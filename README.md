@@ -4,7 +4,7 @@ A dark co-op RPG deckbuilder: Slay the Spire style card combat, Diablo style gea
 
 ## Play
 
-The live game is the `public/` folder (one page, `public/index.html`), deployed by Cloudflare Pages.
+The live game is the `public/` folder (one page, `public/index.html`), deployed as a Cloudflare Worker with static assets (settings in `wrangler.jsonc`; deploy command `npx wrangler deploy`).
 Progress saves in the browser for now; accounts and online co-op come next (Supabase).
 
 ## Layout

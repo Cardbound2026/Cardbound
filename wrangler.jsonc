@@ -1,0 +1,9 @@
+// Cloudflare Workers settings: serve the built game in public/ as a static site.
+{
+  "name": "cardbound",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./public",
+    "not_found_handling": "single-page-application"
+  }
+}
