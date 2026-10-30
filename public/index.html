@@ -182,7 +182,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .hud .spacer { display: none; }
 .hint { color: var(--muted); font-size: 13px; min-height: 18px; }
 .hint.alert { color: var(--warn); }
-.hand { display: flex; gap: 10px; overflow-x: auto; padding: 18px 2px 10px; min-height: 285px; align-items: flex-end; }
+.hand { display: flex; justify-content: center; align-items: flex-end; padding: 46px 8px 8px; min-height: 300px; overflow: visible; }
 .card { flex: 0 0 136px; height: 186px; display: grid; grid-template-rows: auto auto 1fr auto; gap: 4px; text-align: left; padding: 8px 9px; border-radius: 8px; background: linear-gradient(180deg, #2f271f, #211b15); border: 1px solid var(--line); border-top: 4px solid var(--rc); position: relative; transition: transform .12s, border-color .12s; }
 .card:hover:not(:disabled) { transform: translateY(-6px); border-color: var(--rc); }
 .card.selected { transform: translateY(-10px); border-color: var(--accent); box-shadow: 0 6px 18px rgba(214,161,74,.25); }
@@ -229,13 +229,18 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .cf.dark .fpanel { color: #efe4cf; }
 .cf .fname { font-family: var(--cf-name, var(--f-display)); font-weight: var(--cf-name-w, 400); font-size: calc(10.5cqw * var(--cf-name-s, 1)); line-height: 1; color: #1d130b; }
 .cf.dark .fname { color: #f6e9cf; text-shadow: 0 .5cqw 1cqw #000; }
-.cf .ftype { font-family: var(--cf-text, var(--f-ui)); white-space: nowrap; font-size: 4.8cqw; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: color-mix(in srgb, var(--rg) 38%, #3a2a1a); }
-.cf.dark .ftype { color: color-mix(in srgb, var(--rg) 70%, #e8d9bd); }
+.cf .ftype { font-family: var(--cf-text, var(--f-ui)); white-space: nowrap; font-size: 5.4cqw; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--rt-light); }
+.cf.dark .ftype { color: var(--rt-dark); text-shadow: 0 .4cqw .8cqw #000; }
 .cf .ftext { font-family: var(--cf-text, var(--f-ui)); font-size: calc(7.2cqw * var(--cf-text-s, 1)); line-height: 1.18; font-weight: var(--cf-text-w, 600); text-wrap: balance; }
 .cf .ftext.long { font-size: calc(6.2cqw * var(--cf-text-s, 1)); }
 .cf .ftext.vlong { font-size: calc(5.4cqw * var(--cf-text-s, 1)); }
 .cf .ftext b { color: #8a1f12; } .cf.dark .ftext b { color: #ffcf7a; }
-.hand .cf { --cw: 172px; }
+.hand .cf { --cw: 168px; margin-left: calc(var(--cw) * -0.38); transform-origin: 50% 120%; transform: translateY(calc(var(--off, 0) * 1px)) rotate(calc(var(--rot, 0) * 1deg)); transition: transform .14s ease-out, filter .14s, margin .14s; position: relative; z-index: var(--z, 1); }
+.hand .cf:first-child { margin-left: 0; }
+.hand .cf:hover:not(:disabled), .hand .cf:focus-visible { transform: translateY(-58px) rotate(0deg) scale(1.28); z-index: 50; filter: drop-shadow(0 16px 24px rgba(0,0,0,.7)); }
+.hand .cf.selected { transform: translateY(-48px) rotate(0deg) scale(1.18); z-index: 49; filter: drop-shadow(0 0 12px rgba(214,161,74,.85)); }
+@media (max-width: 700px) { .hand .cf { --cw: 120px; margin-left: calc(var(--cw) * -0.45); } .hand .cf:hover:not(:disabled) { transform: translateY(-36px) scale(1.15); } }
+@media (prefers-reduced-motion: reduce) { .hand .cf { transition: none; } }
 .partypick { border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px 8px; margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; }
 .partypick legend { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 0 4px; }
 .partypick label { display: inline-flex; gap: 5px; align-items: center; }
@@ -247,11 +252,38 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .memrow { display: grid; grid-template-columns: 70px 1fr auto; gap: 8px; align-items: center; font-size: 13px; margin: 4px 0; }
 .memrow b { color: var(--mc); }
 .sackhead { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 6px 0 2px; }
+.modal .box.wide { width: min(980px, 100%); }
+.pilegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; padding: 6px 4px 30px; }
+.pilecard { position: relative; display: grid; justify-items: center; }
+.pilecard .cf { transition: transform .14s; transform-origin: 50% 60%; }
+.pilecard:hover .cf { transform: scale(1.65); z-index: 30; position: relative; filter: drop-shadow(0 12px 22px rgba(0,0,0,.75)); }
+.pilecount { position: absolute; right: 4px; top: 2px; z-index: 31; background: var(--accent); color: #1a130a; font-weight: 800; font-size: 13px; padding: 1px 7px; border-radius: 999px; }
+
+/* title / hero select */
+.title { display: grid; gap: 16px; max-width: 1000px; margin: 0 auto; width: 100%; }
+.titlehead { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 10px; }
+.titlehead h2 { font-size: 34px; color: var(--accent); }
+.herolist { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.herocard { text-align: left; background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cc); border-radius: 8px; padding: 14px; display: grid; gap: 6px; min-height: 130px; }
+.herocard b { font-family: var(--cf-name); font-weight: 400; font-size: 26px; line-height: 1; }
+.herocard small { color: var(--muted); font-size: 13px; }
+.herocard .play { justify-self: start; margin-top: 4px; }
+.herocard.new { border-style: dashed; border-top-style: dashed; place-content: center; text-align: center; color: var(--muted); font-size: 16px; }
+.create h3 { font-family: var(--cf-name); font-weight: 400; font-size: 26px; color: var(--accent); margin-bottom: 8px; }
+.classpick { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.classpick button { text-align: left; background: var(--panel2); border: 1px solid var(--line); border-top: 4px solid var(--cc); border-radius: 8px; padding: 10px 12px; display: grid; gap: 4px; }
+.classpick button[aria-checked="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; background: #2b2115; }
+.classpick button:disabled { opacity: .45; }
+.classpick b { font-family: var(--cf-name); font-weight: 400; font-size: 22px; }
+.classpick span { font-size: 13px; color: #d6cab6; } .classpick small { font-size: 12px; color: var(--muted); }
+.namerow { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-top: 12px; }
+.namerow input, .menu input { background: var(--panel2); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; color: var(--text); font: inherit; font-size: 16px; min-width: 220px; }
+.menu { display: grid; gap: 8px; }
+.menu .btn { text-align: left; padding: 10px 14px; }
+.menu label.toggle { display: flex; gap: 8px; align-items: center; font-size: 15px; }
 .cardpeek { position: fixed; z-index: 12; pointer-events: none; filter: drop-shadow(0 14px 28px rgba(0,0,0,.75)); }
 .cardpeek .cf { --cw: 270px; }
 @media (hover: none) { .cardpeek { display: none; } }
-.hand .cf:hover:not(:disabled) { transform: translateY(-10px); filter: drop-shadow(0 8px 14px rgba(0,0,0,.6)); }
-.hand .cf.selected { transform: translateY(-14px); filter: drop-shadow(0 0 10px rgba(214,161,74,.75)); }
 .hand .cf:disabled { filter: grayscale(.85) brightness(.6); cursor: not-allowed; }
 .cardgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; align-items: start; }
 .cardgrid .dcard { display: grid; gap: 4px; justify-items: center; }
@@ -278,7 +310,20 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   <header class="top">
     <div class="brand"><h1>Cardbound</h1><span>Map 1 &middot; The Broken March &middot; prototype v4 &middot; town</span></div>
     <span id="topInfo" class="muted"></span>
+    <button class="btn" id="btnMenu" title="Menu (Esc)">Menu</button>
   </header>
+
+  <!-- TITLE: pick or create a hero -->
+  <section id="scrTitle" class="title" aria-label="Choose your hero" hidden>
+    <div class="titlehead"><h2>Choose your hero</h2><span id="titleAcct"></span></div>
+    <div class="herolist" id="heroList"></div>
+    <div class="panel create" id="createPanel" hidden>
+      <h3>Create a hero</h3>
+      <div class="classpick" id="classPick" role="radiogroup" aria-label="Class"></div>
+      <div class="namerow"><div class="field"><label for="heroName">Name</label><input id="heroName" maxlength="16" autocomplete="off" placeholder="Name your hero"></div><button class="btn primary" id="btnCreate">Create hero</button><button class="btn" id="btnCancelCreate">Cancel</button></div>
+      <p class="down" id="createMsg" style="margin:0;min-height:18px"></p>
+    </div>
+  </section>
 
   <!-- CAMP: the town overworld -->
   <section id="scrStart" class="camp" aria-label="Town">
@@ -1189,7 +1234,7 @@ class Run {
     this.data = this.opts.data || root.CB_DATA;
     this.rng = makeRng(this.opts.seed);
     this.level = this.opts.level;
-    const specs = this.opts.members || [{ cls: this.opts.cls, gear: this.opts.gear, deck: this.opts.deck, bank: this.opts.bank, stashFree: this.opts.stashFree }];
+    const specs = this.opts.members || [{ cls: this.opts.cls, name: this.opts.name, gear: this.opts.gear, deck: this.opts.deck, bank: this.opts.bank, stashFree: this.opts.stashFree }];
     this.sharedBank = !!this.opts.sharedBank;
     this.bankPool = this.sharedBank ? (specs[0].bank || 0) : 0;
     this.members = specs.map((sp, i) => {
@@ -1349,17 +1394,26 @@ const VERSION = 1;
 let uidN = 0;
 const uid = (p) => p + Date.now().toString(36) + (uidN++).toString(36) + Math.floor(Math.random() * 1e6).toString(36);
 
-function newChar(cls) {
+function newChar(cls, name) {
   const deck = [];
   for (const [key, n] of CLASSES[cls].deck) for (let i = 0; i < n; i++) deck.push({ id: uid('k'), key, rank: 0 });
-  return { cls, gear: STARTER_GEAR[cls].map(g => Object.assign({ id: uid('g') }, g)), deck, cards: [], runs: 0, best: 0, bossKills: 0 };
+  return { cls, name: name || cls, created: Date.now(), gear: STARTER_GEAR[cls].map(g => Object.assign({ id: uid('g') }, g)), deck, cards: [], runs: 0, best: 0, bossKills: 0 };
 }
 function newProfile() { return { v: VERSION, gold: 0, stash: [], chars: {}, last: { cls: 'Warrior', level: 0 }, history: [] }; }
 function fix(p) { // tolerate older or partial saves
   p = Object.assign(newProfile(), p || {});
-  for (const c of Object.values(p.chars)) { c.cards = c.cards || []; c.deck = c.deck || []; c.gear = c.gear || []; }
+  for (const c of Object.values(p.chars)) { c.cards = c.cards || []; c.deck = c.deck || []; c.gear = c.gear || []; c.name = c.name || c.cls; }
   return p;
 }
+// character creation: one hero per class for now, each with a name the player picks
+const NAME_RE = /^[A-Za-z][A-Za-z '\-]{1,15}$/;
+function nameProblem(name) { name = (name || '').trim(); if (name.length < 2) return 'Names need at least 2 letters.'; if (name.length > 16) return 'Names can be at most 16 characters.'; if (!NAME_RE.test(name)) return 'Use letters, spaces, apostrophes or hyphens, starting with a letter.'; return null; }
+function createChar(p, cls, name) {
+  if (p.chars[cls]) return { ok: false, why: `You already have a ${cls}.` };
+  const why = nameProblem(name); if (why) return { ok: false, why };
+  p.chars[cls] = newChar(cls, name.trim().replace(/\s+/g, ' ')); p.last.cls = cls; return { ok: true };
+}
+function renameChar(p, cls, name) { const c = p.chars[cls]; if (!c) return { ok: false, why: 'No such hero.' }; const why = nameProblem(name); if (why) return { ok: false, why }; c.name = name.trim().replace(/\s+/g, ' '); return { ok: true }; }
 function char(p, cls) { if (!p.chars[cls]) p.chars[cls] = newChar(cls); return p.chars[cls]; }
 
 // ---------- gear
@@ -1453,9 +1507,9 @@ function buyShop(p, i) {
 // ---------- runs
 function partyOpts(p, classes) {
   const free = Math.max(0, STASH_MAX - p.stash.length);
-  return { sharedBank: true, members: classes.map((cls, i) => { const c = char(p, cls); return { cls, name: cls, bank: i === 0 ? p.gold : 0, stashFree: free, gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })) }; }) };
+  return { sharedBank: true, members: classes.map((cls, i) => { const c = char(p, cls); return { cls, name: c.name || cls, bank: i === 0 ? p.gold : 0, stashFree: free, gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })) }; }) };
 }
-function runOpts(p, cls) { const c = char(p, cls); return { cls, bank: p.gold, stashFree: Math.max(0, STASH_MAX - p.stash.length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })) }; }
+function runOpts(p, cls) { const c = char(p, cls); return { cls, members: undefined, name: c.name, bank: p.gold, stashFree: Math.max(0, STASH_MAX - p.stash.length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })) }; }
 // Bring a finished run home: equipped gear (incl. merchant buys) stays on the character; kept loot goes to stash/collection.
 function absorbRun(p, run, mi) {
   if (mi == null && run.members && run.members.length > 1) { const res = run.members.map((m, i) => absorbRun(p, run, i)); return res[0]; }
@@ -1479,7 +1533,7 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered };
 }
 
-const API = { SLOTS, STASH_MAX, newProfile, fix, char, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { SLOTS, STASH_MAX, newProfile, fix, char, createChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -1547,7 +1601,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       dbRef = { set: async (o) => { const { error: e } = await supa.from('profiles').upsert({ user_id: u.id, data: JSON.parse(o.json), updated_at: new Date(o.savedAt).toISOString() }); if (e) throw e; } };
       storeKind = 'cloud';
       if (row && row.data) { const remote = CBHub.fix(row.data); if ((remote.savedAt || 0) > (profile.savedAt || 0)) { profile = remote; heroCls = profile.last.cls || heroCls; } }
-      if (!run) renderHub();
+      if (!run) { renderHub(); if (!$('scrTitle').hidden) renderTitle(); }
       save();
     } catch (e) { dbRef = null; storeKind = 'local'; toast('Signed in, but your online save could not be reached (' + (e.message || e) + '). Progress keeps saving in this browser.'); }
     renderAccount(); renderSaveNote();
@@ -1558,6 +1612,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     el.innerHTML = supaUser ? `<span class="chip" title="Signed in">${esc(supaUser.email || 'Signed in')}</span> <button class="pilebtn" id="btnSignOut">Sign out</button>` : `<button class="btn primary" id="btnSignIn" style="padding:4px 12px">Sign in to save online</button>`;
     if ($('btnSignIn')) $('btnSignIn').onclick = signInModal;
     if ($('btnSignOut')) $('btnSignOut').onclick = async () => { await supa.auth.signOut(); };
+    if (!$('scrTitle').hidden) renderTitle();
   }
   function signInModal() {
     modal(`<h2>Sign in</h2><p>Enter your email and we'll send you a sign-in link. No password needed. Your characters, stash and decks then follow you to any device.</p>
@@ -1585,24 +1640,25 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       const snap = await Promise.race([ref.get(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))]);
       dbRef = ref; storeKind = 'account';
       if (snap.exists) { const d = snap.data(); const remote = CBHub.fix(JSON.parse(d.json)); if ((remote.savedAt || 0) > (profile.savedAt || 0)) { profile = remote; heroCls = profile.last.cls || heroCls; } }
-      if (!run) renderHub();
+      if (!run) { renderHub(); if (!$('scrTitle').hidden) renderTitle(); }
       save();
     } catch (e) { dbRef = null; storeKind = 'local'; renderSaveNote(); }
   }
 
   function heroTabs() {
-    $('heroes').innerHTML = Object.keys(CLASSES).map(k => {
+    $('heroes').innerHTML = Object.keys(CLASSES).filter(k => profile.chars[k]).map(k => {
       const c = profile.chars[k];
       const sub = c ? `Power ${CBHub.powerLevel(c)} &middot; gear ${CBHub.gearScore(c)} &middot; deck ${CB.deckLevel(c.deck)}` : 'New character';
-      return `<button class="hero" role="tab" style="--cc:${CC[k]}" data-cls="${k}" aria-selected="${k === heroCls}"><b>${k}</b><small>${sub}</small></button>`;
-    }).join('');
+      return `<button class="hero" role="tab" style="--cc:${CC[k]}" data-cls="${k}" aria-selected="${k === heroCls}"><b>${esc(c.name)}</b><small>${k} &middot; ${sub}</small></button>`;
+    }).join('') + (Object.keys(profile.chars).length < 4 ? `<button class="hero" style="--cc:var(--line)" id="heroNew"><b>+ New hero</b><small>Create one on the hero screen</small></button>` : '');
   }
-  $('heroes').addEventListener('click', (ev) => { const b = ev.target.closest('.hero'); if (!b) return; heroCls = b.dataset.cls; CBHub.char(profile, heroCls); profile.last.cls = heroCls; save(); renderHub(); });
+  $('heroes').addEventListener('click', (ev) => { if (ev.target.closest('#heroNew')) { $('sheet').hidden = true; show('title'); openCreate(); return; } const b = ev.target.closest('.hero'); if (!b) return; heroCls = b.dataset.cls; CBHub.char(profile, heroCls); profile.last.cls = heroCls; save(); renderHub(); });
 
   function renderHub() {
+    if (!profile.chars[heroCls]) { const k = Object.keys(profile.chars)[0]; if (!k) return; heroCls = k; }
     const c = CBHub.char(profile, heroCls), s = CB.sumGear(c.gear), dl = CB.deckLevel(c.deck), gs = CBHub.gearScore(c);
     heroTabs();
-    $('hubChar').innerHTML = `<div class="charhead"><h3>${heroCls}</h3><span class="chip">Gold ${profile.gold}</span></div>
+    $('hubChar').innerHTML = `<div class="charhead"><h3>${esc(c.name)} <span class="muted" style="font-size:15px">${heroCls}</span></h3><span class="chip">Gold ${profile.gold}</span></div>
       <div class="power"><div><b>${gs}</b><span>Gear score</span></div><div><b>${dl}</b><span>Deck level</span></div><div><b>${CBHub.powerLevel(c)}</b><span>Power</span></div></div>
       <dl class="kv"><dt>Max HP</dt><dd>${s.maxHp}</dd><dt>Mana</dt><dd>${s.maxMana} max, +${s.regen}/turn</dd><dt>Draw per round</dt><dd>${s.draw}</dd>
       <dt>Strength / Intelligence</dt><dd>+${s.strength}% / +${s.intelligence}%</dd><dt>Dexterity (${CLASSES[heroCls].defense})</dt><dd>+${s.dexterity + s.defGain}%</dd>
@@ -1613,7 +1669,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     $('hubWagon').innerHTML = `<h3 style="font-size:24px;color:var(--accent)">The Wagon</h3>
       <div class="field" style="margin:8px 0"><label for="selLevel">Map 1: The Broken March &middot; level <b id="lvlOut">+${lvl}</b></label><input type="range" id="selLevel" min="0" max="19" step="1" value="${lvl}"></div>
       <p class="savenote" id="lvlInfo"></p>
-      <fieldset class="partypick"><legend>Party (play them all yourself, in Initiative order)</legend>${Object.keys(CLASSES).map(k => `<label><input type="checkbox" data-party="${k}" ${k === heroCls ? 'checked disabled' : (profile.last.party || []).includes(k) ? 'checked' : ''}> ${k}</label>`).join('')}</fieldset>
+      <fieldset class="partypick"><legend>Party (play them all yourself, in Initiative order)</legend>${Object.keys(CLASSES).filter(k => profile.chars[k]).map(k => `<label><input type="checkbox" data-party="${k}" ${k === heroCls ? 'checked disabled' : (profile.last.party || []).includes(k) ? 'checked' : ''}> ${esc(profile.chars[k].name)} <span class="muted">(${k})</span></label>`).join('')}</fieldset>
       <p class="savenote" id="partyNote" style="margin:4px 0 0"></p>
       <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn primary" id="btnStart" ${chk.ok ? '' : 'disabled'}>Set out</button></div>
       ${chk.ok ? '' : `<p class="down" style="margin:6px 0 0;font-size:13px">Fix your deck first: it ${chk.problems.join(', ')}.</p>`}
@@ -1732,7 +1788,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
 
   // ---------- history tab
   function renderLogTab() {
-    const L = { victory: 'Killed the Warlord', extracted: 'Extracted', dead: 'Died' };
+    const L = { victory: 'Killed the Warlord', extracted: 'Extracted', dead: 'Died', abandoned: 'Left early' };
     $('hpLog').innerHTML = profile.history.length ? `<div class="list tall">${profile.history.map(h => `<div class="item" style="--rc:${h.result === 'dead' ? 'var(--hp)' : h.result === 'victory' ? 'var(--r-gold)' : 'var(--good)'}"><div class="ih"><b>${L[h.result] || h.result}</b><span>${h.cls} &middot; Map +${h.level}</span></div><div class="st">Row ${h.row > ROWS ? 'boss' : h.row}. Brought home ${h.items} item${h.items === 1 ? '' : 's'}, ${h.cards} card${h.cards === 1 ? '' : 's'}, ${h.gold} gold.</div><div class="il">${new Date(h.at).toLocaleString()}</div></div>`).join('')}</div>` : '<span class="muted">No runs yet.</span>';
   }
 
@@ -2146,10 +2202,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if ($('scrStart').hidden || ev.target.matches('input, select, textarea')) return;
     if (!$('talk').hidden) {
       if (ev.key === ' ' || ev.key === 'Enter' || ev.key === 'e' || ev.key === 'E') { ev.preventDefault(); const b = $('talk').querySelector('button'); if (b) b.click(); }
-      if (ev.key === 'Escape') closeTalk();
+      if (ev.key === 'Escape') { closeTalk(); ev.cbHandled = true; }
       return;
     }
-    if (!$('sheet').hidden) { if (ev.key === 'Escape' && $('modal').hidden) closeSheet(); return; }
+    if (!$('sheet').hidden) { if (ev.key === 'Escape' && $('modal').hidden) { closeSheet(); ev.cbHandled = true; } return; }
     if (!$('modal').hidden) return;
     const d = KEYDIR[ev.key];
     if (d) { ev.preventDefault(); P.path = []; P.target = null; P.talkTo = null; if (!P.held.includes(d)) P.held.push(d); if (!P.mv && P.dir !== d && !free(P.x + DIRS[d][0], P.y + DIRS[d][1])) P.dir = d; return; }
@@ -2188,8 +2244,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   $('sheetClose').addEventListener('click', closeSheet);
   $('sheet').addEventListener('click', (ev) => { if (ev.target === $('sheet')) closeSheet(); });
   function renderTownBar() {
+    if (!profile.chars[heroCls]) return;
     const c = CBHub.char(profile, heroCls);
-    $('tbHero').innerHTML = `<b style="color:${CC[heroCls]}">${heroCls}</b>`;
+    $('tbHero').innerHTML = `<b style="color:${CC[heroCls]}">${esc(c.name || heroCls)}</b> <span class="muted">${heroCls}</span>`;
     $('tbPower').textContent = `Power ${CBHub.powerLevel(c)} · gear ${CBHub.gearScore(c)} · deck ${CB.deckLevel(c.deck)}`;
     $('tbGold').textContent = `Gold ${profile.gold}`;
   }
@@ -2205,7 +2262,77 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   window.addEventListener('resize', () => { if (TOWN.running) sizeTown(); });
 
   let townReturn = false;
-  function show(which) { $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); }
+
+  // ---------- settings (this browser)
+  const settings = (() => { try { return Object.assign({ fast: false }, JSON.parse(localStorage.getItem('cb-settings') || '{}')); } catch (e) { return { fast: false }; } })();
+  function saveSettings() { try { localStorage.setItem('cb-settings', JSON.stringify(settings)); } catch (e) {} }
+
+  // ---------- title screen: pick a hero, or create one (class + name)
+  let createCls = null;
+  function renderTitle() {
+    const chars = Object.values(profile.chars).sort((a, b) => (a.created || 0) - (b.created || 0));
+    $('heroList').innerHTML = chars.map(c => `<div class="herocard" style="--cc:${CC[c.cls]}"><b>${esc(c.name)}</b><small>${c.cls} &middot; Power ${CBHub.powerLevel(c)} &middot; ${c.runs} run${c.runs === 1 ? '' : 's'}${c.bossKills ? ` &middot; ${c.bossKills} Warlord kill${c.bossKills === 1 ? '' : 's'}` : ''}</small><button class="btn primary play" data-play="${c.cls}">Enter Emberwatch</button></div>`).join('')
+      + (chars.length < 4 ? `<button class="herocard new" id="btnNewHero">+ Create a hero</button>` : '');
+    if ($('btnNewHero')) $('btnNewHero').onclick = openCreate;
+    if (!chars.length) openCreate();
+    $('titleAcct').innerHTML = supa ? (supaUser ? `<span class="muted">Signed in as ${esc(supaUser.email || '')}</span>` : `<button class="btn" id="btnTitleSignIn">Sign in to save online</button>`) : '';
+    if ($('btnTitleSignIn')) $('btnTitleSignIn').onclick = signInModal;
+    $('topInfo').textContent = '';
+  }
+  $('heroList').addEventListener('click', (ev) => { const b = ev.target.closest('[data-play]'); if (!b) return; heroCls = b.dataset.play; profile.last.cls = heroCls; save(); renderHub(); show('start'); });
+  function openCreate() {
+    const taken = (k) => !!profile.chars[k];
+    if (!createCls || taken(createCls)) createCls = Object.keys(CLASSES).find(k => !taken(k)) || null;
+    $('classPick').innerHTML = Object.entries(CLASSES).map(([k, c]) => `<button role="radio" style="--cc:${CC[k]}" data-cls="${k}" aria-checked="${k === createCls}" ${taken(k) ? 'disabled' : ''}><b>${k}</b><span>${esc(c.blurb)}</span><small>${taken(k) ? 'You already have a ' + k : 'Defense: ' + c.defense}</small></button>`).join('');
+    $('createPanel').hidden = false; $('createMsg').textContent = ''; $('btnCancelCreate').hidden = !Object.keys(profile.chars).length;
+    $('heroName').focus();
+  }
+  $('classPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-cls]'); if (!b || b.disabled) return; createCls = b.dataset.cls; for (const x of $('classPick').children) x.setAttribute('aria-checked', x === b); });
+  const doCreate = () => {
+    if (!createCls) { $('createMsg').textContent = 'Pick a class.'; return; }
+    const r = CBHub.createChar(profile, createCls, $('heroName').value);
+    if (!r.ok) { $('createMsg').textContent = r.why; return; }
+    heroCls = createCls; $('heroName').value = ''; $('createPanel').hidden = true; save(); renderHub(); show('start');
+  };
+  $('btnCreate').onclick = doCreate; $('heroName').addEventListener('keydown', (e) => { if (e.key === 'Enter') doCreate(); });
+  $('btnCancelCreate').onclick = () => { $('createPanel').hidden = true; };
+
+  // ---------- Esc menu
+  function openMenu() {
+    const inRun = run && !run.over, onTitle = !$('scrTitle').hidden;
+    modal(`<h2>Menu</h2><div class="menu">
+      <button class="btn primary" id="mClose">Resume</button>
+      ${inRun ? `<button class="btn" id="mnLeave">Leave run and return to town</button>` : ''}
+      ${run && run.over ? `<button class="btn" id="mnTown">Return to town</button>` : ''}
+      ${!run && !onTitle ? `<button class="btn" id="mnHeroes">Switch hero</button>` : ''}
+      ${supa ? (supaUser ? `<button class="btn" id="mnSignOut">Sign out (${esc(supaUser.email || '')})</button>` : `<button class="btn" id="mnSignIn">Sign in to save online</button>`) : ''}
+      <h3 style="font-size:20px;margin-top:6px">Settings</h3>
+      <label class="toggle"><input type="checkbox" id="setFast" ${settings.fast ? 'checked' : ''}> Fast enemy turns</label>
+    </div>`);
+    $('mClose').onclick = closeModal;
+    $('setFast').onchange = (e) => { settings.fast = e.target.checked; saveSettings(); };
+    if ($('mnLeave')) $('mnLeave').onclick = () => {
+      modal(`<h2 class="loss">Leave this run?</h2><p>You go back to Emberwatch now. Everything in your loot sack (items, cards and gold found this run) is lost. Gear you are wearing, your deck and any merchant orders are kept.</p><div class="row"><button class="btn" id="mnConfirm">Leave and lose the sack</button><button class="btn primary" id="mClose">Keep playing</button></div>`);
+      $('mClose').onclick = closeModal; $('mnConfirm').onclick = leaveRun;
+    };
+    if ($('mnTown')) $('mnTown').onclick = () => { closeModal(); toTown(); };
+    if ($('mnHeroes')) $('mnHeroes').onclick = () => { closeModal(); $('sheet').hidden = true; show('title'); };
+    if ($('mnSignIn')) $('mnSignIn').onclick = signInModal;
+    if ($('mnSignOut')) $('mnSignOut').onclick = async () => { closeModal(); await supa.auth.signOut(); };
+  }
+  function toTown() {
+    if (run && run.over && !run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run); save(); }
+    cb = null; run = null; townReturn = true; show('start'); renderHub();
+  }
+  function leaveRun() {
+    if (!run) return closeModal();
+    cb = null; run.combat = null; run.pending = null;
+    for (const m of run.members) m.kept = { items: [], gold: 0 };
+    run.over = 'abandoned'; run.note('Left the March early. The loot sack is lost.');
+    closeModal(); toTown();
+  }
+  $('btnMenu').addEventListener('click', openMenu);
+  function show(which) { $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); }
 
   // ---------- map
   const RH = 58, CW = 78, PADX = 40, PADY = 34;
@@ -2295,7 +2422,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const L = (r) => `left:${pct(r[0])};top:${pct(r[1])};width:${pct(r[2])};height:${pct(r[3])}`;
     const g = F.gem, gr = g[2] * 0.82;
     const text = esc(d.text).replace(/(\d+)/g, '<b>$1</b>'), len = d.text.length;
-    const type = `${d.rarity === 'Token' ? 'Token' : d.rarity} ${d.type}${d.dtype && d.dtype !== 'Physical' ? ' · ' + d.dtype : ''}`;
+    const type = `${d.type}${d.dtype && d.dtype !== 'Physical' ? ' · ' + d.dtype : ''}`;
     const name = d.rank ? d.name.replace(/ \+\d+$/, '') : d.name;
     const art = (window.CB_ART || {})[d.key];
     return `<span class="fart" style="${L(F.art)}">${art ? `<img src="${art}" alt="" draggable="false">` : cardIcon(d)}</span><img class="fimg" src="${F.src}" alt="" draggable="false">
@@ -2313,7 +2440,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   }
   // card lettering (chosen Oct 30): New Rocker for names and the mana number, Grenze for the type line and rules text
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitCards());
-  const cardVars = (d) => `--cc:${CC[d.cls] || '#888'};--rg:${GEMC[d.rarity] || '#888'}`;
+  // rarity color for the type line: a darker shade on parchment and stone, a brighter one on the Warrior's dark panel
+  const RT = { White: ['#5e554b', '#ece4d4'], Green: ['#2f7a2a', '#86d873'], Blue: ['#2456a8', '#86b6ff'], Gold: ['#9a6610', '#ffcf5a'], Token: ['#5e554b', '#d8d0c0'], Status: ['#5e554b', '#d8d0c0'] };
+  const cardVars = (d) => `--cc:${CC[d.cls] || '#888'};--rg:${GEMC[d.rarity] || '#888'};--rt-light:${(RT[d.rarity] || RT.White)[0]};--rt-dark:${(RT[d.rarity] || RT.White)[1]}`;
   const cardCls = (d) => 'cf' + ((window.CB_FRAMES || {})[d.cls] && CB_FRAMES[d.cls].dark ? ' dark' : '');
   function cardBox(d, w) { const f = cardFace(d); return f ? `<div class="${cardCls(d)}" style="${cardVars(d)}${w ? ';--cw:' + w + 'px' : ''}" role="img" aria-label="${esc(d.name + ': ' + d.text)}">${f}</div>` : ''; }
 
@@ -2358,7 +2487,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   for (const [t, p] of [['tSack', 'pSack'], ['tGear', 'pGear'], ['tLog', 'pLog']]) $(t).addEventListener('click', () => { for (const [t2, p2] of [['tSack', 'pSack'], ['tGear', 'pGear'], ['tLog', 'pLog']]) { $(t2).setAttribute('aria-selected', t2 === t); $(p2).hidden = t2 !== t; } });
 
   // ---------- modals
-  function modal(html) { $('modalBox').innerHTML = html; $('modal').hidden = false; fitCards($('modalBox')); const f = $('modalBox').querySelector('button'); if (f) f.focus(); }
+  function modal(html) { $('modalBox').classList.remove('wide'); $('modalBox').innerHTML = html; $('modal').hidden = false; fitCards($('modalBox')); const f = $('modalBox').querySelector('button'); if (f) f.focus(); }
   function closeModal() { $('modal').hidden = true; }
   function pendingModal() {
     const p = run.pending;
@@ -2420,7 +2549,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
   async function pump() {
     if (busy) return; busy = true;
-    while (cb && cb.phase === 'enemy' && !cb.over) { render(); await sleep(400); cb.enemyStep(); render(true); }
+    while (cb && cb.phase === 'enemy' && !cb.over) { render(); await sleep(settings.fast ? 140 : 400); cb.enemyStep(); render(true); }
     busy = false; render();
     if (cb.over) combatOver();
   }
@@ -2507,7 +2636,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     else hint.textContent = party ? `${p.name}'s turn. Click a card to play it. E ends ${p.name}'s turn.` : 'Your turn. Click a card to play it. E ends your turn.';
     $('hand').innerHTML = p.hand.map(c => {
       const d = cb.card(c), chk = cb.canPlay(c), face = d.type !== 'Status' && cardFace(d);
-      if (face) return `<button class="${cardCls(d)} ${selected && selected.uid === c.uid ? 'selected' : ''}" style="${cardVars(d)}" data-uid="${c.uid}" ${chk.ok && !busy ? '' : 'disabled'} title="${chk.ok ? (d.target === 'enemy' ? 'Single enemy' : d.target === 'all' ? 'All enemies' : 'Self') : esc(chk.why)}" aria-label="${esc(d.name + ', ' + d.cost + ' mana: ' + d.text)}">${face}</button>`;
+      const n = p.hand.length, k = p.hand.indexOf(c), mid = (n - 1) / 2, rot = (k - mid) * Math.min(5, 26 / Math.max(1, n)), off = Math.abs(k - mid) ** 1.6 * 4;
+      if (face) return `<button class="${cardCls(d)} ${selected && selected.uid === c.uid ? 'selected' : ''}" style="${cardVars(d)};--rot:${rot.toFixed(1)};--off:${off.toFixed(1)};--z:${k + 1}" data-uid="${c.uid}" ${chk.ok && !busy ? '' : 'disabled'} title="${chk.ok ? (d.target === 'enemy' ? 'Single enemy' : d.target === 'all' ? 'All enemies' : 'Self') : esc(chk.why)}" aria-label="${esc(d.name + ', ' + d.cost + ' mana: ' + d.text)}">${face}</button>`;
       return `<button class="card ${d.type === 'Status' ? 'status' : ''} ${selected && selected.uid === c.uid ? 'selected' : ''}" style="--rc:${RC[d.rarity]}" data-uid="${c.uid}" ${chk.ok && !busy ? '' : 'disabled'} title="${chk.ok ? '' : esc(chk.why)}">
         ${d.cost != null ? `<span class="cost">${d.cost}</span>` : ''}<span class="cname">${esc(d.name)}</span><span class="ctype">${d.rarity} ${d.type}${d.dtype && d.dtype !== 'Physical' ? ' · ' + d.dtype : ''}</span>
         <span class="ctext">${esc(d.text)}</span><span class="cfoot">${chk.ok ? (d.target === 'enemy' ? 'Single enemy' : d.target === 'all' ? 'All enemies' : 'Self') : esc(chk.why)}</span></button>`;
@@ -2535,7 +2665,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const title = { draw: 'Draw pile', discard: 'Discard pile', exhaust: 'Exhaust pile' }[which];
     const cards = which === 'draw' ? p.drawPile : which === 'discard' ? p.discard : p.exhaust;
     const note = { draw: 'Sorted by name; the real order is hidden. Your discard pile is shuffled back in when this runs out (adding a Fatigue).', discard: 'Played and discarded cards. Shuffled back into your draw pile when it runs out.', exhaust: 'Removed for the rest of this fight.' }[which];
-    modal(`<h2>${title} (${cards.length})</h2><p class="muted">${note}</p><div class="cardlist">${cardRows(cards, false)}</div><div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
+    const groups = new Map();
+    for (const c of cards) { const k = c.key + '+' + (c.rank || 0); const g = groups.get(k) || { n: 0, c }; g.n++; groups.set(k, g); }
+    const faces = [...groups.values()].sort((a, b) => cb.card(a.c).name.localeCompare(cb.card(b.c).name)).map(g => { const d = cb.card(g.c); const box = d.type !== 'Status' && cardBox(d, 130); return `<div class="pilecard">${box || rowHtml(1, d)}${g.n > 1 ? `<span class="pilecount">x${g.n}</span>` : ''}</div>`; }).join('');
+    modal(`<h2>${title} (${cards.length})</h2><p class="muted">${note} Hover a card to enlarge it.</p><div class="pilegrid">${faces || '<span class="muted">Empty.</span>'}</div><div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
+    $('modalBox').classList.add('wide');
     $('mClose').onclick = closeModal;
   }
   function viewEnemy(id) {
@@ -2574,7 +2708,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // big readable preview of the hovered card
   const peek = document.createElement('div'); peek.className = 'cardpeek'; peek.hidden = true; document.body.appendChild(peek);
   $('hand').addEventListener('mouseover', (ev) => {
-    const b = ev.target.closest('.cf'); if (!b || !cb) { peek.hidden = true; return; }
+    const b = null; if (!b || !cb) { peek.hidden = true; return; }
     const c = hero().hand.find(x => x.uid === b.dataset.uid); if (!c) return;
     peek.innerHTML = cardBox(cb.card(c)); peek.hidden = false;
     const r = b.getBoundingClientRect(), w = 270, h = 405;
@@ -2595,12 +2729,18 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   $('foes').addEventListener('click', (ev) => { const u = ev.target.closest('.unit.targetable'); if (u) pickTarget(u.dataset.id); });
   $('foes').addEventListener('keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('.unit.targetable')) { ev.preventDefault(); pickTarget(ev.target.dataset.id); } });
   document.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Escape' && selected) { selected = null; render(); }
-    if (ev.key === 'Escape' && !$('modal').hidden && $('mClose')) closeModal();
+    if (ev.key === 'Escape') {
+      if (ev.cbHandled) return;
+      if (selected) { selected = null; render(); return; }
+      if (!$('modal').hidden) { if ($('mClose')) closeModal(); return; }
+      if (!$('sheet').hidden || !$('talk').hidden) return;
+      if (ev.target.matches('input, select, textarea')) return;
+      openMenu(); return;
+    }
     if ((ev.key === 'e' || ev.key === 'E') && !$('scrCombat').hidden && $('modal').hidden && !ev.target.matches('select, input') && !$('btnEnd').disabled) $('btnEnd').click();
   });
   $('btnEnd').addEventListener('click', () => { if (busy || cb.phase !== 'player') return; selected = null; cb.endPlayerTurn(); render(true); pump(); });
-  renderHub(); show('start'); connectAccount();
+  renderHub(); show('title'); connectAccount();
 })();
 </script>
 

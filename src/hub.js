@@ -10,17 +10,26 @@ const VERSION = 1;
 let uidN = 0;
 const uid = (p) => p + Date.now().toString(36) + (uidN++).toString(36) + Math.floor(Math.random() * 1e6).toString(36);
 
-function newChar(cls) {
+function newChar(cls, name) {
   const deck = [];
   for (const [key, n] of CLASSES[cls].deck) for (let i = 0; i < n; i++) deck.push({ id: uid('k'), key, rank: 0 });
-  return { cls, gear: STARTER_GEAR[cls].map(g => Object.assign({ id: uid('g') }, g)), deck, cards: [], runs: 0, best: 0, bossKills: 0 };
+  return { cls, name: name || cls, created: Date.now(), gear: STARTER_GEAR[cls].map(g => Object.assign({ id: uid('g') }, g)), deck, cards: [], runs: 0, best: 0, bossKills: 0 };
 }
 function newProfile() { return { v: VERSION, gold: 0, stash: [], chars: {}, last: { cls: 'Warrior', level: 0 }, history: [] }; }
 function fix(p) { // tolerate older or partial saves
   p = Object.assign(newProfile(), p || {});
-  for (const c of Object.values(p.chars)) { c.cards = c.cards || []; c.deck = c.deck || []; c.gear = c.gear || []; }
+  for (const c of Object.values(p.chars)) { c.cards = c.cards || []; c.deck = c.deck || []; c.gear = c.gear || []; c.name = c.name || c.cls; }
   return p;
 }
+// character creation: one hero per class for now, each with a name the player picks
+const NAME_RE = /^[A-Za-z][A-Za-z '\-]{1,15}$/;
+function nameProblem(name) { name = (name || '').trim(); if (name.length < 2) return 'Names need at least 2 letters.'; if (name.length > 16) return 'Names can be at most 16 characters.'; if (!NAME_RE.test(name)) return 'Use letters, spaces, apostrophes or hyphens, starting with a letter.'; return null; }
+function createChar(p, cls, name) {
+  if (p.chars[cls]) return { ok: false, why: `You already have a ${cls}.` };
+  const why = nameProblem(name); if (why) return { ok: false, why };
+  p.chars[cls] = newChar(cls, name.trim().replace(/\s+/g, ' ')); p.last.cls = cls; return { ok: true };
+}
+function renameChar(p, cls, name) { const c = p.chars[cls]; if (!c) return { ok: false, why: 'No such hero.' }; const why = nameProblem(name); if (why) return { ok: false, why }; c.name = name.trim().replace(/\s+/g, ' '); return { ok: true }; }
 function char(p, cls) { if (!p.chars[cls]) p.chars[cls] = newChar(cls); return p.chars[cls]; }
 
 // ---------- gear
@@ -114,9 +123,9 @@ function buyShop(p, i) {
 // ---------- runs
 function partyOpts(p, classes) {
   const free = Math.max(0, STASH_MAX - p.stash.length);
-  return { sharedBank: true, members: classes.map((cls, i) => { const c = char(p, cls); return { cls, name: cls, bank: i === 0 ? p.gold : 0, stashFree: free, gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })) }; }) };
+  return { sharedBank: true, members: classes.map((cls, i) => { const c = char(p, cls); return { cls, name: c.name || cls, bank: i === 0 ? p.gold : 0, stashFree: free, gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })) }; }) };
 }
-function runOpts(p, cls) { const c = char(p, cls); return { cls, bank: p.gold, stashFree: Math.max(0, STASH_MAX - p.stash.length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })) }; }
+function runOpts(p, cls) { const c = char(p, cls); return { cls, members: undefined, name: c.name, bank: p.gold, stashFree: Math.max(0, STASH_MAX - p.stash.length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })) }; }
 // Bring a finished run home: equipped gear (incl. merchant buys) stays on the character; kept loot goes to stash/collection.
 function absorbRun(p, run, mi) {
   if (mi == null && run.members && run.members.length > 1) { const res = run.members.map((m, i) => absorbRun(p, run, i)); return res[0]; }
@@ -140,6 +149,6 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered };
 }
 
-const API = { SLOTS, STASH_MAX, newProfile, fix, char, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { SLOTS, STASH_MAX, newProfile, fix, char, createChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);

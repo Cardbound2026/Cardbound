@@ -106,7 +106,7 @@ class Run {
     this.data = this.opts.data || root.CB_DATA;
     this.rng = makeRng(this.opts.seed);
     this.level = this.opts.level;
-    const specs = this.opts.members || [{ cls: this.opts.cls, gear: this.opts.gear, deck: this.opts.deck, bank: this.opts.bank, stashFree: this.opts.stashFree }];
+    const specs = this.opts.members || [{ cls: this.opts.cls, name: this.opts.name, gear: this.opts.gear, deck: this.opts.deck, bank: this.opts.bank, stashFree: this.opts.stashFree }];
     this.sharedBank = !!this.opts.sharedBank;
     this.bankPool = this.sharedBank ? (specs[0].bank || 0) : 0;
     this.members = specs.map((sp, i) => {
