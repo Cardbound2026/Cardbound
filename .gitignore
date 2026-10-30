@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+tools/sim_results.json
+__pycache__/
+*.pyc
+~$*.xlsx
