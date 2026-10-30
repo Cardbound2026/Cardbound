@@ -275,7 +275,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 
   <!-- CAMP: the town overworld -->
   <section id="scrStart" class="camp" aria-label="Town">
-    <div class="townbar"><span id="tbHero"></span><span class="chip" id="tbPower"></span><span class="chip" id="tbGold"></span><span class="muted tbhelp">Walk: arrow keys or WASD, or click/tap where to go. Talk: Space, or click someone.</span></div>
+    <div class="townbar"><span id="tbHero"></span><span class="chip" id="tbPower"></span><span class="chip" id="tbGold"></span><span id="acct"></span><span class="muted tbhelp">Walk: arrow keys or WASD, or click/tap where to go. Talk: Space, or click someone.</span></div>
     <div class="townwrap" id="townWrap">
       <canvas id="town" tabindex="0" aria-label="The town of Emberwatch. Walk to the quartermaster, scribe, chronicler, wagoneer or captain and talk to them."></canvas>
       <div class="prompt" id="prompt" hidden></div>
@@ -329,6 +329,10 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 </div></div>
 <div class="modal" id="modal" hidden><div class="box" id="modalBox"></div></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+/*CONFIG*/
+</script>
 <script>
 /*DATA*/
 </script>
@@ -373,25 +377,73 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 
   // ---------- camp (hub): saved profile, characters, gear and stash, deck and cards, the Wagon
   const LS = 'cb-profile-v1';
+  let supa = null, supaUser = null;
   let heroCls = 'Warrior', storeKind = 'local', dbRef = null, saving = Promise.resolve(), saveQueued = false, hubTab = 'hGear';
   const RAR_ORDER = { Gold: 0, Blue: 1, Green: 2, White: 3 };
   const rarName = r => r === 'Purple (Epic)' ? 'Purple' : r;
 
   function renderSaveNote() {
-    if (!$('scrStart').hidden) $('topInfo').textContent = storeKind === 'account' ? 'Progress saves to your Claude account' : 'Progress saves in this browser';
+    if (!$('scrStart').hidden) $('topInfo').textContent = storeKind === 'cloud' ? 'Progress saves to your account' : storeKind === 'account' ? 'Progress saves to your Claude account' : supa ? 'Not signed in: progress saves in this browser only' : 'Progress saves in this browser';
   }
   function save() {
     profile.savedAt = Date.now();
     try { localStorage.setItem(LS, JSON.stringify(profile)); } catch (e) {}
     if (dbRef && !saveQueued) {
       saveQueued = true;
-      saving = saving.then(async () => { saveQueued = false; try { await dbRef.set({ json: JSON.stringify(profile), savedAt: profile.savedAt }); storeKind = 'account'; } catch (e) { storeKind = 'local'; } renderSaveNote(); });
+      saving = saving.then(async () => { saveQueued = false; try { await dbRef.set({ json: JSON.stringify(profile), savedAt: profile.savedAt }); storeKind = supaUser ? 'cloud' : 'account'; } catch (e) { storeKind = 'local'; } renderSaveNote(); });
     }
     renderSaveNote();
   }
   function loadLocal() { let p = null; try { p = JSON.parse(localStorage.getItem(LS) || 'null'); } catch (e) {} profile = CBHub.fix(p); heroCls = profile.last.cls || 'Warrior'; }
+  // ---------- accounts and cloud saves (Supabase), when the game runs on its own site
+  async function connectSupabase() {
+    const C = window.CB_CONFIG;
+    supa = window.supabase.createClient(C.supabaseUrl, C.supabaseKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit' } });
+    supa.auth.onAuthStateChange((ev, session) => {
+      if (session && (!supaUser || supaUser.id !== session.user.id)) attachSupaUser(session.user);
+      if (!session && supaUser) { supaUser = null; dbRef = null; storeKind = 'local'; renderAccount(); renderSaveNote(); }
+    });
+    const { data } = await supa.auth.getSession();
+    if (data && data.session) await attachSupaUser(data.session.user); else { renderAccount(); renderSaveNote(); }
+  }
+  async function attachSupaUser(u) {
+    supaUser = u; renderAccount();
+    try {
+      const { data: row, error } = await supa.from('profiles').select('data').eq('user_id', u.id).maybeSingle();
+      if (error) throw error;
+      dbRef = { set: async (o) => { const { error: e } = await supa.from('profiles').upsert({ user_id: u.id, data: JSON.parse(o.json), updated_at: new Date(o.savedAt).toISOString() }); if (e) throw e; } };
+      storeKind = 'cloud';
+      if (row && row.data) { const remote = CBHub.fix(row.data); if ((remote.savedAt || 0) > (profile.savedAt || 0)) { profile = remote; heroCls = profile.last.cls || heroCls; } }
+      if (!run) renderHub();
+      save();
+    } catch (e) { dbRef = null; storeKind = 'local'; toast('Signed in, but your online save could not be reached (' + (e.message || e) + '). Progress keeps saving in this browser.'); }
+    renderAccount(); renderSaveNote();
+  }
+  function renderAccount() {
+    const el = $('acct'); if (!el) return;
+    if (!supa) { el.innerHTML = ''; return; }
+    el.innerHTML = supaUser ? `<span class="chip" title="Signed in">${esc(supaUser.email || 'Signed in')}</span> <button class="pilebtn" id="btnSignOut">Sign out</button>` : `<button class="btn primary" id="btnSignIn" style="padding:4px 12px">Sign in to save online</button>`;
+    if ($('btnSignIn')) $('btnSignIn').onclick = signInModal;
+    if ($('btnSignOut')) $('btnSignOut').onclick = async () => { await supa.auth.signOut(); };
+  }
+  function signInModal() {
+    modal(`<h2>Sign in</h2><p>Enter your email and we'll send you a sign-in link. No password needed. Your characters, stash and decks then follow you to any device.</p>
+      <div class="field"><label for="siEmail">Email</label><input id="siEmail" type="email" autocomplete="email" style="background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:8px;color:var(--text);font:inherit"></div>
+      <p id="siMsg" class="muted"></p>
+      <div class="row"><button class="btn primary" id="siSend">Email me a link</button><button class="btn" id="mClose">Cancel</button></div>`);
+    $('mClose').onclick = closeModal; $('siEmail').focus();
+    const send = async () => {
+      const email = $('siEmail').value.trim(); if (!/^\S+@\S+\.\S+$/.test(email)) { $('siMsg').textContent = 'Enter a valid email address.'; return; }
+      $('siSend').disabled = true; $('siMsg').textContent = 'Sending...';
+      const { error } = await supa.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
+      if (error) { $('siMsg').textContent = 'Could not send the link: ' + error.message; $('siSend').disabled = false; return; }
+      $('siMsg').textContent = `Link sent to ${email}. Open it on this device to sign in (check spam too). You can close this.`;
+    };
+    $('siSend').onclick = send; $('siEmail').onkeydown = (e) => { if (e.key === 'Enter') send(); };
+  }
   async function connectAccount() {
     try {
+      if (window.CB_CONFIG && window.supabase && window.supabase.createClient) return await connectSupabase();
       if (!window.claude || !window.claude.use) return;
       const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
       if (!db || !user) return;
