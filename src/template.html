@@ -480,9 +480,17 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     $('mClose').onclick = closeModal; $('siEmail').focus();
     const send = async () => {
       const email = $('siEmail').value.trim(); if (!/^\S+@\S+\.\S+$/.test(email)) { $('siMsg').textContent = 'Enter a valid email address.'; return; }
+      let last = 0; try { last = +localStorage.getItem('cb-signin-sent') || 0; } catch (e) {}
+      const wait = Math.ceil((last + 60000 - Date.now()) / 1000);
+      if (wait > 0) { $('siMsg').textContent = `A link was just sent. Check your inbox (and spam), or try again in ${wait} seconds.`; return; }
       $('siSend').disabled = true; $('siMsg').textContent = 'Sending...';
       const { error } = await supa.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
-      if (error) { $('siMsg').textContent = 'Could not send the link: ' + error.message; $('siSend').disabled = false; return; }
+      if (error) {
+        const m = (error.message || '').toLowerCase();
+        $('siMsg').textContent = /rate limit|too many/.test(m) ? 'Too many sign-in emails were sent recently. The free email service only allows a few per hour, so wait a while and try again. The newest link you received still works.' : /after \d+ seconds|security purposes/.test(m) ? 'Please wait a minute before asking for another link.' : 'Could not send the link: ' + error.message;
+        $('siSend').disabled = false; return;
+      }
+      try { localStorage.setItem('cb-signin-sent', String(Date.now())); } catch (e) {}
       $('siMsg').textContent = `Link sent to ${email}. Open it on this device to sign in (check spam too). You can close this.`;
     };
     $('siSend').onclick = send; $('siEmail').onkeydown = (e) => { if (e.key === 'Enter') send(); };
