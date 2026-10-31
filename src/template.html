@@ -299,6 +299,24 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .mparts { margin: 0 0 6px 10px; border-left: 2px solid var(--line); padding-left: 8px; display: grid; gap: 2px; font-size: 12px; }
 .mparts div { display: flex; justify-content: space-between; gap: 8px; } .mparts small { color: var(--muted); }
 .mparts .mabs { color: #a9cdec; }
+.gearside { min-width: 0; }
+.gtabs { margin: 0 0 8px; }
+.deckhead { display: flex; gap: 14px; align-items: stretch; flex-wrap: wrap; }
+.dstats { display: flex; gap: 6px; }
+.dstats > div { background: #1a1612; border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; text-align: center; display: grid; }
+.dstats b { font-size: 22px; color: var(--accent); }
+.dstats span { font-size: 11px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.curve { display: flex; gap: 6px; align-items: end; height: 66px; padding: 0 4px; flex: 1; min-width: 130px; max-width: 280px; }
+.curve > div { flex: 1; height: 100%; display: grid; grid-template-rows: 1fr auto; position: relative; }
+.curve i { align-self: end; display: block; background: linear-gradient(#e0a84a, #8a5a22); border-radius: 3px 3px 0 0; min-height: 2px; }
+.curve b { position: absolute; left: 0; right: 0; text-align: center; font-size: 11px; top: 0; color: var(--text); }
+.curve span { font-size: 11px; color: var(--muted); text-align: center; border-top: 1px solid var(--line); }
+.dline { font-size: 13px; margin: 8px 0 6px; }
+.dtools { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 4px; }
+.dtools .cxchips { margin: 0; }
+.deckgrid { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); padding: 8px 6px 16px; }
+.deckgrid .pilecard { cursor: pointer; }
+.pilecount.rk { right: auto; left: 4px; background: #2a3a1c; color: #cfe9a8; }
 .gearwrap { display: grid; grid-template-columns: minmax(0, 560px) minmax(260px, 1fr); gap: 16px; align-items: start; }
 @media (max-width: 900px) { .gearwrap { grid-template-columns: 1fr; } }
 .doll { display: grid; grid-template-columns: 1fr 220px 1fr; grid-template-areas: 'l m r' 'b b b' 's s s'; gap: 6px 10px; }
@@ -712,7 +730,37 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     show('map'); renderMap(true);
   }
 
-  // ---------- gear tab
+  // ---------- character screen (C): paperdoll on the left, deck or stash on the right
+  const GT = { tab: 'deck', sort: 'cost' };
+  const TYPE_ORDER = { Attack: 0, Skill: 1, Power: 2 };
+  function deckPanel(c) {
+    const chk = CBHub.deckCheck(c.deck), n = chk.counts;
+    const costOf = (k) => { const v = CB.rankedCard(k.key, k.rank || 0); return v.cost != null ? v.cost : CARDS[k.key].cost; };
+    // stack identical cards (same card, same rank)
+    const groups = new Map(); for (const k of c.deck) { const g = k.key + '|' + (k.rank || 0); if (!groups.has(g)) groups.set(g, { k, n: 0 }); groups.get(g).n++; }
+    const by = { cost: (a, b) => costOf(a.k) - costOf(b.k), rarity: (a, b) => RAR_ORDER[CARDS[b.k.key].rarity] - RAR_ORDER[CARDS[a.k.key].rarity], type: (a, b) => (TYPE_ORDER[CARDS[a.k.key].type] ?? 3) - (TYPE_ORDER[CARDS[b.k.key].type] ?? 3), name: () => 0 }[GT.sort];
+    const list = [...groups.values()].sort((a, b) => by(a, b) || CARDS[a.k.key].name.localeCompare(CARDS[b.k.key].name) || (b.k.rank || 0) - (a.k.rank || 0));
+    const types = {}; for (const k of c.deck) { const t = CARDS[k.key].type; types[t] = (types[t] || 0) + 1; }
+    const avg = c.deck.length ? c.deck.reduce((t, k) => t + costOf(k), 0) / c.deck.length : 0;
+    const B = [['0', x => x === 0], ['10', x => x > 0 && x <= 10], ['20', x => x > 10 && x <= 20], ['30', x => x > 20 && x <= 30], ['40+', x => x > 30]];
+    const curve = B.map(([l, f]) => [l, c.deck.filter(k => f(costOf(k))).length]), top = Math.max(1, ...curve.map(x => x[1]));
+    const ranked = c.deck.filter(k => k.rank).length;
+    return `<div class="deckhead">
+        <div class="dstats">
+          <div><b>${c.deck.length}</b><span>cards (${CB.DECK_MIN}-${CB.DECK_MAX})</span></div>
+          <div><b>${avg.toFixed(1)}</b><span>avg mana</span></div>
+          <div><b>${CB.deckLevel(c.deck)}</b><span>deck level</span></div>
+        </div>
+        <div class="curve" role="img" aria-label="Mana curve: ${curve.map(([l, v]) => `${v} at ${l}`).join(', ')}">${curve.map(([l, v]) => `<div><i style="height:${Math.round(100 * v / top)}%"></i><b>${v || ''}</b><span>${l}</span></div>`).join('')}</div>
+      </div>
+      <p class="dline"><span style="color:${RC.Gold}">${n.Gold}/2 Gold</span> &middot; <span style="color:${RC.Blue}">${n.Blue}/4 Blue</span> &middot; <span style="color:${RC.Green}">${n.Green}/6 Green</span> &middot; ${n.White} White
+        <span class="muted">&nbsp;|&nbsp; ${['Attack', 'Skill', 'Power'].filter(t => types[t]).map(t => `${types[t]} ${t}${types[t] > 1 ? 's' : ''}`).join(' &middot; ')}${ranked ? ` &middot; ${ranked} ranked up` : ''}</span></p>
+      ${chk.ok ? '' : `<p class="down" style="margin:0 0 6px;font-size:13px">Deck ${chk.problems.join(', ')}. Fix it at the Scribe before you ride out.</p>`}
+      <div class="dtools"><div class="cxchips" role="group" aria-label="Sort">${[['cost', 'Mana'], ['type', 'Type'], ['rarity', 'Rarity'], ['name', 'Name']].map(([k, l]) => `<button class="cxchip ${GT.sort === k ? 'on' : ''}" data-gsort="${k}">${l}</button>`).join('')}</div>
+        <button class="btn" id="btnScribe" style="padding:4px 10px;font-size:13px">Edit deck${c.cards.length ? ` (${c.cards.length} in collection)` : ''}</button></div>
+      <div class="pilegrid deckgrid">${list.map(({ k, n }) => { const v = CB.rankedCard(k.key, k.rank || 0); return `<div class="pilecard" data-dcard="${k.id}" title="Click to upgrade">${cardBox(Object.assign({}, CARDS[k.key], v), 120)}${n > 1 ? `<span class="pilecount">x${n}</span>` : ''}${k.rank ? `<span class="pilecount rk">+${k.rank}</span>` : ''}</div>`; }).join('')}</div>
+      <p class="muted" style="font-size:12px;margin:0">Hover a card to read it, click it to rank it up. Adding and removing cards happens at the Scribe.</p>`;
+  }
   function renderGearTab(c) {
     const eq = CBHub.SLOTS.map(sl => { const it = c.gear.find(g => g.slot === sl); return it ? itemHtml(it, `<div class="acts"><button class="btn" data-unequip="${sl}">Unequip</button></div>`) : `<div class="item" style="--rc:var(--line)"><span class="muted">${sl}: empty</span></div>`; }).join('');
     const st = profile.stash.map(it => {
@@ -722,12 +770,21 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       const btns = opts.length > 1 ? opts.map(sl => `<button class="btn" data-equip="${it.id}" data-slot="${sl}">Equip as ${sl}</button>`).join('') : `<button class="btn" data-equip="${it.id}">Equip</button>`;
       return itemHtml(it, `<div class="il">${upBadge(it, c.gear)} Replaces ${vs}</div><div class="acts">${btns}<button class="btn" data-salvage="${it.id}">Salvage +${CBHub.salvageValue(it)} gold</button></div>`);
     }).join('');
-    $('hpGear').innerHTML = `<div class="gearwrap"><div>${paperdoll(c, heroCls, { own: true })}<p class="muted" style="font-size:12px;margin:6px 0 0">Hover a slot for the item, click it to swap or unequip.</p></div>
-      <div><h3 style="display:flex;justify-content:space-between"><span>Stash ${profile.stash.length} / ${CBHub.STASH_MAX}</span><span class="muted" style="font-size:12px">shared by all heroes</span></h3><div class="list tall">${st || '<span class="muted">Empty. Gear you bring home from a run lands here. Unequipped gear goes here too.</span>'}</div></div></div>`;
+    const multi = Object.keys(profile.chars).length > 1;
+    const heroRow = multi ? `<div class="cxchips" role="tablist" aria-label="Hero" style="margin:0 0 8px">${Object.keys(CLASSES).filter(k => profile.chars[k]).map(k => `<button class="cxchip ${k === heroCls ? 'on' : ''}" data-hero="${k}"><b style="color:${CC[k]}">${esc(profile.chars[k].name)}</b> <span class="muted">${k}</span></button>`).join('')}</div>` : '';
+    $('hpGear').innerHTML = `${heroRow}<div class="gearwrap"><div>${paperdoll(c, heroCls, { own: true })}<p class="muted" style="font-size:12px;margin:6px 0 0">Hover a slot for the item, click it to swap or unequip.</p></div>
+      <div class="gearside"><div class="tabs gtabs" role="tablist"><button role="tab" data-gtab="deck" aria-selected="${GT.tab === 'deck'}">Deck ${c.deck.length}</button><button role="tab" data-gtab="stash" aria-selected="${GT.tab === 'stash'}">Stash ${profile.stash.length} / ${CBHub.STASH_MAX}</button></div>
+      ${GT.tab === 'deck' ? deckPanel(c) : `<p class="muted" style="font-size:12px;margin:0 0 6px">Shared by all heroes.</p><div class="list tall">${st || '<span class="muted">Empty. Gear you bring home from a run lands here. Unequipped gear goes here too.</span>'}</div>`}</div></div>`;
+    fitCards($('hpGear'));
     paintPortraits($('hpGear'));
   }
   $('hpGear').addEventListener('click', (ev) => {
+    const pc = ev.target.closest('[data-dcard]'); if (pc) return upgradeModal(pc.dataset.dcard);
     const b = ev.target.closest('button'); if (!b) return;
+    if (b.dataset.gtab) { GT.tab = b.dataset.gtab; return renderGearTab(CBHub.char(profile, heroCls)); }
+    if (b.dataset.gsort) { GT.sort = b.dataset.gsort; return renderGearTab(CBHub.char(profile, heroCls)); }
+    if (b.dataset.hero) { heroCls = b.dataset.hero; profile.last.cls = heroCls; save(); return renderHub(); }
+    if (b.id === 'btnScribe') return openSheet('deck');
     if (b.dataset.unequip) { if (!CBHub.unequip(profile, heroCls, b.dataset.unequip)) return toast('Stash is full.'); }
     else if (b.dataset.equip) { const r = CBHub.equip(profile, heroCls, b.dataset.equip, b.dataset.slot); if (!r.ok) return toast(r.why); }
     else if (b.dataset.salvage) CBHub.salvage(profile, b.dataset.salvage);
@@ -1238,8 +1295,8 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 
   // ---------- talking and the sheets NPCs open
   const SHEETS = {
-    gear: { title: 'Quartermaster: gear & stash', show: ['hpGear'] },
-    char: { title: 'Character', show: ['hpGear'] },
+    gear: { title: 'Quartermaster: gear & stash', show: ['hpGear'], gtab: 'stash' },
+    char: { title: 'Character', show: ['hpGear'], gtab: 'deck' },
     deck: { title: 'Scribe: deck & cards', show: ['secChar', 'hpDeck'] },
     log: { title: 'Chronicle: run history', show: ['hpLog'] },
     wagon: { title: 'The Wagon', show: ['secChar', 'secWagon'] },
@@ -1260,7 +1317,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   }
   function closeTalk() { $('talk').hidden = true; updatePrompt(); cv.focus({ preventScroll: true }); }
   function openSheet(kind) {
-    const k = SHEETS[kind]; renderHub();
+    const k = SHEETS[kind]; if (k.gtab) GT.tab = k.gtab; renderHub();
     $('sheetTitle').textContent = k.title;
     for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends', 'hpCodex', 'hpTest']) $(id).hidden = !k.show.includes(id);
     $('sheetGrid').classList.toggle('solo', !k.show.includes('secChar'));
