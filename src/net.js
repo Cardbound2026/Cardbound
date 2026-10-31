@@ -38,7 +38,7 @@
   }
   function netBegin(go) {
     const S = NET.s = { sid: go.sid, kind: go.kind, host: go.host, uids: go.uids, mi: go.uids.indexOf(SOC.me), seq: 1, next: 1, buf: new Map(), log: [], votes: {}, camp: {}, gone: {}, voteAt: 0, turnKey: '', turnAt: 0, missing: {} };
-    closeModal(); $('sheet').hidden = true; if ($('talk')) $('talk').hidden = true;
+    if (TR.s) cancelTrade(); closeModal(); $('sheet').hidden = true; if ($('talk')) $('talk').hidden = true;
     if (go.kind === 'duel') {
       run = null;
       cb = new CB.Combat({ duel: true, party: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, uid: s.uid })), seed: go.seed, data: DATA });
@@ -189,6 +189,7 @@
         if (p.to !== SOC.me || NET.duelIn.some(d => d.from === p.from)) return;
         NET.duelIn.push({ from: p.from, name: p.name, cls: p.cls }); sysChat(`${p.name} challenges you to a duel.`); renderSocial(); return;
       }
+      case 'insp-req': case 'insp': case 'tr-ask': case 'tr-ans': case 'tr-offer': case 'tr-acc': case 'tr-cancel': gearNetIn(p); return;
       case 'duel-answer': {
         if (p.to !== SOC.me || !NET.duelOut || NET.duelOut !== p.from) return;
         NET.duelOut = null;

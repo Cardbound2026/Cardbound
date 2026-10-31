@@ -293,6 +293,31 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .mparts { margin: 0 0 6px 10px; border-left: 2px solid var(--line); padding-left: 8px; display: grid; gap: 2px; font-size: 12px; }
 .mparts div { display: flex; justify-content: space-between; gap: 8px; } .mparts small { color: var(--muted); }
 .mparts .mabs { color: #a9cdec; }
+.gearwrap { display: grid; grid-template-columns: minmax(0, 560px) minmax(260px, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .gearwrap { grid-template-columns: 1fr; } }
+.doll { display: grid; grid-template-columns: 1fr 220px 1fr; grid-template-areas: 'l m r' 'b b b' 's s s'; gap: 6px 10px; }
+.doll .dcol:first-child { grid-area: l; } .doll .dmid { grid-area: m; } .doll .dcol:nth-child(3) { grid-area: r; } .doll .dbot { grid-area: b; display: flex; justify-content: center; gap: 8px; } .doll .dbot .dslot { width: 48%; max-width: 230px; }
+.doll .dcol { display: grid; gap: 6px; align-content: start; }
+.dmid { text-align: center; } .dportrait { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.dname { font-family: var(--f-display); font-size: 22px; margin-top: 4px; }
+.dpow { display: flex; justify-content: center; gap: 12px; margin-top: 4px; } .dpow span { display: grid; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; } .dpow b { font-size: 18px; color: var(--accent); }
+.dslot { display: grid; grid-template-columns: 34px 1fr; gap: 6px; align-items: center; padding: 4px 6px; border: 1px solid var(--line); border-left: 3px solid var(--rc, var(--line)); border-radius: 6px; background: linear-gradient(90deg, color-mix(in srgb, var(--rc, #333) 14%, #18130f), #15110e); min-height: 42px; cursor: default; }
+.dslot[role=button] { cursor: pointer; } .dslot[role=button]:hover { border-color: var(--accent); }
+.dslot .dic { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 5px; background: #0f0c0a; color: var(--rc, #6b5a44); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rc, #333) 60%, transparent); }
+.dslot .dic svg { width: 22px; height: 22px; }
+.dslot .dtx { display: grid; min-width: 0; line-height: 1.15; } .dslot .dtx b { font-size: 13px; color: var(--rc, var(--muted)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .dslot .dtx small { font-size: 11px; color: var(--muted); }
+.dslot.empty { opacity: .55; border-left-color: var(--line); } .dslot.empty .dtx b { color: var(--muted); }
+.dstats { grid-area: s; display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 2px 10px; font-size: 13px; margin: 6px 0 0; padding: 8px 10px; background: var(--panel2); border-radius: 6px; }
+.gtip { position: fixed; z-index: 400; width: 300px; pointer-events: none; filter: drop-shadow(0 8px 20px rgba(0,0,0,.7)); }
+.gtip .item { background: #17120f; }
+.upb { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 7px; border-radius: 999px; margin-right: 4px; }
+.upb.up { background: #1d3319; color: #8fdc7a; } .upb.down { background: #3a1c18; color: #f0a090; } .upb.same { background: #2a2620; color: #cfc4b0; }
+.tradegrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; } .tradegrid h3 { margin: 0 0 6px; font-size: 16px; }
+.trlist, .trstash { display: grid; gap: 4px; } .trstash { max-height: 220px; overflow: auto; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.tritem { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: center; padding: 4px 8px; border: 1px solid var(--line); border-left: 3px solid var(--rc); border-radius: 5px; background: var(--panel2); color: var(--rc); }
+.tritem svg { width: 20px; height: 20px; } .tritem span { display: grid; min-width: 0; } .tritem b { font-size: 13px; color: var(--rc); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .tritem small { color: var(--muted); font-size: 11px; }
+.trgold { display: block; margin: 8px 0 0; font-size: 13px; } .trgold input { width: 90px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+.trst { min-height: 18px; margin: 6px 0 0; font-size: 13px; font-weight: 700; }
 .pilegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; padding: 6px 4px 30px; }
 .pilecard { position: relative; display: grid; justify-items: center; }
 .pilecard .cf { transition: transform .14s; transform-origin: 50% 60%; }
@@ -388,7 +413,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 
   <!-- CAMP: the town overworld -->
   <section id="scrStart" class="camp" aria-label="Town">
-    <div class="townbar"><span id="tbHero"></span><span class="chip" id="tbPower"></span><span class="chip" id="tbGold"></span><button class="pilebtn" id="tbFriends" hidden>Friends</button><span id="acct"></span><span class="muted tbhelp">Walk: arrow keys or WASD, or click/tap where to go. Talk: Space, or click someone.</span></div>
+    <div class="townbar"><span id="tbHero"></span><span class="chip" id="tbPower"></span><span class="chip" id="tbGold"></span><button class="pilebtn" id="tbChar" title="Your hero's gear and stats (C)">Character <span class="muted">C</span></button><button class="pilebtn" id="tbFriends" hidden>Friends</button><span id="acct"></span><span class="muted tbhelp">Walk: arrow keys or WASD, or click/tap where to go. Talk: Space, or click someone.</span></div>
     <div class="townwrap" id="townWrap">
       <canvas id="town" tabindex="0" aria-label="The town of Emberwatch. Walk to the quartermaster, scribe, chronicler, wagoneer or captain and talk to them."></canvas>
       <div class="prompt" id="prompt" hidden></div>
@@ -662,10 +687,11 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       const cur = opts.map(sl => c.gear.find(g => g.slot === sl)).filter(Boolean);
       const vs = cur.length ? cur.map(g => { const d = (it.ilvl || 0) - (g.ilvl || 0); return `${esc(g.name)} ilvl ${g.ilvl} <span class="${d > 0 ? 'up' : d < 0 ? 'down' : ''}">(${d > 0 ? '+' : ''}${d})</span>`; }).join(', ') : 'an empty slot';
       const btns = opts.length > 1 ? opts.map(sl => `<button class="btn" data-equip="${it.id}" data-slot="${sl}">Equip as ${sl}</button>`).join('') : `<button class="btn" data-equip="${it.id}">Equip</button>`;
-      return itemHtml(it, `<div class="il">Replaces ${vs}</div><div class="acts">${btns}<button class="btn" data-salvage="${it.id}">Salvage +${CBHub.salvageValue(it)} gold</button></div>`);
+      return itemHtml(it, `<div class="il">${upBadge(it, c.gear)} Replaces ${vs}</div><div class="acts">${btns}<button class="btn" data-salvage="${it.id}">Salvage +${CBHub.salvageValue(it)} gold</button></div>`);
     }).join('');
-    $('hpGear').innerHTML = `<div class="two"><div><h3>Equipped</h3><div class="list tall">${eq}</div></div>
-      <div><h3><span>Stash ${profile.stash.length} / ${CBHub.STASH_MAX}</span><span>shared by all heroes</span></h3><div class="list tall">${st || '<span class="muted">Empty. Gear you bring home from a run lands here. Unequipped gear goes here too.</span>'}</div></div></div>`;
+    $('hpGear').innerHTML = `<div class="gearwrap"><div>${paperdoll(c, heroCls, { own: true })}<p class="muted" style="font-size:12px;margin:6px 0 0">Hover a slot for the item, click it to swap or unequip.</p></div>
+      <div><h3 style="display:flex;justify-content:space-between"><span>Stash ${profile.stash.length} / ${CBHub.STASH_MAX}</span><span class="muted" style="font-size:12px">shared by all heroes</span></h3><div class="list tall">${st || '<span class="muted">Empty. Gear you bring home from a run lands here. Unequipped gear goes here too.</span>'}</div></div></div>`;
+    paintPortraits($('hpGear'));
   }
   $('hpGear').addEventListener('click', (ev) => {
     const b = ev.target.closest('button'); if (!b) return;
@@ -753,7 +779,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     const rows = sh.items.map((it, i) => {
       const cur = CBHub.slotOptions(it).map(sl => c.gear.find(g => g.slot === sl)).filter(Boolean);
       const vs = cur.length ? cur.map(g => { const d = (it.ilvl || 0) - (g.ilvl || 0); return `${esc(g.name)} (${rarName(g.rarity)}, ilvl ${g.ilvl}) <span class="${d > 0 ? 'up' : d < 0 ? 'down' : ''}">${d > 0 ? '+' : ''}${d}</span>`; }).join(', ') : 'an empty slot';
-      return itemHtml(it, `<div class="il">Your ${esc(heroCls)} wears ${vs}</div><div class="acts"><button class="btn" data-shop="${i}" ${it.sold || profile.gold < it.price || full ? 'disabled' : ''}>${it.sold ? 'Sold' : 'Buy for ' + it.price + ' gold'}</button></div>`);
+      return itemHtml(it, `<div class="il">${upBadge(it, c.gear)}</div><div class="il">Your ${esc(heroCls)} wears ${vs}</div><div class="acts"><button class="btn" data-shop="${i}" ${it.sold || profile.gold < it.price || full ? 'disabled' : ''}>${it.sold ? 'Sold' : 'Buy for ' + it.price + ' gold'}</button></div>`);
     }).join('');
     $('hpShop').innerHTML = `<p class="savenote" style="margin:0 0 8px">Bank: <b style="color:var(--accent)">${profile.gold} gold</b>. Stock rolled at Map 1 +${sh.level}. <b>New stock in ${restockIn()}</b> (every 12 hours, at the map level you last played). Purchases go to your stash.${full ? ' <b class="down">Your stash is full.</b>' : ''}</p><div class="list tall" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px">${rows}</div>`;
   }
@@ -1145,6 +1171,8 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     const r = cv.getBoundingClientRect(), cam = camera();
     const tx = Math.floor((ev.clientX - r.left + cam.x) / TOWN.TS), ty = Math.floor((ev.clientY - r.top + cam.y) / TOWN.TS);
     // clicking near an NPC (or on its head, which overlaps the tile above) counts
+    const op = typeof SOC !== 'undefined' && [...SOC.others.values()].find(o => { const q = otherPos(o); return Math.round(q.x) === tx && (Math.round(q.y) === ty || Math.round(q.y) === ty + 1); });
+    if (op) { playerMenu(op.uid); return; }
     const n = NPCS.find(m => m.x === tx && (m.y === ty || m.y === ty + 1)) || (PROPS.find(p => (p.kind === 'wagon' || p.kind === 'chest' || p.kind === 'board') && tx >= p.x && tx < p.x + p.w && ty >= p.y - 1 && ty < p.y + p.h) && interactFor(PROPS.find(p => (p.kind === 'wagon' || p.kind === 'chest' || p.kind === 'board') && tx >= p.x && tx < p.x + p.w && ty >= p.y - 1 && ty < p.y + p.h)));
     if (n) {
       if (Math.abs(n.x - P.x) + Math.abs(n.y - P.y) === 1 && !P.mv) { P.dir = n.x > P.x ? 'right' : n.x < P.x ? 'left' : n.y > P.y ? 'down' : 'up'; talk(n); return; }
@@ -1168,13 +1196,15 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     if (d) { ev.preventDefault(); P.path = []; P.target = null; P.talkTo = null; if (!P.held.includes(d)) P.held.push(d); if (!P.mv && P.dir !== d && !free(P.x + DIRS[d][0], P.y + DIRS[d][1])) P.dir = d; return; }
     if (ev.key === ' ' || ev.key === 'Enter' || ev.key === 'e' || ev.key === 'E') { ev.preventDefault(); const n = interactTarget(); if (n) talk(n); }
     if (ev.key === 't' || ev.key === 'T') { ev.preventDefault(); P.held = []; $('chatIn').focus(); }
+    if ((ev.key === 'c' || ev.key === 'C') && !ev.ctrlKey && !ev.metaKey) { ev.preventDefault(); P.held = []; closeTalk(); openSheet('char'); }
   });
   document.addEventListener('keyup', (ev) => { const d = KEYDIR[ev.key]; if (d) P.held = P.held.filter(x => x !== d); });
   window.addEventListener('blur', () => { P.held = []; });
 
   // ---------- talking and the sheets NPCs open
   const SHEETS = {
-    gear: { title: 'Quartermaster: gear & stash', show: ['secChar', 'hpGear'] },
+    gear: { title: 'Quartermaster: gear & stash', show: ['hpGear'] },
+    char: { title: 'Character', show: ['hpGear'] },
     deck: { title: 'Scribe: deck & cards', show: ['secChar', 'hpDeck'] },
     log: { title: 'Chronicle: run history', show: ['hpLog'] },
     wagon: { title: 'The Wagon', show: ['secChar', 'secWagon'] },
@@ -1217,6 +1247,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     $('tbPower').textContent = `Power ${CBHub.powerLevel(c)} · gear ${CBHub.gearScore(c)} · deck ${CB.deckLevel(c.deck)}`;
     $('tbGold').textContent = `Gold ${profile.gold}`;
   }
+  $('tbChar').addEventListener('click', () => { closeTalk(); openSheet('char'); });
   function townStart(fromRun) {
     if (fromRun) { P.x = 13; P.y = 3; P.dir = 'down'; }
     P.mv = null; P.path = []; P.held = []; P.target = null;
@@ -1231,6 +1262,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 /*SOCIAL*/
 /*NET*/
 /*CODEX*/
+/*GEARUI*/
   let townReturn = false;
 
   // ---------- settings (this browser)
@@ -1560,7 +1592,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
         const bm = run.members[buyer] || run.m0, bank = run.bankOf(bm);
         const full = bm.orders.length >= bm.stashFree;
         $('modalBox').innerHTML = `<h2>Merchant</h2><p>${run.solo || run.online ? '' : `Ordering for <select id="mBuyer">${run.members.map((m, i) => `<option value="${i}" ${i === buyer ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select>. `}Banked gold: <b>${bank}</b>${bm.orders.length ? ` &middot; ${bm.orders.length} order${bm.orders.length === 1 ? '' : 's'} placed` : ''}. Pay from the bank and the merchant brings it back to town: it waits in your stash, even if you die out here.${full ? ' <b>Your stash is full.</b>' : ''}</p>
-        <div class="shop">${p.stock.map((it, i) => { const cur = bm.gear.find(g => g.slot === run.slotFor(it, bm.idx)); return itemHtml(it, `<div class="il">Compare: ${cur ? esc(cur.name) + ' (ilvl ' + cur.ilvl + ')' : 'empty ' + run.slotFor(it, bm.idx)}</div><div><button class="btn" data-buy="${i}" ${it.sold || bank < it.price || full ? 'disabled' : ''}>${it.sold ? 'Ordered' + (run.solo ? '' : ' by ' + esc(run.members[it.buyer].name)) : 'Order for ' + it.price + ' gold'}</button></div>`); }).join('')}</div>
+        <div class="shop">${p.stock.map((it, i) => { const cur = bm.gear.find(g => g.slot === run.slotFor(it, bm.idx)); return itemHtml(it, `<div class="il">${upBadge(it, bm.gear)}</div><div class="il">Compare: ${cur ? esc(cur.name) + ' (ilvl ' + cur.ilvl + ')' : 'empty ' + run.slotFor(it, bm.idx)}</div><div><button class="btn" data-buy="${i}" ${it.sold || bank < it.price || full ? 'disabled' : ''}>${it.sold ? 'Ordered' + (run.solo ? '' : ' by ' + esc(run.members[it.buyer].name)) : 'Order for ' + it.price + ' gold'}</button></div>`); }).join('')}</div>
         <div class="row"><button class="btn primary" id="mLeave">${run.online ? 'Close (vote on the map to move on)' : 'Leave'}</button></div>`;
         $('mLeave').onclick = () => { if (!run.online) run.closePending(); redrawShop = null; closeModal(); renderMap(); };
         for (const b of $('modalBox').querySelectorAll('[data-buy]')) b.onclick = () => { if (run.online) { b.disabled = true; netAct({ t: 'buy', i: +b.dataset.buy }); return; } run.buy(+b.dataset.buy, buyer); draw(); renderSide(); };

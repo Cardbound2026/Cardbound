@@ -71,7 +71,7 @@ card('divine_storm', { cls: 'Paladin', name: 'Divine Storm', rarity: 'Green', ty
 card('healing_light', { cls: 'Paladin', name: 'Healing Light', rarity: 'Green', type: 'Skill', cost: 10, target: 'self', text: 'Heal yourself for 15 HP.', play: (cb) => cb.heal(cb.player, 15, 'Healing Light'), tags: { heal: 15 } });
 card('divine_shield', { cls: 'Paladin', name: 'Divine Shield', rarity: 'Green', type: 'Skill', cost: 10, target: 'self', text: 'Gain 8 Block. Negate the next debuff applied to you before your next turn.', play: (cb) => { cb.gainDef(8); cb.player.negateDebuff = true; }, tags: { def: 9 } });
 card('ardent_defense', { cls: 'Paladin', name: 'Ardent Defense', rarity: 'Blue', type: 'Skill', cost: 20, target: 'self', text: 'Gain 40 Block.', play: (cb) => cb.gainDef(40), tags: { def: 40 } });
-card('holy_nova', { cls: 'Paladin', name: 'Holy Nova', rarity: 'Blue', type: 'Skill', cost: 20, target: 'all', dtype: 'Holy', text: 'Deal 10 Holy damage to all enemies. Heal yourself for 8 HP.', play: (cb) => { for (const e of cb.alive()) cb.hit(e, 10, 'Holy Nova'); cb.heal(cb.player, 8, 'Holy Nova'); }, tags: { dmg: 10, aoe: 1, heal: 8 } });
+card('holy_nova', { cls: 'Paladin', name: 'Holy Nova', rarity: 'Blue', type: 'Skill', cost: 20, target: 'all', dtype: 'Holy', text: 'Deal 10 Holy damage to all enemies. Heal you and your allies for 8 HP.', play: (cb) => { for (const e of cb.alive()) cb.hit(e, 10, 'Holy Nova'); for (const a of cb.allies()) cb.heal(a, 8, 'Holy Nova'); }, tags: { dmg: 10, aoe: 1, heal: 8 } });
 card('lay_on_hands', { cls: 'Paladin', name: 'Lay on Hands', rarity: 'Gold', type: 'Skill', cost: 30, target: 'self', exhaust: true, text: 'Heal 30% of your total HP. Exhaust.', play: (cb) => cb.heal(cb.player, Math.round(cb.player.maxHp * 0.3), 'Lay on Hands'), tags: { heal: 36 } });
 
 // --- Status cards
@@ -240,6 +240,7 @@ class Combat {
     return p;
   }
   alivePlayers() { return this.players.filter(p => p.hp > 0); }
+  allies() { return this.duel ? [this.player] : this.alivePlayers(); } // the acting hero and their living party
   who(p) { return this.partySize > 1 ? p.name : 'You'; }
 
   makeEnemy(key, i) {
@@ -377,10 +378,11 @@ class Combat {
   heal(a, n, label, quiet) {
     if (n <= 0) return 0;
     if (a.isPlayer && this._playing && this._rankMult && this._rankMult !== 1 && !['Bloodthirst', 'Lifesteal'].includes(label)) n = Math.round(n * this._rankMult);
-    const mult = a.isPlayer && !['Bloodthirst', 'Lifesteal'].includes(label) ? 1 + a.spirit / 100 : 1;
+    const caster = a.isPlayer && this._playing && this.player && this.player.isPlayer ? this.player : a;
+    const mult = a.isPlayer && !['Bloodthirst', 'Lifesteal'].includes(label) ? 1 + caster.spirit / 100 : 1;
     const h = Math.min(a.maxHp - a.hp, Math.round(n * mult));
     a.hp += h; if (a.isPlayer) this.stats.healed += h;
-    if (h > 0) { const m = this.mtr(a).healed, k = label || 'Heal'; m[k] = (m[k] || 0) + h; }
+    if (h > 0) { const m = this.mtr(caster).healed, k = (label || 'Heal') + (caster !== a ? ' on ' + a.name : ''); m[k] = (m[k] || 0) + h; }
     if (h > 0 || !quiet) this.say('heal', `${a.isPlayer ? (this.partySize > 1 ? a.name + ' heals' : 'You heal') : a.name + ' heals'} ${h}${label ? ' (' + label + ')' : ''}. HP ${a.hp}/${a.maxHp}.`);
     return h;
   }

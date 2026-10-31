@@ -297,6 +297,31 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .mparts { margin: 0 0 6px 10px; border-left: 2px solid var(--line); padding-left: 8px; display: grid; gap: 2px; font-size: 12px; }
 .mparts div { display: flex; justify-content: space-between; gap: 8px; } .mparts small { color: var(--muted); }
 .mparts .mabs { color: #a9cdec; }
+.gearwrap { display: grid; grid-template-columns: minmax(0, 560px) minmax(260px, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .gearwrap { grid-template-columns: 1fr; } }
+.doll { display: grid; grid-template-columns: 1fr 220px 1fr; grid-template-areas: 'l m r' 'b b b' 's s s'; gap: 6px 10px; }
+.doll .dcol:first-child { grid-area: l; } .doll .dmid { grid-area: m; } .doll .dcol:nth-child(3) { grid-area: r; } .doll .dbot { grid-area: b; display: flex; justify-content: center; gap: 8px; } .doll .dbot .dslot { width: 48%; max-width: 230px; }
+.doll .dcol { display: grid; gap: 6px; align-content: start; }
+.dmid { text-align: center; } .dportrait { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.dname { font-family: var(--f-display); font-size: 22px; margin-top: 4px; }
+.dpow { display: flex; justify-content: center; gap: 12px; margin-top: 4px; } .dpow span { display: grid; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; } .dpow b { font-size: 18px; color: var(--accent); }
+.dslot { display: grid; grid-template-columns: 34px 1fr; gap: 6px; align-items: center; padding: 4px 6px; border: 1px solid var(--line); border-left: 3px solid var(--rc, var(--line)); border-radius: 6px; background: linear-gradient(90deg, color-mix(in srgb, var(--rc, #333) 14%, #18130f), #15110e); min-height: 42px; cursor: default; }
+.dslot[role=button] { cursor: pointer; } .dslot[role=button]:hover { border-color: var(--accent); }
+.dslot .dic { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 5px; background: #0f0c0a; color: var(--rc, #6b5a44); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rc, #333) 60%, transparent); }
+.dslot .dic svg { width: 22px; height: 22px; }
+.dslot .dtx { display: grid; min-width: 0; line-height: 1.15; } .dslot .dtx b { font-size: 13px; color: var(--rc, var(--muted)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .dslot .dtx small { font-size: 11px; color: var(--muted); }
+.dslot.empty { opacity: .55; border-left-color: var(--line); } .dslot.empty .dtx b { color: var(--muted); }
+.dstats { grid-area: s; display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 2px 10px; font-size: 13px; margin: 6px 0 0; padding: 8px 10px; background: var(--panel2); border-radius: 6px; }
+.gtip { position: fixed; z-index: 400; width: 300px; pointer-events: none; filter: drop-shadow(0 8px 20px rgba(0,0,0,.7)); }
+.gtip .item { background: #17120f; }
+.upb { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 7px; border-radius: 999px; margin-right: 4px; }
+.upb.up { background: #1d3319; color: #8fdc7a; } .upb.down { background: #3a1c18; color: #f0a090; } .upb.same { background: #2a2620; color: #cfc4b0; }
+.tradegrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; } .tradegrid h3 { margin: 0 0 6px; font-size: 16px; }
+.trlist, .trstash { display: grid; gap: 4px; } .trstash { max-height: 220px; overflow: auto; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.tritem { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: center; padding: 4px 8px; border: 1px solid var(--line); border-left: 3px solid var(--rc); border-radius: 5px; background: var(--panel2); color: var(--rc); }
+.tritem svg { width: 20px; height: 20px; } .tritem span { display: grid; min-width: 0; } .tritem b { font-size: 13px; color: var(--rc); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .tritem small { color: var(--muted); font-size: 11px; }
+.trgold { display: block; margin: 8px 0 0; font-size: 13px; } .trgold input { width: 90px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; }
+.trst { min-height: 18px; margin: 6px 0 0; font-size: 13px; font-weight: 700; }
 .pilegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; padding: 6px 4px 30px; }
 .pilecard { position: relative; display: grid; justify-items: center; }
 .pilecard .cf { transition: transform .14s; transform-origin: 50% 60%; }
@@ -395,7 +420,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 
   <!-- CAMP: the town overworld -->
   <section id="scrStart" class="camp" aria-label="Town">
-    <div class="townbar"><span id="tbHero"></span><span class="chip" id="tbPower"></span><span class="chip" id="tbGold"></span><button class="pilebtn" id="tbFriends" hidden>Friends</button><span id="acct"></span><span class="muted tbhelp">Walk: arrow keys or WASD, or click/tap where to go. Talk: Space, or click someone.</span></div>
+    <div class="townbar"><span id="tbHero"></span><span class="chip" id="tbPower"></span><span class="chip" id="tbGold"></span><button class="pilebtn" id="tbChar" title="Your hero's gear and stats (C)">Character <span class="muted">C</span></button><button class="pilebtn" id="tbFriends" hidden>Friends</button><span id="acct"></span><span class="muted tbhelp">Walk: arrow keys or WASD, or click/tap where to go. Talk: Space, or click someone.</span></div>
     <div class="townwrap" id="townWrap">
       <canvas id="town" tabindex="0" aria-label="The town of Emberwatch. Walk to the quartermaster, scribe, chronicler, wagoneer or captain and talk to them."></canvas>
       <div class="prompt" id="prompt" hidden></div>
@@ -550,7 +575,7 @@ card('divine_storm', { cls: 'Paladin', name: 'Divine Storm', rarity: 'Green', ty
 card('healing_light', { cls: 'Paladin', name: 'Healing Light', rarity: 'Green', type: 'Skill', cost: 10, target: 'self', text: 'Heal yourself for 15 HP.', play: (cb) => cb.heal(cb.player, 15, 'Healing Light'), tags: { heal: 15 } });
 card('divine_shield', { cls: 'Paladin', name: 'Divine Shield', rarity: 'Green', type: 'Skill', cost: 10, target: 'self', text: 'Gain 8 Block. Negate the next debuff applied to you before your next turn.', play: (cb) => { cb.gainDef(8); cb.player.negateDebuff = true; }, tags: { def: 9 } });
 card('ardent_defense', { cls: 'Paladin', name: 'Ardent Defense', rarity: 'Blue', type: 'Skill', cost: 20, target: 'self', text: 'Gain 40 Block.', play: (cb) => cb.gainDef(40), tags: { def: 40 } });
-card('holy_nova', { cls: 'Paladin', name: 'Holy Nova', rarity: 'Blue', type: 'Skill', cost: 20, target: 'all', dtype: 'Holy', text: 'Deal 10 Holy damage to all enemies. Heal yourself for 8 HP.', play: (cb) => { for (const e of cb.alive()) cb.hit(e, 10, 'Holy Nova'); cb.heal(cb.player, 8, 'Holy Nova'); }, tags: { dmg: 10, aoe: 1, heal: 8 } });
+card('holy_nova', { cls: 'Paladin', name: 'Holy Nova', rarity: 'Blue', type: 'Skill', cost: 20, target: 'all', dtype: 'Holy', text: 'Deal 10 Holy damage to all enemies. Heal you and your allies for 8 HP.', play: (cb) => { for (const e of cb.alive()) cb.hit(e, 10, 'Holy Nova'); for (const a of cb.allies()) cb.heal(a, 8, 'Holy Nova'); }, tags: { dmg: 10, aoe: 1, heal: 8 } });
 card('lay_on_hands', { cls: 'Paladin', name: 'Lay on Hands', rarity: 'Gold', type: 'Skill', cost: 30, target: 'self', exhaust: true, text: 'Heal 30% of your total HP. Exhaust.', play: (cb) => cb.heal(cb.player, Math.round(cb.player.maxHp * 0.3), 'Lay on Hands'), tags: { heal: 36 } });
 
 // --- Status cards
@@ -719,6 +744,7 @@ class Combat {
     return p;
   }
   alivePlayers() { return this.players.filter(p => p.hp > 0); }
+  allies() { return this.duel ? [this.player] : this.alivePlayers(); } // the acting hero and their living party
   who(p) { return this.partySize > 1 ? p.name : 'You'; }
 
   makeEnemy(key, i) {
@@ -856,10 +882,11 @@ class Combat {
   heal(a, n, label, quiet) {
     if (n <= 0) return 0;
     if (a.isPlayer && this._playing && this._rankMult && this._rankMult !== 1 && !['Bloodthirst', 'Lifesteal'].includes(label)) n = Math.round(n * this._rankMult);
-    const mult = a.isPlayer && !['Bloodthirst', 'Lifesteal'].includes(label) ? 1 + a.spirit / 100 : 1;
+    const caster = a.isPlayer && this._playing && this.player && this.player.isPlayer ? this.player : a;
+    const mult = a.isPlayer && !['Bloodthirst', 'Lifesteal'].includes(label) ? 1 + caster.spirit / 100 : 1;
     const h = Math.min(a.maxHp - a.hp, Math.round(n * mult));
     a.hp += h; if (a.isPlayer) this.stats.healed += h;
-    if (h > 0) { const m = this.mtr(a).healed, k = label || 'Heal'; m[k] = (m[k] || 0) + h; }
+    if (h > 0) { const m = this.mtr(caster).healed, k = (label || 'Heal') + (caster !== a ? ' on ' + a.name : ''); m[k] = (m[k] || 0) + h; }
     if (h > 0 || !quiet) this.say('heal', `${a.isPlayer ? (this.partySize > 1 ? a.name + ' heals' : 'You heal') : a.name + ' heals'} ${h}${label ? ' (' + label + ')' : ''}. HP ${a.hp}/${a.maxHp}.`);
     return h;
   }
@@ -1844,10 +1871,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       const cur = opts.map(sl => c.gear.find(g => g.slot === sl)).filter(Boolean);
       const vs = cur.length ? cur.map(g => { const d = (it.ilvl || 0) - (g.ilvl || 0); return `${esc(g.name)} ilvl ${g.ilvl} <span class="${d > 0 ? 'up' : d < 0 ? 'down' : ''}">(${d > 0 ? '+' : ''}${d})</span>`; }).join(', ') : 'an empty slot';
       const btns = opts.length > 1 ? opts.map(sl => `<button class="btn" data-equip="${it.id}" data-slot="${sl}">Equip as ${sl}</button>`).join('') : `<button class="btn" data-equip="${it.id}">Equip</button>`;
-      return itemHtml(it, `<div class="il">Replaces ${vs}</div><div class="acts">${btns}<button class="btn" data-salvage="${it.id}">Salvage +${CBHub.salvageValue(it)} gold</button></div>`);
+      return itemHtml(it, `<div class="il">${upBadge(it, c.gear)} Replaces ${vs}</div><div class="acts">${btns}<button class="btn" data-salvage="${it.id}">Salvage +${CBHub.salvageValue(it)} gold</button></div>`);
     }).join('');
-    $('hpGear').innerHTML = `<div class="two"><div><h3>Equipped</h3><div class="list tall">${eq}</div></div>
-      <div><h3><span>Stash ${profile.stash.length} / ${CBHub.STASH_MAX}</span><span>shared by all heroes</span></h3><div class="list tall">${st || '<span class="muted">Empty. Gear you bring home from a run lands here. Unequipped gear goes here too.</span>'}</div></div></div>`;
+    $('hpGear').innerHTML = `<div class="gearwrap"><div>${paperdoll(c, heroCls, { own: true })}<p class="muted" style="font-size:12px;margin:6px 0 0">Hover a slot for the item, click it to swap or unequip.</p></div>
+      <div><h3 style="display:flex;justify-content:space-between"><span>Stash ${profile.stash.length} / ${CBHub.STASH_MAX}</span><span class="muted" style="font-size:12px">shared by all heroes</span></h3><div class="list tall">${st || '<span class="muted">Empty. Gear you bring home from a run lands here. Unequipped gear goes here too.</span>'}</div></div></div>`;
+    paintPortraits($('hpGear'));
   }
   $('hpGear').addEventListener('click', (ev) => {
     const b = ev.target.closest('button'); if (!b) return;
@@ -1935,7 +1963,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const rows = sh.items.map((it, i) => {
       const cur = CBHub.slotOptions(it).map(sl => c.gear.find(g => g.slot === sl)).filter(Boolean);
       const vs = cur.length ? cur.map(g => { const d = (it.ilvl || 0) - (g.ilvl || 0); return `${esc(g.name)} (${rarName(g.rarity)}, ilvl ${g.ilvl}) <span class="${d > 0 ? 'up' : d < 0 ? 'down' : ''}">${d > 0 ? '+' : ''}${d}</span>`; }).join(', ') : 'an empty slot';
-      return itemHtml(it, `<div class="il">Your ${esc(heroCls)} wears ${vs}</div><div class="acts"><button class="btn" data-shop="${i}" ${it.sold || profile.gold < it.price || full ? 'disabled' : ''}>${it.sold ? 'Sold' : 'Buy for ' + it.price + ' gold'}</button></div>`);
+      return itemHtml(it, `<div class="il">${upBadge(it, c.gear)}</div><div class="il">Your ${esc(heroCls)} wears ${vs}</div><div class="acts"><button class="btn" data-shop="${i}" ${it.sold || profile.gold < it.price || full ? 'disabled' : ''}>${it.sold ? 'Sold' : 'Buy for ' + it.price + ' gold'}</button></div>`);
     }).join('');
     $('hpShop').innerHTML = `<p class="savenote" style="margin:0 0 8px">Bank: <b style="color:var(--accent)">${profile.gold} gold</b>. Stock rolled at Map 1 +${sh.level}. <b>New stock in ${restockIn()}</b> (every 12 hours, at the map level you last played). Purchases go to your stash.${full ? ' <b class="down">Your stash is full.</b>' : ''}</p><div class="list tall" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px">${rows}</div>`;
   }
@@ -2327,6 +2355,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const r = cv.getBoundingClientRect(), cam = camera();
     const tx = Math.floor((ev.clientX - r.left + cam.x) / TOWN.TS), ty = Math.floor((ev.clientY - r.top + cam.y) / TOWN.TS);
     // clicking near an NPC (or on its head, which overlaps the tile above) counts
+    const op = typeof SOC !== 'undefined' && [...SOC.others.values()].find(o => { const q = otherPos(o); return Math.round(q.x) === tx && (Math.round(q.y) === ty || Math.round(q.y) === ty + 1); });
+    if (op) { playerMenu(op.uid); return; }
     const n = NPCS.find(m => m.x === tx && (m.y === ty || m.y === ty + 1)) || (PROPS.find(p => (p.kind === 'wagon' || p.kind === 'chest' || p.kind === 'board') && tx >= p.x && tx < p.x + p.w && ty >= p.y - 1 && ty < p.y + p.h) && interactFor(PROPS.find(p => (p.kind === 'wagon' || p.kind === 'chest' || p.kind === 'board') && tx >= p.x && tx < p.x + p.w && ty >= p.y - 1 && ty < p.y + p.h)));
     if (n) {
       if (Math.abs(n.x - P.x) + Math.abs(n.y - P.y) === 1 && !P.mv) { P.dir = n.x > P.x ? 'right' : n.x < P.x ? 'left' : n.y > P.y ? 'down' : 'up'; talk(n); return; }
@@ -2350,13 +2380,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (d) { ev.preventDefault(); P.path = []; P.target = null; P.talkTo = null; if (!P.held.includes(d)) P.held.push(d); if (!P.mv && P.dir !== d && !free(P.x + DIRS[d][0], P.y + DIRS[d][1])) P.dir = d; return; }
     if (ev.key === ' ' || ev.key === 'Enter' || ev.key === 'e' || ev.key === 'E') { ev.preventDefault(); const n = interactTarget(); if (n) talk(n); }
     if (ev.key === 't' || ev.key === 'T') { ev.preventDefault(); P.held = []; $('chatIn').focus(); }
+    if ((ev.key === 'c' || ev.key === 'C') && !ev.ctrlKey && !ev.metaKey) { ev.preventDefault(); P.held = []; closeTalk(); openSheet('char'); }
   });
   document.addEventListener('keyup', (ev) => { const d = KEYDIR[ev.key]; if (d) P.held = P.held.filter(x => x !== d); });
   window.addEventListener('blur', () => { P.held = []; });
 
   // ---------- talking and the sheets NPCs open
   const SHEETS = {
-    gear: { title: 'Quartermaster: gear & stash', show: ['secChar', 'hpGear'] },
+    gear: { title: 'Quartermaster: gear & stash', show: ['hpGear'] },
+    char: { title: 'Character', show: ['hpGear'] },
     deck: { title: 'Scribe: deck & cards', show: ['secChar', 'hpDeck'] },
     log: { title: 'Chronicle: run history', show: ['hpLog'] },
     wagon: { title: 'The Wagon', show: ['secChar', 'secWagon'] },
@@ -2399,6 +2431,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     $('tbPower').textContent = `Power ${CBHub.powerLevel(c)} · gear ${CBHub.gearScore(c)} · deck ${CB.deckLevel(c.deck)}`;
     $('tbGold').textContent = `Gold ${profile.gold}`;
   }
+  $('tbChar').addEventListener('click', () => { closeTalk(); openSheet('char'); });
   function townStart(fromRun) {
     if (fromRun) { P.x = 13; P.y = 3; P.dir = 'down'; }
     P.mv = null; P.path = []; P.held = []; P.target = null;
@@ -2630,10 +2663,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const pp = $('partyPanel');
     if (pp) {
       const pt = SOC.party;
-      pp.hidden = !pt && !SOC.invites.length && !NET.duelIn.length;
+      pp.hidden = !pt && !SOC.invites.length && !NET.duelIn.length && !TR.inv.length;
       const canDuel = (m) => m.uid !== SOC.me && SOC.online.has(m.uid) && SOC.online.get(m.uid).place === 'town' && !NET.s && !NET.duelOut;
-      pp.innerHTML = (pt ? `<div class="pph"><b>Party ${pt.members.length}/${PARTY_MAX}</b><button class="pilebtn" id="ppLeave">${pt.leader === SOC.me ? 'Disband' : 'Leave'}</button></div>` + pt.members.map(m => `<div class="ppm"><span class="dot ${SOC.online.has(m.uid) || m.uid === SOC.me ? 'on' : ''}"></span><b style="color:${CC[m.cls] || 'var(--text)'}">${esc(m.name)}</b>${m.uid === pt.leader ? ' <span class="muted">leader</span>' : ''}${canDuel(m) ? ` <button class="pilebtn" data-duel="${m.uid}" title="Challenge to a duel">Duel</button>` : NET.duelOut === m.uid ? ' <span class="muted">challenged...</span>' : ''}${pt.leader === SOC.me && m.uid !== SOC.me ? ` <button class="pilebtn" data-kick="${m.uid}">Remove</button>` : ''}</div>`).join('') + `<p class="muted" style="margin:4px 0 0;font-size:12px">${pt.leader === SOC.me ? 'Talk to the Wagoneer to set out together.' : 'The leader sets out from the Wagon; you ride along.'}</p>` : '')
-        + NET.duelIn.map(d => `<div class="ppinv"><span><b>${esc(d.name)}</b> challenges you to a duel</span><span><button class="btn primary" data-dacc="${d.from}">Fight</button> <button class="btn" data-ddec="${d.from}">Decline</button></span></div>`).join('')
+      pp.innerHTML = (pt ? `<div class="pph"><b>Party ${pt.members.length}/${PARTY_MAX}</b><button class="pilebtn" id="ppLeave">${pt.leader === SOC.me ? 'Disband' : 'Leave'}</button></div>` + pt.members.map(m => `<div class="ppm"><span class="dot ${SOC.online.has(m.uid) || m.uid === SOC.me ? 'on' : ''}"></span><b style="color:${CC[m.cls] || 'var(--text)'}">${esc(m.name)}</b>${m.uid === pt.leader ? ' <span class="muted">leader</span>' : ''}${m.uid !== SOC.me && SOC.online.has(m.uid) ? ` <button class="pilebtn" data-insp="${m.uid}" title="See their gear and deck">Inspect</button>` : ''}${canDuel(m) ? ` <button class="pilebtn" data-duel="${m.uid}" title="Challenge to a duel">Duel</button>` : NET.duelOut === m.uid ? ' <span class="muted">challenged...</span>' : ''}${pt.leader === SOC.me && m.uid !== SOC.me ? ` <button class="pilebtn" data-kick="${m.uid}">Remove</button>` : ''}</div>`).join('') + `<p class="muted" style="margin:4px 0 0;font-size:12px">${pt.leader === SOC.me ? 'Talk to the Wagoneer to set out together.' : 'The leader sets out from the Wagon; you ride along.'}</p>` : '')
+        + tradeInvitesHtml() + NET.duelIn.map(d => `<div class="ppinv"><span><b>${esc(d.name)}</b> challenges you to a duel</span><span><button class="btn primary" data-dacc="${d.from}">Fight</button> <button class="btn" data-ddec="${d.from}">Decline</button></span></div>`).join('')
         + SOC.invites.map(i => `<div class="ppinv"><span><b>${esc(i.name)}</b> invites you to a party</span><span><button class="btn primary" data-acc="${i.from}">Join</button> <button class="btn" data-dec="${i.from}">Decline</button></span></div>`).join('');
     }
     renderChat();
@@ -2653,7 +2686,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       <div class="panel">
         ${SOC.requestsIn.length ? `<h3>Requests</h3>${SOC.requestsIn.map(f => row(Object.assign({ req: true }, f), `<button class="btn primary" data-fa="${f.id}">Accept</button><button class="btn" data-fr="${f.id}">Decline</button>`)).join('')}` : ''}
         <h3>Friends (${SOC.friends.filter(f => SOC.online.has(f.id)).length} online)</h3>
-        ${friends.map(f => row(f, `${SOC.online.has(f.id) && !inParty(f.id) ? `<button class="btn primary" data-inv="${f.id}">Invite to party</button>` : inParty(f.id) ? '<span class="muted">In your party</span>' : ''}<button class="btn" data-fr="${f.id}">Remove</button>`)).join('') || '<p class="muted">No friends yet. Share your code, or add theirs.</p>'}
+        ${friends.map(f => row(f, `${SOC.online.has(f.id) ? `<button class="btn" data-insp="${f.id}">Inspect</button><button class="btn" data-trade="${f.id}">Trade</button>` : ''}${SOC.online.has(f.id) && !inParty(f.id) ? `<button class="btn primary" data-inv="${f.id}">Invite to party</button>` : inParty(f.id) ? '<span class="muted">In your party</span>' : ''}<button class="btn" data-fr="${f.id}">Remove</button>`)).join('') || '<p class="muted">No friends yet. Share your code, or add theirs.</p>'}
         ${SOC.requestsOut.length ? `<h3 style="margin-top:10px">Sent requests</h3>${SOC.requestsOut.map(f => row(Object.assign({ req: true }, f), `<button class="btn" data-fr="${f.id}">Cancel</button>`)).join('')}` : ''}
         ${[...SOC.others.values()].filter(o => !SOC.friends.some(f => f.id === o.uid)).length ? `<h3 style="margin-top:10px">Also in Emberwatch</h3>${[...SOC.others.values()].filter(o => !SOC.friends.some(f => f.id === o.uid)).map(o => row({ id: o.uid, name: o.name, cls: o.cls }, !inParty(o.uid) ? `<button class="btn" data-inv="${o.uid}">Invite to party</button>` : '')).join('')}` : ''}
       </div></div>`;
@@ -2716,7 +2749,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   }
   function netBegin(go) {
     const S = NET.s = { sid: go.sid, kind: go.kind, host: go.host, uids: go.uids, mi: go.uids.indexOf(SOC.me), seq: 1, next: 1, buf: new Map(), log: [], votes: {}, camp: {}, gone: {}, voteAt: 0, turnKey: '', turnAt: 0, missing: {} };
-    closeModal(); $('sheet').hidden = true; if ($('talk')) $('talk').hidden = true;
+    if (TR.s) cancelTrade(); closeModal(); $('sheet').hidden = true; if ($('talk')) $('talk').hidden = true;
     if (go.kind === 'duel') {
       run = null;
       cb = new CB.Combat({ duel: true, party: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, uid: s.uid })), seed: go.seed, data: DATA });
@@ -2867,6 +2900,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
         if (p.to !== SOC.me || NET.duelIn.some(d => d.from === p.from)) return;
         NET.duelIn.push({ from: p.from, name: p.name, cls: p.cls }); sysChat(`${p.name} challenges you to a duel.`); renderSocial(); return;
       }
+      case 'insp-req': case 'insp': case 'tr-ask': case 'tr-ans': case 'tr-offer': case 'tr-acc': case 'tr-cancel': gearNetIn(p); return;
       case 'duel-answer': {
         if (p.to !== SOC.me || !NET.duelOut || NET.duelOut !== p.from) return;
         NET.duelOut = null;
@@ -3024,6 +3058,226 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   });
   $('hpCodex').addEventListener('toggle', (ev) => { if (ev.target.open) fitCards(ev.target); }, true);
   $('hpCodex').addEventListener('input', (ev) => { if (ev.target.id !== 'cxQ') return; CX.q = ev.target.value; const pos = ev.target.selectionStart; renderCodex(); const i = $('cxQ'); i.focus(); i.setSelectionRange(pos, pos); });
+
+  // ---------- character sheet (paperdoll), item tooltips and upgrade checks, inspecting other players, trading
+  const DOLL_L = ['Helm', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves'], DOLL_R = ['Belt', 'Pants', 'Boots', 'Ring 1', 'Ring 2'], DOLL_B = ['Weapon', 'Off-hand'];
+  const SLOT_PATH = {
+    Helm: 'M5 15a7 7 0 0 1 14 0v4H5z M9 19v-4h6v4', Amulet: 'M6 3c0 6 3 9 6 9s6-3 6-9 M12 12v2 M9.5 17a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0',
+    Cloak: 'M8 3h8l3 18H5z M12 3v18', Chest: 'M7 4l5 2 5-2 3 4-3 2v10H7V10L4 8z', Bracers: 'M6 5h12v6H6z M6 13h12v6H6z',
+    Gloves: 'M7 21v-8L5 9l2-1 2 2V4h2v6V3h2v7V4h2v7l2-3 2 1-3 6v6z', Belt: 'M3 10h18v5H3z M10 9h4v7h-4z', Pants: 'M6 3h12l1 18h-5l-2-11-2 11H5z',
+    Boots: 'M8 3h5v11l6 3v4H6v-4l2-2z', Ring: 'M7 14a5 5 0 1 0 10 0a5 5 0 1 0-10 0 M10 4h4l-2 4z',
+    Weapon: 'M14 3h7v7l-9 9-3-3z M4 20l4-4 M6 15l3 3', 'Off-hand': 'M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z',
+  };
+  const slotKey = (sl) => /^Ring/.test(sl) ? 'Ring' : sl;
+  const slotIcon = (sl) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="${SLOT_PATH[slotKey(sl)] || SLOT_PATH.Chest}"/></svg>`;
+
+  // item power: every stat weighted the way item generation values it (the same point costs), with stats your class barely uses counted at a quarter
+  // elemental damage only helps cards of that element: Warriors are all Physical, Rogues have one Nature card, Paladins hit Holy, Mages Fire/Frost/Arcane
+  const ELEM_USE = { Warrior: [], Rogue: ['Nature'], Paladin: ['Holy'], Mage: ['Fire', 'Frost', 'Arcane'] };
+  const OFF_STAT = { Warrior: ['Intelligence', 'Multicast Chance'], Mage: ['Strength', 'Multi-hit Chance', 'Multiplay Chance', 'Bleed Chance'], Rogue: ['Multicast Chance'], Paladin: [] };
+  const isOff = (k, cls) => { const base = k.replace(/:.*$/, ''); if (base === 'Elemental/Holy Damage') return !(ELEM_USE[cls] || []).includes(k.split(':')[1]); return (OFF_STAT[cls] || []).includes(base); };
+  function statPts(k) {
+    const G = DATA.gear.stats, base = k.replace(/:.*$/, '');
+    if (k === 'Draw') return 3; if (k === 'Regen') return 0.3;
+    if (base === 'Resistance') return k === 'Resistance:Fire' ? 1 : 0.8;
+    return G[base] ? G[base].pts : 1;
+  }
+  function itemPower(it, cls) {
+    let p = 0; cls = cls || heroCls;
+    for (const src of [it.stats || {}, it.imp2 || {}]) for (const [k, v] of Object.entries(src)) p += v * statPts(k) * (isOff(k, cls) ? 0.25 : 1);
+    return Math.round(p);
+  }
+  // is an item better than what this hero wears? compares item power with the weaker of the slots it can go in
+  function upgradeInfo(it, gear, cls) {
+    if (!it || it.kind === 'card' || !gear) return null;
+    const cur = CBHub.slotOptions(it).map(sl => gear.find(g => g.slot === sl));
+    if (cur.some(x => !x)) return { kind: 'empty' };
+    const mine = itemPower(it, cls), worst = cur.reduce((a, b) => itemPower(a, cls) <= itemPower(b, cls) ? a : b), d = mine - itemPower(worst, cls);
+    return { kind: d > 0 ? 'up' : d < 0 ? 'down' : 'same', d, vs: worst, p: mine };
+  }
+  function upBadge(it, gear, cls) {
+    const u = upgradeInfo(it, gear, cls); if (!u) return '';
+    if (u.kind === 'empty') return `<span class="upb up" title="You have nothing in this slot">&#9650; Fills an empty slot</span>`;
+    const why = `Item power ${u.p} vs ${itemPower(u.vs, cls)} for your ${esc(u.vs.name)}. Power adds up every stat by its value; stats your class barely uses count for a quarter.`;
+    return u.kind === 'up' ? `<span class="upb up" title="${why}">&#9650; Upgrade +${u.d} power</span>`
+      : u.kind === 'down' ? `<span class="upb down" title="${why}">&#9660; ${u.d} power</span>`
+      : `<span class="upb same" title="${why}">= Even</span>`;
+  }
+  const myGear = () => (profile.chars[heroCls] || { gear: [] }).gear;
+
+  // hover tooltips for item slots: data-tip points into TIPS
+  const TIPS = new Map(); let tipN = 0;
+  function tipKey(it, cmp) { if (TIPS.size > 600) TIPS.clear(); const k = 't' + (tipN++); TIPS.set(k, { it, cmp }); return k; }
+  const gtip = document.createElement('div'); gtip.className = 'gtip'; gtip.hidden = true; document.body.appendChild(gtip);
+  function showTip(el) {
+    const t = TIPS.get(el.dataset.tip); if (!t) return;
+    gtip.innerHTML = itemHtml(t.it, `<div class="il">Item power ${itemPower(t.it)}</div>`) + (t.cmp ? `<div style="margin-top:4px">${upBadge(t.it, t.cmp)}</div>` : '');
+    gtip.hidden = false;
+    const r = el.getBoundingClientRect(), w = gtip.offsetWidth, h = gtip.offsetHeight;
+    let x = r.right + 8; if (x + w > innerWidth - 8) x = r.left - w - 8; if (x < 8) x = Math.max(8, Math.min(innerWidth - w - 8, r.left));
+    gtip.style.left = x + 'px'; gtip.style.top = Math.max(8, Math.min(innerHeight - h - 8, r.top)) + 'px';
+  }
+  document.addEventListener('mouseover', (ev) => { const el = ev.target.closest('[data-tip]'); if (el) showTip(el); else if (!gtip.hidden && !ev.target.closest('.gtip')) gtip.hidden = true; });
+  document.addEventListener('focusin', (ev) => { const el = ev.target.closest && ev.target.closest('[data-tip]'); if (el) showTip(el); });
+  document.addEventListener('scroll', () => { gtip.hidden = true; }, true);
+
+  // paperdoll: portrait in the middle, the 13 slots around it, stats underneath
+  function paperdoll(ch, cls, o) {
+    o = o || {};
+    const slot = (sl) => {
+      const it = ch.gear.find(g => g.slot === sl);
+      if (!it) return `<div class="dslot empty" ${o.own ? `data-dslot="${sl}" role="button" tabindex="0"` : ''} title="${sl}: empty${o.own ? ' (click to equip something)' : ''}"><span class="dic">${slotIcon(sl)}</span><span class="dtx"><b>${sl}</b><small>empty</small></span></div>`;
+      return `<div class="dslot" style="--rc:${RC[it.rarity] || 'var(--line)'}" data-tip="${tipKey(it, o.cmp)}" ${o.own ? `data-dslot="${sl}" role="button"` : ''} tabindex="0"><span class="dic">${slotIcon(sl)}</span><span class="dtx"><b>${esc(it.name)}</b><small>${sl} &middot; ilvl ${it.ilvl}</small></span></div>`;
+    };
+    const s = CB.sumGear(ch.gear), res = Object.entries(s.resist || {}).filter(x => x[1]).map(([k, v]) => `${k} ${v}%`).join(', ') || 'none';
+    return `<div class="doll">
+      <div class="dcol">${DOLL_L.map(slot).join('')}</div>
+      <div class="dmid"><canvas class="dportrait" width="220" height="250" data-cls="${cls}" data-rc="${esc(JSON.stringify(rcOf(ch)))}"></canvas>
+        <div class="dname" style="color:${CC[cls]}">${esc(ch.name || cls)}</div><div class="muted" style="font-size:13px">${cls}${o.acct ? ' &middot; ' + esc(o.acct) : ''}</div>
+        <div class="dpow"><span><b>${CBHub.powerLevel(ch)}</b>Power</span><span><b>${CBHub.gearScore(ch)}</b>Gear</span><span><b>${CB.deckLevel(ch.deck)}</b>Deck</span></div></div>
+      <div class="dcol">${DOLL_R.map(slot).join('')}</div>
+      <div class="dbot">${DOLL_B.map(slot).join('')}</div>
+      <dl class="kv dstats"><dt>Max HP</dt><dd>${s.maxHp}</dd><dt>Mana</dt><dd>${s.maxMana}, +${s.regen}/turn</dd><dt>Draw</dt><dd>${s.draw}/round</dd>
+        <dt>Strength / Int</dt><dd>+${s.strength}% / +${s.intelligence}%</dd><dt>Dexterity</dt><dd>+${s.dexterity + s.defGain}% ${CLASSES[cls].defense}</dd><dt>Crit</dt><dd>${s.crit}% x${s.critMult.toFixed(2)}</dd>
+        <dt>Initiative</dt><dd>${s.init}</dd><dt>Resist</dt><dd>${res}</dd>${s.luck ? `<dt>Luck</dt><dd>${s.luck}</dd>` : ''}${ch.duels ? `<dt>Duels</dt><dd>${ch.duels.w} won, ${ch.duels.l} lost</dd>` : ''}</dl>
+    </div>`;
+  }
+  function paintPortraits(root) {
+    (root || document).querySelectorAll('canvas.dportrait').forEach(cv => {
+      const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height);
+      const bg = g.createRadialGradient(110, 120, 10, 110, 130, 140); bg.addColorStop(0, '#3a2c1e'); bg.addColorStop(1, '#120e0b'); g.fillStyle = bg; g.fillRect(0, 0, cv.width, cv.height);
+      let rc = {}; try { rc = JSON.parse(cv.dataset.rc); } catch (e) {}
+      drawChar(g, 110, 232, 'down', 0, palFor(cv.dataset.cls, rc), 4.2, 0);
+    });
+  }
+  // own sheet: click a slot to see the item (and unequip) or, if empty, to equip something from the stash
+  document.addEventListener('click', (ev) => {
+    const d = ev.target.closest('[data-dslot]'); if (!d || !d.closest('#hpGear')) return;
+    gtip.hidden = true;
+    const sl = d.dataset.dslot, c = CBHub.char(profile, heroCls), it = c.gear.find(g => g.slot === sl);
+    const fits = profile.stash.filter(x => x.kind !== 'card' && CBHub.slotOptions(x).includes(sl)).sort((a, b) => (b.ilvl || 0) - (a.ilvl || 0));
+    const choose = fits.map(x => itemHtml(x, `<div class="acts">${upBadge(x, c.gear)}<button class="btn" data-eq="${x.id}">Equip</button></div>`)).join('');
+    modal(`<h2>${sl}</h2>${it ? itemHtml(it, `<div class="acts"><button class="btn" id="mUneq">Unequip to stash</button></div>`) : '<p class="muted">Nothing equipped.</p>'}
+      <h3 style="font-size:18px;color:var(--accent);margin-top:10px">From your stash (${fits.length})</h3><div class="list" style="max-height:340px">${choose || '<span class="muted">Nothing in the stash fits this slot.</span>'}</div>
+      <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
+    $('mClose').onclick = closeModal;
+    if ($('mUneq')) $('mUneq').onclick = () => { if (!CBHub.unequip(profile, heroCls, sl)) return toast('Stash is full.'); save(); closeModal(); renderHub(); };
+    for (const b of $('modalBox').querySelectorAll('[data-eq]')) b.onclick = () => { const r = CBHub.equip(profile, heroCls, b.dataset.eq, sl); if (!r.ok) return toast(r.why); save(); closeModal(); renderHub(); };
+  });
+
+  // ---------- inspecting another player (they answer with their hero's gear and deck)
+  const INS = { waiting: null };
+  function inspect(uid) {
+    if (!socOn()) return;
+    INS.waiting = uid; netSend('insp-req', { to: uid });
+    modal(`<h2>Inspecting ${esc(nameOfUid(uid))}...</h2><p class="muted">Asking their game for their hero.</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`); $('mClose').onclick = closeModal;
+    setTimeout(() => { if (INS.waiting === uid) { INS.waiting = null; if (!$('modal').hidden && /Inspecting/.test($('modalBox').innerText)) toast(`${nameOfUid(uid)} didn't answer. They may have just gone offline.`); } }, 6000);
+  }
+  function inspectCard() { const c = profile.chars[heroCls]; if (!c) return null; return { name: c.name, cls: heroCls, gear: c.gear.map(g => { const x = Object.assign({}, g); delete x.id; return x; }), deck: c.deck.map(k => ({ key: k.key, rank: k.rank || 0 })), runs: c.runs, best: c.best, bossKills: c.bossKills, duels: c.duels || null, acct: supaUser ? acctName(supaUser) : '' }; }
+  function showInspect(ch) {
+    const deck = ch.deck.slice().sort((a, b) => RAR_ORDER[CARDS[a.key].rarity] - RAR_ORDER[CARDS[b.key].rarity] || CARDS[a.key].name.localeCompare(CARDS[b.key].name));
+    const groups = []; for (const k of deck) { const g = groups.find(x => x.key === k.key && x.rank === k.rank); if (g) g.n++; else groups.push({ key: k.key, rank: k.rank, n: 1 }); }
+    modal(`<h2>${esc(ch.name)}</h2>${paperdoll(ch, ch.cls, { cmp: myGear(), acct: ch.acct })}
+      <p class="muted" style="font-size:13px">Hover their gear to compare it with yours. Runs ${ch.runs || 0}, best row ${ch.best > ROWS ? 'Boss' : ch.best || 0}, Warlord kills ${ch.bossKills || 0}.</p>
+      <h3 style="font-size:18px;color:var(--accent)">Deck (${ch.deck.length})</h3><div class="pilegrid">${groups.map(g => `<div class="pilecard">${cardBox(CB.rankedCard(g.key, g.rank), 130)}${g.n > 1 ? `<span class="pilecount">x${g.n}</span>` : ''}</div>`).join('')}</div>
+      <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
+    $('modalBox').classList.add('wide'); paintPortraits($('modalBox')); fitCards($('modalBox')); $('mClose').onclick = closeModal;
+  }
+
+  // ---------- trading: both players pick items from their stash (and gold); when both accept the same offer, both games swap
+  const TR = { inv: [], s: null };
+  const sideKey = (items, gold) => items.map(i => i.id).sort().join(',') + '$' + (gold || 0);
+  function tradeHash() { const S = TR.s; return [[SOC.me, sideKey(myOffer(), S.myGold)], [S.with, sideKey(S.theirs, S.theirGold)]].sort((a, b) => a[0] < b[0] ? -1 : 1).map(x => x.join(':')).join('|'); }
+  const myOffer = () => TR.s ? TR.s.mine.map(id => profile.stash.find(x => x.id === id)).filter(Boolean) : [];
+  function tradeAsk(uid) {
+    if (!socOn()) return; if (run || cb || NET.s) { toast('You can only trade in Emberwatch.'); return; }
+    if (TR.s) { toast('Finish your current trade first.'); return; }
+    const c = profile.chars[heroCls]; netSend('tr-ask', { to: uid, name: c ? c.name : acctName(supaUser) });
+    TR.asked = uid; sysChat(`Trade request sent to ${nameOfUid(uid)}.`);
+  }
+  function answerTrade(from, ok) {
+    TR.inv = TR.inv.filter(i => i.from !== from); renderSocial();
+    if (ok && (run || cb || NET.s || TR.s)) { toast('You can only trade from Emberwatch, one trade at a time.'); ok = false; }
+    netSend('tr-ans', { to: from, ok });
+    if (ok) openTrade(from);
+  }
+  function openTrade(uid) { TR.s = { tid: [SOC.me, uid].sort().join('-'), with: uid, name: nameOfUid(uid), mine: [], myGold: 0, theirs: [], theirGold: 0, myAcc: null, theirAcc: null }; renderTrade(); }
+  function sendOffer() { const S = TR.s; S.myAcc = null; S.theirAcc = null; netSend('tr-offer', { to: S.with, items: myOffer(), gold: S.myGold }); renderTrade(); }
+  function tradeAccept() {
+    const S = TR.s; if (!S) return;
+    const room = CBHub.STASH_MAX - (profile.stash.length - myOffer().length);
+    if (S.theirs.length > room) { toast(`Your stash can't hold ${S.theirs.length} more item${S.theirs.length === 1 ? '' : 's'}. Make room first.`); return; }
+    S.myAcc = tradeHash(); netSend('tr-acc', { to: S.with, hash: S.myAcc });
+    if (S.theirAcc === S.myAcc) doTrade(); else renderTrade();
+  }
+  function doTrade() {
+    const S = TR.s; if (!S || S.done) return; S.done = true;
+    const mine = myOffer(), ids = new Set(mine.map(x => x.id));
+    profile.stash = profile.stash.filter(x => !ids.has(x.id));
+    profile.gold = Math.max(0, profile.gold - (S.myGold || 0)) + (S.theirGold || 0);
+    for (const it of S.theirs) profile.stash.unshift(Object.assign({}, it, { id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8) }));
+    save(); TR.s = null; closeModal(); renderHub();
+    const got = S.theirs.length + (S.theirGold ? 1 : 0), gave = mine.length + (S.myGold ? 1 : 0);
+    sysChat(`Trade with ${S.name} complete: you gave ${mine.length} item${mine.length === 1 ? '' : 's'}${S.myGold ? ' and ' + S.myGold + ' gold' : ''}, and got ${S.theirs.length} item${S.theirs.length === 1 ? '' : 's'}${S.theirGold ? ' and ' + S.theirGold + ' gold' : ''}.`);
+    toast(`Trade complete. ${got || gave ? 'New items are in your stash.' : ''}`);
+  }
+  function cancelTrade(quiet) { const S = TR.s; if (!S) return; TR.s = null; if (!quiet) netSend('tr-cancel', { to: S.with }); closeModal(); sysChat(`Trade with ${S.name} cancelled.`); }
+  function renderTrade() {
+    const S = TR.s; if (!S) return;
+    const mine = myOffer(), gear = myGear();
+    const avail = profile.stash.filter(x => x.kind !== 'card' && !S.mine.includes(x.id));
+    const row = (it, act) => `<div class="tritem" style="--rc:${RC[it.rarity] || 'var(--line)'}" data-tip="${tipKey(it, gear)}">${slotIcon(it.slot)}<span><b>${esc(it.name)}</b><small>${rarName(it.rarity)} &middot; ilvl ${it.ilvl}</small></span>${act || ''}</div>`;
+    const both = S.myAcc && S.theirAcc === S.myAcc;
+    modal(`<h2>Trade with ${esc(S.name)}</h2>
+      <div class="tradegrid">
+        <div class="panel"><h3>You offer</h3><div class="trlist">${mine.map(it => row(it, `<button class="pilebtn" data-trrm="${it.id}">Remove</button>`)).join('') || '<span class="muted">Click items in your stash below to offer them.</span>'}</div>
+          <label class="trgold">Gold <input type="number" id="trGold" min="0" max="${profile.gold}" value="${S.myGold || 0}"> <span class="muted">of ${profile.gold}</span></label>
+          <p class="trst ${S.myAcc ? 'up' : ''}">${S.myAcc ? 'You accepted.' : ''}</p></div>
+        <div class="panel"><h3>${esc(S.name)} offers</h3><div class="trlist">${S.theirs.map(it => row(it, upBadge(it, gear))).join('') || '<span class="muted">Nothing yet.</span>'}</div>
+          <p class="trgold">Gold: <b>${S.theirGold || 0}</b></p>
+          <p class="trst ${S.theirAcc ? 'up' : ''}">${S.theirAcc ? (S.theirAcc === tradeHash() ? `${esc(S.name)} accepted this offer.` : `${esc(S.name)} accepted an earlier offer.`) : ''}</p></div>
+      </div>
+      <h3 style="font-size:16px;margin:10px 0 4px">Your stash (${profile.stash.length}/${CBHub.STASH_MAX})</h3><div class="trstash">${avail.map(it => row(it, `<button class="pilebtn" data-tradd="${it.id}">Offer</button>`)).join('') || '<span class="muted">Nothing else to offer. Unequip gear at the Quartermaster to trade it.</span>'}</div>
+      <p class="muted" style="font-size:12px">Changing either offer clears both accepts. The swap happens when you both accept the same offer.</p>
+      <div class="row"><button class="btn primary" id="trAcc" ${S.myAcc || both ? 'disabled' : ''}>${S.myAcc ? 'Waiting for ' + esc(S.name) + '...' : 'Accept trade'}</button><button class="btn" id="trCancel">Cancel trade</button></div>`);
+    $('modalBox').classList.add('wide');
+    $('trAcc').onclick = tradeAccept; $('trCancel').onclick = () => cancelTrade();
+    $('trGold').onchange = (e) => { S.myGold = Math.max(0, Math.min(profile.gold, Math.floor(+e.target.value || 0))); sendOffer(); };
+    for (const b of $('modalBox').querySelectorAll('[data-tradd]')) b.onclick = () => { if (S.mine.length >= 12) return; S.mine.push(b.dataset.tradd); sendOffer(); };
+    for (const b of $('modalBox').querySelectorAll('[data-trrm]')) b.onclick = () => { S.mine = S.mine.filter(x => x !== b.dataset.trrm); sendOffer(); };
+  }
+  function tradeInvitesHtml() { return TR.inv.map(i => `<div class="ppinv"><span><b>${esc(i.name)}</b> wants to trade</span><span><button class="btn primary" data-tracc="${i.from}">Trade</button> <button class="btn" data-trdec="${i.from}">Decline</button></span></div>`).join(''); }
+  document.addEventListener('click', (ev) => {
+    const t = ev.target.closest('[data-tracc],[data-trdec],[data-insp],[data-trade]'); if (!t) return;
+    if (t.dataset.tracc) answerTrade(t.dataset.tracc, true);
+    if (t.dataset.trdec) answerTrade(t.dataset.trdec, false);
+    if (t.dataset.insp) { closeTalk(); inspect(t.dataset.insp); }
+    if (t.dataset.trade) { closeTalk(); tradeAsk(t.dataset.trade); }
+  });
+  function gearNetIn(p) {
+    if (p.to !== SOC.me) return;
+    switch (p.type) {
+      case 'insp-req': { const ch = inspectCard(); if (ch) netSend('insp', { to: p.from, ch }); return; }
+      case 'insp': { if (INS.waiting !== p.from) return; INS.waiting = null; showInspect(p.ch); return; }
+      case 'tr-ask': { if (TR.inv.some(i => i.from === p.from)) return; TR.inv.push({ from: p.from, name: p.name }); sysChat(`${p.name} wants to trade with you.`); renderSocial(); return; }
+      case 'tr-ans': { if (TR.asked !== p.from) return; TR.asked = null; if (!p.ok) { sysChat(`${nameOfUid(p.from)} declined the trade.`); return; } if (TR.s || run || cb) { netSend('tr-cancel', { to: p.from }); return; } openTrade(p.from); return; }
+      case 'tr-offer': { const S = TR.s; if (!S || S.with !== p.from) return; S.theirs = (p.items || []).slice(0, 12); S.theirGold = Math.max(0, Math.floor(p.gold || 0)); S.myAcc = null; S.theirAcc = null; renderTrade(); return; }
+      case 'tr-acc': { const S = TR.s; if (!S || S.with !== p.from) return; S.theirAcc = p.hash; if (S.myAcc && S.myAcc === p.hash) doTrade(); else renderTrade(); return; }
+      case 'tr-cancel': { if (TR.s && TR.s.with === p.from) { TR.s = null; closeModal(); sysChat(`${nameOfUid(p.from)} cancelled the trade.`); } TR.inv = TR.inv.filter(i => i.from !== p.from); renderSocial(); return; }
+    }
+  }
+
+  // ---------- clicking another player in town
+  function playerMenu(uid) {
+    const st = SOC.online.get(uid) || {}, o = SOC.others.get(uid) || {};
+    const inParty = SOC.party && SOC.party.members.some(m => m.uid === uid), mineParty = SOC.party && SOC.party.members.some(m => m.uid === SOC.me);
+    $('talk').innerHTML = `<b style="color:${CC[o.cls || st.cls] || 'var(--text)'}">${esc(o.name || st.name || 'Player')}</b><p>${esc(o.cls || st.cls || '')} &middot; ${placeText(st)}</p>
+      <div class="row"><button class="btn primary" data-insp="${uid}">Inspect</button><button class="btn" data-trade="${uid}">Trade</button>${!inParty && (!SOC.party || SOC.party.leader === SOC.me) ? `<button class="btn" id="pmInv">Invite to party</button>` : ''}${inParty && mineParty ? `<button class="btn" id="pmDuel">Duel</button>` : ''}<button class="btn" id="tBye">Close</button></div>`;
+    $('talk').hidden = false; updatePrompt();
+    $('tBye').onclick = closeTalk;
+    if ($('pmInv')) $('pmInv').onclick = () => { closeTalk(); invite(uid); };
+    if ($('pmDuel')) $('pmDuel').onclick = () => { closeTalk(); challenge(uid); };
+  }
 
   let townReturn = false;
 
@@ -3354,7 +3608,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
         const bm = run.members[buyer] || run.m0, bank = run.bankOf(bm);
         const full = bm.orders.length >= bm.stashFree;
         $('modalBox').innerHTML = `<h2>Merchant</h2><p>${run.solo || run.online ? '' : `Ordering for <select id="mBuyer">${run.members.map((m, i) => `<option value="${i}" ${i === buyer ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select>. `}Banked gold: <b>${bank}</b>${bm.orders.length ? ` &middot; ${bm.orders.length} order${bm.orders.length === 1 ? '' : 's'} placed` : ''}. Pay from the bank and the merchant brings it back to town: it waits in your stash, even if you die out here.${full ? ' <b>Your stash is full.</b>' : ''}</p>
-        <div class="shop">${p.stock.map((it, i) => { const cur = bm.gear.find(g => g.slot === run.slotFor(it, bm.idx)); return itemHtml(it, `<div class="il">Compare: ${cur ? esc(cur.name) + ' (ilvl ' + cur.ilvl + ')' : 'empty ' + run.slotFor(it, bm.idx)}</div><div><button class="btn" data-buy="${i}" ${it.sold || bank < it.price || full ? 'disabled' : ''}>${it.sold ? 'Ordered' + (run.solo ? '' : ' by ' + esc(run.members[it.buyer].name)) : 'Order for ' + it.price + ' gold'}</button></div>`); }).join('')}</div>
+        <div class="shop">${p.stock.map((it, i) => { const cur = bm.gear.find(g => g.slot === run.slotFor(it, bm.idx)); return itemHtml(it, `<div class="il">${upBadge(it, bm.gear)}</div><div class="il">Compare: ${cur ? esc(cur.name) + ' (ilvl ' + cur.ilvl + ')' : 'empty ' + run.slotFor(it, bm.idx)}</div><div><button class="btn" data-buy="${i}" ${it.sold || bank < it.price || full ? 'disabled' : ''}>${it.sold ? 'Ordered' + (run.solo ? '' : ' by ' + esc(run.members[it.buyer].name)) : 'Order for ' + it.price + ' gold'}</button></div>`); }).join('')}</div>
         <div class="row"><button class="btn primary" id="mLeave">${run.online ? 'Close (vote on the map to move on)' : 'Leave'}</button></div>`;
         $('mLeave').onclick = () => { if (!run.online) run.closePending(); redrawShop = null; closeModal(); renderMap(); };
         for (const b of $('modalBox').querySelectorAll('[data-buy]')) b.onclick = () => { if (run.online) { b.disabled = true; netAct({ t: 'buy', i: +b.dataset.buy }); return; } run.buy(+b.dataset.buy, buyer); draw(); renderSide(); };
