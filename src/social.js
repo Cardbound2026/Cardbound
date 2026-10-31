@@ -21,7 +21,7 @@
   function myPresence() {
     const c = profile.chars[heroKey];
     const place = !$('scrStart').hidden ? 'town' : run ? 'run' : cb && cb.duel ? 'duel' : 'menu';
-    return { uid: SOC.me, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
+    return { uid: SOC.me, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), shop: typeof BZ !== 'undefined' && BZ.open ? { t: shopTitle(), n: bzState().items.length } : null, x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
   }
 
   async function socStart() {
@@ -40,6 +40,7 @@
     ch.on('broadcast', { event: 'pos' }, ({ payload }) => moveOther(payload));
     ch.on('broadcast', { event: 'chat' }, ({ payload }) => chatIn(payload));
     ch.on('broadcast', { event: 'guild' }, ({ payload }) => guildIn(payload));
+    ch.on('broadcast', { event: 'bazaar' }, ({ payload }) => bazaarIn(payload));
     ch.on('broadcast', { event: 'invite' }, ({ payload }) => { if (payload.to === SOC.me) gotInvite(payload); });
     ch.on('broadcast', { event: 'invite-reply' }, ({ payload }) => { if (payload.to === SOC.me) gotReply(payload); });
     ch.on('broadcast', { event: 'party' }, ({ payload }) => gotParty(payload));
@@ -91,8 +92,8 @@
     for (const [uid, st] of SOC.online) {
       if (uid === SOC.me || st.place !== 'town' || !st.cls) { SOC.others.delete(uid); continue; }
       const o = SOC.others.get(uid);
-      if (!o) SOC.others.set(uid, { uid, x: st.x, y: st.y, fx: st.x, fy: st.y, t: 1, dir: st.dir || 'down', step: 0, name: st.name, cls: st.cls, rc: st.rc || {}, party: st.party });
-      else Object.assign(o, { name: st.name, cls: st.cls, rc: st.rc || {}, party: st.party });
+      if (!o) SOC.others.set(uid, { uid, x: st.x, y: st.y, fx: st.x, fy: st.y, t: 1, dir: st.dir || 'down', step: 0, name: st.name, cls: st.cls, rc: st.rc || {}, party: st.party, shop: st.shop || null });
+      else Object.assign(o, { name: st.name, cls: st.cls, rc: st.rc || {}, party: st.party, shop: st.shop || null });
     }
     for (const uid of [...SOC.others.keys()]) if (!SOC.online.has(uid)) SOC.others.delete(uid);
   }
@@ -114,6 +115,7 @@
         const w = gx.measureText(o.name).width + 10, tx = p.x * TS + TS / 2, ty = p.y * TS - TS * 0.12;
         gx.fillStyle = 'rgba(10,8,6,.78)'; gx.fillRect(tx - w / 2, ty - 13, w, 17);
         gx.fillStyle = SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0'; gx.fillText(o.name, tx, ty);
+        if (o.shop && o.shop.t) drawShopSign(gx, tx, ty - 4, o.shop.t, s);
       } });
     }
     return out;

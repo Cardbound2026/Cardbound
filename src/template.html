@@ -562,6 +562,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   .node .enraged { animation: pulse 1.2s ease-in-out infinite; }
   [data-cardinfo] .card, [data-cardinfo].item { cursor: pointer; }
   .cxcod { cursor: pointer; } .cxcod:hover { background: rgba(255,255,255,.06); }
+  .bzacts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; } .bzacts input { width: 90px; } #tbShop.primary { border-color: var(--accent); color: var(--accent); }
 </style>
 
 <div class="wrap">
@@ -589,7 +590,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 
   <!-- CAMP: the town overworld -->
   <section id="scrStart" class="camp" aria-label="Town">
-    <div class="townbar"><span id="tbHero"></span><span class="chip" id="tbPower"></span><span class="chip" id="tbGold"></span><button class="pilebtn" id="tbChar" title="Your hero's gear and stats (C)">Character <span class="muted">C</span></button><button class="pilebtn" id="tbFriends" hidden>Friends</button><span id="acct"></span><span class="muted tbhelp">Walk: arrow keys or WASD, or click/tap where to go. Talk: Space, or click someone.</span></div>
+    <div class="townbar"><span id="tbHero"></span><span class="chip" id="tbPower"></span><span class="chip" id="tbGold"></span><button class="pilebtn" id="tbShop" hidden title="Set up your Bazaar shop">Set up shop</button><button class="pilebtn" id="tbChar" title="Your hero's gear and stats (C)">Character <span class="muted">C</span></button><button class="pilebtn" id="tbFriends" hidden>Friends</button><span id="acct"></span><span class="muted tbhelp">Walk: arrow keys or WASD, or click/tap where to go. Talk: Space, or click someone.</span></div>
     <div class="townwrap" id="townWrap">
       <canvas id="town" tabindex="0" aria-label="The town of Emberwatch. Walk to the quartermaster, scribe, chronicler, wagoneer or captain and talk to them."></canvas>
       <div class="prompt" id="prompt" hidden></div>
@@ -1055,7 +1056,9 @@ body.aiming { cursor: grabbing; user-select: none; }
   loadLocal();
   // ---------- the town (overworld): grid movement like Pokemon, NPCs open the camp screens
   // Everything is drawn in code: thick dark outlines, muted colors, torchlight over a dark night layer.
-  const MW = 26, MH = 18;
+  const MW = 42, MH = 18; // Oct 31: the town grew east (x 26-41) for the Bazaar
+  const BAZ = { x: 34, y: 9.5, r: 6.3 }; // the round market square; inside it you can set up shop
+  const inBazaar = (x, y) => Math.hypot(x - BAZ.x, y - BAZ.y) <= BAZ.r;
   const TOWN = { running: false, last: 0, t: 0, TS: 48, dpr: 1, cache: null, dark: null, sprites: {}, embers: [] };
   const P = { x: 12, y: 4, dir: 'down', mv: null, path: [], held: [], talkTo: null, step: 0 };
   const STEP_MS = 165;
@@ -1068,6 +1071,10 @@ body.aiming { cursor: grabbing; user-select: none; }
   for (let x = 3; x <= 22; x++) { setG(x, 9, 'p'); setG(x, 10, 'p'); }               // main street
   for (let y = 11; y <= 15; y++) for (let x = 9; x <= 16; x++) if (Math.hypot(x - 12.5, (y - 13) * 1.15) < 3.6) setG(x, y, 'p'); // fire plaza
   for (let y = 11; y <= 12; y++) { setG(5, y, 'p'); setG(6, y, 'p'); setG(19, y, 'p'); setG(20, y, 'p'); }
+  // the Bazaar: a palisade with a gap on the main street, then a round cobbled market
+  for (let y = 0; y < MH; y++) if (y !== 9 && y !== 10) setG(25, y, 'w');
+  for (let x = 23; x <= 29; x++) { setG(x, 9, 'p'); setG(x, 10, 'p'); }
+  for (let y = 1; y < MH - 1; y++) for (let x = 26; x < MW - 1; x++) if (Math.hypot(x - BAZ.x, y - BAZ.y) <= BAZ.r) setG(x, y, 'b');
   for (let y = 15; y <= 16; y++) for (let x = 21; x <= 23; x++) setG(x, y, '~');
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'w' || ground[y][x] === '~') solid.add(K(x, y));
   solid.delete(K(12, 0)); solid.delete(K(13, 0)); setG(12, 0, 'p'); setG(13, 0, 'p');  // the gate
@@ -1085,8 +1092,10 @@ body.aiming { cursor: grabbing; user-select: none; }
     { kind: 'chest', x: 4, y: 8, w: 1, h: 1 },
     { kind: 'lectern', x: 21, y: 8, w: 1, h: 1 },
     { kind: 'lectern', x: 11, y: 7, w: 1, h: 1 },
+    { kind: 'well', x: 33, y: 9, w: 2, h: 1 }, { kind: 'sign', x: 24, y: 8, w: 1, h: 1 },
+    ...[0, 1, 2, 3, 4, 5, 6, 7].map(i => { const a = i / 8 * Math.PI * 2 + Math.PI / 8; return { kind: 'torch', x: Math.round(BAZ.x + Math.cos(a) * 6.9), y: Math.round(BAZ.y + Math.sin(a) * 6.6), w: 1, h: 1 }; }),
     { kind: 'rock', x: 9, y: 3, w: 1, h: 1 }, { kind: 'rock', x: 23, y: 11, w: 1, h: 1 }, { kind: 'rock', x: 10, y: 16, w: 1, h: 1 },
-    ...[[1, 1], [2, 2], [3, 1], [1, 4], [1, 7], [2, 11], [1, 9], [23, 1], [24, 3], [22, 2], [24, 6], [24, 9], [24, 13], [20, 16], [16, 16], [9, 1], [7, 2], [8, 6], [10, 5], [16, 6]].map(([x, y]) => ({ kind: 'tree', x, y, w: 1, h: 1, v: (x * 7 + y * 3) % 3 })),
+    ...[[1, 1], [2, 2], [3, 1], [1, 4], [1, 7], [2, 11], [1, 9], [23, 1], [24, 3], [22, 2], [24, 6], [24, 13], [27, 2], [30, 1], [39, 1], [40, 4], [27, 16], [40, 16], [27, 5], [40, 13], [20, 16], [16, 16], [9, 1], [7, 2], [8, 6], [10, 5], [16, 6]].map(([x, y]) => ({ kind: 'tree', x, y, w: 1, h: 1, v: (x * 7 + y * 3) % 3 })),
     ...[[11, 2], [14, 5], [9, 8], [16, 8], [8, 11], [17, 11]].map(([x, y]) => ({ kind: 'torch', x, y, w: 1, h: 1 })),
   ];
   for (const p of PROPS) for (let y = p.y; y < p.y + p.h; y++) for (let x = p.x; x < p.x + p.w; x++) solid.add(K(x, y));
@@ -1154,6 +1163,11 @@ body.aiming { cursor: grabbing; user-select: none; }
     for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'p') {
       circ(g, x * TS + TS / 2 + (R() - 0.5) * TS * 0.25, y * TS + TS / 2 + (R() - 0.5) * TS * 0.25, TS * (0.5 + R() * 0.1), '#3a2f22');
       for (let i = 0; i < 4; i++) circ(g, x * TS + R() * TS, y * TS + R() * TS, 1.5 + R() * 2, R() < 0.5 ? '#4a3c2b' : '#2a2219');
+    }
+    // bazaar cobbles
+    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'b') {
+      g.fillStyle = '#2c2925'; g.fillRect(x * TS, y * TS, TS, TS);
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { const v = R(); rrect(g, x * TS + i * TS / 3 + 1.5 + (j % 2) * 3, y * TS + j * TS / 3 + 1.5, TS / 3 - 3, TS / 3 - 3, 3, v < 0.33 ? '#45403a' : v < 0.66 ? '#3d3833' : '#4a443d'); }
     }
     // water
     for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === '~') { rrect(g, x * TS - 3, y * TS - 3, TS + 6, TS + 6, 10, '#101c25'); }
@@ -1234,6 +1248,18 @@ body.aiming { cursor: grabbing; user-select: none; }
       for (const wx of [x0 + TS * 0.55, x0 + W - TS * 0.55]) { circ(g, wx, by - TS * 0.32, TS * 0.36, '#3b2a1c', 2.2); circ(g, wx, by - TS * 0.32, TS * 0.1, '#7a5a3a', 1.4); }
       rrect(g, x0 - TS * 0.5, y0 + TS * 1.2, TS * 0.6, 5, 2, '#3b2a1c', 1.4); // tongue
       circ(g, x0 + 6, y0 + TS * 0.4, 5 * s, '#ffcf7a', 1.4); // lantern
+    } else if (p.kind === 'well') { // bazaar fountain
+      const cx = x0 + W / 2, by = y0 + TS * 0.85;
+      g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.ellipse(cx, by, W * 0.5, TS * 0.3, 0, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.ellipse(cx, by - 8 * s, W * 0.46, TS * 0.32, 0, 0, Math.PI * 2); g.fillStyle = '#5a554e'; g.fill(); line(g, 2);
+      g.beginPath(); g.ellipse(cx, by - 10 * s, W * 0.38, TS * 0.24, 0, 0, Math.PI * 2); g.fillStyle = '#1b3446'; g.fill();
+      const k = (t % 2000) / 2000; g.strokeStyle = `rgba(150,200,230,${0.5 - k * 0.5})`; g.lineWidth = 1.5; g.beginPath(); g.ellipse(cx, by - 10 * s, W * 0.1 + k * W * 0.25, TS * 0.06 + k * TS * 0.16, 0, 0, Math.PI * 2); g.stroke();
+      rrect(g, cx - 4 * s, by - 30 * s, 8 * s, 20 * s, 2, '#6a645c', 1.6); circ(g, cx, by - 32 * s, 6 * s, '#7a736a', 1.6);
+    } else if (p.kind === 'sign') { // "Bazaar" signpost at the gate
+      const cx = x0 + TS / 2, by = y0 + TS * 0.95;
+      rrect(g, cx - 3 * s, by - 34 * s, 6 * s, 34 * s, 2, '#3b2a1c', 1.6);
+      rrect(g, cx - 22 * s, by - 44 * s, 44 * s, 16 * s, 3, '#6a4a2a', 1.8);
+      g.fillStyle = '#f0d9a8'; g.font = `700 ${Math.round(10 * s)}px "Barlow Semi Condensed", sans-serif`; g.textAlign = 'center'; g.fillText('BAZAAR \u2192', cx, by - 32.5 * s);
     } else if (p.kind === 'board') {
       const cx = x0 + TS / 2, by = y0 + TS * 0.9;
       rrect(g, cx - 18 * s, by - 18 * s, 4 * s, 18 * s, 1, '#3b2a1c', 1.4); rrect(g, cx + 14 * s, by - 18 * s, 4 * s, 18 * s, 1, '#3b2a1c', 1.4);
@@ -1386,6 +1412,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     list.push({ y: hp.y + 0.5, f: () => drawChar(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, P.dir, stepF, heroPal(), s, t) });
     for (const o of othersDrawList(TS, s, t)) list.push(o);
     list.sort((a, b) => a.y - b.y); for (const o of list) o.f();
+    if (BZ.open) drawShopSign(gx, hp.x * TS + TS / 2, hp.y * TS - TS * 0.12, shopTitle(), s);
     // embers over the fire
     for (const e of TOWN.embers) { gx.fillStyle = `rgba(255,${150 + (e.life * 80 | 0)},70,${e.life})`; gx.fillRect(e.x * TS, e.y * TS, 2.5 * s, 2.5 * s); }
     // name tags for nearby NPCs
@@ -1421,6 +1448,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   const free = (x, y) => x >= 0 && y >= 0 && x < MW && y < MH && !solid.has(K(x, y));
   const townBusy = () => !$('sheet').hidden || !$('modal').hidden || !$('talk').hidden;
   function tryStep(dir) {
+    if (BZ.open) { P.path = []; return false; } // a vendor stays at their stall
     P.dir = dir; const [dx, dy] = DIRS[dir];
     if (!free(P.x + dx, P.y + dy)) return false;
     P.mv = { fx: P.x, fy: P.y, t: 0 }; P.x += dx; P.y += dy; P.step++; socPos(); return true;
@@ -1440,7 +1468,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       if (!tryStep(dir)) P.path = [];
       if (!P.path.length) { P.target = null; if (P.talkTo) { const n = P.talkTo; P.talkTo = null; P.dir = n.x > P.x ? 'right' : n.x < P.x ? 'left' : n.y > P.y ? 'down' : 'up'; talk(n); } }
     } else if (P.held.length) tryStep(P.held[P.held.length - 1]);
-    updatePrompt();
+    updatePrompt(); updateShopBtn();
   }
   function facing() { const [dx, dy] = DIRS[P.dir]; return NPCS.find(n => n.x === P.x + dx && n.y === P.y + dy) || PROPS.find(p => p.kind === 'chest' && p.x === P.x + dx && p.y === P.y + dy) || PROPS.find(p => p.kind === 'wagon' && P.x + dx >= p.x && P.x + dx < p.x + p.w && P.y + dy >= p.y && P.y + dy < p.y + p.h) || PROPS.find(p => p.kind === 'board' && p.x === P.x + dx && p.y === P.y + dy); }
   function interactTarget() { const f = facing(); if (!f) return null; if (f.name) return f; if (f.kind === 'chest') return NPCS[0]; if (f.kind === 'wagon') return NPCS.find(n => n.id === 'wagon'); if (f.kind === 'board') return NPCS.find(n => n.id === 'chron'); return null; }
@@ -1574,6 +1602,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 /*GUILD*/
 /*NET*/
 /*RAID*/
+/*BAZAAR*/
 /*UPDATES*/
 /*CODEX*/
 /*GEARUI*/
@@ -1730,7 +1759,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     slot.hidden = !inFight; $('scrCombat').classList.toggle('withchat', inFight);
     if (typeof renderChat === 'function') renderChat();
   }
-  function show(which) { placeChat(which); if (typeof retrack === 'function') setTimeout(() => { try { retrack(); } catch (e) {} }, 0); hidePeeks(); $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); retrack(true); }
+  function show(which) { if (which !== 'start' && typeof BZ !== 'undefined' && BZ.open) closeShop(true); placeChat(which); if (typeof retrack === 'function') setTimeout(() => { try { retrack(); } catch (e) {} }, 0); hidePeeks(); $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); retrack(true); }
 
   // ---------- map
   const RH = 58, CW = 78, PADX = 40, PADY = 34;

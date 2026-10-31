@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-10-31', items: [
+      ['Bazaar', 'The town grew: walk east down the main street, through the gate, into the round Bazaar. Inside the market square you get a "Set up shop" button: list stash items (up to 12) at your own prices, name your shop and open it.'],
+      ['Bazaar', 'An open shop shows a striped sign over your head and keeps you in place (close it to walk again). Others click you and pick Browse shop to buy. Gold and the item change hands right away; the seller has to be online. Listings are kept between visits.'],
       ['Town', 'New names: Quartermaster Old Arthur, Guildmaster Strecks, Raid Warden Bagadee, Archivist Casey Jones and Wagoneer Arisha.'],
       ['Scribe', 'Click any card at the Scribe to open its Compendium page: rank slider and where it drops.'],
       ['Compendium', 'Click a codex in the Codexes tab: where it drops (boss and raid), your copies, and example rolls.'],
