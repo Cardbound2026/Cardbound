@@ -3,6 +3,7 @@
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
+  const CB_BUILD = '__CB_BUILD__'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -27,8 +28,8 @@
     NET.pend = { sid, kind, uids, level, map, specs: { [SOC.me]: me } };
     NET.pend.timer = setTimeout(() => { if (!NET.pend || NET.pend.sid !== sid) return; clearInterval(NET.pend.again); const miss = uids.filter(u => !NET.pend.specs[u]).map(nameOfUid); NET.pend = null; toast(`${miss.join(', ')} didn't answer. ${kind === 'duel' ? 'The duel' : 'The run'} is called off. If they're online, ask them to reload the page (both of you should be on the latest version).`); }, 15000);
     // realtime messages can get lost: ask again every 2 seconds until everyone has answered
-    NET.pend.again = setInterval(() => { if (!NET.pend || NET.pend.sid !== sid) return; netSend('req', { sid, kind, uids, level, map }); }, 2000);
-    netSend('req', { sid, kind, uids, level, map });
+    NET.pend.again = setInterval(() => { if (!NET.pend || NET.pend.sid !== sid) return; netSend('req', { sid, kind, uids, level, map, build: CB_BUILD }); }, 2000);
+    netSend('req', { sid, kind, uids, level, map, build: CB_BUILD });
     sysChat(kind === 'duel' ? 'Setting up the duel...' : 'Gathering the party at the Wagon...');
     netCheckSpecs();
   }
@@ -51,6 +52,7 @@
       run = new Run({ members: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, bank: s.bank, stashFree: s.stashFree })), level: go.level, map: go.map || 'physical', seed: go.seed, data: DATA });
       run.online = true; run.myMi = S.mi; run.uids = go.uids.slice();
       show('map'); renderMap(true);
+      if (go.host !== SOC.me) { modal(`<h2>Your party sets out</h2><p>${esc(nameOfUid(go.host))} is leading ${go.specs.map(x => esc(x.name)).join(', ')} onto <b>${esc(run.mapName)}</b> (+${go.level}).</p><p class="muted">Click a node on the map to vote where to go. The party moves when everyone has voted (ties are a coin flip; after 45 seconds the votes in count).</p><div class="row"><button class="btn primary" id="mClose">Let's go</button></div>`); $('mClose').onclick = closeModal; }
     }
     sysChat(go.kind === 'duel' ? `Duel: ${go.specs.map(s => s.name).join(' vs ')}.` : `The party sets out: ${go.specs.map(s => s.name).join(', ')}.`);
     retrack(true);
@@ -58,13 +60,20 @@
   function netEnd() { NET.s = null; NET.pend = null; retrack(true); }
 
   // ---------- actions
+  // the host applies its own actions directly; everyone else's are sent with an id and re-sent every 2 seconds
+  // until they come back numbered from the host (lost messages happen). The host ignores repeats of the same id.
   function netAct(a) {
     const S = NET.s; if (!S) return;
-    if (netHost()) hostSeq(Object.assign({}, a, { mi: S.mi }));
-    else netSend('act', { sid: S.sid, a });
+    if (netHost()) { hostSeq(Object.assign({}, a, { mi: S.mi })); return; }
+    const aid = SOC.me.slice(0, 6) + '-' + (++NET.aidN || (NET.aidN = 1)) + '-' + Date.now().toString(36);
+    const msg = Object.assign({}, a, { aid });
+    S.outbox = S.outbox || new Map(); S.outbox.set(aid, { a: msg, tries: 0 });
+    netSend('act', { sid: S.sid, a: msg });
   }
   function hostSeq(a) {
-    const S = NET.s; const seq = S.next++;
+    const S = NET.s;
+    if (a.aid) { S.aids = S.aids || new Set(); if (S.aids.has(a.aid)) return; S.aids.add(a.aid); }
+    const seq = S.next++;
     netSend('do', { sid: S.sid, seq, a });
     S.buf.set(seq, a); netDrain();
   }
@@ -72,6 +81,7 @@
     const S = NET.s; if (!S) return;
     while (!busy && NET.s === S && S.buf.has(S.seq)) {
       const a = S.buf.get(S.seq); S.buf.delete(S.seq); S.log[S.seq] = a; S.seq++;
+      if (a.aid && S.outbox) S.outbox.delete(a.aid);
       try { netApply(a); } catch (e) { console.error('net apply', a, e); }
     }
     if (NET.s === S && !busy) autoSkip();
@@ -151,10 +161,19 @@
   function netIn(p) {
     if (!p || p.from === SOC.me) return;
     const S = NET.s;
+    if (S && p.sid === S.sid) { S.seen = S.seen || {}; S.seen[p.from] = Date.now(); }
     switch (p.type) {
+      case 'hb': {
+        // heartbeat: the host says how many actions exist; anyone behind asks for the missing ones
+        if (!S || p.sid !== S.sid || p.from !== S.host) return;
+        if (p.next > S.seq && !S.buf.has(S.seq) && Date.now() - (S.askedAt || 0) > 1500) { S.askedAt = Date.now(); netSend('need', { sid: S.sid, seq: S.seq }); }
+        return;
+      }
       case 'req': {
         if (!p.uids.includes(SOC.me)) return;
-        if (NET.s) { netSend('spec', { sid: p.sid, to: p.from, spec: { err: 'is already in a game' } }); return; }
+        if (NET.s) { if (NET.s.sid !== p.sid) netSend('spec', { sid: p.sid, to: p.from, spec: { err: 'is already in a game' } }); return; }
+        if (p.build !== CB_BUILD) { netSend('spec', { sid: p.sid, to: p.from, spec: { err: 'is on a different version of the game. Both of you reload the page (Ctrl+F5), then try again' } }); if (NET.verWarn !== p.sid) { NET.verWarn = p.sid; toast(`${nameOfUid(p.from)} tried to start ${p.kind === 'duel' ? 'a duel' : 'a run'}, but you two are on different versions of the game. Both of you reload the page (Ctrl+F5), then try again.`); } return; }
+        if (!NET.wait || NET.wait.sid !== p.sid) sysChat(`${nameOfUid(p.from)} is ${p.kind === 'duel' ? 'starting the duel' : 'setting out'}...`);
         const spec = mySpec();
         netSend('spec', { sid: p.sid, to: p.from, spec });
         // if the start doesn't arrive, ask the host for it again
@@ -249,7 +268,13 @@
     const S = NET.s; if (!S || !socOn()) return;
     const now = Date.now();
     // who is still here
-    S.uids.forEach((u, i) => { if (u === SOC.me || S.gone[i]) return; if (SOC.online.has(u)) delete S.missing[u]; else if (!S.missing[u]) S.missing[u] = now; });
+    // a player is here if presence shows them or we heard from them in the last 10 seconds
+    S.uids.forEach((u, i) => { if (u === SOC.me || S.gone[i]) return; if (SOC.online.has(u) || now - ((S.seen || {})[u] || 0) < 10000) delete S.missing[u]; else if (!S.missing[u]) S.missing[u] = now; });
+    // heartbeat every 2 seconds; guests re-send actions the host hasn't numbered yet
+    if (now - (S.hbAt || 0) >= 2000) {
+      S.hbAt = now; netSend('hb', { sid: S.sid, next: netHost() ? S.next : S.seq });
+      if (!netHost() && S.outbox) for (const [aid, o] of S.outbox) { if (++o.tries > 15) { S.outbox.delete(aid); continue; } netSend('act', { sid: S.sid, a: o.a }); }
+    }
     const hostGone = S.host !== SOC.me && S.missing[S.host] && now - S.missing[S.host] > GONE_S * 1000;
     if (hostGone) {
       const heir = S.uids.find((u, i) => !S.gone[i] && u !== S.host && (u === SOC.me || !S.missing[u]));
