@@ -1,4 +1,4 @@
-  // ---------- the Compendium (Archivist Mora; called the Codex until Oct 31, renamed so it isn't confused with codex items): every card, every enemy with its deck and loot, every gear base and what it can roll
+  // ---------- the Compendium (Archivist Casey Jones; called the Codex until Oct 31, renamed so it isn't confused with codex items): every card, every enemy with its deck and loot, every gear base and what it can roll
   const CX = { own: 'All', map: null, tab: 'cards', cls: 'All', rar: 'All', built: 'All', tier: 'All', slot: 'All', q: '' };
   const TIER_NAME = t => t === 'Elite' || t === 'Boss' ? t : 'Tier ' + t;
   function cxChips(key, vals, label) { return `<div class="cxchips" role="group" aria-label="${label}">${vals.map(v => `<button class="cxchip ${CX[key] === v ? 'on' : ''}" data-cx="${key}" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div>`; }

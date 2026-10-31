@@ -1092,19 +1092,19 @@ body.aiming { cursor: grabbing; user-select: none; }
   for (const p of PROPS) for (let y = p.y; y < p.y + p.h; y++) for (let x = p.x; x < p.x + p.w; x++) solid.add(K(x, y));
 
   const NPCS = [
-    { id: 'qm', name: 'Quartermaster Hale', x: 6, y: 8, dir: 'down', open: 'gear', btn: 'Gear & stash', pal: { skin: '#c99a76', hair: '#3b2a1e', chest: '#4a3a2a', trim: '#8a6a40', legs: '#2b231b', helm: null, cape: null, weapon: 'hammer' },
+    { id: 'qm', name: 'Quartermaster Old Arthur', x: 6, y: 8, dir: 'down', open: 'gear', btn: 'Gear & stash', pal: { skin: '#c99a76', hair: '#3b2a1e', chest: '#4a3a2a', trim: '#8a6a40', legs: '#2b231b', helm: null, cape: null, weapon: 'hammer' },
       lines: ["Drag it out of the March and I'll keep it safe. One stash, every hero.", "What you don't wear, I'll scrap for coin."] },
     { id: 'scribe', name: 'Scribe Vell', x: 19, y: 8, dir: 'down', open: 'deck', btn: 'Deck & cards', pal: { skin: '#b9a08a', hair: '#cfc6b8', chest: '#2c2f4a', trim: '#6c7ad0', legs: '#1d1f30', helm: 'hood', helmC: '#2c2f4a', cape: null, weapon: 'book' },
       lines: ['Every card has more in it. Feed me the spares and I\'ll draw it out.', 'Twenty cards at least. Never more than two Gold.'] },
     { id: 'chron', name: 'Chronicler Osk', x: 16, y: 13, dir: 'left', open: 'log', btn: 'Run history', pal: { skin: '#a87f62', hair: '#1c1612', chest: '#3a2f22', trim: '#a6978a', legs: '#2a2219', helm: null, cape: null, weapon: 'quill' },
       lines: ['I write down who comes back. And who doesn\'t.'] },
-    { id: 'wagon', name: 'Wagoneer Brann', x: 14, y: 3, dir: 'down', open: 'wagon', btn: 'Pick a road', pal: { skin: '#c08a66', hair: '#5a3a22', chest: '#4b3a26', trim: '#d6a14a', legs: '#2d2418', helm: 'cap', helmC: '#3b2f22', cape: null, weapon: 'whip' },
+    { id: 'wagon', name: 'Wagoneer Arisha', x: 14, y: 3, dir: 'down', open: 'wagon', btn: 'Pick a road', pal: { skin: '#c08a66', hair: '#5a3a22', chest: '#4b3a26', trim: '#d6a14a', legs: '#2d2418', helm: 'cap', helmC: '#3b2f22', cape: null, weapon: 'whip' },
       lines: ['Which road, and how rough?', 'Half the sack if you bail at a campfire. All of it if the boss drops.', 'Six roads now. Each one hits with its own element: farm the one before it for the right resistance.'] },
     { id: 'captain', name: 'Captain Ilsa', x: 6, y: 11, dir: 'down', open: 'heroes', btn: 'Heroes', pal: { skin: '#d2a684', hair: '#7a2d1e', chest: '#5a5f66', trim: '#c9c2b2', legs: '#30343a', helm: null, cape: '#6b1f1a', weapon: 'sword' },
       lines: ['Four of you bunk here. Pick who rides out next.'] },
     { id: 'merchant', name: 'Merchant Dace', x: 20, y: 12, dir: 'down', open: 'shop', btn: 'Browse wares', pal: { skin: '#b88a6a', hair: '#2a1d14', chest: '#5a4a1e', trim: '#e4a93a', legs: '#2a2418', helm: 'cap', helmC: '#5a2a22', cape: null, weapon: null },
       lines: ['Coin from the bank, goods to your stash. My wagons bring new stock every twelve hours.', 'I also take orders out on the March. My runners always make it home.'] },
-    { id: 'guildmaster', name: 'Guildmaster Vorn', x: 3, y: 11, dir: 'right', open: 'guild', btn: 'Guilds', pal: { skin: '#b8906e', hair: '#4a3a2a', chest: '#2f4a2a', trim: '#7fd36a', legs: '#22301f', helm: null, cape: '#2a3a22', weapon: 'staff', wpnC: '#7fd36a' },
+    { id: 'guildmaster', name: 'Guildmaster Strecks', x: 3, y: 11, dir: 'right', open: 'guild', btn: 'Guilds', pal: { skin: '#b8906e', hair: '#4a3a2a', chest: '#2f4a2a', trim: '#7fd36a', legs: '#22301f', helm: null, cape: '#2a3a22', weapon: 'staff', wpnC: '#7fd36a' },
       lines: ['A guild is a promise: we ride together, we share what we learn.', 'Found one for fifty gold, or bring me an invitation.'] },
     { id: 'jeweler', name: 'Jeweler Rook', x: 22, y: 11, dir: 'left', open: 'amulets', btn: 'Browse amulets', pal: { skin: '#c9a080', hair: '#d8d0c4', chest: '#2e3a4a', trim: '#8fc3ff', legs: '#1f2630', helm: null, cape: '#3a2a4a', weapon: null },
       lines: ['Six points of focus in every pendant. How you split them between cards and mana is up to you.', 'Big spells want mana. Cheap combos want cards. Choose your pendant accordingly.'] },
@@ -1112,9 +1112,9 @@ body.aiming { cursor: grabbing; user-select: none; }
       lines: ['Testing, testing! Every card, every codex, free. Don\'t tell the merchants.'] },
     { id: 'dummy', name: 'Training Dummy', x: 18, y: 15, dir: 'down', fixed: true, open: 'dummy', btn: 'Practice on it', pal: { skin: '#cdb47a', hair: '#d9b44a', chest: '#7a5a34', trim: '#d9b44a', legs: '#6a4c2a', helm: 'cap', helmC: '#4a3826', cape: null, weapon: null },
       lines: ['A scarecrow stuffed with straw. 99,999 HP, 60 mana, a hand of cards that do nothing. It never hits back and never blocks.', 'No Fatigue and no Pressure here: fight as long as you like.', 'Somebody pinned a note to it: "Test your combos here. Leave from the Esc menu."'] },
-    { id: 'raidwarden', name: 'Raid Warden Kael', x: 9, y: 4, dir: 'down', open: 'raid', btn: 'Raids', pal: { skin: '#a8785a', hair: '#1e1a18', chest: '#4a1f1f', trim: '#e04a3a', legs: '#241414', helm: 'cap', helmC: '#2a1616', cape: '#5a1414', weapon: 'sword' },
+    { id: 'raidwarden', name: 'Raid Warden Bagadee', x: 9, y: 4, dir: 'down', open: 'raid', btn: 'Raids', pal: { skin: '#a8785a', hair: '#1e1a18', chest: '#4a1f1f', trim: '#e04a3a', legs: '#241414', helm: 'cap', helmC: '#2a1616', cape: '#5a1414', weapon: 'sword' },
       lines: ['Beat a warlord and it comes back bigger. Bring friends: two at least, ten at most.', 'Everyone fights at once in a raid, and everything it swings hits all of you.', 'Kill one and you sit it out for a week. Lose, and you can go right back in.'] },
-    { id: 'archivist', name: 'Archivist Mora', x: 10, y: 7, dir: 'down', open: 'codex', btn: 'Open the Compendium', pal: { skin: '#cfa889', hair: '#9c9488', chest: '#3a2a3e', trim: '#b48cd8', legs: '#22182a', helm: 'hood', helmC: '#3a2a3e', cape: null, weapon: 'book' },
+    { id: 'archivist', name: 'Archivist Casey Jones', x: 10, y: 7, dir: 'down', open: 'codex', btn: 'Open the Compendium', pal: { skin: '#cfa889', hair: '#9c9488', chest: '#3a2a3e', trim: '#b48cd8', legs: '#22182a', helm: 'hood', helmC: '#3a2a3e', cape: null, weapon: 'book' },
       lines: ['Every card, every beast on every road, every scrap of iron worth wearing. It is all written here.', 'Ask before you ride. The Compendium knows what drops where.', 'Looking for a codex for your Codex slot? I keep a page on every one of them.'] },
   ];
   for (const n of NPCS) { n.home = n.dir; solid.add(K(n.x, n.y)); }
@@ -1517,8 +1517,8 @@ body.aiming { cursor: grabbing; user-select: none; }
     codex: { title: 'The Compendium: cards, bestiary, gear and codexes', show: ['hpCodex'] },
     test: { title: 'Tinker Pip: free test goods (temporary)', show: ['hpTest'] },
     amulets: { title: 'Jeweler Rook: amulets', show: ['secChar', 'hpAmu'] },
-    guild: { title: 'Guildmaster Vorn: guilds', show: ['hpGuild'] },
-    raid: { title: 'Raid Warden Kael: raids', show: ['hpRaid'] },
+    guild: { title: 'Guildmaster Strecks: guilds', show: ['hpGuild'] },
+    raid: { title: 'Raid Warden Bagadee: raids', show: ['hpRaid'] },
   };
   function talk(n) {
     P.held = []; P.path = []; P.target = null;

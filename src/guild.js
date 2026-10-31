@@ -1,4 +1,4 @@
-  // ---------- guilds (tables: guilds, guild_members, guild_invites; players.power): Guildmaster Vorn in town
+  // ---------- guilds (tables: guilds, guild_members, guild_invites; players.power): Guildmaster Strecks in town
   // One guild per player. Leaders and officers invite; the invited player accepts; the roster shows power and last time online.
   const GUILD = { me: null, roster: [], invites: [], err: null, busy: false, loadedAt: 0 };
   const GUILD_COST = 50;
@@ -122,7 +122,7 @@
   function guildPing(gid, kicked) { if (socOn()) SOC.ch.send({ type: 'broadcast', event: 'guild', payload: { kind: 'update', gid, kicked, from: SOC.me } }); }
   function guildIn(p) {
     if (!p || p.from === SOC.me) return;
-    if (p.kind === 'invite' && p.to === SOC.me) { sysChat(`${p.name || 'Someone'} invited you to the guild ${p.gname}. Visit Guildmaster Vorn in town to answer.`); guildLoad(); }
+    if (p.kind === 'invite' && p.to === SOC.me) { sysChat(`${p.name || 'Someone'} invited you to the guild ${p.gname}. Visit Guildmaster Strecks in town to answer.`); guildLoad(); }
     if (p.kind === 'update' && GUILD.me && p.gid === GUILD.me.id) { if (p.kicked === SOC.me) sysChat('You were removed from the guild.'); guildLoad(); }
   }
   $('hpGuild').addEventListener('click', (ev) => { const b = ev.target.closest('[data-g]'); if (!b || b.disabled) return; guildAct(b.dataset.g, b.dataset.id); });

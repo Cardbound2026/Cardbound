@@ -153,7 +153,7 @@
       if (!rest.trim() && key !== 'help') { sysChat(`Type a message after /${k}.`); return; }
       if (key === 'world' || key === 's' || key === 'y') m = Object.assign(me, { ch: 'world', text: rest });
       else if (key === 'p' || key === 'party') { if (!SOC.party) { sysChat('You are not in a party.'); return; } m = Object.assign(me, { ch: 'party', pid: SOC.party.id, text: rest }); }
-      else if (key === 'g' || key === 'guild') { const g = myGuild(); if (!g) { sysChat('You are not in a guild. Visit the Guild Registrar in town.'); return; } m = Object.assign(me, { ch: 'guild', gid: g.id, text: rest }); }
+      else if (key === 'g' || key === 'guild') { const g = myGuild(); if (!g) { sysChat('You are not in a guild. Visit Guildmaster Strecks in town.'); return; } m = Object.assign(me, { ch: 'guild', gid: g.id, text: rest }); }
       else if (key === 'w' || key === 'whisper' || key === 'tell' || key === 'r') {
         let to, body;
         if (key === 'r') { if (!SOC.lastWhisper) { sysChat('Nobody has whispered you yet.'); return; } to = SOC.lastWhisper; body = rest; }

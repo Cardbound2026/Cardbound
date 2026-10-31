@@ -1,4 +1,4 @@
-  // ---------- raids: Raid Warden Kael in town. One raid per map, 2 to 10 heroes, unlocked by beating that map's boss.
+  // ---------- raids: Raid Warden Bagadee in town. One raid per map, 2 to 10 heroes, unlocked by beating that map's boss.
   // You can raid at any level up to the highest level you beat the map's boss on. Killing a raid boss locks that hero
   // out of that raid for 7 days; wipes cost nothing and can be retried as often as you like.
   // In the fight everyone plays at the same time; the boss acts once every hero has ended their turn (engine: opts.raid).

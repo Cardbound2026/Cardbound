@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-10-31', items: [
+      ['Town', 'New names: Quartermaster Old Arthur, Guildmaster Strecks, Raid Warden Bagadee, Archivist Casey Jones and Wagoneer Arisha.'],
       ['Scribe', 'Click any card at the Scribe to open its Compendium page: rank slider and where it drops.'],
       ['Compendium', 'Click a codex in the Codexes tab: where it drops (boss and raid), your copies, and example rolls.'],
       ['Loot', 'Map bosses now drop the codex for your class on 50% of kills (more with Luck), down from every kill.'],
@@ -26,15 +27,15 @@
       ['Updates', 'This changelog: the "What\'s new" button in the bottom-right corner. A dot means there is something you haven\'t read.'],
       ['Updates', 'New-version warning: when a new build is out you get a banner. In town with nothing open, the game reloads itself after a short countdown (you can cancel).'],
       ['Raids', 'Raid loot is now 10 item levels above what the map\'s boss drops. Each piece rolls on its own: 10% chance to be Epic at +0, +1% per raid level (up to 30%), otherwise Blue. Plus one codex.'],
-      ['Compendium', 'The in-town "Codex" is now the Compendium (Archivist Mora), so it isn\'t mixed up with codex items. Enemies are under "Bestiary & loot".'],
+      ['Compendium', 'The in-town "Codex" is now the Compendium (Archivist Casey Jones), so it isn\'t mixed up with codex items. Enemies are under "Bestiary & loot".'],
       ['Compendium', 'New Codexes tab: every codex, its passive, which boss and raid drop it, and whether you own one.'],
       ['Social', 'Click a player in town to Message them (fills in /w Name) or Invite them to your guild. Friends list has Message and Invite to guild too.'],
       ['Social', 'Press G anywhere (town, map, mid-fight) to open the guild window.'],
       ['Social', 'Friends list and guild roster show where online players are: in town, which map/level/row, fighting, raiding, duelling or at the dummy.'],
       ['Gear', 'Physical weapons (swords, axes, daggers, maces, mauls, warhammers) add flat damage to every Attack hit: +1 for a one-hander, +2 for a two-hander at White on the first map, more with rarity and map level. Dual wielding counts both.'],
       ['Chronicler', 'Chronicler Osk can show the damage meter for each past run (runs finished from today on).'],
-      ['Raids', 'Raids! Raid Warden Kael (west of the gate). One raid boss per map for 2 to 10 heroes, unlocked by beating that map\'s boss at the same level or higher. Everyone plays at once, every boss attack hits the whole raid, only one hero a round can debuff it, 7-day lockout on kills (wipes are free), Need/Greed/Pass loot with 1-100 rolls in chat.'],
-      ['Social', 'Guilds: Guildmaster Vorn. Found one for 50 gold, invite by name or friend code, officers, message of the day, roster with power and last online.'],
+      ['Raids', 'Raids! Raid Warden Bagadee (west of the gate). One raid boss per map for 2 to 10 heroes, unlocked by beating that map\'s boss at the same level or higher. Everyone plays at once, every boss attack hits the whole raid, only one hero a round can debuff it, 7-day lockout on kills (wipes are free), Need/Greed/Pass loot with 1-100 rolls in chat.'],
+      ['Social', 'Guilds: Guildmaster Strecks. Found one for 50 gold, invite by name or friend code, officers, message of the day, roster with power and last online.'],
       ['Chat', 'Chat channels: /g guild, /p party, /w Name whisper, /r reply, /world. Chat stays up on the left during fights.'],
       ['Heroes', '20 hero slots per account, and as many of one class as you like.'],
       ['Heroes', 'New heroes pick a starting deck (4 playstyles per class) and a starting amulet (from 1 draw / 50 regen to 5 draw / 10 regen). Jeweler Rook sells the pendants. Base mana regen with no amulet: 10 to 15.'],
