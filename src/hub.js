@@ -13,12 +13,14 @@ const uid = (p) => p + Date.now().toString(36) + (uidN++).toString(36) + Math.fl
 function newChar(cls, name) {
   const deck = [];
   for (const [key, n] of CLASSES[cls].deck) for (let i = 0; i < n; i++) deck.push({ id: uid('k'), key, rank: 0 });
-  return { cls, name: name || cls, created: Date.now(), gear: STARTER_GEAR[cls].map(g => Object.assign({ id: uid('g') }, g)), deck, cards: [], runs: 0, best: 0, bossKills: 0 };
+  return { cls, name: name || cls, created: Date.now(), gear: STARTER_GEAR[cls].map(g => Object.assign({ id: uid('g') }, g)), deck, cards: [], runs: 0, best: 0, bossKills: 0, gotOffense1: true };
 }
 function newProfile() { return { v: VERSION, gold: 0, stash: [], chars: {}, last: { cls: 'Warrior', level: 0 }, history: [] }; }
 function fix(p) { // tolerate older or partial saves
   p = Object.assign(newProfile(), p || {});
   for (const c of Object.values(p.chars)) { c.cards = c.cards || []; c.deck = c.deck || []; c.gear = c.gear || []; c.name = c.name || c.cls; }
+  // Oct 30: the Paladin starter got more offense (+1 Crusader Strike, +1 Smite); existing Paladins get those two cards in their collection once
+  const pal = p.chars.Paladin; if (pal && !pal.gotOffense1) { pal.gotOffense1 = true; pal.cards.push({ id: uid('k'), key: 'crusader_strike', rank: 0 }, { id: uid('k'), key: 'smite', rank: 0 }); }
   return p;
 }
 // character creation: one hero per class for now, each with a name the player picks

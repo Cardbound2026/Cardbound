@@ -135,11 +135,26 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 /* battlefield */
 .field-panel { background: radial-gradient(120% 90% at 50% 0%, #2a2219 0%, var(--panel) 60%); border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: grid; gap: 10px; min-width: 0; }
 .order { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; }
+.order .otile { position: relative; width: 98px; padding: 4px 4px 5px; border: 1px solid var(--line); border-radius: 8px; background: linear-gradient(#1f1915, #15110e); text-align: center; transition: transform .15s, opacity .15s; }
+.order .otile.hero { border-color: color-mix(in srgb, var(--oc) 55%, var(--line)); }
+.order .otile.foe { border-color: #5a2a20; }
+.order .otile .ofig { height: 58px; display: grid; place-items: center; }
+.order .otile .ofig svg { height: 58px; width: auto; }
+.order .otile .onm { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--oc, var(--text)); }
+.order .otile .obar { height: 5px; background: #2a1a16; border-radius: 2px; margin-top: 3px; overflow: hidden; }
+.order .otile .obar i { display: block; height: 100%; background: var(--hp); }
+.order .otile .oini { position: absolute; top: 3px; right: 4px; font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.order .otile.done { opacity: .5; }
+.order .otile.dead { opacity: .3; filter: grayscale(1); }
+.order .otile.now { transform: translateY(-3px) scale(1.08); border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 18px rgba(214,161,74,.45); opacity: 1; }
+.order .otile.now::after { content: 'NOW'; position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%); background: var(--accent); color: #1a1208; font-size: 9px; font-weight: 800; letter-spacing: .1em; padding: 1px 6px; border-radius: 999px; }
+.order .osep { color: #5a4a3b; font-size: 16px; }
+.intent .itgt { font-weight: 600; font-size: 11px; margin-left: 2px; opacity: .95; }
 .order .lbl { color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-size: 11px; margin-right: 4px; }
 .order .chip.now { border-color: var(--accent); color: var(--text); background: #3a2c17; }
 .order .chip.dead { text-decoration: line-through; opacity: .5; }
 .order .round { margin-left: auto; font-family: var(--f-display); font-size: 22px; color: var(--accent); }
-.stage { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.4fr); align-items: end; gap: 12px; min-height: 240px; padding: 4px 4px; border-bottom: 1px dashed var(--line); }
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.4fr); align-items: end; gap: 12px; min-height: 200px; padding: 0 4px; border-bottom: 1px dashed var(--line); }
 .vs { font-family: var(--f-display); color: var(--line); font-size: 30px; align-self: center; }
 .foes { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
 @media (max-width: 640px) { .stage { grid-template-columns: minmax(0, 1fr); } .vs { display: none; } .foes { justify-content: flex-start; } }
@@ -148,8 +163,8 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .unit.dead { opacity: .35; filter: grayscale(1); }
 .unit.targetable { cursor: crosshair; border-color: var(--hp); background: rgba(201,71,47,.08); }
 .unit.targetable:hover { background: rgba(201,71,47,.18); }
-.figure { height: 96px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
-.figure svg { height: 96px; width: auto; max-width: 100%; display: block; }
+.figure { height: 80px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
+.figure svg { height: 80px; width: auto; max-width: 100%; display: block; }
 .uname { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
 .uname b { font-size: 16px; font-weight: 700; }
 .uname small { color: var(--muted); font-size: 12px; white-space: nowrap; }
@@ -178,7 +193,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .hud .spacer { display: none; }
 .hint { color: var(--muted); font-size: 13px; min-height: 18px; }
 .hint.alert { color: var(--warn); }
-.hand { display: flex; justify-content: center; align-items: flex-end; padding: 46px 8px 8px; min-height: 300px; overflow: visible; }
+.hand { display: flex; justify-content: center; align-items: flex-end; padding: 18px 8px 4px; min-height: 0; overflow: visible; }
 .card { flex: 0 0 136px; height: 186px; display: grid; grid-template-rows: auto auto 1fr auto; gap: 4px; text-align: left; padding: 8px 9px; border-radius: 8px; background: linear-gradient(180deg, #2f271f, #211b15); border: 1px solid var(--line); border-top: 4px solid var(--rc); position: relative; transition: transform .12s, border-color .12s; }
 .card:hover:not(:disabled) { transform: translateY(-6px); border-color: var(--rc); }
 .card.selected { transform: translateY(-10px); border-color: var(--accent); box-shadow: 0 6px 18px rgba(214,161,74,.25); }
@@ -223,19 +238,19 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .cf .frank { position: absolute; right: 13cqw; top: 10cqw; padding: .6cqw 3cqw; border-radius: 3cqw; background: rgba(10,8,6,.82); border: .6cqw solid var(--rg); color: #ffe7a8; font-weight: 700; font-size: 6.5cqw; }
 .cf .fpanel { position: absolute; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 1.4cqw; padding: 4cqw 5cqw 3cqw; box-sizing: border-box; color: #2a1d12; }
 .cf.dark .fpanel { color: #efe4cf; }
-.cf .fname { font-family: var(--cf-name, var(--f-display)); font-weight: var(--cf-name-w, 400); font-size: calc(10.5cqw * var(--cf-name-s, 1)); line-height: 1; color: #1d130b; }
+.cf .fname { font-family: var(--cf-name, var(--f-display)); font-weight: var(--cf-name-w, 400); font-size: calc(9.2cqw * var(--cf-name-s, 1)); line-height: 1; color: #1d130b; }
 .cf.dark .fname { color: #f6e9cf; text-shadow: 0 .5cqw 1cqw #000; }
-.cf .ftype { font-family: var(--cf-text, var(--f-ui)); white-space: nowrap; font-size: 5.4cqw; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--rt-light); }
+.cf .ftype { font-family: var(--cf-text, var(--f-ui)); white-space: nowrap; font-size: 4.6cqw; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--rt-light); }
 .cf.dark .ftype { color: var(--rt-dark); text-shadow: 0 .4cqw .8cqw #000; }
-.cf .ftext { font-family: var(--cf-text, var(--f-ui)); font-size: calc(7.2cqw * var(--cf-text-s, 1)); line-height: 1.18; font-weight: var(--cf-text-w, 600); text-wrap: balance; }
-.cf .ftext.long { font-size: calc(6.2cqw * var(--cf-text-s, 1)); }
-.cf .ftext.vlong { font-size: calc(5.4cqw * var(--cf-text-s, 1)); }
+.cf .ftext { font-family: var(--cf-text, var(--f-ui)); font-size: calc(8.2cqw * var(--cf-text-s, 1)); line-height: 1.18; font-weight: var(--cf-text-w, 600); text-wrap: balance; }
+.cf .ftext.long { font-size: calc(7.2cqw * var(--cf-text-s, 1)); }
+.cf .ftext.vlong { font-size: calc(6.3cqw * var(--cf-text-s, 1)); }
 .cf .ftext b { color: #8a1f12; } .cf.dark .ftext b { color: #ffcf7a; }
-.hand .cf { --cw: 168px; margin-left: calc(var(--cw) * -0.38); transform-origin: 50% 120%; transform: translateY(calc(var(--off, 0) * 1px)) rotate(calc(var(--rot, 0) * 1deg)); transition: transform .14s ease-out, filter .14s, margin .14s; position: relative; z-index: var(--z, 1); }
+.hand .cf { --cw: min(218px, max(150px, calc((100vh - 610px) / 1.5))); margin-left: calc(var(--cw) * -0.3); transform-origin: 50% 120%; transform: translateY(calc(var(--off, 0) * 1px)) rotate(calc(var(--rot, 0) * 1deg)); transition: transform .14s ease-out, filter .14s, margin .14s; position: relative; z-index: var(--z, 1); }
 .hand .cf:first-child { margin-left: 0; }
-.hand .cf:hover:not(:disabled), .hand .cf:focus-visible { transform: translateY(-58px) rotate(0deg) scale(1.28); z-index: 50; filter: drop-shadow(0 16px 24px rgba(0,0,0,.7)); }
+.hand .cf:hover:not(:disabled), .hand .cf:focus-visible { transform: translateY(-64px) rotate(0deg) scale(1.2); z-index: 50; filter: drop-shadow(0 16px 24px rgba(0,0,0,.7)); }
 .hand .cf.selected { transform: translateY(-48px) rotate(0deg) scale(1.18); z-index: 49; filter: drop-shadow(0 0 12px rgba(214,161,74,.85)); }
-@media (max-width: 700px) { .hand .cf { --cw: 120px; margin-left: calc(var(--cw) * -0.45); } .hand .cf:hover:not(:disabled) { transform: translateY(-36px) scale(1.15); } }
+@media (max-width: 700px) { .hand .cf { --cw: 156px; margin-left: calc(var(--cw) * -0.45); } .hand .cf:hover:not(:disabled) { transform: translateY(-36px) scale(1.15); } }
 @media (prefers-reduced-motion: reduce) { .hand .cf { transition: none; } }
 .partypick { border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px 8px; margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; }
 .partypick legend { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 0 4px; }
@@ -270,6 +285,14 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .egrid { grid-template-columns: repeat(auto-fill, minmax(var(--egw), 1fr)); }
 .pilecard.dim .cf { filter: grayscale(.7) brightness(.6); }
 .pilecount.etag { top: auto; bottom: 6px; background: #3a1c16; color: #f0c0a8; }
+.meter { font-size: 13px; }
+.mrow { position: relative; display: flex; justify-content: space-between; gap: 8px; padding: 5px 8px; margin: 3px 0; background: #1b1512; border-radius: 4px; overflow: hidden; cursor: pointer; }
+.mrow i { position: absolute; inset: 0 auto 0 0; opacity: .38; }
+.mrow b, .mrow span { position: relative; } .mrow small { color: var(--muted); }
+.mrow.open { outline: 1px solid var(--line); }
+.mparts { margin: 0 0 6px 10px; border-left: 2px solid var(--line); padding-left: 8px; display: grid; gap: 2px; font-size: 12px; }
+.mparts div { display: flex; justify-content: space-between; gap: 8px; } .mparts small { color: var(--muted); }
+.mparts .mabs { color: #a9cdec; }
 .pilegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; padding: 6px 4px 30px; }
 .pilecard { position: relative; display: grid; justify-items: center; }
 .pilecard .cf { transition: transform .14s; transform-origin: 50% 60%; }
@@ -385,10 +408,11 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     <aside class="side">
       <div class="panel" id="charPanel"></div>
       <div class="panel">
-        <div class="tabs" role="tablist"><button role="tab" id="tSack" aria-selected="true">Loot sack</button><button role="tab" id="tGear" aria-selected="false">Gear</button><button role="tab" id="tLog" aria-selected="false">Journal</button></div>
+        <div class="tabs" role="tablist"><button role="tab" id="tSack" aria-selected="true">Loot sack</button><button role="tab" id="tGear" aria-selected="false">Gear</button><button role="tab" id="tLog" aria-selected="false">Journal</button><button role="tab" id="tMeter" aria-selected="false">Meter</button></div>
         <div id="pSack" class="list"></div>
         <div id="pGear" class="list" hidden></div>
         <div id="pLog" class="runlog" hidden></div>
+        <div id="pMeter" class="meter" hidden></div>
       </div>
     </aside>
   </section>
@@ -407,7 +431,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       <div class="hint" id="hint"></div>
       <div class="hand" id="hand" aria-label="Your hand"></div>
     </div>
-    <aside class="panel ledger"><div class="tabs"><button aria-selected="true">Combat log</button></div><div class="pane"><div class="log" id="log"></div></div></aside>
+    <aside class="panel ledger"><div class="tabs" role="tablist"><button role="tab" id="tCLog" aria-selected="true">Combat log</button><button role="tab" id="tCMeter" aria-selected="false">Meter</button></div><div class="pane" id="pCLog"><div class="log" id="log"></div></div><div class="pane" id="pCMeter" hidden><div id="meterC" class="meter"></div></div></aside>
   </section>
 </div>
 
@@ -1452,6 +1476,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   }
   $('charPanel').addEventListener('click', (ev) => { if (ev.target.id === 'btnCamp') toTown(); });
   function renderSide() {
+    if (!$('pMeter').hidden) renderMeter($('pMeter'), 'run');
     if (!run.solo) return renderSideParty();
     const s = run.stats, b = run.activeBuffs();
     const pctHp = 100 * run.hp / run.maxHp;
@@ -1468,7 +1493,38 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     $('pGear').innerHTML = SLOTS.map(sl => { const it = run.gear.find(g => g.slot === sl); return it ? itemHtml(it, `<div class="il">${sl}</div>`) : `<div class="item" style="--rc:var(--line)"><span class="muted">${sl}: empty</span></div>`; }).join('');
     $('pLog').innerHTML = run.log.slice().reverse().map(t => `<div>${esc(t)}</div>`).join('');
   }
-  for (const [t, p] of [['tSack', 'pSack'], ['tGear', 'pGear'], ['tLog', 'pLog']]) $(t).addEventListener('click', () => { for (const [t2, p2] of [['tSack', 'pSack'], ['tGear', 'pGear'], ['tLog', 'pLog']]) { $(t2).setAttribute('aria-selected', t2 === t); $(p2).hidden = t2 !== t; } });
+  const SIDE_TABS = [['tSack', 'pSack'], ['tGear', 'pGear'], ['tLog', 'pLog'], ['tMeter', 'pMeter']];
+  for (const [t, p] of SIDE_TABS) $(t).addEventListener('click', () => { for (const [t2, p2] of SIDE_TABS) { $(t2).setAttribute('aria-selected', t2 === t); $(p2).hidden = t2 !== t; } if (t === 'tMeter') renderMeter($('pMeter'), 'run'); });
+  for (const [t, p] of [['tCLog', 'pCLog'], ['tCMeter', 'pCMeter']]) $(t).addEventListener('click', () => { for (const [t2, p2] of [['tCLog', 'pCLog'], ['tCMeter', 'pCMeter']]) { $(t2).setAttribute('aria-selected', t2 === t); $(p2).hidden = t2 !== t; } if (t === 'tCMeter') renderMeter($('meterC')); });
+
+  // ---------- damage meter (Details-style): who dealt damage, who healed, who took damage, each broken down by ability or source
+  const MT = { mode: 'dealt', scope: 'fight', open: {} };
+  const MODES = [['dealt', 'Damage done'], ['healed', 'Healing'], ['taken', 'Damage taken']];
+  function meterData(scope) {
+    const out = {};
+    const add = (m, key) => { const R = out[key] || (out[key] = { key, name: m.name, isPlayer: m.isPlayer, cls: m.cls, dealt: {}, healed: {}, taken: {}, absorbed: 0 }); for (const f of ['dealt', 'healed', 'taken']) for (const [a, v] of Object.entries(m[f])) R[f][a] = (R[f][a] || 0) + v; R.absorbed += m.absorbed; };
+    if (scope === 'run' && run) { for (const m of Object.values(run.meter || {})) add(m, m.id); if (run.combat && run.combat.meter) for (const m of Object.values(run.combat.meter)) add(m, m.isPlayer ? m.id : 'm:' + m.name); }
+    else if (cb) for (const m of Object.values(cb.meter || {})) add(m, m.id);
+    return Object.values(out);
+  }
+  function renderMeter(el, forceScope) {
+    if (!el) return;
+    const scope = forceScope || (run ? MT.scope : 'fight'), rows = meterData(scope);
+    const list = rows.map(r => { const parts = Object.entries(r[MT.mode]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]); return { r, parts, total: parts.reduce((s, x) => s + x[1], 0) }; }).filter(x => x.total > 0 || (MT.mode === 'taken' && x.r.absorbed > 0)).sort((a, b) => b.total - a.total);
+    const max = Math.max(1, ...list.map(x => x.total)), sum = Math.max(1, list.reduce((s, x) => s + x.total, 0));
+    const rounds = scope === 'fight' && cb ? Math.max(1, cb.round) : 0;
+    el.innerHTML = `<div class="cxchips">${MODES.map(([k, l]) => `<button class="cxchip ${MT.mode === k ? 'on' : ''}" data-mmode="${k}">${l}</button>`).join('')}</div>
+      ${run && !forceScope ? `<div class="cxchips">${[['fight', 'This fight'], ['run', 'Whole run']].map(([k, l]) => `<button class="cxchip ${MT.scope === k ? 'on' : ''}" data-mscope="${k}">${l}</button>`).join('')}</div>` : forceScope ? '<p class="muted" style="margin:2px 0 6px;font-size:12px">Totals for the whole run so far.</p>' : ''}
+      ${list.map(({ r, parts, total }) => { const op = MT.open[r.key]; const col = r.isPlayer ? CC[r.cls] : '#8a3b2c';
+        return `<div class="mrow ${op ? 'open' : ''}" data-mk="${esc(r.key)}" role="button" tabindex="0" aria-expanded="${!!op}"><i style="width:${100 * total / max}%;background:${col}"></i><b>${esc(r.name)}</b><span>${total.toLocaleString()}${rounds ? ` <small>(${(total / rounds).toFixed(1)}/rd)</small>` : ''} <small>${Math.round(100 * total / sum)}%</small></span></div>
+        ${op ? `<div class="mparts">${parts.map(([a, v]) => `<div><span>${esc(a)}</span><span>${v.toLocaleString()} <small>${Math.round(100 * v / total)}%</small></span></div>`).join('')}${MT.mode === 'taken' && r.absorbed ? `<div class="mabs"><span>Absorbed by Block/Barrier</span><span>${r.absorbed.toLocaleString()}</span></div>` : ''}</div>` : ''}`; }).join('') || `<p class="muted">Nothing yet.</p>`}
+      <p class="muted" style="font-size:11px;margin-top:8px">Click a bar for the breakdown. Damage counts HP actually lost (blocked damage is listed under Damage taken).</p>`;
+  }
+  document.addEventListener('click', (ev) => {
+    const m = ev.target.closest('.meter [data-mmode], .meter [data-mscope], .meter [data-mk]'); if (!m) return;
+    if (m.dataset.mmode) MT.mode = m.dataset.mmode; else if (m.dataset.mscope) MT.scope = m.dataset.mscope; else MT.open[m.dataset.mk] = !MT.open[m.dataset.mk];
+    const el = m.closest('.meter'); renderMeter(el, el.id === 'pMeter' ? 'run' : undefined);
+  });
 
   // ---------- modals
   function modal(html) { $('modalBox').classList.remove('wide'); $('modalBox').innerHTML = html; $('modal').hidden = false; fitCards($('modalBox')); const f = $('modalBox').querySelector('button'); if (f) f.focus(); }
@@ -1587,9 +1643,11 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       const planned = e.plan.includes(c.uid), kind = CB.intentKind(c.ops);
       let num = '';
       const dmg = c.ops.find(o => o.op === 'damage' || o.op === 'execute'), blk = c.ops.find(o => o.op === 'block' || o.op === 'parry');
-      if (dmg) { const hv = hero(); const res = Math.min(75, hv.resist[c.dtype] || 0) / 100; num = Math.round((dmg.n || dmg.low) * cb.dmgMult * e.dmgTune * (1 + (e.strength + e.strTurn) / 100) * (1 - e.weak / 100) * (1 + cb.pressure()) * (1 - res) * (1 + hv.vulnerable / 100)) + (dmg.times ? 'x' + dmg.times : ''); }
+      if (dmg) { const hv = (c.mark && cb.actorById(c.mark)) || hero(); const res = Math.min(75, hv.resist[c.dtype] || 0) / 100; num = Math.round((dmg.n || dmg.low) * cb.dmgMult * e.dmgTune * (1 + (e.strength + e.strTurn) / 100) * (1 - e.weak / 100) * (1 + cb.pressure()) * (1 - res) * (1 + hv.vulnerable / 100)) + (dmg.times ? 'x' + dmg.times : ''); }
       else if (blk) num = blk.n;
-      return `<span class="intent ${kind}${planned ? '' : ' skip'}" data-e="${e.id}" data-cu="${c.uid}" title="${esc(c.name)} (${c.cost} mana): ${esc(c.text)}${c.dtype !== 'Physical' && dmg ? ' [' + c.dtype + ']' : ''}${planned ? '' : ' (not enough mana: discarded)'}">${ICON[kind]}${num !== '' ? num : esc(c.name)}</span>`;
+      const mk = planned && c.mark && cb.partySize > 1 ? cb.actorById(c.mark) : null;
+      const tg = mk ? `<span class="itgt" style="color:${CC[mk.cls]}">&rarr; ${mk === hero() && cb.myMi != null ? 'You' : esc(mk.name.split(' ')[0])}</span>` : '';
+      return `<span class="intent ${kind}${planned ? '' : ' skip'}" data-e="${e.id}" data-cu="${c.uid}" title="${esc(c.name)} (${c.cost} mana): ${esc(c.text)}${c.dtype !== 'Physical' && dmg ? ' [' + c.dtype + ']' : ''}${mk ? ' Aimed at ' + esc(mk.name) + '.' : ''}${planned ? '' : ' (not enough mana: discarded)'}">${ICON[kind]}${num !== '' ? num : esc(c.name)}${tg}</span>`;
     }).join('') || '<span class="tag">no cards</span>';
   }
   function unitHtml(a) {
@@ -1617,7 +1675,8 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   function render(withPops) {
     if (!cb) return;
     const p = hero(), party = cb.partySize > 1;
-    $('order').innerHTML = `<span class="lbl">Turn order</span>` + cb.order.map((id, i) => { const a = cb.actorById(id); return `<span class="chip ${i === cb.turnIndex && !cb.over ? 'now' : ''} ${a.hp <= 0 ? 'dead' : ''}">${a.isPlayer ? (party ? esc(a.name) : 'You') : esc(a.name)} ${cb.initiative(a)}</span>`; }).join('') + `<span class="round">Round ${cb.round}</span>`;
+    $('order').innerHTML = `<span class="lbl">Turn<br>order</span>` + cb.order.map((id, i) => { const a = cb.actorById(id); const st = a.hp <= 0 ? 'dead' : i === cb.turnIndex && !cb.over ? 'now' : i < cb.turnIndex ? 'done' : '';
+      return `${i ? '<span class="osep" aria-hidden="true">&rsaquo;</span>' : ''}<div class="otile ${a.isPlayer ? 'hero' : 'foe'} ${st}" style="--oc:${a.isPlayer ? CC[a.cls] : '#e0b8a8'}" title="${esc(a.name)}: Initiative ${cb.initiative(a)}, HP ${a.hp}/${a.maxHp}"><span class="oini">${cb.initiative(a)}</span><div class="ofig">${figure(a)}</div><div class="onm">${a.isPlayer && !party ? 'You' : a === p && cb.myMi != null ? 'You' : esc(a.name)}</div><div class="obar"><i style="width:${Math.max(0, 100 * a.hp / a.maxHp)}%"></i></div></div>`; }).join('') + `<span class="round">Round ${cb.round}</span>`;
     const mine = cb.duel ? [p] : cb.players, foes = cb.duel ? cb.players.filter(x => x !== p) : cb.enemies;
     $('playerSlot').className = party && !cb.duel ? 'party' : ''; $('playerSlot').innerHTML = mine.map(unitHtml).join('');
     $('foes').innerHTML = foes.map(unitHtml).join('');
@@ -1643,6 +1702,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
         <span class="ctext">${esc(d.text)}</span><span class="cfoot">${chk.ok ? (d.target === 'enemy' ? 'Single enemy' : d.target === 'all' ? 'All enemies' : 'Self') : esc(chk.why)}</span></button>`;
     }).join('') || `<span class="hint">${myTurn ? 'No cards in hand.' : ''}</span>`;
     fitCards($('hand'));
+    if (!$('pCMeter').hidden) renderMeter($('meterC'));
     const logEl = $('log');
     logEl.innerHTML = cb.log.slice(-250).map(l => `<div class="k-${l.kind}">${esc(l.text)}</div>`).join('');
     logEl.parentElement.scrollTop = logEl.parentElement.scrollHeight;

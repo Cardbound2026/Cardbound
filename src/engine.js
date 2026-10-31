@@ -84,7 +84,7 @@ const CLASSES = {
   Warrior: { defense: 'Block', blurb: 'Sword and shield. Hits, blocks, and gets stronger after taking a hit (Battle Fever).', deck: [['battle_fever', 1], ['execute', 1], ['shield_wall', 1], ['bloodthirst', 1], ['shield_up', 1], ['whirlwind', 1], ['battle_shout', 1], ['defend', 3], ['pommel_strike', 1], ['shield_bash', 2], ['strike', 7]] },
   Rogue: { defense: 'Dodge', blurb: 'Quick hits, Dodge, Bleed and Poison. Hide skips an enemy\'s single-target attacks.', deck: [['assassinate', 1], ['coup_de_grace', 1], ['evasion', 1], ['blur', 1], ['garrote', 1], ['hide', 1], ['envenom', 1], ['evade', 5], ['slip_away', 1], ['stab', 5], ['throwing_stars', 1], ['twin_daggers', 1]] },
   Mage: { defense: 'Barrier', blurb: 'Fire, Frost and Arcane spells with Barrier. Exploits enemy weaknesses (Arcane vs humans, Fire vs beasts).', deck: [['amplify', 1], ['prismatic_barrier', 1], ['pyroblast', 1], ['arcane_barrage', 1], ['blizzard', 1], ['ice_barrier', 1], ['arcane_missiles', 2], ['fireball', 3], ['frostbolt', 2], ['ice_bolt', 1], ['mana_spring', 1], ['ward', 5]] },
-  Paladin: { defense: 'Block', blurb: 'Holy warrior: Block, Holy damage that ignores resistance, and heals.', deck: [['lay_on_hands', 1], ['ardent_defense', 1], ['holy_nova', 1], ['divine_shield', 1], ['divine_storm', 1], ['healing_light', 1], ['crusader_strike', 5], ['mend_wounds', 1], ['raise_shield', 3], ['righteous_blow', 2], ['sacred_ward', 1], ['smite', 2]] },
+  Paladin: { defense: 'Block', blurb: 'Holy warrior: Block, Holy damage that ignores resistance, and heals.', deck: [['lay_on_hands', 1], ['ardent_defense', 1], ['holy_nova', 1], ['divine_shield', 1], ['divine_storm', 1], ['healing_light', 1], ['crusader_strike', 6], ['raise_shield', 2], ['righteous_blow', 2], ['sacred_ward', 1], ['smite', 3]] },
 };
 const it = (slot, base, stats, imp2) => ({ slot, name: base, rarity: 'White', ilvl: 1, stats: Object.assign({ 'Resistance:Fire': 3 }, stats), imp2: imp2 || {} });
 const STARTER_GEAR = {
@@ -199,14 +199,15 @@ class Combat {
     this.log = []; this.round = 0; this.over = null;
     this.stats = { dealt: 0, taken: 0, blocked: 0, cardsPlayed: 0, healed: 0 };
     this._uid = 0;
+    this.meter = {}; // damage meter: per actor id, damage dealt / healing done / damage taken, each broken down by ability or source
     // party: 1 to 4 heroes. opts.party = [{cls, gear, deck, hp, mana, buffs, name}]; without it, one hero from opts.cls/gear/deck/hp/mana/buffs
     const party = this.opts.party || [{ cls: this.opts.cls, gear: this.opts.gear, deck: this.opts.deck, hp: this.opts.hp, mana: this.opts.mana, buffs: this.opts.buffs }];
     this.players = party.map((spec, i) => this.makePlayer(spec, i, party.length));
     this.player = this.players[0];       // the hero currently acting, or the one an enemy card is aimed at
     this.gear = sumGear(party[0].gear || STARTER_GEAR[party[0].cls]);
     this.partySize = this.players.length;
-    this.partyScale = 1 + (this.opts.partyStep != null ? this.opts.partyStep : 0.85) * (this.partySize - 1); // each extra hero: enemies get +85% HP, mana and regen, and +1 draw
-    this.hpMult = Math.pow(1.5, this.level) * this.partyScale; this.dmgMult = Math.pow(1.3, this.level); // each extra hero: +70% enemy HP
+    this.partyScale = 1 + (this.opts.partyStep != null ? this.opts.partyStep : 0.85) * (this.partySize - 1); // 1 when a party fight brings one monster per hero instead // each extra hero: enemies get +85% HP, mana and regen, and +1 draw
+    this.hpMult = Math.pow(1.5, this.level) * this.partyScale * (this.opts.mobHp || 1); this.dmgMult = Math.pow(1.3, this.level); // mobHp: extra HP when a party meets one monster per hero
     this.levelHpMult = Math.pow(1.5, this.level);
     this.typeResist = Math.min(1, 0.05 + 0.05 * this.level);
     this.duel = !!this.opts.duel; // duel: two heroes, no monsters; each hero's "enemies" are the other hero
@@ -252,12 +253,13 @@ class Combat {
     }
     return {
       id: 'e' + i, key, name: d.name, tier: d.tier, creature: d.creature, type: d.type, weakTo: d.weak, maxHp: hp, hp, block: 0, parryBack: 0, thorns: 0, thornsTurns: 0,
-      mana: 0, maxMana: Math.round(d.maxMana * this.partyScale), regen: Math.round(d.regen * this.partyScale), draw: d.draw + (this.partySize - 1), baseInit: d.tier === 'Boss' ? 12 : d.tier === 'Elite' ? 11 : 8 + ri(this.rng, 0, 7),
+      mana: 0, maxMana: Math.round(d.maxMana * this.partyScale), regen: Math.round(d.regen * this.partyScale), draw: d.draw + (this.partyScale > 1 ? this.partySize - 1 : 0), baseInit: d.tier === 'Boss' ? 12 : d.tier === 'Elite' ? 11 : 8 + ri(this.rng, 0, 7),
       strength: 0, strTurn: 0, weak: 0, vulnerable: 0, bleed: 0, poison: 0, burn: 0, chill: 0, frozen: false, slow: 0, initNext: 0, regenDown: [], nextBonus: 0,
       drawPile: shuffle(deck, this.rng), phase2Cards: phase2, phase: 1, d, hand: [], discard: [], plan: [], firstTurn: true, dmgTune: tune.dmg || 1,
     };
   }
 
+  mtr(a) { return this.meter[a.id] || (this.meter[a.id] = { id: a.id, name: a.name, isPlayer: !!a.isPlayer, cls: a.cls || null, dealt: {}, healed: {}, taken: {}, absorbed: 0 }); }
   say(kind, text) { this.log.push({ round: this.round, kind, text }); }
   foes() { return this.enemies.filter(e => e.hp > 0); } // monsters only
   // what the acting hero can hit: monsters, or in a duel the other hero (unless they are in Stealth and the card is single-target)
@@ -302,12 +304,20 @@ class Combat {
   }
 
   effRegen(e) { const down = e.regenDown.reduce((s, x) => s + x.n, 0); return Math.max(Math.min(10, e.regen), e.regen - down); }
+  // single-target enemy cards pick a hero when planned, so players can see who is about to be hit
+  isTargeted(c) { const PO = ['damage', 'execute', 'damageBlock', 'debuff', 'stealMana', 'burnMana', 'drawLess', 'disarm', 'purge', 'shred', 'shredAll', 'tickBleed', 'status']; return !(c.ops.some(o => o.all || o.op === 'shredAll') || /every player|each of their/.test(c.text)) && c.ops.some(o => PO.includes(o.op)); }
+  pickMark(e, avoid) {
+    const seen = this.alivePlayers().filter(q => !q.stealth); if (!seen.length) return null; if (seen.length === 1) return seen[0];
+    const w = seen.map(q => q.id === (avoid || e.lastMark) ? 1 : 2), tot = w.reduce((a, b) => a + b, 0);
+    let r = this.rng() * tot; for (let i = 0; i < seen.length; i++) { if (r < w[i]) return seen[i]; r -= w[i]; } return seen[seen.length - 1];
+  }
   planEnemy(e) {
     let mana = Math.min(e.maxMana, e.mana + this.effRegen(e) * (e.firstTurn ? 2 : 1));
     e.plan = [];
     const gm = c => c.ops.some(o => o.op === 'gainMana') ? 1 : 0;
     const order = [...e.hand].sort((a, b) => gm(b) - gm(a));
     for (const c of order) if (c.cost <= mana) { mana -= c.cost; e.plan.push(c.uid); const g = c.ops.find(o => o.op === 'gainMana'); if (g) mana += g.n; }
+    if (this.partySize > 1) { let last = e.lastMark; for (const uid of e.plan) { const c = e.hand.find(x => x.uid === uid); if (c && this.isTargeted(c)) { const m = this.pickMark(e, last); c.mark = m ? m.id : null; last = c.mark; } } }
   }
 
   actorById(id) { return this.players.find(p => p.id === id) || this.enemies.find(e => e.id === id); }
@@ -352,7 +362,7 @@ class Combat {
       if (a.thornsTurns > 0 && --a.thornsTurns === 0) a.thorns = 0;
     }
     for (const [key, label, ignoresBlock] of [['bleed', 'Bleed', false], ['poison', 'Poison', true], ['burn', 'Burn', false]]) {
-      if (a[key] > 0 && a.hp > 0 && !this.over) { this.applyHit(a.isPlayer ? null : this.player, a, a[key], { isDot: true, label, ignoreBlock: ignoresBlock }); a[key] = Math.max(0, a[key] - 1); }
+      if (a[key] > 0 && a.hp > 0 && !this.over) { this.applyHit(this.actorById(a[key + 'By']) || (a.isPlayer ? null : this.player), a, a[key], { isDot: true, label, ignoreBlock: ignoresBlock }); a[key] = Math.max(0, a[key] - 1); }
     }
     if (a.initNext) a.initNext = 0;
   }
@@ -370,13 +380,14 @@ class Combat {
     const mult = a.isPlayer && !['Bloodthirst', 'Lifesteal'].includes(label) ? 1 + a.spirit / 100 : 1;
     const h = Math.min(a.maxHp - a.hp, Math.round(n * mult));
     a.hp += h; if (a.isPlayer) this.stats.healed += h;
+    if (h > 0) { const m = this.mtr(a).healed, k = label || 'Heal'; m[k] = (m[k] || 0) + h; }
     if (h > 0 || !quiet) this.say('heal', `${a.isPlayer ? (this.partySize > 1 ? a.name + ' heals' : 'You heal') : a.name + ' heals'} ${h}${label ? ' (' + label + ')' : ''}. HP ${a.hp}/${a.maxHp}.`);
     return h;
   }
   applyDot(e, key, n) {
     if (!e || e.hp <= 0) return;
     const v = Math.round(n * (1 + this.player.spirit / 100));
-    e[key] += v;
+    e[key] += v; e[key + 'By'] = this.player.id;
     this.say('player', `${e.name} gains ${v} ${key[0].toUpperCase() + key.slice(1)} (now ${e[key]}).`);
   }
   applyChill(e, n) {
@@ -390,7 +401,11 @@ class Combat {
     o = o || {};
     let dmg = amount, absorbed = 0;
     if (tgt.block > 0 && !o.ignoreBlock) { absorbed = Math.min(tgt.block, dmg); tgt.block -= absorbed; dmg -= absorbed; }
+    const before = tgt.hp;
     tgt.hp = Math.max(0, tgt.hp - dmg);
+    const real = before - tgt.hp, label = o.label || 'Attack';
+    if (src) { const m = this.mtr(src).dealt; m[label] = (m[label] || 0) + real; }
+    { const t = this.mtr(tgt); const k = src ? src.name : label; t.taken[k] = (t.taken[k] || 0) + real; t.absorbed += absorbed; }
     if (tgt.isPlayer) { this.stats.taken += dmg; this.stats.blocked += absorbed; } else this.stats.dealt += dmg;
     if (o.isDot) this.say('dot', `${tgt.isPlayer ? 'You take' : tgt.name + ' takes'} ${amount} ${o.label}` + (absorbed ? ` (${absorbed} absorbed)` : '') + `. HP ${tgt.hp}/${tgt.maxHp}.`);
     if (tgt.hp <= 0 && !o.defer) this.onDeath(tgt);
@@ -443,11 +458,11 @@ class Combat {
     if (tm !== 1) parts.push(`x ${tm.toFixed(2)} ${tm > 1 ? dtype + ' weakness' : dtype + ' resist'}`);
     if (e.vulnerable) parts.push(`x ${vulnMod.toFixed(2)} Vulnerable`);
     if (pvp !== 1) parts.push(`x ${pvp.toFixed(2)} resist/Pressure`);
-    const r = this.applyHit(p, e, dmg, { defer: true });
+    const r = this.applyHit(p, e, dmg, { defer: true, label });
     this.say(crit ? 'crit' : 'player', `${label} hits ${e.name}: ${parts.join(' ')} = ${dmg}` + (r.absorbed ? `, ${r.absorbed} blocked` : '') + `. HP ${e.hp}/${e.maxHp}.`);
-    if (kind === 'Attack' && e.parryBack && r.absorbed && e.hp > 0) { const back = this.applyHit(e, p, Math.round(e.parryBack * this.dmgMult), { defer: true }); this.say('enemy', `${e.name} parries and strikes back: ${back.lost} HP lost.`); e.parryBack = 0; }
-    if (kind === 'Attack' && e.thorns && e.hp > 0) { const t = this.applyHit(e, p, e.thorns, { defer: true }); this.say('enemy', `${e.name}'s ${e.isPlayer ? 'Thorns' : 'spikes'}: ${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${t.lost} HP.`); }
-    if (kind === 'Attack' && p.bleedChance && e.hp > 0 && this.rng() * 100 < p.bleedChance) { e.bleed += 3; this.say('crit', `Bleed Chance: ${e.name} gains 3 Bleed.`); }
+    if (kind === 'Attack' && e.parryBack && r.absorbed && e.hp > 0) { const back = this.applyHit(e, p, Math.round(e.parryBack * this.dmgMult), { defer: true, label: 'Riposte' }); this.say('enemy', `${e.name} parries and strikes back: ${back.lost} HP lost.`); e.parryBack = 0; }
+    if (kind === 'Attack' && e.thorns && e.hp > 0) { const t = this.applyHit(e, p, e.thorns, { defer: true, label: e.isPlayer ? 'Thorns' : 'Spikes' }); this.say('enemy', `${e.name}'s ${e.isPlayer ? 'Thorns' : 'spikes'}: ${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${t.lost} HP.`); }
+    if (kind === 'Attack' && p.bleedChance && e.hp > 0 && this.rng() * 100 < p.bleedChance) { e.bleed += 3; e.bleedBy = p.id; this.say('crit', `Bleed Chance: ${e.name} gains 3 Bleed.`); }
     if (p.lifesteal && r.lost) this.heal(p, Math.round(r.lost * p.lifesteal / 100), 'Lifesteal', true);
     if (p.hp <= 0) { this.onDeath(p); return r.lost; }
     if (e.hp <= 0) this.onDeath(e);
@@ -468,17 +483,17 @@ class Combat {
     if (res) parts.push(`x ${(1 - res).toFixed(2)} ${dtype} resist`);
     if (p.vulnerable) parts.push(`x ${(1 + p.vulnerable / 100).toFixed(2)} Vulnerable`);
     p.attackedThisRound = true;
-    const r = this.applyHit(e, p, dmg, { defer: true });
+    const r = this.applyHit(e, p, dmg, { defer: true, label });
     this.say('enemy', `${e.name}'s ${label} hits ${this.partySize > 1 ? p.name : 'you'}${dtype !== 'Physical' ? ' (' + dtype + ')' : ''}: ${parts.join(' ')} = ${dmg}` + (r.absorbed ? `, ${r.absorbed} absorbed` : '') + `. HP ${p.hp}/${p.maxHp}.`);
     if (p.hp <= 0) { this.onDeath(p); return r.lost; }
-    if (p.thorns && e.hp > 0) { const t = this.applyHit(p, e, p.thorns, { defer: true }); this.say('player', `Thorns: ${e.name} takes ${p.thorns}` + (t.absorbed ? ` (${t.absorbed} blocked)` : '') + '.'); if (e.hp <= 0) this.onDeath(e); }
+    if (p.thorns && e.hp > 0) { const t = this.applyHit(p, e, p.thorns, { defer: true, label: 'Thorns' }); this.say('player', `Thorns: ${e.name} takes ${p.thorns}` + (t.absorbed ? ` (${t.absorbed} blocked)` : '') + '.'); if (e.hp <= 0) this.onDeath(e); }
     return r.lost;
   }
 
   debuffPlayer(key, n, e) {
     const p = this.player;
     if (p.negateDebuff) { p.negateDebuff = false; this.say('player', `Divine Shield negates the ${key}.`); return; }
-    p[key] += n;
+    p[key] += n; if (key === 'bleed') p.bleedBy = e && e.id;
     const W = this.partySize > 1 ? p.name : 'You', is = this.partySize > 1 ? 'is' : 'are', gain = this.partySize > 1 ? 'gains' : 'gain';
     const txt = { weak: `${W} ${is} Weak ${p.weak}: ${p.weak}% less damage dealt.`, vulnerable: `${W} ${is} Vulnerable ${p.vulnerable}: ${p.vulnerable}% more damage taken.`, bleed: `${W} ${gain} ${n} Bleed (now ${p.bleed}).`, slow: `${W} ${is} Slowed ${p.slow}.` };
     this.say('enemy', txt[key]);
@@ -553,7 +568,9 @@ class Combat {
     else if (targeted) {
       const seen = standing.filter(q => !q.stealth);
       if (!seen.length) { this.say('player', `${e.name} can't find ${this.partySize > 1 ? 'anyone' : 'you'} in Stealth: ${c.name} misses.`); return true; }
-      mark = seen[Math.floor(this.rng() * seen.length)];
+      const planned = c.mark && seen.find(q => q.id === c.mark);
+      mark = planned || this.pickMark(e);
+      e.lastMark = mark.id; c.mark = null;
       if (this.partySize > 1) this.say('enemy', `${e.name} targets ${mark.name}.`);
     }
     for (const op of c.ops) {
@@ -602,7 +619,7 @@ class Combat {
         case 'nextBonus': e.nextBonus += op.n; break;
         case 'shred': { const s = Math.min(op.n, p.block); p.block -= s; this.say('enemy', `${e.name} removes ${s} of your ${p.defName}.`); break; }
         case 'shredAll': this.say('enemy', `${e.name} strips all ${p.block} of your ${p.defName}.`); p.block = 0; break;
-        case 'tickBleed': if (p.bleed) this.applyHit(e, p, p.bleed, { isDot: true, label: 'Bleed' }); break;
+        case 'tickBleed': if (p.bleed) this.applyHit(e, p, p.bleed, { isDot: true, label: c.name }); break;
         case 'draw': { this.drawCards(e, op.n); const nc = e.hand[e.hand.length - 1]; if (nc && nc.cost <= e.mana && !e.plan.includes(nc.uid) && nc !== c) e.plan.push(nc.uid); break; }
       }
       if (!PLAYER_OPS.includes(op.op)) break; // non-hero effects (block, mana, strength) happen once

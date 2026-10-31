@@ -139,11 +139,26 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 /* battlefield */
 .field-panel { background: radial-gradient(120% 90% at 50% 0%, #2a2219 0%, var(--panel) 60%); border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: grid; gap: 10px; min-width: 0; }
 .order { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; }
+.order .otile { position: relative; width: 98px; padding: 4px 4px 5px; border: 1px solid var(--line); border-radius: 8px; background: linear-gradient(#1f1915, #15110e); text-align: center; transition: transform .15s, opacity .15s; }
+.order .otile.hero { border-color: color-mix(in srgb, var(--oc) 55%, var(--line)); }
+.order .otile.foe { border-color: #5a2a20; }
+.order .otile .ofig { height: 58px; display: grid; place-items: center; }
+.order .otile .ofig svg { height: 58px; width: auto; }
+.order .otile .onm { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--oc, var(--text)); }
+.order .otile .obar { height: 5px; background: #2a1a16; border-radius: 2px; margin-top: 3px; overflow: hidden; }
+.order .otile .obar i { display: block; height: 100%; background: var(--hp); }
+.order .otile .oini { position: absolute; top: 3px; right: 4px; font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.order .otile.done { opacity: .5; }
+.order .otile.dead { opacity: .3; filter: grayscale(1); }
+.order .otile.now { transform: translateY(-3px) scale(1.08); border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 18px rgba(214,161,74,.45); opacity: 1; }
+.order .otile.now::after { content: 'NOW'; position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%); background: var(--accent); color: #1a1208; font-size: 9px; font-weight: 800; letter-spacing: .1em; padding: 1px 6px; border-radius: 999px; }
+.order .osep { color: #5a4a3b; font-size: 16px; }
+.intent .itgt { font-weight: 600; font-size: 11px; margin-left: 2px; opacity: .95; }
 .order .lbl { color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-size: 11px; margin-right: 4px; }
 .order .chip.now { border-color: var(--accent); color: var(--text); background: #3a2c17; }
 .order .chip.dead { text-decoration: line-through; opacity: .5; }
 .order .round { margin-left: auto; font-family: var(--f-display); font-size: 22px; color: var(--accent); }
-.stage { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.4fr); align-items: end; gap: 12px; min-height: 240px; padding: 4px 4px; border-bottom: 1px dashed var(--line); }
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.4fr); align-items: end; gap: 12px; min-height: 200px; padding: 0 4px; border-bottom: 1px dashed var(--line); }
 .vs { font-family: var(--f-display); color: var(--line); font-size: 30px; align-self: center; }
 .foes { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
 @media (max-width: 640px) { .stage { grid-template-columns: minmax(0, 1fr); } .vs { display: none; } .foes { justify-content: flex-start; } }
@@ -152,8 +167,8 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .unit.dead { opacity: .35; filter: grayscale(1); }
 .unit.targetable { cursor: crosshair; border-color: var(--hp); background: rgba(201,71,47,.08); }
 .unit.targetable:hover { background: rgba(201,71,47,.18); }
-.figure { height: 96px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
-.figure svg { height: 96px; width: auto; max-width: 100%; display: block; }
+.figure { height: 80px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
+.figure svg { height: 80px; width: auto; max-width: 100%; display: block; }
 .uname { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
 .uname b { font-size: 16px; font-weight: 700; }
 .uname small { color: var(--muted); font-size: 12px; white-space: nowrap; }
@@ -182,7 +197,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .hud .spacer { display: none; }
 .hint { color: var(--muted); font-size: 13px; min-height: 18px; }
 .hint.alert { color: var(--warn); }
-.hand { display: flex; justify-content: center; align-items: flex-end; padding: 46px 8px 8px; min-height: 300px; overflow: visible; }
+.hand { display: flex; justify-content: center; align-items: flex-end; padding: 18px 8px 4px; min-height: 0; overflow: visible; }
 .card { flex: 0 0 136px; height: 186px; display: grid; grid-template-rows: auto auto 1fr auto; gap: 4px; text-align: left; padding: 8px 9px; border-radius: 8px; background: linear-gradient(180deg, #2f271f, #211b15); border: 1px solid var(--line); border-top: 4px solid var(--rc); position: relative; transition: transform .12s, border-color .12s; }
 .card:hover:not(:disabled) { transform: translateY(-6px); border-color: var(--rc); }
 .card.selected { transform: translateY(-10px); border-color: var(--accent); box-shadow: 0 6px 18px rgba(214,161,74,.25); }
@@ -227,19 +242,19 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .cf .frank { position: absolute; right: 13cqw; top: 10cqw; padding: .6cqw 3cqw; border-radius: 3cqw; background: rgba(10,8,6,.82); border: .6cqw solid var(--rg); color: #ffe7a8; font-weight: 700; font-size: 6.5cqw; }
 .cf .fpanel { position: absolute; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 1.4cqw; padding: 4cqw 5cqw 3cqw; box-sizing: border-box; color: #2a1d12; }
 .cf.dark .fpanel { color: #efe4cf; }
-.cf .fname { font-family: var(--cf-name, var(--f-display)); font-weight: var(--cf-name-w, 400); font-size: calc(10.5cqw * var(--cf-name-s, 1)); line-height: 1; color: #1d130b; }
+.cf .fname { font-family: var(--cf-name, var(--f-display)); font-weight: var(--cf-name-w, 400); font-size: calc(9.2cqw * var(--cf-name-s, 1)); line-height: 1; color: #1d130b; }
 .cf.dark .fname { color: #f6e9cf; text-shadow: 0 .5cqw 1cqw #000; }
-.cf .ftype { font-family: var(--cf-text, var(--f-ui)); white-space: nowrap; font-size: 5.4cqw; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--rt-light); }
+.cf .ftype { font-family: var(--cf-text, var(--f-ui)); white-space: nowrap; font-size: 4.6cqw; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--rt-light); }
 .cf.dark .ftype { color: var(--rt-dark); text-shadow: 0 .4cqw .8cqw #000; }
-.cf .ftext { font-family: var(--cf-text, var(--f-ui)); font-size: calc(7.2cqw * var(--cf-text-s, 1)); line-height: 1.18; font-weight: var(--cf-text-w, 600); text-wrap: balance; }
-.cf .ftext.long { font-size: calc(6.2cqw * var(--cf-text-s, 1)); }
-.cf .ftext.vlong { font-size: calc(5.4cqw * var(--cf-text-s, 1)); }
+.cf .ftext { font-family: var(--cf-text, var(--f-ui)); font-size: calc(8.2cqw * var(--cf-text-s, 1)); line-height: 1.18; font-weight: var(--cf-text-w, 600); text-wrap: balance; }
+.cf .ftext.long { font-size: calc(7.2cqw * var(--cf-text-s, 1)); }
+.cf .ftext.vlong { font-size: calc(6.3cqw * var(--cf-text-s, 1)); }
 .cf .ftext b { color: #8a1f12; } .cf.dark .ftext b { color: #ffcf7a; }
-.hand .cf { --cw: 168px; margin-left: calc(var(--cw) * -0.38); transform-origin: 50% 120%; transform: translateY(calc(var(--off, 0) * 1px)) rotate(calc(var(--rot, 0) * 1deg)); transition: transform .14s ease-out, filter .14s, margin .14s; position: relative; z-index: var(--z, 1); }
+.hand .cf { --cw: min(218px, max(150px, calc((100vh - 610px) / 1.5))); margin-left: calc(var(--cw) * -0.3); transform-origin: 50% 120%; transform: translateY(calc(var(--off, 0) * 1px)) rotate(calc(var(--rot, 0) * 1deg)); transition: transform .14s ease-out, filter .14s, margin .14s; position: relative; z-index: var(--z, 1); }
 .hand .cf:first-child { margin-left: 0; }
-.hand .cf:hover:not(:disabled), .hand .cf:focus-visible { transform: translateY(-58px) rotate(0deg) scale(1.28); z-index: 50; filter: drop-shadow(0 16px 24px rgba(0,0,0,.7)); }
+.hand .cf:hover:not(:disabled), .hand .cf:focus-visible { transform: translateY(-64px) rotate(0deg) scale(1.2); z-index: 50; filter: drop-shadow(0 16px 24px rgba(0,0,0,.7)); }
 .hand .cf.selected { transform: translateY(-48px) rotate(0deg) scale(1.18); z-index: 49; filter: drop-shadow(0 0 12px rgba(214,161,74,.85)); }
-@media (max-width: 700px) { .hand .cf { --cw: 120px; margin-left: calc(var(--cw) * -0.45); } .hand .cf:hover:not(:disabled) { transform: translateY(-36px) scale(1.15); } }
+@media (max-width: 700px) { .hand .cf { --cw: 156px; margin-left: calc(var(--cw) * -0.45); } .hand .cf:hover:not(:disabled) { transform: translateY(-36px) scale(1.15); } }
 @media (prefers-reduced-motion: reduce) { .hand .cf { transition: none; } }
 .partypick { border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px 8px; margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; }
 .partypick legend { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 0 4px; }
@@ -274,6 +289,14 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .egrid { grid-template-columns: repeat(auto-fill, minmax(var(--egw), 1fr)); }
 .pilecard.dim .cf { filter: grayscale(.7) brightness(.6); }
 .pilecount.etag { top: auto; bottom: 6px; background: #3a1c16; color: #f0c0a8; }
+.meter { font-size: 13px; }
+.mrow { position: relative; display: flex; justify-content: space-between; gap: 8px; padding: 5px 8px; margin: 3px 0; background: #1b1512; border-radius: 4px; overflow: hidden; cursor: pointer; }
+.mrow i { position: absolute; inset: 0 auto 0 0; opacity: .38; }
+.mrow b, .mrow span { position: relative; } .mrow small { color: var(--muted); }
+.mrow.open { outline: 1px solid var(--line); }
+.mparts { margin: 0 0 6px 10px; border-left: 2px solid var(--line); padding-left: 8px; display: grid; gap: 2px; font-size: 12px; }
+.mparts div { display: flex; justify-content: space-between; gap: 8px; } .mparts small { color: var(--muted); }
+.mparts .mabs { color: #a9cdec; }
 .pilegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; padding: 6px 4px 30px; }
 .pilecard { position: relative; display: grid; justify-items: center; }
 .pilecard .cf { transition: transform .14s; transform-origin: 50% 60%; }
@@ -392,10 +415,11 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     <aside class="side">
       <div class="panel" id="charPanel"></div>
       <div class="panel">
-        <div class="tabs" role="tablist"><button role="tab" id="tSack" aria-selected="true">Loot sack</button><button role="tab" id="tGear" aria-selected="false">Gear</button><button role="tab" id="tLog" aria-selected="false">Journal</button></div>
+        <div class="tabs" role="tablist"><button role="tab" id="tSack" aria-selected="true">Loot sack</button><button role="tab" id="tGear" aria-selected="false">Gear</button><button role="tab" id="tLog" aria-selected="false">Journal</button><button role="tab" id="tMeter" aria-selected="false">Meter</button></div>
         <div id="pSack" class="list"></div>
         <div id="pGear" class="list" hidden></div>
         <div id="pLog" class="runlog" hidden></div>
+        <div id="pMeter" class="meter" hidden></div>
       </div>
     </aside>
   </section>
@@ -414,7 +438,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       <div class="hint" id="hint"></div>
       <div class="hand" id="hand" aria-label="Your hand"></div>
     </div>
-    <aside class="panel ledger"><div class="tabs"><button aria-selected="true">Combat log</button></div><div class="pane"><div class="log" id="log"></div></div></aside>
+    <aside class="panel ledger"><div class="tabs" role="tablist"><button role="tab" id="tCLog" aria-selected="true">Combat log</button><button role="tab" id="tCMeter" aria-selected="false">Meter</button></div><div class="pane" id="pCLog"><div class="log" id="log"></div></div><div class="pane" id="pCMeter" hidden><div id="meterC" class="meter"></div></div></aside>
   </section>
 </div>
 
@@ -539,7 +563,7 @@ const CLASSES = {
   Warrior: { defense: 'Block', blurb: 'Sword and shield. Hits, blocks, and gets stronger after taking a hit (Battle Fever).', deck: [['battle_fever', 1], ['execute', 1], ['shield_wall', 1], ['bloodthirst', 1], ['shield_up', 1], ['whirlwind', 1], ['battle_shout', 1], ['defend', 3], ['pommel_strike', 1], ['shield_bash', 2], ['strike', 7]] },
   Rogue: { defense: 'Dodge', blurb: 'Quick hits, Dodge, Bleed and Poison. Hide skips an enemy\'s single-target attacks.', deck: [['assassinate', 1], ['coup_de_grace', 1], ['evasion', 1], ['blur', 1], ['garrote', 1], ['hide', 1], ['envenom', 1], ['evade', 5], ['slip_away', 1], ['stab', 5], ['throwing_stars', 1], ['twin_daggers', 1]] },
   Mage: { defense: 'Barrier', blurb: 'Fire, Frost and Arcane spells with Barrier. Exploits enemy weaknesses (Arcane vs humans, Fire vs beasts).', deck: [['amplify', 1], ['prismatic_barrier', 1], ['pyroblast', 1], ['arcane_barrage', 1], ['blizzard', 1], ['ice_barrier', 1], ['arcane_missiles', 2], ['fireball', 3], ['frostbolt', 2], ['ice_bolt', 1], ['mana_spring', 1], ['ward', 5]] },
-  Paladin: { defense: 'Block', blurb: 'Holy warrior: Block, Holy damage that ignores resistance, and heals.', deck: [['lay_on_hands', 1], ['ardent_defense', 1], ['holy_nova', 1], ['divine_shield', 1], ['divine_storm', 1], ['healing_light', 1], ['crusader_strike', 5], ['mend_wounds', 1], ['raise_shield', 3], ['righteous_blow', 2], ['sacred_ward', 1], ['smite', 2]] },
+  Paladin: { defense: 'Block', blurb: 'Holy warrior: Block, Holy damage that ignores resistance, and heals.', deck: [['lay_on_hands', 1], ['ardent_defense', 1], ['holy_nova', 1], ['divine_shield', 1], ['divine_storm', 1], ['healing_light', 1], ['crusader_strike', 6], ['raise_shield', 2], ['righteous_blow', 2], ['sacred_ward', 1], ['smite', 3]] },
 };
 const it = (slot, base, stats, imp2) => ({ slot, name: base, rarity: 'White', ilvl: 1, stats: Object.assign({ 'Resistance:Fire': 3 }, stats), imp2: imp2 || {} });
 const STARTER_GEAR = {
@@ -654,14 +678,15 @@ class Combat {
     this.log = []; this.round = 0; this.over = null;
     this.stats = { dealt: 0, taken: 0, blocked: 0, cardsPlayed: 0, healed: 0 };
     this._uid = 0;
+    this.meter = {}; // damage meter: per actor id, damage dealt / healing done / damage taken, each broken down by ability or source
     // party: 1 to 4 heroes. opts.party = [{cls, gear, deck, hp, mana, buffs, name}]; without it, one hero from opts.cls/gear/deck/hp/mana/buffs
     const party = this.opts.party || [{ cls: this.opts.cls, gear: this.opts.gear, deck: this.opts.deck, hp: this.opts.hp, mana: this.opts.mana, buffs: this.opts.buffs }];
     this.players = party.map((spec, i) => this.makePlayer(spec, i, party.length));
     this.player = this.players[0];       // the hero currently acting, or the one an enemy card is aimed at
     this.gear = sumGear(party[0].gear || STARTER_GEAR[party[0].cls]);
     this.partySize = this.players.length;
-    this.partyScale = 1 + (this.opts.partyStep != null ? this.opts.partyStep : 0.85) * (this.partySize - 1); // each extra hero: enemies get +85% HP, mana and regen, and +1 draw
-    this.hpMult = Math.pow(1.5, this.level) * this.partyScale; this.dmgMult = Math.pow(1.3, this.level); // each extra hero: +70% enemy HP
+    this.partyScale = 1 + (this.opts.partyStep != null ? this.opts.partyStep : 0.85) * (this.partySize - 1); // 1 when a party fight brings one monster per hero instead // each extra hero: enemies get +85% HP, mana and regen, and +1 draw
+    this.hpMult = Math.pow(1.5, this.level) * this.partyScale * (this.opts.mobHp || 1); this.dmgMult = Math.pow(1.3, this.level); // mobHp: extra HP when a party meets one monster per hero
     this.levelHpMult = Math.pow(1.5, this.level);
     this.typeResist = Math.min(1, 0.05 + 0.05 * this.level);
     this.duel = !!this.opts.duel; // duel: two heroes, no monsters; each hero's "enemies" are the other hero
@@ -707,12 +732,13 @@ class Combat {
     }
     return {
       id: 'e' + i, key, name: d.name, tier: d.tier, creature: d.creature, type: d.type, weakTo: d.weak, maxHp: hp, hp, block: 0, parryBack: 0, thorns: 0, thornsTurns: 0,
-      mana: 0, maxMana: Math.round(d.maxMana * this.partyScale), regen: Math.round(d.regen * this.partyScale), draw: d.draw + (this.partySize - 1), baseInit: d.tier === 'Boss' ? 12 : d.tier === 'Elite' ? 11 : 8 + ri(this.rng, 0, 7),
+      mana: 0, maxMana: Math.round(d.maxMana * this.partyScale), regen: Math.round(d.regen * this.partyScale), draw: d.draw + (this.partyScale > 1 ? this.partySize - 1 : 0), baseInit: d.tier === 'Boss' ? 12 : d.tier === 'Elite' ? 11 : 8 + ri(this.rng, 0, 7),
       strength: 0, strTurn: 0, weak: 0, vulnerable: 0, bleed: 0, poison: 0, burn: 0, chill: 0, frozen: false, slow: 0, initNext: 0, regenDown: [], nextBonus: 0,
       drawPile: shuffle(deck, this.rng), phase2Cards: phase2, phase: 1, d, hand: [], discard: [], plan: [], firstTurn: true, dmgTune: tune.dmg || 1,
     };
   }
 
+  mtr(a) { return this.meter[a.id] || (this.meter[a.id] = { id: a.id, name: a.name, isPlayer: !!a.isPlayer, cls: a.cls || null, dealt: {}, healed: {}, taken: {}, absorbed: 0 }); }
   say(kind, text) { this.log.push({ round: this.round, kind, text }); }
   foes() { return this.enemies.filter(e => e.hp > 0); } // monsters only
   // what the acting hero can hit: monsters, or in a duel the other hero (unless they are in Stealth and the card is single-target)
@@ -757,12 +783,20 @@ class Combat {
   }
 
   effRegen(e) { const down = e.regenDown.reduce((s, x) => s + x.n, 0); return Math.max(Math.min(10, e.regen), e.regen - down); }
+  // single-target enemy cards pick a hero when planned, so players can see who is about to be hit
+  isTargeted(c) { const PO = ['damage', 'execute', 'damageBlock', 'debuff', 'stealMana', 'burnMana', 'drawLess', 'disarm', 'purge', 'shred', 'shredAll', 'tickBleed', 'status']; return !(c.ops.some(o => o.all || o.op === 'shredAll') || /every player|each of their/.test(c.text)) && c.ops.some(o => PO.includes(o.op)); }
+  pickMark(e, avoid) {
+    const seen = this.alivePlayers().filter(q => !q.stealth); if (!seen.length) return null; if (seen.length === 1) return seen[0];
+    const w = seen.map(q => q.id === (avoid || e.lastMark) ? 1 : 2), tot = w.reduce((a, b) => a + b, 0);
+    let r = this.rng() * tot; for (let i = 0; i < seen.length; i++) { if (r < w[i]) return seen[i]; r -= w[i]; } return seen[seen.length - 1];
+  }
   planEnemy(e) {
     let mana = Math.min(e.maxMana, e.mana + this.effRegen(e) * (e.firstTurn ? 2 : 1));
     e.plan = [];
     const gm = c => c.ops.some(o => o.op === 'gainMana') ? 1 : 0;
     const order = [...e.hand].sort((a, b) => gm(b) - gm(a));
     for (const c of order) if (c.cost <= mana) { mana -= c.cost; e.plan.push(c.uid); const g = c.ops.find(o => o.op === 'gainMana'); if (g) mana += g.n; }
+    if (this.partySize > 1) { let last = e.lastMark; for (const uid of e.plan) { const c = e.hand.find(x => x.uid === uid); if (c && this.isTargeted(c)) { const m = this.pickMark(e, last); c.mark = m ? m.id : null; last = c.mark; } } }
   }
 
   actorById(id) { return this.players.find(p => p.id === id) || this.enemies.find(e => e.id === id); }
@@ -807,7 +841,7 @@ class Combat {
       if (a.thornsTurns > 0 && --a.thornsTurns === 0) a.thorns = 0;
     }
     for (const [key, label, ignoresBlock] of [['bleed', 'Bleed', false], ['poison', 'Poison', true], ['burn', 'Burn', false]]) {
-      if (a[key] > 0 && a.hp > 0 && !this.over) { this.applyHit(a.isPlayer ? null : this.player, a, a[key], { isDot: true, label, ignoreBlock: ignoresBlock }); a[key] = Math.max(0, a[key] - 1); }
+      if (a[key] > 0 && a.hp > 0 && !this.over) { this.applyHit(this.actorById(a[key + 'By']) || (a.isPlayer ? null : this.player), a, a[key], { isDot: true, label, ignoreBlock: ignoresBlock }); a[key] = Math.max(0, a[key] - 1); }
     }
     if (a.initNext) a.initNext = 0;
   }
@@ -825,13 +859,14 @@ class Combat {
     const mult = a.isPlayer && !['Bloodthirst', 'Lifesteal'].includes(label) ? 1 + a.spirit / 100 : 1;
     const h = Math.min(a.maxHp - a.hp, Math.round(n * mult));
     a.hp += h; if (a.isPlayer) this.stats.healed += h;
+    if (h > 0) { const m = this.mtr(a).healed, k = label || 'Heal'; m[k] = (m[k] || 0) + h; }
     if (h > 0 || !quiet) this.say('heal', `${a.isPlayer ? (this.partySize > 1 ? a.name + ' heals' : 'You heal') : a.name + ' heals'} ${h}${label ? ' (' + label + ')' : ''}. HP ${a.hp}/${a.maxHp}.`);
     return h;
   }
   applyDot(e, key, n) {
     if (!e || e.hp <= 0) return;
     const v = Math.round(n * (1 + this.player.spirit / 100));
-    e[key] += v;
+    e[key] += v; e[key + 'By'] = this.player.id;
     this.say('player', `${e.name} gains ${v} ${key[0].toUpperCase() + key.slice(1)} (now ${e[key]}).`);
   }
   applyChill(e, n) {
@@ -845,7 +880,11 @@ class Combat {
     o = o || {};
     let dmg = amount, absorbed = 0;
     if (tgt.block > 0 && !o.ignoreBlock) { absorbed = Math.min(tgt.block, dmg); tgt.block -= absorbed; dmg -= absorbed; }
+    const before = tgt.hp;
     tgt.hp = Math.max(0, tgt.hp - dmg);
+    const real = before - tgt.hp, label = o.label || 'Attack';
+    if (src) { const m = this.mtr(src).dealt; m[label] = (m[label] || 0) + real; }
+    { const t = this.mtr(tgt); const k = src ? src.name : label; t.taken[k] = (t.taken[k] || 0) + real; t.absorbed += absorbed; }
     if (tgt.isPlayer) { this.stats.taken += dmg; this.stats.blocked += absorbed; } else this.stats.dealt += dmg;
     if (o.isDot) this.say('dot', `${tgt.isPlayer ? 'You take' : tgt.name + ' takes'} ${amount} ${o.label}` + (absorbed ? ` (${absorbed} absorbed)` : '') + `. HP ${tgt.hp}/${tgt.maxHp}.`);
     if (tgt.hp <= 0 && !o.defer) this.onDeath(tgt);
@@ -898,11 +937,11 @@ class Combat {
     if (tm !== 1) parts.push(`x ${tm.toFixed(2)} ${tm > 1 ? dtype + ' weakness' : dtype + ' resist'}`);
     if (e.vulnerable) parts.push(`x ${vulnMod.toFixed(2)} Vulnerable`);
     if (pvp !== 1) parts.push(`x ${pvp.toFixed(2)} resist/Pressure`);
-    const r = this.applyHit(p, e, dmg, { defer: true });
+    const r = this.applyHit(p, e, dmg, { defer: true, label });
     this.say(crit ? 'crit' : 'player', `${label} hits ${e.name}: ${parts.join(' ')} = ${dmg}` + (r.absorbed ? `, ${r.absorbed} blocked` : '') + `. HP ${e.hp}/${e.maxHp}.`);
-    if (kind === 'Attack' && e.parryBack && r.absorbed && e.hp > 0) { const back = this.applyHit(e, p, Math.round(e.parryBack * this.dmgMult), { defer: true }); this.say('enemy', `${e.name} parries and strikes back: ${back.lost} HP lost.`); e.parryBack = 0; }
-    if (kind === 'Attack' && e.thorns && e.hp > 0) { const t = this.applyHit(e, p, e.thorns, { defer: true }); this.say('enemy', `${e.name}'s ${e.isPlayer ? 'Thorns' : 'spikes'}: ${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${t.lost} HP.`); }
-    if (kind === 'Attack' && p.bleedChance && e.hp > 0 && this.rng() * 100 < p.bleedChance) { e.bleed += 3; this.say('crit', `Bleed Chance: ${e.name} gains 3 Bleed.`); }
+    if (kind === 'Attack' && e.parryBack && r.absorbed && e.hp > 0) { const back = this.applyHit(e, p, Math.round(e.parryBack * this.dmgMult), { defer: true, label: 'Riposte' }); this.say('enemy', `${e.name} parries and strikes back: ${back.lost} HP lost.`); e.parryBack = 0; }
+    if (kind === 'Attack' && e.thorns && e.hp > 0) { const t = this.applyHit(e, p, e.thorns, { defer: true, label: e.isPlayer ? 'Thorns' : 'Spikes' }); this.say('enemy', `${e.name}'s ${e.isPlayer ? 'Thorns' : 'spikes'}: ${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${t.lost} HP.`); }
+    if (kind === 'Attack' && p.bleedChance && e.hp > 0 && this.rng() * 100 < p.bleedChance) { e.bleed += 3; e.bleedBy = p.id; this.say('crit', `Bleed Chance: ${e.name} gains 3 Bleed.`); }
     if (p.lifesteal && r.lost) this.heal(p, Math.round(r.lost * p.lifesteal / 100), 'Lifesteal', true);
     if (p.hp <= 0) { this.onDeath(p); return r.lost; }
     if (e.hp <= 0) this.onDeath(e);
@@ -923,17 +962,17 @@ class Combat {
     if (res) parts.push(`x ${(1 - res).toFixed(2)} ${dtype} resist`);
     if (p.vulnerable) parts.push(`x ${(1 + p.vulnerable / 100).toFixed(2)} Vulnerable`);
     p.attackedThisRound = true;
-    const r = this.applyHit(e, p, dmg, { defer: true });
+    const r = this.applyHit(e, p, dmg, { defer: true, label });
     this.say('enemy', `${e.name}'s ${label} hits ${this.partySize > 1 ? p.name : 'you'}${dtype !== 'Physical' ? ' (' + dtype + ')' : ''}: ${parts.join(' ')} = ${dmg}` + (r.absorbed ? `, ${r.absorbed} absorbed` : '') + `. HP ${p.hp}/${p.maxHp}.`);
     if (p.hp <= 0) { this.onDeath(p); return r.lost; }
-    if (p.thorns && e.hp > 0) { const t = this.applyHit(p, e, p.thorns, { defer: true }); this.say('player', `Thorns: ${e.name} takes ${p.thorns}` + (t.absorbed ? ` (${t.absorbed} blocked)` : '') + '.'); if (e.hp <= 0) this.onDeath(e); }
+    if (p.thorns && e.hp > 0) { const t = this.applyHit(p, e, p.thorns, { defer: true, label: 'Thorns' }); this.say('player', `Thorns: ${e.name} takes ${p.thorns}` + (t.absorbed ? ` (${t.absorbed} blocked)` : '') + '.'); if (e.hp <= 0) this.onDeath(e); }
     return r.lost;
   }
 
   debuffPlayer(key, n, e) {
     const p = this.player;
     if (p.negateDebuff) { p.negateDebuff = false; this.say('player', `Divine Shield negates the ${key}.`); return; }
-    p[key] += n;
+    p[key] += n; if (key === 'bleed') p.bleedBy = e && e.id;
     const W = this.partySize > 1 ? p.name : 'You', is = this.partySize > 1 ? 'is' : 'are', gain = this.partySize > 1 ? 'gains' : 'gain';
     const txt = { weak: `${W} ${is} Weak ${p.weak}: ${p.weak}% less damage dealt.`, vulnerable: `${W} ${is} Vulnerable ${p.vulnerable}: ${p.vulnerable}% more damage taken.`, bleed: `${W} ${gain} ${n} Bleed (now ${p.bleed}).`, slow: `${W} ${is} Slowed ${p.slow}.` };
     this.say('enemy', txt[key]);
@@ -1008,7 +1047,9 @@ class Combat {
     else if (targeted) {
       const seen = standing.filter(q => !q.stealth);
       if (!seen.length) { this.say('player', `${e.name} can't find ${this.partySize > 1 ? 'anyone' : 'you'} in Stealth: ${c.name} misses.`); return true; }
-      mark = seen[Math.floor(this.rng() * seen.length)];
+      const planned = c.mark && seen.find(q => q.id === c.mark);
+      mark = planned || this.pickMark(e);
+      e.lastMark = mark.id; c.mark = null;
       if (this.partySize > 1) this.say('enemy', `${e.name} targets ${mark.name}.`);
     }
     for (const op of c.ops) {
@@ -1057,7 +1098,7 @@ class Combat {
         case 'nextBonus': e.nextBonus += op.n; break;
         case 'shred': { const s = Math.min(op.n, p.block); p.block -= s; this.say('enemy', `${e.name} removes ${s} of your ${p.defName}.`); break; }
         case 'shredAll': this.say('enemy', `${e.name} strips all ${p.block} of your ${p.defName}.`); p.block = 0; break;
-        case 'tickBleed': if (p.bleed) this.applyHit(e, p, p.bleed, { isDot: true, label: 'Bleed' }); break;
+        case 'tickBleed': if (p.bleed) this.applyHit(e, p, p.bleed, { isDot: true, label: c.name }); break;
         case 'draw': { this.drawCards(e, op.n); const nc = e.hand[e.hand.length - 1]; if (nc && nc.cost <= e.mana && !e.plan.includes(nc.uid) && nc !== c) e.plan.push(nc.uid); break; }
       }
       if (!PLAYER_OPS.includes(op.op)) break; // non-hero effects (block, mana, strength) happen once
@@ -1196,6 +1237,7 @@ const CB = (typeof module !== 'undefined' && module.exports) ? require('./engine
 const { makeRng, shuffle, ri, rollItem, rollDrops, sumGear, STARTER_GEAR, presetGear, Combat, rollCards } = CB;
 
 const ROWS = 14, COLS = 5;
+const MOB_HP_STEP = 0.3; // a party fights one monster per hero, each with +30% HP per extra hero (sims: about solo difficulty)
 const TIER_ROWS = r => r <= 4 ? '1' : r <= 9 ? '2' : '3';
 const SHRINES = [
   { key: 'crit', name: 'Shrine of the Keen Edge', text: '+10% Crit Chance for the next 2 fights.', buff: { crit: 10 } },
@@ -1207,7 +1249,7 @@ const SHRINES = [
 ];
 const SLOTS = ['Weapon', 'Off-hand', 'Helm', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves', 'Belt', 'Pants', 'Boots', 'Ring 1', 'Ring 2'];
 
-function generateMap(rng, data) {
+function generateMap(rng, data, partySize) {
   const nodes = {}, edges = new Set();
   const id = (r, c) => r + ':' + c;
   const starts = new Set();
@@ -1281,7 +1323,7 @@ function generateMap(rng, data) {
   const elites = shuffle(byTier.Elite.slice(), rng);
   let ei = 0;
   for (const n of list) {
-    if (n.type === 'fight') n.enemies = [byTier[TIER_ROWS(n.row)][ri(rng, 0, byTier[TIER_ROWS(n.row)].length - 1)]];
+    if (n.type === 'fight') { const pool = byTier[TIER_ROWS(n.row)]; n.enemies = [pool[ri(rng, 0, pool.length - 1)]]; for (let k = 1; k < Math.min(4, partySize || 1); k++) n.enemies.push(pool[ri(rng, 0, pool.length - 1)]); } // a party meets one monster per hero
     if (n.type === 'elite') n.enemies = [elites[ei++ % elites.length]];
     if (n.type === 'shrine') n.shrine = SHRINES[ri(rng, 0, SHRINES.length - 1)].key;
   }
@@ -1306,8 +1348,8 @@ class Run {
       return { idx: i, cls: sp.cls, name: sp.name || sp.cls, gear, stats, deck: sp.deck || null, hp: stats.maxHp, mana: 0, gold: 0, sack: [],
         bank: this.sharedBank ? 0 : (sp.bank || 0), spent: 0, orders: [], stashFree: sp.stashFree != null ? sp.stashFree : 99, kept: null, deaths: 0 };
     });
-    this.buffs = []; this.log = [];
-    this.map = generateMap(this.rng, this.data);
+    this.buffs = []; this.log = []; this.meter = {};
+    this.map = generateMap(this.rng, this.data, specs.length);
     this.at = null; this.visited = []; this.over = null; this.fightsWon = 0; this.kills = 0; this.combat = null; this.pending = null;
     this.note(this.members.length > 1 ? `A party of ${this.members.length} (${this.members.map(m => m.name).join(', ')}) sets out on The Broken March (+${this.level}).` : `A ${this.cls} sets out on The Broken March (+${this.level}).`);
   }
@@ -1345,7 +1387,7 @@ class Run {
     if (['fight', 'elite', 'boss'].includes(n.type)) {
       const buffs = this.activeBuffs();
       const party = this.members.map(m => ({ cls: m.cls, name: m.name, gear: m.gear, deck: m.deck || undefined, hp: m.hp, mana: m.mana, buffs }));
-      this.combat = new Combat({ party, enemies: n.enemies, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: this.opts.partyStep });
+      this.combat = new Combat({ party, enemies: n.enemies, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : this.opts.partyStep, mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * (this.members.length - 1) : 1 });
       this.note(`Row ${n.row}: ${n.type === 'boss' ? 'the boss' : n.type === 'elite' ? 'an elite' : 'a fight'} against ${n.enemies.map(k => this.data.enemies[k].name).join(', ')}.`);
     } else if (n.type === 'rest') { this.pending = { type: 'rest', heals: this.members.map(m => Math.min(m.stats.maxHp - m.hp, Math.round(m.stats.maxHp * 0.3))), keep: n.campfire ? 0.75 : 0.5 }; this.pending.heal = this.pending.heals[0]; }
     else if (n.type === 'shrine') { const s = SHRINES.find(x => x.key === n.shrine); this.buffs.push({ key: s.key, name: s.name, buff: s.buff, fights: 2 }); this.pending = { type: 'shrine', shrine: s }; this.note(`Row ${n.row}: ${s.name}. ${s.text}`); }
@@ -1358,6 +1400,11 @@ class Run {
     const cb = this.combat; if (!cb || !cb.over) return null;
     const n = this.map.nodes[this.at];
     this.combat = null;
+    for (const m of Object.values(cb.meter)) { // add the fight to the run totals: heroes by seat, monsters together by name
+      const k = m.isPlayer ? m.id : 'm:' + m.name, R = this.meter[k] || (this.meter[k] = { id: k, name: m.name, isPlayer: m.isPlayer, cls: m.cls, dealt: {}, healed: {}, taken: {}, absorbed: 0 });
+      for (const f of ['dealt', 'healed', 'taken']) for (const [a, v] of Object.entries(m[f])) R[f][a] = (R[f][a] || 0) + v;
+      R.absorbed += m.absorbed;
+    }
     for (const b of this.buffs) b.fights--;
     this.buffs = this.buffs.filter(b => b.fights > 0);
     if (cb.over === 'loss') {
@@ -1460,12 +1507,14 @@ const uid = (p) => p + Date.now().toString(36) + (uidN++).toString(36) + Math.fl
 function newChar(cls, name) {
   const deck = [];
   for (const [key, n] of CLASSES[cls].deck) for (let i = 0; i < n; i++) deck.push({ id: uid('k'), key, rank: 0 });
-  return { cls, name: name || cls, created: Date.now(), gear: STARTER_GEAR[cls].map(g => Object.assign({ id: uid('g') }, g)), deck, cards: [], runs: 0, best: 0, bossKills: 0 };
+  return { cls, name: name || cls, created: Date.now(), gear: STARTER_GEAR[cls].map(g => Object.assign({ id: uid('g') }, g)), deck, cards: [], runs: 0, best: 0, bossKills: 0, gotOffense1: true };
 }
 function newProfile() { return { v: VERSION, gold: 0, stash: [], chars: {}, last: { cls: 'Warrior', level: 0 }, history: [] }; }
 function fix(p) { // tolerate older or partial saves
   p = Object.assign(newProfile(), p || {});
   for (const c of Object.values(p.chars)) { c.cards = c.cards || []; c.deck = c.deck || []; c.gear = c.gear || []; c.name = c.name || c.cls; }
+  // Oct 30: the Paladin starter got more offense (+1 Crusader Strike, +1 Smite); existing Paladins get those two cards in their collection once
+  const pal = p.chars.Paladin; if (pal && !pal.gotOffense1) { pal.gotOffense1 = true; pal.cards.push({ id: uid('k'), key: 'crusader_strike', rank: 0 }, { id: uid('k'), key: 'smite', rank: 0 }); }
   return p;
 }
 // character creation: one hero per class for now, each with a name the player picks
@@ -3221,6 +3270,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   }
   $('charPanel').addEventListener('click', (ev) => { if (ev.target.id === 'btnCamp') toTown(); });
   function renderSide() {
+    if (!$('pMeter').hidden) renderMeter($('pMeter'), 'run');
     if (!run.solo) return renderSideParty();
     const s = run.stats, b = run.activeBuffs();
     const pctHp = 100 * run.hp / run.maxHp;
@@ -3237,7 +3287,38 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     $('pGear').innerHTML = SLOTS.map(sl => { const it = run.gear.find(g => g.slot === sl); return it ? itemHtml(it, `<div class="il">${sl}</div>`) : `<div class="item" style="--rc:var(--line)"><span class="muted">${sl}: empty</span></div>`; }).join('');
     $('pLog').innerHTML = run.log.slice().reverse().map(t => `<div>${esc(t)}</div>`).join('');
   }
-  for (const [t, p] of [['tSack', 'pSack'], ['tGear', 'pGear'], ['tLog', 'pLog']]) $(t).addEventListener('click', () => { for (const [t2, p2] of [['tSack', 'pSack'], ['tGear', 'pGear'], ['tLog', 'pLog']]) { $(t2).setAttribute('aria-selected', t2 === t); $(p2).hidden = t2 !== t; } });
+  const SIDE_TABS = [['tSack', 'pSack'], ['tGear', 'pGear'], ['tLog', 'pLog'], ['tMeter', 'pMeter']];
+  for (const [t, p] of SIDE_TABS) $(t).addEventListener('click', () => { for (const [t2, p2] of SIDE_TABS) { $(t2).setAttribute('aria-selected', t2 === t); $(p2).hidden = t2 !== t; } if (t === 'tMeter') renderMeter($('pMeter'), 'run'); });
+  for (const [t, p] of [['tCLog', 'pCLog'], ['tCMeter', 'pCMeter']]) $(t).addEventListener('click', () => { for (const [t2, p2] of [['tCLog', 'pCLog'], ['tCMeter', 'pCMeter']]) { $(t2).setAttribute('aria-selected', t2 === t); $(p2).hidden = t2 !== t; } if (t === 'tCMeter') renderMeter($('meterC')); });
+
+  // ---------- damage meter (Details-style): who dealt damage, who healed, who took damage, each broken down by ability or source
+  const MT = { mode: 'dealt', scope: 'fight', open: {} };
+  const MODES = [['dealt', 'Damage done'], ['healed', 'Healing'], ['taken', 'Damage taken']];
+  function meterData(scope) {
+    const out = {};
+    const add = (m, key) => { const R = out[key] || (out[key] = { key, name: m.name, isPlayer: m.isPlayer, cls: m.cls, dealt: {}, healed: {}, taken: {}, absorbed: 0 }); for (const f of ['dealt', 'healed', 'taken']) for (const [a, v] of Object.entries(m[f])) R[f][a] = (R[f][a] || 0) + v; R.absorbed += m.absorbed; };
+    if (scope === 'run' && run) { for (const m of Object.values(run.meter || {})) add(m, m.id); if (run.combat && run.combat.meter) for (const m of Object.values(run.combat.meter)) add(m, m.isPlayer ? m.id : 'm:' + m.name); }
+    else if (cb) for (const m of Object.values(cb.meter || {})) add(m, m.id);
+    return Object.values(out);
+  }
+  function renderMeter(el, forceScope) {
+    if (!el) return;
+    const scope = forceScope || (run ? MT.scope : 'fight'), rows = meterData(scope);
+    const list = rows.map(r => { const parts = Object.entries(r[MT.mode]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]); return { r, parts, total: parts.reduce((s, x) => s + x[1], 0) }; }).filter(x => x.total > 0 || (MT.mode === 'taken' && x.r.absorbed > 0)).sort((a, b) => b.total - a.total);
+    const max = Math.max(1, ...list.map(x => x.total)), sum = Math.max(1, list.reduce((s, x) => s + x.total, 0));
+    const rounds = scope === 'fight' && cb ? Math.max(1, cb.round) : 0;
+    el.innerHTML = `<div class="cxchips">${MODES.map(([k, l]) => `<button class="cxchip ${MT.mode === k ? 'on' : ''}" data-mmode="${k}">${l}</button>`).join('')}</div>
+      ${run && !forceScope ? `<div class="cxchips">${[['fight', 'This fight'], ['run', 'Whole run']].map(([k, l]) => `<button class="cxchip ${MT.scope === k ? 'on' : ''}" data-mscope="${k}">${l}</button>`).join('')}</div>` : forceScope ? '<p class="muted" style="margin:2px 0 6px;font-size:12px">Totals for the whole run so far.</p>' : ''}
+      ${list.map(({ r, parts, total }) => { const op = MT.open[r.key]; const col = r.isPlayer ? CC[r.cls] : '#8a3b2c';
+        return `<div class="mrow ${op ? 'open' : ''}" data-mk="${esc(r.key)}" role="button" tabindex="0" aria-expanded="${!!op}"><i style="width:${100 * total / max}%;background:${col}"></i><b>${esc(r.name)}</b><span>${total.toLocaleString()}${rounds ? ` <small>(${(total / rounds).toFixed(1)}/rd)</small>` : ''} <small>${Math.round(100 * total / sum)}%</small></span></div>
+        ${op ? `<div class="mparts">${parts.map(([a, v]) => `<div><span>${esc(a)}</span><span>${v.toLocaleString()} <small>${Math.round(100 * v / total)}%</small></span></div>`).join('')}${MT.mode === 'taken' && r.absorbed ? `<div class="mabs"><span>Absorbed by Block/Barrier</span><span>${r.absorbed.toLocaleString()}</span></div>` : ''}</div>` : ''}`; }).join('') || `<p class="muted">Nothing yet.</p>`}
+      <p class="muted" style="font-size:11px;margin-top:8px">Click a bar for the breakdown. Damage counts HP actually lost (blocked damage is listed under Damage taken).</p>`;
+  }
+  document.addEventListener('click', (ev) => {
+    const m = ev.target.closest('.meter [data-mmode], .meter [data-mscope], .meter [data-mk]'); if (!m) return;
+    if (m.dataset.mmode) MT.mode = m.dataset.mmode; else if (m.dataset.mscope) MT.scope = m.dataset.mscope; else MT.open[m.dataset.mk] = !MT.open[m.dataset.mk];
+    const el = m.closest('.meter'); renderMeter(el, el.id === 'pMeter' ? 'run' : undefined);
+  });
 
   // ---------- modals
   function modal(html) { $('modalBox').classList.remove('wide'); $('modalBox').innerHTML = html; $('modal').hidden = false; fitCards($('modalBox')); const f = $('modalBox').querySelector('button'); if (f) f.focus(); }
@@ -3356,9 +3437,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       const planned = e.plan.includes(c.uid), kind = CB.intentKind(c.ops);
       let num = '';
       const dmg = c.ops.find(o => o.op === 'damage' || o.op === 'execute'), blk = c.ops.find(o => o.op === 'block' || o.op === 'parry');
-      if (dmg) { const hv = hero(); const res = Math.min(75, hv.resist[c.dtype] || 0) / 100; num = Math.round((dmg.n || dmg.low) * cb.dmgMult * e.dmgTune * (1 + (e.strength + e.strTurn) / 100) * (1 - e.weak / 100) * (1 + cb.pressure()) * (1 - res) * (1 + hv.vulnerable / 100)) + (dmg.times ? 'x' + dmg.times : ''); }
+      if (dmg) { const hv = (c.mark && cb.actorById(c.mark)) || hero(); const res = Math.min(75, hv.resist[c.dtype] || 0) / 100; num = Math.round((dmg.n || dmg.low) * cb.dmgMult * e.dmgTune * (1 + (e.strength + e.strTurn) / 100) * (1 - e.weak / 100) * (1 + cb.pressure()) * (1 - res) * (1 + hv.vulnerable / 100)) + (dmg.times ? 'x' + dmg.times : ''); }
       else if (blk) num = blk.n;
-      return `<span class="intent ${kind}${planned ? '' : ' skip'}" data-e="${e.id}" data-cu="${c.uid}" title="${esc(c.name)} (${c.cost} mana): ${esc(c.text)}${c.dtype !== 'Physical' && dmg ? ' [' + c.dtype + ']' : ''}${planned ? '' : ' (not enough mana: discarded)'}">${ICON[kind]}${num !== '' ? num : esc(c.name)}</span>`;
+      const mk = planned && c.mark && cb.partySize > 1 ? cb.actorById(c.mark) : null;
+      const tg = mk ? `<span class="itgt" style="color:${CC[mk.cls]}">&rarr; ${mk === hero() && cb.myMi != null ? 'You' : esc(mk.name.split(' ')[0])}</span>` : '';
+      return `<span class="intent ${kind}${planned ? '' : ' skip'}" data-e="${e.id}" data-cu="${c.uid}" title="${esc(c.name)} (${c.cost} mana): ${esc(c.text)}${c.dtype !== 'Physical' && dmg ? ' [' + c.dtype + ']' : ''}${mk ? ' Aimed at ' + esc(mk.name) + '.' : ''}${planned ? '' : ' (not enough mana: discarded)'}">${ICON[kind]}${num !== '' ? num : esc(c.name)}${tg}</span>`;
     }).join('') || '<span class="tag">no cards</span>';
   }
   function unitHtml(a) {
@@ -3386,7 +3469,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function render(withPops) {
     if (!cb) return;
     const p = hero(), party = cb.partySize > 1;
-    $('order').innerHTML = `<span class="lbl">Turn order</span>` + cb.order.map((id, i) => { const a = cb.actorById(id); return `<span class="chip ${i === cb.turnIndex && !cb.over ? 'now' : ''} ${a.hp <= 0 ? 'dead' : ''}">${a.isPlayer ? (party ? esc(a.name) : 'You') : esc(a.name)} ${cb.initiative(a)}</span>`; }).join('') + `<span class="round">Round ${cb.round}</span>`;
+    $('order').innerHTML = `<span class="lbl">Turn<br>order</span>` + cb.order.map((id, i) => { const a = cb.actorById(id); const st = a.hp <= 0 ? 'dead' : i === cb.turnIndex && !cb.over ? 'now' : i < cb.turnIndex ? 'done' : '';
+      return `${i ? '<span class="osep" aria-hidden="true">&rsaquo;</span>' : ''}<div class="otile ${a.isPlayer ? 'hero' : 'foe'} ${st}" style="--oc:${a.isPlayer ? CC[a.cls] : '#e0b8a8'}" title="${esc(a.name)}: Initiative ${cb.initiative(a)}, HP ${a.hp}/${a.maxHp}"><span class="oini">${cb.initiative(a)}</span><div class="ofig">${figure(a)}</div><div class="onm">${a.isPlayer && !party ? 'You' : a === p && cb.myMi != null ? 'You' : esc(a.name)}</div><div class="obar"><i style="width:${Math.max(0, 100 * a.hp / a.maxHp)}%"></i></div></div>`; }).join('') + `<span class="round">Round ${cb.round}</span>`;
     const mine = cb.duel ? [p] : cb.players, foes = cb.duel ? cb.players.filter(x => x !== p) : cb.enemies;
     $('playerSlot').className = party && !cb.duel ? 'party' : ''; $('playerSlot').innerHTML = mine.map(unitHtml).join('');
     $('foes').innerHTML = foes.map(unitHtml).join('');
@@ -3412,6 +3496,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
         <span class="ctext">${esc(d.text)}</span><span class="cfoot">${chk.ok ? (d.target === 'enemy' ? 'Single enemy' : d.target === 'all' ? 'All enemies' : 'Self') : esc(chk.why)}</span></button>`;
     }).join('') || `<span class="hint">${myTurn ? 'No cards in hand.' : ''}</span>`;
     fitCards($('hand'));
+    if (!$('pCMeter').hidden) renderMeter($('meterC'));
     const logEl = $('log');
     logEl.innerHTML = cb.log.slice(-250).map(l => `<div class="k-${l.kind}">${esc(l.text)}</div>`).join('');
     logEl.parentElement.scrollTop = logEl.parentElement.scrollHeight;

@@ -5,6 +5,7 @@ const CB = (typeof module !== 'undefined' && module.exports) ? require('./engine
 const { makeRng, shuffle, ri, rollItem, rollDrops, sumGear, STARTER_GEAR, presetGear, Combat, rollCards } = CB;
 
 const ROWS = 14, COLS = 5;
+const MOB_HP_STEP = 0.3; // a party fights one monster per hero, each with +30% HP per extra hero (sims: about solo difficulty)
 const TIER_ROWS = r => r <= 4 ? '1' : r <= 9 ? '2' : '3';
 const SHRINES = [
   { key: 'crit', name: 'Shrine of the Keen Edge', text: '+10% Crit Chance for the next 2 fights.', buff: { crit: 10 } },
@@ -16,7 +17,7 @@ const SHRINES = [
 ];
 const SLOTS = ['Weapon', 'Off-hand', 'Helm', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves', 'Belt', 'Pants', 'Boots', 'Ring 1', 'Ring 2'];
 
-function generateMap(rng, data) {
+function generateMap(rng, data, partySize) {
   const nodes = {}, edges = new Set();
   const id = (r, c) => r + ':' + c;
   const starts = new Set();
@@ -90,7 +91,7 @@ function generateMap(rng, data) {
   const elites = shuffle(byTier.Elite.slice(), rng);
   let ei = 0;
   for (const n of list) {
-    if (n.type === 'fight') n.enemies = [byTier[TIER_ROWS(n.row)][ri(rng, 0, byTier[TIER_ROWS(n.row)].length - 1)]];
+    if (n.type === 'fight') { const pool = byTier[TIER_ROWS(n.row)]; n.enemies = [pool[ri(rng, 0, pool.length - 1)]]; for (let k = 1; k < Math.min(4, partySize || 1); k++) n.enemies.push(pool[ri(rng, 0, pool.length - 1)]); } // a party meets one monster per hero
     if (n.type === 'elite') n.enemies = [elites[ei++ % elites.length]];
     if (n.type === 'shrine') n.shrine = SHRINES[ri(rng, 0, SHRINES.length - 1)].key;
   }
@@ -115,8 +116,8 @@ class Run {
       return { idx: i, cls: sp.cls, name: sp.name || sp.cls, gear, stats, deck: sp.deck || null, hp: stats.maxHp, mana: 0, gold: 0, sack: [],
         bank: this.sharedBank ? 0 : (sp.bank || 0), spent: 0, orders: [], stashFree: sp.stashFree != null ? sp.stashFree : 99, kept: null, deaths: 0 };
     });
-    this.buffs = []; this.log = [];
-    this.map = generateMap(this.rng, this.data);
+    this.buffs = []; this.log = []; this.meter = {};
+    this.map = generateMap(this.rng, this.data, specs.length);
     this.at = null; this.visited = []; this.over = null; this.fightsWon = 0; this.kills = 0; this.combat = null; this.pending = null;
     this.note(this.members.length > 1 ? `A party of ${this.members.length} (${this.members.map(m => m.name).join(', ')}) sets out on The Broken March (+${this.level}).` : `A ${this.cls} sets out on The Broken March (+${this.level}).`);
   }
@@ -154,7 +155,7 @@ class Run {
     if (['fight', 'elite', 'boss'].includes(n.type)) {
       const buffs = this.activeBuffs();
       const party = this.members.map(m => ({ cls: m.cls, name: m.name, gear: m.gear, deck: m.deck || undefined, hp: m.hp, mana: m.mana, buffs }));
-      this.combat = new Combat({ party, enemies: n.enemies, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: this.opts.partyStep });
+      this.combat = new Combat({ party, enemies: n.enemies, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : this.opts.partyStep, mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * (this.members.length - 1) : 1 });
       this.note(`Row ${n.row}: ${n.type === 'boss' ? 'the boss' : n.type === 'elite' ? 'an elite' : 'a fight'} against ${n.enemies.map(k => this.data.enemies[k].name).join(', ')}.`);
     } else if (n.type === 'rest') { this.pending = { type: 'rest', heals: this.members.map(m => Math.min(m.stats.maxHp - m.hp, Math.round(m.stats.maxHp * 0.3))), keep: n.campfire ? 0.75 : 0.5 }; this.pending.heal = this.pending.heals[0]; }
     else if (n.type === 'shrine') { const s = SHRINES.find(x => x.key === n.shrine); this.buffs.push({ key: s.key, name: s.name, buff: s.buff, fights: 2 }); this.pending = { type: 'shrine', shrine: s }; this.note(`Row ${n.row}: ${s.name}. ${s.text}`); }
@@ -167,6 +168,11 @@ class Run {
     const cb = this.combat; if (!cb || !cb.over) return null;
     const n = this.map.nodes[this.at];
     this.combat = null;
+    for (const m of Object.values(cb.meter)) { // add the fight to the run totals: heroes by seat, monsters together by name
+      const k = m.isPlayer ? m.id : 'm:' + m.name, R = this.meter[k] || (this.meter[k] = { id: k, name: m.name, isPlayer: m.isPlayer, cls: m.cls, dealt: {}, healed: {}, taken: {}, absorbed: 0 });
+      for (const f of ['dealt', 'healed', 'taken']) for (const [a, v] of Object.entries(m[f])) R[f][a] = (R[f][a] || 0) + v;
+      R.absorbed += m.absorbed;
+    }
     for (const b of this.buffs) b.fights--;
     this.buffs = this.buffs.filter(b => b.fights > 0);
     if (cb.over === 'loss') {
