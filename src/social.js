@@ -46,7 +46,9 @@
     ch.on('broadcast', { event: 'party-leave' }, ({ payload }) => gotLeave(payload));
     ch.on('broadcast', { event: 'net' }, ({ payload }) => netIn(payload));
     ch.on('broadcast', { event: 'friend-ping' }, ({ payload }) => { if (payload.to === SOC.me) { loadFriends(); sysChat(`${payload.name} sent you a friend request. Open Friends to accept it.`); } });
-    ch.subscribe(async (status) => { if (status === 'SUBSCRIBED') { await ch.track(myPresence()); renderSocial(); } });
+    ch.subscribe(async (status) => { if (status === 'SUBSCRIBED') { SOC.trackAt = Date.now(); await ch.track(myPresence()); renderSocial(); } });
+    // the party leader repeats the party now and then, so anyone who missed an update catches up
+    if (!SOC.partyTimer) SOC.partyTimer = setInterval(() => { if (socOn() && SOC.party && SOC.party.leader === SOC.me && SOC.party.members.length > 1) SOC.ch.send({ type: 'broadcast', event: 'party', payload: SOC.party }); }, 20000);
     setTimeout(() => guildLoad(), 500);
     if (!SOC.cardTimer) SOC.cardTimer = setInterval(() => { if (supaUser) saveCard(); }, 5 * 60 * 1000); // keeps 'last online' fresh
     SOC.ch = ch;
@@ -61,15 +63,27 @@
     renderSocial();
   }
   // presence is re-sent at most every 2 seconds (hero, place, party); movement goes out as broadcasts
+  // Supabase allows each client only 5 presence updates per 30 seconds (and 100 messages a second for the whole project,
+  // counting every delivery), so presence goes out at most every 8 seconds and town movement is batched (Oct 31)
+  const TRACK_GAP = 8000, POS_GAP = 700;
   function retrack(now) {
     if (!socOn()) return;
     clearTimeout(SOC.retrackTimer);
-    SOC.retrackTimer = setTimeout(() => { if (socOn()) SOC.ch.track(myPresence()); }, now ? 0 : 2000);
+    const wait = Math.max(now ? 0 : 2000, (SOC.trackAt || 0) + TRACK_GAP - Date.now());
+    SOC.retrackTimer = setTimeout(() => { if (socOn()) { SOC.trackAt = Date.now(); SOC.ch.track(myPresence()); } }, wait);
   }
+  // each step is buffered; every 0.7 s the steps go out as one message (only if someone else is in town to see them)
   function socPos() {
     if (!socOn() || $('scrStart').hidden) return;
-    SOC.ch.send({ type: 'broadcast', event: 'pos', payload: { uid: SOC.me, x: P.x, y: P.y, dir: P.dir } });
+    SOC.posBuf = SOC.posBuf || []; SOC.posBuf.push([P.x, P.y, P.dir]);
+    if (!SOC.posTimer) SOC.posTimer = setTimeout(flushPos, POS_GAP);
     retrack();
+  }
+  function flushPos() {
+    SOC.posTimer = null; const b = SOC.posBuf || []; SOC.posBuf = [];
+    if (!b.length || !socOn() || !SOC.others.size) return;
+    const last = b[b.length - 1];
+    SOC.ch.send({ type: 'broadcast', event: 'pos', payload: { uid: SOC.me, x: last[0], y: last[1], dir: last[2], path: b.slice(-6) } });
   }
 
   // ---------- other players walking around town
@@ -84,11 +98,11 @@
   }
   function moveOther(p) {
     const o = SOC.others.get(p.uid); if (!o) return;
-    const cur = otherPos(o);
-    Object.assign(o, { fx: cur.x, fy: cur.y, x: p.x, y: p.y, t: 0, dir: p.dir, step: o.step + 1 });
+    o.q = o.q || []; for (const s of (p.path || [[p.x, p.y, p.dir]])) o.q.push(s);
+    if (o.q.length > 8) { const s = o.q[o.q.length - 1]; o.q = []; Object.assign(o, { fx: s[0], fy: s[1], x: s[0], y: s[1], t: 1, dir: s[2] }); } // fell far behind: jump
   }
   function otherPos(o) { const k = Math.min(1, o.t); return { x: o.fx + (o.x - o.fx) * k, y: o.fy + (o.y - o.fy) * k }; }
-  function updateOthers(dt) { for (const o of SOC.others.values()) if (o.t < 1) o.t += dt / STEP_MS; }
+  function updateOthers(dt) { for (const o of SOC.others.values()) { if (o.t < 1) o.t += dt / STEP_MS; if (o.t >= 1 && o.q && o.q.length) { const s = o.q.shift(); Object.assign(o, { fx: o.x, fy: o.y, x: s[0], y: s[1], t: 0, dir: s[2] || o.dir, step: o.step + 1 }); } } }
   function othersDrawList(TS, s, t) {
     const out = [];
     for (const o of SOC.others.values()) {
@@ -223,7 +237,10 @@
     const inv = SOC.invites.find(i => i.from === from); if (!inv) return;
     SOC.invites = SOC.invites.filter(i => i.from !== from);
     if (accept && SOC.party) leaveParty(true);
-    SOC.ch.send({ type: 'broadcast', event: 'invite-reply', payload: Object.assign({ to: from, partyId: inv.partyId, accept }, meMember()) });
+    const msg = { type: 'broadcast', event: 'invite-reply', payload: Object.assign({ to: from, partyId: inv.partyId, accept }, meMember()) };
+    SOC.ch.send(msg);
+    // messages can get lost: keep answering until the party shows up with us in it (up to 15 s)
+    if (accept) { clearInterval(SOC.joinTimer); let n = 0; SOC.joinTimer = setInterval(() => { if ((SOC.party && SOC.party.id === inv.partyId) || ++n > 5 || !socOn()) { clearInterval(SOC.joinTimer); if (n > 5 && !(SOC.party && SOC.party.id === inv.partyId)) sysChat('The party invite answer did not get through. Ask for a new invite.'); return; } SOC.ch.send(msg); }, 3000); }
     renderSocial();
   }
   function gotReply(p) {

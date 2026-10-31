@@ -306,12 +306,11 @@
     const now = Date.now();
     // who is still here
     // a player is here if presence shows them or we heard from them in the last 10 seconds
-    S.uids.forEach((u, i) => { if (u === SOC.me || S.gone[i]) return; if (SOC.online.has(u) || now - ((S.seen || {})[u] || 0) < 10000) delete S.missing[u]; else if (!S.missing[u]) S.missing[u] = now; });
+    S.uids.forEach((u, i) => { if (u === SOC.me || S.gone[i]) return; if (SOC.online.has(u) || now - ((S.seen || {})[u] || 0) < 12000) delete S.missing[u]; else if (!S.missing[u]) S.missing[u] = now; });
     // heartbeat every 2 seconds; guests re-send actions the host hasn't numbered yet
-    if (now - (S.hbAt || 0) >= 2000) {
-      S.hbAt = now; netSend('hb', { sid: S.sid, next: netHost() ? S.next : S.seq });
-      if (!netHost() && S.outbox) for (const [aid, o] of S.outbox) { if (++o.tries > 15) { S.outbox.delete(aid); continue; } netSend('act', { sid: S.sid, a: o.a }); }
-    }
+    // (guests beat every 5 s: with 10 raiders every message is delivered 9 times, and Supabase caps the whole project at 100 a second)
+    if (now - (S.hbAt || 0) >= (netHost() ? 2000 : 5000)) { S.hbAt = now; netSend('hb', { sid: S.sid, next: netHost() ? S.next : S.seq }); }
+    if (!netHost() && S.outbox && S.outbox.size && now - (S.rsAt || 0) >= 2000) { S.rsAt = now; for (const [aid, o] of S.outbox) { if (++o.tries > 15) { S.outbox.delete(aid); continue; } netSend('act', { sid: S.sid, a: o.a }); } }
     const hostGone = S.host !== SOC.me && S.missing[S.host] && now - S.missing[S.host] > GONE_S * 1000;
     if (hostGone) {
       const heir = S.uids.find((u, i) => !S.gone[i] && u !== S.host && (u === SOC.me || !S.missing[u]));
