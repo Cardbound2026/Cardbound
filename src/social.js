@@ -6,9 +6,9 @@
 
   function rcOf(c) { const slot = sl => c.gear.find(g => g.slot === sl); const rc = sl => { const it = slot(sl); return it ? it.rarity : null; }; return { helm: rc('Helm'), chest: rc('Chest'), weapon: rc('Weapon'), cloak: rc('Cloak'), boots: rc('Boots') }; }
   function myPresence() {
-    const c = profile.chars[heroCls];
+    const c = profile.chars[heroKey];
     const place = !$('scrStart').hidden ? 'town' : run ? 'run' : cb && cb.duel ? 'duel' : 'menu';
-    return { uid: SOC.me, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? heroCls : null, rc: c ? rcOf(c) : {}, place, x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
+    return { uid: SOC.me, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
   }
 
   async function socStart() {
@@ -99,7 +99,7 @@
   function sendChat(text) {
     text = (text || '').trim().slice(0, 200); if (!text) return;
     if (!socOn()) { sysChat('Sign in to chat with other players.'); return; }
-    const c = profile.chars[heroCls];
+    const c = profile.chars[heroKey];
     const m = { uid: SOC.me, name: c ? c.name : acctName(supaUser), text, at: Date.now() };
     SOC.ch.send({ type: 'broadcast', event: 'chat', payload: m }); addChat(m);
   }
@@ -112,8 +112,8 @@
   // ---------- friends (tables: players, friends)
   async function saveCard() {
     if (!supa || !supaUser) return;
-    const c = profile.chars[heroCls];
-    const row = { user_id: supaUser.id, display_name: acctName(supaUser).slice(0, 40), hero_name: c ? c.name : null, hero_class: c ? heroCls : null, updated_at: new Date().toISOString() };
+    const c = profile.chars[heroKey];
+    const row = { user_id: supaUser.id, display_name: acctName(supaUser).slice(0, 40), hero_name: c ? c.name : null, hero_class: c ? c.cls : null, updated_at: new Date().toISOString() };
     const { error } = await supa.from('players').upsert(row);
     if (error) { console.warn('players upsert', error); return; }
     const { data } = await supa.from('players').select('friend_code').eq('user_id', supaUser.id).maybeSingle();
@@ -143,7 +143,7 @@
     if (SOC.requestsIn.some(f => f.id === p.user_id)) { await acceptFriend(p.user_id); return null; }
     const { error } = await supa.from('friends').insert({ user_id: SOC.me, friend_id: p.user_id, status: 'pending' });
     if (error) return 'Could not send the request: ' + error.message;
-    if (socOn()) { const c = profile.chars[heroCls]; SOC.ch.send({ type: 'broadcast', event: 'friend-ping', payload: { to: p.user_id, name: c ? c.name : acctName(supaUser) } }); }
+    if (socOn()) { const c = profile.chars[heroKey]; SOC.ch.send({ type: 'broadcast', event: 'friend-ping', payload: { to: p.user_id, name: c ? c.name : acctName(supaUser) } }); }
     await loadFriends(); return null;
   }
   async function acceptFriend(id) { await supa.from('friends').update({ status: 'accepted' }).eq('user_id', id).eq('friend_id', SOC.me); await loadFriends(); }
@@ -151,13 +151,13 @@
 
   // ---------- parties: the inviter leads; up to 4 players
   const newPartyId = () => 'p' + Math.random().toString(36).slice(2, 10);
-  function meMember() { const c = profile.chars[heroCls]; return { uid: SOC.me, name: c ? c.name : acctName(supaUser), cls: c ? heroCls : null }; }
+  function meMember() { const c = profile.chars[heroKey]; return { uid: SOC.me, name: c ? c.name : acctName(supaUser), cls: c ? c.cls : null }; }
   function invite(uid) {
     if (!socOn()) return;
     if (SOC.party && SOC.party.leader !== SOC.me) { toast('Only the party leader can invite.'); return; }
     if (!SOC.party) SOC.party = { id: newPartyId(), leader: SOC.me, members: [meMember()] };
     if (SOC.party.members.length >= PARTY_MAX) { toast('The party is full (4 players).'); return; }
-    const c = profile.chars[heroCls];
+    const c = profile.chars[heroKey];
     SOC.ch.send({ type: 'broadcast', event: 'invite', payload: { to: uid, from: SOC.me, name: c ? c.name : acctName(supaUser), partyId: SOC.party.id } });
     const f = SOC.friends.find(x => x.id === uid) || SOC.others.get(uid);
     sysChat(`Party invite sent to ${f ? f.name : 'player'}.`); retrack(true); renderSocial();

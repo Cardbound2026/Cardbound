@@ -23,14 +23,14 @@
     return G[base] ? G[base].pts : 1;
   }
   function itemPower(it, cls) {
-    let p = 0; cls = cls || heroCls;
+    let p = 0; cls = cls || hcls();
     for (const src of [it.stats || {}, it.imp2 || {}]) for (const [k, v] of Object.entries(src)) p += v * statPts(k) * (isOff(k, cls) ? 0.25 : 1);
     return Math.round(p);
   }
   // is an item better than what this hero wears? compares item power with the weaker of the slots it can go in
   function upgradeInfo(it, gear, cls) {
     if (!it || it.kind === 'card' || !gear) return null;
-    if (it.slot === 'Codex' && it.cls && it.cls !== (cls || heroCls)) return { kind: 'other', cls: it.cls };
+    if (it.slot === 'Codex' && it.cls && it.cls !== (cls || hcls())) return { kind: 'other', cls: it.cls };
     const cur = CBHub.slotOptions(it).map(sl => gear.find(g => g.slot === sl));
     if (cur.some(x => !x)) return { kind: 'empty' };
     const mine = itemPower(it, cls), worst = cur.reduce((a, b) => itemPower(a, cls) <= itemPower(b, cls) ? a : b), d = mine - itemPower(worst, cls);
@@ -45,7 +45,7 @@
       : u.kind === 'down' ? `<span class="upb down" title="${why}">&#9660; ${u.d} power</span>`
       : `<span class="upb same" title="${why}">= Even</span>`;
   }
-  const myGear = () => (profile.chars[heroCls] || { gear: [] }).gear;
+  const myGear = () => (profile.chars[heroKey] || { gear: [] }).gear;
 
   // hover tooltips for item slots: data-tip points into TIPS
   const TIPS = new Map(); let tipN = 0;
@@ -96,15 +96,15 @@
   document.addEventListener('click', (ev) => {
     const d = ev.target.closest('[data-dslot]'); if (!d || !d.closest('#hpGear')) return;
     gtip.hidden = true;
-    const sl = d.dataset.dslot, c = CBHub.char(profile, heroCls), it = c.gear.find(g => g.slot === sl);
-    const fits = profile.stash.filter(x => x.kind !== 'card' && CBHub.slotOptions(x).includes(sl) && !(x.slot === 'Codex' && x.cls && x.cls !== heroCls)).sort((a, b) => (b.ilvl || 0) - (a.ilvl || 0));
+    const sl = d.dataset.dslot, c = CBHub.char(profile, heroKey), it = c.gear.find(g => g.slot === sl);
+    const fits = profile.stash.filter(x => x.kind !== 'card' && CBHub.slotOptions(x).includes(sl) && !(x.slot === 'Codex' && x.cls && x.cls !== hcls())).sort((a, b) => (b.ilvl || 0) - (a.ilvl || 0));
     const choose = fits.map(x => itemHtml(x, `<div class="acts">${upBadge(x, c.gear)}<button class="btn" data-eq="${x.id}">Equip</button></div>`)).join('');
     modal(`<h2>${sl}</h2>${it ? itemHtml(it, `<div class="acts"><button class="btn" id="mUneq">Unequip to stash</button></div>`) : '<p class="muted">Nothing equipped.</p>'}
       <h3 style="font-size:18px;color:var(--accent);margin-top:10px">From your stash (${fits.length})</h3><div class="list" style="max-height:340px">${choose || '<span class="muted">Nothing in the stash fits this slot.</span>'}</div>
       <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     $('mClose').onclick = closeModal;
-    if ($('mUneq')) $('mUneq').onclick = () => { if (!CBHub.unequip(profile, heroCls, sl)) return toast('Stash is full.'); save(); closeModal(); renderHub(); };
-    for (const b of $('modalBox').querySelectorAll('[data-eq]')) b.onclick = () => { const r = CBHub.equip(profile, heroCls, b.dataset.eq, sl); if (!r.ok) return toast(r.why); save(); closeModal(); renderHub(); };
+    if ($('mUneq')) $('mUneq').onclick = () => { if (!CBHub.unequip(profile, heroKey, sl)) return toast('Stash is full.'); save(); closeModal(); renderHub(); };
+    for (const b of $('modalBox').querySelectorAll('[data-eq]')) b.onclick = () => { const r = CBHub.equip(profile, heroKey, b.dataset.eq, sl); if (!r.ok) return toast(r.why); save(); closeModal(); renderHub(); };
   });
 
   // ---------- inspecting another player (they answer with their hero's gear and deck)
@@ -115,7 +115,7 @@
     modal(`<h2>Inspecting ${esc(nameOfUid(uid))}...</h2><p class="muted">Asking their game for their hero.</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`); $('mClose').onclick = closeModal;
     setTimeout(() => { if (INS.waiting === uid) { INS.waiting = null; if (!$('modal').hidden && /Inspecting/.test($('modalBox').innerText)) toast(`${nameOfUid(uid)} didn't answer. They may have just gone offline.`); } }, 6000);
   }
-  function inspectCard() { const c = profile.chars[heroCls]; if (!c) return null; return { name: c.name, cls: heroCls, gear: c.gear.map(g => { const x = Object.assign({}, g); delete x.id; return x; }), deck: c.deck.map(k => ({ key: k.key, rank: k.rank || 0 })), runs: c.runs, best: c.best, bossKills: c.bossKills, duels: c.duels || null, acct: supaUser ? acctName(supaUser) : '' }; }
+  function inspectCard() { const c = profile.chars[heroKey]; if (!c) return null; return { name: c.name, cls: c.cls, gear: c.gear.map(g => { const x = Object.assign({}, g); delete x.id; return x; }), deck: c.deck.map(k => ({ key: k.key, rank: k.rank || 0 })), runs: c.runs, best: c.best, bossKills: c.bossKills, duels: c.duels || null, acct: supaUser ? acctName(supaUser) : '' }; }
   function showInspect(ch) {
     const deck = ch.deck.slice().sort((a, b) => RAR_ORDER[CARDS[a.key].rarity] - RAR_ORDER[CARDS[b.key].rarity] || CARDS[a.key].name.localeCompare(CARDS[b.key].name));
     const groups = []; for (const k of deck) { const g = groups.find(x => x.key === k.key && x.rank === k.rank); if (g) g.n++; else groups.push({ key: k.key, rank: k.rank, n: 1 }); }
@@ -134,7 +134,7 @@
   function tradeAsk(uid) {
     if (!socOn()) return; if (run || cb || NET.s) { toast('You can only trade in Emberwatch.'); return; }
     if (TR.s) { toast('Finish your current trade first.'); return; }
-    const c = profile.chars[heroCls]; netSend('tr-ask', { to: uid, name: c ? c.name : acctName(supaUser) });
+    const c = profile.chars[heroKey]; netSend('tr-ask', { to: uid, name: c ? c.name : acctName(supaUser) });
     TR.asked = uid; sysChat(`Trade request sent to ${nameOfUid(uid)}.`);
   }
   function answerTrade(from, ok) {

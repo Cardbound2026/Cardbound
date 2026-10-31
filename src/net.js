@@ -20,9 +20,9 @@
   // what I bring: my current hero, gear, deck, bank and stash space
   function mySpec() {
     if (run || cb) return { err: 'is already on the March or in a fight' };
-    const c = profile.chars[heroCls]; if (!c) return { err: 'has no hero yet' };
+    const c = profile.chars[heroKey]; if (!c) return { err: 'has no hero yet' };
     const chk = CBHub.deckCheck(c.deck); if (!chk.ok) return { err: `needs to fix their deck (it ${chk.problems.join(', ')})` };
-    const o = CBHub.runOpts(profile, heroCls); delete o.members;
+    const o = CBHub.runOpts(profile, heroKey); delete o.members;
     return Object.assign(o, { uid: SOC.me });
   }
 
@@ -60,7 +60,7 @@
       cb = new CB.Combat({ duel: true, party: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, uid: s.uid })), seed: go.seed, data: DATA });
       cb.myMi = S.mi; startCombatUI();
     } else {
-      run = new Run({ members: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, bank: s.bank, stashFree: s.stashFree })), level: go.level, map: go.map || 'physical', seed: go.seed, data: DATA });
+      run = new Run({ members: go.specs.map(s => ({ key: s.key, cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, bank: s.bank, stashFree: s.stashFree })), level: go.level, map: go.map || 'physical', seed: go.seed, data: DATA });
       run.online = true; run.myMi = S.mi; run.uids = go.uids.slice();
       show('map'); renderMap(true);
       if (go.host !== SOC.me) { modal(`<h2>Your party sets out</h2><p>${esc(nameOfUid(go.host))} is leading ${go.specs.map(x => esc(x.name)).join(', ')} onto <b>${esc(run.mapName)}</b> (+${go.level}).</p><p class="muted">Click a node on the map to vote where to go. The party moves when everyone has voted (ties are a coin flip; after 45 seconds the votes in count).</p><div class="row"><button class="btn primary" id="mClose">Let's go</button></div>`); $('mClose').onclick = closeModal; }
@@ -257,9 +257,9 @@
   function challenge(uid) {
     if (!socOn() || NET.s || NET.duelOut) return;
     if (run || cb) { toast('Finish what you are doing first.'); return; }
-    const c = profile.chars[heroCls]; if (!c) return;
+    const c = profile.chars[heroKey]; if (!c) return;
     NET.duelOut = uid;
-    netSend('duel-ask', { to: uid, name: c.name, cls: heroCls });
+    netSend('duel-ask', { to: uid, name: c.name, cls: c.cls });
     sysChat(`You challenged ${nameOfUid(uid)} to a duel.`); renderSocial();
     setTimeout(() => { if (NET.duelOut === uid) { NET.duelOut = null; sysChat(`${nameOfUid(uid)} didn't answer the challenge.`); renderSocial(); } }, 30000);
   }
@@ -271,7 +271,7 @@
   }
   function duelOver() {
     const S = NET.s, me = cb.players[cb.myMi], won = cb.winner === me;
-    const c = profile.chars[heroCls]; if (c && S && !S.counted) { S.counted = true; c.duels = c.duels || { w: 0, l: 0 }; if (won) c.duels.w++; else c.duels.l++; save(); }
+    const c = profile.chars[heroKey]; if (c && S && !S.counted) { S.counted = true; c.duels = c.duels || { w: 0, l: 0 }; if (won) c.duels.w++; else c.duels.l++; save(); }
     const foe = cb.players.find(p => p !== me);
     modal(`<h2 class="${won ? '' : 'loss'}">${won ? 'Victory' : cb.winner ? 'Defeat' : 'Draw'}</h2><p>${won ? `You beat ${esc(foe.name)} in ${cb.round} rounds.` : cb.winner ? `${esc(cb.winner.name)} wins in ${cb.round} rounds.` : 'Nobody is left standing.'} Duels are for glory: nobody loses gear, gold or HP.</p>
       <dl class="kv"><dt>Your duel record</dt><dd>${c && c.duels ? c.duels.w + ' won, ' + c.duels.l + ' lost' : '-'}</dd></dl>

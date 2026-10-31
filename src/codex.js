@@ -2,7 +2,7 @@
   const CX = { own: 'All', map: null, tab: 'cards', cls: 'All', rar: 'All', built: 'All', tier: 'All', slot: 'All', q: '' };
   const TIER_NAME = t => t === 'Elite' || t === 'Boss' ? t : 'Tier ' + t;
   function cxChips(key, vals, label) { return `<div class="cxchips" role="group" aria-label="${label}">${vals.map(v => `<button class="cxchip ${CX[key] === v ? 'on' : ''}" data-cx="${key}" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div>`; }
-  function ownedCounts() { const c = profile.chars[heroCls], n = {}; if (c) for (const k of [...c.deck, ...c.cards]) n[k.key] = (n[k.key] || 0) + 1; return n; }
+  function ownedCounts() { const c = profile.chars[heroKey], n = {}; if (c) for (const k of [...c.deck, ...c.cards]) n[k.key] = (n[k.key] || 0) + 1; return n; }
   function codexCards() {
     const own = ownedCounts(), q = CX.q.toLowerCase();
     const all = Object.entries(CARDS).filter(([k, d]) => d.cls && d.rarity !== 'Status' && d.rarity !== 'Token');
@@ -11,7 +11,7 @@
     const drops = CB.CARD_DROPS;
     const nBuilt = all.filter(([k, d]) => !d.designOnly).length;
     return `${cxChips('cls', ['All', ...Object.keys(CLASSES)], 'Class')}${cxChips('rar', ['All', 'White', 'Green', 'Blue', 'Gold'], 'Rarity')}${cxChips('own', ['All', 'Owned', 'Not owned'], 'Owned')}
-      <p class="savenote">${list.length} of ${all.length} cards. <b>${nBuilt} are playable</b>; the other ${all.length - nBuilt} are from the card design and are marked <i>Not built yet</i>: they don't drop until their mechanics are added to the game. <b>How cards drop:</b> each kill can drop a card for <i>your</i> class: tier 1 ${drops[1].chance}%, tier 2 ${drops[2].chance}%, tier 3 ${drops[3].chance}% (mostly White, some Green and Blue); elites always drop one Green or better (${drops.Elite.w.Gold}% Gold); the Warlord drops two Blue or Gold. Luck raises every chance. Cards marked <b>owned</b> are in ${esc(profile.chars[heroCls] ? profile.chars[heroCls].name : 'your hero')}'s deck or collection.</p>
+      <p class="savenote">${list.length} of ${all.length} cards. <b>${nBuilt} are playable</b>; the other ${all.length - nBuilt} are from the card design and are marked <i>Not built yet</i>: they don't drop until their mechanics are added to the game. <b>How cards drop:</b> each kill can drop a card for <i>your</i> class: tier 1 ${drops[1].chance}%, tier 2 ${drops[2].chance}%, tier 3 ${drops[3].chance}% (mostly White, some Green and Blue); elites always drop one Green or better (${drops.Elite.w.Gold}% Gold); the Warlord drops two Blue or Gold. Luck raises every chance. Cards marked <b>owned</b> are in ${esc(profile.chars[heroKey] ? profile.chars[heroKey].name : 'your hero')}'s deck or collection.</p>
       <div class="pilegrid cxgrid">${list.map(([k, d]) => `<div class="pilecard ${d.designOnly ? 'design' : ''}" data-cxcard="${k}" style="cursor:pointer" title="${esc((d.id || '') + (d.designOnly ? ' (not built yet)' : ''))} - click for ranks and drop sources">${cardBox(d, 150) || rowHtml(1, d)}${d.designOnly ? '<span class="dstamp">Not built yet</span>' : ''}${own[k] ? `<span class="pilecount" title="In your deck or collection">owned${own[k] > 1 ? ' x' + own[k] : ''}</span>` : ''}</div>`).join('') || '<span class="muted">No cards match.</span>'}</div>`;
   }
   // map filter: defaults to the map picked at the Wagon

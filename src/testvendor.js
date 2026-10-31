@@ -3,21 +3,21 @@
   // ---------- premade codex test decks (design/Cardbound_Codex_Test_Decks.xlsx): load one and its codex in a click
   const TDECKS = window.CB_TESTDECKS || [];
   function testDecksHtml(c) {
-    const mine = TDECKS.filter(d => d.cls === heroCls), eq = c.gear.find(g => g.slot === 'Codex');
-    const others = Object.keys(CLASSES).filter(k => k !== heroCls).map(k => `${TDECKS.filter(d => d.cls === k).length} ${k}`).join(', ');
+    const mine = TDECKS.filter(d => d.cls === hcls()), eq = c.gear.find(g => g.slot === 'Codex');
+    const others = Object.keys(CLASSES).filter(k => k !== hcls()).map(k => `${TDECKS.filter(d => d.cls === k).length} ${k}`).join(', ');
     const groups = []; for (const d of mine) { let g = groups.find(x => x.codex === d.codex); if (!g) groups.push(g = { codex: d.codex, decks: [] }); g.decks.push(d); }
-    const cx = (k) => (CB.CODEXES[heroCls] || []).find(x => x[0] === k) || [k, k, ''];
-    return `<p class="savenote" style="margin:0 0 8px"><b>${mine.length} ${heroCls} test decks</b>, three per codex (the deck sheets are in the Codex Test Decks workbook). <b>Load deck</b> equips that codex and replaces ${esc(c.name)}'s deck with the 22 cards at +0. Your own cards go back to the collection; test-deck cards are removed when you load another. Other classes: ${others} (switch hero to load those).</p>
+    const cx = (k) => (CB.CODEXES[hcls()] || []).find(x => x[0] === k) || [k, k, ''];
+    return `<p class="savenote" style="margin:0 0 8px"><b>${mine.length} ${hcls()} test decks</b>, three per codex (the deck sheets are in the Codex Test Decks workbook). <b>Load deck</b> equips that codex and replaces ${esc(c.name)}'s deck with the 22 cards at +0. Your own cards go back to the collection; test-deck cards are removed when you load another. Other classes: ${others} (switch hero to load those).</p>
       ${groups.map(g => { const [k, nm, txt] = cx(g.codex); return `<div class="tdgroup"><div class="tdhead"><b style="color:#e0802a">${esc(nm)} Codex</b> <span class="muted">${esc(txt)}</span>${eq && eq.codex === k ? ' <span class="chip">equipped</span>' : ''}</div>
         <div class="tdrow">${g.decks.map(d => { const loaded = c.testDeck === d.id, cnt = { Gold: 0, Blue: 0, Green: 0, White: 0 }; for (const [ck, n] of d.cards) cnt[CARDS[ck].rarity] += n;
-          return `<div class="tdcard ${loaded ? 'on' : ''}"><div class="ih"><b>${esc(nm)} ${heroCls} ${d.n}: ${esc(d.name)}</b></div><div class="il">${esc(d.style)}</div><p>${esc(d.plan)}</p>
+          return `<div class="tdcard ${loaded ? 'on' : ''}"><div class="ih"><b>${esc(nm)} ${hcls()} ${d.n}: ${esc(d.name)}</b></div><div class="il">${esc(d.style)}</div><p>${esc(d.plan)}</p>
             <div class="il">${['Gold', 'Blue', 'Green', 'White'].map(r => `<span style="color:${RC[r]}">${cnt[r]} ${r}</span>`).join(' &middot; ')}</div>
             ${TV.open === d.id ? `<div class="tdlist">${d.cards.slice().sort((a, b) => RAR_ORDER[CARDS[b[0]].rarity] - RAR_ORDER[CARDS[a[0]].rarity] || CARDS[a[0]].name.localeCompare(CARDS[b[0]].name)).map(([ck, n]) => `<span style="color:${RC[CARDS[ck].rarity]}" title="${esc(CARDS[ck].text)}">${n}x ${esc(CARDS[ck].name)}</span>`).join('')}</div>` : ''}
             <div class="acts"><button class="btn ${loaded ? '' : 'primary'}" data-tvdeck="${d.id}">${loaded ? 'Loaded (reload)' : 'Load deck'}</button><button class="btn" data-tvpeek="${d.id}">${TV.open === d.id ? 'Hide cards' : 'Show cards'}</button></div></div>`; }).join('')}</div></div>`; }).join('')}`;
   }
   function loadTestDeck(id) {
-    const d = TDECKS.find(x => x.id === id), c = profile.chars[heroCls]; if (!d || !c) return;
-    if (d.cls !== heroCls) return toast(`That deck is for a ${d.cls}.`);
+    const d = TDECKS.find(x => x.id === id), c = profile.chars[heroKey]; if (!d || !c) return;
+    if (d.cls !== hcls()) return toast(`That deck is for a ${d.cls}.`);
     const nid = () => 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
     // your own cards go back to the collection; cards from an earlier test deck just disappear
     for (const k of c.deck) if (!k.test) c.cards.push(k);
@@ -28,22 +28,22 @@
     if (!eq || eq.codex !== d.codex) {
       let it = profile.stash.find(x => x.codex === d.codex);
       if (!it) { if (profile.stash.length >= CBHub.STASH_MAX) note = ' Your stash is full, so the codex could not be added: make room and load again.'; else { it = Object.assign({ id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, CB.makeCodex(DATA, CB.makeRng(Date.now() % 2147483646), d.codex, profile.last.level || 0)); profile.stash.unshift(it); } }
-      if (it) { const r = CBHub.equip(profile, heroCls, it.id, 'Codex'); if (!r.ok) note = ` The codex could not be equipped: ${r.why}.`; }
+      if (it) { const r = CBHub.equip(profile, heroKey, it.id, 'Codex'); if (!r.ok) note = ` The codex could not be equipped: ${r.why}.`; }
     }
     save(); renderHub(); renderTestVendor();
     toast(`Loaded ${d.name} (${d.cards.reduce((t, x) => t + x[1], 0)} cards) and equipped the ${CB.CODEX_BY_KEY ? (CB.CODEX_BY_KEY[d.codex] || {}).name || d.codex : d.codex} Codex.${note} Press C to see the deck.`);
   }
   function renderTestVendor() {
     const el = $('hpTest'); if (!el) return;
-    const c = profile.chars[heroCls]; if (!c) { el.innerHTML = '<p>Make a hero first.</p>'; return; }
+    const c = profile.chars[heroKey]; if (!c) { el.innerHTML = '<p>Make a hero first.</p>'; return; }
     const own = {}; for (const k of [...c.deck, ...c.cards]) own[k.key] = (own[k.key] || 0) + 1;
     const q = TV.q.toLowerCase();
-    const cards = Object.entries(CARDS).filter(([k, d]) => d.cls === heroCls && !d.designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(d.rarity) && (TV.rar === 'All' || d.rarity === TV.rar) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + d.rarity).toLowerCase().includes(q)))
+    const cards = Object.entries(CARDS).filter(([k, d]) => d.cls === hcls() && !d.designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(d.rarity) && (TV.rar === 'All' || d.rarity === TV.rar) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + d.rarity).toLowerCase().includes(q)))
       .sort((a, b) => RAR_ORDER[b[1].rarity] - RAR_ORDER[a[1].rarity] || a[1].name.localeCompare(b[1].name));
     const room = CBHub.STASH_MAX - profile.stash.length;
     el.innerHTML = `<p class="savenote" style="margin:0 0 8px"><b style="color:#e0802a">Test vendor (temporary).</b> Everything here is free so you can try cards and codexes. Cards go to ${esc(c.name)}'s collection (add them to the deck at the Scribe); codexes go to the stash (equip them in the Codex slot with C).</p>
-      <div class="cxtop"><div class="tabs cxtabs" role="tablist">${[['decks', 'Test decks'], ['cards', `${heroCls} cards`], ['codex', 'Codexes'], ['misc', 'Gold']].map(([k, l]) => `<button role="tab" aria-selected="${TV.tab === k}" data-tvtab="${k}">${l}</button>`).join('')}</div>
-        ${TV.tab === 'cards' ? `<input id="tvQ" type="search" placeholder="Search ${heroCls} cards by name or text..." value="${esc(TV.q)}" autocomplete="off">` : ''}
+      <div class="cxtop"><div class="tabs cxtabs" role="tablist">${[['decks', 'Test decks'], ['cards', `${hcls()} cards`], ['codex', 'Codexes'], ['misc', 'Gold']].map(([k, l]) => `<button role="tab" aria-selected="${TV.tab === k}" data-tvtab="${k}">${l}</button>`).join('')}</div>
+        ${TV.tab === 'cards' ? `<input id="tvQ" type="search" placeholder="Search ${hcls()} cards by name or text..." value="${esc(TV.q)}" autocomplete="off">` : ''}
         <button class="btn" data-tvshop="1" title="Merchant Dace normally restocks every 12 hours">Restock Merchant Dace now</button></div>
       ${TV.tab === 'decks' ? testDecksHtml(c) : TV.tab === 'cards' ? `<div class="cxchips">${['All', 'White', 'Green', 'Blue', 'Gold'].map(r => `<button class="cxchip ${TV.rar === r ? 'on' : ''}" data-tvrar="${r}">${r}</button>`).join('')}<button class="btn primary" data-tvall="1" style="margin-left:auto">Take one of each${q || TV.rar !== 'All' ? ' shown' : ''} (${cards.length})</button></div>
         <div class="pilegrid cxgrid nozoom">${cards.length ? '' : '<span class="muted">No cards match.</span>'}${cards.map(([k, d]) => `<div class="pilecard" style="display:grid;gap:4px;justify-items:center">${cardBox(d, 140)}${own[k] ? `<span class="pilecount">x${own[k]}</span>` : ''}<button class="pilebtn" data-tvcard="${k}">Take</button></div>`).join('')}</div>`
@@ -56,12 +56,12 @@
     const b = ev.target.closest('[data-tvtab],[data-tvrar],[data-tvcard],[data-tvall],[data-tvcx],[data-tvgold],[data-tvshop],[data-tvdeck],[data-tvpeek]'); if (!b) return;
     if (b.dataset.tvdeck) return loadTestDeck(b.dataset.tvdeck);
     if (b.dataset.tvpeek) { TV.open = TV.open === b.dataset.tvpeek ? null : b.dataset.tvpeek; return renderTestVendor(); }
-    const c = profile.chars[heroCls];
+    const c = profile.chars[heroKey];
     if (b.dataset.tvtab) TV.tab = b.dataset.tvtab;
     else if (b.dataset.tvrar) TV.rar = b.dataset.tvrar;
     else if (b.dataset.tvcard) { c.cards.push({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), key: b.dataset.tvcard, rank: 0 }); save(); }
     else if (b.dataset.tvshop) { CBHub.refreshShop(profile, DATA, profile.last.level || 0); save(); toast(`Merchant Dace has new stock (map level +${profile.last.level || 0}, ${DATA.maps[curMap()].name} gear).`); }
-    else if (b.dataset.tvall) { const q = TV.q.toLowerCase(); let n = 0; for (const [k, d] of Object.entries(CARDS)) if (d.cls === heroCls && !d.designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(d.rarity) && (TV.rar === 'All' || d.rarity === TV.rar) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + d.rarity).toLowerCase().includes(q)) && ++n) c.cards.push({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), key: k, rank: 0 }); save(); toast(`Added ${n} ${heroCls} card${n === 1 ? '' : 's'} to ${c.name}'s collection.`); }
+    else if (b.dataset.tvall) { const q = TV.q.toLowerCase(); let n = 0; for (const [k, d] of Object.entries(CARDS)) if (d.cls === hcls() && !d.designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(d.rarity) && (TV.rar === 'All' || d.rarity === TV.rar) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + d.rarity).toLowerCase().includes(q)) && ++n) c.cards.push({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), key: k, rank: 0 }); save(); toast(`Added ${n} ${hcls()} card${n === 1 ? '' : 's'} to ${c.name}'s collection.`); }
     else if (b.dataset.tvcx) { if (profile.stash.length >= CBHub.STASH_MAX) return toast('Stash is full.'); const it = CB.makeCodex(DATA, CB.makeRng(Date.now() % 2147483646), b.dataset.tvcx, profile.last.level || 0); profile.stash.unshift(Object.assign({ id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, it)); save(); }
     else if (b.dataset.tvgold) { profile.gold += +b.dataset.tvgold; save(); renderTownBar(); }
     renderTestVendor();

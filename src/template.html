@@ -656,7 +656,9 @@ body.aiming { cursor: grabbing; user-select: none; }
   // ---------- camp (hub): saved profile, characters, gear and stash, deck and cards, the Wagon
   const LS = 'cb-profile-v1';
   let supa = null, supaUser = null;
-  let heroCls = 'Warrior', storeKind = 'local', dbRef = null, saving = Promise.resolve(), saveQueued = false, hubTab = 'hGear';
+  const hcls = () => CBHub.clsOf(profile, heroKey);
+  const heroKeys = () => Object.keys(profile.chars).sort((a, b) => (profile.chars[a].created || 0) - (profile.chars[b].created || 0)); // class of the current hero (heroes are keyed by id; several can share a class)
+  let heroKey = 'Warrior', storeKind = 'local', dbRef = null, saving = Promise.resolve(), saveQueued = false, hubTab = 'hGear';
   const RAR_ORDER = { Gold: 0, Blue: 1, Green: 2, White: 3 };
   const rarName = r => r === 'Purple (Epic)' ? 'Purple' : r;
 
@@ -672,7 +674,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     }
     renderSaveNote();
   }
-  function loadLocal() { let p = null; try { p = JSON.parse(localStorage.getItem(LS) || 'null'); } catch (e) {} profile = CBHub.fix(p); heroCls = profile.last.cls || 'Warrior'; }
+  function loadLocal() { let p = null; try { p = JSON.parse(localStorage.getItem(LS) || 'null'); } catch (e) {} profile = CBHub.fix(p); heroKey = profile.last.cls || 'Warrior'; }
   // ---------- accounts and cloud saves (Supabase), when the game runs on its own site
   async function connectSupabase() {
     const C = window.CB_CONFIG;
@@ -697,7 +699,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       const up = (o) => supa.from('profiles').upsert({ user_id: u.id, data: JSON.parse(o.json), updated_at: new Date(o.savedAt).toISOString() });
       dbRef = { set: async (o) => { let { error: e } = await up(o); if (e && /jwt|expired|token/i.test(e.message || '')) { await supa.auth.refreshSession(); ({ error: e } = await up(o)); } if (e) throw e; } };
       storeKind = 'cloud';
-      if (row && row.data) { const remote = CBHub.fix(row.data); if ((remote.savedAt || 0) > (profile.savedAt || 0)) { profile = remote; heroCls = profile.last.cls || heroCls; } }
+      if (row && row.data) { const remote = CBHub.fix(row.data); if ((remote.savedAt || 0) > (profile.savedAt || 0)) { profile = remote; heroKey = profile.last.cls || heroKey; } }
       if (!run) { renderHub(); if (!$('scrTitle').hidden) renderTitle(); }
       save();
     } catch (e) { dbRef = null; storeKind = 'local'; toast('Signed in, but your online save could not be reached (' + (e.message || e) + '). Progress keeps saving in this browser.'); }
@@ -751,29 +753,29 @@ body.aiming { cursor: grabbing; user-select: none; }
       const ref = db.doc('data/users/' + id + '/profile');
       const snap = await Promise.race([ref.get(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))]);
       dbRef = ref; storeKind = 'account';
-      if (snap.exists) { const d = snap.data(); const remote = CBHub.fix(JSON.parse(d.json)); if ((remote.savedAt || 0) > (profile.savedAt || 0)) { profile = remote; heroCls = profile.last.cls || heroCls; } }
+      if (snap.exists) { const d = snap.data(); const remote = CBHub.fix(JSON.parse(d.json)); if ((remote.savedAt || 0) > (profile.savedAt || 0)) { profile = remote; heroKey = profile.last.cls || heroKey; } }
       if (!run) { renderHub(); if (!$('scrTitle').hidden) renderTitle(); }
       save();
     } catch (e) { dbRef = null; storeKind = 'local'; renderSaveNote(); }
   }
 
   function heroTabs() {
-    $('heroes').innerHTML = Object.keys(CLASSES).filter(k => profile.chars[k]).map(k => {
+    $('heroes').innerHTML = heroKeys().map(k => {
       const c = profile.chars[k];
       const sub = c ? `Power ${CBHub.powerLevel(c)} &middot; gear ${CBHub.gearScore(c)} &middot; deck ${CB.deckLevel(c.deck)}` : 'New character';
-      return `<button class="hero" role="tab" style="--cc:${CC[k]}" data-cls="${k}" aria-selected="${k === heroCls}"><b>${esc(c.name)}</b><small>${k} &middot; ${sub}</small></button>`;
-    }).join('') + (Object.keys(profile.chars).length < 4 ? `<button class="hero" style="--cc:var(--line)" id="heroNew"><b>+ New hero</b><small>Create one on the hero screen</small></button>` : '');
+      return `<button class="hero" role="tab" style="--cc:${CC[c.cls]}" data-cls="${k}" aria-selected="${k === heroKey}"><b>${esc(c.name)}</b><small>${c.cls} &middot; ${sub}</small></button>`;
+    }).join('') + (Object.keys(profile.chars).length < CBHub.MAX_HEROES ? `<button class="hero" style="--cc:var(--line)" id="heroNew"><b>+ New hero</b><small>Create one on the hero screen</small></button>` : '');
   }
-  $('heroes').addEventListener('click', (ev) => { if (ev.target.closest('#heroNew')) { $('sheet').hidden = true; show('title'); openCreate(); return; } const b = ev.target.closest('.hero'); if (!b) return; heroCls = b.dataset.cls; CBHub.char(profile, heroCls); profile.last.cls = heroCls; save(); renderHub(); });
+  $('heroes').addEventListener('click', (ev) => { if (ev.target.closest('#heroNew')) { $('sheet').hidden = true; show('title'); openCreate(); return; } const b = ev.target.closest('.hero'); if (!b) return; heroKey = b.dataset.cls; CBHub.char(profile, heroKey); profile.last.cls = heroKey; save(); renderHub(); });
 
   function renderHub() {
-    if (!profile.chars[heroCls]) { const k = Object.keys(profile.chars)[0]; if (!k) return; heroCls = k; }
-    const c = CBHub.char(profile, heroCls), s = CB.sumGear(c.gear), dl = CB.deckLevel(c.deck), gs = CBHub.gearScore(c);
+    if (!profile.chars[heroKey]) { const k = Object.keys(profile.chars)[0]; if (!k) return; heroKey = k; }
+    const c = CBHub.char(profile, heroKey), s = CB.sumGear(c.gear), dl = CB.deckLevel(c.deck), gs = CBHub.gearScore(c);
     heroTabs();
-    $('hubChar').innerHTML = `<div class="charhead"><h3>${esc(c.name)} <span class="muted" style="font-size:15px">${heroCls}</span></h3><span class="chip">Gold ${profile.gold}</span></div>
+    $('hubChar').innerHTML = `<div class="charhead"><h3>${esc(c.name)} <span class="muted" style="font-size:15px">${c.cls}</span></h3><span class="chip">Gold ${profile.gold}</span></div>
       <div class="power"><div><b>${gs}</b><span>Gear score</span></div><div><b>${dl}</b><span>Deck level</span></div><div><b>${CBHub.powerLevel(c)}</b><span>Power</span></div></div>
       <dl class="kv"><dt>Max HP</dt><dd>${s.maxHp}</dd><dt>Mana</dt><dd>${s.maxMana} max, +${s.regen}/turn</dd><dt>Draw per round</dt><dd>${s.draw}</dd>
-      <dt>Strength / Intelligence</dt><dd>+${s.strength}% / +${s.intelligence}%</dd><dt>Dexterity (${CLASSES[heroCls].defense})</dt><dd>+${s.dexterity + s.defGain}%</dd>
+      <dt>Strength / Intelligence</dt><dd>+${s.strength}% / +${s.intelligence}%</dd><dt>Dexterity (${CLASSES[c.cls].defense})</dt><dd>+${s.dexterity + s.defGain}%</dd>
       <dt>Crit</dt><dd>${s.crit}% x${s.critMult.toFixed(2)}</dd><dt>Initiative</dt><dd>${s.init}</dd>
       <dt>Runs / best row / boss kills</dt><dd>${c.runs} / ${c.best > ROWS ? 'Boss' : c.best} / ${c.bossKills}</dd></dl>
       <p class="savenote" style="margin:8px 0 0">Gear score is the average item level of your 13 slots. Deck level is your best 20 cards against a perfect +10 deck. Power is the average of the two (0 to 100).</p>`;
@@ -783,7 +785,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       <p class="savenote" style="margin:4px 0 0">${mapBlurb(mk)}</p>
       <div class="field" style="margin:8px 0"><label for="selLevel">Map ${M.num}: ${esc(M.name)} &middot; level <b id="lvlOut">+${lvl}</b></label><input type="range" id="selLevel" min="0" max="19" step="1" value="${lvl}"></div>
       <p class="savenote" id="lvlInfo"></p>
-      ${onlineParty() ? onlineWagonHtml() : `<fieldset class="partypick"><legend>Party (play them all yourself, in Initiative order)</legend>${Object.keys(CLASSES).filter(k => profile.chars[k]).map(k => `<label><input type="checkbox" data-party="${k}" ${k === heroCls ? 'checked disabled' : (profile.last.party || []).includes(k) ? 'checked' : ''}> ${esc(profile.chars[k].name)} <span class="muted">(${k})</span></label>`).join('')}</fieldset>
+      ${onlineParty() ? onlineWagonHtml() : `<fieldset class="partypick"><legend>Party (play them all yourself, in Initiative order)</legend>${heroKeys().map(k => `<label><input type="checkbox" data-party="${k}" ${k === heroKey ? 'checked disabled' : (profile.last.party || []).includes(k) ? 'checked' : ''}> ${esc(profile.chars[k].name)} <span class="muted">(${profile.chars[k].cls})</span></label>`).join('')}</fieldset>
       <p class="savenote" id="partyNote" style="margin:4px 0 0"></p>`}
       <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn primary" id="btnStart" ${chk.ok && (!onlineParty() || SOC.party.leader === SOC.me) ? '' : 'disabled'}>${onlineParty() ? (SOC.party.leader === SOC.me ? `Set out with the party (${SOC.party.members.length})` : 'Waiting for the leader') : 'Set out'}</button></div>
       ${chk.ok ? '' : `<p class="down" style="margin:6px 0 0;font-size:13px">Fix your deck first: it ${chk.problems.join(', ')}.</p>`}
@@ -824,10 +826,10 @@ body.aiming { cursor: grabbing; user-select: none; }
     const lvl = +$('selLevel').value, mk = curMap();
     if (onlineParty()) { if (SOC.party.leader !== SOC.me) return; profile.last.level = lvl; save(); $('sheet').hidden = true; netStart('run', SOC.party.members.map(m => m.uid), lvl, mk); return; }
     const extra = [...$('hubWagon').querySelectorAll('[data-party]:checked:not(:disabled)')].map(x => x.dataset.party);
-    const party = [heroCls, ...extra];
+    const party = [heroKey, ...extra];
     for (const k of extra) { const d = CBHub.deckCheck(CBHub.char(profile, k).deck); if (!d.ok) return toast(`${k}'s deck ${d.problems.join(', ')}. Fix it at the Scribe first.`); }
-    profile.last = { cls: heroCls, level: lvl, party: extra, map: mk }; save(); $('sheet').hidden = true;
-    const base = party.length > 1 ? CBHub.partyOpts(profile, party) : CBHub.runOpts(profile, heroCls);
+    profile.last = { cls: heroKey, level: lvl, party: extra, map: mk }; save(); $('sheet').hidden = true;
+    const base = party.length > 1 ? CBHub.partyOpts(profile, party) : CBHub.runOpts(profile, heroKey);
     run = new Run(Object.assign(base, { level: lvl, map: mk, seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA }));
     show('map'); renderMap(true);
   }
@@ -873,8 +875,8 @@ body.aiming { cursor: grabbing; user-select: none; }
       return itemHtml(it, `<div class="il">${upBadge(it, c.gear)} Replaces ${vs}</div><div class="acts">${btns}<button class="btn" data-salvage="${it.id}">Salvage +${CBHub.salvageValue(it)} gold</button></div>`);
     }).join('');
     const multi = Object.keys(profile.chars).length > 1;
-    const heroRow = multi ? `<div class="cxchips" role="tablist" aria-label="Hero" style="margin:0 0 8px">${Object.keys(CLASSES).filter(k => profile.chars[k]).map(k => `<button class="cxchip ${k === heroCls ? 'on' : ''}" data-hero="${k}"><b style="color:${CC[k]}">${esc(profile.chars[k].name)}</b> <span class="muted">${k}</span></button>`).join('')}</div>` : '';
-    $('hpGear').innerHTML = `${heroRow}<div class="gearwrap"><div>${paperdoll(c, heroCls, { own: true })}<p class="muted" style="font-size:12px;margin:6px 0 0">Hover a slot for the item, click it to swap or unequip.</p></div>
+    const heroRow = multi ? `<div class="cxchips" role="tablist" aria-label="Hero" style="margin:0 0 8px">${heroKeys().map(k => `<button class="cxchip ${k === heroKey ? 'on' : ''}" data-hero="${k}"><b style="color:${CC[profile.chars[k].cls]}">${esc(profile.chars[k].name)}</b> <span class="muted">${profile.chars[k].cls}</span></button>`).join('')}</div>` : '';
+    $('hpGear').innerHTML = `${heroRow}<div class="gearwrap"><div>${paperdoll(c, c.cls, { own: true })}<p class="muted" style="font-size:12px;margin:6px 0 0">Hover a slot for the item, click it to swap or unequip.</p></div>
       <div class="gearside"><div class="tabs gtabs" role="tablist"><button role="tab" data-gtab="deck" aria-selected="${GT.tab === 'deck'}">Deck ${c.deck.length}</button><button role="tab" data-gtab="stash" aria-selected="${GT.tab === 'stash'}">Stash ${profile.stash.length} / ${CBHub.STASH_MAX}</button></div>
       ${GT.tab === 'deck' ? deckPanel(c) : `<p class="muted" style="font-size:12px;margin:0 0 6px">Shared by all heroes.</p><div class="list tall">${st || '<span class="muted">Empty. Gear you bring home from a run lands here. Unequipped gear goes here too.</span>'}</div>`}</div></div>`;
     fitCards($('hpGear'));
@@ -883,12 +885,12 @@ body.aiming { cursor: grabbing; user-select: none; }
   $('hpGear').addEventListener('click', (ev) => {
     const pc = ev.target.closest('[data-dcard]'); if (pc) return upgradeModal(pc.dataset.dcard);
     const b = ev.target.closest('button'); if (!b) return;
-    if (b.dataset.gtab) { GT.tab = b.dataset.gtab; return renderGearTab(CBHub.char(profile, heroCls)); }
-    if (b.dataset.gsort) { GT.sort = b.dataset.gsort; return renderGearTab(CBHub.char(profile, heroCls)); }
-    if (b.dataset.hero) { heroCls = b.dataset.hero; profile.last.cls = heroCls; save(); return renderHub(); }
+    if (b.dataset.gtab) { GT.tab = b.dataset.gtab; return renderGearTab(CBHub.char(profile, heroKey)); }
+    if (b.dataset.gsort) { GT.sort = b.dataset.gsort; return renderGearTab(CBHub.char(profile, heroKey)); }
+    if (b.dataset.hero) { heroKey = b.dataset.hero; profile.last.cls = heroKey; save(); return renderHub(); }
     if (b.id === 'btnScribe') return openSheet('deck');
-    if (b.dataset.unequip) { if (!CBHub.unequip(profile, heroCls, b.dataset.unequip)) return toast('Stash is full.'); }
-    else if (b.dataset.equip) { const r = CBHub.equip(profile, heroCls, b.dataset.equip, b.dataset.slot); if (!r.ok) return toast(r.why); }
+    if (b.dataset.unequip) { if (!CBHub.unequip(profile, heroKey, b.dataset.unequip)) return toast('Stash is full.'); }
+    else if (b.dataset.equip) { const r = CBHub.equip(profile, heroKey, b.dataset.equip, b.dataset.slot); if (!r.ok) return toast(r.why); }
     else if (b.dataset.salvage) CBHub.salvage(profile, b.dataset.salvage);
     else return;
     save(); renderHub();
@@ -918,24 +920,24 @@ body.aiming { cursor: grabbing; user-select: none; }
   }
   $('hpDeck').addEventListener('click', (ev) => {
     const b = ev.target.closest('button'); if (!b || b.disabled) return;
-    if (b.dataset.add) { const r = CBHub.addToDeck(profile, heroCls, b.dataset.add); if (!r.ok) return toast(r.why); }
-    else if (b.dataset.remove) { const r = CBHub.removeFromDeck(profile, heroCls, b.dataset.remove); if (!r.ok) return toast(r.why); }
+    if (b.dataset.add) { const r = CBHub.addToDeck(profile, heroKey, b.dataset.add); if (!r.ok) return toast(r.why); }
+    else if (b.dataset.remove) { const r = CBHub.removeFromDeck(profile, heroKey, b.dataset.remove); if (!r.ok) return toast(r.why); }
     else if (b.dataset.up) return upgradeModal(b.dataset.up);
     else return;
     save(); renderHub();
   });
   function feedAll() {
-    const c = CBHub.char(profile, heroCls); let ups = 0, fed = 0;
+    const c = CBHub.char(profile, heroKey); let ups = 0, fed = 0;
     for (const k of c.cards.slice()) {
       const t = c.deck.filter(d => d.key === k.key && (d.rank || 0) < CB.MAX_RANK).sort((a, b) => (b.rank || 0) - (a.rank || 0))[0];
-      if (!t) continue; const r = CBHub.feed(profile, heroCls, t.id, [k.id]); if (r.ok) { fed++; ups += r.ups; }
+      if (!t) continue; const r = CBHub.feed(profile, heroKey, t.id, [k.id]); if (r.ok) { fed++; ups += r.ups; }
     }
     for (const d of c.deck) ups += CBHub.rankUp(profile, d);
     save(); renderHub();
     toast(`Fed ${fed} card${fed === 1 ? '' : 's'}: ${ups} rank-up${ups === 1 ? '' : 's'}.${ups ? '' : ' Not enough XP or gold for a rank yet; the XP is banked on the card.'}`);
   }
   function upgradeModal(targetId) {
-    const c = CBHub.char(profile, heroCls);
+    const c = CBHub.char(profile, heroKey);
     const t = c.deck.find(x => x.id === targetId) || c.cards.find(x => x.id === targetId); if (!t) return;
     const fod = c.cards.filter(x => x.id !== targetId).sort((a, b) => (a.key === t.key ? -1 : 0) - (b.key === t.key ? -1 : 0) || sortCards(a, b));
     if ((t.rank || 0) >= CB.MAX_RANK) return toast('That card is already at +' + CB.MAX_RANK + '.');
@@ -954,7 +956,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     };
     $('modalBox').querySelector('.feedlist').addEventListener('change', prev);
     $('mClose').onclick = closeModal;
-    $('mFeed').onclick = () => { const ids = [...$('modalBox').querySelectorAll('input:checked')].map(i => i.value); CBHub.feed(profile, heroCls, t.id, ids); save(); closeModal(); renderHub(); };
+    $('mFeed').onclick = () => { const ids = [...$('modalBox').querySelectorAll('input:checked')].map(i => i.value); CBHub.feed(profile, heroKey, t.id, ids); save(); closeModal(); renderHub(); };
   }
 
   // ---------- history tab
@@ -966,8 +968,8 @@ body.aiming { cursor: grabbing; user-select: none; }
   // ---------- Jeweler Rook: the five starter pendants (draw/regen splits), any time, for a little gold
   const AMU_PRICE = 25;
   function renderAmuShop() {
-    const c = profile.chars[heroCls]; if (!c) return; const cur = c.gear.find(g => g.slot === 'Amulet'), ci = cur && cur.imp2 || {};
-    $('hpAmu').innerHTML = `<p class="savenote" style="margin:0 0 8px">Every pendant has 6 points split between <b>cards drawn per round</b> and <b>mana regen</b> (each point not on draw is +10 regen), plus +3 ${AMULET_STAT_UI[heroCls]}. ${cur ? `You wear <b>${esc(cur.name)}</b>${ci.Draw != null ? ` (${ci.Draw} draw, +${ci.Regen || 0} regen)` : ''}.` : 'You wear no amulet (1 draw, +15 regen).'} Bank: <b style="color:var(--accent)">${profile.gold} gold</b>. Your old amulet goes to the stash.</p>
+    const c = profile.chars[heroKey]; if (!c) return; const cur = c.gear.find(g => g.slot === 'Amulet'), ci = cur && cur.imp2 || {};
+    $('hpAmu').innerHTML = `<p class="savenote" style="margin:0 0 8px">Every pendant has 6 points split between <b>cards drawn per round</b> and <b>mana regen</b> (each point not on draw is +10 regen), plus +3 ${AMULET_STAT_UI[hcls()]}. ${cur ? `You wear <b>${esc(cur.name)}</b>${ci.Draw != null ? ` (${ci.Draw} draw, +${ci.Regen || 0} regen)` : ''}.` : 'You wear no amulet (1 draw, +15 regen).'} Bank: <b style="color:var(--accent)">${profile.gold} gold</b>. Your old amulet goes to the stash.</p>
       <div class="amushop">${CB.STARTER_AMULETS.map(([k, nm, dr, rg, blurb]) => { const same = cur && cur.imp2 && cur.imp2.Draw === dr && cur.imp2.Regen === rg;
         return `<div class="item amucard ${same ? 'on' : ''}"><div class="ih"><b>${esc(nm)}</b><span>${AMU_PRICE} gold</span></div><div class="amunums"><b>${dr}</b> draw &middot; <b style="color:#8fc3ff">+${rg}</b> regen</div><div class="il">${esc(blurb)}</div>
           <div class="acts"><button class="btn ${same ? '' : 'primary'}" data-buyamu="${k}" ${profile.gold < AMU_PRICE || same ? 'disabled' : ''}>${same ? 'Wearing one' : profile.gold < AMU_PRICE ? 'Not enough gold' : 'Buy and wear'}</button></div></div>`; }).join('')}</div>`;
@@ -977,8 +979,8 @@ body.aiming { cursor: grabbing; user-select: none; }
     const b = ev.target.closest('[data-buyamu]'); if (!b || b.disabled) return;
     if (profile.gold < AMU_PRICE) return toast('Not enough gold.');
     if (profile.stash.length >= CBHub.STASH_MAX) return toast('Your stash is full: make room for the old amulet first.');
-    const it = Object.assign({ id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, CB.starterAmulet(heroCls, b.dataset.buyamu));
-    profile.gold -= AMU_PRICE; profile.stash.unshift(it); const r = CBHub.equip(profile, heroCls, it.id); if (!r.ok) { toast(r.why); }
+    const it = Object.assign({ id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, CB.starterAmulet(hcls(), b.dataset.buyamu));
+    profile.gold -= AMU_PRICE; profile.stash.unshift(it); const r = CBHub.equip(profile, heroKey, it.id); if (!r.ok) { toast(r.why); }
     save(); renderHub(); renderAmuShop(); renderTownBar();
   });
 
@@ -990,7 +992,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     const rows = sh.items.map((it, i) => {
       const cur = CBHub.slotOptions(it).map(sl => c.gear.find(g => g.slot === sl)).filter(Boolean);
       const vs = cur.length ? cur.map(g => { const d = (it.ilvl || 0) - (g.ilvl || 0); return `${esc(g.name)} (${rarName(g.rarity)}, ilvl ${g.ilvl}) <span class="${d > 0 ? 'up' : d < 0 ? 'down' : ''}">${d > 0 ? '+' : ''}${d}</span>`; }).join(', ') : 'an empty slot';
-      return itemHtml(it, `<div class="il">${upBadge(it, c.gear)}</div><div class="il">Your ${esc(heroCls)} wears ${vs}</div><div class="acts"><button class="btn" data-shop="${i}" ${it.sold || profile.gold < it.price || full ? 'disabled' : ''}>${it.sold ? 'Sold' : 'Buy for ' + it.price + ' gold'}</button></div>`);
+      return itemHtml(it, `<div class="il">${upBadge(it, c.gear)}</div><div class="il">${esc(c.name)} wears ${vs}</div><div class="acts"><button class="btn" data-shop="${i}" ${it.sold || profile.gold < it.price || full ? 'disabled' : ''}>${it.sold ? 'Sold' : 'Buy for ' + it.price + ' gold'}</button></div>`);
     }).join('');
     $('hpShop').innerHTML = `<p class="savenote" style="margin:0 0 8px">Bank: <b style="color:var(--accent)">${profile.gold} gold</b>. Stock rolled at Map 1 +${sh.level}. <b>New stock in ${restockIn()}</b> (every 12 hours, at the map level you last played). Purchases go to your stash.${full ? ' <b class="down">Your stash is full.</b>' : ''}</p><div class="list tall" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px">${rows}</div>`;
   }
@@ -1203,13 +1205,13 @@ body.aiming { cursor: grabbing; user-select: none; }
 
   // ---------- characters: one drawing routine for the hero and every NPC
   const RARC = { White: '#9c968a', Green: '#4f8f48', Blue: '#3f74b8', 'Purple (Epic)': '#8461b8', Gold: '#e4a93a' };
-  function heroPal() { const c = CBHub.char(profile, heroCls); return palFor(heroCls, rcOf(c)); }
+  function heroPal() { const c = CBHub.char(profile, heroKey); return palFor(c ? c.cls : 'Warrior', c ? rcOf(c) : {}); }
   function palFor(cls, R) {
-    R = R || {}; const rc = (k) => R[k] ? RARC[R[k]] || '#9c968a' : null; const heroCls_ = cls || 'Warrior';
+    R = R || {}; const rc = (k) => R[k] ? RARC[R[k]] || '#9c968a' : null; const heroKey_ = cls || 'Warrior';
     const base = { Warrior: { chest: '#5a2620', skin: '#c99a76', hair: '#2a1d14', legs: '#2a2420', weapon: 'swordshield', cape: '#3a1612' },
       Rogue: { chest: '#21331e', skin: '#b98d6c', hair: '#141210', legs: '#1b1f19', weapon: 'daggers', cape: '#18231a', helm: 'hood' },
       Mage: { chest: '#202d4c', skin: '#d2ad8c', hair: '#c9c2b2', legs: '#191e2e', weapon: 'staff', cape: '#2a1f44', helm: 'hood' },
-      Paladin: { chest: '#5f5a4a', skin: '#caa07e', hair: '#8a6a3a', legs: '#2e2c26', weapon: 'maceshield', cape: '#6a5420' } }[heroCls_];
+      Paladin: { chest: '#5f5a4a', skin: '#caa07e', hair: '#8a6a3a', legs: '#2e2c26', weapon: 'maceshield', cape: '#6a5420' } }[heroKey_];
     return Object.assign({}, base, { trim: rc('chest') || '#9c968a', helm: R.helm ? (base.helm || 'helm') : base.helm || null, helmC: rc('helm') || '#5a5f66', wpnC: rc('weapon') || '#9c968a', capeTrim: rc('cloak'), bootC: rc('boots'), hero: true });
   }
   // the training dummy: a straw scarecrow on a post, swaying a little
@@ -1478,9 +1480,9 @@ body.aiming { cursor: grabbing; user-select: none; }
     ev.stopPropagation();
   });
   function renderTownBar() {
-    if (!profile.chars[heroCls]) return;
-    const c = CBHub.char(profile, heroCls);
-    $('tbHero').innerHTML = `<b style="color:${CC[heroCls]}">${esc(c.name || heroCls)}</b> <span class="muted">${heroCls}</span>`;
+    if (!profile.chars[heroKey]) return;
+    const c = CBHub.char(profile, heroKey);
+    $('tbHero').innerHTML = `<b style="color:${CC[c.cls]}">${esc(c.name || c.cls)}</b> <span class="muted">${c.cls}</span>`;
     $('tbPower').textContent = `Power ${CBHub.powerLevel(c)} · gear ${CBHub.gearScore(c)} · deck ${CB.deckLevel(c.deck)}`;
     $('tbGold').textContent = `Gold ${profile.gold}`;
   }
@@ -1523,9 +1525,9 @@ body.aiming { cursor: grabbing; user-select: none; }
   // ---------- title screen: pick a hero, or create one (class + name)
   let createCls = null;
   function renderTitle() {
-    const chars = Object.values(profile.chars).sort((a, b) => (a.created || 0) - (b.created || 0));
-    $('heroList').innerHTML = chars.map(c => `<div class="herocard" style="--cc:${CC[c.cls]}"><b>${esc(c.name)}</b><small>${c.cls} &middot; Power ${CBHub.powerLevel(c)} &middot; ${c.runs} run${c.runs === 1 ? '' : 's'}${c.bossKills ? ` &middot; ${c.bossKills} boss kill${c.bossKills === 1 ? '' : 's'}` : ''}</small><div class="row" style="display:flex;gap:6px;align-items:center"><button class="btn primary play" data-play="${c.cls}">Enter Emberwatch</button><button class="pilebtn" data-delhero="${c.cls}" title="Delete this hero">Delete</button></div></div>`).join('')
-      + (chars.length < 4 ? `<button class="herocard new" id="btnNewHero">+ Create a hero</button>` : '');
+    const keys = heroKeys(), chars = keys.map(k => profile.chars[k]);
+    $('heroList').innerHTML = keys.map(k => { const c = profile.chars[k]; return `<div class="herocard" style="--cc:${CC[c.cls]}"><b>${esc(c.name)}</b><small>${c.cls} &middot; Power ${CBHub.powerLevel(c)} &middot; ${c.runs} run${c.runs === 1 ? '' : 's'}${c.bossKills ? ` &middot; ${c.bossKills} boss kill${c.bossKills === 1 ? '' : 's'}` : ''}</small><div class="row" style="display:flex;gap:6px;align-items:center"><button class="btn primary play" data-play="${k}">Enter Emberwatch</button><button class="pilebtn" data-delhero="${k}" title="Delete this hero">Delete</button></div></div>`; }).join('')
+      + (chars.length < CBHub.MAX_HEROES ? `<button class="herocard new" id="btnNewHero">+ Create a hero</button>` : '');
     if ($('btnNewHero')) $('btnNewHero').onclick = openCreate;
     if (!chars.length) openCreate();
     $('heroList').insertAdjacentHTML('beforeend', chars.length || profile.stash.length || profile.gold ? `<p class="savenote" style="grid-column:1/-1;margin:4px 0 0">Want a clean slate? <button class="pilebtn" id="btnWipe">Start fresh: delete everything</button></p>` : '');
@@ -1545,24 +1547,24 @@ body.aiming { cursor: grabbing; user-select: none; }
   }
   function busyElsewhere() { if (run || cb) { toast('Finish or leave your run or fight first.'); return true; } return false; }
   function afterRosterChange() {
-    if (!profile.chars[heroCls]) heroCls = Object.keys(profile.chars)[0] || 'Warrior';
-    profile.last.cls = heroCls; save(); if (typeof saveCard === 'function') Promise.resolve().then(saveCard).catch(() => {});
+    if (!profile.chars[heroKey]) heroKey = Object.keys(profile.chars)[0] || 'Warrior';
+    profile.last.cls = heroKey; save(); if (typeof saveCard === 'function') Promise.resolve().then(saveCard).catch(() => {});
     if (typeof retrack === 'function') try { retrack(true); } catch (e) {}
     if (!Object.keys(profile.chars).length) { $('sheet').hidden = true; show('title'); renderTitle(); return; }
     renderHub(); if (!$('scrTitle').hidden) renderTitle();
   }
   function deleteHeroFlow(cls) {
     if (busyElsewhere()) return; const c = profile.chars[cls]; if (!c) return;
-    confirmTyped(`Delete ${esc(c.name)}?`, `<p>This permanently deletes your ${cls} <b>${esc(c.name)}</b>: their equipped gear, deck, card collection, level and records. The shared stash and banked gold stay. This cannot be undone.</p>`, c.name,
-      () => { CBHub.deleteChar(profile, cls); afterRosterChange(); toast(`${c.name} is gone. You can create a new ${cls} any time.`); });
+    confirmTyped(`Delete ${esc(c.name)}?`, `<p>This permanently deletes your ${c.cls} <b>${esc(c.name)}</b>: their equipped gear, deck, card collection, level and records. The shared stash and banked gold stay. This cannot be undone.</p>`, c.name,
+      () => { CBHub.deleteChar(profile, cls); afterRosterChange(); toast(`${c.name} is gone.`); });
   }
   function wipeFlow() {
     if (busyElsewhere()) return;
     confirmTyped('Start fresh?', `<p>This deletes <b>everything</b> on this account: every hero, the shared stash, all gold, run history and merchant stock. You start over with nothing. This cannot be undone.</p>`, 'RESET',
-      () => { const keep = { savedAt: Date.now() }; profile = CBHub.fix(Object.assign(CBHub.newProfile(), keep)); heroCls = 'Warrior'; afterRosterChange(); toast('Everything was deleted. Create a hero to begin again.'); });
+      () => { const keep = { savedAt: Date.now() }; profile = CBHub.fix(Object.assign(CBHub.newProfile(), keep)); heroKey = 'Warrior'; afterRosterChange(); toast('Everything was deleted. Create a hero to begin again.'); });
   }
   $('heroList').addEventListener('click', (ev) => { const d = ev.target.closest('[data-delhero]'); if (d) return deleteHeroFlow(d.dataset.delhero); });
-  $('heroList').addEventListener('click', (ev) => { const b = ev.target.closest('[data-play]'); if (!b) return; heroCls = b.dataset.play; profile.last.cls = heroCls; save(); renderHub(); show('start'); saveCard(); });
+  $('heroList').addEventListener('click', (ev) => { const b = ev.target.closest('[data-play]'); if (!b) return; heroKey = b.dataset.play; profile.last.cls = heroKey; save(); renderHub(); show('start'); saveCard(); });
   let createDeck = 'balanced', createAmu = 'soldier';
   function renderCreateChoices() {
     const list = createCls ? CB.STARTER_DECKS[createCls] || [] : [];
@@ -1574,11 +1576,11 @@ body.aiming { cursor: grabbing; user-select: none; }
   $('deckPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-deck]'); if (!b) return; createDeck = b.dataset.deck; renderCreateChoices(); });
   $('amuPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-amu]'); if (!b) return; createAmu = b.dataset.amu; renderCreateChoices(); });
   function openCreate() {
-    const taken = (k) => !!profile.chars[k];
-    if (!createCls || taken(createCls)) createCls = Object.keys(CLASSES).find(k => !taken(k)) || null;
-    $('classPick').innerHTML = Object.entries(CLASSES).map(([k, c]) => `<button role="radio" style="--cc:${CC[k]}" data-cls="${k}" aria-checked="${k === createCls}" ${taken(k) ? 'disabled' : ''}><b>${k}</b><span>${esc(c.blurb)}</span><small>${taken(k) ? 'You already have a ' + k : 'Defense: ' + c.defense}</small></button>`).join('');
+    const n = Object.keys(profile.chars).length; if (!createCls) createCls = 'Warrior';
+    $('classPick').innerHTML = Object.entries(CLASSES).map(([k, c]) => { const have = Object.values(profile.chars).filter(x => x.cls === k).length; return `<button role="radio" style="--cc:${CC[k]}" data-cls="${k}" aria-checked="${k === createCls}"><b>${k}</b><span>${esc(c.blurb)}</span><small>Defense: ${c.defense}${have ? ` &middot; you have ${have}` : ''}</small></button>`; }).join('');
+    $('createMsg').textContent = n >= CBHub.MAX_HEROES ? `All ${CBHub.MAX_HEROES} hero slots are used. Delete a hero first.` : '';
     renderCreateChoices();
-    $('createPanel').hidden = false; $('createMsg').textContent = ''; $('btnCancelCreate').hidden = !Object.keys(profile.chars).length;
+    $('createPanel').hidden = false; $('btnCancelCreate').hidden = !Object.keys(profile.chars).length;
     $('heroName').focus();
   }
   $('classPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-cls]'); if (!b || b.disabled) return; createCls = b.dataset.cls; for (const x of $('classPick').children) x.setAttribute('aria-checked', x === b); createDeck = 'balanced'; renderCreateChoices(); });
@@ -1586,7 +1588,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (!createCls) { $('createMsg').textContent = 'Pick a class.'; return; }
     const r = CBHub.createChar(profile, createCls, $('heroName').value, createDeck, createAmu);
     if (!r.ok) { $('createMsg').textContent = r.why; return; }
-    heroCls = createCls; $('heroName').value = ''; $('createPanel').hidden = true; save(); renderHub(); show('start'); saveCard();
+    heroKey = r.id; $('heroName').value = ''; $('createPanel').hidden = true; save(); renderHub(); show('start'); saveCard();
   };
   $('btnCreate').onclick = doCreate; $('heroName').addEventListener('keydown', (e) => { if (e.key === 'Enter') doCreate(); });
   $('btnCancelCreate').onclick = () => { $('createPanel').hidden = true; };
@@ -1603,7 +1605,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       ${cb && cb.practice ? `<button class="btn" id="mnDummyReset">Reset the dummy (fresh fight)</button><button class="btn" id="mnDummyLeave">Leave the dummy and return to town</button>` : ''}
       ${run && run.over ? `<button class="btn" id="mnTown">Return to town</button>` : ''}
       ${!run && !onTitle ? `<button class="btn" id="mnHeroes">Switch hero</button>` : ''}
-      ${!run && !cb && !onTitle && profile.chars[heroCls] ? `<button class="btn" id="mnDelHero">Delete ${esc(profile.chars[heroCls].name)}...</button><button class="btn" id="mnWipe">Start fresh (delete everything)...</button>` : ''}
+      ${!run && !cb && !onTitle && profile.chars[heroKey] ? `<button class="btn" id="mnDelHero">Delete ${esc(profile.chars[heroKey].name)}...</button><button class="btn" id="mnWipe">Start fresh (delete everything)...</button>` : ''}
       ${supa ? (supaUser ? `<button class="btn" id="mnSignOut">Sign out (${esc(acctName(supaUser))})</button>` : `<button class="btn" id="mnSignIn">Sign in to save online</button>`) : ''}
       ${typeof socOn === 'function' && socOn() ? `<button class="btn" id="mnNet">Connection details (co-op)</button>` : ''}
       <h3 style="font-size:20px;margin-top:6px">Settings</h3>
@@ -1621,7 +1623,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     if ($('mnDummyLeave')) $('mnDummyLeave').onclick = leaveDummy;
     if ($('mnForfeit')) $('mnForfeit').onclick = () => { closeModal(); if (netOn()) netAct({ t: 'leave' }); else backToTown(); };
     if ($('mnNet')) $('mnNet').onclick = openNetReport;
-    if ($('mnDelHero')) $('mnDelHero').onclick = () => deleteHeroFlow(heroCls);
+    if ($('mnDelHero')) $('mnDelHero').onclick = () => deleteHeroFlow(heroKey);
     if ($('mnWipe')) $('mnWipe').onclick = wipeFlow;
     if ($('mnHeroes')) $('mnHeroes').onclick = () => { closeModal(); $('sheet').hidden = true; show('title'); };
     if ($('mnSignIn')) $('mnSignIn').onclick = signInModal;
@@ -1980,8 +1982,8 @@ body.aiming { cursor: grabbing; user-select: none; }
       { name: 'Straw Storm', n: 4, cost: 30, kind: 'Attack', text: 'Does nothing (no damage).', phase2: false, dtype: 'Physical' },
     ], gold: [0, 0], pool: [], loot: [] };
   function startDummy() {
-    if (!profile.chars[heroCls] || run || cb) return;
-    const o = CBHub.runOpts(profile, heroCls);
+    if (!profile.chars[heroKey] || run || cb) return;
+    const o = CBHub.runOpts(profile, heroKey);
     cb = new CB.Combat({ party: [{ cls: o.cls, name: o.name, gear: o.gear, deck: o.deck }], enemies: ['training_dummy'], practice: true, seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA });
     cb.practice = true; $('sheet').hidden = true; startCombatUI();
   }

@@ -2413,13 +2413,13 @@ class Run {
     this.data = this.opts.data || root.CB_DATA;
     this.rng = makeRng(this.opts.seed);
     this.level = this.opts.level;
-    const specs = this.opts.members || [{ cls: this.opts.cls, name: this.opts.name, gear: this.opts.gear, deck: this.opts.deck, bank: this.opts.bank, stashFree: this.opts.stashFree }];
+    const specs = this.opts.members || [{ key: this.opts.key, cls: this.opts.cls, name: this.opts.name, gear: this.opts.gear, deck: this.opts.deck, bank: this.opts.bank, stashFree: this.opts.stashFree }];
     this.sharedBank = !!this.opts.sharedBank;
     this.bankPool = this.sharedBank ? (specs[0].bank || 0) : 0;
     this.members = specs.map((sp, i) => {
       const gear = (sp.gear || (this.opts.gearPreset === 'White' ? STARTER_GEAR[sp.cls] : presetGear(sp.cls, this.opts.gearPreset))).map(x => Object.assign({}, x));
       const stats = sumGear(gear);
-      return { idx: i, cls: sp.cls, name: sp.name || sp.cls, gear, stats, deck: sp.deck || null, hp: stats.maxHp, mana: 0, gold: 0, sack: [],
+      return { idx: i, key: sp.key, cls: sp.cls, name: sp.name || sp.cls, gear, stats, deck: sp.deck || null, hp: stats.maxHp, mana: 0, gold: 0, sack: [],
         bank: this.sharedBank ? 0 : (sp.bank || 0), spent: 0, orders: [], stashFree: sp.stashFree != null ? sp.stashFree : 99, kept: null, deaths: 0 };
     });
     this.buffs = []; this.log = []; this.meter = {};
@@ -2592,28 +2592,33 @@ function newChar(cls, name, deckKey, amuletKey) {
 function newProfile() { return { v: VERSION, gold: 0, stash: [], chars: {}, last: { cls: 'Warrior', level: 0 }, history: [] }; }
 function fix(p) { // tolerate older or partial saves
   p = Object.assign(newProfile(), p || {});
-  for (const c of Object.values(p.chars)) { c.cards = c.cards || []; c.deck = c.deck || []; c.gear = c.gear || []; c.name = c.name || c.cls; }
+  for (const [k, c] of Object.entries(p.chars)) { if (!c.cls && CLASSES[k]) c.cls = k; c.cards = c.cards || []; c.deck = c.deck || []; c.gear = c.gear || []; c.name = c.name || c.cls; }
+  if (p.last && p.last.cls && !p.chars[p.last.cls]) p.last.cls = Object.keys(p.chars)[0] || '';
   // Oct 30: the Paladin starter got more offense (+1 Crusader Strike, +1 Smite); existing Paladins get those two cards in their collection once
-  const pal = p.chars.Paladin; if (pal && !pal.gotOffense1) { pal.gotOffense1 = true; pal.cards.push({ id: uid('k'), key: 'crusader_strike', rank: 0 }, { id: uid('k'), key: 'smite', rank: 0 }); }
+  for (const pal of Object.values(p.chars).filter(c => c.cls === 'Paladin')) if (!pal.gotOffense1) { pal.gotOffense1 = true; pal.cards.push({ id: uid('k'), key: 'crusader_strike', rank: 0 }, { id: uid('k'), key: 'smite', rank: 0 }); }
   return p;
 }
 // character creation: one hero per class for now, each with a name the player picks
 const NAME_RE = /^[A-Za-z][A-Za-z '\-]{1,15}$/;
 function nameProblem(name) { name = (name || '').trim(); if (name.length < 2) return 'Names need at least 2 letters.'; if (name.length > 16) return 'Names can be at most 16 characters.'; if (!NAME_RE.test(name)) return 'Use letters, spaces, apostrophes or hyphens, starting with a letter.'; return null; }
 // delete a hero for good: their gear, deck, cards and records go with them; the shared stash and gold stay
-function deleteChar(p, cls) {
-  if (!p.chars[cls]) return { ok: false, why: 'No such hero' };
-  delete p.chars[cls];
-  if (p.last) { if (p.last.cls === cls) p.last.cls = Object.keys(p.chars)[0] || 'Warrior'; if (p.last.party) p.last.party = p.last.party.filter(k => k !== cls); }
+// heroes are keyed by an id (old saves keep their class name as the id); an account holds up to MAX_HEROES of any classes
+const MAX_HEROES = 20;
+function deleteChar(p, key) {
+  if (!p.chars[key]) return { ok: false, why: 'No such hero' };
+  delete p.chars[key];
+  if (p.last) { if (p.last.cls === key) p.last.cls = Object.keys(p.chars)[0] || ''; if (p.last.party) p.last.party = p.last.party.filter(k => k !== key); }
   return { ok: true };
 }
 function createChar(p, cls, name, deckKey, amuletKey) {
-  if (p.chars[cls]) return { ok: false, why: `You already have a ${cls}.` };
+  if (!CLASSES[cls]) return { ok: false, why: 'Pick a class.' };
+  if (Object.keys(p.chars).length >= MAX_HEROES) return { ok: false, why: `You already have ${MAX_HEROES} heroes. Delete one to make room.` };
   const why = nameProblem(name); if (why) return { ok: false, why };
-  p.chars[cls] = newChar(cls, name.trim().replace(/\s+/g, ' '), deckKey, amuletKey); p.last.cls = cls; return { ok: true };
+  const id = uid('h'); p.chars[id] = newChar(cls, name.trim().replace(/\s+/g, ' '), deckKey, amuletKey); p.last.cls = id; return { ok: true, id };
 }
 function renameChar(p, cls, name) { const c = p.chars[cls]; if (!c) return { ok: false, why: 'No such hero.' }; const why = nameProblem(name); if (why) return { ok: false, why }; c.name = name.trim().replace(/\s+/g, ' '); return { ok: true }; }
-function char(p, cls) { if (!p.chars[cls]) p.chars[cls] = newChar(cls); return p.chars[cls]; }
+function char(p, key) { return p.chars[key]; }
+const clsOf = (p, key) => (p.chars[key] && p.chars[key].cls) || (CLASSES[key] ? key : 'Warrior');
 
 // ---------- gear
 function gearScore(c) { return Math.round(SLOTS.reduce((s, sl) => { const it = c.gear.find(g => g.slot === sl); return s + (it ? it.ilvl || 0 : 0); }, 0) / SLOTS.length); }
@@ -2624,7 +2629,7 @@ const isOneHand = (item) => (item.slot === 'Weapon' || item.slot === 'Off-hand')
 function slotOptions(item) { if (item.slot === 'Ring' || /^Ring/.test(item.slot)) return ['Ring 1', 'Ring 2']; if (isOneHand(item)) return ['Weapon', 'Off-hand']; return [item.slot]; }
 function equip(p, cls, itemId, slotWanted) {
   const c = char(p, cls), i = p.stash.findIndex(x => x.id === itemId); if (i < 0) return { ok: false, why: 'Not in stash' };
-  if (p.stash[i].slot === 'Codex' && p.stash[i].cls && p.stash[i].cls !== cls) return { ok: false, why: `Only a ${p.stash[i].cls} can use the ${p.stash[i].name}.` };
+  if (p.stash[i].slot === 'Codex' && p.stash[i].cls && p.stash[i].cls !== c.cls) return { ok: false, why: `Only a ${p.stash[i].cls} can use the ${p.stash[i].name}.` };
   const item = p.stash[i], opts = slotOptions(item);
   let slot = slotWanted && opts.includes(slotWanted) ? slotWanted : opts[0];
   if (opts.length > 1 && !slotWanted && opts[0] !== 'Weapon') { const free = opts.find(s => !c.gear.find(g => g.slot === s)); if (free) slot = free; else { const a = c.gear.find(g => g.slot === opts[0]), b = c.gear.find(g => g.slot === opts[1]); slot = (a.ilvl || 0) <= (b.ilvl || 0) ? opts[0] : opts[1]; } }
@@ -2710,14 +2715,14 @@ function buyShop(p, i) {
 // ---------- runs
 function partyOpts(p, classes) {
   const free = Math.max(0, STASH_MAX - p.stash.length);
-  return { sharedBank: true, members: classes.map((cls, i) => { const c = char(p, cls); return { cls, name: c.name || cls, bank: i === 0 ? p.gold : 0, stashFree: free, gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })) }; }) };
+  return { sharedBank: true, members: classes.map((key, i) => { const c = char(p, key); return { key, cls: c.cls, name: c.name || c.cls, bank: i === 0 ? p.gold : 0, stashFree: free, gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })) }; }) };
 }
-function runOpts(p, cls) { const c = char(p, cls); return { cls, members: undefined, name: c.name, bank: p.gold, stashFree: Math.max(0, STASH_MAX - p.stash.length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })) }; }
+function runOpts(p, key) { const c = char(p, key); return { key, cls: c.cls, members: undefined, name: c.name, bank: p.gold, stashFree: Math.max(0, STASH_MAX - p.stash.length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })) }; }
 // Bring a finished run home: equipped gear (incl. merchant buys) stays on the character; kept loot goes to stash/collection.
 function absorbRun(p, run, mi) {
   if (mi == null && run.members && run.members.length > 1) { const res = run.members.map((m, i) => absorbRun(p, run, i)); return res[0]; }
   const mem = run.members ? run.members[mi || 0] : run;
-  const c = char(p, mem.cls);
+  const c = char(p, mem.key || mem.cls); if (!c) return { items: 0, cards: 0, gold: 0, lost: 0, ordered: 0 };
   c.gear = mem.gear.map(g => Object.assign({ id: g.id || uid('g') }, g));
   const kept = mem.kept || { items: [], gold: 0 };
   let lost = 0, items = 0, cards = 0, ordered = 0;
@@ -2729,14 +2734,14 @@ function absorbRun(p, run, mi) {
     else lost++;
   }
   p.gold += kept.gold;
-  c.runs++; const row = run.currentRow(); c.best = Math.max(c.best, row); if (run.over === 'victory') c.bossKills++;
-  p.history.unshift({ cls: mem.cls, party: run.members && run.members.length > 1 ? run.members.map(m => m.cls) : undefined, level: run.level, result: run.over, row, items, cards, gold: kept.gold, ordered, at: Date.now() });
+  c.runs++; const row = run.currentRow(); c.best = Math.max(c.best, row); if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); }
+  p.history.unshift({ cls: mem.cls, name: mem.name, party: run.members && run.members.length > 1 ? run.members.map(m => m.cls) : undefined, level: run.level, result: run.over, row, items, cards, gold: kept.gold, ordered, at: Date.now() });
   p.history = p.history.slice(0, 20);
-  p.last = Object.assign(p.last || {}, { cls: (run.members ? run.members[0] : run).cls, level: run.level });
+  p.last = Object.assign(p.last || {}, { level: run.level });
   return { items, cards, gold: kept.gold, lost, ordered };
 }
 
-const API = { SLOTS, STASH_MAX, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -2768,7 +2773,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // ---------- camp (hub): saved profile, characters, gear and stash, deck and cards, the Wagon
   const LS = 'cb-profile-v1';
   let supa = null, supaUser = null;
-  let heroCls = 'Warrior', storeKind = 'local', dbRef = null, saving = Promise.resolve(), saveQueued = false, hubTab = 'hGear';
+  const hcls = () => CBHub.clsOf(profile, heroKey);
+  const heroKeys = () => Object.keys(profile.chars).sort((a, b) => (profile.chars[a].created || 0) - (profile.chars[b].created || 0)); // class of the current hero (heroes are keyed by id; several can share a class)
+  let heroKey = 'Warrior', storeKind = 'local', dbRef = null, saving = Promise.resolve(), saveQueued = false, hubTab = 'hGear';
   const RAR_ORDER = { Gold: 0, Blue: 1, Green: 2, White: 3 };
   const rarName = r => r === 'Purple (Epic)' ? 'Purple' : r;
 
@@ -2784,7 +2791,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     }
     renderSaveNote();
   }
-  function loadLocal() { let p = null; try { p = JSON.parse(localStorage.getItem(LS) || 'null'); } catch (e) {} profile = CBHub.fix(p); heroCls = profile.last.cls || 'Warrior'; }
+  function loadLocal() { let p = null; try { p = JSON.parse(localStorage.getItem(LS) || 'null'); } catch (e) {} profile = CBHub.fix(p); heroKey = profile.last.cls || 'Warrior'; }
   // ---------- accounts and cloud saves (Supabase), when the game runs on its own site
   async function connectSupabase() {
     const C = window.CB_CONFIG;
@@ -2809,7 +2816,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       const up = (o) => supa.from('profiles').upsert({ user_id: u.id, data: JSON.parse(o.json), updated_at: new Date(o.savedAt).toISOString() });
       dbRef = { set: async (o) => { let { error: e } = await up(o); if (e && /jwt|expired|token/i.test(e.message || '')) { await supa.auth.refreshSession(); ({ error: e } = await up(o)); } if (e) throw e; } };
       storeKind = 'cloud';
-      if (row && row.data) { const remote = CBHub.fix(row.data); if ((remote.savedAt || 0) > (profile.savedAt || 0)) { profile = remote; heroCls = profile.last.cls || heroCls; } }
+      if (row && row.data) { const remote = CBHub.fix(row.data); if ((remote.savedAt || 0) > (profile.savedAt || 0)) { profile = remote; heroKey = profile.last.cls || heroKey; } }
       if (!run) { renderHub(); if (!$('scrTitle').hidden) renderTitle(); }
       save();
     } catch (e) { dbRef = null; storeKind = 'local'; toast('Signed in, but your online save could not be reached (' + (e.message || e) + '). Progress keeps saving in this browser.'); }
@@ -2863,29 +2870,29 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       const ref = db.doc('data/users/' + id + '/profile');
       const snap = await Promise.race([ref.get(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))]);
       dbRef = ref; storeKind = 'account';
-      if (snap.exists) { const d = snap.data(); const remote = CBHub.fix(JSON.parse(d.json)); if ((remote.savedAt || 0) > (profile.savedAt || 0)) { profile = remote; heroCls = profile.last.cls || heroCls; } }
+      if (snap.exists) { const d = snap.data(); const remote = CBHub.fix(JSON.parse(d.json)); if ((remote.savedAt || 0) > (profile.savedAt || 0)) { profile = remote; heroKey = profile.last.cls || heroKey; } }
       if (!run) { renderHub(); if (!$('scrTitle').hidden) renderTitle(); }
       save();
     } catch (e) { dbRef = null; storeKind = 'local'; renderSaveNote(); }
   }
 
   function heroTabs() {
-    $('heroes').innerHTML = Object.keys(CLASSES).filter(k => profile.chars[k]).map(k => {
+    $('heroes').innerHTML = heroKeys().map(k => {
       const c = profile.chars[k];
       const sub = c ? `Power ${CBHub.powerLevel(c)} &middot; gear ${CBHub.gearScore(c)} &middot; deck ${CB.deckLevel(c.deck)}` : 'New character';
-      return `<button class="hero" role="tab" style="--cc:${CC[k]}" data-cls="${k}" aria-selected="${k === heroCls}"><b>${esc(c.name)}</b><small>${k} &middot; ${sub}</small></button>`;
-    }).join('') + (Object.keys(profile.chars).length < 4 ? `<button class="hero" style="--cc:var(--line)" id="heroNew"><b>+ New hero</b><small>Create one on the hero screen</small></button>` : '');
+      return `<button class="hero" role="tab" style="--cc:${CC[c.cls]}" data-cls="${k}" aria-selected="${k === heroKey}"><b>${esc(c.name)}</b><small>${c.cls} &middot; ${sub}</small></button>`;
+    }).join('') + (Object.keys(profile.chars).length < CBHub.MAX_HEROES ? `<button class="hero" style="--cc:var(--line)" id="heroNew"><b>+ New hero</b><small>Create one on the hero screen</small></button>` : '');
   }
-  $('heroes').addEventListener('click', (ev) => { if (ev.target.closest('#heroNew')) { $('sheet').hidden = true; show('title'); openCreate(); return; } const b = ev.target.closest('.hero'); if (!b) return; heroCls = b.dataset.cls; CBHub.char(profile, heroCls); profile.last.cls = heroCls; save(); renderHub(); });
+  $('heroes').addEventListener('click', (ev) => { if (ev.target.closest('#heroNew')) { $('sheet').hidden = true; show('title'); openCreate(); return; } const b = ev.target.closest('.hero'); if (!b) return; heroKey = b.dataset.cls; CBHub.char(profile, heroKey); profile.last.cls = heroKey; save(); renderHub(); });
 
   function renderHub() {
-    if (!profile.chars[heroCls]) { const k = Object.keys(profile.chars)[0]; if (!k) return; heroCls = k; }
-    const c = CBHub.char(profile, heroCls), s = CB.sumGear(c.gear), dl = CB.deckLevel(c.deck), gs = CBHub.gearScore(c);
+    if (!profile.chars[heroKey]) { const k = Object.keys(profile.chars)[0]; if (!k) return; heroKey = k; }
+    const c = CBHub.char(profile, heroKey), s = CB.sumGear(c.gear), dl = CB.deckLevel(c.deck), gs = CBHub.gearScore(c);
     heroTabs();
-    $('hubChar').innerHTML = `<div class="charhead"><h3>${esc(c.name)} <span class="muted" style="font-size:15px">${heroCls}</span></h3><span class="chip">Gold ${profile.gold}</span></div>
+    $('hubChar').innerHTML = `<div class="charhead"><h3>${esc(c.name)} <span class="muted" style="font-size:15px">${c.cls}</span></h3><span class="chip">Gold ${profile.gold}</span></div>
       <div class="power"><div><b>${gs}</b><span>Gear score</span></div><div><b>${dl}</b><span>Deck level</span></div><div><b>${CBHub.powerLevel(c)}</b><span>Power</span></div></div>
       <dl class="kv"><dt>Max HP</dt><dd>${s.maxHp}</dd><dt>Mana</dt><dd>${s.maxMana} max, +${s.regen}/turn</dd><dt>Draw per round</dt><dd>${s.draw}</dd>
-      <dt>Strength / Intelligence</dt><dd>+${s.strength}% / +${s.intelligence}%</dd><dt>Dexterity (${CLASSES[heroCls].defense})</dt><dd>+${s.dexterity + s.defGain}%</dd>
+      <dt>Strength / Intelligence</dt><dd>+${s.strength}% / +${s.intelligence}%</dd><dt>Dexterity (${CLASSES[c.cls].defense})</dt><dd>+${s.dexterity + s.defGain}%</dd>
       <dt>Crit</dt><dd>${s.crit}% x${s.critMult.toFixed(2)}</dd><dt>Initiative</dt><dd>${s.init}</dd>
       <dt>Runs / best row / boss kills</dt><dd>${c.runs} / ${c.best > ROWS ? 'Boss' : c.best} / ${c.bossKills}</dd></dl>
       <p class="savenote" style="margin:8px 0 0">Gear score is the average item level of your 13 slots. Deck level is your best 20 cards against a perfect +10 deck. Power is the average of the two (0 to 100).</p>`;
@@ -2895,7 +2902,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       <p class="savenote" style="margin:4px 0 0">${mapBlurb(mk)}</p>
       <div class="field" style="margin:8px 0"><label for="selLevel">Map ${M.num}: ${esc(M.name)} &middot; level <b id="lvlOut">+${lvl}</b></label><input type="range" id="selLevel" min="0" max="19" step="1" value="${lvl}"></div>
       <p class="savenote" id="lvlInfo"></p>
-      ${onlineParty() ? onlineWagonHtml() : `<fieldset class="partypick"><legend>Party (play them all yourself, in Initiative order)</legend>${Object.keys(CLASSES).filter(k => profile.chars[k]).map(k => `<label><input type="checkbox" data-party="${k}" ${k === heroCls ? 'checked disabled' : (profile.last.party || []).includes(k) ? 'checked' : ''}> ${esc(profile.chars[k].name)} <span class="muted">(${k})</span></label>`).join('')}</fieldset>
+      ${onlineParty() ? onlineWagonHtml() : `<fieldset class="partypick"><legend>Party (play them all yourself, in Initiative order)</legend>${heroKeys().map(k => `<label><input type="checkbox" data-party="${k}" ${k === heroKey ? 'checked disabled' : (profile.last.party || []).includes(k) ? 'checked' : ''}> ${esc(profile.chars[k].name)} <span class="muted">(${profile.chars[k].cls})</span></label>`).join('')}</fieldset>
       <p class="savenote" id="partyNote" style="margin:4px 0 0"></p>`}
       <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn primary" id="btnStart" ${chk.ok && (!onlineParty() || SOC.party.leader === SOC.me) ? '' : 'disabled'}>${onlineParty() ? (SOC.party.leader === SOC.me ? `Set out with the party (${SOC.party.members.length})` : 'Waiting for the leader') : 'Set out'}</button></div>
       ${chk.ok ? '' : `<p class="down" style="margin:6px 0 0;font-size:13px">Fix your deck first: it ${chk.problems.join(', ')}.</p>`}
@@ -2936,10 +2943,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const lvl = +$('selLevel').value, mk = curMap();
     if (onlineParty()) { if (SOC.party.leader !== SOC.me) return; profile.last.level = lvl; save(); $('sheet').hidden = true; netStart('run', SOC.party.members.map(m => m.uid), lvl, mk); return; }
     const extra = [...$('hubWagon').querySelectorAll('[data-party]:checked:not(:disabled)')].map(x => x.dataset.party);
-    const party = [heroCls, ...extra];
+    const party = [heroKey, ...extra];
     for (const k of extra) { const d = CBHub.deckCheck(CBHub.char(profile, k).deck); if (!d.ok) return toast(`${k}'s deck ${d.problems.join(', ')}. Fix it at the Scribe first.`); }
-    profile.last = { cls: heroCls, level: lvl, party: extra, map: mk }; save(); $('sheet').hidden = true;
-    const base = party.length > 1 ? CBHub.partyOpts(profile, party) : CBHub.runOpts(profile, heroCls);
+    profile.last = { cls: heroKey, level: lvl, party: extra, map: mk }; save(); $('sheet').hidden = true;
+    const base = party.length > 1 ? CBHub.partyOpts(profile, party) : CBHub.runOpts(profile, heroKey);
     run = new Run(Object.assign(base, { level: lvl, map: mk, seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA }));
     show('map'); renderMap(true);
   }
@@ -2985,8 +2992,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       return itemHtml(it, `<div class="il">${upBadge(it, c.gear)} Replaces ${vs}</div><div class="acts">${btns}<button class="btn" data-salvage="${it.id}">Salvage +${CBHub.salvageValue(it)} gold</button></div>`);
     }).join('');
     const multi = Object.keys(profile.chars).length > 1;
-    const heroRow = multi ? `<div class="cxchips" role="tablist" aria-label="Hero" style="margin:0 0 8px">${Object.keys(CLASSES).filter(k => profile.chars[k]).map(k => `<button class="cxchip ${k === heroCls ? 'on' : ''}" data-hero="${k}"><b style="color:${CC[k]}">${esc(profile.chars[k].name)}</b> <span class="muted">${k}</span></button>`).join('')}</div>` : '';
-    $('hpGear').innerHTML = `${heroRow}<div class="gearwrap"><div>${paperdoll(c, heroCls, { own: true })}<p class="muted" style="font-size:12px;margin:6px 0 0">Hover a slot for the item, click it to swap or unequip.</p></div>
+    const heroRow = multi ? `<div class="cxchips" role="tablist" aria-label="Hero" style="margin:0 0 8px">${heroKeys().map(k => `<button class="cxchip ${k === heroKey ? 'on' : ''}" data-hero="${k}"><b style="color:${CC[profile.chars[k].cls]}">${esc(profile.chars[k].name)}</b> <span class="muted">${profile.chars[k].cls}</span></button>`).join('')}</div>` : '';
+    $('hpGear').innerHTML = `${heroRow}<div class="gearwrap"><div>${paperdoll(c, c.cls, { own: true })}<p class="muted" style="font-size:12px;margin:6px 0 0">Hover a slot for the item, click it to swap or unequip.</p></div>
       <div class="gearside"><div class="tabs gtabs" role="tablist"><button role="tab" data-gtab="deck" aria-selected="${GT.tab === 'deck'}">Deck ${c.deck.length}</button><button role="tab" data-gtab="stash" aria-selected="${GT.tab === 'stash'}">Stash ${profile.stash.length} / ${CBHub.STASH_MAX}</button></div>
       ${GT.tab === 'deck' ? deckPanel(c) : `<p class="muted" style="font-size:12px;margin:0 0 6px">Shared by all heroes.</p><div class="list tall">${st || '<span class="muted">Empty. Gear you bring home from a run lands here. Unequipped gear goes here too.</span>'}</div>`}</div></div>`;
     fitCards($('hpGear'));
@@ -2995,12 +3002,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   $('hpGear').addEventListener('click', (ev) => {
     const pc = ev.target.closest('[data-dcard]'); if (pc) return upgradeModal(pc.dataset.dcard);
     const b = ev.target.closest('button'); if (!b) return;
-    if (b.dataset.gtab) { GT.tab = b.dataset.gtab; return renderGearTab(CBHub.char(profile, heroCls)); }
-    if (b.dataset.gsort) { GT.sort = b.dataset.gsort; return renderGearTab(CBHub.char(profile, heroCls)); }
-    if (b.dataset.hero) { heroCls = b.dataset.hero; profile.last.cls = heroCls; save(); return renderHub(); }
+    if (b.dataset.gtab) { GT.tab = b.dataset.gtab; return renderGearTab(CBHub.char(profile, heroKey)); }
+    if (b.dataset.gsort) { GT.sort = b.dataset.gsort; return renderGearTab(CBHub.char(profile, heroKey)); }
+    if (b.dataset.hero) { heroKey = b.dataset.hero; profile.last.cls = heroKey; save(); return renderHub(); }
     if (b.id === 'btnScribe') return openSheet('deck');
-    if (b.dataset.unequip) { if (!CBHub.unequip(profile, heroCls, b.dataset.unequip)) return toast('Stash is full.'); }
-    else if (b.dataset.equip) { const r = CBHub.equip(profile, heroCls, b.dataset.equip, b.dataset.slot); if (!r.ok) return toast(r.why); }
+    if (b.dataset.unequip) { if (!CBHub.unequip(profile, heroKey, b.dataset.unequip)) return toast('Stash is full.'); }
+    else if (b.dataset.equip) { const r = CBHub.equip(profile, heroKey, b.dataset.equip, b.dataset.slot); if (!r.ok) return toast(r.why); }
     else if (b.dataset.salvage) CBHub.salvage(profile, b.dataset.salvage);
     else return;
     save(); renderHub();
@@ -3030,24 +3037,24 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   }
   $('hpDeck').addEventListener('click', (ev) => {
     const b = ev.target.closest('button'); if (!b || b.disabled) return;
-    if (b.dataset.add) { const r = CBHub.addToDeck(profile, heroCls, b.dataset.add); if (!r.ok) return toast(r.why); }
-    else if (b.dataset.remove) { const r = CBHub.removeFromDeck(profile, heroCls, b.dataset.remove); if (!r.ok) return toast(r.why); }
+    if (b.dataset.add) { const r = CBHub.addToDeck(profile, heroKey, b.dataset.add); if (!r.ok) return toast(r.why); }
+    else if (b.dataset.remove) { const r = CBHub.removeFromDeck(profile, heroKey, b.dataset.remove); if (!r.ok) return toast(r.why); }
     else if (b.dataset.up) return upgradeModal(b.dataset.up);
     else return;
     save(); renderHub();
   });
   function feedAll() {
-    const c = CBHub.char(profile, heroCls); let ups = 0, fed = 0;
+    const c = CBHub.char(profile, heroKey); let ups = 0, fed = 0;
     for (const k of c.cards.slice()) {
       const t = c.deck.filter(d => d.key === k.key && (d.rank || 0) < CB.MAX_RANK).sort((a, b) => (b.rank || 0) - (a.rank || 0))[0];
-      if (!t) continue; const r = CBHub.feed(profile, heroCls, t.id, [k.id]); if (r.ok) { fed++; ups += r.ups; }
+      if (!t) continue; const r = CBHub.feed(profile, heroKey, t.id, [k.id]); if (r.ok) { fed++; ups += r.ups; }
     }
     for (const d of c.deck) ups += CBHub.rankUp(profile, d);
     save(); renderHub();
     toast(`Fed ${fed} card${fed === 1 ? '' : 's'}: ${ups} rank-up${ups === 1 ? '' : 's'}.${ups ? '' : ' Not enough XP or gold for a rank yet; the XP is banked on the card.'}`);
   }
   function upgradeModal(targetId) {
-    const c = CBHub.char(profile, heroCls);
+    const c = CBHub.char(profile, heroKey);
     const t = c.deck.find(x => x.id === targetId) || c.cards.find(x => x.id === targetId); if (!t) return;
     const fod = c.cards.filter(x => x.id !== targetId).sort((a, b) => (a.key === t.key ? -1 : 0) - (b.key === t.key ? -1 : 0) || sortCards(a, b));
     if ((t.rank || 0) >= CB.MAX_RANK) return toast('That card is already at +' + CB.MAX_RANK + '.');
@@ -3066,7 +3073,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     };
     $('modalBox').querySelector('.feedlist').addEventListener('change', prev);
     $('mClose').onclick = closeModal;
-    $('mFeed').onclick = () => { const ids = [...$('modalBox').querySelectorAll('input:checked')].map(i => i.value); CBHub.feed(profile, heroCls, t.id, ids); save(); closeModal(); renderHub(); };
+    $('mFeed').onclick = () => { const ids = [...$('modalBox').querySelectorAll('input:checked')].map(i => i.value); CBHub.feed(profile, heroKey, t.id, ids); save(); closeModal(); renderHub(); };
   }
 
   // ---------- history tab
@@ -3078,8 +3085,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // ---------- Jeweler Rook: the five starter pendants (draw/regen splits), any time, for a little gold
   const AMU_PRICE = 25;
   function renderAmuShop() {
-    const c = profile.chars[heroCls]; if (!c) return; const cur = c.gear.find(g => g.slot === 'Amulet'), ci = cur && cur.imp2 || {};
-    $('hpAmu').innerHTML = `<p class="savenote" style="margin:0 0 8px">Every pendant has 6 points split between <b>cards drawn per round</b> and <b>mana regen</b> (each point not on draw is +10 regen), plus +3 ${AMULET_STAT_UI[heroCls]}. ${cur ? `You wear <b>${esc(cur.name)}</b>${ci.Draw != null ? ` (${ci.Draw} draw, +${ci.Regen || 0} regen)` : ''}.` : 'You wear no amulet (1 draw, +15 regen).'} Bank: <b style="color:var(--accent)">${profile.gold} gold</b>. Your old amulet goes to the stash.</p>
+    const c = profile.chars[heroKey]; if (!c) return; const cur = c.gear.find(g => g.slot === 'Amulet'), ci = cur && cur.imp2 || {};
+    $('hpAmu').innerHTML = `<p class="savenote" style="margin:0 0 8px">Every pendant has 6 points split between <b>cards drawn per round</b> and <b>mana regen</b> (each point not on draw is +10 regen), plus +3 ${AMULET_STAT_UI[hcls()]}. ${cur ? `You wear <b>${esc(cur.name)}</b>${ci.Draw != null ? ` (${ci.Draw} draw, +${ci.Regen || 0} regen)` : ''}.` : 'You wear no amulet (1 draw, +15 regen).'} Bank: <b style="color:var(--accent)">${profile.gold} gold</b>. Your old amulet goes to the stash.</p>
       <div class="amushop">${CB.STARTER_AMULETS.map(([k, nm, dr, rg, blurb]) => { const same = cur && cur.imp2 && cur.imp2.Draw === dr && cur.imp2.Regen === rg;
         return `<div class="item amucard ${same ? 'on' : ''}"><div class="ih"><b>${esc(nm)}</b><span>${AMU_PRICE} gold</span></div><div class="amunums"><b>${dr}</b> draw &middot; <b style="color:#8fc3ff">+${rg}</b> regen</div><div class="il">${esc(blurb)}</div>
           <div class="acts"><button class="btn ${same ? '' : 'primary'}" data-buyamu="${k}" ${profile.gold < AMU_PRICE || same ? 'disabled' : ''}>${same ? 'Wearing one' : profile.gold < AMU_PRICE ? 'Not enough gold' : 'Buy and wear'}</button></div></div>`; }).join('')}</div>`;
@@ -3089,8 +3096,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const b = ev.target.closest('[data-buyamu]'); if (!b || b.disabled) return;
     if (profile.gold < AMU_PRICE) return toast('Not enough gold.');
     if (profile.stash.length >= CBHub.STASH_MAX) return toast('Your stash is full: make room for the old amulet first.');
-    const it = Object.assign({ id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, CB.starterAmulet(heroCls, b.dataset.buyamu));
-    profile.gold -= AMU_PRICE; profile.stash.unshift(it); const r = CBHub.equip(profile, heroCls, it.id); if (!r.ok) { toast(r.why); }
+    const it = Object.assign({ id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, CB.starterAmulet(hcls(), b.dataset.buyamu));
+    profile.gold -= AMU_PRICE; profile.stash.unshift(it); const r = CBHub.equip(profile, heroKey, it.id); if (!r.ok) { toast(r.why); }
     save(); renderHub(); renderAmuShop(); renderTownBar();
   });
 
@@ -3102,7 +3109,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const rows = sh.items.map((it, i) => {
       const cur = CBHub.slotOptions(it).map(sl => c.gear.find(g => g.slot === sl)).filter(Boolean);
       const vs = cur.length ? cur.map(g => { const d = (it.ilvl || 0) - (g.ilvl || 0); return `${esc(g.name)} (${rarName(g.rarity)}, ilvl ${g.ilvl}) <span class="${d > 0 ? 'up' : d < 0 ? 'down' : ''}">${d > 0 ? '+' : ''}${d}</span>`; }).join(', ') : 'an empty slot';
-      return itemHtml(it, `<div class="il">${upBadge(it, c.gear)}</div><div class="il">Your ${esc(heroCls)} wears ${vs}</div><div class="acts"><button class="btn" data-shop="${i}" ${it.sold || profile.gold < it.price || full ? 'disabled' : ''}>${it.sold ? 'Sold' : 'Buy for ' + it.price + ' gold'}</button></div>`);
+      return itemHtml(it, `<div class="il">${upBadge(it, c.gear)}</div><div class="il">${esc(c.name)} wears ${vs}</div><div class="acts"><button class="btn" data-shop="${i}" ${it.sold || profile.gold < it.price || full ? 'disabled' : ''}>${it.sold ? 'Sold' : 'Buy for ' + it.price + ' gold'}</button></div>`);
     }).join('');
     $('hpShop').innerHTML = `<p class="savenote" style="margin:0 0 8px">Bank: <b style="color:var(--accent)">${profile.gold} gold</b>. Stock rolled at Map 1 +${sh.level}. <b>New stock in ${restockIn()}</b> (every 12 hours, at the map level you last played). Purchases go to your stash.${full ? ' <b class="down">Your stash is full.</b>' : ''}</p><div class="list tall" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px">${rows}</div>`;
   }
@@ -3315,13 +3322,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
 
   // ---------- characters: one drawing routine for the hero and every NPC
   const RARC = { White: '#9c968a', Green: '#4f8f48', Blue: '#3f74b8', 'Purple (Epic)': '#8461b8', Gold: '#e4a93a' };
-  function heroPal() { const c = CBHub.char(profile, heroCls); return palFor(heroCls, rcOf(c)); }
+  function heroPal() { const c = CBHub.char(profile, heroKey); return palFor(c ? c.cls : 'Warrior', c ? rcOf(c) : {}); }
   function palFor(cls, R) {
-    R = R || {}; const rc = (k) => R[k] ? RARC[R[k]] || '#9c968a' : null; const heroCls_ = cls || 'Warrior';
+    R = R || {}; const rc = (k) => R[k] ? RARC[R[k]] || '#9c968a' : null; const heroKey_ = cls || 'Warrior';
     const base = { Warrior: { chest: '#5a2620', skin: '#c99a76', hair: '#2a1d14', legs: '#2a2420', weapon: 'swordshield', cape: '#3a1612' },
       Rogue: { chest: '#21331e', skin: '#b98d6c', hair: '#141210', legs: '#1b1f19', weapon: 'daggers', cape: '#18231a', helm: 'hood' },
       Mage: { chest: '#202d4c', skin: '#d2ad8c', hair: '#c9c2b2', legs: '#191e2e', weapon: 'staff', cape: '#2a1f44', helm: 'hood' },
-      Paladin: { chest: '#5f5a4a', skin: '#caa07e', hair: '#8a6a3a', legs: '#2e2c26', weapon: 'maceshield', cape: '#6a5420' } }[heroCls_];
+      Paladin: { chest: '#5f5a4a', skin: '#caa07e', hair: '#8a6a3a', legs: '#2e2c26', weapon: 'maceshield', cape: '#6a5420' } }[heroKey_];
     return Object.assign({}, base, { trim: rc('chest') || '#9c968a', helm: R.helm ? (base.helm || 'helm') : base.helm || null, helmC: rc('helm') || '#5a5f66', wpnC: rc('weapon') || '#9c968a', capeTrim: rc('cloak'), bootC: rc('boots'), hero: true });
   }
   // the training dummy: a straw scarecrow on a post, swaying a little
@@ -3590,9 +3597,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     ev.stopPropagation();
   });
   function renderTownBar() {
-    if (!profile.chars[heroCls]) return;
-    const c = CBHub.char(profile, heroCls);
-    $('tbHero').innerHTML = `<b style="color:${CC[heroCls]}">${esc(c.name || heroCls)}</b> <span class="muted">${heroCls}</span>`;
+    if (!profile.chars[heroKey]) return;
+    const c = CBHub.char(profile, heroKey);
+    $('tbHero').innerHTML = `<b style="color:${CC[c.cls]}">${esc(c.name || c.cls)}</b> <span class="muted">${c.cls}</span>`;
     $('tbPower').textContent = `Power ${CBHub.powerLevel(c)} · gear ${CBHub.gearScore(c)} · deck ${CB.deckLevel(c.deck)}`;
     $('tbGold').textContent = `Gold ${profile.gold}`;
   }
@@ -3616,9 +3623,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
 
   function rcOf(c) { const slot = sl => c.gear.find(g => g.slot === sl); const rc = sl => { const it = slot(sl); return it ? it.rarity : null; }; return { helm: rc('Helm'), chest: rc('Chest'), weapon: rc('Weapon'), cloak: rc('Cloak'), boots: rc('Boots') }; }
   function myPresence() {
-    const c = profile.chars[heroCls];
+    const c = profile.chars[heroKey];
     const place = !$('scrStart').hidden ? 'town' : run ? 'run' : cb && cb.duel ? 'duel' : 'menu';
-    return { uid: SOC.me, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? heroCls : null, rc: c ? rcOf(c) : {}, place, x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
+    return { uid: SOC.me, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
   }
 
   async function socStart() {
@@ -3709,7 +3716,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function sendChat(text) {
     text = (text || '').trim().slice(0, 200); if (!text) return;
     if (!socOn()) { sysChat('Sign in to chat with other players.'); return; }
-    const c = profile.chars[heroCls];
+    const c = profile.chars[heroKey];
     const m = { uid: SOC.me, name: c ? c.name : acctName(supaUser), text, at: Date.now() };
     SOC.ch.send({ type: 'broadcast', event: 'chat', payload: m }); addChat(m);
   }
@@ -3722,8 +3729,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // ---------- friends (tables: players, friends)
   async function saveCard() {
     if (!supa || !supaUser) return;
-    const c = profile.chars[heroCls];
-    const row = { user_id: supaUser.id, display_name: acctName(supaUser).slice(0, 40), hero_name: c ? c.name : null, hero_class: c ? heroCls : null, updated_at: new Date().toISOString() };
+    const c = profile.chars[heroKey];
+    const row = { user_id: supaUser.id, display_name: acctName(supaUser).slice(0, 40), hero_name: c ? c.name : null, hero_class: c ? c.cls : null, updated_at: new Date().toISOString() };
     const { error } = await supa.from('players').upsert(row);
     if (error) { console.warn('players upsert', error); return; }
     const { data } = await supa.from('players').select('friend_code').eq('user_id', supaUser.id).maybeSingle();
@@ -3753,7 +3760,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (SOC.requestsIn.some(f => f.id === p.user_id)) { await acceptFriend(p.user_id); return null; }
     const { error } = await supa.from('friends').insert({ user_id: SOC.me, friend_id: p.user_id, status: 'pending' });
     if (error) return 'Could not send the request: ' + error.message;
-    if (socOn()) { const c = profile.chars[heroCls]; SOC.ch.send({ type: 'broadcast', event: 'friend-ping', payload: { to: p.user_id, name: c ? c.name : acctName(supaUser) } }); }
+    if (socOn()) { const c = profile.chars[heroKey]; SOC.ch.send({ type: 'broadcast', event: 'friend-ping', payload: { to: p.user_id, name: c ? c.name : acctName(supaUser) } }); }
     await loadFriends(); return null;
   }
   async function acceptFriend(id) { await supa.from('friends').update({ status: 'accepted' }).eq('user_id', id).eq('friend_id', SOC.me); await loadFriends(); }
@@ -3761,13 +3768,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
 
   // ---------- parties: the inviter leads; up to 4 players
   const newPartyId = () => 'p' + Math.random().toString(36).slice(2, 10);
-  function meMember() { const c = profile.chars[heroCls]; return { uid: SOC.me, name: c ? c.name : acctName(supaUser), cls: c ? heroCls : null }; }
+  function meMember() { const c = profile.chars[heroKey]; return { uid: SOC.me, name: c ? c.name : acctName(supaUser), cls: c ? c.cls : null }; }
   function invite(uid) {
     if (!socOn()) return;
     if (SOC.party && SOC.party.leader !== SOC.me) { toast('Only the party leader can invite.'); return; }
     if (!SOC.party) SOC.party = { id: newPartyId(), leader: SOC.me, members: [meMember()] };
     if (SOC.party.members.length >= PARTY_MAX) { toast('The party is full (4 players).'); return; }
-    const c = profile.chars[heroCls];
+    const c = profile.chars[heroKey];
     SOC.ch.send({ type: 'broadcast', event: 'invite', payload: { to: uid, from: SOC.me, name: c ? c.name : acctName(supaUser), partyId: SOC.party.id } });
     const f = SOC.friends.find(x => x.id === uid) || SOC.others.get(uid);
     sysChat(`Party invite sent to ${f ? f.name : 'player'}.`); retrack(true); renderSocial();
@@ -3879,8 +3886,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793459515791';
-  const CB_BUILD = '8bbd450816'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793460867879';
+  const CB_BUILD = 'dbb2aedc72'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -3896,9 +3903,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // what I bring: my current hero, gear, deck, bank and stash space
   function mySpec() {
     if (run || cb) return { err: 'is already on the March or in a fight' };
-    const c = profile.chars[heroCls]; if (!c) return { err: 'has no hero yet' };
+    const c = profile.chars[heroKey]; if (!c) return { err: 'has no hero yet' };
     const chk = CBHub.deckCheck(c.deck); if (!chk.ok) return { err: `needs to fix their deck (it ${chk.problems.join(', ')})` };
-    const o = CBHub.runOpts(profile, heroCls); delete o.members;
+    const o = CBHub.runOpts(profile, heroKey); delete o.members;
     return Object.assign(o, { uid: SOC.me });
   }
 
@@ -3936,7 +3943,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       cb = new CB.Combat({ duel: true, party: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, uid: s.uid })), seed: go.seed, data: DATA });
       cb.myMi = S.mi; startCombatUI();
     } else {
-      run = new Run({ members: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, bank: s.bank, stashFree: s.stashFree })), level: go.level, map: go.map || 'physical', seed: go.seed, data: DATA });
+      run = new Run({ members: go.specs.map(s => ({ key: s.key, cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, bank: s.bank, stashFree: s.stashFree })), level: go.level, map: go.map || 'physical', seed: go.seed, data: DATA });
       run.online = true; run.myMi = S.mi; run.uids = go.uids.slice();
       show('map'); renderMap(true);
       if (go.host !== SOC.me) { modal(`<h2>Your party sets out</h2><p>${esc(nameOfUid(go.host))} is leading ${go.specs.map(x => esc(x.name)).join(', ')} onto <b>${esc(run.mapName)}</b> (+${go.level}).</p><p class="muted">Click a node on the map to vote where to go. The party moves when everyone has voted (ties are a coin flip; after 45 seconds the votes in count).</p><div class="row"><button class="btn primary" id="mClose">Let's go</button></div>`); $('mClose').onclick = closeModal; }
@@ -4133,9 +4140,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function challenge(uid) {
     if (!socOn() || NET.s || NET.duelOut) return;
     if (run || cb) { toast('Finish what you are doing first.'); return; }
-    const c = profile.chars[heroCls]; if (!c) return;
+    const c = profile.chars[heroKey]; if (!c) return;
     NET.duelOut = uid;
-    netSend('duel-ask', { to: uid, name: c.name, cls: heroCls });
+    netSend('duel-ask', { to: uid, name: c.name, cls: c.cls });
     sysChat(`You challenged ${nameOfUid(uid)} to a duel.`); renderSocial();
     setTimeout(() => { if (NET.duelOut === uid) { NET.duelOut = null; sysChat(`${nameOfUid(uid)} didn't answer the challenge.`); renderSocial(); } }, 30000);
   }
@@ -4147,7 +4154,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   }
   function duelOver() {
     const S = NET.s, me = cb.players[cb.myMi], won = cb.winner === me;
-    const c = profile.chars[heroCls]; if (c && S && !S.counted) { S.counted = true; c.duels = c.duels || { w: 0, l: 0 }; if (won) c.duels.w++; else c.duels.l++; save(); }
+    const c = profile.chars[heroKey]; if (c && S && !S.counted) { S.counted = true; c.duels = c.duels || { w: 0, l: 0 }; if (won) c.duels.w++; else c.duels.l++; save(); }
     const foe = cb.players.find(p => p !== me);
     modal(`<h2 class="${won ? '' : 'loss'}">${won ? 'Victory' : cb.winner ? 'Defeat' : 'Draw'}</h2><p>${won ? `You beat ${esc(foe.name)} in ${cb.round} rounds.` : cb.winner ? `${esc(cb.winner.name)} wins in ${cb.round} rounds.` : 'Nobody is left standing.'} Duels are for glory: nobody loses gear, gold or HP.</p>
       <dl class="kv"><dt>Your duel record</dt><dd>${c && c.duels ? c.duels.w + ' won, ' + c.duels.l + ' lost' : '-'}</dd></dl>
@@ -4237,7 +4244,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   const CX = { own: 'All', map: null, tab: 'cards', cls: 'All', rar: 'All', built: 'All', tier: 'All', slot: 'All', q: '' };
   const TIER_NAME = t => t === 'Elite' || t === 'Boss' ? t : 'Tier ' + t;
   function cxChips(key, vals, label) { return `<div class="cxchips" role="group" aria-label="${label}">${vals.map(v => `<button class="cxchip ${CX[key] === v ? 'on' : ''}" data-cx="${key}" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div>`; }
-  function ownedCounts() { const c = profile.chars[heroCls], n = {}; if (c) for (const k of [...c.deck, ...c.cards]) n[k.key] = (n[k.key] || 0) + 1; return n; }
+  function ownedCounts() { const c = profile.chars[heroKey], n = {}; if (c) for (const k of [...c.deck, ...c.cards]) n[k.key] = (n[k.key] || 0) + 1; return n; }
   function codexCards() {
     const own = ownedCounts(), q = CX.q.toLowerCase();
     const all = Object.entries(CARDS).filter(([k, d]) => d.cls && d.rarity !== 'Status' && d.rarity !== 'Token');
@@ -4246,7 +4253,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const drops = CB.CARD_DROPS;
     const nBuilt = all.filter(([k, d]) => !d.designOnly).length;
     return `${cxChips('cls', ['All', ...Object.keys(CLASSES)], 'Class')}${cxChips('rar', ['All', 'White', 'Green', 'Blue', 'Gold'], 'Rarity')}${cxChips('own', ['All', 'Owned', 'Not owned'], 'Owned')}
-      <p class="savenote">${list.length} of ${all.length} cards. <b>${nBuilt} are playable</b>; the other ${all.length - nBuilt} are from the card design and are marked <i>Not built yet</i>: they don't drop until their mechanics are added to the game. <b>How cards drop:</b> each kill can drop a card for <i>your</i> class: tier 1 ${drops[1].chance}%, tier 2 ${drops[2].chance}%, tier 3 ${drops[3].chance}% (mostly White, some Green and Blue); elites always drop one Green or better (${drops.Elite.w.Gold}% Gold); the Warlord drops two Blue or Gold. Luck raises every chance. Cards marked <b>owned</b> are in ${esc(profile.chars[heroCls] ? profile.chars[heroCls].name : 'your hero')}'s deck or collection.</p>
+      <p class="savenote">${list.length} of ${all.length} cards. <b>${nBuilt} are playable</b>; the other ${all.length - nBuilt} are from the card design and are marked <i>Not built yet</i>: they don't drop until their mechanics are added to the game. <b>How cards drop:</b> each kill can drop a card for <i>your</i> class: tier 1 ${drops[1].chance}%, tier 2 ${drops[2].chance}%, tier 3 ${drops[3].chance}% (mostly White, some Green and Blue); elites always drop one Green or better (${drops.Elite.w.Gold}% Gold); the Warlord drops two Blue or Gold. Luck raises every chance. Cards marked <b>owned</b> are in ${esc(profile.chars[heroKey] ? profile.chars[heroKey].name : 'your hero')}'s deck or collection.</p>
       <div class="pilegrid cxgrid">${list.map(([k, d]) => `<div class="pilecard ${d.designOnly ? 'design' : ''}" data-cxcard="${k}" style="cursor:pointer" title="${esc((d.id || '') + (d.designOnly ? ' (not built yet)' : ''))} - click for ranks and drop sources">${cardBox(d, 150) || rowHtml(1, d)}${d.designOnly ? '<span class="dstamp">Not built yet</span>' : ''}${own[k] ? `<span class="pilecount" title="In your deck or collection">owned${own[k] > 1 ? ' x' + own[k] : ''}</span>` : ''}</div>`).join('') || '<span class="muted">No cards match.</span>'}</div>`;
   }
   // map filter: defaults to the map picked at the Wagon
@@ -4378,14 +4385,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     return G[base] ? G[base].pts : 1;
   }
   function itemPower(it, cls) {
-    let p = 0; cls = cls || heroCls;
+    let p = 0; cls = cls || hcls();
     for (const src of [it.stats || {}, it.imp2 || {}]) for (const [k, v] of Object.entries(src)) p += v * statPts(k) * (isOff(k, cls) ? 0.25 : 1);
     return Math.round(p);
   }
   // is an item better than what this hero wears? compares item power with the weaker of the slots it can go in
   function upgradeInfo(it, gear, cls) {
     if (!it || it.kind === 'card' || !gear) return null;
-    if (it.slot === 'Codex' && it.cls && it.cls !== (cls || heroCls)) return { kind: 'other', cls: it.cls };
+    if (it.slot === 'Codex' && it.cls && it.cls !== (cls || hcls())) return { kind: 'other', cls: it.cls };
     const cur = CBHub.slotOptions(it).map(sl => gear.find(g => g.slot === sl));
     if (cur.some(x => !x)) return { kind: 'empty' };
     const mine = itemPower(it, cls), worst = cur.reduce((a, b) => itemPower(a, cls) <= itemPower(b, cls) ? a : b), d = mine - itemPower(worst, cls);
@@ -4400,7 +4407,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       : u.kind === 'down' ? `<span class="upb down" title="${why}">&#9660; ${u.d} power</span>`
       : `<span class="upb same" title="${why}">= Even</span>`;
   }
-  const myGear = () => (profile.chars[heroCls] || { gear: [] }).gear;
+  const myGear = () => (profile.chars[heroKey] || { gear: [] }).gear;
 
   // hover tooltips for item slots: data-tip points into TIPS
   const TIPS = new Map(); let tipN = 0;
@@ -4451,15 +4458,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   document.addEventListener('click', (ev) => {
     const d = ev.target.closest('[data-dslot]'); if (!d || !d.closest('#hpGear')) return;
     gtip.hidden = true;
-    const sl = d.dataset.dslot, c = CBHub.char(profile, heroCls), it = c.gear.find(g => g.slot === sl);
-    const fits = profile.stash.filter(x => x.kind !== 'card' && CBHub.slotOptions(x).includes(sl) && !(x.slot === 'Codex' && x.cls && x.cls !== heroCls)).sort((a, b) => (b.ilvl || 0) - (a.ilvl || 0));
+    const sl = d.dataset.dslot, c = CBHub.char(profile, heroKey), it = c.gear.find(g => g.slot === sl);
+    const fits = profile.stash.filter(x => x.kind !== 'card' && CBHub.slotOptions(x).includes(sl) && !(x.slot === 'Codex' && x.cls && x.cls !== hcls())).sort((a, b) => (b.ilvl || 0) - (a.ilvl || 0));
     const choose = fits.map(x => itemHtml(x, `<div class="acts">${upBadge(x, c.gear)}<button class="btn" data-eq="${x.id}">Equip</button></div>`)).join('');
     modal(`<h2>${sl}</h2>${it ? itemHtml(it, `<div class="acts"><button class="btn" id="mUneq">Unequip to stash</button></div>`) : '<p class="muted">Nothing equipped.</p>'}
       <h3 style="font-size:18px;color:var(--accent);margin-top:10px">From your stash (${fits.length})</h3><div class="list" style="max-height:340px">${choose || '<span class="muted">Nothing in the stash fits this slot.</span>'}</div>
       <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     $('mClose').onclick = closeModal;
-    if ($('mUneq')) $('mUneq').onclick = () => { if (!CBHub.unequip(profile, heroCls, sl)) return toast('Stash is full.'); save(); closeModal(); renderHub(); };
-    for (const b of $('modalBox').querySelectorAll('[data-eq]')) b.onclick = () => { const r = CBHub.equip(profile, heroCls, b.dataset.eq, sl); if (!r.ok) return toast(r.why); save(); closeModal(); renderHub(); };
+    if ($('mUneq')) $('mUneq').onclick = () => { if (!CBHub.unequip(profile, heroKey, sl)) return toast('Stash is full.'); save(); closeModal(); renderHub(); };
+    for (const b of $('modalBox').querySelectorAll('[data-eq]')) b.onclick = () => { const r = CBHub.equip(profile, heroKey, b.dataset.eq, sl); if (!r.ok) return toast(r.why); save(); closeModal(); renderHub(); };
   });
 
   // ---------- inspecting another player (they answer with their hero's gear and deck)
@@ -4470,7 +4477,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     modal(`<h2>Inspecting ${esc(nameOfUid(uid))}...</h2><p class="muted">Asking their game for their hero.</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`); $('mClose').onclick = closeModal;
     setTimeout(() => { if (INS.waiting === uid) { INS.waiting = null; if (!$('modal').hidden && /Inspecting/.test($('modalBox').innerText)) toast(`${nameOfUid(uid)} didn't answer. They may have just gone offline.`); } }, 6000);
   }
-  function inspectCard() { const c = profile.chars[heroCls]; if (!c) return null; return { name: c.name, cls: heroCls, gear: c.gear.map(g => { const x = Object.assign({}, g); delete x.id; return x; }), deck: c.deck.map(k => ({ key: k.key, rank: k.rank || 0 })), runs: c.runs, best: c.best, bossKills: c.bossKills, duels: c.duels || null, acct: supaUser ? acctName(supaUser) : '' }; }
+  function inspectCard() { const c = profile.chars[heroKey]; if (!c) return null; return { name: c.name, cls: c.cls, gear: c.gear.map(g => { const x = Object.assign({}, g); delete x.id; return x; }), deck: c.deck.map(k => ({ key: k.key, rank: k.rank || 0 })), runs: c.runs, best: c.best, bossKills: c.bossKills, duels: c.duels || null, acct: supaUser ? acctName(supaUser) : '' }; }
   function showInspect(ch) {
     const deck = ch.deck.slice().sort((a, b) => RAR_ORDER[CARDS[a.key].rarity] - RAR_ORDER[CARDS[b.key].rarity] || CARDS[a.key].name.localeCompare(CARDS[b.key].name));
     const groups = []; for (const k of deck) { const g = groups.find(x => x.key === k.key && x.rank === k.rank); if (g) g.n++; else groups.push({ key: k.key, rank: k.rank, n: 1 }); }
@@ -4489,7 +4496,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function tradeAsk(uid) {
     if (!socOn()) return; if (run || cb || NET.s) { toast('You can only trade in Emberwatch.'); return; }
     if (TR.s) { toast('Finish your current trade first.'); return; }
-    const c = profile.chars[heroCls]; netSend('tr-ask', { to: uid, name: c ? c.name : acctName(supaUser) });
+    const c = profile.chars[heroKey]; netSend('tr-ask', { to: uid, name: c ? c.name : acctName(supaUser) });
     TR.asked = uid; sysChat(`Trade request sent to ${nameOfUid(uid)}.`);
   }
   function answerTrade(from, ok) {
@@ -4676,21 +4683,21 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // ---------- premade codex test decks (design/Cardbound_Codex_Test_Decks.xlsx): load one and its codex in a click
   const TDECKS = window.CB_TESTDECKS || [];
   function testDecksHtml(c) {
-    const mine = TDECKS.filter(d => d.cls === heroCls), eq = c.gear.find(g => g.slot === 'Codex');
-    const others = Object.keys(CLASSES).filter(k => k !== heroCls).map(k => `${TDECKS.filter(d => d.cls === k).length} ${k}`).join(', ');
+    const mine = TDECKS.filter(d => d.cls === hcls()), eq = c.gear.find(g => g.slot === 'Codex');
+    const others = Object.keys(CLASSES).filter(k => k !== hcls()).map(k => `${TDECKS.filter(d => d.cls === k).length} ${k}`).join(', ');
     const groups = []; for (const d of mine) { let g = groups.find(x => x.codex === d.codex); if (!g) groups.push(g = { codex: d.codex, decks: [] }); g.decks.push(d); }
-    const cx = (k) => (CB.CODEXES[heroCls] || []).find(x => x[0] === k) || [k, k, ''];
-    return `<p class="savenote" style="margin:0 0 8px"><b>${mine.length} ${heroCls} test decks</b>, three per codex (the deck sheets are in the Codex Test Decks workbook). <b>Load deck</b> equips that codex and replaces ${esc(c.name)}'s deck with the 22 cards at +0. Your own cards go back to the collection; test-deck cards are removed when you load another. Other classes: ${others} (switch hero to load those).</p>
+    const cx = (k) => (CB.CODEXES[hcls()] || []).find(x => x[0] === k) || [k, k, ''];
+    return `<p class="savenote" style="margin:0 0 8px"><b>${mine.length} ${hcls()} test decks</b>, three per codex (the deck sheets are in the Codex Test Decks workbook). <b>Load deck</b> equips that codex and replaces ${esc(c.name)}'s deck with the 22 cards at +0. Your own cards go back to the collection; test-deck cards are removed when you load another. Other classes: ${others} (switch hero to load those).</p>
       ${groups.map(g => { const [k, nm, txt] = cx(g.codex); return `<div class="tdgroup"><div class="tdhead"><b style="color:#e0802a">${esc(nm)} Codex</b> <span class="muted">${esc(txt)}</span>${eq && eq.codex === k ? ' <span class="chip">equipped</span>' : ''}</div>
         <div class="tdrow">${g.decks.map(d => { const loaded = c.testDeck === d.id, cnt = { Gold: 0, Blue: 0, Green: 0, White: 0 }; for (const [ck, n] of d.cards) cnt[CARDS[ck].rarity] += n;
-          return `<div class="tdcard ${loaded ? 'on' : ''}"><div class="ih"><b>${esc(nm)} ${heroCls} ${d.n}: ${esc(d.name)}</b></div><div class="il">${esc(d.style)}</div><p>${esc(d.plan)}</p>
+          return `<div class="tdcard ${loaded ? 'on' : ''}"><div class="ih"><b>${esc(nm)} ${hcls()} ${d.n}: ${esc(d.name)}</b></div><div class="il">${esc(d.style)}</div><p>${esc(d.plan)}</p>
             <div class="il">${['Gold', 'Blue', 'Green', 'White'].map(r => `<span style="color:${RC[r]}">${cnt[r]} ${r}</span>`).join(' &middot; ')}</div>
             ${TV.open === d.id ? `<div class="tdlist">${d.cards.slice().sort((a, b) => RAR_ORDER[CARDS[b[0]].rarity] - RAR_ORDER[CARDS[a[0]].rarity] || CARDS[a[0]].name.localeCompare(CARDS[b[0]].name)).map(([ck, n]) => `<span style="color:${RC[CARDS[ck].rarity]}" title="${esc(CARDS[ck].text)}">${n}x ${esc(CARDS[ck].name)}</span>`).join('')}</div>` : ''}
             <div class="acts"><button class="btn ${loaded ? '' : 'primary'}" data-tvdeck="${d.id}">${loaded ? 'Loaded (reload)' : 'Load deck'}</button><button class="btn" data-tvpeek="${d.id}">${TV.open === d.id ? 'Hide cards' : 'Show cards'}</button></div></div>`; }).join('')}</div></div>`; }).join('')}`;
   }
   function loadTestDeck(id) {
-    const d = TDECKS.find(x => x.id === id), c = profile.chars[heroCls]; if (!d || !c) return;
-    if (d.cls !== heroCls) return toast(`That deck is for a ${d.cls}.`);
+    const d = TDECKS.find(x => x.id === id), c = profile.chars[heroKey]; if (!d || !c) return;
+    if (d.cls !== hcls()) return toast(`That deck is for a ${d.cls}.`);
     const nid = () => 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
     // your own cards go back to the collection; cards from an earlier test deck just disappear
     for (const k of c.deck) if (!k.test) c.cards.push(k);
@@ -4701,22 +4708,22 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (!eq || eq.codex !== d.codex) {
       let it = profile.stash.find(x => x.codex === d.codex);
       if (!it) { if (profile.stash.length >= CBHub.STASH_MAX) note = ' Your stash is full, so the codex could not be added: make room and load again.'; else { it = Object.assign({ id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, CB.makeCodex(DATA, CB.makeRng(Date.now() % 2147483646), d.codex, profile.last.level || 0)); profile.stash.unshift(it); } }
-      if (it) { const r = CBHub.equip(profile, heroCls, it.id, 'Codex'); if (!r.ok) note = ` The codex could not be equipped: ${r.why}.`; }
+      if (it) { const r = CBHub.equip(profile, heroKey, it.id, 'Codex'); if (!r.ok) note = ` The codex could not be equipped: ${r.why}.`; }
     }
     save(); renderHub(); renderTestVendor();
     toast(`Loaded ${d.name} (${d.cards.reduce((t, x) => t + x[1], 0)} cards) and equipped the ${CB.CODEX_BY_KEY ? (CB.CODEX_BY_KEY[d.codex] || {}).name || d.codex : d.codex} Codex.${note} Press C to see the deck.`);
   }
   function renderTestVendor() {
     const el = $('hpTest'); if (!el) return;
-    const c = profile.chars[heroCls]; if (!c) { el.innerHTML = '<p>Make a hero first.</p>'; return; }
+    const c = profile.chars[heroKey]; if (!c) { el.innerHTML = '<p>Make a hero first.</p>'; return; }
     const own = {}; for (const k of [...c.deck, ...c.cards]) own[k.key] = (own[k.key] || 0) + 1;
     const q = TV.q.toLowerCase();
-    const cards = Object.entries(CARDS).filter(([k, d]) => d.cls === heroCls && !d.designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(d.rarity) && (TV.rar === 'All' || d.rarity === TV.rar) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + d.rarity).toLowerCase().includes(q)))
+    const cards = Object.entries(CARDS).filter(([k, d]) => d.cls === hcls() && !d.designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(d.rarity) && (TV.rar === 'All' || d.rarity === TV.rar) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + d.rarity).toLowerCase().includes(q)))
       .sort((a, b) => RAR_ORDER[b[1].rarity] - RAR_ORDER[a[1].rarity] || a[1].name.localeCompare(b[1].name));
     const room = CBHub.STASH_MAX - profile.stash.length;
     el.innerHTML = `<p class="savenote" style="margin:0 0 8px"><b style="color:#e0802a">Test vendor (temporary).</b> Everything here is free so you can try cards and codexes. Cards go to ${esc(c.name)}'s collection (add them to the deck at the Scribe); codexes go to the stash (equip them in the Codex slot with C).</p>
-      <div class="cxtop"><div class="tabs cxtabs" role="tablist">${[['decks', 'Test decks'], ['cards', `${heroCls} cards`], ['codex', 'Codexes'], ['misc', 'Gold']].map(([k, l]) => `<button role="tab" aria-selected="${TV.tab === k}" data-tvtab="${k}">${l}</button>`).join('')}</div>
-        ${TV.tab === 'cards' ? `<input id="tvQ" type="search" placeholder="Search ${heroCls} cards by name or text..." value="${esc(TV.q)}" autocomplete="off">` : ''}
+      <div class="cxtop"><div class="tabs cxtabs" role="tablist">${[['decks', 'Test decks'], ['cards', `${hcls()} cards`], ['codex', 'Codexes'], ['misc', 'Gold']].map(([k, l]) => `<button role="tab" aria-selected="${TV.tab === k}" data-tvtab="${k}">${l}</button>`).join('')}</div>
+        ${TV.tab === 'cards' ? `<input id="tvQ" type="search" placeholder="Search ${hcls()} cards by name or text..." value="${esc(TV.q)}" autocomplete="off">` : ''}
         <button class="btn" data-tvshop="1" title="Merchant Dace normally restocks every 12 hours">Restock Merchant Dace now</button></div>
       ${TV.tab === 'decks' ? testDecksHtml(c) : TV.tab === 'cards' ? `<div class="cxchips">${['All', 'White', 'Green', 'Blue', 'Gold'].map(r => `<button class="cxchip ${TV.rar === r ? 'on' : ''}" data-tvrar="${r}">${r}</button>`).join('')}<button class="btn primary" data-tvall="1" style="margin-left:auto">Take one of each${q || TV.rar !== 'All' ? ' shown' : ''} (${cards.length})</button></div>
         <div class="pilegrid cxgrid nozoom">${cards.length ? '' : '<span class="muted">No cards match.</span>'}${cards.map(([k, d]) => `<div class="pilecard" style="display:grid;gap:4px;justify-items:center">${cardBox(d, 140)}${own[k] ? `<span class="pilecount">x${own[k]}</span>` : ''}<button class="pilebtn" data-tvcard="${k}">Take</button></div>`).join('')}</div>`
@@ -4729,12 +4736,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const b = ev.target.closest('[data-tvtab],[data-tvrar],[data-tvcard],[data-tvall],[data-tvcx],[data-tvgold],[data-tvshop],[data-tvdeck],[data-tvpeek]'); if (!b) return;
     if (b.dataset.tvdeck) return loadTestDeck(b.dataset.tvdeck);
     if (b.dataset.tvpeek) { TV.open = TV.open === b.dataset.tvpeek ? null : b.dataset.tvpeek; return renderTestVendor(); }
-    const c = profile.chars[heroCls];
+    const c = profile.chars[heroKey];
     if (b.dataset.tvtab) TV.tab = b.dataset.tvtab;
     else if (b.dataset.tvrar) TV.rar = b.dataset.tvrar;
     else if (b.dataset.tvcard) { c.cards.push({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), key: b.dataset.tvcard, rank: 0 }); save(); }
     else if (b.dataset.tvshop) { CBHub.refreshShop(profile, DATA, profile.last.level || 0); save(); toast(`Merchant Dace has new stock (map level +${profile.last.level || 0}, ${DATA.maps[curMap()].name} gear).`); }
-    else if (b.dataset.tvall) { const q = TV.q.toLowerCase(); let n = 0; for (const [k, d] of Object.entries(CARDS)) if (d.cls === heroCls && !d.designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(d.rarity) && (TV.rar === 'All' || d.rarity === TV.rar) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + d.rarity).toLowerCase().includes(q)) && ++n) c.cards.push({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), key: k, rank: 0 }); save(); toast(`Added ${n} ${heroCls} card${n === 1 ? '' : 's'} to ${c.name}'s collection.`); }
+    else if (b.dataset.tvall) { const q = TV.q.toLowerCase(); let n = 0; for (const [k, d] of Object.entries(CARDS)) if (d.cls === hcls() && !d.designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(d.rarity) && (TV.rar === 'All' || d.rarity === TV.rar) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + d.rarity).toLowerCase().includes(q)) && ++n) c.cards.push({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), key: k, rank: 0 }); save(); toast(`Added ${n} ${hcls()} card${n === 1 ? '' : 's'} to ${c.name}'s collection.`); }
     else if (b.dataset.tvcx) { if (profile.stash.length >= CBHub.STASH_MAX) return toast('Stash is full.'); const it = CB.makeCodex(DATA, CB.makeRng(Date.now() % 2147483646), b.dataset.tvcx, profile.last.level || 0); profile.stash.unshift(Object.assign({ id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, it)); save(); }
     else if (b.dataset.tvgold) { profile.gold += +b.dataset.tvgold; save(); renderTownBar(); }
     renderTestVendor();
@@ -4763,9 +4770,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // ---------- title screen: pick a hero, or create one (class + name)
   let createCls = null;
   function renderTitle() {
-    const chars = Object.values(profile.chars).sort((a, b) => (a.created || 0) - (b.created || 0));
-    $('heroList').innerHTML = chars.map(c => `<div class="herocard" style="--cc:${CC[c.cls]}"><b>${esc(c.name)}</b><small>${c.cls} &middot; Power ${CBHub.powerLevel(c)} &middot; ${c.runs} run${c.runs === 1 ? '' : 's'}${c.bossKills ? ` &middot; ${c.bossKills} boss kill${c.bossKills === 1 ? '' : 's'}` : ''}</small><div class="row" style="display:flex;gap:6px;align-items:center"><button class="btn primary play" data-play="${c.cls}">Enter Emberwatch</button><button class="pilebtn" data-delhero="${c.cls}" title="Delete this hero">Delete</button></div></div>`).join('')
-      + (chars.length < 4 ? `<button class="herocard new" id="btnNewHero">+ Create a hero</button>` : '');
+    const keys = heroKeys(), chars = keys.map(k => profile.chars[k]);
+    $('heroList').innerHTML = keys.map(k => { const c = profile.chars[k]; return `<div class="herocard" style="--cc:${CC[c.cls]}"><b>${esc(c.name)}</b><small>${c.cls} &middot; Power ${CBHub.powerLevel(c)} &middot; ${c.runs} run${c.runs === 1 ? '' : 's'}${c.bossKills ? ` &middot; ${c.bossKills} boss kill${c.bossKills === 1 ? '' : 's'}` : ''}</small><div class="row" style="display:flex;gap:6px;align-items:center"><button class="btn primary play" data-play="${k}">Enter Emberwatch</button><button class="pilebtn" data-delhero="${k}" title="Delete this hero">Delete</button></div></div>`; }).join('')
+      + (chars.length < CBHub.MAX_HEROES ? `<button class="herocard new" id="btnNewHero">+ Create a hero</button>` : '');
     if ($('btnNewHero')) $('btnNewHero').onclick = openCreate;
     if (!chars.length) openCreate();
     $('heroList').insertAdjacentHTML('beforeend', chars.length || profile.stash.length || profile.gold ? `<p class="savenote" style="grid-column:1/-1;margin:4px 0 0">Want a clean slate? <button class="pilebtn" id="btnWipe">Start fresh: delete everything</button></p>` : '');
@@ -4785,24 +4792,24 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   }
   function busyElsewhere() { if (run || cb) { toast('Finish or leave your run or fight first.'); return true; } return false; }
   function afterRosterChange() {
-    if (!profile.chars[heroCls]) heroCls = Object.keys(profile.chars)[0] || 'Warrior';
-    profile.last.cls = heroCls; save(); if (typeof saveCard === 'function') Promise.resolve().then(saveCard).catch(() => {});
+    if (!profile.chars[heroKey]) heroKey = Object.keys(profile.chars)[0] || 'Warrior';
+    profile.last.cls = heroKey; save(); if (typeof saveCard === 'function') Promise.resolve().then(saveCard).catch(() => {});
     if (typeof retrack === 'function') try { retrack(true); } catch (e) {}
     if (!Object.keys(profile.chars).length) { $('sheet').hidden = true; show('title'); renderTitle(); return; }
     renderHub(); if (!$('scrTitle').hidden) renderTitle();
   }
   function deleteHeroFlow(cls) {
     if (busyElsewhere()) return; const c = profile.chars[cls]; if (!c) return;
-    confirmTyped(`Delete ${esc(c.name)}?`, `<p>This permanently deletes your ${cls} <b>${esc(c.name)}</b>: their equipped gear, deck, card collection, level and records. The shared stash and banked gold stay. This cannot be undone.</p>`, c.name,
-      () => { CBHub.deleteChar(profile, cls); afterRosterChange(); toast(`${c.name} is gone. You can create a new ${cls} any time.`); });
+    confirmTyped(`Delete ${esc(c.name)}?`, `<p>This permanently deletes your ${c.cls} <b>${esc(c.name)}</b>: their equipped gear, deck, card collection, level and records. The shared stash and banked gold stay. This cannot be undone.</p>`, c.name,
+      () => { CBHub.deleteChar(profile, cls); afterRosterChange(); toast(`${c.name} is gone.`); });
   }
   function wipeFlow() {
     if (busyElsewhere()) return;
     confirmTyped('Start fresh?', `<p>This deletes <b>everything</b> on this account: every hero, the shared stash, all gold, run history and merchant stock. You start over with nothing. This cannot be undone.</p>`, 'RESET',
-      () => { const keep = { savedAt: Date.now() }; profile = CBHub.fix(Object.assign(CBHub.newProfile(), keep)); heroCls = 'Warrior'; afterRosterChange(); toast('Everything was deleted. Create a hero to begin again.'); });
+      () => { const keep = { savedAt: Date.now() }; profile = CBHub.fix(Object.assign(CBHub.newProfile(), keep)); heroKey = 'Warrior'; afterRosterChange(); toast('Everything was deleted. Create a hero to begin again.'); });
   }
   $('heroList').addEventListener('click', (ev) => { const d = ev.target.closest('[data-delhero]'); if (d) return deleteHeroFlow(d.dataset.delhero); });
-  $('heroList').addEventListener('click', (ev) => { const b = ev.target.closest('[data-play]'); if (!b) return; heroCls = b.dataset.play; profile.last.cls = heroCls; save(); renderHub(); show('start'); saveCard(); });
+  $('heroList').addEventListener('click', (ev) => { const b = ev.target.closest('[data-play]'); if (!b) return; heroKey = b.dataset.play; profile.last.cls = heroKey; save(); renderHub(); show('start'); saveCard(); });
   let createDeck = 'balanced', createAmu = 'soldier';
   function renderCreateChoices() {
     const list = createCls ? CB.STARTER_DECKS[createCls] || [] : [];
@@ -4814,11 +4821,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   $('deckPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-deck]'); if (!b) return; createDeck = b.dataset.deck; renderCreateChoices(); });
   $('amuPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-amu]'); if (!b) return; createAmu = b.dataset.amu; renderCreateChoices(); });
   function openCreate() {
-    const taken = (k) => !!profile.chars[k];
-    if (!createCls || taken(createCls)) createCls = Object.keys(CLASSES).find(k => !taken(k)) || null;
-    $('classPick').innerHTML = Object.entries(CLASSES).map(([k, c]) => `<button role="radio" style="--cc:${CC[k]}" data-cls="${k}" aria-checked="${k === createCls}" ${taken(k) ? 'disabled' : ''}><b>${k}</b><span>${esc(c.blurb)}</span><small>${taken(k) ? 'You already have a ' + k : 'Defense: ' + c.defense}</small></button>`).join('');
+    const n = Object.keys(profile.chars).length; if (!createCls) createCls = 'Warrior';
+    $('classPick').innerHTML = Object.entries(CLASSES).map(([k, c]) => { const have = Object.values(profile.chars).filter(x => x.cls === k).length; return `<button role="radio" style="--cc:${CC[k]}" data-cls="${k}" aria-checked="${k === createCls}"><b>${k}</b><span>${esc(c.blurb)}</span><small>Defense: ${c.defense}${have ? ` &middot; you have ${have}` : ''}</small></button>`; }).join('');
+    $('createMsg').textContent = n >= CBHub.MAX_HEROES ? `All ${CBHub.MAX_HEROES} hero slots are used. Delete a hero first.` : '';
     renderCreateChoices();
-    $('createPanel').hidden = false; $('createMsg').textContent = ''; $('btnCancelCreate').hidden = !Object.keys(profile.chars).length;
+    $('createPanel').hidden = false; $('btnCancelCreate').hidden = !Object.keys(profile.chars).length;
     $('heroName').focus();
   }
   $('classPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-cls]'); if (!b || b.disabled) return; createCls = b.dataset.cls; for (const x of $('classPick').children) x.setAttribute('aria-checked', x === b); createDeck = 'balanced'; renderCreateChoices(); });
@@ -4826,7 +4833,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (!createCls) { $('createMsg').textContent = 'Pick a class.'; return; }
     const r = CBHub.createChar(profile, createCls, $('heroName').value, createDeck, createAmu);
     if (!r.ok) { $('createMsg').textContent = r.why; return; }
-    heroCls = createCls; $('heroName').value = ''; $('createPanel').hidden = true; save(); renderHub(); show('start'); saveCard();
+    heroKey = r.id; $('heroName').value = ''; $('createPanel').hidden = true; save(); renderHub(); show('start'); saveCard();
   };
   $('btnCreate').onclick = doCreate; $('heroName').addEventListener('keydown', (e) => { if (e.key === 'Enter') doCreate(); });
   $('btnCancelCreate').onclick = () => { $('createPanel').hidden = true; };
@@ -4843,7 +4850,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       ${cb && cb.practice ? `<button class="btn" id="mnDummyReset">Reset the dummy (fresh fight)</button><button class="btn" id="mnDummyLeave">Leave the dummy and return to town</button>` : ''}
       ${run && run.over ? `<button class="btn" id="mnTown">Return to town</button>` : ''}
       ${!run && !onTitle ? `<button class="btn" id="mnHeroes">Switch hero</button>` : ''}
-      ${!run && !cb && !onTitle && profile.chars[heroCls] ? `<button class="btn" id="mnDelHero">Delete ${esc(profile.chars[heroCls].name)}...</button><button class="btn" id="mnWipe">Start fresh (delete everything)...</button>` : ''}
+      ${!run && !cb && !onTitle && profile.chars[heroKey] ? `<button class="btn" id="mnDelHero">Delete ${esc(profile.chars[heroKey].name)}...</button><button class="btn" id="mnWipe">Start fresh (delete everything)...</button>` : ''}
       ${supa ? (supaUser ? `<button class="btn" id="mnSignOut">Sign out (${esc(acctName(supaUser))})</button>` : `<button class="btn" id="mnSignIn">Sign in to save online</button>`) : ''}
       ${typeof socOn === 'function' && socOn() ? `<button class="btn" id="mnNet">Connection details (co-op)</button>` : ''}
       <h3 style="font-size:20px;margin-top:6px">Settings</h3>
@@ -4861,7 +4868,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if ($('mnDummyLeave')) $('mnDummyLeave').onclick = leaveDummy;
     if ($('mnForfeit')) $('mnForfeit').onclick = () => { closeModal(); if (netOn()) netAct({ t: 'leave' }); else backToTown(); };
     if ($('mnNet')) $('mnNet').onclick = openNetReport;
-    if ($('mnDelHero')) $('mnDelHero').onclick = () => deleteHeroFlow(heroCls);
+    if ($('mnDelHero')) $('mnDelHero').onclick = () => deleteHeroFlow(heroKey);
     if ($('mnWipe')) $('mnWipe').onclick = wipeFlow;
     if ($('mnHeroes')) $('mnHeroes').onclick = () => { closeModal(); $('sheet').hidden = true; show('title'); };
     if ($('mnSignIn')) $('mnSignIn').onclick = signInModal;
@@ -5220,8 +5227,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       { name: 'Straw Storm', n: 4, cost: 30, kind: 'Attack', text: 'Does nothing (no damage).', phase2: false, dtype: 'Physical' },
     ], gold: [0, 0], pool: [], loot: [] };
   function startDummy() {
-    if (!profile.chars[heroCls] || run || cb) return;
-    const o = CBHub.runOpts(profile, heroCls);
+    if (!profile.chars[heroKey] || run || cb) return;
+    const o = CBHub.runOpts(profile, heroKey);
     cb = new CB.Combat({ party: [{ cls: o.cls, name: o.name, gear: o.gear, deck: o.deck }], enemies: ['training_dummy'], practice: true, seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA });
     cb.practice = true; $('sheet').hidden = true; startCombatUI();
   }

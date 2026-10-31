@@ -108,13 +108,13 @@ class Run {
     this.data = this.opts.data || root.CB_DATA;
     this.rng = makeRng(this.opts.seed);
     this.level = this.opts.level;
-    const specs = this.opts.members || [{ cls: this.opts.cls, name: this.opts.name, gear: this.opts.gear, deck: this.opts.deck, bank: this.opts.bank, stashFree: this.opts.stashFree }];
+    const specs = this.opts.members || [{ key: this.opts.key, cls: this.opts.cls, name: this.opts.name, gear: this.opts.gear, deck: this.opts.deck, bank: this.opts.bank, stashFree: this.opts.stashFree }];
     this.sharedBank = !!this.opts.sharedBank;
     this.bankPool = this.sharedBank ? (specs[0].bank || 0) : 0;
     this.members = specs.map((sp, i) => {
       const gear = (sp.gear || (this.opts.gearPreset === 'White' ? STARTER_GEAR[sp.cls] : presetGear(sp.cls, this.opts.gearPreset))).map(x => Object.assign({}, x));
       const stats = sumGear(gear);
-      return { idx: i, cls: sp.cls, name: sp.name || sp.cls, gear, stats, deck: sp.deck || null, hp: stats.maxHp, mana: 0, gold: 0, sack: [],
+      return { idx: i, key: sp.key, cls: sp.cls, name: sp.name || sp.cls, gear, stats, deck: sp.deck || null, hp: stats.maxHp, mana: 0, gold: 0, sack: [],
         bank: this.sharedBank ? 0 : (sp.bank || 0), spent: 0, orders: [], stashFree: sp.stashFree != null ? sp.stashFree : 99, kept: null, deaths: 0 };
     });
     this.buffs = []; this.log = []; this.meter = {};

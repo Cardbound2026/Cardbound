@@ -20,28 +20,33 @@ function newChar(cls, name, deckKey, amuletKey) {
 function newProfile() { return { v: VERSION, gold: 0, stash: [], chars: {}, last: { cls: 'Warrior', level: 0 }, history: [] }; }
 function fix(p) { // tolerate older or partial saves
   p = Object.assign(newProfile(), p || {});
-  for (const c of Object.values(p.chars)) { c.cards = c.cards || []; c.deck = c.deck || []; c.gear = c.gear || []; c.name = c.name || c.cls; }
+  for (const [k, c] of Object.entries(p.chars)) { if (!c.cls && CLASSES[k]) c.cls = k; c.cards = c.cards || []; c.deck = c.deck || []; c.gear = c.gear || []; c.name = c.name || c.cls; }
+  if (p.last && p.last.cls && !p.chars[p.last.cls]) p.last.cls = Object.keys(p.chars)[0] || '';
   // Oct 30: the Paladin starter got more offense (+1 Crusader Strike, +1 Smite); existing Paladins get those two cards in their collection once
-  const pal = p.chars.Paladin; if (pal && !pal.gotOffense1) { pal.gotOffense1 = true; pal.cards.push({ id: uid('k'), key: 'crusader_strike', rank: 0 }, { id: uid('k'), key: 'smite', rank: 0 }); }
+  for (const pal of Object.values(p.chars).filter(c => c.cls === 'Paladin')) if (!pal.gotOffense1) { pal.gotOffense1 = true; pal.cards.push({ id: uid('k'), key: 'crusader_strike', rank: 0 }, { id: uid('k'), key: 'smite', rank: 0 }); }
   return p;
 }
 // character creation: one hero per class for now, each with a name the player picks
 const NAME_RE = /^[A-Za-z][A-Za-z '\-]{1,15}$/;
 function nameProblem(name) { name = (name || '').trim(); if (name.length < 2) return 'Names need at least 2 letters.'; if (name.length > 16) return 'Names can be at most 16 characters.'; if (!NAME_RE.test(name)) return 'Use letters, spaces, apostrophes or hyphens, starting with a letter.'; return null; }
 // delete a hero for good: their gear, deck, cards and records go with them; the shared stash and gold stay
-function deleteChar(p, cls) {
-  if (!p.chars[cls]) return { ok: false, why: 'No such hero' };
-  delete p.chars[cls];
-  if (p.last) { if (p.last.cls === cls) p.last.cls = Object.keys(p.chars)[0] || 'Warrior'; if (p.last.party) p.last.party = p.last.party.filter(k => k !== cls); }
+// heroes are keyed by an id (old saves keep their class name as the id); an account holds up to MAX_HEROES of any classes
+const MAX_HEROES = 20;
+function deleteChar(p, key) {
+  if (!p.chars[key]) return { ok: false, why: 'No such hero' };
+  delete p.chars[key];
+  if (p.last) { if (p.last.cls === key) p.last.cls = Object.keys(p.chars)[0] || ''; if (p.last.party) p.last.party = p.last.party.filter(k => k !== key); }
   return { ok: true };
 }
 function createChar(p, cls, name, deckKey, amuletKey) {
-  if (p.chars[cls]) return { ok: false, why: `You already have a ${cls}.` };
+  if (!CLASSES[cls]) return { ok: false, why: 'Pick a class.' };
+  if (Object.keys(p.chars).length >= MAX_HEROES) return { ok: false, why: `You already have ${MAX_HEROES} heroes. Delete one to make room.` };
   const why = nameProblem(name); if (why) return { ok: false, why };
-  p.chars[cls] = newChar(cls, name.trim().replace(/\s+/g, ' '), deckKey, amuletKey); p.last.cls = cls; return { ok: true };
+  const id = uid('h'); p.chars[id] = newChar(cls, name.trim().replace(/\s+/g, ' '), deckKey, amuletKey); p.last.cls = id; return { ok: true, id };
 }
 function renameChar(p, cls, name) { const c = p.chars[cls]; if (!c) return { ok: false, why: 'No such hero.' }; const why = nameProblem(name); if (why) return { ok: false, why }; c.name = name.trim().replace(/\s+/g, ' '); return { ok: true }; }
-function char(p, cls) { if (!p.chars[cls]) p.chars[cls] = newChar(cls); return p.chars[cls]; }
+function char(p, key) { return p.chars[key]; }
+const clsOf = (p, key) => (p.chars[key] && p.chars[key].cls) || (CLASSES[key] ? key : 'Warrior');
 
 // ---------- gear
 function gearScore(c) { return Math.round(SLOTS.reduce((s, sl) => { const it = c.gear.find(g => g.slot === sl); return s + (it ? it.ilvl || 0 : 0); }, 0) / SLOTS.length); }
@@ -52,7 +57,7 @@ const isOneHand = (item) => (item.slot === 'Weapon' || item.slot === 'Off-hand')
 function slotOptions(item) { if (item.slot === 'Ring' || /^Ring/.test(item.slot)) return ['Ring 1', 'Ring 2']; if (isOneHand(item)) return ['Weapon', 'Off-hand']; return [item.slot]; }
 function equip(p, cls, itemId, slotWanted) {
   const c = char(p, cls), i = p.stash.findIndex(x => x.id === itemId); if (i < 0) return { ok: false, why: 'Not in stash' };
-  if (p.stash[i].slot === 'Codex' && p.stash[i].cls && p.stash[i].cls !== cls) return { ok: false, why: `Only a ${p.stash[i].cls} can use the ${p.stash[i].name}.` };
+  if (p.stash[i].slot === 'Codex' && p.stash[i].cls && p.stash[i].cls !== c.cls) return { ok: false, why: `Only a ${p.stash[i].cls} can use the ${p.stash[i].name}.` };
   const item = p.stash[i], opts = slotOptions(item);
   let slot = slotWanted && opts.includes(slotWanted) ? slotWanted : opts[0];
   if (opts.length > 1 && !slotWanted && opts[0] !== 'Weapon') { const free = opts.find(s => !c.gear.find(g => g.slot === s)); if (free) slot = free; else { const a = c.gear.find(g => g.slot === opts[0]), b = c.gear.find(g => g.slot === opts[1]); slot = (a.ilvl || 0) <= (b.ilvl || 0) ? opts[0] : opts[1]; } }
@@ -138,14 +143,14 @@ function buyShop(p, i) {
 // ---------- runs
 function partyOpts(p, classes) {
   const free = Math.max(0, STASH_MAX - p.stash.length);
-  return { sharedBank: true, members: classes.map((cls, i) => { const c = char(p, cls); return { cls, name: c.name || cls, bank: i === 0 ? p.gold : 0, stashFree: free, gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })) }; }) };
+  return { sharedBank: true, members: classes.map((key, i) => { const c = char(p, key); return { key, cls: c.cls, name: c.name || c.cls, bank: i === 0 ? p.gold : 0, stashFree: free, gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })) }; }) };
 }
-function runOpts(p, cls) { const c = char(p, cls); return { cls, members: undefined, name: c.name, bank: p.gold, stashFree: Math.max(0, STASH_MAX - p.stash.length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })) }; }
+function runOpts(p, key) { const c = char(p, key); return { key, cls: c.cls, members: undefined, name: c.name, bank: p.gold, stashFree: Math.max(0, STASH_MAX - p.stash.length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })) }; }
 // Bring a finished run home: equipped gear (incl. merchant buys) stays on the character; kept loot goes to stash/collection.
 function absorbRun(p, run, mi) {
   if (mi == null && run.members && run.members.length > 1) { const res = run.members.map((m, i) => absorbRun(p, run, i)); return res[0]; }
   const mem = run.members ? run.members[mi || 0] : run;
-  const c = char(p, mem.cls);
+  const c = char(p, mem.key || mem.cls); if (!c) return { items: 0, cards: 0, gold: 0, lost: 0, ordered: 0 };
   c.gear = mem.gear.map(g => Object.assign({ id: g.id || uid('g') }, g));
   const kept = mem.kept || { items: [], gold: 0 };
   let lost = 0, items = 0, cards = 0, ordered = 0;
@@ -157,13 +162,13 @@ function absorbRun(p, run, mi) {
     else lost++;
   }
   p.gold += kept.gold;
-  c.runs++; const row = run.currentRow(); c.best = Math.max(c.best, row); if (run.over === 'victory') c.bossKills++;
-  p.history.unshift({ cls: mem.cls, party: run.members && run.members.length > 1 ? run.members.map(m => m.cls) : undefined, level: run.level, result: run.over, row, items, cards, gold: kept.gold, ordered, at: Date.now() });
+  c.runs++; const row = run.currentRow(); c.best = Math.max(c.best, row); if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); }
+  p.history.unshift({ cls: mem.cls, name: mem.name, party: run.members && run.members.length > 1 ? run.members.map(m => m.cls) : undefined, level: run.level, result: run.over, row, items, cards, gold: kept.gold, ordered, at: Date.now() });
   p.history = p.history.slice(0, 20);
-  p.last = Object.assign(p.last || {}, { cls: (run.members ? run.members[0] : run).cls, level: run.level });
+  p.last = Object.assign(p.last || {}, { level: run.level });
   return { items, cards, gold: kept.gold, lost, ordered };
 }
 
-const API = { SLOTS, STASH_MAX, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);
