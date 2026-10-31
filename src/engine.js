@@ -698,7 +698,45 @@ function presetGear(cls, rarity) {
   return STARTER_GEAR[cls].map(x => ({ slot: x.slot, name: x.name, rarity, ilvl: 1, stats: Object.fromEntries(Object.entries(x.stats).map(([k, v]) => [k, Math.round(v * scale)])),
     imp2: Object.fromEntries(Object.entries(x.imp2).map(([k, v]) => [k, k === 'Draw' ? 4 : k === 'Regen' ? { White: 20, Green: 30, Blue: 40 }[rarity] : Math.round(v * imp)])) }));
 }
-const BASE = { hp: 100, maxMana: 20, regen: 10, draw: 1, init: 10, critMult: 1.5 };
+const BASE = { hp: 100, maxMana: 20, regen: 15, draw: 1, init: 10, critMult: 1.5 };
+// ---------- starting choices (Oct 31): pick a playstyle deck and a draw/regen amulet when you create a hero
+// every starter: 1 Gold, 2 Blue, 3 Green, 14 White (20 cards), like the original Balanced decks
+const STARTER_DECKS = {
+  Warrior: [
+    ['balanced', 'Balanced', 'A bit of everything: Strikes, Block and a few big swings.', null],
+    ['berserker', 'Berserker', 'Big hits and Strength. Hurt yourself to hit harder.', [['battle_fever', 1], ['bully', 1], ['mortal_strike', 1], ['overpower', 1], ['bloodlust', 1], ['bloodthirst', 1], ['heavy_swing', 3], ['reckless_swing', 3], ['strike', 4], ['battle_shout', 1], ['defend', 3]]],
+    ['bleeder', 'Bleeder', 'Stack Bleed with fast hits, then cash it in.', [['hemorrhagic_strike', 1], ['scent_of_blood', 1], ['rampage', 1], ['deep_cuts', 1], ['crimson_whirl', 1], ['sever', 1], ['rend', 4], ['lacerate', 3], ['flurry_of_blows', 3], ['defend', 3], ['strike', 1]]],
+    ['shieldbearer', 'Shieldbearer', 'Build a wall of Block and hit with it.', [['crushing_bastion', 1], ['shield_wall', 1], ['fortify', 1], ['shield_slam', 1], ['shield_up', 1], ['unflinching', 1], ['defend', 4], ['shield_bash', 3], ['shield_strike', 3], ['brace', 2], ['strike', 2]]],
+  ],
+  Rogue: [
+    ['balanced', 'Balanced', 'Stabs, Dodge and a taste of Stealth, Bleed and Poison.', null],
+    ['assassin', 'Assassin', 'Slip into Stealth and strike for double damage.', [['assassinate', 1], ['eviscerate', 1], ['shadow_dance', 1], ['ambush', 1], ['hide', 1], ['shadow_cloak', 1], ['backstab', 4], ['stab', 4], ['evade', 4], ['cheap_shot', 2]]],
+    ['poisoner', 'Poisoner', 'Stack Poison (scales with Strength) and let it work.', [['plague_bloom', 1], ['deadly_toxin', 1], ['virulence', 1], ['crippling_poison', 1], ['fester', 1], ['toxic_cloud', 1], ['envenom', 4], ['poisoned_blade', 4], ['evade', 4], ['stab', 2]]],
+    ['bladedancer', 'Bladedancer', 'Many small hits, Bleed and thrown Shurikens.', [['rupture', 1], ['arterial_strike', 1], ['storm_of_steel', 1], ['garrote', 1], ['ribbon_cuts', 1], ['shuriken_volley', 1], ['serrated_edge', 4], ['blade_dance', 3], ['twin_daggers', 3], ['evade', 4]]],
+  ],
+  Mage: [
+    ['balanced', 'Balanced', 'Fire, Frost and Arcane with Barrier to stay safe.', null],
+    ['pyromancer', 'Pyromancer', 'Fire spells and Burn that keeps ticking.', [['fan_the_flames', 1], ['pyroblast', 1], ['meteor', 1], ['ignite', 1], ['combust', 1], ['flamestrike', 1], ['fireball', 4], ['scorch', 3], ['ember', 2], ['ward', 4], ['mana_spring', 1]]],
+    ['cryomancer', 'Cryomancer', 'Chill and Freeze enemies, then shatter them.', [['amplify', 1], ['glacial_spike', 1], ['cone_of_cold', 1], ['blizzard', 1], ['ice_barrier', 1], ['flash_freeze', 1], ['ice_bolt', 3], ['frostbolt', 3], ['ice_lance', 3], ['frost_armor', 3], ['frost_nova', 2]]],
+    ['arcanist', 'Arcanist', 'Chain cheap Arcane spells and draw more cards.', [['arcane_cascade', 1], ['arcane_blast', 1], ['presence_of_mind', 1], ['arcane_barrage', 1], ['arcane_flow', 1], ['echoing_rune', 1], ['spark', 4], ['arcane_missiles', 4], ['arcane_bolt', 2], ['ward', 4]]],
+  ],
+  Paladin: [
+    ['balanced', 'Balanced', 'Crusader Strikes, Block, Holy damage and some healing.', null],
+    ['templar', 'Templar', 'Holy damage that ignores resistance, plus Burn.', [['twin_verdict', 1], ['final_verdict', 1], ['consecrated_ground', 1], ['holy_fire', 1], ['divine_storm', 1], ['hammer_of_wrath', 1], ['smite', 4], ['searing_light', 3], ['crusader_strike', 3], ['sacred_ward', 3], ['condemn', 1]]],
+    ['guardian', 'Guardian', 'Big Block, shield bashes and Stuns.', [['unbreakable_faith', 1], ['ardent_defense', 1], ['hammer_of_justice', 1], ['shield_of_righteousness', 1], ['divine_shield', 1], ['tempered_zeal', 1], ['raise_shield', 4], ['righteous_blow', 4], ['sword_and_board', 3], ['guarded_advance', 2], ['steadfast', 1]]],
+    ['lightbringer', 'Lightbringer', 'Heal yourself and your party while you fight.', [['lay_on_hands', 1], ['holy_nova', 1], ['prayer_of_healing', 1], ['healing_light', 1], ['overflowing_light', 1], ['mending_prayer', 1], ['smite', 3], ['mend_wounds', 3], ['soothing_light', 2], ['crusader_strike', 3], ['sacred_ward', 3]]],
+  ],
+};
+// the amulet's 6 points split between card draw and mana regen (each point not on draw is +10 regen)
+const STARTER_AMULETS = [
+  ['wellspring', 'Wellspring Pendant', 1, 50, 'Slow and steady: very few cards, lots of mana.'],
+  ['deepwell', 'Deepwell Pendant', 2, 40, 'Fewer cards, plenty of mana for big spells.'],
+  ['balanced', 'Balanced Pendant', 3, 30, 'Even split between cards and mana.'],
+  ['soldier', "Soldier's Pendant", 4, 20, 'The classic: a full hand, modest mana.'],
+  ['quickhand', 'Quickhand Pendant', 5, 10, 'Lots of cards, little mana: for cheap decks.'],
+];
+const AMULET_STAT = { Warrior: 'Strength', Rogue: 'Strength', Mage: 'Intelligence', Paladin: 'Strength' };
+function starterAmulet(cls, key) { const a = STARTER_AMULETS.find(x => x[0] === key) || STARTER_AMULETS[3]; return { slot: 'Amulet', name: a[1], rarity: 'White', ilvl: 1, stats: { [AMULET_STAT[cls] || 'Strength']: 3 }, imp2: { Draw: a[2], Regen: a[3] }, label: 'Starter amulet', amuletKey: a[0] }; }
 const PRESSURE_START = 5, PRESSURE_STEP = 0.02;
 const ELEMENTS = ['Physical', 'Fire', 'Frost', 'Nature', 'Arcane', 'Shadow'];
 
@@ -1606,6 +1644,6 @@ function rollDrops(data, rng, enemyKey, level, luck) {
 // Oct 31: the Rogue's poison cards are Attacks, so they scale with Strength (poison stacks scale with Strength too, see applyDot)
 for (const k of ['envenom', 'plague_bloom', 'toxic_cloud', 'venom_vial', 'fester', 'crippling_poison', 'mind_numbing_poison', 'deadly_toxin', 'wound_poison', 'corrosive_toxin', 'draining_venom', 'poison_nova']) if (C[k]) { C[k].type = 'Attack'; if (C[k].dtype == null) C[k].dtype = k === 'poison_nova' ? 'Nature' : 'Physical'; }
 if (C.seismic_slam) { C.seismic_slam.cost = 0; C.seismic_slam.text = 'Deal damage to all enemies equal to 50% of your current mana. Your mana is not spent.'; }
-const API = { CARDS_VERSION: 2, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { CARDS_VERSION: 2, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);

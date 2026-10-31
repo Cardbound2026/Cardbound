@@ -314,6 +314,16 @@ body.aiming { cursor: grabbing; user-select: none; }
 #ledger:hover .lgrip::after { background: rgba(224,160,80,.45); }
 .lgrip:hover::after, .lgrip.on::after { background: rgba(255,180,90,.9) !important; }
 @media (max-width: 980px) { .lgrip-w, .lgrip-c { display: none; } }
+.createstep { margin: 14px 0 6px; font-size: 15px; color: var(--accent); font-weight: 600; } .createstep .muted { font-size: 12px; font-weight: 400; }
+.deckpick small i { font-style: normal; }
+.amupick { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 760px) { .amupick { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.amupick button { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: grid; gap: 2px; text-align: center; color: var(--text); font: inherit; cursor: pointer; }
+.amupick button[aria-checked="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; background: #2b2115; }
+.amupick b { font-size: 18px; } .amupick span { font-size: 13px; color: #8fc3ff; } .amupick small { font-size: 11px; color: var(--muted); }
+.amushop { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.amucard { --rc: #8fc3ff; } .amucard.on { box-shadow: 0 0 0 1px var(--accent) inset; }
+.amunums { font-size: 15px; margin: 2px 0; } .amunums b { font-size: 20px; }
 .mappick { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; margin: 8px 0 0; }
 .mapchip { text-align: left; background: #1a1612; border: 1px solid var(--line); border-left: 4px solid var(--ec); border-radius: 6px; padding: 6px 9px; color: var(--text); cursor: pointer; font: inherit; }
 .mapchip b { display: block; font-size: 14px; }
@@ -526,6 +536,10 @@ body.aiming { cursor: grabbing; user-select: none; }
     <div class="panel create" id="createPanel" hidden>
       <h3>Create a hero</h3>
       <div class="classpick" id="classPick" role="radiogroup" aria-label="Class"></div>
+      <h4 class="createstep">Starting deck</h4>
+      <div class="classpick deckpick" id="deckPick" role="radiogroup" aria-label="Starting deck"></div>
+      <h4 class="createstep">Starting amulet <span class="muted">(6 points split between cards drawn each round and mana regen; you can buy the others later from Jeweler Rook in town)</span></h4>
+      <div class="amupick" id="amuPick" role="radiogroup" aria-label="Starting amulet"></div>
       <div class="namerow"><div class="field"><label for="heroName">Name</label><input id="heroName" maxlength="16" autocomplete="off" placeholder="Name your hero"></div><button class="btn primary" id="btnCreate">Create hero</button><button class="btn" id="btnCancelCreate">Cancel</button></div>
       <p class="down" id="createMsg" style="margin:0;min-height:18px"></p>
     </div>
@@ -585,7 +599,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   <div id="secHeroes"><div class="heroes" id="heroes" role="tablist" aria-label="Characters"></div></div>
   <div class="sheetgrid" id="sheetGrid">
     <aside id="secChar"><div class="panel" id="hubChar"></div></aside>
-    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div><div id="hpFriends"></div><div id="hpCodex"></div><div id="hpTest"></div></div>
+    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div><div id="hpFriends"></div><div id="hpCodex"></div><div id="hpTest"></div><div id="hpAmu"></div></div>
   </div>
 </div></div>
 <div class="modal" id="modal" hidden><div class="box" id="modalBox"></div></div>
@@ -949,6 +963,25 @@ body.aiming { cursor: grabbing; user-select: none; }
     $('hpLog').innerHTML = profile.history.length ? `<div class="list tall">${profile.history.map(h => `<div class="item" style="--rc:${h.result === 'dead' ? 'var(--hp)' : h.result === 'victory' ? 'var(--r-gold)' : 'var(--good)'}"><div class="ih"><b>${L[h.result] || h.result}</b><span>${h.cls} &middot; Map +${h.level}</span></div><div class="st">Row ${h.row > ROWS ? 'boss' : h.row}. Brought home ${h.items} item${h.items === 1 ? '' : 's'}, ${h.cards} card${h.cards === 1 ? '' : 's'}, ${h.gold} gold.</div><div class="il">${new Date(h.at).toLocaleString()}</div></div>`).join('')}</div>` : '<span class="muted">No runs yet.</span>';
   }
 
+  // ---------- Jeweler Rook: the five starter pendants (draw/regen splits), any time, for a little gold
+  const AMU_PRICE = 25;
+  function renderAmuShop() {
+    const c = profile.chars[heroCls]; if (!c) return; const cur = c.gear.find(g => g.slot === 'Amulet'), ci = cur && cur.imp2 || {};
+    $('hpAmu').innerHTML = `<p class="savenote" style="margin:0 0 8px">Every pendant has 6 points split between <b>cards drawn per round</b> and <b>mana regen</b> (each point not on draw is +10 regen), plus +3 ${AMULET_STAT_UI[heroCls]}. ${cur ? `You wear <b>${esc(cur.name)}</b>${ci.Draw != null ? ` (${ci.Draw} draw, +${ci.Regen || 0} regen)` : ''}.` : 'You wear no amulet (1 draw, +15 regen).'} Bank: <b style="color:var(--accent)">${profile.gold} gold</b>. Your old amulet goes to the stash.</p>
+      <div class="amushop">${CB.STARTER_AMULETS.map(([k, nm, dr, rg, blurb]) => { const same = cur && cur.imp2 && cur.imp2.Draw === dr && cur.imp2.Regen === rg;
+        return `<div class="item amucard ${same ? 'on' : ''}"><div class="ih"><b>${esc(nm)}</b><span>${AMU_PRICE} gold</span></div><div class="amunums"><b>${dr}</b> draw &middot; <b style="color:#8fc3ff">+${rg}</b> regen</div><div class="il">${esc(blurb)}</div>
+          <div class="acts"><button class="btn ${same ? '' : 'primary'}" data-buyamu="${k}" ${profile.gold < AMU_PRICE || same ? 'disabled' : ''}>${same ? 'Wearing one' : profile.gold < AMU_PRICE ? 'Not enough gold' : 'Buy and wear'}</button></div></div>`; }).join('')}</div>`;
+  }
+  const AMULET_STAT_UI = { Warrior: 'Strength', Rogue: 'Strength', Mage: 'Intelligence', Paladin: 'Strength' };
+  $('hpAmu').addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-buyamu]'); if (!b || b.disabled) return;
+    if (profile.gold < AMU_PRICE) return toast('Not enough gold.');
+    if (profile.stash.length >= CBHub.STASH_MAX) return toast('Your stash is full: make room for the old amulet first.');
+    const it = Object.assign({ id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, CB.starterAmulet(heroCls, b.dataset.buyamu));
+    profile.gold -= AMU_PRICE; profile.stash.unshift(it); const r = CBHub.equip(profile, heroCls, it.id); if (!r.ok) { toast(r.why); }
+    save(); renderHub(); renderAmuShop(); renderTownBar();
+  });
+
   // ---------- Merchant Dace (town shop)
   function restockIn() { const ms = Math.max(0, profile.shop.at + CBHub.SHOP_RESTOCK_MS - Date.now()); const h = Math.floor(ms / 3600000), m = Math.ceil((ms % 3600000) / 60000); return h ? `${h}h ${m}m` : `${m}m`; }
   function renderShopTab(c) {
@@ -1015,6 +1048,8 @@ body.aiming { cursor: grabbing; user-select: none; }
       lines: ['Four of you bunk here. Pick who rides out next.'] },
     { id: 'merchant', name: 'Merchant Dace', x: 20, y: 12, dir: 'down', open: 'shop', btn: 'Browse wares', pal: { skin: '#b88a6a', hair: '#2a1d14', chest: '#5a4a1e', trim: '#e4a93a', legs: '#2a2418', helm: 'cap', helmC: '#5a2a22', cape: null, weapon: null },
       lines: ['Coin from the bank, goods to your stash. My wagons bring new stock every twelve hours.', 'I also take orders out on the March. My runners always make it home.'] },
+    { id: 'jeweler', name: 'Jeweler Rook', x: 22, y: 11, dir: 'left', open: 'amulets', btn: 'Browse amulets', pal: { skin: '#c9a080', hair: '#d8d0c4', chest: '#2e3a4a', trim: '#8fc3ff', legs: '#1f2630', helm: null, cape: '#3a2a4a', weapon: null },
+      lines: ['Six points of focus in every pendant. How you split them between cards and mana is up to you.', 'Big spells want mana. Cheap combos want cards. Choose your pendant accordingly.'] },
     { id: 'tinker', name: 'Tinker Pip (test)', x: 16, y: 4, dir: 'down', open: 'test', btn: 'Free test goods', pal: { skin: '#d8b090', hair: '#e0802a', chest: '#3a4a2a', trim: '#e0802a', legs: '#2a2418', helm: 'cap', helmC: '#e0802a', cape: null, weapon: 'hammer' },
       lines: ['Testing, testing! Every card, every codex, free. Don\'t tell the merchants.'] },
     { id: 'dummy', name: 'Training Dummy', x: 18, y: 15, dir: 'down', fixed: true, open: 'dummy', btn: 'Practice on it', pal: { skin: '#cdb47a', hair: '#d9b44a', chest: '#7a5a34', trim: '#d9b44a', legs: '#6a4c2a', helm: 'cap', helmC: '#4a3826', cape: null, weapon: null },
@@ -1411,6 +1446,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     friends: { title: 'Friends', show: ['hpFriends'] },
     codex: { title: 'The Codex: cards, enemies and gear', show: ['hpCodex'] },
     test: { title: 'Tinker Pip: free test goods (temporary)', show: ['hpTest'] },
+    amulets: { title: 'Jeweler Rook: amulets', show: ['secChar', 'hpAmu'] },
   };
   function talk(n) {
     P.held = []; P.path = []; P.target = null;
@@ -1425,12 +1461,13 @@ body.aiming { cursor: grabbing; user-select: none; }
   function openSheet(kind) {
     const k = SHEETS[kind]; if (k.gtab) GT.tab = k.gtab; renderHub();
     $('sheetTitle').textContent = k.title;
-    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends', 'hpCodex', 'hpTest']) $(id).hidden = !k.show.includes(id);
+    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends', 'hpCodex', 'hpTest', 'hpAmu']) $(id).hidden = !k.show.includes(id);
     $('sheetGrid').classList.toggle('solo', !k.show.includes('secChar'));
     $('sheet').hidden = false; $('sheet').dataset.kind = kind; fitCards($('sheet')); $('sheetClose').focus();
     if (kind === 'friends') { renderFriendsTab(); loadFriends(); }
     if (kind === 'codex') renderCodex();
     if (kind === 'test') renderTestVendor();
+    if (kind === 'amulets') renderAmuShop();
   }
   function closeSheet() { $('sheet').hidden = true; renderTownBar(); cv.focus({ preventScroll: true }); }
   $('sheetClose').addEventListener('click', closeSheet);
@@ -1526,17 +1563,28 @@ body.aiming { cursor: grabbing; user-select: none; }
   }
   $('heroList').addEventListener('click', (ev) => { const d = ev.target.closest('[data-delhero]'); if (d) return deleteHeroFlow(d.dataset.delhero); });
   $('heroList').addEventListener('click', (ev) => { const b = ev.target.closest('[data-play]'); if (!b) return; heroCls = b.dataset.play; profile.last.cls = heroCls; save(); renderHub(); show('start'); saveCard(); });
+  let createDeck = 'balanced', createAmu = 'soldier';
+  function renderCreateChoices() {
+    const list = createCls ? CB.STARTER_DECKS[createCls] || [] : [];
+    if (!list.find(x => x[0] === createDeck)) createDeck = 'balanced';
+    $('deckPick').innerHTML = list.map(([k, nm, blurb, deck]) => { const d = deck || CLASSES[createCls].deck, top = d.filter(([key]) => ['Gold', 'Blue'].includes(CARDS[key].rarity)).map(([key]) => `<i style="color:${RC[CARDS[key].rarity]}">${esc(CARDS[key].name)}</i>`).join(', ');
+      return `<button role="radio" style="--cc:${CC[createCls]}" data-deck="${k}" aria-checked="${k === createDeck}" title="${esc(d.map(([key, n]) => n + 'x ' + CARDS[key].name).join(', '))}"><b>${esc(nm)}</b><span>${esc(blurb)}</span><small>Key cards: ${top}</small></button>`; }).join('');
+    $('amuPick').innerHTML = CB.STARTER_AMULETS.map(([k, nm, dr, rg, blurb]) => `<button role="radio" data-amu="${k}" aria-checked="${k === createAmu}" title="${esc(blurb)}"><b>${dr} draw</b><span>+${rg} mana regen</span><small>${esc(nm)}</small></button>`).join('');
+  }
+  $('deckPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-deck]'); if (!b) return; createDeck = b.dataset.deck; renderCreateChoices(); });
+  $('amuPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-amu]'); if (!b) return; createAmu = b.dataset.amu; renderCreateChoices(); });
   function openCreate() {
     const taken = (k) => !!profile.chars[k];
     if (!createCls || taken(createCls)) createCls = Object.keys(CLASSES).find(k => !taken(k)) || null;
     $('classPick').innerHTML = Object.entries(CLASSES).map(([k, c]) => `<button role="radio" style="--cc:${CC[k]}" data-cls="${k}" aria-checked="${k === createCls}" ${taken(k) ? 'disabled' : ''}><b>${k}</b><span>${esc(c.blurb)}</span><small>${taken(k) ? 'You already have a ' + k : 'Defense: ' + c.defense}</small></button>`).join('');
+    renderCreateChoices();
     $('createPanel').hidden = false; $('createMsg').textContent = ''; $('btnCancelCreate').hidden = !Object.keys(profile.chars).length;
     $('heroName').focus();
   }
-  $('classPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-cls]'); if (!b || b.disabled) return; createCls = b.dataset.cls; for (const x of $('classPick').children) x.setAttribute('aria-checked', x === b); });
+  $('classPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-cls]'); if (!b || b.disabled) return; createCls = b.dataset.cls; for (const x of $('classPick').children) x.setAttribute('aria-checked', x === b); createDeck = 'balanced'; renderCreateChoices(); });
   const doCreate = () => {
     if (!createCls) { $('createMsg').textContent = 'Pick a class.'; return; }
-    const r = CBHub.createChar(profile, createCls, $('heroName').value);
+    const r = CBHub.createChar(profile, createCls, $('heroName').value, createDeck, createAmu);
     if (!r.ok) { $('createMsg').textContent = r.why; return; }
     heroCls = createCls; $('heroName').value = ''; $('createPanel').hidden = true; save(); renderHub(); show('start'); saveCard();
   };

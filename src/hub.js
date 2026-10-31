@@ -10,10 +10,12 @@ const VERSION = 1;
 let uidN = 0;
 const uid = (p) => p + Date.now().toString(36) + (uidN++).toString(36) + Math.floor(Math.random() * 1e6).toString(36);
 
-function newChar(cls, name) {
-  const deck = [];
-  for (const [key, n] of CLASSES[cls].deck) for (let i = 0; i < n; i++) deck.push({ id: uid('k'), key, rank: 0 });
-  return { cls, name: name || cls, created: Date.now(), gear: STARTER_GEAR[cls].map(g => Object.assign({ id: uid('g') }, g)), deck, cards: [], runs: 0, best: 0, bossKills: 0, gotOffense1: true };
+function newChar(cls, name, deckKey, amuletKey) {
+  const deck = [], sd = (CB.STARTER_DECKS[cls] || []).find(x => x[0] === deckKey), list = (sd && sd[3]) || CLASSES[cls].deck;
+  for (const [key, n] of list) for (let i = 0; i < n; i++) deck.push({ id: uid('k'), key, rank: 0 });
+  const gear = STARTER_GEAR[cls].map(g => Object.assign({ id: uid('g') }, g));
+  if (amuletKey) { const i = gear.findIndex(g => g.slot === 'Amulet'); if (i >= 0) gear[i] = Object.assign({ id: uid('g') }, CB.starterAmulet(cls, amuletKey)); }
+  return { cls, name: name || cls, created: Date.now(), gear, deck, cards: [], runs: 0, best: 0, bossKills: 0, gotOffense1: true, starter: (sd && sd[0]) || 'balanced' };
 }
 function newProfile() { return { v: VERSION, gold: 0, stash: [], chars: {}, last: { cls: 'Warrior', level: 0 }, history: [] }; }
 function fix(p) { // tolerate older or partial saves
@@ -33,10 +35,10 @@ function deleteChar(p, cls) {
   if (p.last) { if (p.last.cls === cls) p.last.cls = Object.keys(p.chars)[0] || 'Warrior'; if (p.last.party) p.last.party = p.last.party.filter(k => k !== cls); }
   return { ok: true };
 }
-function createChar(p, cls, name) {
+function createChar(p, cls, name, deckKey, amuletKey) {
   if (p.chars[cls]) return { ok: false, why: `You already have a ${cls}.` };
   const why = nameProblem(name); if (why) return { ok: false, why };
-  p.chars[cls] = newChar(cls, name.trim().replace(/\s+/g, ' ')); p.last.cls = cls; return { ok: true };
+  p.chars[cls] = newChar(cls, name.trim().replace(/\s+/g, ' '), deckKey, amuletKey); p.last.cls = cls; return { ok: true };
 }
 function renameChar(p, cls, name) { const c = p.chars[cls]; if (!c) return { ok: false, why: 'No such hero.' }; const why = nameProblem(name); if (why) return { ok: false, why }; c.name = name.trim().replace(/\s+/g, ' '); return { ok: true }; }
 function char(p, cls) { if (!p.chars[cls]) p.chars[cls] = newChar(cls); return p.chars[cls]; }
