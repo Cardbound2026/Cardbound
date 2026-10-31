@@ -136,7 +136,7 @@
         return;
       }
       case 'camp': {
-        if (!run || !run.pending || run.pending.type !== 'rest' || !['rest', 'extract'].includes(a.choice)) return;
+        if (!run || !run.pending || run.pending.type !== 'rest' || !['rest', 'extract', 'rummage', 'mend'].includes(a.choice)) return;
         if (!Object.keys(S.camp).length) S.voteAt = Date.now();
         S.camp[mi] = a.choice;
         if (tallyDone(S.camp)) resolveCamp(); else if (!$('modal').hidden) pendingModal();
@@ -183,11 +183,13 @@
     if (run.pending) pendingModal();
   }
   function resolveCamp() {
-    const S = NET.s; const list = active().map(i => S.camp[i]).filter(Boolean);
+    // extract is a party vote (majority, ties a coin flip); everyone who stays does their own thing: rest, rummage or mend
+    const S = NET.s; const list = active().map(i => S.camp[i]).filter(Boolean).map(c => c === 'extract' ? 'extract' : 'stay');
     const pick = list.length > 1 ? run.resolveVote(list) : list[0];
+    const choices = run.members.map((m, i) => !S.gone[i] && S.camp[i] && S.camp[i] !== 'extract' ? S.camp[i] : 'rest');
     S.camp = {}; S.voteAt = 0; closeModal();
-    if (pick === 'extract') run.extract(); else run.rest();
-    renderMap();
+    if (pick === 'extract') { run.extract(); renderMap(); return; }
+    const out = run.camp(choices); renderMap(); campResultModal(out, choices);
   }
 
   // ---------- ready check (guests): the leader's start request asks everyone to click Ready

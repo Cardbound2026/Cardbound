@@ -572,6 +572,9 @@ body.aiming { cursor: grabbing; user-select: none; }
   /* chat stays usable beside the big windows (link items and cards into it) */
   @media (min-width: 1000px) { body.sheetopen #townWrap #chatBox, body.modalopen #townWrap #chatBox { position: fixed; left: 12px; bottom: 12px; width: 300px; z-index: 21; background: rgba(12,10,8,.94); border: 1px solid var(--line); border-radius: 8px; padding: 6px; }
     body.sheetopen .sheet { padding-left: 330px; } body.modalopen .modal { padding-left: 330px; } }
+  .campbtns { flex-wrap: wrap; }
+  #cardZoom { position: fixed; inset: 0; z-index: 60; background: rgba(6,5,4,.78); display: grid; place-items: center; cursor: zoom-out; } #cardZoom[hidden] { display: none; } #cardZoom .zoomin { display: grid; justify-items: center; gap: 8px; } #cardZoom p { color: var(--muted); font-size: 13px; margin: 0; }
+  .item[data-ilink] .card, .item[data-ilink] .cf { cursor: zoom-in; }
 </style>
 </head>
 <body>
@@ -2778,6 +2781,31 @@ class Run {
     this.members.forEach((m, i) => { const h = this.pending.heals[i]; m.hp = Math.min(m.stats.maxHp, m.hp + h); this.note(`${this.solo ? 'Rested' : m.name + ' rests'}: +${h} HP (${m.hp}/${m.stats.maxHp}).`); });
     this.pending = null;
   }
+  // campfire choices per hero (Oct 31): 'rest' heals that hero 30%, 'mend' heals the whole party 10% (stacks), 'rummage' rolls
+  // that hero one normal monster's loot (gear, cards, gold) for this map and row. Returns what each hero got.
+  camp(choices) {
+    if (!this.pending || this.pending.type !== 'rest') return null;
+    const heal = this.members.map(() => 0), out = this.members.map(() => ({ drops: [], gold: 0, heal: 0 }));
+    const menders = this.members.filter((m, i) => choices[i] === 'mend');
+    this.members.forEach((m, i) => { if ((choices[i] || 'rest') === 'rest') heal[i] += this.pending.heals[i]; });
+    for (const md of menders) { this.members.forEach((m, i) => { heal[i] += Math.round(m.stats.maxHp * 0.1); }); this.note(`${this.solo ? 'You mend' : md.name + ' mends the party'}: everyone heals 10%.`); }
+    this.members.forEach((m, i) => {
+      if (choices[i] === 'rummage') {
+        const row = this.currentRow(), tier = row <= 4 ? '1' : row <= 9 ? '2' : '3';
+        const pool = Object.entries(this.data.enemies).filter(([k, e]) => e.tier === tier && (e.map || 'physical') === this.mapKey).map(([k]) => k);
+        if (pool.length) {
+          const k = pool[Math.floor(this.rng() * pool.length)], e = this.data.enemies[k];
+          const drops = [...rollDrops(this.data, this.rng, k, this.level, this.luck(m), m.cls), ...rollCards(this.rng, m.cls, e.tier, this.luck(m)), ...rollNamedCards(this.data, this.rng, k, m.cls, this.luck(m))];
+          const gold = Math.round(ri(this.rng, e.gold[0], e.gold[1]) * Math.pow(1.5, this.level));
+          m.sack.push(...drops); m.gold += gold; out[i].drops = drops; out[i].gold = gold; out[i].from = e.name;
+          this.note(`${this.solo ? 'You rummage' : m.name + ' rummages'} through what the ${e.name} left behind: ${drops.length} drop${drops.length === 1 ? '' : 's'} and ${gold} gold.`);
+        }
+      }
+      if (heal[i]) { const before = m.hp; m.hp = Math.min(m.stats.maxHp, m.hp + heal[i]); out[i].heal = m.hp - before; if (choices[i] === 'rest') this.note(`${this.solo ? 'Rested' : m.name + ' rests'}: +${m.hp - before} HP (${m.hp}/${m.stats.maxHp}).`); }
+    });
+    this.pending = null; this.lastCamp = out;
+    return out;
+  }
   extract() {
     if (!this.pending || this.pending.type !== 'rest') return;
     const frac = this.pending.keep || 0.5; // the row-7 campfire keeps 75%, every other campfire 50%
@@ -4129,6 +4157,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     ev.preventDefault(); ev.stopPropagation(); insertLink(it);
   }, true);
   document.addEventListener('click', (ev) => { const a = ev.target.closest('[data-chatlink]'); if (!a) return; const [i, j] = a.dataset.chatlink.split(':').map(Number); const m = SOC.chat[i], l = m && m.items && m.items[j]; if (l && l.it) showLinked(l.it); });
+  // click a dropped card (loot screens, sack, trades...) to see it big; click anywhere to close
+  const zoom = document.createElement('div'); zoom.id = 'cardZoom'; zoom.hidden = true; document.body.appendChild(zoom);
+  zoom.addEventListener('click', () => { zoom.hidden = true; });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && !zoom.hidden) { zoom.hidden = true; ev.cbHandled = true; ev.stopPropagation(); } }, true);
+  document.addEventListener('click', (ev) => {
+    if (ev.shiftKey || ev.target.closest('button, input, #cardZoom')) return;
+    const a = ev.target.closest('.item[data-ilink]'); if (!a) return; const it = ILINK.get(a.dataset.ilink); if (!it || it.kind !== 'card' || !CARDS[it.key]) return;
+    zoom.innerHTML = `<div class="zoomin">${cardBox(CB.rankedCard(it.key, it.rank || 0), 300)}<p>${esc(CARDS[it.key].rarity)} ${esc(CARDS[it.key].cls || '')} card &middot; click anywhere to close</p></div>`; fitCards(zoom); zoom.hidden = false;
+  });
   function showLinked(it) {
     const body = it.kind === 'card' ? (cardBox(CB.rankedCard(it.key, it.rank || 0), 230) || itemHtml(it)) : itemHtml(it);
     modal(`<h2>${esc(linkName(it))}</h2><div class="linkview">${body}</div><p class="muted" style="font-size:13px">Linked in chat. Shift-click your own items to link them.</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
@@ -4448,8 +4485,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793484915300';
-  const CB_BUILD = '25f8761d5f'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793486106423';
+  const CB_BUILD = '004705d50a'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -4581,7 +4618,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
         return;
       }
       case 'camp': {
-        if (!run || !run.pending || run.pending.type !== 'rest' || !['rest', 'extract'].includes(a.choice)) return;
+        if (!run || !run.pending || run.pending.type !== 'rest' || !['rest', 'extract', 'rummage', 'mend'].includes(a.choice)) return;
         if (!Object.keys(S.camp).length) S.voteAt = Date.now();
         S.camp[mi] = a.choice;
         if (tallyDone(S.camp)) resolveCamp(); else if (!$('modal').hidden) pendingModal();
@@ -4628,11 +4665,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (run.pending) pendingModal();
   }
   function resolveCamp() {
-    const S = NET.s; const list = active().map(i => S.camp[i]).filter(Boolean);
+    // extract is a party vote (majority, ties a coin flip); everyone who stays does their own thing: rest, rummage or mend
+    const S = NET.s; const list = active().map(i => S.camp[i]).filter(Boolean).map(c => c === 'extract' ? 'extract' : 'stay');
     const pick = list.length > 1 ? run.resolveVote(list) : list[0];
+    const choices = run.members.map((m, i) => !S.gone[i] && S.camp[i] && S.camp[i] !== 'extract' ? S.camp[i] : 'rest');
     S.camp = {}; S.voteAt = 0; closeModal();
-    if (pick === 'extract') run.extract(); else run.rest();
-    renderMap();
+    if (pick === 'extract') { run.extract(); renderMap(); return; }
+    const out = run.camp(choices); renderMap(); campResultModal(out, choices);
   }
 
   // ---------- ready check (guests): the leader's start request asks everyone to click Ready
@@ -5146,6 +5185,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-10-31', items: [
+      ['Loot', 'Click a dropped card (fight rewards, the loot sack, raid loot, trades) to see it full size.'],
+      ['Rest sites', 'Two more options at the fire: Rummage (roll the loot of one normal monster from this part of the map: gear, cards and gold) and Mend (everyone in the party heals 10%; in a party). In co-op each hero picks for themselves (one can rummage while another rests); Extract is still a party vote.'],
       ['Wagon', 'New "Map loot" button at the Wagon: every codex, every named card for your class, every gear base by slot, rarity odds and all the monsters of the chosen map.'],
       ['Combat', 'Paying HP can kill you now: the card still resolves, then you fall (Divine Intervention-style "cannot fall" effects still save you).'],
       ['Cards', 'Lay on Hands and Mend Wounds can heal any hero in your party: click the card, then the hero (or drag the card onto them).'],
@@ -6317,26 +6358,40 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function modal2(html) { $('modalBox').classList.remove('wide'); $('modalBox').innerHTML = html; $('modal').hidden = false; fitCards($('modalBox')); const f = $('modalBox').querySelector('button'); if (f) f.focus(); }
   function closeModal() { $('modal').hidden = true; }
   let redrawShop = null;
+  // what the campfire gave: rummage finds and heals (yours, or the whole hot-seat party's)
+  function campResultModal(out, choices) {
+    if (!out || !run) return;
+    const idx = run.online ? [run.myMi] : run.members.map((m, i) => i);
+    const parts = idx.map(i => { const m = run.members[i], o = out[i]; return `<div><b style="color:${CC[m.cls]}">${esc(m.name)}</b>: ${o.heal ? `healed ${o.heal} HP` : 'no healing'}${choices[i] === 'rummage' ? `, rummaged${o.from ? ' (' + esc(o.from) + ')' : ''}: ${o.gold} gold${o.drops.length ? ' and:' : ', nothing else.'}` : ''}</div>${o.drops.length ? `<div class="list">${o.drops.map(d => itemHtml(d)).join('')}</div>` : ''}`; });
+    if (!idx.some(i => choices[i] === 'rummage') && !run.online) return; // a plain rest needs no popup
+    modal(`<h2>At the fire</h2>${parts.join('')}<div class="row"><button class="btn primary" id="mClose">Back to the map</button></div>`); $('mClose').onclick = closeModal;
+  }
   function pendingModal() {
     const p = run.pending; redrawShop = null;
+    const CAMP = { rest: 'rest (heal 30%)', rummage: 'rummage for loot', mend: 'mend the party (+10% each)', extract: 'extract' };
     if (run.online && p.type === 'rest') {
       const S = NET.s, me = run.members[run.myMi];
-      const votes = run.members.map((m, i) => S && !S.gone[i] ? `<b style="color:${CC[m.cls]}">${esc(m.name)}</b>: ${S.camp[i] ? (S.camp[i] === 'rest' ? 'rest' : 'extract') : '<span class="muted">deciding</span>'}` : '').filter(Boolean).join('<br>');
-      const mine = S && S.camp[S.mi];
-      modal(`<h2>Rest site</h2><p>The party votes: rest (everyone heals 30%), or extract together (everyone keeps ${p.keep > 0.5 ? '75%' : 'half'} of their own sack). Majority wins; a tie is a coin flip.</p>
-        <p class="muted">Your sack: ${me.sack.length} item${me.sack.length === 1 ? '' : 's'} and ${me.gold} gold.</p>
-        <div class="row"><button class="btn ${mine === 'rest' ? 'primary' : ''}" id="mRest">Vote rest${mine === 'rest' ? ' (voted)' : ''}</button><button class="btn ${mine === 'extract' ? 'primary' : ''}" id="mExtract">Vote extract${mine === 'extract' ? ' (voted)' : ''}</button></div>
+      const votes = run.members.map((m, i) => S && !S.gone[i] ? `<b style="color:${CC[m.cls]}">${esc(m.name)}</b>: ${S.camp[i] ? CAMP[S.camp[i]] : '<span class="muted">deciding</span>'}` : '').filter(Boolean).join('<br>');
+      const mine = S && S.camp[S.mi], btn = (k, label) => `<button class="btn ${mine === k ? 'primary' : ''}" id="mC_${k}">${label}${mine === k ? ' (picked)' : ''}</button>`;
+      modal(`<h2>Rest site</h2><p>Everyone picks what they do at the fire. <b>Extract</b> is a vote: if most of the party votes for it, everyone leaves together and keeps ${p.keep > 0.5 ? '75%' : 'half'} of their own sack (a tie is a coin flip). Otherwise each hero does what they picked.</p>
+        <p class="muted">Your sack: ${me.sack.length} item${me.sack.length === 1 ? '' : 's'} and ${me.gold} gold. HP ${me.hp}/${me.stats.maxHp}.</p>
+        <div class="row campbtns">${btn('rest', `Rest: heal ${p.heals[run.myMi]}`)}${btn('rummage', 'Rummage: one monster\'s loot')}${btn('mend', 'Mend: everyone +10%')}${btn('extract', 'Vote extract')}</div>
         <p style="margin-top:8px">${votes}</p>`);
-      $('mRest').onclick = () => netAct({ t: 'camp', choice: 'rest' });
-      $('mExtract').onclick = () => netAct({ t: 'camp', choice: 'extract' });
+      for (const k of ['rest', 'rummage', 'mend', 'extract']) $('mC_' + k).onclick = () => netAct({ t: 'camp', choice: k });
       return;
     }
     if (p.type === 'rest') {
-      const sackN = run.sack.length;
-      modal(`<h2>Rest site</h2><p>The fire is warm. You can rest, or pack up and leave the road with what you carry.</p>
-        <div class="row"><button class="btn primary" id="mRest">${run.solo ? `Rest: heal ${p.heal} HP` : 'Rest: everyone heals 30%'}</button><button class="btn" id="mExtract">Extract: keep ${p.keep > 0.5 ? '75%' : 'half'} of ${sackN} item${sackN === 1 ? '' : 's'} and ${run.gold} gold</button></div>
+      const sackN = run.sack.length, party = run.members.length > 1;
+      modal(`<h2>Rest site</h2><p>The fire is warm. Rest, search the camp for loot, or pack up and leave the road with what you carry.</p>
+        <div class="row campbtns"><button class="btn primary" id="mRest">${run.solo ? `Rest: heal ${p.heal} HP` : 'Rest: everyone heals 30%'}</button>
+          <button class="btn" id="mRummage" title="Roll the loot of one normal monster from this part of the map">Rummage: ${party ? 'each hero finds' : 'find'} one monster's loot</button>
+          ${party ? '<button class="btn" id="mMend">Mend: everyone heals 10%</button>' : ''}
+          <button class="btn" id="mExtract">Extract: keep ${p.keep > 0.5 ? '75%' : 'half'} of ${sackN} item${sackN === 1 ? '' : 's'} and ${run.gold} gold</button></div>
         <p class="muted">${p.keep > 0.5 ? 'This is the halfway campfire: extracting here keeps 75% of your sack. Later campfires keep only half.' : 'Extracting here keeps a random half of your sack.'} Beating ${esc(bossName())} keeps everything.</p>`);
-      $('mRest').onclick = () => { run.rest(); closeModal(); renderMap(); };
+      const doCamp = (k) => { const ch = run.members.map(() => k); const out = run.camp(ch); closeModal(); renderMap(); campResultModal(out, ch); };
+      $('mRest').onclick = () => doCamp('rest');
+      $('mRummage').onclick = () => doCamp('rummage');
+      if ($('mMend')) $('mMend').onclick = () => doCamp('mend');
       $('mExtract').onclick = () => { run.extract(); closeModal(); renderMap(); };
     } else if (p.type === 'shrine') {
       modal(`<h2>${esc(p.shrine.name)}</h2><p>${esc(p.shrine.text)}</p><div class="row"><button class="btn primary" id="mOk">Continue</button></div>`);

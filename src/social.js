@@ -195,6 +195,15 @@
     ev.preventDefault(); ev.stopPropagation(); insertLink(it);
   }, true);
   document.addEventListener('click', (ev) => { const a = ev.target.closest('[data-chatlink]'); if (!a) return; const [i, j] = a.dataset.chatlink.split(':').map(Number); const m = SOC.chat[i], l = m && m.items && m.items[j]; if (l && l.it) showLinked(l.it); });
+  // click a dropped card (loot screens, sack, trades...) to see it big; click anywhere to close
+  const zoom = document.createElement('div'); zoom.id = 'cardZoom'; zoom.hidden = true; document.body.appendChild(zoom);
+  zoom.addEventListener('click', () => { zoom.hidden = true; });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && !zoom.hidden) { zoom.hidden = true; ev.cbHandled = true; ev.stopPropagation(); } }, true);
+  document.addEventListener('click', (ev) => {
+    if (ev.shiftKey || ev.target.closest('button, input, #cardZoom')) return;
+    const a = ev.target.closest('.item[data-ilink]'); if (!a) return; const it = ILINK.get(a.dataset.ilink); if (!it || it.kind !== 'card' || !CARDS[it.key]) return;
+    zoom.innerHTML = `<div class="zoomin">${cardBox(CB.rankedCard(it.key, it.rank || 0), 300)}<p>${esc(CARDS[it.key].rarity)} ${esc(CARDS[it.key].cls || '')} card &middot; click anywhere to close</p></div>`; fitCards(zoom); zoom.hidden = false;
+  });
   function showLinked(it) {
     const body = it.kind === 'card' ? (cardBox(CB.rankedCard(it.key, it.rank || 0), 230) || itemHtml(it)) : itemHtml(it);
     modal(`<h2>${esc(linkName(it))}</h2><div class="linkview">${body}</div><p class="muted" style="font-size:13px">Linked in chat. Shift-click your own items to link them.</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`);

@@ -301,6 +301,31 @@ class Run {
     this.members.forEach((m, i) => { const h = this.pending.heals[i]; m.hp = Math.min(m.stats.maxHp, m.hp + h); this.note(`${this.solo ? 'Rested' : m.name + ' rests'}: +${h} HP (${m.hp}/${m.stats.maxHp}).`); });
     this.pending = null;
   }
+  // campfire choices per hero (Oct 31): 'rest' heals that hero 30%, 'mend' heals the whole party 10% (stacks), 'rummage' rolls
+  // that hero one normal monster's loot (gear, cards, gold) for this map and row. Returns what each hero got.
+  camp(choices) {
+    if (!this.pending || this.pending.type !== 'rest') return null;
+    const heal = this.members.map(() => 0), out = this.members.map(() => ({ drops: [], gold: 0, heal: 0 }));
+    const menders = this.members.filter((m, i) => choices[i] === 'mend');
+    this.members.forEach((m, i) => { if ((choices[i] || 'rest') === 'rest') heal[i] += this.pending.heals[i]; });
+    for (const md of menders) { this.members.forEach((m, i) => { heal[i] += Math.round(m.stats.maxHp * 0.1); }); this.note(`${this.solo ? 'You mend' : md.name + ' mends the party'}: everyone heals 10%.`); }
+    this.members.forEach((m, i) => {
+      if (choices[i] === 'rummage') {
+        const row = this.currentRow(), tier = row <= 4 ? '1' : row <= 9 ? '2' : '3';
+        const pool = Object.entries(this.data.enemies).filter(([k, e]) => e.tier === tier && (e.map || 'physical') === this.mapKey).map(([k]) => k);
+        if (pool.length) {
+          const k = pool[Math.floor(this.rng() * pool.length)], e = this.data.enemies[k];
+          const drops = [...rollDrops(this.data, this.rng, k, this.level, this.luck(m), m.cls), ...rollCards(this.rng, m.cls, e.tier, this.luck(m)), ...rollNamedCards(this.data, this.rng, k, m.cls, this.luck(m))];
+          const gold = Math.round(ri(this.rng, e.gold[0], e.gold[1]) * Math.pow(1.5, this.level));
+          m.sack.push(...drops); m.gold += gold; out[i].drops = drops; out[i].gold = gold; out[i].from = e.name;
+          this.note(`${this.solo ? 'You rummage' : m.name + ' rummages'} through what the ${e.name} left behind: ${drops.length} drop${drops.length === 1 ? '' : 's'} and ${gold} gold.`);
+        }
+      }
+      if (heal[i]) { const before = m.hp; m.hp = Math.min(m.stats.maxHp, m.hp + heal[i]); out[i].heal = m.hp - before; if (choices[i] === 'rest') this.note(`${this.solo ? 'Rested' : m.name + ' rests'}: +${m.hp - before} HP (${m.hp}/${m.stats.maxHp}).`); }
+    });
+    this.pending = null; this.lastCamp = out;
+    return out;
+  }
   extract() {
     if (!this.pending || this.pending.type !== 'rest') return;
     const frac = this.pending.keep || 0.5; // the row-7 campfire keeps 75%, every other campfire 50%
