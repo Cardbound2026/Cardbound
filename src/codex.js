@@ -22,13 +22,13 @@
       ${list.map(([k, e]) => { const t = G.drops[e.tier], cd = CB.CARD_DROPS[e.tier];
         return `<details class="cxenemy"><summary><b>${esc(e.name)}</b> <span class="muted">${TIER_NAME(e.tier)} &middot; ${e.hp} HP &middot; ${esc(e.creature)} &middot; ${e.type}, weak to ${e.weak}</span></summary>
         <p>${esc(e.desc || '')}</p><p class="muted">${esc(e.arch || '')}. Draws ${e.draw} a round${e.draw2 ? ` (${e.draw2} in phase 2)` : ''}, ${e.maxMana} max mana, +${e.regen} per turn.</p>
-        <div class="two"><div><h4>Deck</h4><div class="cardlist">${rows(e)}</div></div>
+        <h4>Deck (${e.deck.reduce((s, x) => s + x.n, 0)} cards)</h4>${enemyGrid(e.deck.map(c => ({ c, n: c.n, tag: c.phase2 ? 'phase 2' : '' })), k, 140)}
         <div><h4>Loot</h4><p><b>Gold:</b> ${e.gold[0]} to ${e.gold[1]} per kill.</p>
           ${t ? `<p><b>${t.rolls} gear rolls per kill</b>, each: ${['White', 'Green', 'Blue', 'Purple (Epic)'].filter(r => t.chance[r]).map(r => `<span style="color:${RC[r]}">${r === 'Purple (Epic)' ? 'Purple' : r} ${t.chance[r]}%</span>`).join(' &middot; ')}</p>
           <p><b>Bases:</b> ${e.pool.map(b => `<button class="pilebtn" data-cxbase="${esc(b)}">${esc(b)}</button>`).join(' ')}</p>` : ''}
           ${cd ? `<p><b>Cards:</b> ${cd.n ? cd.n + ' guaranteed' : cd.chance + '% chance'} for your class (${Object.entries(cd.w).filter(x => x[1]).map(([r, w]) => `${r} ${w}%`).join(', ')}).</p>` : ''}
           ${(e.loot || []).length ? `<p class="muted"><b>Named drops from the Map 1 design</b> (arrive as the cards are built):</p><div class="cardlist">${e.loot.map(x => `<div class="cardrow" style="--rc:${RC[x.rarity] || 'var(--line)'}"><span class="n">${x.pct}%</span><b>${esc(x.item)} <span class="muted">${esc(x.cls)} ${esc(x.rarity)}${x.type === 'Codex' ? ' codex' : ''}</span></b><span class="cst"></span><span class="tx">${esc(x.note || '')}</span></div>`).join('')}</div>` : ''}
-        </div></div></details>`; }).join('') || '<p class="muted">No enemies match.</p>'}`;
+        </div></details>`; }).join('') || '<p class="muted">No enemies match.</p>'}`;
   }
   const statRange = (s, mult) => { const S = DATA.gear.stats[s]; if (!S) return ''; return `${Math.max(1, Math.round(S.min * (mult || 1)))}-${Math.max(1, Math.round(S.max * (mult || 1)))}${S.unit}`; };
   function implicitText(A, b) {
@@ -75,4 +75,5 @@
     else if (t.dataset.cxbase) { CX.tab = 'gear'; CX.slot = 'All'; CX.q = ''; CX.base = t.dataset.cxbase; }
     renderCodex();
   });
+  $('hpCodex').addEventListener('toggle', (ev) => { if (ev.target.open) fitCards(ev.target); }, true);
   $('hpCodex').addEventListener('input', (ev) => { if (ev.target.id !== 'cxQ') return; CX.q = ev.target.value; const pos = ev.target.selectionStart; renderCodex(); const i = $('cxQ'); i.focus(); i.setSelectionRange(pos, pos); });
