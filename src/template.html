@@ -541,6 +541,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   .raidloot { display: grid; gap: 8px; max-height: 60vh; overflow: auto; } .rlrow { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; } .rlvote { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; max-width: 260px; }
   #playerSlot.party.raid { display: grid; grid-template-columns: repeat(5, minmax(0, 104px)); gap: 4px; align-items: end; } #playerSlot.raid .unit { width: auto; padding: 4px; } #playerSlot.raid .figure, #playerSlot.raid .figure svg { height: 38px; } #playerSlot.raid .uname b { font-size: 12px; } #playerSlot.raid .tag { font-size: 10px; padding: 0 3px; }
   .order.raid .otile { width: 62px; padding: 2px; } .order.raid .otile .ofig, .order.raid .otile .ofig svg { height: 30px; } .order.raid .otile .onm { font-size: 11px; } .order.raid .otile.now::after { display: none; }
+  .cxcods { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; margin-top: 6px; } .cxcod { border-left: 3px solid var(--rc); background: rgba(255,255,255,.03); padding: 8px 10px; border-radius: 6px; display: grid; gap: 4px; } .cxch { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; } .cxch b { color: #f0b070; }
 </style>
 
 <div class="wrap">
@@ -1090,8 +1091,8 @@ body.aiming { cursor: grabbing; user-select: none; }
       lines: ['A scarecrow stuffed with straw. 99,999 HP, 60 mana, a hand of cards that do nothing. It never hits back and never blocks.', 'No Fatigue and no Pressure here: fight as long as you like.', 'Somebody pinned a note to it: "Test your combos here. Leave from the Esc menu."'] },
     { id: 'raidwarden', name: 'Raid Warden Kael', x: 9, y: 4, dir: 'down', open: 'raid', btn: 'Raids', pal: { skin: '#a8785a', hair: '#1e1a18', chest: '#4a1f1f', trim: '#e04a3a', legs: '#241414', helm: 'cap', helmC: '#2a1616', cape: '#5a1414', weapon: 'sword' },
       lines: ['Beat a warlord and it comes back bigger. Bring friends: two at least, ten at most.', 'Everyone fights at once in a raid, and everything it swings hits all of you.', 'Kill one and you sit it out for a week. Lose, and you can go right back in.'] },
-    { id: 'archivist', name: 'Archivist Mora', x: 10, y: 7, dir: 'down', open: 'codex', btn: 'Open the Codex', pal: { skin: '#cfa889', hair: '#9c9488', chest: '#3a2a3e', trim: '#b48cd8', legs: '#22182a', helm: 'hood', helmC: '#3a2a3e', cape: null, weapon: 'book' },
-      lines: ['Every card, every beast on every road, every scrap of iron worth wearing. It is all written here.', 'Ask before you ride. The Codex knows what drops where.'] },
+    { id: 'archivist', name: 'Archivist Mora', x: 10, y: 7, dir: 'down', open: 'codex', btn: 'Open the Compendium', pal: { skin: '#cfa889', hair: '#9c9488', chest: '#3a2a3e', trim: '#b48cd8', legs: '#22182a', helm: 'hood', helmC: '#3a2a3e', cape: null, weapon: 'book' },
+      lines: ['Every card, every beast on every road, every scrap of iron worth wearing. It is all written here.', 'Ask before you ride. The Compendium knows what drops where.', 'Looking for a codex for your Codex slot? I keep a page on every one of them.'] },
   ];
   for (const n of NPCS) { n.home = n.dir; solid.add(K(n.x, n.y)); }
 
@@ -1490,7 +1491,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     heroes: { title: 'Barracks: heroes', show: ['secHeroes', 'secChar'] },
     shop: { title: 'Merchant Dace: wares', show: ['secChar', 'hpShop'] },
     friends: { title: 'Friends', show: ['hpFriends'] },
-    codex: { title: 'The Codex: cards, enemies and gear', show: ['hpCodex'] },
+    codex: { title: 'The Compendium: cards, bestiary, gear and codexes', show: ['hpCodex'] },
     test: { title: 'Tinker Pip: free test goods (temporary)', show: ['hpTest'] },
     amulets: { title: 'Jeweler Rook: amulets', show: ['secChar', 'hpAmu'] },
     guild: { title: 'Guildmaster Vorn: guilds', show: ['hpGuild'] },

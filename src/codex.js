@@ -1,4 +1,4 @@
-  // ---------- the Codex (Archivist Mora): every card, every enemy with its deck and loot, every gear base and what it can roll
+  // ---------- the Compendium (Archivist Mora; called the Codex until Oct 31, renamed so it isn't confused with codex items): every card, every enemy with its deck and loot, every gear base and what it can roll
   const CX = { own: 'All', map: null, tab: 'cards', cls: 'All', rar: 'All', built: 'All', tier: 'All', slot: 'All', q: '' };
   const TIER_NAME = t => t === 'Elite' || t === 'Boss' ? t : 'Tier ' + t;
   function cxChips(key, vals, label) { return `<div class="cxchips" role="group" aria-label="${label}">${vals.map(v => `<button class="cxchip ${CX[key] === v ? 'on' : ''}" data-cx="${key}" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div>`; }
@@ -99,11 +99,29 @@
     $('modalBox').classList.add('wide'); $('cxdR').oninput = draw; draw();
     $('mClose').onclick = closeModal;
   }
+  // every class codex: its passive, which boss drops it (and which raid), and whether you own one
+  function codexList() {
+    const q = CX.q.toLowerCase(), have = new Set();
+    for (const it of [...profile.stash, ...Object.values(profile.chars).flatMap(c => c.gear || [])]) if (it && it.slot === 'Codex' && it.codex) have.add(it.codex);
+    const src = {}; // codex name -> [{ boss, map, pct }]
+    for (const [mk, M] of Object.entries(DATA.maps)) { const b = DATA.enemies[M.boss]; for (const x of (b && b.loot) || []) if (x.type === 'Codex') (src[x.item] = src[x.item] || []).push({ boss: b.name, mk, map: M.name, pct: x.pct }); }
+    const rows = [];
+    for (const [cls, list] of Object.entries(CB.CODEXES)) for (const [key, name, text] of list) {
+      if (CX.cls !== 'All' && CX.cls !== cls) continue;
+      if (CX.own !== 'All' && (CX.own === 'Owned') !== have.has(key)) continue;
+      if (q && !(name + ' ' + text + ' ' + cls).toLowerCase().includes(q)) continue;
+      const from = src[name + ' Codex'] || [];
+      rows.push(`<div class="cxcod" style="--rc:${CC[cls]}"><div class="cxch"><b>${esc(name)} Codex</b><span style="color:${CC[cls]}">${cls}</span>${have.has(key) ? '<span class="tag good">Owned</span>' : ''}</div><div>${esc(text)}</div><small class="muted">${from.length ? from.map(f => `Drops from ${esc(f.boss.split(',')[0])} on ${esc(f.map)} (${f.pct}% per kill, more with Luck). The raid ${esc(CB.RAID_NAMES[f.mk] || '')} always drops one of its codexes.`).join(' ') : 'Not on any loot table yet.'}</small></div>`);
+    }
+    return `<p class="muted" style="margin:0 0 6px">A codex is an item for the Codex slot (Quartermaster): a fixed class passive that shapes a playstyle, plus random stats. Tinker Pip has three test decks for each.</p>
+      ${cxChips('cls', ['All', ...Object.keys(CLASSES)], 'Class')}${cxChips('own', ['All', 'Owned', 'Not owned'], 'Owned')}
+      <div class="cxcods">${rows.join('') || '<span class="muted">Nothing matches.</span>'}</div>`;
+  }
   function renderCodex() {
     const el = $('hpCodex'); if (!el) return;
-    el.innerHTML = `<div class="cxtop"><div class="tabs cxtabs" role="tablist">${[['cards', 'Cards'], ['enemies', 'Enemies & loot'], ['gear', 'Gear bases']].map(([k, l]) => `<button role="tab" aria-selected="${CX.tab === k}" data-cxtab="${k}">${l}</button>`).join('')}</div>
-      <input id="cxQ" type="search" placeholder="Search ${CX.tab === 'cards' ? 'cards' : CX.tab === 'enemies' ? 'enemies and their cards' : 'gear and stats'}..." value="${esc(CX.q)}" autocomplete="off"></div>
-      <div id="cxBody">${CX.tab === 'cards' ? codexCards() : CX.tab === 'enemies' ? codexEnemies() : codexGear()}</div>`;
+    el.innerHTML = `<div class="cxtop"><div class="tabs cxtabs" role="tablist">${[['cards', 'Cards'], ['enemies', 'Bestiary & loot'], ['gear', 'Gear bases'], ['codexes', 'Codexes']].map(([k, l]) => `<button role="tab" aria-selected="${CX.tab === k}" data-cxtab="${k}">${l}</button>`).join('')}</div>
+      <input id="cxQ" type="search" placeholder="Search ${CX.tab === 'cards' ? 'cards' : CX.tab === 'enemies' ? 'enemies and their cards' : CX.tab === 'codexes' ? 'codexes' : 'gear and stats'}..." value="${esc(CX.q)}" autocomplete="off"></div>
+      <div id="cxBody">${CX.tab === 'cards' ? codexCards() : CX.tab === 'enemies' ? codexEnemies() : CX.tab === 'codexes' ? codexList() : codexGear()}</div>`;
     fitCards(el);
     const s = $('cxSel'); if (s) { s.scrollIntoView({ block: 'center' }); CX.base = null; }
   }

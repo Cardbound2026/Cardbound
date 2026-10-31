@@ -545,6 +545,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   .raidloot { display: grid; gap: 8px; max-height: 60vh; overflow: auto; } .rlrow { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; } .rlvote { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; max-width: 260px; }
   #playerSlot.party.raid { display: grid; grid-template-columns: repeat(5, minmax(0, 104px)); gap: 4px; align-items: end; } #playerSlot.raid .unit { width: auto; padding: 4px; } #playerSlot.raid .figure, #playerSlot.raid .figure svg { height: 38px; } #playerSlot.raid .uname b { font-size: 12px; } #playerSlot.raid .tag { font-size: 10px; padding: 0 3px; }
   .order.raid .otile { width: 62px; padding: 2px; } .order.raid .otile .ofig, .order.raid .otile .ofig svg { height: 30px; } .order.raid .otile .onm { font-size: 11px; } .order.raid .otile.now::after { display: none; }
+  .cxcods { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; margin-top: 6px; } .cxcod { border-left: 3px solid var(--rc); background: rgba(255,255,255,.03); padding: 8px 10px; border-radius: 6px; display: grid; gap: 4px; } .cxch { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; } .cxch b { color: #f0b070; }
 </style>
 </head>
 <body>
@@ -3301,8 +3302,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       lines: ['A scarecrow stuffed with straw. 99,999 HP, 60 mana, a hand of cards that do nothing. It never hits back and never blocks.', 'No Fatigue and no Pressure here: fight as long as you like.', 'Somebody pinned a note to it: "Test your combos here. Leave from the Esc menu."'] },
     { id: 'raidwarden', name: 'Raid Warden Kael', x: 9, y: 4, dir: 'down', open: 'raid', btn: 'Raids', pal: { skin: '#a8785a', hair: '#1e1a18', chest: '#4a1f1f', trim: '#e04a3a', legs: '#241414', helm: 'cap', helmC: '#2a1616', cape: '#5a1414', weapon: 'sword' },
       lines: ['Beat a warlord and it comes back bigger. Bring friends: two at least, ten at most.', 'Everyone fights at once in a raid, and everything it swings hits all of you.', 'Kill one and you sit it out for a week. Lose, and you can go right back in.'] },
-    { id: 'archivist', name: 'Archivist Mora', x: 10, y: 7, dir: 'down', open: 'codex', btn: 'Open the Codex', pal: { skin: '#cfa889', hair: '#9c9488', chest: '#3a2a3e', trim: '#b48cd8', legs: '#22182a', helm: 'hood', helmC: '#3a2a3e', cape: null, weapon: 'book' },
-      lines: ['Every card, every beast on every road, every scrap of iron worth wearing. It is all written here.', 'Ask before you ride. The Codex knows what drops where.'] },
+    { id: 'archivist', name: 'Archivist Mora', x: 10, y: 7, dir: 'down', open: 'codex', btn: 'Open the Compendium', pal: { skin: '#cfa889', hair: '#9c9488', chest: '#3a2a3e', trim: '#b48cd8', legs: '#22182a', helm: 'hood', helmC: '#3a2a3e', cape: null, weapon: 'book' },
+      lines: ['Every card, every beast on every road, every scrap of iron worth wearing. It is all written here.', 'Ask before you ride. The Compendium knows what drops where.', 'Looking for a codex for your Codex slot? I keep a page on every one of them.'] },
   ];
   for (const n of NPCS) { n.home = n.dir; solid.add(K(n.x, n.y)); }
 
@@ -3701,7 +3702,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     heroes: { title: 'Barracks: heroes', show: ['secHeroes', 'secChar'] },
     shop: { title: 'Merchant Dace: wares', show: ['secChar', 'hpShop'] },
     friends: { title: 'Friends', show: ['hpFriends'] },
-    codex: { title: 'The Codex: cards, enemies and gear', show: ['hpCodex'] },
+    codex: { title: 'The Compendium: cards, bestiary, gear and codexes', show: ['hpCodex'] },
     test: { title: 'Tinker Pip: free test goods (temporary)', show: ['hpTest'] },
     amulets: { title: 'Jeweler Rook: amulets', show: ['secChar', 'hpAmu'] },
     guild: { title: 'Guildmaster Vorn: guilds', show: ['hpGuild'] },
@@ -4220,8 +4221,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793465202694';
-  const CB_BUILD = '502da01f81'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793465830786';
+  const CB_BUILD = '5830199c14'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -4721,7 +4722,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     }
   }
 
-  // ---------- the Codex (Archivist Mora): every card, every enemy with its deck and loot, every gear base and what it can roll
+  // ---------- the Compendium (Archivist Mora; called the Codex until Oct 31, renamed so it isn't confused with codex items): every card, every enemy with its deck and loot, every gear base and what it can roll
   const CX = { own: 'All', map: null, tab: 'cards', cls: 'All', rar: 'All', built: 'All', tier: 'All', slot: 'All', q: '' };
   const TIER_NAME = t => t === 'Elite' || t === 'Boss' ? t : 'Tier ' + t;
   function cxChips(key, vals, label) { return `<div class="cxchips" role="group" aria-label="${label}">${vals.map(v => `<button class="cxchip ${CX[key] === v ? 'on' : ''}" data-cx="${key}" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div>`; }
@@ -4822,11 +4823,29 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     $('modalBox').classList.add('wide'); $('cxdR').oninput = draw; draw();
     $('mClose').onclick = closeModal;
   }
+  // every class codex: its passive, which boss drops it (and which raid), and whether you own one
+  function codexList() {
+    const q = CX.q.toLowerCase(), have = new Set();
+    for (const it of [...profile.stash, ...Object.values(profile.chars).flatMap(c => c.gear || [])]) if (it && it.slot === 'Codex' && it.codex) have.add(it.codex);
+    const src = {}; // codex name -> [{ boss, map, pct }]
+    for (const [mk, M] of Object.entries(DATA.maps)) { const b = DATA.enemies[M.boss]; for (const x of (b && b.loot) || []) if (x.type === 'Codex') (src[x.item] = src[x.item] || []).push({ boss: b.name, mk, map: M.name, pct: x.pct }); }
+    const rows = [];
+    for (const [cls, list] of Object.entries(CB.CODEXES)) for (const [key, name, text] of list) {
+      if (CX.cls !== 'All' && CX.cls !== cls) continue;
+      if (CX.own !== 'All' && (CX.own === 'Owned') !== have.has(key)) continue;
+      if (q && !(name + ' ' + text + ' ' + cls).toLowerCase().includes(q)) continue;
+      const from = src[name + ' Codex'] || [];
+      rows.push(`<div class="cxcod" style="--rc:${CC[cls]}"><div class="cxch"><b>${esc(name)} Codex</b><span style="color:${CC[cls]}">${cls}</span>${have.has(key) ? '<span class="tag good">Owned</span>' : ''}</div><div>${esc(text)}</div><small class="muted">${from.length ? from.map(f => `Drops from ${esc(f.boss.split(',')[0])} on ${esc(f.map)} (${f.pct}% per kill, more with Luck). The raid ${esc(CB.RAID_NAMES[f.mk] || '')} always drops one of its codexes.`).join(' ') : 'Not on any loot table yet.'}</small></div>`);
+    }
+    return `<p class="muted" style="margin:0 0 6px">A codex is an item for the Codex slot (Quartermaster): a fixed class passive that shapes a playstyle, plus random stats. Tinker Pip has three test decks for each.</p>
+      ${cxChips('cls', ['All', ...Object.keys(CLASSES)], 'Class')}${cxChips('own', ['All', 'Owned', 'Not owned'], 'Owned')}
+      <div class="cxcods">${rows.join('') || '<span class="muted">Nothing matches.</span>'}</div>`;
+  }
   function renderCodex() {
     const el = $('hpCodex'); if (!el) return;
-    el.innerHTML = `<div class="cxtop"><div class="tabs cxtabs" role="tablist">${[['cards', 'Cards'], ['enemies', 'Enemies & loot'], ['gear', 'Gear bases']].map(([k, l]) => `<button role="tab" aria-selected="${CX.tab === k}" data-cxtab="${k}">${l}</button>`).join('')}</div>
-      <input id="cxQ" type="search" placeholder="Search ${CX.tab === 'cards' ? 'cards' : CX.tab === 'enemies' ? 'enemies and their cards' : 'gear and stats'}..." value="${esc(CX.q)}" autocomplete="off"></div>
-      <div id="cxBody">${CX.tab === 'cards' ? codexCards() : CX.tab === 'enemies' ? codexEnemies() : codexGear()}</div>`;
+    el.innerHTML = `<div class="cxtop"><div class="tabs cxtabs" role="tablist">${[['cards', 'Cards'], ['enemies', 'Bestiary & loot'], ['gear', 'Gear bases'], ['codexes', 'Codexes']].map(([k, l]) => `<button role="tab" aria-selected="${CX.tab === k}" data-cxtab="${k}">${l}</button>`).join('')}</div>
+      <input id="cxQ" type="search" placeholder="Search ${CX.tab === 'cards' ? 'cards' : CX.tab === 'enemies' ? 'enemies and their cards' : CX.tab === 'codexes' ? 'codexes' : 'gear and stats'}..." value="${esc(CX.q)}" autocomplete="off"></div>
+      <div id="cxBody">${CX.tab === 'cards' ? codexCards() : CX.tab === 'enemies' ? codexEnemies() : CX.tab === 'codexes' ? codexList() : codexGear()}</div>`;
     fitCards(el);
     const s = $('cxSel'); if (s) { s.scrollIntoView({ block: 'center' }); CX.base = null; }
   }
