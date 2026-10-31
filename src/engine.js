@@ -728,6 +728,6 @@ function rollDrops(data, rng, enemyKey, level, luck) {
   return out;
 }
 
-const API = { CARDS_VERSION: 2, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { CARDS_VERSION: 2, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);

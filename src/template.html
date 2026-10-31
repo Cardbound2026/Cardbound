@@ -249,6 +249,24 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .memrow b { color: var(--mc); }
 .sackhead { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 6px 0 2px; }
 .modal .box.wide { width: min(980px, 100%); }
+.cxtop { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.cxtop input { flex: 1; min-width: 180px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; font: inherit; }
+.cxtabs { margin: 0; }
+.cxchips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.cxchip { background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 999px; padding: 3px 11px; font: inherit; font-size: 13px; cursor: pointer; }
+.cxchip.on { background: var(--accent); color: #1a1208; border-color: var(--accent); font-weight: 700; }
+.cxgrid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.cxenemy { border: 1px solid var(--line); border-radius: 6px; background: var(--panel2); margin: 6px 0; padding: 0 10px; }
+.cxenemy summary { cursor: pointer; padding: 8px 0; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.cxenemy[open] { padding-bottom: 10px; }
+.cxenemy h4 { margin: 6px 0 4px; color: var(--accent); }
+.cxenemy p { margin: 4px 0; font-size: 14px; }
+.cximp { margin-left: auto; font-size: 12px; color: #b9a4da; }
+.cxrules { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin: 8px 0; font-size: 13px; }
+.cxrules > div { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+.cxrules h4 { margin: 2px 0 4px; color: var(--accent); }
+.cxranges { display: grid; grid-template-columns: 1fr 1fr; gap: 1px 10px; }
+.cxranges b { color: var(--text); }
 .pilegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; padding: 6px 4px 30px; }
 .pilecard { position: relative; display: grid; justify-items: center; }
 .pilecard .cf { transition: transform .14s; transform-origin: 50% 60%; }
@@ -395,7 +413,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   <div id="secHeroes"><div class="heroes" id="heroes" role="tablist" aria-label="Characters"></div></div>
   <div class="sheetgrid" id="sheetGrid">
     <aside id="secChar"><div class="panel" id="hubChar"></div></aside>
-    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div><div id="hpFriends"></div></div>
+    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div><div id="hpFriends"></div><div id="hpCodex"></div></div>
   </div>
 </div></div>
 <div class="modal" id="modal" hidden><div class="box" id="modalBox"></div></div>
@@ -745,6 +763,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     { kind: 'board', x: 16, y: 12, w: 1, h: 1 },
     { kind: 'chest', x: 4, y: 8, w: 1, h: 1 },
     { kind: 'lectern', x: 21, y: 8, w: 1, h: 1 },
+    { kind: 'lectern', x: 11, y: 7, w: 1, h: 1 },
     { kind: 'rock', x: 9, y: 3, w: 1, h: 1 }, { kind: 'rock', x: 23, y: 11, w: 1, h: 1 }, { kind: 'rock', x: 10, y: 16, w: 1, h: 1 },
     ...[[1, 1], [2, 2], [3, 1], [1, 4], [1, 7], [2, 11], [1, 9], [23, 1], [24, 3], [22, 2], [24, 6], [24, 9], [24, 13], [20, 16], [16, 16], [9, 1], [7, 2], [8, 6], [10, 5], [16, 6]].map(([x, y]) => ({ kind: 'tree', x, y, w: 1, h: 1, v: (x * 7 + y * 3) % 3 })),
     ...[[11, 2], [14, 5], [9, 8], [16, 8], [8, 11], [17, 11]].map(([x, y]) => ({ kind: 'torch', x, y, w: 1, h: 1 })),
@@ -764,6 +783,8 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       lines: ['Four of you bunk here. Pick who rides out next.'] },
     { id: 'merchant', name: 'Merchant Dace', x: 20, y: 12, dir: 'down', open: 'shop', btn: 'Browse wares', pal: { skin: '#b88a6a', hair: '#2a1d14', chest: '#5a4a1e', trim: '#e4a93a', legs: '#2a2418', helm: 'cap', helmC: '#5a2a22', cape: null, weapon: null },
       lines: ['Coin from the bank, goods to your stash. My wagons bring new stock every twelve hours.', 'I also take orders out on the March. My runners always make it home.'] },
+    { id: 'archivist', name: 'Archivist Mora', x: 10, y: 7, dir: 'down', open: 'codex', btn: 'Open the Codex', pal: { skin: '#cfa889', hair: '#9c9488', chest: '#3a2a3e', trim: '#b48cd8', legs: '#22182a', helm: 'hood', helmC: '#3a2a3e', cape: null, weapon: 'book' },
+      lines: ['Every card, every beast on the March, every scrap of iron worth wearing. It is all written here.', 'Ask before you ride. The Codex knows what drops where.'] },
   ];
   for (const n of NPCS) { n.home = n.dir; solid.add(K(n.x, n.y)); }
 
@@ -1132,6 +1153,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     heroes: { title: 'Barracks: heroes', show: ['secHeroes', 'secChar'] },
     shop: { title: 'Merchant Dace: wares', show: ['secChar', 'hpShop'] },
     friends: { title: 'Friends', show: ['hpFriends'] },
+    codex: { title: 'The Codex: cards, enemies and gear', show: ['hpCodex'] },
   };
   function talk(n) {
     P.held = []; P.path = []; P.target = null;
@@ -1146,10 +1168,11 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   function openSheet(kind) {
     const k = SHEETS[kind]; renderHub();
     $('sheetTitle').textContent = k.title;
-    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends']) $(id).hidden = !k.show.includes(id);
+    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends', 'hpCodex']) $(id).hidden = !k.show.includes(id);
     $('sheetGrid').classList.toggle('solo', !k.show.includes('secChar'));
     $('sheet').hidden = false; $('sheet').dataset.kind = kind; fitCards($('sheet')); $('sheetClose').focus();
     if (kind === 'friends') { renderFriendsTab(); loadFriends(); }
+    if (kind === 'codex') renderCodex();
   }
   function closeSheet() { $('sheet').hidden = true; renderTownBar(); cv.focus({ preventScroll: true }); }
   $('sheetClose').addEventListener('click', closeSheet);
@@ -1179,6 +1202,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 
 /*SOCIAL*/
 /*NET*/
+/*CODEX*/
   let townReturn = false;
 
   // ---------- settings (this browser)
