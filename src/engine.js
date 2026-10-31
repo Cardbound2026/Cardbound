@@ -931,7 +931,7 @@ class Combat {
   // what the acting hero can hit: monsters, or in a duel the other hero (unless they are in Stealth and the card is single-target)
   alive() { return this.duel ? this.players.filter(p => p !== this.player && p.hp > 0) : this.foes(); }
   initiative(a) { return a.baseInit + (a.initNext || 0) - (a.slow || 0) - (a.chill || 0) + (a.isPlayer && a.powers.length ? this.pwSum(a, 'initPlus') : 0); }
-  pressure() { return this.round >= PRESSURE_START ? (this.round - PRESSURE_START + 1) * PRESSURE_STEP * (this.duel ? 5 : 1) : 0; } // duels ramp 5x faster so they end
+  pressure() { if (this.opts.practice) return 0; return this.round >= PRESSURE_START ? (this.round - PRESSURE_START + 1) * PRESSURE_STEP * (this.duel ? 5 : 1) : 0; } // duels ramp 5x faster so they end
   card(c) { return c.rank ? (c._v || (c._v = rankedCard(c.key, c.rank))) : C[c.key]; }
   addToHand(key) { const p = this.player; const c = { uid: 'c' + (this._uid++), key }; if (p.hand.length >= 10) { p.discard.push(c); this.say('sys', `Hand full: ${C[key].name} went to the discard pile.`); this.fire(p, 'handFull'); } else p.hand.push(c); }
   statusCount() { const p = this.player; return [...p.drawPile, ...p.hand, ...p.discard].filter(c => C[c.key].type === 'Status').length; }
@@ -942,7 +942,7 @@ class Combat {
       if (a.drawPile.length === 0) {
         if (a.discard.length === 0) break;
         a.drawPile = shuffle(a.discard.splice(0), this.rng);
-        if (a.isPlayer) { a.reshuffles++; a.drawPile.splice(Math.floor(this.rng() * (a.drawPile.length + 1)), 0, { uid: 'c' + (this._uid++), key: 'fatigue' }); this.say('sys', 'Deck reshuffled. A Fatigue card was shuffled in.'); }
+        if (a.isPlayer && this.opts.practice) a.reshuffles++; else if (a.isPlayer) { a.reshuffles++; a.drawPile.splice(Math.floor(this.rng() * (a.drawPile.length + 1)), 0, { uid: 'c' + (this._uid++), key: 'fatigue' }); this.say('sys', 'Deck reshuffled. A Fatigue card was shuffled in.'); }
       }
       const c = a.drawPile.pop();
       if (a.hand.length >= 10) { a.discard.push(c); if (a.isPlayer) { this.say('sys', `Hand full: ${C[c.key].name} went to the discard pile.`); this.fire(a, 'handFull'); } }

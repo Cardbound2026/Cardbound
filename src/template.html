@@ -946,7 +946,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     { id: 'tinker', name: 'Tinker Pip (test)', x: 16, y: 4, dir: 'down', open: 'test', btn: 'Free test goods', pal: { skin: '#d8b090', hair: '#e0802a', chest: '#3a4a2a', trim: '#e0802a', legs: '#2a2418', helm: 'cap', helmC: '#e0802a', cape: null, weapon: 'hammer' },
       lines: ['Testing, testing! Every card, every codex, free. Don\'t tell the merchants.'] },
     { id: 'dummy', name: 'Training Dummy', x: 18, y: 15, dir: 'down', fixed: true, open: 'dummy', btn: 'Practice on it', pal: { skin: '#cdb47a', hair: '#d9b44a', chest: '#7a5a34', trim: '#d9b44a', legs: '#6a4c2a', helm: 'cap', helmC: '#4a3826', cape: null, weapon: null },
-      lines: ['A scarecrow stuffed with straw. 99,999 HP. It never hits back and never blocks.', 'Somebody pinned a note to it: "Test your combos here. Leave from the Esc menu."'] },
+      lines: ['A scarecrow stuffed with straw. 99,999 HP, 60 mana, a hand of cards that do nothing. It never hits back and never blocks.', 'No Fatigue and no Pressure here: fight as long as you like.', 'Somebody pinned a note to it: "Test your combos here. Leave from the Esc menu."'] },
     { id: 'archivist', name: 'Archivist Mora', x: 10, y: 7, dir: 'down', open: 'codex', btn: 'Open the Codex', pal: { skin: '#cfa889', hair: '#9c9488', chest: '#3a2a3e', trim: '#b48cd8', legs: '#22182a', helm: 'hood', helmC: '#3a2a3e', cape: null, weapon: 'book' },
       lines: ['Every card, every beast on every road, every scrap of iron worth wearing. It is all written here.', 'Ask before you ride. The Codex knows what drops where.'] },
   ];
@@ -1783,12 +1783,18 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   let viewHero = null;
   function hero() { if (cb.myMi != null) return (viewHero = cb.players[cb.myMi]); if (cb.phase === 'player' && cb.current && cb.current.isPlayer) viewHero = cb.current; if (!viewHero || !cb.players.includes(viewHero)) viewHero = cb.players[0]; return viewHero; }
   // ---------- training dummy in town: 99,999 HP, does nothing on its turn, never blocks. Nothing is won or lost.
-  DATA.enemies.training_dummy = { name: 'Training Dummy', tier: '1', hp: 99999, draw: 1, draw2: null, maxMana: 0, regen: 0, regen2: null, creature: 'Construct', type: 'Physical', weak: 'None', arch: 'Practice target', desc: 'A scarecrow on a post. It just stands there.', map: 'town',
-    deck: [{ name: 'Stand Still', n: 10, cost: 0, kind: 'Defense', text: 'Does nothing.', phase2: false, dtype: 'Physical' }], gold: [0, 0], pool: [], loot: [] };
+  // it has a real hand, mana and regen so mana burn/steal, regen cuts and card discard/exhaust can be tested; none of its cards do anything
+  DATA.enemies.training_dummy = { name: 'Training Dummy', tier: '1', hp: 99999, draw: 3, draw2: null, maxMana: 60, regen: 20, regen2: null, creature: 'Construct', type: 'Physical', weak: 'None', arch: 'Practice target', desc: 'A scarecrow on a post. It has mana and cards, but none of them do anything.', map: 'town',
+    deck: [
+      { name: 'Stand Still', n: 4, cost: 0, kind: 'Defense', text: 'Does nothing.', phase2: false, dtype: 'Physical' },
+      { name: 'Flap in the Wind', n: 6, cost: 10, kind: 'Attack', text: 'Does nothing (no damage).', phase2: false, dtype: 'Physical' },
+      { name: 'Creak Loudly', n: 6, cost: 20, kind: 'Defense', text: 'Does nothing (no Block).', phase2: false, dtype: 'Physical' },
+      { name: 'Straw Storm', n: 4, cost: 30, kind: 'Attack', text: 'Does nothing (no damage).', phase2: false, dtype: 'Physical' },
+    ], gold: [0, 0], pool: [], loot: [] };
   function startDummy() {
     if (!profile.chars[heroCls] || run || cb) return;
     const o = CBHub.runOpts(profile, heroCls);
-    cb = new CB.Combat({ party: [{ cls: o.cls, name: o.name, gear: o.gear, deck: o.deck }], enemies: ['training_dummy'], seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA });
+    cb = new CB.Combat({ party: [{ cls: o.cls, name: o.name, gear: o.gear, deck: o.deck }], enemies: ['training_dummy'], practice: true, seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA });
     cb.practice = true; $('sheet').hidden = true; startCombatUI();
   }
   function leaveDummy() { closeModal(); cb = null; townReturn = true; show('start'); renderHub(); }

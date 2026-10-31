@@ -1489,7 +1489,7 @@ class Combat {
   // what the acting hero can hit: monsters, or in a duel the other hero (unless they are in Stealth and the card is single-target)
   alive() { return this.duel ? this.players.filter(p => p !== this.player && p.hp > 0) : this.foes(); }
   initiative(a) { return a.baseInit + (a.initNext || 0) - (a.slow || 0) - (a.chill || 0) + (a.isPlayer && a.powers.length ? this.pwSum(a, 'initPlus') : 0); }
-  pressure() { return this.round >= PRESSURE_START ? (this.round - PRESSURE_START + 1) * PRESSURE_STEP * (this.duel ? 5 : 1) : 0; } // duels ramp 5x faster so they end
+  pressure() { if (this.opts.practice) return 0; return this.round >= PRESSURE_START ? (this.round - PRESSURE_START + 1) * PRESSURE_STEP * (this.duel ? 5 : 1) : 0; } // duels ramp 5x faster so they end
   card(c) { return c.rank ? (c._v || (c._v = rankedCard(c.key, c.rank))) : C[c.key]; }
   addToHand(key) { const p = this.player; const c = { uid: 'c' + (this._uid++), key }; if (p.hand.length >= 10) { p.discard.push(c); this.say('sys', `Hand full: ${C[key].name} went to the discard pile.`); this.fire(p, 'handFull'); } else p.hand.push(c); }
   statusCount() { const p = this.player; return [...p.drawPile, ...p.hand, ...p.discard].filter(c => C[c.key].type === 'Status').length; }
@@ -1500,7 +1500,7 @@ class Combat {
       if (a.drawPile.length === 0) {
         if (a.discard.length === 0) break;
         a.drawPile = shuffle(a.discard.splice(0), this.rng);
-        if (a.isPlayer) { a.reshuffles++; a.drawPile.splice(Math.floor(this.rng() * (a.drawPile.length + 1)), 0, { uid: 'c' + (this._uid++), key: 'fatigue' }); this.say('sys', 'Deck reshuffled. A Fatigue card was shuffled in.'); }
+        if (a.isPlayer && this.opts.practice) a.reshuffles++; else if (a.isPlayer) { a.reshuffles++; a.drawPile.splice(Math.floor(this.rng() * (a.drawPile.length + 1)), 0, { uid: 'c' + (this._uid++), key: 'fatigue' }); this.say('sys', 'Deck reshuffled. A Fatigue card was shuffled in.'); }
       }
       const c = a.drawPile.pop();
       if (a.hand.length >= 10) { a.discard.push(c); if (a.isPlayer) { this.say('sys', `Hand full: ${C[c.key].name} went to the discard pile.`); this.fire(a, 'handFull'); } }
@@ -2949,7 +2949,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     { id: 'tinker', name: 'Tinker Pip (test)', x: 16, y: 4, dir: 'down', open: 'test', btn: 'Free test goods', pal: { skin: '#d8b090', hair: '#e0802a', chest: '#3a4a2a', trim: '#e0802a', legs: '#2a2418', helm: 'cap', helmC: '#e0802a', cape: null, weapon: 'hammer' },
       lines: ['Testing, testing! Every card, every codex, free. Don\'t tell the merchants.'] },
     { id: 'dummy', name: 'Training Dummy', x: 18, y: 15, dir: 'down', fixed: true, open: 'dummy', btn: 'Practice on it', pal: { skin: '#cdb47a', hair: '#d9b44a', chest: '#7a5a34', trim: '#d9b44a', legs: '#6a4c2a', helm: 'cap', helmC: '#4a3826', cape: null, weapon: null },
-      lines: ['A scarecrow stuffed with straw. 99,999 HP. It never hits back and never blocks.', 'Somebody pinned a note to it: "Test your combos here. Leave from the Esc menu."'] },
+      lines: ['A scarecrow stuffed with straw. 99,999 HP, 60 mana, a hand of cards that do nothing. It never hits back and never blocks.', 'No Fatigue and no Pressure here: fight as long as you like.', 'Somebody pinned a note to it: "Test your combos here. Leave from the Esc menu."'] },
     { id: 'archivist', name: 'Archivist Mora', x: 10, y: 7, dir: 'down', open: 'codex', btn: 'Open the Codex', pal: { skin: '#cfa889', hair: '#9c9488', chest: '#3a2a3e', trim: '#b48cd8', legs: '#22182a', helm: 'hood', helmC: '#3a2a3e', cape: null, weapon: 'book' },
       lines: ['Every card, every beast on every road, every scrap of iron worth wearing. It is all written here.', 'Ask before you ride. The Codex knows what drops where.'] },
   ];
@@ -3661,7 +3661,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILD = '82a3fb94ee'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILD = '24356f55f6'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -4834,12 +4834,18 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   let viewHero = null;
   function hero() { if (cb.myMi != null) return (viewHero = cb.players[cb.myMi]); if (cb.phase === 'player' && cb.current && cb.current.isPlayer) viewHero = cb.current; if (!viewHero || !cb.players.includes(viewHero)) viewHero = cb.players[0]; return viewHero; }
   // ---------- training dummy in town: 99,999 HP, does nothing on its turn, never blocks. Nothing is won or lost.
-  DATA.enemies.training_dummy = { name: 'Training Dummy', tier: '1', hp: 99999, draw: 1, draw2: null, maxMana: 0, regen: 0, regen2: null, creature: 'Construct', type: 'Physical', weak: 'None', arch: 'Practice target', desc: 'A scarecrow on a post. It just stands there.', map: 'town',
-    deck: [{ name: 'Stand Still', n: 10, cost: 0, kind: 'Defense', text: 'Does nothing.', phase2: false, dtype: 'Physical' }], gold: [0, 0], pool: [], loot: [] };
+  // it has a real hand, mana and regen so mana burn/steal, regen cuts and card discard/exhaust can be tested; none of its cards do anything
+  DATA.enemies.training_dummy = { name: 'Training Dummy', tier: '1', hp: 99999, draw: 3, draw2: null, maxMana: 60, regen: 20, regen2: null, creature: 'Construct', type: 'Physical', weak: 'None', arch: 'Practice target', desc: 'A scarecrow on a post. It has mana and cards, but none of them do anything.', map: 'town',
+    deck: [
+      { name: 'Stand Still', n: 4, cost: 0, kind: 'Defense', text: 'Does nothing.', phase2: false, dtype: 'Physical' },
+      { name: 'Flap in the Wind', n: 6, cost: 10, kind: 'Attack', text: 'Does nothing (no damage).', phase2: false, dtype: 'Physical' },
+      { name: 'Creak Loudly', n: 6, cost: 20, kind: 'Defense', text: 'Does nothing (no Block).', phase2: false, dtype: 'Physical' },
+      { name: 'Straw Storm', n: 4, cost: 30, kind: 'Attack', text: 'Does nothing (no damage).', phase2: false, dtype: 'Physical' },
+    ], gold: [0, 0], pool: [], loot: [] };
   function startDummy() {
     if (!profile.chars[heroCls] || run || cb) return;
     const o = CBHub.runOpts(profile, heroCls);
-    cb = new CB.Combat({ party: [{ cls: o.cls, name: o.name, gear: o.gear, deck: o.deck }], enemies: ['training_dummy'], seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA });
+    cb = new CB.Combat({ party: [{ cls: o.cls, name: o.name, gear: o.gear, deck: o.deck }], enemies: ['training_dummy'], practice: true, seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA });
     cb.practice = true; $('sheet').hidden = true; startCombatUI();
   }
   function leaveDummy() { closeModal(); cb = null; townReturn = true; show('start'); renderHub(); }
