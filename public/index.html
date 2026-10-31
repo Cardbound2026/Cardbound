@@ -640,8 +640,10 @@ class Combat {
     this.hpMult = Math.pow(1.5, this.level) * this.partyScale; this.dmgMult = Math.pow(1.3, this.level); // each extra hero: +70% enemy HP
     this.levelHpMult = Math.pow(1.5, this.level);
     this.typeResist = Math.min(1, 0.05 + 0.05 * this.level);
-    this.enemies = this.opts.enemies.map((key, i) => this.makeEnemy(key, i));
-    this.say('sys', `Fight starts. Map level +${this.level}${this.partySize > 1 ? `, party of ${this.partySize}` : ''}: enemy HP x${this.hpMult.toFixed(2)}${this.partySize > 1 ? ` and +${this.partySize - 1} card draw` : ''}, damage x${this.dmgMult.toFixed(2)}; enemies resist their own type by ${Math.round(this.typeResist * 100)}%.`);
+    this.duel = !!this.opts.duel; // duel: two heroes, no monsters; each hero's "enemies" are the other hero
+    this.enemies = this.duel ? [] : this.opts.enemies.map((key, i) => this.makeEnemy(key, i));
+    if (this.duel) this.say('sys', `Duel: ${this.players.map(p => p.name).join(' vs ')}. Last hero standing wins. From round ${PRESSURE_START} every hit lands harder.`);
+    else this.say('sys', `Fight starts. Map level +${this.level}${this.partySize > 1 ? `, party of ${this.partySize}` : ''}: enemy HP x${this.hpMult.toFixed(2)}${this.partySize > 1 ? ` and +${this.partySize - 1} card draw` : ''}, damage x${this.dmgMult.toFixed(2)}; enemies resist their own type by ${Math.round(this.typeResist * 100)}%.`);
     this.startRound();
   }
 
@@ -656,6 +658,7 @@ class Combat {
       strTurn: 0, strCombat: 0, weak: 0, vulnerable: 0, bleed: 0, slow: 0, initNext: 0, defNext: 0, manaNext: 0, drawLess: 0,
       stealth: false, locked: false, disarmed: false, disarmNext: false, negateDebuff: false, nextAttackMult: 1, nextSkillMult: 1,
       attackedThisRound: false, drawPile: [], hand: [], discard: [], exhaust: [], reshuffles: 0, firstTurn: true, dead: false,
+      poison: 0, burn: 0, chill: 0, frozen: false, regenDown: [], uid: spec.uid || null,
     };
     if (buffs.resist) for (const el of ELEMENTS) p.resist[el] = Math.min(75, (p.resist[el] || 0) + buffs.resist);
     const deck = [];
@@ -687,9 +690,11 @@ class Combat {
   }
 
   say(kind, text) { this.log.push({ round: this.round, kind, text }); }
-  alive() { return this.enemies.filter(e => e.hp > 0); }
+  foes() { return this.enemies.filter(e => e.hp > 0); } // monsters only
+  // what the acting hero can hit: monsters, or in a duel the other hero (unless they are in Stealth and the card is single-target)
+  alive() { return this.duel ? this.players.filter(p => p !== this.player && p.hp > 0) : this.foes(); }
   initiative(a) { return a.baseInit + (a.initNext || 0) - (a.slow || 0) - (a.chill || 0); }
-  pressure() { return this.round >= PRESSURE_START ? (this.round - PRESSURE_START + 1) * PRESSURE_STEP : 0; }
+  pressure() { return this.round >= PRESSURE_START ? (this.round - PRESSURE_START + 1) * PRESSURE_STEP * (this.duel ? 5 : 1) : 0; } // duels ramp 5x faster so they end
   card(c) { return c.rank ? (c._v || (c._v = rankedCard(c.key, c.rank))) : C[c.key]; }
   addToHand(key) { const p = this.player; const c = { uid: 'c' + (this._uid++), key }; if (p.hand.length >= 10) { p.discard.push(c); this.say('sys', `Hand full: ${C[key].name} went to the discard pile.`); } else p.hand.push(c); }
   statusCount() { const p = this.player; return [...p.drawPile, ...p.hand, ...p.discard].filter(c => C[c.key].type === 'Status').length; }
@@ -709,7 +714,7 @@ class Combat {
 
   startRound() {
     this.round++;
-    this.say('round', `Round ${this.round}` + (this.pressure() ? ` (Pressure: enemies deal +${Math.round(this.pressure() * 100)}%)` : ''));
+    this.say('round', `Round ${this.round}` + (this.pressure() ? ` (Pressure: ${this.duel ? 'every hit deals' : 'enemies deal'} +${Math.round(this.pressure() * 100)}%)` : ''));
     for (const p of this.alivePlayers()) {
       this.player = p; p.attackedThisRound = false;
       const n = Math.max(0, p.draw - p.drawLess);
@@ -717,12 +722,12 @@ class Combat {
       p.drawLess = 0;
       this.drawCards(p, n);
     }
-    for (const e of this.alive()) if (this.round === 1) this.drawCards(e, e.draw);
-    const actors = [...this.alivePlayers(), ...this.alive()].map(a => ({ a, ini: this.initiative(a), tie: this.rng() }));
+    for (const e of this.foes()) if (this.round === 1) this.drawCards(e, e.draw);
+    const actors = [...this.alivePlayers(), ...this.foes()].map(a => ({ a, ini: this.initiative(a), tie: this.rng() }));
     actors.sort((x, y) => y.ini - x.ini || y.tie - x.tie);
     this.order = actors.map(x => x.a.id);
     this.turnIndex = -1;
-    for (const e of this.alive()) this.planEnemy(e);
+    for (const e of this.foes()) this.planEnemy(e);
     this.say('sys', 'Turn order: ' + actors.map(x => `${x.a.isPlayer ? this.who(x.a) : x.a.name} (${x.ini})`).join(' > '));
     this.nextTurn();
   }
@@ -749,6 +754,7 @@ class Combat {
     this.beginTurn(a);
     if (this.over) return;
     if (a.hp <= 0) { this.nextTurn(); return; }
+    if (a.isPlayer && a.frozen) { a.frozen = false; this.say('crit', `${a.name} is Frozen and loses the turn.`); a.discard.push(...a.hand.splice(0)); if (a.chill) a.chill = 0; this.nextTurn(); return; }
     if (!a.isPlayer && a.frozen) { a.frozen = false; this.say('enemy', `${a.name} is Frozen and loses its turn.`); a.plan = []; a.discard.push(...a.hand.splice(0)); this.drawCards(a, a.draw); this.planEnemy(a); this.nextTurn(); return; }
     this.phase = a.isPlayer ? 'player' : 'enemy';
   }
@@ -756,8 +762,10 @@ class Combat {
   beginTurn(a) {
     if (!a.isPlayer && this.opts.blockReset !== 'none' && a.block) { a.block = 0; a.parryBack = 0; }
     if (a.isPlayer && this.opts.blockReset === 'all' && a.block) { this.say('player', `Your ${a.block} ${a.defName} fades.`); a.block = 0; }
-    if (a.isPlayer && this.opts.blockReset === 'decay' && a.block) { const kept = Math.floor(a.block / 2); this.say('player', `Half your ${a.defName} fades: ${a.block} -> ${kept}.`); a.block = kept; }
-    const regen = a.isPlayer ? a.regen : this.effRegen(a);
+    if (a.isPlayer && this.opts.blockReset === 'decay' && a.block) { const kept = Math.floor(a.block / 2); this.say('player', `${this.partySize > 1 ? 'Half of ' + a.name + "'s" : 'Half your'} ${a.defName} fades: ${a.block} -> ${kept}.`); a.block = kept; }
+    if (a.isPlayer && a.regenDown.length) { for (const r of a.regenDown) r.turns--; }
+    const regen = a.isPlayer ? Math.max(0, a.regen - a.regenDown.reduce((s, x) => s + x.n, 0)) : this.effRegen(a);
+    if (a.isPlayer) a.regenDown = a.regenDown.filter(r => r.turns > 0);
     const extra = a.isPlayer ? a.manaNext : 0;
     const gain = regen * (a.firstTurn ? 2 : 1) + extra;
     const before = a.mana;
@@ -825,6 +833,7 @@ class Combat {
     if (a.isPlayer) {
       if (a.dead) return;
       a.dead = true; a.block = 0; a.bleed = 0; a.discard.push(...a.hand.splice(0));
+      if (this.duel) { this.winner = this.alivePlayers()[0] || null; this.say('win', `${a.name} falls. ${this.winner ? this.winner.name + ' wins the duel' : 'The duel is a draw'} in ${this.round} round${this.round > 1 ? 's' : ''}.`); this.over = 'duel'; this.phase = 'over'; return; }
       if (!this.alivePlayers().length) { this.say('loss', this.partySize > 1 ? 'The whole party falls.' : 'You fall.'); this.over = 'loss'; this.phase = 'over'; return; }
       this.say('loss', `${a.name} falls! The rest of the party fights on.`);
       if (this.current === a && this.phase === 'player') { this.phase = 'between'; this.nextTurn(); }
@@ -832,7 +841,7 @@ class Combat {
     }
     a.bleed = a.poison = a.burn = 0; a.block = 0;
     this.say('kill', `${a.name} dies.`);
-    if (this.alive().length === 0) { this.say('win', `Victory in ${this.round} round${this.round > 1 ? 's' : ''}.`); this.over = 'win'; this.phase = 'over'; }
+    if (this.foes().length === 0) { this.say('win', `Victory in ${this.round} round${this.round > 1 ? 's' : ''}.`); this.over = 'win'; this.phase = 'over'; }
   }
 
   typeMod(e, dtype) {
@@ -853,8 +862,9 @@ class Combat {
     const crit = this.rng() * 100 < p.crit;
     const tm = this.typeMod(e, dtype);
     const weakMod = 1 - Math.min(p.weak, 90) / 100, vulnMod = 1 + e.vulnerable / 100;
+    const pvp = e.isPlayer ? (1 - Math.min(75, e.resist[dtype] || 0) / 100) * (1 + this.pressure()) : 1;
     const setup = kind === 'Attack' ? (this._attackMult || 1) : (this._skillMult || 1);
-    const dmg = Math.max(0, Math.round(base * (1 + stat / 100) * (1 + elem / 100) * weakMod * (crit ? p.critMult : 1) * tm * vulnMod * setup));
+    const dmg = Math.max(0, Math.round(base * (1 + stat / 100) * (1 + elem / 100) * weakMod * (crit ? p.critMult : 1) * tm * vulnMod * setup * pvp));
     const parts = [`${base}`];
     if (stat) parts.push(`x ${(1 + stat / 100).toFixed(2)} ${kind === 'Attack' ? 'Strength' : 'Intelligence'}`);
     if (elem) parts.push(`x ${(1 + elem / 100).toFixed(2)} ${dtype} bonus`);
@@ -863,10 +873,11 @@ class Combat {
     if (crit) parts.push(`x ${p.critMult.toFixed(2)} CRIT`);
     if (tm !== 1) parts.push(`x ${tm.toFixed(2)} ${tm > 1 ? dtype + ' weakness' : dtype + ' resist'}`);
     if (e.vulnerable) parts.push(`x ${vulnMod.toFixed(2)} Vulnerable`);
+    if (pvp !== 1) parts.push(`x ${pvp.toFixed(2)} resist/Pressure`);
     const r = this.applyHit(p, e, dmg, { defer: true });
     this.say(crit ? 'crit' : 'player', `${label} hits ${e.name}: ${parts.join(' ')} = ${dmg}` + (r.absorbed ? `, ${r.absorbed} blocked` : '') + `. HP ${e.hp}/${e.maxHp}.`);
     if (kind === 'Attack' && e.parryBack && r.absorbed && e.hp > 0) { const back = this.applyHit(e, p, Math.round(e.parryBack * this.dmgMult), { defer: true }); this.say('enemy', `${e.name} parries and strikes back: ${back.lost} HP lost.`); e.parryBack = 0; }
-    if (kind === 'Attack' && e.thorns && e.hp > 0) { const t = this.applyHit(e, p, e.thorns, { defer: true }); this.say('enemy', `${e.name}'s spikes: you lose ${t.lost} HP.`); }
+    if (kind === 'Attack' && e.thorns && e.hp > 0) { const t = this.applyHit(e, p, e.thorns, { defer: true }); this.say('enemy', `${e.name}'s ${e.isPlayer ? 'Thorns' : 'spikes'}: ${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${t.lost} HP.`); }
     if (kind === 'Attack' && p.bleedChance && e.hp > 0 && this.rng() * 100 < p.bleedChance) { e.bleed += 3; this.say('crit', `Bleed Chance: ${e.name} gains 3 Bleed.`); }
     if (p.lifesteal && r.lost) this.heal(p, Math.round(r.lost * p.lifesteal / 100), 'Lifesteal', true);
     if (p.hp <= 0) { this.onDeath(p); return r.lost; }
@@ -911,6 +922,7 @@ class Combat {
     if (p.locked && d.cost > 0) return { ok: false, why: 'In Stealth: 0-cost only' };
     if (p.disarmed && d.type === 'Attack') return { ok: false, why: 'Disarmed' };
     if (d.cost > p.mana) return { ok: false, why: `Needs ${d.cost} mana` };
+    if (this.duel && d.target === 'enemy' && !this.alive().some(x => !x.stealth)) return { ok: false, why: 'Target is in Stealth' };
     return { ok: true };
   }
 
@@ -921,10 +933,11 @@ class Combat {
     const c = p.hand[idx]; const d = this.card(c);
     if (!this.canPlay(c).ok) return false;
     let tgt = null;
-    if (d.target === 'enemy') { tgt = this.enemies.find(e => e.id === targetId && e.hp > 0) || this.alive()[0]; if (!tgt) return false; }
+    if (d.target === 'enemy') { const pool = this.alive().filter(x => !x.stealth); tgt = pool.find(e => e.id === targetId) || pool[0]; if (!tgt) return false; }
     p.mana -= d.cost; p.hand.splice(idx, 1); this.stats.cardsPlayed++;
-    this.say('card', `You play ${d.name}${d.cost ? ' (' + d.cost + ' mana)' : ''}` + (tgt ? ` on ${tgt.name}` : '') + `. Mana ${p.mana}.`);
+    this.say('card', `${this.partySize > 1 ? p.name + ' plays' : 'You play'} ${d.name}${d.cost ? ' (' + d.cost + ' mana)' : ''}` + (tgt ? ` on ${tgt.name}` : '') + `. Mana ${p.mana}.`);
     if (d.target === 'all' && p.stealth) p.stealth = false;
+    if (this.duel && d.target === 'all') for (const x of this.alive()) if (x.stealth) { x.stealth = false; this.say('player', `${x.name}'s Stealth is broken.`); }
     this._playing = d; this._rankMult = d.mult || 1;
     this._attackMult = d.type === 'Attack' ? p.nextAttackMult : 1;
     this._skillMult = (d.type === 'Skill' && d.tags.dmg) ? p.nextSkillMult : 1;
@@ -945,7 +958,7 @@ class Combat {
     p.discard.push(...p.hand.splice(0));
     if (kept) this.say('player', `End turn: ${kept} card${kept > 1 ? 's' : ''} discarded.`);
     p.strTurn = 0; p.disarmed = false; p.locked = false;
-    p.weak = Math.floor(p.weak / 2); p.vulnerable = Math.floor(p.vulnerable / 2); if (p.slow) p.slow = Math.max(0, p.slow - 1);
+    p.weak = Math.floor(p.weak / 2); p.vulnerable = Math.floor(p.vulnerable / 2); if (p.slow) p.slow = Math.max(0, p.slow - 1); if (p.chill) p.chill = Math.max(0, p.chill - 1);
     this.nextTurn();
   }
 
@@ -1050,7 +1063,7 @@ class Combat {
 
   endRound() {
     for (const e of this.enemies) e.strTurn = 0;
-    if (this.round >= 60) { this.over = 'loss'; this.phase = 'over'; this.say('loss', 'Stalemate after 60 rounds.'); return; }
+    if (this.round >= (this.duel ? 30 : 60)) { this.over = 'loss'; this.phase = 'over'; this.say('loss', 'Stalemate after 60 rounds.'); return; }
     this.startRound();
   }
 }
@@ -1710,9 +1723,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     $('hubWagon').innerHTML = `<h3 style="font-size:24px;color:var(--accent)">The Wagon</h3>
       <div class="field" style="margin:8px 0"><label for="selLevel">Map 1: The Broken March &middot; level <b id="lvlOut">+${lvl}</b></label><input type="range" id="selLevel" min="0" max="19" step="1" value="${lvl}"></div>
       <p class="savenote" id="lvlInfo"></p>
-      <fieldset class="partypick"><legend>Party (play them all yourself, in Initiative order)</legend>${Object.keys(CLASSES).filter(k => profile.chars[k]).map(k => `<label><input type="checkbox" data-party="${k}" ${k === heroCls ? 'checked disabled' : (profile.last.party || []).includes(k) ? 'checked' : ''}> ${esc(profile.chars[k].name)} <span class="muted">(${k})</span></label>`).join('')}</fieldset>
-      <p class="savenote" id="partyNote" style="margin:4px 0 0"></p>
-      <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn primary" id="btnStart" ${chk.ok ? '' : 'disabled'}>Set out</button></div>
+      ${onlineParty() ? onlineWagonHtml() : `<fieldset class="partypick"><legend>Party (play them all yourself, in Initiative order)</legend>${Object.keys(CLASSES).filter(k => profile.chars[k]).map(k => `<label><input type="checkbox" data-party="${k}" ${k === heroCls ? 'checked disabled' : (profile.last.party || []).includes(k) ? 'checked' : ''}> ${esc(profile.chars[k].name)} <span class="muted">(${k})</span></label>`).join('')}</fieldset>
+      <p class="savenote" id="partyNote" style="margin:4px 0 0"></p>`}
+      <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn primary" id="btnStart" ${chk.ok && (!onlineParty() || SOC.party.leader === SOC.me) ? '' : 'disabled'}>${onlineParty() ? (SOC.party.leader === SOC.me ? `Set out with the party (${SOC.party.members.length})` : 'Waiting for the leader') : 'Set out'}</button></div>
       ${chk.ok ? '' : `<p class="down" style="margin:6px 0 0;font-size:13px">Fix your deck first: it ${chk.problems.join(', ')}.</p>`}
       <p class="savenote" style="margin:8px 0 0">Equipped gear and your deck are safe. Only the loot sack is at risk: die and it's gone. Extract at the row-7 campfire (there's always one) to keep 75%, at any later campfire to keep half, or kill the Warlord to keep it all. Anything you order from a merchant is paid from the bank and waits in your stash, even if you die.</p>
       <details style="margin-top:8px;font-size:13px;color:#d6cab6"><summary style="cursor:pointer;color:var(--text);font-weight:600">How a run works</summary>
@@ -1726,13 +1739,21 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     lvlInfo();
     $('btnStart').onclick = startRun;
     const partyNote = () => { const n = 1 + $('hubWagon').querySelectorAll('[data-party]:checked:not(:disabled)').length; $('partyNote').textContent = n > 1 ? `Party of ${n}: enemies get +${Math.round(85 * (n - 1))}% HP, mana and regen and draw ${n - 1} more card${n > 2 ? 's' : ''}. Every hero rolls their own loot; one who falls loses their sack and gets up at half HP.` : 'Solo run. Tick more heroes to bring a party.'; };
-    $('hubWagon').querySelector('.partypick').addEventListener('change', partyNote); partyNote();
+    if ($('partyNote')) { $('hubWagon').querySelector('.partypick').addEventListener('change', partyNote); partyNote(); }
     renderGearTab(c); renderDeckTab(c); renderLogTab(); renderShopTab(c);
     renderSaveNote(); renderTownBar(); if (!$('sheet').hidden) fitCards($('sheet'));
   }
 
+  // an online party (2+ players) rides out together from the leader's Wagon
+  function onlineParty() { return typeof SOC !== 'undefined' && socOn() && SOC.party && SOC.party.members.length > 1; }
+  function onlineWagonHtml() {
+    const pt = SOC.party, lead = pt.members.find(m => m.uid === pt.leader);
+    return `<div class="partypick" style="padding:8px 10px"><b>Online party</b> &middot; ${pt.members.map(m => `<span style="color:${CC[m.cls] || 'var(--text)'}">${esc(m.name)}</span>${m.uid === pt.leader ? ' <span class="muted">(leader)</span>' : ''}`).join(', ')}
+      <p class="savenote" style="margin:4px 0 0">${pt.leader === SOC.me ? 'You pick the map level and set out; everyone comes along.' : `${esc(lead ? lead.name : 'The leader')} picks the level and sets out; you'll ride along automatically.`} Each player brings their own hero, gear and deck and controls only that hero. The party votes on every step of the map (ties go to a coin flip). Enemies get +85% HP, mana and regen per extra hero. Everyone takes their own loot home.</p></div>`;
+  }
   function startRun() {
     const lvl = +$('selLevel').value;
+    if (onlineParty()) { if (SOC.party.leader !== SOC.me) return; profile.last.level = lvl; save(); $('sheet').hidden = true; netStart('run', SOC.party.members.map(m => m.uid), lvl); return; }
     const extra = [...$('hubWagon').querySelectorAll('[data-party]:checked:not(:disabled)')].map(x => x.dataset.party);
     const party = [heroCls, ...extra];
     for (const k of extra) { const d = CBHub.deckCheck(CBHub.char(profile, k).deck); if (!d.ok) return toast(`${k}'s deck ${d.problems.join(', ')}. Fix it at the Scribe first.`); }
@@ -2320,7 +2341,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function rcOf(c) { const slot = sl => c.gear.find(g => g.slot === sl); const rc = sl => { const it = slot(sl); return it ? it.rarity : null; }; return { helm: rc('Helm'), chest: rc('Chest'), weapon: rc('Weapon'), cloak: rc('Cloak'), boots: rc('Boots') }; }
   function myPresence() {
     const c = profile.chars[heroCls];
-    const place = !$('scrStart').hidden ? 'town' : run ? 'run' : 'menu';
+    const place = !$('scrStart').hidden ? 'town' : run ? 'run' : cb && cb.duel ? 'duel' : 'menu';
     return { uid: SOC.me, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? heroCls : null, rc: c ? rcOf(c) : {}, place, x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
   }
 
@@ -2343,6 +2364,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     ch.on('broadcast', { event: 'invite-reply' }, ({ payload }) => { if (payload.to === SOC.me) gotReply(payload); });
     ch.on('broadcast', { event: 'party' }, ({ payload }) => gotParty(payload));
     ch.on('broadcast', { event: 'party-leave' }, ({ payload }) => gotLeave(payload));
+    ch.on('broadcast', { event: 'net' }, ({ payload }) => netIn(payload));
     ch.on('broadcast', { event: 'friend-ping' }, ({ payload }) => { if (payload.to === SOC.me) { loadFriends(); sysChat(`${payload.name} sent you a friend request. Open Friends to accept it.`); } });
     ch.subscribe(async (status) => { if (status === 'SUBSCRIBED') { await ch.track(myPresence()); renderSocial(); } });
     SOC.ch = ch;
@@ -2522,7 +2544,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function kick(uid) { if (!SOC.party || SOC.party.leader !== SOC.me) return; gotLeave({ partyId: SOC.party.id, uid }); }
 
   // ---------- social UI: town bar button, party panel, invite cards, Friends sheet
-  function placeText(st) { return !st ? 'Offline' : st.place === 'town' ? 'In Emberwatch' : st.place === 'run' ? 'On the March' : 'Online'; }
+  function placeText(st) { return !st ? 'Offline' : st.place === 'town' ? 'In Emberwatch' : st.place === 'run' ? 'On the March' : st.place === 'duel' ? 'In a duel' : 'Online'; }
   function renderSocial() {
     const nOn = SOC.friends.filter(f => SOC.online.has(f.id)).length;
     if ($('tbFriends')) { $('tbFriends').hidden = !supa; $('tbFriends').innerHTML = `Friends${SOC.requestsIn.length ? ` <b class="badge">${SOC.requestsIn.length}</b>` : ''} <span class="muted">${socOn() ? nOn + ' online' : 'sign in'}</span>`; }
@@ -2530,12 +2552,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const pp = $('partyPanel');
     if (pp) {
       const pt = SOC.party;
-      pp.hidden = !pt && !SOC.invites.length;
-      pp.innerHTML = (pt ? `<div class="pph"><b>Party ${pt.members.length}/${PARTY_MAX}</b><button class="pilebtn" id="ppLeave">${pt.leader === SOC.me ? 'Disband' : 'Leave'}</button></div>` + pt.members.map(m => `<div class="ppm"><span class="dot ${SOC.online.has(m.uid) || m.uid === SOC.me ? 'on' : ''}"></span><b style="color:${CC[m.cls] || 'var(--text)'}">${esc(m.name)}</b>${m.uid === pt.leader ? ' <span class="muted">leader</span>' : ''}${pt.leader === SOC.me && m.uid !== SOC.me ? ` <button class="pilebtn" data-kick="${m.uid}">Remove</button>` : ''}</div>`).join('') + `<p class="muted" style="margin:4px 0 0;font-size:12px">Riding out together from the Wagon is coming next.</p>` : '')
+      pp.hidden = !pt && !SOC.invites.length && !NET.duelIn.length;
+      const canDuel = (m) => m.uid !== SOC.me && SOC.online.has(m.uid) && SOC.online.get(m.uid).place === 'town' && !NET.s && !NET.duelOut;
+      pp.innerHTML = (pt ? `<div class="pph"><b>Party ${pt.members.length}/${PARTY_MAX}</b><button class="pilebtn" id="ppLeave">${pt.leader === SOC.me ? 'Disband' : 'Leave'}</button></div>` + pt.members.map(m => `<div class="ppm"><span class="dot ${SOC.online.has(m.uid) || m.uid === SOC.me ? 'on' : ''}"></span><b style="color:${CC[m.cls] || 'var(--text)'}">${esc(m.name)}</b>${m.uid === pt.leader ? ' <span class="muted">leader</span>' : ''}${canDuel(m) ? ` <button class="pilebtn" data-duel="${m.uid}" title="Challenge to a duel">Duel</button>` : NET.duelOut === m.uid ? ' <span class="muted">challenged...</span>' : ''}${pt.leader === SOC.me && m.uid !== SOC.me ? ` <button class="pilebtn" data-kick="${m.uid}">Remove</button>` : ''}</div>`).join('') + `<p class="muted" style="margin:4px 0 0;font-size:12px">${pt.leader === SOC.me ? 'Talk to the Wagoneer to set out together.' : 'The leader sets out from the Wagon; you ride along.'}</p>` : '')
+        + NET.duelIn.map(d => `<div class="ppinv"><span><b>${esc(d.name)}</b> challenges you to a duel</span><span><button class="btn primary" data-dacc="${d.from}">Fight</button> <button class="btn" data-ddec="${d.from}">Decline</button></span></div>`).join('')
         + SOC.invites.map(i => `<div class="ppinv"><span><b>${esc(i.name)}</b> invites you to a party</span><span><button class="btn primary" data-acc="${i.from}">Join</button> <button class="btn" data-dec="${i.from}">Decline</button></span></div>`).join('');
     }
     renderChat();
     if (!$('sheet').hidden && $('sheet').dataset.kind === 'friends') renderFriendsTab();
+    if (!$('sheet').hidden && $('sheet').dataset.kind === 'wagon' && !run && !cb) renderHub();
   }
   function renderFriendsTab() {
     const el = $('hpFriends'); if (!el) return;
@@ -2559,7 +2584,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     $('frAdd').onclick = add; $('frCode').onkeydown = (e) => { if (e.key === 'Enter') add(); };
   }
   document.addEventListener('click', (ev) => {
-    const t = ev.target.closest('[data-inv],[data-fa],[data-fr],[data-acc],[data-dec],[data-kick],#ppLeave,#tbFriends'); if (!t) return;
+    const t = ev.target.closest('[data-inv],[data-fa],[data-fr],[data-acc],[data-dec],[data-kick],[data-duel],[data-dacc],[data-ddec],#ppLeave,#tbFriends'); if (!t) return;
+    if (t.dataset.duel) { challenge(t.dataset.duel); return; }
+    if (t.dataset.dacc) { answerDuel(t.dataset.dacc, true); return; }
+    if (t.dataset.ddec) { answerDuel(t.dataset.ddec, false); return; }
     if (t.id === 'tbFriends') { openSheet('friends'); return; }
     if (t.id === 'ppLeave') { leaveParty(); return; }
     if (t.dataset.inv) invite(t.dataset.inv);
@@ -2569,6 +2597,275 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (t.dataset.dec) answerInvite(t.dataset.dec, false);
     if (t.dataset.kick) kick(t.dataset.kick);
   });
+
+  // ---------- online play: shared Wagon runs and duels (lockstep, no game server)
+  // The host (the party leader, or whoever threw down the duel challenge) numbers every action and broadcasts it.
+  // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
+  // game stay identical. Each player only ever sends actions for their own hero.
+  const NET = { s: null, pend: null, duelIn: [], duelOut: null };
+  const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
+  const netOn = () => !!NET.s;
+  const netHost = () => !!(NET.s && NET.s.host === SOC.me);
+  const newSid = () => 's' + Math.random().toString(36).slice(2, 10);
+  function netSend(type, payload) { if (socOn()) SOC.ch.send({ type: 'broadcast', event: 'net', payload: Object.assign({ type, from: SOC.me }, payload) }); }
+  function nameOfUid(uid) { const m = SOC.party && SOC.party.members.find(x => x.uid === uid); if (m) return m.name; const o = SOC.online.get(uid); return o ? o.name : 'A player'; }
+
+  // what I bring: my current hero, gear, deck, bank and stash space
+  function mySpec() {
+    if (run || cb) return { err: 'is already on the March or in a fight' };
+    const c = profile.chars[heroCls]; if (!c) return { err: 'has no hero yet' };
+    const chk = CBHub.deckCheck(c.deck); if (!chk.ok) return { err: `needs to fix their deck (it ${chk.problems.join(', ')})` };
+    const o = CBHub.runOpts(profile, heroCls); delete o.members;
+    return Object.assign(o, { uid: SOC.me });
+  }
+
+  // ---------- starting a session: the host asks everyone for their hero, then sends the seed
+  function netStart(kind, uids, level) {
+    if (!socOn() || NET.s || NET.pend) return;
+    const me = mySpec(); if (me.err) { toast(`You ${me.err.replace(/^is /, 'are ').replace(/^has /, 'have ').replace(/^needs /, 'need ').replace(/their/, 'your')}.`); return; }
+    const sid = newSid();
+    NET.pend = { sid, kind, uids, level, specs: { [SOC.me]: me } };
+    NET.pend.timer = setTimeout(() => { if (!NET.pend || NET.pend.sid !== sid) return; const miss = uids.filter(u => !NET.pend.specs[u]).map(nameOfUid); NET.pend = null; toast(`${miss.join(', ')} didn't answer. ${kind === 'duel' ? 'The duel' : 'The run'} is called off.`); }, 10000);
+    netSend('req', { sid, kind, uids, level });
+    sysChat(kind === 'duel' ? 'Setting up the duel...' : 'Gathering the party at the Wagon...');
+    netCheckSpecs();
+  }
+  function netCheckSpecs() {
+    const P = NET.pend; if (!P || !P.uids.every(u => P.specs[u])) return;
+    clearTimeout(P.timer); NET.pend = null;
+    const go = { sid: P.sid, kind: P.kind, host: SOC.me, uids: P.uids, level: P.level, seed: Math.floor(Math.random() * 2147483646) + 1, specs: P.uids.map(u => P.specs[u]) };
+    netSend('go', go); netBegin(go);
+  }
+  function netBegin(go) {
+    const S = NET.s = { sid: go.sid, kind: go.kind, host: go.host, uids: go.uids, mi: go.uids.indexOf(SOC.me), seq: 1, next: 1, buf: new Map(), log: [], votes: {}, camp: {}, gone: {}, voteAt: 0, turnKey: '', turnAt: 0, missing: {} };
+    closeModal(); $('sheet').hidden = true; if ($('talk')) $('talk').hidden = true;
+    if (go.kind === 'duel') {
+      run = null;
+      cb = new CB.Combat({ duel: true, party: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, uid: s.uid })), seed: go.seed, data: DATA });
+      cb.myMi = S.mi; startCombatUI();
+    } else {
+      run = new Run({ members: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, bank: s.bank, stashFree: s.stashFree })), level: go.level, seed: go.seed, data: DATA });
+      run.online = true; run.myMi = S.mi; run.uids = go.uids.slice();
+      show('map'); renderMap(true);
+    }
+    sysChat(go.kind === 'duel' ? `Duel: ${go.specs.map(s => s.name).join(' vs ')}.` : `The party sets out: ${go.specs.map(s => s.name).join(', ')}.`);
+    retrack(true);
+  }
+  function netEnd() { NET.s = null; NET.pend = null; retrack(true); }
+
+  // ---------- actions
+  function netAct(a) {
+    const S = NET.s; if (!S) return;
+    if (netHost()) hostSeq(Object.assign({}, a, { mi: S.mi }));
+    else netSend('act', { sid: S.sid, a });
+  }
+  function hostSeq(a) {
+    const S = NET.s; const seq = S.next++;
+    netSend('do', { sid: S.sid, seq, a });
+    S.buf.set(seq, a); netDrain();
+  }
+  function netDrain() {
+    const S = NET.s; if (!S) return;
+    while (!busy && NET.s === S && S.buf.has(S.seq)) {
+      const a = S.buf.get(S.seq); S.buf.delete(S.seq); S.log[S.seq] = a; S.seq++;
+      try { netApply(a); } catch (e) { console.error('net apply', a, e); }
+    }
+    if (NET.s === S && !busy) autoSkip();
+  }
+  const active = () => NET.s.uids.map((u, i) => i).filter(i => !NET.s.gone[i]);
+  const tallyDone = (box) => active().every(i => box[i] != null);
+  function netApply(a) {
+    const S = NET.s, mi = a.mi, who = S.uids[mi] ? nameOfUid(S.uids[mi]) : 'A player';
+    if (S.kind === 'duel') {
+      if (!cb || cb.over) return;
+      if (a.t === 'leave') { S.gone[mi] = true; const p = cb.players[mi]; if (p.hp > 0) { cb.say('loss', `${p.name} leaves the duel.`); p.hp = 0; cb.onDeath(p); } render(); combatOver(); return; }
+    }
+    switch (a.t) {
+      case 'vote': {
+        if (!run || run.over || run.combat || (run.pending && run.pending.type === 'rest') || !run.reachable().includes(a.node)) return;
+        if (!Object.keys(S.votes).length) S.voteAt = Date.now();
+        S.votes[mi] = a.node;
+        if (tallyDone(S.votes)) resolveMove(); else { renderMap(); if (run.pending && $('modal').hidden === false && run.pending.type === 'merchant' && redrawShop) redrawShop(); }
+        return;
+      }
+      case 'camp': {
+        if (!run || !run.pending || run.pending.type !== 'rest' || !['rest', 'extract'].includes(a.choice)) return;
+        if (!Object.keys(S.camp).length) S.voteAt = Date.now();
+        S.camp[mi] = a.choice;
+        if (tallyDone(S.camp)) resolveCamp(); else if (!$('modal').hidden) pendingModal();
+        return;
+      }
+      case 'force': {
+        if (!run || run.over) return;
+        if (run.pending && run.pending.type === 'rest' && Object.keys(S.camp).length) resolveCamp();
+        else if (Object.keys(S.votes).length && !run.combat) resolveMove();
+        return;
+      }
+      case 'buy': { if (!run || !run.pending || run.pending.type !== 'merchant') return; run.buy(a.i, mi); if (redrawShop && !$('modal').hidden) redrawShop(); renderSide(); return; }
+      case 'play': { if (!cb || cb.over || cb.phase !== 'player' || cb.current !== cb.players[mi]) return; if (selected && mi === S.mi) selected = null; cb.play(a.uid, a.tgt); render(true); if (cb.over) combatOver(); return; }
+      case 'end': { if (!cb || cb.over || cb.phase !== 'player' || cb.current !== cb.players[mi]) return; if (mi === S.mi) selected = null; if (a.auto) cb.say('sys', `${cb.current.name} ran out of time.`); cb.endPlayerTurn(); render(true); pump(); return; }
+      case 'leave': {
+        if (S.gone[mi]) return; S.gone[mi] = true;
+        if (run) { const m = run.members[mi]; m.kept = { items: [], gold: 0 }; m.left = true; run.note(`${m.name} left the March. Their sack is lost.`); }
+        if (mi !== S.mi) sysChat(`${who} left the ${S.kind === 'duel' ? 'duel' : 'run'}.`);
+        if (!active().length) return;
+        if (run && !run.over && !run.combat) { if (run.pending && run.pending.type === 'rest' && Object.keys(S.camp).length && tallyDone(S.camp)) resolveCamp(); else if (Object.keys(S.votes).length && tallyDone(S.votes)) resolveMove(); else if (!$('scrMap').hidden) renderMap(); }
+        if (cb && !$('scrCombat').hidden) render();
+        return;
+      }
+    }
+  }
+  // a hero whose player left skips their turns
+  function autoSkip() {
+    const S = NET.s; if (!S || !cb || cb.over || busy) return;
+    let g = 0;
+    while (cb && !cb.over && cb.phase === 'player' && S.gone[cb.players.indexOf(cb.current)] && g++ < 10) cb.endPlayerTurn();
+    if (cb && cb.phase === 'enemy' && !busy) { render(); pump(); }
+  }
+  function resolveMove() {
+    const S = NET.s; const list = active().map(i => S.votes[i]).filter(Boolean);
+    const node = list.length > 1 ? run.resolveVote(list) : list[0];
+    const split = new Set(list).size > 1;
+    S.votes = {}; S.voteAt = 0;
+    if (run.pending) run.closePending();
+    closeModal();
+    if (!run.enter(node)) { renderMap(); return; }
+    if (split) run.note(`The party was split on where to go; ${run.map.nodes[node].type} on row ${run.map.nodes[node].row} won${new Set(list).size === list.length ? ' the coin flip' : ''}.`);
+    if (run.combat) { cb = run.combat; startCombatUI(); return; }
+    show('map'); renderMap(true);
+    if (run.pending) pendingModal();
+  }
+  function resolveCamp() {
+    const S = NET.s; const list = active().map(i => S.camp[i]).filter(Boolean);
+    const pick = list.length > 1 ? run.resolveVote(list) : list[0];
+    S.camp = {}; S.voteAt = 0; closeModal();
+    if (pick === 'extract') run.extract(); else run.rest();
+    renderMap();
+  }
+
+  // ---------- incoming messages
+  function netIn(p) {
+    if (!p || p.from === SOC.me) return;
+    const S = NET.s;
+    switch (p.type) {
+      case 'req': {
+        if (!p.uids.includes(SOC.me)) return;
+        if (NET.s) { netSend('spec', { sid: p.sid, to: p.from, spec: { err: 'is already in a game' } }); return; }
+        const spec = mySpec();
+        netSend('spec', { sid: p.sid, to: p.from, spec });
+        if (spec.err) toast(`${nameOfUid(p.from)} tried to start ${p.kind === 'duel' ? 'a duel' : 'a run'}, but you ${spec.err.replace(/^is /, 'are ').replace(/^has /, 'have ').replace(/^needs /, 'need ').replace(/their/, 'your')}.`);
+        return;
+      }
+      case 'spec': {
+        const P = NET.pend; if (!P || P.sid !== p.sid || p.to !== SOC.me || !P.uids.includes(p.from)) return;
+        if (p.spec.err) { clearTimeout(P.timer); NET.pend = null; toast(`${nameOfUid(p.from)} ${p.spec.err}. ${P.kind === 'duel' ? 'The duel' : 'The run'} is called off.`); netSend('cancel', { sid: P.sid }); return; }
+        P.specs[p.from] = p.spec; netCheckSpecs(); return;
+      }
+      case 'cancel': return;
+      case 'go': { if (!p.uids.includes(SOC.me) || NET.s) return; if (run || cb) return; netBegin(p); return; }
+      case 'act': {
+        if (!S || p.sid !== S.sid || !netHost()) return;
+        const mi = S.uids.indexOf(p.from); if (mi < 0 || S.gone[mi]) return;
+        hostSeq(Object.assign({}, p.a, { mi })); return;
+      }
+      case 'do': {
+        if (!S || p.sid !== S.sid || p.seq < S.seq || S.buf.has(p.seq)) return;
+        S.buf.set(p.seq, p.a);
+        if (!S.buf.has(S.seq) && Date.now() - (S.askedAt || 0) > 1500) { S.askedAt = Date.now(); netSend('need', { sid: S.sid, seq: S.seq }); }
+        netDrain(); return;
+      }
+      case 'need': {
+        if (!S || p.sid !== S.sid || !netHost()) return;
+        for (let q = p.seq; q < S.next; q++) { const a = S.log[q] || S.buf.get(q); if (a) netSend('do', { sid: S.sid, seq: q, a }); }
+        return;
+      }
+      case 'host': {
+        if (!S || p.sid !== S.sid) return;
+        S.host = p.host; if (p.host === SOC.me) S.next = Math.max(S.next, p.seq);
+        if (S.seq < p.seq) { S.askedAt = Date.now(); netSend('need', { sid: S.sid, seq: S.seq }); }
+        return;
+      }
+      case 'duel-ask': {
+        if (p.to !== SOC.me || NET.duelIn.some(d => d.from === p.from)) return;
+        NET.duelIn.push({ from: p.from, name: p.name, cls: p.cls }); sysChat(`${p.name} challenges you to a duel.`); renderSocial(); return;
+      }
+      case 'duel-answer': {
+        if (p.to !== SOC.me || !NET.duelOut || NET.duelOut !== p.from) return;
+        NET.duelOut = null;
+        if (!p.accept) { sysChat(`${nameOfUid(p.from)} declined the duel.`); renderSocial(); return; }
+        netStart('duel', [SOC.me, p.from], 0); renderSocial(); return;
+      }
+    }
+  }
+
+  // ---------- duels: challenge a party member
+  function challenge(uid) {
+    if (!socOn() || NET.s || NET.duelOut) return;
+    if (run || cb) { toast('Finish what you are doing first.'); return; }
+    const c = profile.chars[heroCls]; if (!c) return;
+    NET.duelOut = uid;
+    netSend('duel-ask', { to: uid, name: c.name, cls: heroCls });
+    sysChat(`You challenged ${nameOfUid(uid)} to a duel.`); renderSocial();
+    setTimeout(() => { if (NET.duelOut === uid) { NET.duelOut = null; sysChat(`${nameOfUid(uid)} didn't answer the challenge.`); renderSocial(); } }, 30000);
+  }
+  function answerDuel(from, accept) {
+    NET.duelIn = NET.duelIn.filter(d => d.from !== from);
+    if (accept) { const s = mySpec(); if (s.err) { toast(`You can't duel right now: you ${s.err.replace(/^is /, 'are ').replace(/^has /, 'have ').replace(/^needs /, 'need ').replace(/their/, 'your')}.`); accept = false; } }
+    netSend('duel-answer', { to: from, accept });
+    renderSocial();
+  }
+  function duelOver() {
+    const S = NET.s, me = cb.players[cb.myMi], won = cb.winner === me;
+    const c = profile.chars[heroCls]; if (c && S && !S.counted) { S.counted = true; c.duels = c.duels || { w: 0, l: 0 }; if (won) c.duels.w++; else c.duels.l++; save(); }
+    const foe = cb.players.find(p => p !== me);
+    modal(`<h2 class="${won ? '' : 'loss'}">${won ? 'Victory' : cb.winner ? 'Defeat' : 'Draw'}</h2><p>${won ? `You beat ${esc(foe.name)} in ${cb.round} rounds.` : cb.winner ? `${esc(cb.winner.name)} wins in ${cb.round} rounds.` : 'Nobody is left standing.'} Duels are for glory: nobody loses gear, gold or HP.</p>
+      <dl class="kv"><dt>Your duel record</dt><dd>${c && c.duels ? c.duels.w + ' won, ' + c.duels.l + ' lost' : '-'}</dd></dl>
+      <div class="row"><button class="btn primary" id="mNew">Back to Emberwatch</button><button class="btn" id="mClose">Look at the fight</button></div>`);
+    $('mNew').onclick = backToTown; $('mClose').onclick = closeModal;
+  }
+
+  // ---------- host duties: turn timer, vote timer, players who drop; and taking over if the host drops
+  setInterval(() => {
+    const S = NET.s; if (!S || !socOn()) return;
+    const now = Date.now();
+    // who is still here
+    S.uids.forEach((u, i) => { if (u === SOC.me || S.gone[i]) return; if (SOC.online.has(u)) delete S.missing[u]; else if (!S.missing[u]) S.missing[u] = now; });
+    const hostGone = S.host !== SOC.me && S.missing[S.host] && now - S.missing[S.host] > GONE_S * 1000;
+    if (hostGone) {
+      const heir = S.uids.find((u, i) => !S.gone[i] && u !== S.host && (u === SOC.me || !S.missing[u]));
+      if (heir === SOC.me) {
+        const old = S.uids.indexOf(S.host); S.host = SOC.me; S.next = Math.max(S.next, S.seq + S.buf.size);
+        netSend('host', { sid: S.sid, host: SOC.me, seq: S.next }); sysChat('The leader dropped out. You are running the game now.');
+        hostSeq({ t: 'leave', mi: old });
+      }
+    }
+    if (!netHost()) { netClock(); return; }
+    for (const [u, t] of Object.entries(S.missing)) { const i = S.uids.indexOf(u); if (i >= 0 && !S.gone[i] && now - t > GONE_S * 1000) hostSeq({ t: 'leave', mi: i }); }
+    if (S.voteAt && now - S.voteAt > VOTE_S * 1000) { S.voteAt = 0; hostSeq({ t: 'force' }); }
+    if (cb && !cb.over && cb.phase === 'player' && !busy) {
+      const key = cb.round + ':' + cb.turnIndex;
+      if (S.turnKey !== key) { S.turnKey = key; S.turnAt = now; }
+      else if (now - S.turnAt > TURN_S * 1000) { S.turnAt = now + 5000; const mi = cb.players.indexOf(cb.current); if (mi >= 0) hostSeq({ t: 'end', mi, auto: true }); }
+    }
+    netClock();
+  }, 1000);
+  // everyone shows the turn clock (counted locally from when the turn began here)
+  function netClock() {
+    const S = NET.s, el = $('tclock'); if (!S || !cb || !el) return;
+    const key = cb.round + ':' + cb.turnIndex;
+    if (S.clockKey !== key) { S.clockKey = key; S.clockAt = Date.now(); }
+    const left = Math.max(0, TURN_S - Math.floor((Date.now() - S.clockAt) / 1000));
+    el.textContent = cb.phase === 'player' && !cb.over && left <= 30 ? ` (${left}s left)` : '';
+  }
+  function netLeave() {
+    const S = NET.s; if (!S) return;
+    if (netHost()) {
+      hostSeq({ t: 'leave', mi: S.mi });
+      const heir = S.uids.find((u, i) => !S.gone[i] && u !== SOC.me);
+      if (heir) netSend('host', { sid: S.sid, host: heir, seq: S.next });
+    } else netAct({ t: 'leave' });
+    netEnd();
+  }
 
   let townReturn = false;
 
@@ -2612,6 +2909,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     modal(`<h2>Menu</h2><div class="menu">
       <button class="btn primary" id="mClose">Resume</button>
       ${inRun ? `<button class="btn" id="mnLeave">Leave run and return to town</button>` : ''}
+      ${cb && cb.duel && !cb.over ? `<button class="btn" id="mnForfeit">Forfeit the duel</button>` : ''}
+      ${cb && cb.duel && cb.over ? `<button class="btn" id="mnTown">Return to town</button>` : ''}
       ${run && run.over ? `<button class="btn" id="mnTown">Return to town</button>` : ''}
       ${!run && !onTitle ? `<button class="btn" id="mnHeroes">Switch hero</button>` : ''}
       ${supa ? (supaUser ? `<button class="btn" id="mnSignOut">Sign out (${esc(acctName(supaUser))})</button>` : `<button class="btn" id="mnSignIn">Sign in to save online</button>`) : ''}
@@ -2625,16 +2924,19 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       $('mClose').onclick = closeModal; $('mnConfirm').onclick = leaveRun;
     };
     if ($('mnTown')) $('mnTown').onclick = () => { closeModal(); toTown(); };
+    if ($('mnForfeit')) $('mnForfeit').onclick = () => { closeModal(); if (netOn()) netAct({ t: 'leave' }); else backToTown(); };
     if ($('mnHeroes')) $('mnHeroes').onclick = () => { closeModal(); $('sheet').hidden = true; show('title'); };
     if ($('mnSignIn')) $('mnSignIn').onclick = signInModal;
     if ($('mnSignOut')) $('mnSignOut').onclick = async () => { closeModal(); await supa.auth.signOut(); };
   }
   function toTown() {
-    if (run && run.over && !run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run); save(); }
-    cb = null; run = null; townReturn = true; show('start'); renderHub();
+    if (run && run.over && !run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run, run.myMi); save(); }
+    backToTown();
   }
+  function backToTown() { closeModal(); cb = null; run = null; if (netOn()) netEnd(); townReturn = true; show('start'); renderHub(); }
   function leaveRun() {
     if (!run) return closeModal();
+    if (netOn()) netLeave();
     cb = null; run.combat = null; run.pending = null;
     for (const m of run.members) m.kept = { items: [], gold: 0 };
     run.over = 'abandoned'; run.note('Left the March early. The loot sack is lost.');
@@ -2662,6 +2964,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       const label = vis ? `${t.label}${n.enemies ? ': ' + n.enemies.map(k => DATA.enemies[k].name).join(', ') : ''}, row ${n.row}` : `Unknown, row ${n.row}`;
       dots += `<g class="node ${isReach ? 'reach' : ''}" data-id="${n.id}" transform="translate(${p.x},${p.y})" ${isReach ? 'tabindex="0" role="button"' : ''} aria-label="${esc(label)}">
         <circle class="ring" r="${r}" fill="${fill}" stroke="${here ? '#d6a14a' : visited ? '#6b5a44' : vis ? '#4a3d31' : '#2a231c'}" stroke-width="2"/>
+        ${run.online && NET.s ? run.members.map((m, i) => NET.s.votes[i] === n.id ? `<circle cx="${-r + 4 + 9 * i}" cy="${r + 4}" r="4" fill="${CC[m.cls]}" stroke="#111"/>` : '').join('') : ''}
         ${vis ? `<path d="${t.path}" transform="scale(${n.id === 'boss' ? 1.25 : .95})" fill="${visited && !here ? '#6b5a44' : t.color}" opacity="${visited && !here ? .7 : 1}"/>` : `<text y="5" text-anchor="middle" fill="#4a3d31" font-size="15" font-weight="700">?</text>`}
       </g>`;
     }
@@ -2685,8 +2988,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (n.type === 'rest') s += `<span class="muted">Heal 30% of your max HP, or extract and keep ${n.campfire ? '75%' : 'half'} of your sack.</span>`;
     if (n.type === 'shrine') s += `<span class="muted">${esc(SHRINES.find(x => x.key === n.shrine).text)}</span>`;
     if (n.type === 'merchant') s += '<span class="muted">Order Map 1 gear with banked gold. It is delivered to your stash in town, even if you die.</span>';
-    s += `<div style="margin-top:6px" class="muted">Click a glowing node to travel there.</div>`;
+    s += run.online ? voteLine() : `<div style="margin-top:6px" class="muted">Click a glowing node to travel there.</div>`;
     el.innerHTML = s;
+  }
+  function voteLine() {
+    const S = NET.s; if (!S || run.over) return '';
+    const names = run.members.map((m, i) => S.gone[i] ? null : { m, i }).filter(Boolean);
+    const voted = names.filter(x => S.votes[x.i]), waiting = names.filter(x => !S.votes[x.i]);
+    const where = (id) => { const n = run.map.nodes[id]; return `${NODE[n.type].label.toLowerCase()} (row ${n.row > ROWS ? 'boss' : n.row})`; };
+    return `<div style="margin-top:6px" class="muted">Click a glowing node to vote. The party goes where most votes point; ties are a coin flip.</div>
+      ${voted.length ? `<div style="margin-top:4px">${voted.map(x => `<b style="color:${CC[x.m.cls]}">${esc(x.m.name)}</b> &rarr; ${where(S.votes[x.i])}`).join('<br>')}</div>` : ''}
+      ${voted.length && waiting.length ? `<div class="muted">Waiting for ${waiting.map(x => esc(x.m.name)).join(', ')} (up to ${VOTE_S}s).</div>` : ''}`;
   }
   $('mapScroll').addEventListener('click', (ev) => { const g = ev.target.closest('.node.reach'); if (g) travel(g.dataset.id); });
   $('mapScroll').addEventListener('keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('.node.reach')) { ev.preventDefault(); travel(ev.target.dataset.id); } });
@@ -2716,6 +3028,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   $('nodeInfo').addEventListener('click', (ev) => { const b = ev.target.closest('[data-loot]'); if (b) lootModal(b.dataset.loot); const d = ev.target.closest('[data-deck]'); if (d) deckModal(d.dataset.deck); });
 
   function travel(id) {
+    if (run.online) { if (NET.s && NET.s.gone[NET.s.mi]) return; netAct({ t: 'vote', node: id }); return; }
     if (!run.enter(id)) return;
     if (run.combat) { cb = run.combat; startCombatUI(); return; }
     renderMap();
@@ -2766,8 +3079,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   }
 
   function renderSideParty() {
-    $('charPanel').innerHTML = `<div class="charhead"><h3>Party</h3><span class="chip" title="Banked gold, shared: spent at merchants">Bank ${run.bankPool}</span></div>
-      ${run.members.map(m => `<div class="memrow" style="--mc:${CC[m.cls]}"><b>${esc(m.name)}</b><div class="bar"><i style="width:${100 * m.hp / m.stats.maxHp}%"></i><span>${m.hp} / ${m.stats.maxHp}</span></div><span class="chip" title="Sack: items and gold">${m.sack.length} &middot; ${m.gold}g</span></div>`).join('')}
+    $('charPanel').innerHTML = `<div class="charhead"><h3>Party</h3><span class="chip" title="Banked gold: spent at merchants">${run.online ? 'Your bank ' + run.bankOf(run.members[run.myMi]) : 'Bank ' + run.bankPool}</span></div>
+      ${run.members.map(m => `<div class="memrow" style="--mc:${CC[m.cls]}${m.left ? ';opacity:.45' : ''}"><b>${esc(m.name)}${run.online && m.idx === run.myMi ? ' <span class="muted">(you)</span>' : ''}${m.left ? ' <span class="muted">(left)</span>' : ''}</b><div class="bar"><i style="width:${100 * m.hp / m.stats.maxHp}%"></i><span>${m.hp} / ${m.stats.maxHp}</span></div><span class="chip" title="Sack: items and gold">${m.sack.length} &middot; ${m.gold}g</span></div>`).join('')}
       <dl class="kv" style="margin-top:6px"><dt>Fights won</dt><dd>${run.fightsWon}</dd><dt>Falls</dt><dd>${run.members.reduce((t, m) => t + m.deaths, 0)}</dd></dl>
       ${run.over ? '<div style="margin-top:8px"><button class="btn primary" id="btnCamp">Return to camp</button></div>' : ''}
       ${run.buffs.length ? '<div class="tags" style="margin-top:6px">' + run.buffs.map(x => `<span class="tag good">${esc(x.name.replace('Shrine of ', ''))}: ${x.fights} fight${x.fights > 1 ? 's' : ''}</span>`).join('') + '</div>' : ''}`;
@@ -2775,7 +3088,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     $('pGear').innerHTML = run.members.map(m => `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}</div>` + SLOTS.map(sl => { const it = m.gear.find(g => g.slot === sl); return it ? itemHtml(it, `<div class="il">${sl}</div>`) : ''; }).join('')).join('');
     $('pLog').innerHTML = run.log.slice().reverse().map(t => `<div>${esc(t)}</div>`).join('');
   }
-  $('charPanel').addEventListener('click', (ev) => { if (ev.target.id === 'btnCamp') { closeModal(); run = null; townReturn = true; show('start'); renderHub(); } });
+  $('charPanel').addEventListener('click', (ev) => { if (ev.target.id === 'btnCamp') toTown(); });
   function renderSide() {
     if (!run.solo) return renderSideParty();
     const s = run.stats, b = run.activeBuffs();
@@ -2798,8 +3111,21 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // ---------- modals
   function modal(html) { $('modalBox').classList.remove('wide'); $('modalBox').innerHTML = html; $('modal').hidden = false; fitCards($('modalBox')); const f = $('modalBox').querySelector('button'); if (f) f.focus(); }
   function closeModal() { $('modal').hidden = true; }
+  let redrawShop = null;
   function pendingModal() {
-    const p = run.pending;
+    const p = run.pending; redrawShop = null;
+    if (run.online && p.type === 'rest') {
+      const S = NET.s, me = run.members[run.myMi];
+      const votes = run.members.map((m, i) => S && !S.gone[i] ? `<b style="color:${CC[m.cls]}">${esc(m.name)}</b>: ${S.camp[i] ? (S.camp[i] === 'rest' ? 'rest' : 'extract') : '<span class="muted">deciding</span>'}` : '').filter(Boolean).join('<br>');
+      const mine = S && S.camp[S.mi];
+      modal(`<h2>Rest site</h2><p>The party votes: rest (everyone heals 30%), or extract together (everyone keeps ${p.keep > 0.5 ? '75%' : 'half'} of their own sack). Majority wins; a tie is a coin flip.</p>
+        <p class="muted">Your sack: ${me.sack.length} item${me.sack.length === 1 ? '' : 's'} and ${me.gold} gold.</p>
+        <div class="row"><button class="btn ${mine === 'rest' ? 'primary' : ''}" id="mRest">Vote rest${mine === 'rest' ? ' (voted)' : ''}</button><button class="btn ${mine === 'extract' ? 'primary' : ''}" id="mExtract">Vote extract${mine === 'extract' ? ' (voted)' : ''}</button></div>
+        <p style="margin-top:8px">${votes}</p>`);
+      $('mRest').onclick = () => netAct({ t: 'camp', choice: 'rest' });
+      $('mExtract').onclick = () => netAct({ t: 'camp', choice: 'extract' });
+      return;
+    }
     if (p.type === 'rest') {
       const sackN = run.sack.length;
       modal(`<h2>Rest site</h2><p>The fire is warm. You can rest, or pack up and leave the March with what you carry.</p>
@@ -2809,17 +3135,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       $('mExtract').onclick = () => { run.extract(); closeModal(); renderMap(); };
     } else if (p.type === 'shrine') {
       modal(`<h2>${esc(p.shrine.name)}</h2><p>${esc(p.shrine.text)}</p><div class="row"><button class="btn primary" id="mOk">Continue</button></div>`);
-      $('mOk').onclick = () => { run.closePending(); closeModal(); renderMap(); };
+      $('mOk').onclick = () => { if (!run.online) run.closePending(); closeModal(); renderMap(); };
     } else if (p.type === 'merchant') {
-      let buyer = 0;
-      const draw = () => {
+      let buyer = run.online ? run.myMi : 0;
+      const draw = redrawShop = () => {
         const bm = run.members[buyer] || run.m0, bank = run.bankOf(bm);
         const full = bm.orders.length >= bm.stashFree;
-        $('modalBox').innerHTML = `<h2>Merchant</h2><p>${run.solo ? '' : `Ordering for <select id="mBuyer">${run.members.map((m, i) => `<option value="${i}" ${i === buyer ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select>. `}Banked gold: <b>${bank}</b>${bm.orders.length ? ` &middot; ${bm.orders.length} order${bm.orders.length === 1 ? '' : 's'} placed` : ''}. Pay from the bank and the merchant brings it back to town: it waits in your stash, even if you die out here.${full ? ' <b>Your stash is full.</b>' : ''}</p>
+        $('modalBox').innerHTML = `<h2>Merchant</h2><p>${run.solo || run.online ? '' : `Ordering for <select id="mBuyer">${run.members.map((m, i) => `<option value="${i}" ${i === buyer ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select>. `}Banked gold: <b>${bank}</b>${bm.orders.length ? ` &middot; ${bm.orders.length} order${bm.orders.length === 1 ? '' : 's'} placed` : ''}. Pay from the bank and the merchant brings it back to town: it waits in your stash, even if you die out here.${full ? ' <b>Your stash is full.</b>' : ''}</p>
         <div class="shop">${p.stock.map((it, i) => { const cur = bm.gear.find(g => g.slot === run.slotFor(it, bm.idx)); return itemHtml(it, `<div class="il">Compare: ${cur ? esc(cur.name) + ' (ilvl ' + cur.ilvl + ')' : 'empty ' + run.slotFor(it, bm.idx)}</div><div><button class="btn" data-buy="${i}" ${it.sold || bank < it.price || full ? 'disabled' : ''}>${it.sold ? 'Ordered' + (run.solo ? '' : ' by ' + esc(run.members[it.buyer].name)) : 'Order for ' + it.price + ' gold'}</button></div>`); }).join('')}</div>
-        <div class="row"><button class="btn primary" id="mLeave">Leave</button></div>`;
-        $('mLeave').onclick = () => { run.closePending(); closeModal(); renderMap(); };
-        for (const b of $('modalBox').querySelectorAll('[data-buy]')) b.onclick = () => { run.buy(+b.dataset.buy, buyer); draw(); renderSide(); };
+        <div class="row"><button class="btn primary" id="mLeave">${run.online ? 'Close (vote on the map to move on)' : 'Leave'}</button></div>`;
+        $('mLeave').onclick = () => { if (!run.online) run.closePending(); redrawShop = null; closeModal(); renderMap(); };
+        for (const b of $('modalBox').querySelectorAll('[data-buy]')) b.onclick = () => { if (run.online) { b.disabled = true; netAct({ t: 'buy', i: +b.dataset.buy }); return; } run.buy(+b.dataset.buy, buyer); draw(); renderSide(); };
         if ($('mBuyer')) $('mBuyer').onchange = (e) => { buyer = +e.target.value; draw(); };
       };
       $('modal').hidden = false; draw(); $('mLeave').focus();
@@ -2834,8 +3160,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       <dl class="kv"><dt>Furthest row</dt><dd>${run.currentRow() > ROWS ? 'Boss' : run.currentRow()}</dd><dt>Fights won</dt><dd>${run.fightsWon}</dd><dt>Items kept</dt><dd>${k.items.length}</dd><dt>Gold kept</dt><dd>${k.gold}</dd></dl>
       <div class="list">${k.items.map(it => itemHtml(it)).join('') || '<span class="muted">Nothing kept.</span>'}</div>
       <div class="row"><button class="btn primary" id="mNew">Return to camp</button><button class="btn" id="mMap">Look at the map</button></div>`);
-    if (!run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run); save(); }
-    $('mNew').onclick = () => { closeModal(); run = null; townReturn = true; show('start'); renderHub(); };
+    if (!run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run, run.myMi); save(); }
+    $('mNew').onclick = backToTown;
     $('mMap').onclick = () => closeModal();
   }
 
@@ -2846,21 +3172,22 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       <dl class="kv"><dt>Furthest row</dt><dd>${run.currentRow() > ROWS ? 'Boss' : run.currentRow()}</dd><dt>Fights won</dt><dd>${run.fightsWon}</dd></dl>
       ${run.members.map(m => { const k = m.kept || { items: [], gold: 0 }; return `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${k.items.length} item${k.items.length === 1 ? '' : 's'}, ${k.gold} gold${m.orders.length ? `, ${m.orders.length} order${m.orders.length === 1 ? '' : 's'}` : ''}</div><div class="list">${k.items.map(it => itemHtml(it)).join('')}</div>`; }).join('')}
       <div class="row"><button class="btn primary" id="mNew">Return to camp</button><button class="btn" id="mMap">Look at the map</button></div>`);
-    if (!run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run); save(); }
-    $('mNew').onclick = () => { closeModal(); run = null; townReturn = true; show('start'); renderHub(); };
+    if (!run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run, run.myMi); save(); }
+    $('mNew').onclick = backToTown;
     $('mMap').onclick = () => closeModal();
   }
 
   // ---------- combat UI
   let viewHero = null;
-  function hero() { if (cb.phase === 'player' && cb.current && cb.current.isPlayer) viewHero = cb.current; if (!viewHero || !cb.players.includes(viewHero)) viewHero = cb.players[0]; return viewHero; }
-  function startCombatUI() { viewHero = null; selected = null; busy = false; lastHp = {}; lastBlock = {}; show('combat'); snapshot(); render(); pump(); }
+  function hero() { if (cb.myMi != null) return (viewHero = cb.players[cb.myMi]); if (cb.phase === 'player' && cb.current && cb.current.isPlayer) viewHero = cb.current; if (!viewHero || !cb.players.includes(viewHero)) viewHero = cb.players[0]; return viewHero; }
+  function startCombatUI() { closeModal(); if (run && run.online) cb.myMi = run.myMi; viewHero = null; selected = null; busy = false; lastHp = {}; lastBlock = {}; show('combat'); snapshot(); render(); pump(); }
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
   async function pump() {
     if (busy) return; busy = true;
     while (cb && cb.phase === 'enemy' && !cb.over) { render(); await sleep(settings.fast ? 140 : 400); cb.enemyStep(); render(true); }
     busy = false; render();
-    if (cb.over) combatOver();
+    if (cb && cb.over) combatOver();
+    if (netOn()) netDrain();
   }
   function snapshot() { for (const a of [...cb.players, ...cb.enemies]) { lastHp[a.id] = a.hp; lastBlock[a.id] = a.block; } }
   function figure(a) {
@@ -2904,7 +3231,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     }).join('') || '<span class="tag">no cards</span>';
   }
   function unitHtml(a) {
-    const isNow = cb.current === a && !cb.over, targetable = !a.isPlayer && a.hp > 0 && selected && CARDS[selected.key].target === 'enemy';
+    const isNow = cb.current === a && !cb.over, targetable = (cb.duel ? a.isPlayer && a !== hero() : !a.isPlayer) && a.hp > 0 && selected && CARDS[selected.key].target === 'enemy';
     const pct = Math.max(0, 100 * a.hp / a.maxHp), ini = cb.initiative(a);
     const sub = a.isPlayer ? `Init ${ini}` : `${a.tier === 'Elite' || a.tier === 'Boss' ? a.tier + ' &middot; ' : ''}${a.type} &middot; weak ${a.weakTo} &middot; Init ${ini}`;
     return `<div class="unit ${isNow ? 'active' : ''} ${a.isPlayer && cb.partySize > 1 && a === viewHero && !isNow ? 'viewing' : ''} ${a.hp <= 0 ? 'dead' : ''} ${targetable ? 'targetable' : ''}" data-id="${a.id}" ${targetable ? 'role="button" tabindex="0"' : ''}>
@@ -2913,7 +3240,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       <div class="figure">${figure(a)}</div>
       <div class="uname"><b ${a.isPlayer ? `style="color:${CC[a.cls]}"` : ''}>${esc(a.name)}</b><small>${sub}</small></div>
       <div class="bar"><i style="width:${pct}%"></i><span>${a.hp} / ${a.maxHp}</span></div>
-      <div class="tags">${tags(a)}</div></div>`;
+      <div class="tags">${tags(a)}${cb.duel && a !== hero() ? `<span class="tag">Hand ${a.hand.length} &middot; Mana ${a.mana}</span>` : ''}</div></div>`;
   }
   function popups() {
     for (const a of [...cb.players, ...cb.enemies]) {
@@ -2929,22 +3256,24 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (!cb) return;
     const p = hero(), party = cb.partySize > 1;
     $('order').innerHTML = `<span class="lbl">Turn order</span>` + cb.order.map((id, i) => { const a = cb.actorById(id); return `<span class="chip ${i === cb.turnIndex && !cb.over ? 'now' : ''} ${a.hp <= 0 ? 'dead' : ''}">${a.isPlayer ? (party ? esc(a.name) : 'You') : esc(a.name)} ${cb.initiative(a)}</span>`; }).join('') + `<span class="round">Round ${cb.round}</span>`;
-    $('playerSlot').className = party ? 'party' : ''; $('playerSlot').innerHTML = cb.players.map(unitHtml).join('');
-    $('foes').innerHTML = cb.enemies.map(unitHtml).join('');
+    const mine = cb.duel ? [p] : cb.players, foes = cb.duel ? cb.players.filter(x => x !== p) : cb.enemies;
+    $('playerSlot').className = party && !cb.duel ? 'party' : ''; $('playerSlot').innerHTML = mine.map(unitHtml).join('');
+    $('foes').innerHTML = foes.map(unitHtml).join('');
     if (withPops) popups(); else snapshot();
     $('orb').textContent = p.mana;
     $('manaSub').textContent = `max ${p.maxMana} · +${p.regen} per turn`;
     const fat = [...p.drawPile, ...p.hand, ...p.discard].filter(c => CARDS[c.key].type === 'Status').length;
     $('piles').innerHTML = `<button class="pilebtn" data-pile="draw">Draw pile <b>${p.drawPile.length}</b></button><button class="pilebtn" data-pile="discard">Discard <b>${p.discard.length}</b></button><button class="pilebtn" data-pile="exhaust">Exhaust <b>${p.exhaust.length}</b></button><span>Draws <b>${p.draw}</b>/round</span>${fat ? `<span>Status cards <b>${fat}</b></span>` : ''}${cb.pressure() ? `<span>Pressure <b>+${Math.round(cb.pressure() * 100)}%</b></span>` : ''}`;
-    const myTurn = cb.phase === 'player' && !cb.over;
+    const myTurn = cb.phase === 'player' && !cb.over && (cb.myMi == null || cb.current === p);
     $('btnEnd').disabled = !myTurn || busy;
     const hint = $('hint'); hint.classList.remove('alert');
     if (cb.over) hint.textContent = cb.over === 'win' ? 'Victory.' : 'Defeat.';
-    else if (!myTurn) hint.textContent = `${cb.current ? (cb.current.isPlayer ? (party ? cb.current.name : 'You') : cb.current.name) : ''} acting...`;
+    else if (!myTurn) hint.innerHTML = `${cb.current ? esc(cb.current.isPlayer ? (party ? cb.current.name : 'You') : cb.current.name) : ''} ${cb.current && cb.current.isPlayer && cb.myMi != null ? 'is taking their turn' : 'acting'}...<span id="tclock"></span>`;
     else if (selected) { hint.textContent = `Choose a target for ${CARDS[selected.key].name} (Esc to cancel).`; hint.classList.add('alert'); }
+    else if (cb.myMi != null) hint.innerHTML = `Your turn. Click a card to play it. E ends your turn.<span id="tclock"></span>`;
     else hint.textContent = party ? `${p.name}'s turn. Click a card to play it. E ends ${p.name}'s turn.` : 'Your turn. Click a card to play it. E ends your turn.';
     $('hand').innerHTML = p.hand.map(c => {
-      const d = cb.card(c), chk = cb.canPlay(c), face = d.type !== 'Status' && cardFace(d);
+      const d = cb.card(c), chk = myTurn ? cb.canPlay(c) : { ok: false, why: cb.over ? 'Fight over' : 'Not your turn' }, face = d.type !== 'Status' && cardFace(d);
       const n = p.hand.length, k = p.hand.indexOf(c), mid = (n - 1) / 2, rot = (k - mid) * Math.min(5, 26 / Math.max(1, n)), off = Math.abs(k - mid) ** 1.6 * 4;
       if (face) return `<button class="${cardCls(d)} ${selected && selected.uid === c.uid ? 'selected' : ''}" style="${cardVars(d)};--rot:${rot.toFixed(1)};--off:${off.toFixed(1)};--z:${k + 1}" data-uid="${c.uid}" ${chk.ok && !busy ? '' : 'disabled'} title="${chk.ok ? (d.target === 'enemy' ? 'Single enemy' : d.target === 'all' ? 'All enemies' : 'Self') : esc(chk.why)}" aria-label="${esc(d.name + ', ' + d.cost + ' mana: ' + d.text)}">${face}</button>`;
       return `<button class="card ${d.type === 'Status' ? 'status' : ''} ${selected && selected.uid === c.uid ? 'selected' : ''}" style="--rc:${RC[d.rarity]}" data-uid="${c.uid}" ${chk.ok && !busy ? '' : 'disabled'} title="${chk.ok ? '' : esc(chk.why)}">
@@ -2996,6 +3325,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   $('modal').addEventListener('click', (ev) => { if (ev.target === $('modal') && $('mClose')) closeModal(); });
 
   function combatOver() {
+    if (cb && cb.duel) { if (!cb._shown) { cb._shown = true; duelOver(); } return; }
+    if (!run || !run.combat) return;
     const result = run.finishCombat();
     if (!result) return;
     if (result.result === 'loss') { show('map'); renderMap(true); return; }
@@ -3003,7 +3334,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const isBoss = run.over === 'victory';
     if (!run.solo) {
       modal(`<h2>${isBoss ? 'The Warlord falls' : 'Victory'}</h2><p>Won in ${result.rounds} rounds. Each hero rolled their own loot.</p>
-        ${run.members.map((m, i) => { const r = result.per[i]; return `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${m.hp}/${m.stats.maxHp} HP${r.fell ? ' (fell: sack lost, back up at half HP)' : ''} &middot; +${r.gold} gold</div><div class="list">${r.drops.map(it => itemHtml(it)).join('') || '<span class="muted">No gear or cards.</span>'}</div>`; }).join('')}
+        ${run.members.map((m, i) => run.online && i !== run.myMi ? `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${m.hp}/${m.stats.maxHp} HP${result.per[i].fell ? ' (fell)' : ''} &middot; ${result.per[i].drops.length} drop${result.per[i].drops.length === 1 ? '' : 's'}, +${result.per[i].gold} gold</div>` : (() => { const r = result.per[i]; return `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${m.hp}/${m.stats.maxHp} HP${r.fell ? ' (fell: sack lost, back up at half HP)' : ''} &middot; +${r.gold} gold</div><div class="list">${r.drops.map(it => itemHtml(it)).join('') || '<span class="muted">No gear or cards.</span>'}</div>`; })()).join('')}
         <div class="row"><button class="btn primary" id="mBack">${isBoss ? 'See the results' : 'Back to the map'}</button></div>`);
       $('mBack').onclick = () => { closeModal(); show('map'); renderMap(true); };
       return;
@@ -3032,9 +3363,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const c = hero().hand.find(x => x.uid === b.dataset.uid); if (!c) return;
     const d = CARDS[c.key];
     if (d.target === 'enemy' && cb.alive().length > 1) { selected = (selected && selected.uid === c.uid) ? null : c; render(); return; }
-    selected = null; cb.play(c.uid, cb.alive()[0] && cb.alive()[0].id); render(true); if (cb.over) combatOver();
+    selected = null; const tgt = cb.alive()[0] && cb.alive()[0].id;
+    if (cb.myMi != null) { b.disabled = true; netAct({ t: 'play', uid: c.uid, tgt }); return; }
+    cb.play(c.uid, tgt); render(true); if (cb.over) combatOver();
   });
-  function pickTarget(id) { if (!selected) return; const c = selected; selected = null; cb.play(c.uid, id); render(true); if (cb.over) combatOver(); }
+  function pickTarget(id) { if (!selected) return; const c = selected; selected = null; if (cb.myMi != null) { render(); netAct({ t: 'play', uid: c.uid, tgt: id }); return; } cb.play(c.uid, id); render(true); if (cb.over) combatOver(); }
   $('foes').addEventListener('click', (ev) => { const u = ev.target.closest('.unit.targetable'); if (u) pickTarget(u.dataset.id); });
   $('foes').addEventListener('keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('.unit.targetable')) { ev.preventDefault(); pickTarget(ev.target.dataset.id); } });
   document.addEventListener('keydown', (ev) => {
@@ -3048,7 +3381,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     }
     if ((ev.key === 'e' || ev.key === 'E') && !$('scrCombat').hidden && $('modal').hidden && !ev.target.matches('select, input') && !$('btnEnd').disabled) $('btnEnd').click();
   });
-  $('btnEnd').addEventListener('click', () => { if (busy || cb.phase !== 'player') return; selected = null; cb.endPlayerTurn(); render(true); pump(); });
+  $('btnEnd').addEventListener('click', () => { if (busy || cb.phase !== 'player') return; selected = null; if (cb.myMi != null) { $('btnEnd').disabled = true; netAct({ t: 'end' }); return; } cb.endPlayerTurn(); render(true); pump(); });
   renderHub(); show('title'); connectAccount();
 })();
 </script>

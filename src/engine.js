@@ -209,8 +209,10 @@ class Combat {
     this.hpMult = Math.pow(1.5, this.level) * this.partyScale; this.dmgMult = Math.pow(1.3, this.level); // each extra hero: +70% enemy HP
     this.levelHpMult = Math.pow(1.5, this.level);
     this.typeResist = Math.min(1, 0.05 + 0.05 * this.level);
-    this.enemies = this.opts.enemies.map((key, i) => this.makeEnemy(key, i));
-    this.say('sys', `Fight starts. Map level +${this.level}${this.partySize > 1 ? `, party of ${this.partySize}` : ''}: enemy HP x${this.hpMult.toFixed(2)}${this.partySize > 1 ? ` and +${this.partySize - 1} card draw` : ''}, damage x${this.dmgMult.toFixed(2)}; enemies resist their own type by ${Math.round(this.typeResist * 100)}%.`);
+    this.duel = !!this.opts.duel; // duel: two heroes, no monsters; each hero's "enemies" are the other hero
+    this.enemies = this.duel ? [] : this.opts.enemies.map((key, i) => this.makeEnemy(key, i));
+    if (this.duel) this.say('sys', `Duel: ${this.players.map(p => p.name).join(' vs ')}. Last hero standing wins. From round ${PRESSURE_START} every hit lands harder.`);
+    else this.say('sys', `Fight starts. Map level +${this.level}${this.partySize > 1 ? `, party of ${this.partySize}` : ''}: enemy HP x${this.hpMult.toFixed(2)}${this.partySize > 1 ? ` and +${this.partySize - 1} card draw` : ''}, damage x${this.dmgMult.toFixed(2)}; enemies resist their own type by ${Math.round(this.typeResist * 100)}%.`);
     this.startRound();
   }
 
@@ -225,6 +227,7 @@ class Combat {
       strTurn: 0, strCombat: 0, weak: 0, vulnerable: 0, bleed: 0, slow: 0, initNext: 0, defNext: 0, manaNext: 0, drawLess: 0,
       stealth: false, locked: false, disarmed: false, disarmNext: false, negateDebuff: false, nextAttackMult: 1, nextSkillMult: 1,
       attackedThisRound: false, drawPile: [], hand: [], discard: [], exhaust: [], reshuffles: 0, firstTurn: true, dead: false,
+      poison: 0, burn: 0, chill: 0, frozen: false, regenDown: [], uid: spec.uid || null,
     };
     if (buffs.resist) for (const el of ELEMENTS) p.resist[el] = Math.min(75, (p.resist[el] || 0) + buffs.resist);
     const deck = [];
@@ -256,9 +259,11 @@ class Combat {
   }
 
   say(kind, text) { this.log.push({ round: this.round, kind, text }); }
-  alive() { return this.enemies.filter(e => e.hp > 0); }
+  foes() { return this.enemies.filter(e => e.hp > 0); } // monsters only
+  // what the acting hero can hit: monsters, or in a duel the other hero (unless they are in Stealth and the card is single-target)
+  alive() { return this.duel ? this.players.filter(p => p !== this.player && p.hp > 0) : this.foes(); }
   initiative(a) { return a.baseInit + (a.initNext || 0) - (a.slow || 0) - (a.chill || 0); }
-  pressure() { return this.round >= PRESSURE_START ? (this.round - PRESSURE_START + 1) * PRESSURE_STEP : 0; }
+  pressure() { return this.round >= PRESSURE_START ? (this.round - PRESSURE_START + 1) * PRESSURE_STEP * (this.duel ? 5 : 1) : 0; } // duels ramp 5x faster so they end
   card(c) { return c.rank ? (c._v || (c._v = rankedCard(c.key, c.rank))) : C[c.key]; }
   addToHand(key) { const p = this.player; const c = { uid: 'c' + (this._uid++), key }; if (p.hand.length >= 10) { p.discard.push(c); this.say('sys', `Hand full: ${C[key].name} went to the discard pile.`); } else p.hand.push(c); }
   statusCount() { const p = this.player; return [...p.drawPile, ...p.hand, ...p.discard].filter(c => C[c.key].type === 'Status').length; }
@@ -278,7 +283,7 @@ class Combat {
 
   startRound() {
     this.round++;
-    this.say('round', `Round ${this.round}` + (this.pressure() ? ` (Pressure: enemies deal +${Math.round(this.pressure() * 100)}%)` : ''));
+    this.say('round', `Round ${this.round}` + (this.pressure() ? ` (Pressure: ${this.duel ? 'every hit deals' : 'enemies deal'} +${Math.round(this.pressure() * 100)}%)` : ''));
     for (const p of this.alivePlayers()) {
       this.player = p; p.attackedThisRound = false;
       const n = Math.max(0, p.draw - p.drawLess);
@@ -286,12 +291,12 @@ class Combat {
       p.drawLess = 0;
       this.drawCards(p, n);
     }
-    for (const e of this.alive()) if (this.round === 1) this.drawCards(e, e.draw);
-    const actors = [...this.alivePlayers(), ...this.alive()].map(a => ({ a, ini: this.initiative(a), tie: this.rng() }));
+    for (const e of this.foes()) if (this.round === 1) this.drawCards(e, e.draw);
+    const actors = [...this.alivePlayers(), ...this.foes()].map(a => ({ a, ini: this.initiative(a), tie: this.rng() }));
     actors.sort((x, y) => y.ini - x.ini || y.tie - x.tie);
     this.order = actors.map(x => x.a.id);
     this.turnIndex = -1;
-    for (const e of this.alive()) this.planEnemy(e);
+    for (const e of this.foes()) this.planEnemy(e);
     this.say('sys', 'Turn order: ' + actors.map(x => `${x.a.isPlayer ? this.who(x.a) : x.a.name} (${x.ini})`).join(' > '));
     this.nextTurn();
   }
@@ -318,6 +323,7 @@ class Combat {
     this.beginTurn(a);
     if (this.over) return;
     if (a.hp <= 0) { this.nextTurn(); return; }
+    if (a.isPlayer && a.frozen) { a.frozen = false; this.say('crit', `${a.name} is Frozen and loses the turn.`); a.discard.push(...a.hand.splice(0)); if (a.chill) a.chill = 0; this.nextTurn(); return; }
     if (!a.isPlayer && a.frozen) { a.frozen = false; this.say('enemy', `${a.name} is Frozen and loses its turn.`); a.plan = []; a.discard.push(...a.hand.splice(0)); this.drawCards(a, a.draw); this.planEnemy(a); this.nextTurn(); return; }
     this.phase = a.isPlayer ? 'player' : 'enemy';
   }
@@ -325,8 +331,10 @@ class Combat {
   beginTurn(a) {
     if (!a.isPlayer && this.opts.blockReset !== 'none' && a.block) { a.block = 0; a.parryBack = 0; }
     if (a.isPlayer && this.opts.blockReset === 'all' && a.block) { this.say('player', `Your ${a.block} ${a.defName} fades.`); a.block = 0; }
-    if (a.isPlayer && this.opts.blockReset === 'decay' && a.block) { const kept = Math.floor(a.block / 2); this.say('player', `Half your ${a.defName} fades: ${a.block} -> ${kept}.`); a.block = kept; }
-    const regen = a.isPlayer ? a.regen : this.effRegen(a);
+    if (a.isPlayer && this.opts.blockReset === 'decay' && a.block) { const kept = Math.floor(a.block / 2); this.say('player', `${this.partySize > 1 ? 'Half of ' + a.name + "'s" : 'Half your'} ${a.defName} fades: ${a.block} -> ${kept}.`); a.block = kept; }
+    if (a.isPlayer && a.regenDown.length) { for (const r of a.regenDown) r.turns--; }
+    const regen = a.isPlayer ? Math.max(0, a.regen - a.regenDown.reduce((s, x) => s + x.n, 0)) : this.effRegen(a);
+    if (a.isPlayer) a.regenDown = a.regenDown.filter(r => r.turns > 0);
     const extra = a.isPlayer ? a.manaNext : 0;
     const gain = regen * (a.firstTurn ? 2 : 1) + extra;
     const before = a.mana;
@@ -394,6 +402,7 @@ class Combat {
     if (a.isPlayer) {
       if (a.dead) return;
       a.dead = true; a.block = 0; a.bleed = 0; a.discard.push(...a.hand.splice(0));
+      if (this.duel) { this.winner = this.alivePlayers()[0] || null; this.say('win', `${a.name} falls. ${this.winner ? this.winner.name + ' wins the duel' : 'The duel is a draw'} in ${this.round} round${this.round > 1 ? 's' : ''}.`); this.over = 'duel'; this.phase = 'over'; return; }
       if (!this.alivePlayers().length) { this.say('loss', this.partySize > 1 ? 'The whole party falls.' : 'You fall.'); this.over = 'loss'; this.phase = 'over'; return; }
       this.say('loss', `${a.name} falls! The rest of the party fights on.`);
       if (this.current === a && this.phase === 'player') { this.phase = 'between'; this.nextTurn(); }
@@ -401,7 +410,7 @@ class Combat {
     }
     a.bleed = a.poison = a.burn = 0; a.block = 0;
     this.say('kill', `${a.name} dies.`);
-    if (this.alive().length === 0) { this.say('win', `Victory in ${this.round} round${this.round > 1 ? 's' : ''}.`); this.over = 'win'; this.phase = 'over'; }
+    if (this.foes().length === 0) { this.say('win', `Victory in ${this.round} round${this.round > 1 ? 's' : ''}.`); this.over = 'win'; this.phase = 'over'; }
   }
 
   typeMod(e, dtype) {
@@ -422,8 +431,9 @@ class Combat {
     const crit = this.rng() * 100 < p.crit;
     const tm = this.typeMod(e, dtype);
     const weakMod = 1 - Math.min(p.weak, 90) / 100, vulnMod = 1 + e.vulnerable / 100;
+    const pvp = e.isPlayer ? (1 - Math.min(75, e.resist[dtype] || 0) / 100) * (1 + this.pressure()) : 1;
     const setup = kind === 'Attack' ? (this._attackMult || 1) : (this._skillMult || 1);
-    const dmg = Math.max(0, Math.round(base * (1 + stat / 100) * (1 + elem / 100) * weakMod * (crit ? p.critMult : 1) * tm * vulnMod * setup));
+    const dmg = Math.max(0, Math.round(base * (1 + stat / 100) * (1 + elem / 100) * weakMod * (crit ? p.critMult : 1) * tm * vulnMod * setup * pvp));
     const parts = [`${base}`];
     if (stat) parts.push(`x ${(1 + stat / 100).toFixed(2)} ${kind === 'Attack' ? 'Strength' : 'Intelligence'}`);
     if (elem) parts.push(`x ${(1 + elem / 100).toFixed(2)} ${dtype} bonus`);
@@ -432,10 +442,11 @@ class Combat {
     if (crit) parts.push(`x ${p.critMult.toFixed(2)} CRIT`);
     if (tm !== 1) parts.push(`x ${tm.toFixed(2)} ${tm > 1 ? dtype + ' weakness' : dtype + ' resist'}`);
     if (e.vulnerable) parts.push(`x ${vulnMod.toFixed(2)} Vulnerable`);
+    if (pvp !== 1) parts.push(`x ${pvp.toFixed(2)} resist/Pressure`);
     const r = this.applyHit(p, e, dmg, { defer: true });
     this.say(crit ? 'crit' : 'player', `${label} hits ${e.name}: ${parts.join(' ')} = ${dmg}` + (r.absorbed ? `, ${r.absorbed} blocked` : '') + `. HP ${e.hp}/${e.maxHp}.`);
     if (kind === 'Attack' && e.parryBack && r.absorbed && e.hp > 0) { const back = this.applyHit(e, p, Math.round(e.parryBack * this.dmgMult), { defer: true }); this.say('enemy', `${e.name} parries and strikes back: ${back.lost} HP lost.`); e.parryBack = 0; }
-    if (kind === 'Attack' && e.thorns && e.hp > 0) { const t = this.applyHit(e, p, e.thorns, { defer: true }); this.say('enemy', `${e.name}'s spikes: you lose ${t.lost} HP.`); }
+    if (kind === 'Attack' && e.thorns && e.hp > 0) { const t = this.applyHit(e, p, e.thorns, { defer: true }); this.say('enemy', `${e.name}'s ${e.isPlayer ? 'Thorns' : 'spikes'}: ${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${t.lost} HP.`); }
     if (kind === 'Attack' && p.bleedChance && e.hp > 0 && this.rng() * 100 < p.bleedChance) { e.bleed += 3; this.say('crit', `Bleed Chance: ${e.name} gains 3 Bleed.`); }
     if (p.lifesteal && r.lost) this.heal(p, Math.round(r.lost * p.lifesteal / 100), 'Lifesteal', true);
     if (p.hp <= 0) { this.onDeath(p); return r.lost; }
@@ -480,6 +491,7 @@ class Combat {
     if (p.locked && d.cost > 0) return { ok: false, why: 'In Stealth: 0-cost only' };
     if (p.disarmed && d.type === 'Attack') return { ok: false, why: 'Disarmed' };
     if (d.cost > p.mana) return { ok: false, why: `Needs ${d.cost} mana` };
+    if (this.duel && d.target === 'enemy' && !this.alive().some(x => !x.stealth)) return { ok: false, why: 'Target is in Stealth' };
     return { ok: true };
   }
 
@@ -490,10 +502,11 @@ class Combat {
     const c = p.hand[idx]; const d = this.card(c);
     if (!this.canPlay(c).ok) return false;
     let tgt = null;
-    if (d.target === 'enemy') { tgt = this.enemies.find(e => e.id === targetId && e.hp > 0) || this.alive()[0]; if (!tgt) return false; }
+    if (d.target === 'enemy') { const pool = this.alive().filter(x => !x.stealth); tgt = pool.find(e => e.id === targetId) || pool[0]; if (!tgt) return false; }
     p.mana -= d.cost; p.hand.splice(idx, 1); this.stats.cardsPlayed++;
-    this.say('card', `You play ${d.name}${d.cost ? ' (' + d.cost + ' mana)' : ''}` + (tgt ? ` on ${tgt.name}` : '') + `. Mana ${p.mana}.`);
+    this.say('card', `${this.partySize > 1 ? p.name + ' plays' : 'You play'} ${d.name}${d.cost ? ' (' + d.cost + ' mana)' : ''}` + (tgt ? ` on ${tgt.name}` : '') + `. Mana ${p.mana}.`);
     if (d.target === 'all' && p.stealth) p.stealth = false;
+    if (this.duel && d.target === 'all') for (const x of this.alive()) if (x.stealth) { x.stealth = false; this.say('player', `${x.name}'s Stealth is broken.`); }
     this._playing = d; this._rankMult = d.mult || 1;
     this._attackMult = d.type === 'Attack' ? p.nextAttackMult : 1;
     this._skillMult = (d.type === 'Skill' && d.tags.dmg) ? p.nextSkillMult : 1;
@@ -514,7 +527,7 @@ class Combat {
     p.discard.push(...p.hand.splice(0));
     if (kept) this.say('player', `End turn: ${kept} card${kept > 1 ? 's' : ''} discarded.`);
     p.strTurn = 0; p.disarmed = false; p.locked = false;
-    p.weak = Math.floor(p.weak / 2); p.vulnerable = Math.floor(p.vulnerable / 2); if (p.slow) p.slow = Math.max(0, p.slow - 1);
+    p.weak = Math.floor(p.weak / 2); p.vulnerable = Math.floor(p.vulnerable / 2); if (p.slow) p.slow = Math.max(0, p.slow - 1); if (p.chill) p.chill = Math.max(0, p.chill - 1);
     this.nextTurn();
   }
 
@@ -619,7 +632,7 @@ class Combat {
 
   endRound() {
     for (const e of this.enemies) e.strTurn = 0;
-    if (this.round >= 60) { this.over = 'loss'; this.phase = 'over'; this.say('loss', 'Stalemate after 60 rounds.'); return; }
+    if (this.round >= (this.duel ? 30 : 60)) { this.over = 'loss'; this.phase = 'over'; this.say('loss', 'Stalemate after 60 rounds.'); return; }
     this.startRound();
   }
 }

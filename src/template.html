@@ -568,9 +568,9 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     $('hubWagon').innerHTML = `<h3 style="font-size:24px;color:var(--accent)">The Wagon</h3>
       <div class="field" style="margin:8px 0"><label for="selLevel">Map 1: The Broken March &middot; level <b id="lvlOut">+${lvl}</b></label><input type="range" id="selLevel" min="0" max="19" step="1" value="${lvl}"></div>
       <p class="savenote" id="lvlInfo"></p>
-      <fieldset class="partypick"><legend>Party (play them all yourself, in Initiative order)</legend>${Object.keys(CLASSES).filter(k => profile.chars[k]).map(k => `<label><input type="checkbox" data-party="${k}" ${k === heroCls ? 'checked disabled' : (profile.last.party || []).includes(k) ? 'checked' : ''}> ${esc(profile.chars[k].name)} <span class="muted">(${k})</span></label>`).join('')}</fieldset>
-      <p class="savenote" id="partyNote" style="margin:4px 0 0"></p>
-      <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn primary" id="btnStart" ${chk.ok ? '' : 'disabled'}>Set out</button></div>
+      ${onlineParty() ? onlineWagonHtml() : `<fieldset class="partypick"><legend>Party (play them all yourself, in Initiative order)</legend>${Object.keys(CLASSES).filter(k => profile.chars[k]).map(k => `<label><input type="checkbox" data-party="${k}" ${k === heroCls ? 'checked disabled' : (profile.last.party || []).includes(k) ? 'checked' : ''}> ${esc(profile.chars[k].name)} <span class="muted">(${k})</span></label>`).join('')}</fieldset>
+      <p class="savenote" id="partyNote" style="margin:4px 0 0"></p>`}
+      <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn primary" id="btnStart" ${chk.ok && (!onlineParty() || SOC.party.leader === SOC.me) ? '' : 'disabled'}>${onlineParty() ? (SOC.party.leader === SOC.me ? `Set out with the party (${SOC.party.members.length})` : 'Waiting for the leader') : 'Set out'}</button></div>
       ${chk.ok ? '' : `<p class="down" style="margin:6px 0 0;font-size:13px">Fix your deck first: it ${chk.problems.join(', ')}.</p>`}
       <p class="savenote" style="margin:8px 0 0">Equipped gear and your deck are safe. Only the loot sack is at risk: die and it's gone. Extract at the row-7 campfire (there's always one) to keep 75%, at any later campfire to keep half, or kill the Warlord to keep it all. Anything you order from a merchant is paid from the bank and waits in your stash, even if you die.</p>
       <details style="margin-top:8px;font-size:13px;color:#d6cab6"><summary style="cursor:pointer;color:var(--text);font-weight:600">How a run works</summary>
@@ -584,13 +584,21 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     lvlInfo();
     $('btnStart').onclick = startRun;
     const partyNote = () => { const n = 1 + $('hubWagon').querySelectorAll('[data-party]:checked:not(:disabled)').length; $('partyNote').textContent = n > 1 ? `Party of ${n}: enemies get +${Math.round(85 * (n - 1))}% HP, mana and regen and draw ${n - 1} more card${n > 2 ? 's' : ''}. Every hero rolls their own loot; one who falls loses their sack and gets up at half HP.` : 'Solo run. Tick more heroes to bring a party.'; };
-    $('hubWagon').querySelector('.partypick').addEventListener('change', partyNote); partyNote();
+    if ($('partyNote')) { $('hubWagon').querySelector('.partypick').addEventListener('change', partyNote); partyNote(); }
     renderGearTab(c); renderDeckTab(c); renderLogTab(); renderShopTab(c);
     renderSaveNote(); renderTownBar(); if (!$('sheet').hidden) fitCards($('sheet'));
   }
 
+  // an online party (2+ players) rides out together from the leader's Wagon
+  function onlineParty() { return typeof SOC !== 'undefined' && socOn() && SOC.party && SOC.party.members.length > 1; }
+  function onlineWagonHtml() {
+    const pt = SOC.party, lead = pt.members.find(m => m.uid === pt.leader);
+    return `<div class="partypick" style="padding:8px 10px"><b>Online party</b> &middot; ${pt.members.map(m => `<span style="color:${CC[m.cls] || 'var(--text)'}">${esc(m.name)}</span>${m.uid === pt.leader ? ' <span class="muted">(leader)</span>' : ''}`).join(', ')}
+      <p class="savenote" style="margin:4px 0 0">${pt.leader === SOC.me ? 'You pick the map level and set out; everyone comes along.' : `${esc(lead ? lead.name : 'The leader')} picks the level and sets out; you'll ride along automatically.`} Each player brings their own hero, gear and deck and controls only that hero. The party votes on every step of the map (ties go to a coin flip). Enemies get +85% HP, mana and regen per extra hero. Everyone takes their own loot home.</p></div>`;
+  }
   function startRun() {
     const lvl = +$('selLevel').value;
+    if (onlineParty()) { if (SOC.party.leader !== SOC.me) return; profile.last.level = lvl; save(); $('sheet').hidden = true; netStart('run', SOC.party.members.map(m => m.uid), lvl); return; }
     const extra = [...$('hubWagon').querySelectorAll('[data-party]:checked:not(:disabled)')].map(x => x.dataset.party);
     const party = [heroCls, ...extra];
     for (const k of extra) { const d = CBHub.deckCheck(CBHub.char(profile, k).deck); if (!d.ok) return toast(`${k}'s deck ${d.problems.join(', ')}. Fix it at the Scribe first.`); }
@@ -1170,6 +1178,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   window.addEventListener('resize', () => { if (TOWN.running) sizeTown(); });
 
 /*SOCIAL*/
+/*NET*/
   let townReturn = false;
 
   // ---------- settings (this browser)
@@ -1212,6 +1221,8 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     modal(`<h2>Menu</h2><div class="menu">
       <button class="btn primary" id="mClose">Resume</button>
       ${inRun ? `<button class="btn" id="mnLeave">Leave run and return to town</button>` : ''}
+      ${cb && cb.duel && !cb.over ? `<button class="btn" id="mnForfeit">Forfeit the duel</button>` : ''}
+      ${cb && cb.duel && cb.over ? `<button class="btn" id="mnTown">Return to town</button>` : ''}
       ${run && run.over ? `<button class="btn" id="mnTown">Return to town</button>` : ''}
       ${!run && !onTitle ? `<button class="btn" id="mnHeroes">Switch hero</button>` : ''}
       ${supa ? (supaUser ? `<button class="btn" id="mnSignOut">Sign out (${esc(acctName(supaUser))})</button>` : `<button class="btn" id="mnSignIn">Sign in to save online</button>`) : ''}
@@ -1225,16 +1236,19 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       $('mClose').onclick = closeModal; $('mnConfirm').onclick = leaveRun;
     };
     if ($('mnTown')) $('mnTown').onclick = () => { closeModal(); toTown(); };
+    if ($('mnForfeit')) $('mnForfeit').onclick = () => { closeModal(); if (netOn()) netAct({ t: 'leave' }); else backToTown(); };
     if ($('mnHeroes')) $('mnHeroes').onclick = () => { closeModal(); $('sheet').hidden = true; show('title'); };
     if ($('mnSignIn')) $('mnSignIn').onclick = signInModal;
     if ($('mnSignOut')) $('mnSignOut').onclick = async () => { closeModal(); await supa.auth.signOut(); };
   }
   function toTown() {
-    if (run && run.over && !run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run); save(); }
-    cb = null; run = null; townReturn = true; show('start'); renderHub();
+    if (run && run.over && !run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run, run.myMi); save(); }
+    backToTown();
   }
+  function backToTown() { closeModal(); cb = null; run = null; if (netOn()) netEnd(); townReturn = true; show('start'); renderHub(); }
   function leaveRun() {
     if (!run) return closeModal();
+    if (netOn()) netLeave();
     cb = null; run.combat = null; run.pending = null;
     for (const m of run.members) m.kept = { items: [], gold: 0 };
     run.over = 'abandoned'; run.note('Left the March early. The loot sack is lost.');
@@ -1262,6 +1276,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       const label = vis ? `${t.label}${n.enemies ? ': ' + n.enemies.map(k => DATA.enemies[k].name).join(', ') : ''}, row ${n.row}` : `Unknown, row ${n.row}`;
       dots += `<g class="node ${isReach ? 'reach' : ''}" data-id="${n.id}" transform="translate(${p.x},${p.y})" ${isReach ? 'tabindex="0" role="button"' : ''} aria-label="${esc(label)}">
         <circle class="ring" r="${r}" fill="${fill}" stroke="${here ? '#d6a14a' : visited ? '#6b5a44' : vis ? '#4a3d31' : '#2a231c'}" stroke-width="2"/>
+        ${run.online && NET.s ? run.members.map((m, i) => NET.s.votes[i] === n.id ? `<circle cx="${-r + 4 + 9 * i}" cy="${r + 4}" r="4" fill="${CC[m.cls]}" stroke="#111"/>` : '').join('') : ''}
         ${vis ? `<path d="${t.path}" transform="scale(${n.id === 'boss' ? 1.25 : .95})" fill="${visited && !here ? '#6b5a44' : t.color}" opacity="${visited && !here ? .7 : 1}"/>` : `<text y="5" text-anchor="middle" fill="#4a3d31" font-size="15" font-weight="700">?</text>`}
       </g>`;
     }
@@ -1285,8 +1300,17 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     if (n.type === 'rest') s += `<span class="muted">Heal 30% of your max HP, or extract and keep ${n.campfire ? '75%' : 'half'} of your sack.</span>`;
     if (n.type === 'shrine') s += `<span class="muted">${esc(SHRINES.find(x => x.key === n.shrine).text)}</span>`;
     if (n.type === 'merchant') s += '<span class="muted">Order Map 1 gear with banked gold. It is delivered to your stash in town, even if you die.</span>';
-    s += `<div style="margin-top:6px" class="muted">Click a glowing node to travel there.</div>`;
+    s += run.online ? voteLine() : `<div style="margin-top:6px" class="muted">Click a glowing node to travel there.</div>`;
     el.innerHTML = s;
+  }
+  function voteLine() {
+    const S = NET.s; if (!S || run.over) return '';
+    const names = run.members.map((m, i) => S.gone[i] ? null : { m, i }).filter(Boolean);
+    const voted = names.filter(x => S.votes[x.i]), waiting = names.filter(x => !S.votes[x.i]);
+    const where = (id) => { const n = run.map.nodes[id]; return `${NODE[n.type].label.toLowerCase()} (row ${n.row > ROWS ? 'boss' : n.row})`; };
+    return `<div style="margin-top:6px" class="muted">Click a glowing node to vote. The party goes where most votes point; ties are a coin flip.</div>
+      ${voted.length ? `<div style="margin-top:4px">${voted.map(x => `<b style="color:${CC[x.m.cls]}">${esc(x.m.name)}</b> &rarr; ${where(S.votes[x.i])}`).join('<br>')}</div>` : ''}
+      ${voted.length && waiting.length ? `<div class="muted">Waiting for ${waiting.map(x => esc(x.m.name)).join(', ')} (up to ${VOTE_S}s).</div>` : ''}`;
   }
   $('mapScroll').addEventListener('click', (ev) => { const g = ev.target.closest('.node.reach'); if (g) travel(g.dataset.id); });
   $('mapScroll').addEventListener('keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('.node.reach')) { ev.preventDefault(); travel(ev.target.dataset.id); } });
@@ -1316,6 +1340,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   $('nodeInfo').addEventListener('click', (ev) => { const b = ev.target.closest('[data-loot]'); if (b) lootModal(b.dataset.loot); const d = ev.target.closest('[data-deck]'); if (d) deckModal(d.dataset.deck); });
 
   function travel(id) {
+    if (run.online) { if (NET.s && NET.s.gone[NET.s.mi]) return; netAct({ t: 'vote', node: id }); return; }
     if (!run.enter(id)) return;
     if (run.combat) { cb = run.combat; startCombatUI(); return; }
     renderMap();
@@ -1366,8 +1391,8 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   }
 
   function renderSideParty() {
-    $('charPanel').innerHTML = `<div class="charhead"><h3>Party</h3><span class="chip" title="Banked gold, shared: spent at merchants">Bank ${run.bankPool}</span></div>
-      ${run.members.map(m => `<div class="memrow" style="--mc:${CC[m.cls]}"><b>${esc(m.name)}</b><div class="bar"><i style="width:${100 * m.hp / m.stats.maxHp}%"></i><span>${m.hp} / ${m.stats.maxHp}</span></div><span class="chip" title="Sack: items and gold">${m.sack.length} &middot; ${m.gold}g</span></div>`).join('')}
+    $('charPanel').innerHTML = `<div class="charhead"><h3>Party</h3><span class="chip" title="Banked gold: spent at merchants">${run.online ? 'Your bank ' + run.bankOf(run.members[run.myMi]) : 'Bank ' + run.bankPool}</span></div>
+      ${run.members.map(m => `<div class="memrow" style="--mc:${CC[m.cls]}${m.left ? ';opacity:.45' : ''}"><b>${esc(m.name)}${run.online && m.idx === run.myMi ? ' <span class="muted">(you)</span>' : ''}${m.left ? ' <span class="muted">(left)</span>' : ''}</b><div class="bar"><i style="width:${100 * m.hp / m.stats.maxHp}%"></i><span>${m.hp} / ${m.stats.maxHp}</span></div><span class="chip" title="Sack: items and gold">${m.sack.length} &middot; ${m.gold}g</span></div>`).join('')}
       <dl class="kv" style="margin-top:6px"><dt>Fights won</dt><dd>${run.fightsWon}</dd><dt>Falls</dt><dd>${run.members.reduce((t, m) => t + m.deaths, 0)}</dd></dl>
       ${run.over ? '<div style="margin-top:8px"><button class="btn primary" id="btnCamp">Return to camp</button></div>' : ''}
       ${run.buffs.length ? '<div class="tags" style="margin-top:6px">' + run.buffs.map(x => `<span class="tag good">${esc(x.name.replace('Shrine of ', ''))}: ${x.fights} fight${x.fights > 1 ? 's' : ''}</span>`).join('') + '</div>' : ''}`;
@@ -1375,7 +1400,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     $('pGear').innerHTML = run.members.map(m => `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}</div>` + SLOTS.map(sl => { const it = m.gear.find(g => g.slot === sl); return it ? itemHtml(it, `<div class="il">${sl}</div>`) : ''; }).join('')).join('');
     $('pLog').innerHTML = run.log.slice().reverse().map(t => `<div>${esc(t)}</div>`).join('');
   }
-  $('charPanel').addEventListener('click', (ev) => { if (ev.target.id === 'btnCamp') { closeModal(); run = null; townReturn = true; show('start'); renderHub(); } });
+  $('charPanel').addEventListener('click', (ev) => { if (ev.target.id === 'btnCamp') toTown(); });
   function renderSide() {
     if (!run.solo) return renderSideParty();
     const s = run.stats, b = run.activeBuffs();
@@ -1398,8 +1423,21 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   // ---------- modals
   function modal(html) { $('modalBox').classList.remove('wide'); $('modalBox').innerHTML = html; $('modal').hidden = false; fitCards($('modalBox')); const f = $('modalBox').querySelector('button'); if (f) f.focus(); }
   function closeModal() { $('modal').hidden = true; }
+  let redrawShop = null;
   function pendingModal() {
-    const p = run.pending;
+    const p = run.pending; redrawShop = null;
+    if (run.online && p.type === 'rest') {
+      const S = NET.s, me = run.members[run.myMi];
+      const votes = run.members.map((m, i) => S && !S.gone[i] ? `<b style="color:${CC[m.cls]}">${esc(m.name)}</b>: ${S.camp[i] ? (S.camp[i] === 'rest' ? 'rest' : 'extract') : '<span class="muted">deciding</span>'}` : '').filter(Boolean).join('<br>');
+      const mine = S && S.camp[S.mi];
+      modal(`<h2>Rest site</h2><p>The party votes: rest (everyone heals 30%), or extract together (everyone keeps ${p.keep > 0.5 ? '75%' : 'half'} of their own sack). Majority wins; a tie is a coin flip.</p>
+        <p class="muted">Your sack: ${me.sack.length} item${me.sack.length === 1 ? '' : 's'} and ${me.gold} gold.</p>
+        <div class="row"><button class="btn ${mine === 'rest' ? 'primary' : ''}" id="mRest">Vote rest${mine === 'rest' ? ' (voted)' : ''}</button><button class="btn ${mine === 'extract' ? 'primary' : ''}" id="mExtract">Vote extract${mine === 'extract' ? ' (voted)' : ''}</button></div>
+        <p style="margin-top:8px">${votes}</p>`);
+      $('mRest').onclick = () => netAct({ t: 'camp', choice: 'rest' });
+      $('mExtract').onclick = () => netAct({ t: 'camp', choice: 'extract' });
+      return;
+    }
     if (p.type === 'rest') {
       const sackN = run.sack.length;
       modal(`<h2>Rest site</h2><p>The fire is warm. You can rest, or pack up and leave the March with what you carry.</p>
@@ -1409,17 +1447,17 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       $('mExtract').onclick = () => { run.extract(); closeModal(); renderMap(); };
     } else if (p.type === 'shrine') {
       modal(`<h2>${esc(p.shrine.name)}</h2><p>${esc(p.shrine.text)}</p><div class="row"><button class="btn primary" id="mOk">Continue</button></div>`);
-      $('mOk').onclick = () => { run.closePending(); closeModal(); renderMap(); };
+      $('mOk').onclick = () => { if (!run.online) run.closePending(); closeModal(); renderMap(); };
     } else if (p.type === 'merchant') {
-      let buyer = 0;
-      const draw = () => {
+      let buyer = run.online ? run.myMi : 0;
+      const draw = redrawShop = () => {
         const bm = run.members[buyer] || run.m0, bank = run.bankOf(bm);
         const full = bm.orders.length >= bm.stashFree;
-        $('modalBox').innerHTML = `<h2>Merchant</h2><p>${run.solo ? '' : `Ordering for <select id="mBuyer">${run.members.map((m, i) => `<option value="${i}" ${i === buyer ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select>. `}Banked gold: <b>${bank}</b>${bm.orders.length ? ` &middot; ${bm.orders.length} order${bm.orders.length === 1 ? '' : 's'} placed` : ''}. Pay from the bank and the merchant brings it back to town: it waits in your stash, even if you die out here.${full ? ' <b>Your stash is full.</b>' : ''}</p>
+        $('modalBox').innerHTML = `<h2>Merchant</h2><p>${run.solo || run.online ? '' : `Ordering for <select id="mBuyer">${run.members.map((m, i) => `<option value="${i}" ${i === buyer ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select>. `}Banked gold: <b>${bank}</b>${bm.orders.length ? ` &middot; ${bm.orders.length} order${bm.orders.length === 1 ? '' : 's'} placed` : ''}. Pay from the bank and the merchant brings it back to town: it waits in your stash, even if you die out here.${full ? ' <b>Your stash is full.</b>' : ''}</p>
         <div class="shop">${p.stock.map((it, i) => { const cur = bm.gear.find(g => g.slot === run.slotFor(it, bm.idx)); return itemHtml(it, `<div class="il">Compare: ${cur ? esc(cur.name) + ' (ilvl ' + cur.ilvl + ')' : 'empty ' + run.slotFor(it, bm.idx)}</div><div><button class="btn" data-buy="${i}" ${it.sold || bank < it.price || full ? 'disabled' : ''}>${it.sold ? 'Ordered' + (run.solo ? '' : ' by ' + esc(run.members[it.buyer].name)) : 'Order for ' + it.price + ' gold'}</button></div>`); }).join('')}</div>
-        <div class="row"><button class="btn primary" id="mLeave">Leave</button></div>`;
-        $('mLeave').onclick = () => { run.closePending(); closeModal(); renderMap(); };
-        for (const b of $('modalBox').querySelectorAll('[data-buy]')) b.onclick = () => { run.buy(+b.dataset.buy, buyer); draw(); renderSide(); };
+        <div class="row"><button class="btn primary" id="mLeave">${run.online ? 'Close (vote on the map to move on)' : 'Leave'}</button></div>`;
+        $('mLeave').onclick = () => { if (!run.online) run.closePending(); redrawShop = null; closeModal(); renderMap(); };
+        for (const b of $('modalBox').querySelectorAll('[data-buy]')) b.onclick = () => { if (run.online) { b.disabled = true; netAct({ t: 'buy', i: +b.dataset.buy }); return; } run.buy(+b.dataset.buy, buyer); draw(); renderSide(); };
         if ($('mBuyer')) $('mBuyer').onchange = (e) => { buyer = +e.target.value; draw(); };
       };
       $('modal').hidden = false; draw(); $('mLeave').focus();
@@ -1434,8 +1472,8 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       <dl class="kv"><dt>Furthest row</dt><dd>${run.currentRow() > ROWS ? 'Boss' : run.currentRow()}</dd><dt>Fights won</dt><dd>${run.fightsWon}</dd><dt>Items kept</dt><dd>${k.items.length}</dd><dt>Gold kept</dt><dd>${k.gold}</dd></dl>
       <div class="list">${k.items.map(it => itemHtml(it)).join('') || '<span class="muted">Nothing kept.</span>'}</div>
       <div class="row"><button class="btn primary" id="mNew">Return to camp</button><button class="btn" id="mMap">Look at the map</button></div>`);
-    if (!run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run); save(); }
-    $('mNew').onclick = () => { closeModal(); run = null; townReturn = true; show('start'); renderHub(); };
+    if (!run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run, run.myMi); save(); }
+    $('mNew').onclick = backToTown;
     $('mMap').onclick = () => closeModal();
   }
 
@@ -1446,21 +1484,22 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       <dl class="kv"><dt>Furthest row</dt><dd>${run.currentRow() > ROWS ? 'Boss' : run.currentRow()}</dd><dt>Fights won</dt><dd>${run.fightsWon}</dd></dl>
       ${run.members.map(m => { const k = m.kept || { items: [], gold: 0 }; return `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${k.items.length} item${k.items.length === 1 ? '' : 's'}, ${k.gold} gold${m.orders.length ? `, ${m.orders.length} order${m.orders.length === 1 ? '' : 's'}` : ''}</div><div class="list">${k.items.map(it => itemHtml(it)).join('')}</div>`; }).join('')}
       <div class="row"><button class="btn primary" id="mNew">Return to camp</button><button class="btn" id="mMap">Look at the map</button></div>`);
-    if (!run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run); save(); }
-    $('mNew').onclick = () => { closeModal(); run = null; townReturn = true; show('start'); renderHub(); };
+    if (!run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run, run.myMi); save(); }
+    $('mNew').onclick = backToTown;
     $('mMap').onclick = () => closeModal();
   }
 
   // ---------- combat UI
   let viewHero = null;
-  function hero() { if (cb.phase === 'player' && cb.current && cb.current.isPlayer) viewHero = cb.current; if (!viewHero || !cb.players.includes(viewHero)) viewHero = cb.players[0]; return viewHero; }
-  function startCombatUI() { viewHero = null; selected = null; busy = false; lastHp = {}; lastBlock = {}; show('combat'); snapshot(); render(); pump(); }
+  function hero() { if (cb.myMi != null) return (viewHero = cb.players[cb.myMi]); if (cb.phase === 'player' && cb.current && cb.current.isPlayer) viewHero = cb.current; if (!viewHero || !cb.players.includes(viewHero)) viewHero = cb.players[0]; return viewHero; }
+  function startCombatUI() { closeModal(); if (run && run.online) cb.myMi = run.myMi; viewHero = null; selected = null; busy = false; lastHp = {}; lastBlock = {}; show('combat'); snapshot(); render(); pump(); }
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
   async function pump() {
     if (busy) return; busy = true;
     while (cb && cb.phase === 'enemy' && !cb.over) { render(); await sleep(settings.fast ? 140 : 400); cb.enemyStep(); render(true); }
     busy = false; render();
-    if (cb.over) combatOver();
+    if (cb && cb.over) combatOver();
+    if (netOn()) netDrain();
   }
   function snapshot() { for (const a of [...cb.players, ...cb.enemies]) { lastHp[a.id] = a.hp; lastBlock[a.id] = a.block; } }
   function figure(a) {
@@ -1504,7 +1543,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     }).join('') || '<span class="tag">no cards</span>';
   }
   function unitHtml(a) {
-    const isNow = cb.current === a && !cb.over, targetable = !a.isPlayer && a.hp > 0 && selected && CARDS[selected.key].target === 'enemy';
+    const isNow = cb.current === a && !cb.over, targetable = (cb.duel ? a.isPlayer && a !== hero() : !a.isPlayer) && a.hp > 0 && selected && CARDS[selected.key].target === 'enemy';
     const pct = Math.max(0, 100 * a.hp / a.maxHp), ini = cb.initiative(a);
     const sub = a.isPlayer ? `Init ${ini}` : `${a.tier === 'Elite' || a.tier === 'Boss' ? a.tier + ' &middot; ' : ''}${a.type} &middot; weak ${a.weakTo} &middot; Init ${ini}`;
     return `<div class="unit ${isNow ? 'active' : ''} ${a.isPlayer && cb.partySize > 1 && a === viewHero && !isNow ? 'viewing' : ''} ${a.hp <= 0 ? 'dead' : ''} ${targetable ? 'targetable' : ''}" data-id="${a.id}" ${targetable ? 'role="button" tabindex="0"' : ''}>
@@ -1513,7 +1552,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       <div class="figure">${figure(a)}</div>
       <div class="uname"><b ${a.isPlayer ? `style="color:${CC[a.cls]}"` : ''}>${esc(a.name)}</b><small>${sub}</small></div>
       <div class="bar"><i style="width:${pct}%"></i><span>${a.hp} / ${a.maxHp}</span></div>
-      <div class="tags">${tags(a)}</div></div>`;
+      <div class="tags">${tags(a)}${cb.duel && a !== hero() ? `<span class="tag">Hand ${a.hand.length} &middot; Mana ${a.mana}</span>` : ''}</div></div>`;
   }
   function popups() {
     for (const a of [...cb.players, ...cb.enemies]) {
@@ -1529,22 +1568,24 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     if (!cb) return;
     const p = hero(), party = cb.partySize > 1;
     $('order').innerHTML = `<span class="lbl">Turn order</span>` + cb.order.map((id, i) => { const a = cb.actorById(id); return `<span class="chip ${i === cb.turnIndex && !cb.over ? 'now' : ''} ${a.hp <= 0 ? 'dead' : ''}">${a.isPlayer ? (party ? esc(a.name) : 'You') : esc(a.name)} ${cb.initiative(a)}</span>`; }).join('') + `<span class="round">Round ${cb.round}</span>`;
-    $('playerSlot').className = party ? 'party' : ''; $('playerSlot').innerHTML = cb.players.map(unitHtml).join('');
-    $('foes').innerHTML = cb.enemies.map(unitHtml).join('');
+    const mine = cb.duel ? [p] : cb.players, foes = cb.duel ? cb.players.filter(x => x !== p) : cb.enemies;
+    $('playerSlot').className = party && !cb.duel ? 'party' : ''; $('playerSlot').innerHTML = mine.map(unitHtml).join('');
+    $('foes').innerHTML = foes.map(unitHtml).join('');
     if (withPops) popups(); else snapshot();
     $('orb').textContent = p.mana;
     $('manaSub').textContent = `max ${p.maxMana} · +${p.regen} per turn`;
     const fat = [...p.drawPile, ...p.hand, ...p.discard].filter(c => CARDS[c.key].type === 'Status').length;
     $('piles').innerHTML = `<button class="pilebtn" data-pile="draw">Draw pile <b>${p.drawPile.length}</b></button><button class="pilebtn" data-pile="discard">Discard <b>${p.discard.length}</b></button><button class="pilebtn" data-pile="exhaust">Exhaust <b>${p.exhaust.length}</b></button><span>Draws <b>${p.draw}</b>/round</span>${fat ? `<span>Status cards <b>${fat}</b></span>` : ''}${cb.pressure() ? `<span>Pressure <b>+${Math.round(cb.pressure() * 100)}%</b></span>` : ''}`;
-    const myTurn = cb.phase === 'player' && !cb.over;
+    const myTurn = cb.phase === 'player' && !cb.over && (cb.myMi == null || cb.current === p);
     $('btnEnd').disabled = !myTurn || busy;
     const hint = $('hint'); hint.classList.remove('alert');
     if (cb.over) hint.textContent = cb.over === 'win' ? 'Victory.' : 'Defeat.';
-    else if (!myTurn) hint.textContent = `${cb.current ? (cb.current.isPlayer ? (party ? cb.current.name : 'You') : cb.current.name) : ''} acting...`;
+    else if (!myTurn) hint.innerHTML = `${cb.current ? esc(cb.current.isPlayer ? (party ? cb.current.name : 'You') : cb.current.name) : ''} ${cb.current && cb.current.isPlayer && cb.myMi != null ? 'is taking their turn' : 'acting'}...<span id="tclock"></span>`;
     else if (selected) { hint.textContent = `Choose a target for ${CARDS[selected.key].name} (Esc to cancel).`; hint.classList.add('alert'); }
+    else if (cb.myMi != null) hint.innerHTML = `Your turn. Click a card to play it. E ends your turn.<span id="tclock"></span>`;
     else hint.textContent = party ? `${p.name}'s turn. Click a card to play it. E ends ${p.name}'s turn.` : 'Your turn. Click a card to play it. E ends your turn.';
     $('hand').innerHTML = p.hand.map(c => {
-      const d = cb.card(c), chk = cb.canPlay(c), face = d.type !== 'Status' && cardFace(d);
+      const d = cb.card(c), chk = myTurn ? cb.canPlay(c) : { ok: false, why: cb.over ? 'Fight over' : 'Not your turn' }, face = d.type !== 'Status' && cardFace(d);
       const n = p.hand.length, k = p.hand.indexOf(c), mid = (n - 1) / 2, rot = (k - mid) * Math.min(5, 26 / Math.max(1, n)), off = Math.abs(k - mid) ** 1.6 * 4;
       if (face) return `<button class="${cardCls(d)} ${selected && selected.uid === c.uid ? 'selected' : ''}" style="${cardVars(d)};--rot:${rot.toFixed(1)};--off:${off.toFixed(1)};--z:${k + 1}" data-uid="${c.uid}" ${chk.ok && !busy ? '' : 'disabled'} title="${chk.ok ? (d.target === 'enemy' ? 'Single enemy' : d.target === 'all' ? 'All enemies' : 'Self') : esc(chk.why)}" aria-label="${esc(d.name + ', ' + d.cost + ' mana: ' + d.text)}">${face}</button>`;
       return `<button class="card ${d.type === 'Status' ? 'status' : ''} ${selected && selected.uid === c.uid ? 'selected' : ''}" style="--rc:${RC[d.rarity]}" data-uid="${c.uid}" ${chk.ok && !busy ? '' : 'disabled'} title="${chk.ok ? '' : esc(chk.why)}">
@@ -1596,6 +1637,8 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   $('modal').addEventListener('click', (ev) => { if (ev.target === $('modal') && $('mClose')) closeModal(); });
 
   function combatOver() {
+    if (cb && cb.duel) { if (!cb._shown) { cb._shown = true; duelOver(); } return; }
+    if (!run || !run.combat) return;
     const result = run.finishCombat();
     if (!result) return;
     if (result.result === 'loss') { show('map'); renderMap(true); return; }
@@ -1603,7 +1646,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     const isBoss = run.over === 'victory';
     if (!run.solo) {
       modal(`<h2>${isBoss ? 'The Warlord falls' : 'Victory'}</h2><p>Won in ${result.rounds} rounds. Each hero rolled their own loot.</p>
-        ${run.members.map((m, i) => { const r = result.per[i]; return `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${m.hp}/${m.stats.maxHp} HP${r.fell ? ' (fell: sack lost, back up at half HP)' : ''} &middot; +${r.gold} gold</div><div class="list">${r.drops.map(it => itemHtml(it)).join('') || '<span class="muted">No gear or cards.</span>'}</div>`; }).join('')}
+        ${run.members.map((m, i) => run.online && i !== run.myMi ? `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${m.hp}/${m.stats.maxHp} HP${result.per[i].fell ? ' (fell)' : ''} &middot; ${result.per[i].drops.length} drop${result.per[i].drops.length === 1 ? '' : 's'}, +${result.per[i].gold} gold</div>` : (() => { const r = result.per[i]; return `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${m.hp}/${m.stats.maxHp} HP${r.fell ? ' (fell: sack lost, back up at half HP)' : ''} &middot; +${r.gold} gold</div><div class="list">${r.drops.map(it => itemHtml(it)).join('') || '<span class="muted">No gear or cards.</span>'}</div>`; })()).join('')}
         <div class="row"><button class="btn primary" id="mBack">${isBoss ? 'See the results' : 'Back to the map'}</button></div>`);
       $('mBack').onclick = () => { closeModal(); show('map'); renderMap(true); };
       return;
@@ -1632,9 +1675,11 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     const c = hero().hand.find(x => x.uid === b.dataset.uid); if (!c) return;
     const d = CARDS[c.key];
     if (d.target === 'enemy' && cb.alive().length > 1) { selected = (selected && selected.uid === c.uid) ? null : c; render(); return; }
-    selected = null; cb.play(c.uid, cb.alive()[0] && cb.alive()[0].id); render(true); if (cb.over) combatOver();
+    selected = null; const tgt = cb.alive()[0] && cb.alive()[0].id;
+    if (cb.myMi != null) { b.disabled = true; netAct({ t: 'play', uid: c.uid, tgt }); return; }
+    cb.play(c.uid, tgt); render(true); if (cb.over) combatOver();
   });
-  function pickTarget(id) { if (!selected) return; const c = selected; selected = null; cb.play(c.uid, id); render(true); if (cb.over) combatOver(); }
+  function pickTarget(id) { if (!selected) return; const c = selected; selected = null; if (cb.myMi != null) { render(); netAct({ t: 'play', uid: c.uid, tgt: id }); return; } cb.play(c.uid, id); render(true); if (cb.over) combatOver(); }
   $('foes').addEventListener('click', (ev) => { const u = ev.target.closest('.unit.targetable'); if (u) pickTarget(u.dataset.id); });
   $('foes').addEventListener('keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('.unit.targetable')) { ev.preventDefault(); pickTarget(ev.target.dataset.id); } });
   document.addEventListener('keydown', (ev) => {
@@ -1648,7 +1693,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     }
     if ((ev.key === 'e' || ev.key === 'E') && !$('scrCombat').hidden && $('modal').hidden && !ev.target.matches('select, input') && !$('btnEnd').disabled) $('btnEnd').click();
   });
-  $('btnEnd').addEventListener('click', () => { if (busy || cb.phase !== 'player') return; selected = null; cb.endPlayerTurn(); render(true); pump(); });
+  $('btnEnd').addEventListener('click', () => { if (busy || cb.phase !== 'player') return; selected = null; if (cb.myMi != null) { $('btnEnd').disabled = true; netAct({ t: 'end' }); return; } cb.endPlayerTurn(); render(true); pump(); });
   renderHub(); show('title'); connectAccount();
 })();
 </script>
