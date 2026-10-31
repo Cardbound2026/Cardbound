@@ -945,6 +945,8 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       lines: ['Coin from the bank, goods to your stash. My wagons bring new stock every twelve hours.', 'I also take orders out on the March. My runners always make it home.'] },
     { id: 'tinker', name: 'Tinker Pip (test)', x: 16, y: 4, dir: 'down', open: 'test', btn: 'Free test goods', pal: { skin: '#d8b090', hair: '#e0802a', chest: '#3a4a2a', trim: '#e0802a', legs: '#2a2418', helm: 'cap', helmC: '#e0802a', cape: null, weapon: 'hammer' },
       lines: ['Testing, testing! Every card, every codex, free. Don\'t tell the merchants.'] },
+    { id: 'dummy', name: 'Training Dummy', x: 18, y: 15, dir: 'down', fixed: true, open: 'dummy', btn: 'Practice on it', pal: { skin: '#cdb47a', hair: '#d9b44a', chest: '#7a5a34', trim: '#d9b44a', legs: '#6a4c2a', helm: 'cap', helmC: '#4a3826', cape: null, weapon: null },
+      lines: ['A scarecrow stuffed with straw. 99,999 HP. It never hits back and never blocks.', 'Somebody pinned a note to it: "Test your combos here. Leave from the Esc menu."'] },
     { id: 'archivist', name: 'Archivist Mora', x: 10, y: 7, dir: 'down', open: 'codex', btn: 'Open the Codex', pal: { skin: '#cfa889', hair: '#9c9488', chest: '#3a2a3e', trim: '#b48cd8', legs: '#22182a', helm: 'hood', helmC: '#3a2a3e', cape: null, weapon: 'book' },
       lines: ['Every card, every beast on every road, every scrap of iron worth wearing. It is all written here.', 'Ask before you ride. The Codex knows what drops where.'] },
   ];
@@ -1103,6 +1105,22 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       Paladin: { chest: '#5f5a4a', skin: '#caa07e', hair: '#8a6a3a', legs: '#2e2c26', weapon: 'maceshield', cape: '#6a5420' } }[heroCls_];
     return Object.assign({}, base, { trim: rc('chest') || '#9c968a', helm: R.helm ? (base.helm || 'helm') : base.helm || null, helmC: rc('helm') || '#5a5f66', wpnC: rc('weapon') || '#9c968a', capeTrim: rc('cloak'), bootC: rc('boots'), hero: true });
   }
+  // the training dummy: a straw scarecrow on a post, swaying a little
+  function drawScarecrow(g, cx, by, s, t) {
+    const sway = Math.sin(t / 900) * 1.2 * s;
+    g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, 11 * s, 4 * s, 0, 0, Math.PI * 2); g.fill();
+    rrect(g, cx - 2 * s, by - 40 * s, 4 * s, 40 * s, 1, '#5a4026', 1.4);                                   // post
+    rrect(g, cx - 18 * s + sway, by - 31 * s, 36 * s, 4 * s, 1, '#5a4026', 1.4);                           // crossbar
+    poly(g, [[cx - 10 * s + sway, by - 32 * s], [cx + 10 * s + sway, by - 32 * s], [cx + 12 * s + sway, by - 12 * s], [cx - 12 * s + sway, by - 12 * s]], '#7a5a34', 1.6); // sack shirt
+    for (const dx of [-1, 1]) poly(g, [[cx + dx * 17 * s + sway, by - 31 * s], [cx + dx * 21 * s + sway, by - 25 * s], [cx + dx * 17 * s + sway, by - 27 * s], [cx + dx * 15 * s + sway, by - 23 * s]], '#d9b44a', 1); // straw hands
+    poly(g, [[cx - 9 * s + sway, by - 12 * s], [cx - 5 * s + sway, by - 6 * s], [cx - 1 * s + sway, by - 12 * s], [cx + 3 * s + sway, by - 6 * s], [cx + 8 * s + sway, by - 12 * s]], '#d9b44a', 1); // straw hem
+    rrect(g, cx - 3 * s + sway, by - 26 * s, 6 * s, 6 * s, 1, '#c9472f', 1.2);                              // red patch (the target)
+    circ(g, cx + sway, by - 39 * s, 8 * s, '#cdb47a', 1.6);                                                // burlap head
+    g.strokeStyle = '#2a1d14'; g.lineWidth = 1.4 * s; g.beginPath();
+    for (const ex of [-3, 3]) { g.moveTo(cx + sway + (ex - 1.5) * s, by - 41.5 * s); g.lineTo(cx + sway + (ex + 1.5) * s, by - 38.5 * s); g.moveTo(cx + sway + (ex + 1.5) * s, by - 41.5 * s); g.lineTo(cx + sway + (ex - 1.5) * s, by - 38.5 * s); }
+    g.moveTo(cx + sway - 3 * s, by - 35 * s); g.lineTo(cx + sway + 3 * s, by - 35 * s); g.stroke();
+    poly(g, [[cx - 13 * s + sway, by - 44 * s], [cx + 13 * s + sway, by - 44 * s], [cx + 5 * s + sway, by - 47 * s], [cx + 2 * s + sway, by - 55 * s], [cx - 5 * s + sway, by - 47 * s]], '#4a3826', 1.6); // floppy hat
+  }
   function drawChar(g, cx, by, dir, step, pal, s, t) {
     const bob = step ? -1.5 * s : 0, sw = step === 1 ? 1 : step === 2 ? -1 : 0;
     g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, 13 * s, 5 * s, 0, 0, Math.PI * 2); g.fill();
@@ -1195,7 +1213,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     gx.setTransform(d, 0, 0, d, -cam.x * d, -cam.y * d);
     // depth sort: props by footprint bottom, characters by their tile
     const list = PROPS.map(p => ({ y: p.y + p.h - 0.01, f: () => drawProp(gx, p, TS, t) }));
-    for (const n of NPCS) list.push({ y: n.y + 0.5, f: () => drawChar(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.dir, 0, n.pal, s, t) });
+    for (const n of NPCS) list.push({ y: n.y + 0.5, f: () => n.id === 'dummy' ? drawScarecrow(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, s, t) : drawChar(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.dir, 0, n.pal, s, t) });
     const hp = heroPos(); const walking = P.mv ? (Math.floor(P.mv.t * 2) % 2 ? 2 : 1) * (P.step % 2 ? 1 : 1) : 0;
     const stepF = P.mv ? ((P.step + (P.mv.t > 0.5 ? 1 : 0)) % 2 ? 1 : 2) : 0;
     list.push({ y: hp.y + 0.5, f: () => drawChar(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, P.dir, stepF, heroPal(), s, t) });
@@ -1247,7 +1265,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     for (const e of TOWN.embers) { e.x += e.vx * dt + Math.sin(TOWN.t / 300 + e.y * 5) * 0.0004 * dt; e.y += e.vy * dt; e.life -= dt / 2200; }
     TOWN.embers = TOWN.embers.filter(e => e.life > 0);
     // NPCs glance at the hero when close
-    for (const n of NPCS) { const dx = P.x - n.x, dy = P.y - n.y; if (Math.abs(dx) + Math.abs(dy) <= 2) n.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'); else n.dir = n.home; }
+    for (const n of NPCS) { if (n.fixed) continue; const dx = P.x - n.x, dy = P.y - n.y; if (Math.abs(dx) + Math.abs(dy) <= 2) n.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'); else n.dir = n.home; }
     if (P.mv) { P.mv.t += dt / STEP_MS; if (P.mv.t >= 1) P.mv = null; else return; }
     if (townBusy()) { P.path = []; return; }
     if (P.path.length) {
@@ -1324,11 +1342,11 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   };
   function talk(n) {
     P.held = []; P.path = []; P.target = null;
-    n.dir = n.x > P.x ? 'left' : n.x < P.x ? 'right' : n.y > P.y ? 'up' : 'down';
+    if (!n.fixed) n.dir = n.x > P.x ? 'left' : n.x < P.x ? 'right' : n.y > P.y ? 'up' : 'down';
     n.lineN = ((n.lineN == null ? -1 : n.lineN) + 1) % n.lines.length;
     $('talk').innerHTML = `<b>${esc(n.name)}</b><p>${esc(n.lines[n.lineN])}</p><div class="row">${n.open ? `<button class="btn primary" id="tOpen">${esc(n.btn)}</button>` : ''}<button class="btn" id="tBye">${n.open ? 'Not now' : 'Farewell'}</button></div>`;
     $('talk').hidden = false; updatePrompt();
-    if (n.open) $('tOpen').onclick = () => { closeTalk(); openSheet(n.open); };
+    if (n.open) $('tOpen').onclick = () => { closeTalk(); if (n.open === 'dummy') startDummy(); else openSheet(n.open); };
     $('tBye').onclick = closeTalk;
   }
   function closeTalk() { $('talk').hidden = true; updatePrompt(); cv.focus({ preventScroll: true }); }
@@ -1420,6 +1438,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       ${inRun ? `<button class="btn" id="mnLeave">Leave run and return to town</button>` : ''}
       ${cb && cb.duel && !cb.over ? `<button class="btn" id="mnForfeit">Forfeit the duel</button>` : ''}
       ${cb && cb.duel && cb.over ? `<button class="btn" id="mnTown">Return to town</button>` : ''}
+      ${cb && cb.practice ? `<button class="btn" id="mnDummyReset">Reset the dummy (fresh fight)</button><button class="btn" id="mnDummyLeave">Leave the dummy and return to town</button>` : ''}
       ${run && run.over ? `<button class="btn" id="mnTown">Return to town</button>` : ''}
       ${!run && !onTitle ? `<button class="btn" id="mnHeroes">Switch hero</button>` : ''}
       ${supa ? (supaUser ? `<button class="btn" id="mnSignOut">Sign out (${esc(acctName(supaUser))})</button>` : `<button class="btn" id="mnSignIn">Sign in to save online</button>`) : ''}
@@ -1434,6 +1453,8 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       $('mClose').onclick = closeModal; $('mnConfirm').onclick = leaveRun;
     };
     if ($('mnTown')) $('mnTown').onclick = () => { closeModal(); toTown(); };
+    if ($('mnDummyReset')) $('mnDummyReset').onclick = () => { closeModal(); cb = null; startDummy(); };
+    if ($('mnDummyLeave')) $('mnDummyLeave').onclick = leaveDummy;
     if ($('mnForfeit')) $('mnForfeit').onclick = () => { closeModal(); if (netOn()) netAct({ t: 'leave' }); else backToTown(); };
     if ($('mnHeroes')) $('mnHeroes').onclick = () => { closeModal(); $('sheet').hidden = true; show('title'); };
     if ($('mnSignIn')) $('mnSignIn').onclick = signInModal;
@@ -1761,11 +1782,22 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   // ---------- combat UI
   let viewHero = null;
   function hero() { if (cb.myMi != null) return (viewHero = cb.players[cb.myMi]); if (cb.phase === 'player' && cb.current && cb.current.isPlayer) viewHero = cb.current; if (!viewHero || !cb.players.includes(viewHero)) viewHero = cb.players[0]; return viewHero; }
+  // ---------- training dummy in town: 99,999 HP, does nothing on its turn, never blocks. Nothing is won or lost.
+  DATA.enemies.training_dummy = { name: 'Training Dummy', tier: '1', hp: 99999, draw: 1, draw2: null, maxMana: 0, regen: 0, regen2: null, creature: 'Construct', type: 'Physical', weak: 'None', arch: 'Practice target', desc: 'A scarecrow on a post. It just stands there.', map: 'town',
+    deck: [{ name: 'Stand Still', n: 10, cost: 0, kind: 'Defense', text: 'Does nothing.', phase2: false, dtype: 'Physical' }], gold: [0, 0], pool: [], loot: [] };
+  function startDummy() {
+    if (!profile.chars[heroCls] || run || cb) return;
+    const o = CBHub.runOpts(profile, heroCls);
+    cb = new CB.Combat({ party: [{ cls: o.cls, name: o.name, gear: o.gear, deck: o.deck }], enemies: ['training_dummy'], seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA });
+    cb.practice = true; $('sheet').hidden = true; startCombatUI();
+  }
+  function leaveDummy() { closeModal(); cb = null; townReturn = true; show('start'); renderHub(); }
   function startCombatUI() { closeModal(); if (run && run.online) cb.myMi = run.myMi; viewHero = null; selected = null; busy = false; lastHp = {}; lastBlock = {}; show('combat'); snapshot(); render(); pump(); }
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
   async function pump() {
-    if (busy) return; busy = true;
-    while (cb && cb.phase === 'enemy' && !cb.over) { render(); await sleep(settings.fast ? 140 : 400); cb.enemyStep(); render(true); }
+    if (busy) return; busy = true; const me = cb; // a pump belongs to one fight: if the fight is replaced or left mid-turn (training dummy reset/leave), it stops
+    while (cb && cb === me && cb.phase === 'enemy' && !cb.over) { render(); await sleep(settings.fast ? 140 : 400); if (cb !== me) return; cb.enemyStep(); render(true); }
+    if (cb !== me) return;
     busy = false; render();
     if (cb && cb.over) combatOver();
     if (netOn()) netDrain();
@@ -1864,7 +1896,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     if (!cb) return;
     const p = hero(), party = cb.partySize > 1;
     $('order').innerHTML = `<span class="lbl">Turn<br>order</span>` + cb.order.map((id, i) => { const a = cb.actorById(id); const st = a.hp <= 0 ? 'dead' : i === cb.turnIndex && !cb.over ? 'now' : i < cb.turnIndex ? 'done' : '';
-      return `${i ? '<span class="osep" aria-hidden="true">&rsaquo;</span>' : ''}<div class="otile ${a.isPlayer ? 'hero' : 'foe'} ${st}" style="--oc:${a.isPlayer ? CC[a.cls] : '#e0b8a8'}" title="${esc(a.name)}: Initiative ${cb.initiative(a)}, HP ${a.hp}/${a.maxHp}"><span class="oini">${cb.initiative(a)}</span><div class="ofig">${figure(a)}</div><div class="onm">${a.isPlayer && !party ? 'You' : a === p && cb.myMi != null ? 'You' : esc(a.name)}</div><div class="obar"><i style="width:${Math.max(0, 100 * a.hp / a.maxHp)}%"></i></div></div>`; }).join('') + `<span class="round">Round ${cb.round}</span>${run ? '<button class="pilebtn" id="btnCMap" title="Look at the map (M)">Map</button>' : ''}`;
+      return `${i ? '<span class="osep" aria-hidden="true">&rsaquo;</span>' : ''}<div class="otile ${a.isPlayer ? 'hero' : 'foe'} ${st}" style="--oc:${a.isPlayer ? CC[a.cls] : '#e0b8a8'}" title="${esc(a.name)}: Initiative ${cb.initiative(a)}, HP ${a.hp}/${a.maxHp}"><span class="oini">${cb.initiative(a)}</span><div class="ofig">${figure(a)}</div><div class="onm">${a.isPlayer && !party ? 'You' : a === p && cb.myMi != null ? 'You' : esc(a.name)}</div><div class="obar"><i style="width:${Math.max(0, 100 * a.hp / a.maxHp)}%"></i></div></div>`; }).join('') + `<span class="round">Round ${cb.round}</span>${run ? '<button class="pilebtn" id="btnCMap" title="Look at the map (M)">Map</button>' : ''}${cb.practice ? '<button class="pilebtn" id="btnCReset" title="Start a fresh fight">Reset</button><button class="pilebtn" id="btnCLeave">Leave</button>' : ''}`;
     const mine = cb.duel ? [p] : cb.players, foes = cb.duel ? cb.players.filter(x => x !== p) : cb.enemies;
     $('playerSlot').className = party && !cb.duel ? 'party' : ''; $('playerSlot').innerHTML = mine.map(unitHtml).join('');
     $('foes').innerHTML = foes.map(unitHtml).join('');
@@ -1939,6 +1971,9 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   function combatOver() {
     hidePeeks();
     if (cb && cb.duel) { if (!cb._shown) { cb._shown = true; duelOver(); } return; }
+    if (cb && cb.practice) { if (!cb._shown) { cb._shown = true; const p = cb.players[0], dmg = cb.enemies.reduce((t, e) => t + (e.maxHp - Math.max(0, e.hp)), 0);
+      modal(`<h2>${p.hp > 0 ? 'The dummy is down' : 'You fell over'}</h2><p>${dmg.toLocaleString()} damage in ${cb.round} rounds (${Math.round(dmg / Math.max(1, cb.round)).toLocaleString()} a round). Nothing is lost at the dummy.</p><div class="row"><button class="btn primary" id="mAgain">Go again</button><button class="btn" id="mTown">Back to town</button></div>`);
+      $('mAgain').onclick = () => { cb = null; startDummy(); }; $('mTown').onclick = leaveDummy; } return; }
     if (!run || !run.combat) return;
     const result = run.finishCombat();
     if (!result) return;
@@ -2005,7 +2040,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     if ((ev.key === 'm' || ev.key === 'M') && !$('scrCombat').hidden && $('modal').hidden && !ev.target.matches('select, input, textarea') && run) { mapPeek(); return; }
     if ((ev.key === 'e' || ev.key === 'E') && !$('scrCombat').hidden && $('modal').hidden && !ev.target.matches('select, input') && !$('btnEnd').disabled) $('btnEnd').click();
   });
-  $('order').addEventListener('click', (ev) => { if (ev.target.closest('#btnCMap')) mapPeek(); });
+  $('order').addEventListener('click', (ev) => { if (ev.target.closest('#btnCMap')) mapPeek(); if (ev.target.closest('#btnCReset') && cb && cb.practice) { cb = null; startDummy(); } if (ev.target.closest('#btnCLeave') && cb && cb.practice) leaveDummy(); });
   $('btnEnd').addEventListener('click', () => { if (busy || cb.phase !== 'player') return; selected = null; if (cb.myMi != null) { $('btnEnd').disabled = true; netAct({ t: 'end' }); return; } cb.endPlayerTurn(); render(true); pump(); });
   renderHub(); show('title'); connectAccount();
 })();
