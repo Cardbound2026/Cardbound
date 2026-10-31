@@ -256,6 +256,22 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .hand .cf.selected { transform: translateY(-48px) rotate(0deg) scale(1.18); z-index: 49; filter: drop-shadow(0 0 12px rgba(214,161,74,.85)); }
 @media (max-width: 700px) { .hand .cf { --cw: 156px; margin-left: calc(var(--cw) * -0.45); } .hand .cf:hover:not(:disabled) { transform: translateY(-36px) scale(1.15); } }
 @media (prefers-reduced-motion: reduce) { .hand .cf { transition: none; } }
+.cxdetail { display: grid; grid-template-columns: 280px 1fr; gap: 18px; align-items: start; }
+@media (max-width: 760px) { .cxdetail { grid-template-columns: 1fr; } }
+.cxrank { display: grid; justify-items: center; gap: 4px; }
+.cxrank #cxdCard { min-height: 340px; display: grid; place-items: center; }
+.cxrank input[type=range] { width: 100%; accent-color: var(--accent); }
+.cxdlab { font-size: 14px; } .cxdlab b { color: var(--accent); font-size: 18px; }
+.cxdticks { width: 100%; display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); padding: 0 4px; }
+.cxsrc h4 { margin: 4px 0 6px; color: var(--accent); }
+.cxdt { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 0 0 4px; }
+.cxdt th { text-align: left; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--line); padding: 3px 6px; }
+.cxdt td { padding: 4px 6px; border-bottom: 1px solid #2a231b; }
+.cxdt td:last-child, .cxdt th:last-child { text-align: right; }
+.cxdrand { display: flex; flex-wrap: wrap; gap: 6px; }
+.cxdrand span { background: #1a1612; border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+.cxdrand b { color: var(--accent); }
+.nozoom .pilecard:hover .cf { transform: none; filter: none; }
 .mappick { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; margin: 8px 0 0; }
 .mapchip { text-align: left; background: #1a1612; border: 1px solid var(--line); border-left: 4px solid var(--ec); border-radius: 6px; padding: 6px 9px; color: var(--text); cursor: pointer; font: inherit; }
 .mapchip b { display: block; font-size: 14px; }
@@ -3906,7 +3922,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const nBuilt = all.filter(([k, d]) => !d.designOnly).length;
     return `${cxChips('cls', ['All', ...Object.keys(CLASSES)], 'Class')}${cxChips('rar', ['All', 'White', 'Green', 'Blue', 'Gold'], 'Rarity')}${cxChips('built', ['All', 'Playable', 'Design only'], 'Built')}
       <p class="savenote">${list.length} of ${all.length} cards. <b>${nBuilt} are playable</b>; the other ${all.length - nBuilt} are from the card design and are marked <i>Not built yet</i>: they don't drop until their mechanics are added to the game. <b>How cards drop:</b> each kill can drop a card for <i>your</i> class: tier 1 ${drops[1].chance}%, tier 2 ${drops[2].chance}%, tier 3 ${drops[3].chance}% (mostly White, some Green and Blue); elites always drop one Green or better (${drops.Elite.w.Gold}% Gold); the Warlord drops two Blue or Gold. Luck raises every chance. Cards marked <b>owned</b> are in ${esc(profile.chars[heroCls] ? profile.chars[heroCls].name : 'your hero')}'s deck or collection.</p>
-      <div class="pilegrid cxgrid">${list.map(([k, d]) => `<div class="pilecard ${d.designOnly ? 'design' : ''}" title="${esc((d.id || '') + (d.designOnly ? ' (not built yet)' : ''))}">${cardBox(d, 150) || rowHtml(1, d)}${d.designOnly ? '<span class="dstamp">Not built yet</span>' : ''}${own[k] ? `<span class="pilecount" title="In your deck or collection">owned${own[k] > 1 ? ' x' + own[k] : ''}</span>` : ''}</div>`).join('') || '<span class="muted">No cards match.</span>'}</div>`;
+      <div class="pilegrid cxgrid">${list.map(([k, d]) => `<div class="pilecard ${d.designOnly ? 'design' : ''}" data-cxcard="${k}" style="cursor:pointer" title="${esc((d.id || '') + (d.designOnly ? ' (not built yet)' : ''))} - click for ranks and drop sources">${cardBox(d, 150) || rowHtml(1, d)}${d.designOnly ? '<span class="dstamp">Not built yet</span>' : ''}${own[k] ? `<span class="pilecount" title="In your deck or collection">owned${own[k] > 1 ? ' x' + own[k] : ''}</span>` : ''}</div>`).join('') || '<span class="muted">No cards match.</span>'}</div>`;
   }
   // map filter: defaults to the map picked at the Wagon
   const cxMapName = () => CX.map || DATA.maps[curMap()].name; // 'All' means every map
@@ -3960,6 +3976,39 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
         <p><b>Affix odds</b> (per affix): ${affixOdds(A, false).map(([s, p]) => `${esc(s)} ${p.toFixed(p < 10 ? 1 : 0)}%`).join(' &middot; ')}${A.weights.Efficiency ? ' &middot; <i>Efficiency only on Purples</i>' : ''}</p>
         <p class="muted"><b>Dropped by:</b> ${(droppers[b.name] || []).map(esc).join(', ') || 'merchants only'}</p></details>`; }).join('') || '<p class="muted">No bases match.</p>'}</div>`;
   }
+  // ---------- card detail: rank slider (+0 to +10) and where it drops
+  function cardDetail(key) {
+    const d = CARDS[key]; if (!d) return;
+    const pool = d.cls && !d.designOnly ? CB.cardPool(d.cls) : [], same = pool.filter(k => CARDS[k].rarity === d.rarity).length;
+    const rand = same ? Object.entries(CB.CARD_DROPS).map(([t, x]) => { const tot = Object.values(x.w).reduce((a, b) => a + b, 0), pr = (x.w[d.rarity] || 0) / tot; const per = (x.chance / 100) * pr / same * (x.n || 1) * 100; return [TIER_NAME(t), per]; }).filter(x => x[1] > 0) : [];
+    const named = [];
+    for (const [ek, e] of Object.entries(DATA.enemies)) for (const x of e.loot || []) if (x.type === 'Card' && x.item === d.name && x.cls === d.cls) named.push({ e, pct: x.pct, map: DATA.maps[e.map || 'physical'] });
+    named.sort((a, b) => a.map.num - b.map.num || b.pct - a.pct);
+    const fmt = (v) => v >= 1 ? v.toFixed(1) + '%' : v >= 0.1 ? v.toFixed(2) + '%' : v.toFixed(3) + '%';
+    const costs = (r) => { let xp = 0, gold = 0; for (let i = 0; i < r; i++) { const c = CBHub.rankCost({ key, rank: i }); xp += c.xp; gold += c.gold; } return { xp, gold }; };
+    modal2(`<h2>${esc(d.name)} <span class="muted" style="font-size:15px">${esc(d.cls || '')} &middot; <span style="color:${RC[d.rarity] || 'inherit'}">${d.rarity}</span> &middot; ${esc(d.type || '')}</span></h2>
+      <div class="cxdetail">
+        <div class="cxrank">
+          <div id="cxdCard"></div>
+          <label for="cxdR" class="cxdlab">Rank <b id="cxdRv">+0</b></label>
+          <input type="range" id="cxdR" min="0" max="${CB.MAX_RANK}" step="1" value="0">
+          <div class="cxdticks">${Array.from({ length: CB.MAX_RANK + 1 }, (_, i) => `<span>${i}</span>`).join('')}</div>
+          <p class="muted" id="cxdCost" style="font-size:12.5px;margin:6px 0 0"></p>
+        </div>
+        <div class="cxsrc">
+          ${d.designOnly ? '<p class="down">Not built yet: this card does not drop until its mechanics are in the game.</p>' : ''}
+          <h4>Named drops</h4>
+          ${named.length ? `<table class="cxdt"><thead><tr><th>Enemy</th><th>Map</th><th>Tier</th><th>Chance</th></tr></thead><tbody>${named.map(x => `<tr><td><b>${esc(x.e.name)}</b></td><td><span style="color:${ELC[x.map.element]}">${x.map.num}. ${esc(x.map.name)}</span></td><td>${TIER_NAME(x.e.tier)}</td><td>${x.pct}%</td></tr>`).join('')}</tbody></table><p class="muted" style="font-size:12px">Per kill, for a ${esc(d.cls)} in the party. Luck raises it.</p>` : '<p class="muted">No enemy has this card on its named loot list.</p>'}
+          <h4>Random card drops (any map)</h4>
+          ${rand.length ? `<p class="muted" style="font-size:12.5px;margin:0 0 4px">Every kill can also roll a random ${esc(d.cls)} card of its rarity. Chance this exact card drops from one kill:</p><div class="cxdrand">${rand.map(([t, v]) => `<span>${t} <b>${fmt(v)}</b></span>`).join('')}</div><p class="muted" style="font-size:12px">${same} ${d.rarity} ${esc(d.cls)} cards share that roll.</p>` : `<p class="muted">${d.designOnly ? 'None yet.' : `${d.rarity} cards don't come from random drops.`}</p>`}
+        </div>
+      </div>
+      <div class="row"><button class="btn" id="mClose">Close</button></div>`);
+    const draw = () => { const r = +$('cxdR').value; $('cxdRv').textContent = '+' + r; $('cxdCard').innerHTML = cardBox(CB.rankedCard(key, r), 240) || rowHtml(1, d); fitCards($('cxdCard'));
+      const c = costs(r); $('cxdCost').textContent = r ? `Reaching +${r} from +0 takes ${c.xp} XP and ${c.gold} gold (feed spare cards at the Scribe).` : 'Drag the slider to see each rank.'; };
+    $('modalBox').classList.add('wide'); $('cxdR').oninput = draw; draw();
+    $('mClose').onclick = closeModal;
+  }
   function renderCodex() {
     const el = $('hpCodex'); if (!el) return;
     el.innerHTML = `<div class="cxtop"><div class="tabs cxtabs" role="tablist">${[['cards', 'Cards'], ['enemies', 'Enemies & loot'], ['gear', 'Gear bases']].map(([k, l]) => `<button role="tab" aria-selected="${CX.tab === k}" data-cxtab="${k}">${l}</button>`).join('')}</div>
@@ -3969,6 +4018,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const s = $('cxSel'); if (s) { s.scrollIntoView({ block: 'center' }); CX.base = null; }
   }
   $('hpCodex').addEventListener('click', (ev) => {
+    const cc = ev.target.closest('[data-cxcard]'); if (cc) return cardDetail(cc.dataset.cxcard);
     const t = ev.target.closest('[data-cxtab],[data-cx],[data-cxbase]'); if (!t) return;
     if (t.dataset.cxtab) { CX.tab = t.dataset.cxtab; CX.q = ''; }
     else if (t.dataset.cx) CX[t.dataset.cx] = t.dataset.v;
@@ -4297,34 +4347,40 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   }
 
   // ---------- TEMPORARY test vendor (Tinker Pip): every card and every codex, free. Remove before launch.
-  const TV = { tab: 'cards', rar: 'All' };
+  const TV = { tab: 'cards', rar: 'All', q: '' };
   function renderTestVendor() {
     const el = $('hpTest'); if (!el) return;
     const c = profile.chars[heroCls]; if (!c) { el.innerHTML = '<p>Make a hero first.</p>'; return; }
     const own = {}; for (const k of [...c.deck, ...c.cards]) own[k.key] = (own[k.key] || 0) + 1;
-    const cards = Object.entries(CARDS).filter(([k, d]) => d.cls === heroCls && !d.designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(d.rarity) && (TV.rar === 'All' || d.rarity === TV.rar))
+    const q = TV.q.toLowerCase();
+    const cards = Object.entries(CARDS).filter(([k, d]) => d.cls === heroCls && !d.designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(d.rarity) && (TV.rar === 'All' || d.rarity === TV.rar) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + d.rarity).toLowerCase().includes(q)))
       .sort((a, b) => RAR_ORDER[b[1].rarity] - RAR_ORDER[a[1].rarity] || a[1].name.localeCompare(b[1].name));
     const room = CBHub.STASH_MAX - profile.stash.length;
     el.innerHTML = `<p class="savenote" style="margin:0 0 8px"><b style="color:#e0802a">Test vendor (temporary).</b> Everything here is free so you can try cards and codexes. Cards go to ${esc(c.name)}'s collection (add them to the deck at the Scribe); codexes go to the stash (equip them in the Codex slot with C).</p>
-      <div class="cxtop"><div class="tabs cxtabs" role="tablist">${[['cards', `${heroCls} cards`], ['codex', 'Codexes'], ['misc', 'Gold']].map(([k, l]) => `<button role="tab" aria-selected="${TV.tab === k}" data-tvtab="${k}">${l}</button>`).join('')}</div></div>
-      ${TV.tab === 'cards' ? `<div class="cxchips">${['All', 'White', 'Green', 'Blue', 'Gold'].map(r => `<button class="cxchip ${TV.rar === r ? 'on' : ''}" data-tvrar="${r}">${r}</button>`).join('')}<button class="btn primary" data-tvall="1" style="margin-left:auto">Take one of each (${cards.length})</button></div>
-        <div class="pilegrid cxgrid">${cards.map(([k, d]) => `<div class="pilecard" style="display:grid;gap:4px;justify-items:center">${cardBox(d, 140)}${own[k] ? `<span class="pilecount">x${own[k]}</span>` : ''}<button class="pilebtn" data-tvcard="${k}">Take</button></div>`).join('')}</div>`
+      <div class="cxtop"><div class="tabs cxtabs" role="tablist">${[['cards', `${heroCls} cards`], ['codex', 'Codexes'], ['misc', 'Gold']].map(([k, l]) => `<button role="tab" aria-selected="${TV.tab === k}" data-tvtab="${k}">${l}</button>`).join('')}</div>
+        ${TV.tab === 'cards' ? `<input id="tvQ" type="search" placeholder="Search ${heroCls} cards by name or text..." value="${esc(TV.q)}" autocomplete="off">` : ''}
+        <button class="btn" data-tvshop="1" title="Merchant Dace normally restocks every 12 hours">Restock Merchant Dace now</button></div>
+      ${TV.tab === 'cards' ? `<div class="cxchips">${['All', 'White', 'Green', 'Blue', 'Gold'].map(r => `<button class="cxchip ${TV.rar === r ? 'on' : ''}" data-tvrar="${r}">${r}</button>`).join('')}<button class="btn primary" data-tvall="1" style="margin-left:auto">Take one of each${q || TV.rar !== 'All' ? ' shown' : ''} (${cards.length})</button></div>
+        <div class="pilegrid cxgrid nozoom">${cards.length ? '' : '<span class="muted">No cards match.</span>'}${cards.map(([k, d]) => `<div class="pilecard" style="display:grid;gap:4px;justify-items:center">${cardBox(d, 140)}${own[k] ? `<span class="pilecount">x${own[k]}</span>` : ''}<button class="pilebtn" data-tvcard="${k}">Take</button></div>`).join('')}</div>`
       : TV.tab === 'codex' ? `<p class="muted">Stash space: ${room}. Codexes roll random stats at map level +${profile.last.level || 0} (the Wagon's level). Only that class can equip one.</p>
         ${Object.entries(CB.CODEXES).map(([cls, list]) => `<h3 style="color:${CC[cls]};margin:10px 0 4px">${cls}</h3><div class="list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px">${list.map(([key, name, text]) => `<div class="item" style="--rc:#e0802a"><div class="ih"><b>${esc(name)} Codex</b><span>${cls}</span></div><div class="st" style="color:#f0b070">${esc(text)}</div><div class="acts"><button class="btn" data-tvcx="${key}" ${room > 0 ? '' : 'disabled'}>Take</button></div></div>`).join('')}</div>`).join('')}`
       : `<div class="row"><button class="btn primary" data-tvgold="1000">+1,000 gold</button><button class="btn" data-tvgold="10000">+10,000 gold</button></div><p class="muted">Bank: ${profile.gold} gold.</p>`}`;
     fitCards(el);
   }
   $('hpTest').addEventListener('click', (ev) => {
-    const b = ev.target.closest('[data-tvtab],[data-tvrar],[data-tvcard],[data-tvall],[data-tvcx],[data-tvgold]'); if (!b) return;
+    const b = ev.target.closest('[data-tvtab],[data-tvrar],[data-tvcard],[data-tvall],[data-tvcx],[data-tvgold],[data-tvshop]'); if (!b) return;
     const c = profile.chars[heroCls];
     if (b.dataset.tvtab) TV.tab = b.dataset.tvtab;
     else if (b.dataset.tvrar) TV.rar = b.dataset.tvrar;
     else if (b.dataset.tvcard) { c.cards.push({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), key: b.dataset.tvcard, rank: 0 }); save(); }
-    else if (b.dataset.tvall) { for (const [k, d] of Object.entries(CARDS)) if (d.cls === heroCls && !d.designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(d.rarity)) c.cards.push({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), key: k, rank: 0 }); save(); toast(`Added one of every ${heroCls} card to ${c.name}'s collection.`); }
+    else if (b.dataset.tvshop) { CBHub.refreshShop(profile, DATA, profile.last.level || 0); save(); toast(`Merchant Dace has new stock (map level +${profile.last.level || 0}, ${DATA.maps[curMap()].name} gear).`); }
+    else if (b.dataset.tvall) { const q = TV.q.toLowerCase(); let n = 0; for (const [k, d] of Object.entries(CARDS)) if (d.cls === heroCls && !d.designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(d.rarity) && (TV.rar === 'All' || d.rarity === TV.rar) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + d.rarity).toLowerCase().includes(q)) && ++n) c.cards.push({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), key: k, rank: 0 }); save(); toast(`Added ${n} ${heroCls} card${n === 1 ? '' : 's'} to ${c.name}'s collection.`); }
     else if (b.dataset.tvcx) { if (profile.stash.length >= CBHub.STASH_MAX) return toast('Stash is full.'); const it = CB.makeCodex(DATA, CB.makeRng(Date.now() % 2147483646), b.dataset.tvcx, profile.last.level || 0); profile.stash.unshift(Object.assign({ id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, it)); save(); }
     else if (b.dataset.tvgold) { profile.gold += +b.dataset.tvgold; save(); renderTownBar(); }
     renderTestVendor();
   });
+
+  $('hpTest').addEventListener('input', (ev) => { if (ev.target.id !== 'tvQ') return; TV.q = ev.target.value; const pos = ev.target.selectionStart; renderTestVendor(); const i = $('tvQ'); i.focus(); i.setSelectionRange(pos, pos); });
 
   let townReturn = false;
 

@@ -252,6 +252,22 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .hand .cf.selected { transform: translateY(-48px) rotate(0deg) scale(1.18); z-index: 49; filter: drop-shadow(0 0 12px rgba(214,161,74,.85)); }
 @media (max-width: 700px) { .hand .cf { --cw: 156px; margin-left: calc(var(--cw) * -0.45); } .hand .cf:hover:not(:disabled) { transform: translateY(-36px) scale(1.15); } }
 @media (prefers-reduced-motion: reduce) { .hand .cf { transition: none; } }
+.cxdetail { display: grid; grid-template-columns: 280px 1fr; gap: 18px; align-items: start; }
+@media (max-width: 760px) { .cxdetail { grid-template-columns: 1fr; } }
+.cxrank { display: grid; justify-items: center; gap: 4px; }
+.cxrank #cxdCard { min-height: 340px; display: grid; place-items: center; }
+.cxrank input[type=range] { width: 100%; accent-color: var(--accent); }
+.cxdlab { font-size: 14px; } .cxdlab b { color: var(--accent); font-size: 18px; }
+.cxdticks { width: 100%; display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); padding: 0 4px; }
+.cxsrc h4 { margin: 4px 0 6px; color: var(--accent); }
+.cxdt { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 0 0 4px; }
+.cxdt th { text-align: left; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--line); padding: 3px 6px; }
+.cxdt td { padding: 4px 6px; border-bottom: 1px solid #2a231b; }
+.cxdt td:last-child, .cxdt th:last-child { text-align: right; }
+.cxdrand { display: flex; flex-wrap: wrap; gap: 6px; }
+.cxdrand span { background: #1a1612; border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; font-size: 13px; }
+.cxdrand b { color: var(--accent); }
+.nozoom .pilecard:hover .cf { transform: none; filter: none; }
 .mappick { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; margin: 8px 0 0; }
 .mapchip { text-align: left; background: #1a1612; border: 1px solid var(--line); border-left: 4px solid var(--ec); border-radius: 6px; padding: 6px 9px; color: var(--text); cursor: pointer; font: inherit; }
 .mapchip b { display: block; font-size: 14px; }
