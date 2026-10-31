@@ -970,6 +970,11 @@ class Combat {
     t = t.replace(/\b([Dd]eal) (\d+) (instead|more)/g, (m, w, n, x) => `${w} ${mark(+n, Math.max(0, Math.round((+n + flat) * dmgMult(d.dtype || 'Physical'))))} ${x}`);
     let defM = 1 + (p.dexterity || 0) / 100; if (T.defX || this.hasTimed(p, 'defX')) defM *= 2;
     if (pow) { try { defM *= this.pwProd(p, 'defMult') * this.pwProd(p, 'defMultFn'); } catch (x) {} }
+    if (/Poison/.test(t)) {
+      let pm = (1 + (p.strength + p.strTurn + p.strCombat) / 100) * (1 + (p.spirit || 0) / 100), pp = 0;
+      if (pow) { try { pm *= this.pwKey(p, 'dotMult', 'poison'); pp = this.pwKey(p, 'dotPlus', 'poison', 'sum') || 0; } catch (x) {} }
+      t = t.replace(/\b(\d+) Poison\b/g, (m, n) => `${mark(+n, Math.round(+n * pm) + pp)} Poison`);
+    }
     t = t.replace(/\b([Gg]ains?) (\d+) (Block|Barrier|Dodge|Parry)/g, (m, w, n, k) => `${w} ${mark(+n, Math.round(+n * defM))} ${k}`);
     return t;
   }
@@ -1124,7 +1129,8 @@ class Combat {
   }
   applyDot(e, key, n) {
     if (!e || e.hp <= 0) return;
-    const v = Math.round(n * (1 + this.player.spirit / 100) * this.pwKey(this.player, 'dotMult', key) * (key === 'bleed' && this.player.bleedX ? this.player.bleedX : 1)) + this.pwKey(this.player, 'dotPlus', key, 'sum');
+    const q = this.player, strMult = key === 'poison' && q.isPlayer ? 1 + (q.strength + q.strTurn + q.strCombat) / 100 : 1; // poison scales with Strength
+    const v = Math.round(n * strMult * (1 + this.player.spirit / 100) * this.pwKey(this.player, 'dotMult', key) * (key === 'bleed' && this.player.bleedX ? this.player.bleedX : 1)) + this.pwKey(this.player, 'dotPlus', key, 'sum');
     const before = e[key]; e[key] += v; e[key + 'By'] = this.player.id;
     if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, v, before);
     this.say('player', `${e.name} gains ${v} ${key[0].toUpperCase() + key.slice(1)} (now ${e[key]}).`);
@@ -1597,6 +1603,8 @@ function rollDrops(data, rng, enemyKey, level, luck) {
 }
 
 // design changes on top of the card database (Oct 31): Seismic Slam is free; it hits for half your current mana and spends none
+// Oct 31: the Rogue's poison cards are Attacks, so they scale with Strength (poison stacks scale with Strength too, see applyDot)
+for (const k of ['envenom', 'plague_bloom', 'toxic_cloud', 'venom_vial', 'fester', 'crippling_poison', 'mind_numbing_poison', 'deadly_toxin', 'wound_poison', 'corrosive_toxin', 'draining_venom', 'poison_nova']) if (C[k]) { C[k].type = 'Attack'; if (C[k].dtype == null) C[k].dtype = k === 'poison_nova' ? 'Nature' : 'Physical'; }
 if (C.seismic_slam) { C.seismic_slam.cost = 0; C.seismic_slam.text = 'Deal damage to all enemies equal to 50% of your current mana. Your mana is not spent.'; }
 const API = { CARDS_VERSION: 2, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
