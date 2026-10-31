@@ -96,16 +96,21 @@
   document.addEventListener('click', (ev) => {
     const d = ev.target.closest('[data-dslot]'); if (!d || !d.closest('#hpGear')) return;
     gtip.hidden = true;
-    const sl = d.dataset.dslot, c = CBHub.char(profile, heroKey), it = c.gear.find(g => g.slot === sl);
+    slotPicker(d.dataset.dslot);
+  });
+  // a gear slot: what's equipped, and every stash item that fits it, compared with your gear (equip or salvage right here)
+  function slotPicker(sl) {
+    const c = CBHub.char(profile, heroKey), it = c.gear.find(g => g.slot === sl);
     const fits = profile.stash.filter(x => x.kind !== 'card' && CBHub.slotOptions(x).includes(sl) && !(x.slot === 'Codex' && x.cls && x.cls !== hcls())).sort((a, b) => (b.ilvl || 0) - (a.ilvl || 0));
-    const choose = fits.map(x => itemHtml(x, `<div class="acts">${upBadge(x, c.gear)}<button class="btn" data-eq="${x.id}">Equip</button></div>`)).join('');
+    const choose = fits.map(x => itemHtml(x, `<div class="acts">${upBadge(x, c.gear)}<button class="btn" data-eq="${x.id}">Equip</button><button class="btn" data-salv="${x.id}" title="Scrap it for gold right now">Salvage +${CBHub.salvageValue(x)}g</button></div>`)).join('');
     modal(`<h2>${sl}</h2>${it ? itemHtml(it, `<div class="acts"><button class="btn" id="mUneq">Unequip to stash</button></div>`) : '<p class="muted">Nothing equipped.</p>'}
       <h3 style="font-size:18px;color:var(--accent);margin-top:10px">From your stash (${fits.length})</h3><div class="list" style="max-height:340px">${choose || '<span class="muted">Nothing in the stash fits this slot.</span>'}</div>
       <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     $('mClose').onclick = closeModal;
     if ($('mUneq')) $('mUneq').onclick = () => { if (!CBHub.unequip(profile, heroKey, sl)) return toast('Stash is full.'); save(); closeModal(); renderHub(); };
     for (const b of $('modalBox').querySelectorAll('[data-eq]')) b.onclick = () => { const r = CBHub.equip(profile, heroKey, b.dataset.eq, sl); if (!r.ok) return toast(r.why); save(); closeModal(); renderHub(); };
-  });
+    for (const b of $('modalBox').querySelectorAll('[data-salv]')) b.onclick = () => { const sc = $('modalBox').querySelector('.list') ? $('modalBox').querySelector('.list').scrollTop : 0; const g = CBHub.salvage(profile, b.dataset.salv); if (!g) return; save(); renderHub(); slotPicker(sl); const l = $('modalBox').querySelector('.list'); if (l) l.scrollTop = sc; sysChat(`Salvaged for ${g} gold.`); };
+  }
 
   // ---------- inspecting another player (they answer with their hero's gear and deck)
   const INS = { waiting: null };

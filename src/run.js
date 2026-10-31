@@ -17,8 +17,53 @@ const SHRINES = [
 ];
 const SLOTS = ['Weapon', 'Off-hand', 'Helm', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves', 'Belt', 'Pants', 'Boots', 'Ring 1', 'Ring 2'];
 
+// map rules (Oct 31): every row has 3 to 5 nodes, at most 3 rows have only 3, at least 5 rows have exactly 4;
+// at least 5 shrines; never more than 4 fights (incl. elites) in a row along any path; 10% of maps hide one Enraged elite
+const MAP_RULES = { minRow: 3, maxThreeRows: 3, minFourRows: 5, minShrines: 5, maxFightRun: 4, enragedChance: 0.1 };
+function rowCounts(nodes) { const n = {}; for (let r = 1; r <= ROWS; r++) n[r] = 0; for (const x of Object.values(nodes)) if (x.row >= 1 && x.row <= ROWS) n[x.row]++; return n; }
+function topologyOk(nodes) {
+  const n = rowCounts(nodes), v = Object.values(n);
+  if (v.some(k => k < MAP_RULES.minRow) || v.filter(k => k === 3).length > MAP_RULES.maxThreeRows || v.filter(k => k === 4).length < MAP_RULES.minFourRows) return false;
+  const all = Object.values(nodes).filter(x => x.row >= 1 && x.row <= ROWS);
+  return all.every(x => (x.row === ROWS || x.next.length) && (x.row === 1 || all.some(p => p.row === x.row - 1 && p.next.includes(x.id))));
+}
+// add or remove single nodes until the row counts follow MAP_RULES (edges never cross)
+function repairRows(rng, nodes) {
+  const id = (r, c) => r + ':' + c, has = (r, c) => !!nodes[id(r, c)], edge = (a, b) => nodes[a] && nodes[a].next.includes(b);
+  const tryAdd = (r) => {
+    for (const c of shuffle([0, 1, 2, 3, 4].filter(c => !has(r, c)), rng)) {
+      const ps = r === 1 ? [null] : shuffle([c - 1, c, c + 1].filter(p => p >= 0 && p < COLS && has(r - 1, p) && !(p !== c && edge(id(r - 1, c), id(r, p)))), rng);
+      const qs = r === ROWS ? [null] : shuffle([c - 1, c, c + 1].filter(q => q >= 0 && q < COLS && has(r + 1, q) && !(q !== c && edge(id(r, q), id(r + 1, c)))), rng);
+      if (!ps.length || !qs.length) continue;
+      const n = nodes[id(r, c)] = { id: id(r, c), row: r, col: c, next: [] };
+      if (ps[0] !== null) nodes[id(r - 1, ps[0])].next.push(n.id);
+      if (qs[0] !== null) n.next.push(id(r + 1, qs[0]));
+      return true;
+    }
+    return false;
+  };
+  const tryRemove = (r) => {
+    for (const c of shuffle([0, 1, 2, 3, 4].filter(c => has(r, c)), rng)) {
+      const n = nodes[id(r, c)], parents = Object.values(nodes).filter(p => p.next.includes(n.id));
+      const kidsOk = n.next.every(k => Object.values(nodes).some(p => p !== n && p.next.includes(k)));
+      if (parents.every(p => p.next.length >= 2) && kidsOk && (r !== 1 || rowCounts(nodes)[1] > MAP_RULES.minRow)) { for (const p of parents) p.next = p.next.filter(k => k !== n.id); delete nodes[n.id]; return true; }
+    }
+    return false;
+  };
+  for (let r = 1; r <= ROWS; r++) { let g = 0; while (rowCounts(nodes)[r] < MAP_RULES.minRow && g++ < 5 && tryAdd(r)); }
+  for (let g = 0; g < 40; g++) {
+    const n = rowCounts(nodes), rows = Object.keys(n).map(Number), three = rows.filter(r => n[r] === 3), four = rows.filter(r => n[r] === 4), five = rows.filter(r => n[r] === 5);
+    if (three.length > MAP_RULES.maxThreeRows) { if (!shuffle(three, rng).some(r => tryAdd(r))) break; continue; }
+    if (four.length < MAP_RULES.minFourRows) { if (shuffle(five, rng).some(r => tryRemove(r))) continue; if (shuffle(three, rng).some(r => tryAdd(r))) continue; break; }
+    break;
+  }
+}
 function generateMap(rng, data, partySize, mapKey) {
-  mapKey = mapKey || 'physical';
+  let last = null;
+  for (let t = 0; t < 30; t++) { const nodes = mapTopology(rng); repairRows(rng, nodes); last = nodes; if (topologyOk(nodes)) break; }
+  return finishMap(rng, data, partySize, mapKey, last);
+}
+function mapTopology(rng) {
   const nodes = {}, edges = new Set();
   const id = (r, c) => r + ':' + c;
   const starts = new Set();
@@ -57,6 +102,17 @@ function generateMap(rng, data, partySize, mapKey) {
     // nodes created in the next row need a way forward
     for (let c = 0; c < COLS; c++) { const m = nodes[id(r + 1, c)]; if (m && r + 1 < ROWS && !m.next.length) { const t = [c, c - 1, c + 1].find(x => nodes[id(r + 2, x)]); const nc = t ?? c; if (!nodes[id(r + 2, nc)]) nodes[id(r + 2, nc)] = { id: id(r + 2, nc), row: r + 2, col: nc, next: [] }; m.next.push(id(r + 2, nc)); } }
   }
+  return nodes;
+}
+function finishMap(rng, data, partySize, mapKey, nodes) {
+  mapKey = mapKey || 'physical';
+  const id = (r, c) => r + ':' + c, starts = new Set(Object.values(nodes).filter(n => n.row === 1).map(n => n.col));
+  // untangle crossing edges: (r,a)->(r+1,b) and (r,b)->(r+1,a) become straight lines (same nodes stay connected)
+  for (const n of Object.values(nodes)) for (const k of n.next.slice()) {
+    const t = nodes[k]; if (!t || t.col === n.col) continue;
+    const o = nodes[id(n.row, t.col)], back = id(n.row + 1, n.col);
+    if (o && o.next.includes(back) && nodes[back]) { n.next = n.next.filter(x => x !== k); if (!n.next.includes(back)) n.next.push(back); o.next = o.next.filter(x => x !== back); if (!o.next.includes(k)) o.next.push(k); }
+  }
   const boss = { id: 'boss', row: ROWS + 1, col: 2, next: [], type: 'boss' };
   nodes.boss = boss;
   for (const n of Object.values(nodes)) if (n.row === ROWS) n.next = ['boss'];
@@ -86,6 +142,16 @@ function generateMap(rng, data, partySize, mapKey) {
   const mids = shuffle(list.filter(n => n.type === 'fight' && n.row >= 6 && n.row <= 11), rng);
   while (rests.filter(n => n.row < ROWS).length < 1 && mids.length) { mids.pop().type = 'rest'; rests = list.filter(n => n.type === 'rest'); }
   while (rests.length > 8) { const x = rests.find(n => n.row < ROWS && !n.campfire); if (!x) break; x.type = 'fight'; rests = list.filter(n => n.type === 'rest'); }
+  // never more than 4 fights in a row along any path: the 5th becomes a shrine
+  const isFight = (n) => n.type === 'fight' || n.type === 'elite', streak = {};
+  for (let r = 1; r <= ROWS; r++) for (const n of list.filter(x => x.row === r)) {
+    const parents = list.filter(p => p.row === r - 1 && p.next.includes(n.id)), before = Math.max(0, ...parents.map(p => streak[p.id] || 0));
+    if (isFight(n) && before + 1 > MAP_RULES.maxFightRun) n.type = 'shrine';
+    streak[n.id] = isFight(n) ? before + 1 : 0;
+  }
+  // at least 5 shrines: turn random fights (rows 2-13) into shrines
+  const spare = shuffle(list.filter(n => n.type === 'fight' && n.row >= 2 && n.row < ROWS), rng);
+  while (list.filter(n => n.type === 'shrine').length < MAP_RULES.minShrines && spare.length) spare.pop().type = 'shrine';
   // enemies
   const byTier = { 1: [], 2: [], 3: [], Elite: [] };
   for (const [k, e] of Object.entries(data.enemies)) if (byTier[e.tier] && (e.map || 'physical') === mapKey) byTier[e.tier].push(k);
@@ -96,6 +162,8 @@ function generateMap(rng, data, partySize, mapKey) {
     if (n.type === 'elite') n.enemies = [elites[ei++ % elites.length]];
     if (n.type === 'shrine') n.shrine = SHRINES[ri(rng, 0, SHRINES.length - 1)].key;
   }
+  // 10% of maps: one elite is Enraged (+50% HP and damage, double loot, a guaranteed Blue or better item)
+  if (rng() < MAP_RULES.enragedChance) { const els = list.filter(n => n.type === 'elite'); if (els.length) els[Math.floor(rng() * els.length)].enraged = true; }
   boss.enemies = [(data.maps && data.maps[mapKey] && data.maps[mapKey].boss) || 'warlord_gorrath_the_iron_tide'];
   return { nodes, starts: [...starts].map(c => id(1, c)).filter(k => nodes[k]) };
 }
@@ -159,7 +227,7 @@ class Run {
     if (['fight', 'elite', 'boss'].includes(n.type)) {
       const buffs = this.activeBuffs();
       const party = this.members.map(m => ({ cls: m.cls, name: m.name, gear: m.gear, deck: m.deck || undefined, hp: m.hp, mana: m.mana, buffs }));
-      this.combat = new Combat({ party, enemies: n.enemies, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : this.opts.partyStep, mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * (this.members.length - 1) : 1 });
+      this.combat = new Combat({ party, enemies: n.enemies, enraged: !!n.enraged, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : this.opts.partyStep, mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * (this.members.length - 1) : 1 });
       this.note(`Row ${n.row}: ${n.type === 'boss' ? 'the boss' : n.type === 'elite' ? 'an elite' : 'a fight'} against ${n.enemies.map(k => this.data.enemies[k].name).join(', ')}.`);
     } else if (n.type === 'rest') { this.pending = { type: 'rest', heals: this.members.map(m => Math.min(m.stats.maxHp - m.hp, Math.round(m.stats.maxHp * 0.3))), keep: n.campfire ? 0.75 : 0.5 }; this.pending.heal = this.pending.heals[0]; }
     else if (n.type === 'shrine') { const s = SHRINES.find(x => x.key === n.shrine); this.buffs.push({ key: s.key, name: s.name, buff: s.buff, fights: 2 }); this.pending = { type: 'shrine', shrine: s }; this.note(`Row ${n.row}: ${s.name}. ${s.text}`); }
@@ -198,10 +266,13 @@ class Run {
       const regen = m.stats.healthRegen; if (regen && !fell) m.hp = Math.min(m.stats.maxHp, m.hp + regen);
       const drops = []; let gold = 0;
       for (const e of cb.enemies) {  // every hero rolls their own loot
-        drops.push(...rollDrops(this.data, this.rng, e.key, this.level, this.luck(m), m.cls));
-        drops.push(...rollCards(this.rng, m.cls, this.data.enemies[e.key].tier, this.luck(m)));
-        drops.push(...rollNamedCards(this.data, this.rng, e.key, m.cls, this.luck(m)));
-        const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * Math.pow(1.5, this.level));
+        for (let k = 0; k < (e.enraged ? 2 : 1); k++) { // an Enraged elite drops everything twice
+          drops.push(...rollDrops(this.data, this.rng, e.key, this.level, this.luck(m), m.cls));
+          drops.push(...rollCards(this.rng, m.cls, this.data.enemies[e.key].tier, this.luck(m)));
+          drops.push(...rollNamedCards(this.data, this.rng, e.key, m.cls, this.luck(m)));
+          const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * Math.pow(1.5, this.level));
+        }
+        if (e.enraged) { const pool = this.data.enemies[e.key].pool; if (pool && pool.length) { const it = rollItem(this.data, this.rng, pool[Math.floor(this.rng() * pool.length)], this.rng() < 0.25 * (1 + this.luck(m) / 100) ? 'Purple (Epic)' : 'Blue', this.level); if (it) drops.push(it); } } // plus a guaranteed Blue, 25% Epic
       }
       m.sack.push(...drops); m.gold += gold;
       per.push({ drops, gold, fell });
@@ -259,6 +330,6 @@ class Run {
   }
 }
 
-const API = { Run, generateMap, SHRINES, SLOTS, ROWS, COLS };
+const API = { Run, generateMap, SHRINES, SLOTS, ROWS, COLS, MAP_RULES };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBRun = API;
 })(typeof window !== 'undefined' ? window : globalThis);

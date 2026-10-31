@@ -557,6 +557,9 @@ body.aiming { cursor: grabbing; user-select: none; }
   #updBanner .btn { padding: 4px 12px; font-size: 14px; } #updBanner { width: max-content; position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 32px); padding: 8px 14px; background: #2a1f12; border: 1px solid var(--accent); border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,.6); }
   .rlrolls { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; margin: -2px 0 4px 8px; } .rlrolls .win { text-decoration: underline; }
   .ilink { cursor: pointer; font-weight: 700; text-decoration: none; } .ilink:hover { text-decoration: underline; } .linkview { display: grid; justify-items: start; }
+  .planbox { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 8px; } .planhead { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; } .planhead .btn { padding: 4px 12px; font-size: 14px; }
+  .plancols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 6px; } .plancol { border-left: 3px solid var(--pc); padding-left: 8px; font-size: 14px; } .planmobs { margin-top: 4px; font-size: 13px; } .planmobs span:first-child { display: inline-block; min-width: 26px; color: var(--accent); }
+  .node .enraged { animation: pulse 1.2s ease-in-out infinite; }
 </style>
 
 <div class="wrap">
@@ -600,6 +603,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       <div class="mapscroll" id="mapScroll"></div>
       <div class="info" id="nodeInfo"></div>
       <div class="legend" id="legend"></div>
+      <div class="planbox" id="planBox"></div>
     </div>
     <aside class="side">
       <div class="panel" id="charPanel"></div>
@@ -1729,7 +1733,9 @@ body.aiming { cursor: grabbing; user-select: none; }
   function pos(n) { return { x: PADX + n.col * CW, y: PADY + (ROWS + 1 - n.row) * RH }; }
   function renderMap(scroll) {
     if (typeof retrack === 'function') try { retrack(); } catch (e) {}
+    trimPlans();
     $('mapScroll').innerHTML = mapSvg(true);
+    renderPlan();
     const curRow = run.currentRow(), W = PADX * 2 + (COLS - 1) * CW, H = PADY * 2 + ROWS * RH, reach = new Set(run.over ? [] : run.reachable());
     if (scroll) { const target = PADY + (ROWS + 1 - Math.max(1, curRow + 2)) * RH; const sc = $('mapScroll'); sc.scrollTop = Math.max(0, target - sc.clientHeight / 2); }
     $('legend').innerHTML = Object.entries(NODE).map(([k, t]) => `<span><svg width="16" height="16" viewBox="-11 -11 22 22"><path d="${t.path}" fill="${t.color}"/></svg>${t.label}</span>`).join('');
@@ -1752,16 +1758,23 @@ body.aiming { cursor: grabbing; user-select: none; }
       const p = pos(n), vis = run.visible(n), t = NODE[n.type], isReach = reach.has(n.id), visited = run.visited.includes(n.id), here = run.at === n.id;
       const r = n.id === 'boss' ? 22 : 16;
       const fill = here ? '#3a2c17' : visited ? '#2a2219' : '#1d1813';
-      const label = vis ? `${t.label}${n.enemies ? ': ' + n.enemies.map(k => DATA.enemies[k].name).join(', ') : ''}, row ${n.row}` : `Unknown, row ${n.row}`;
+      const label = vis ? `${n.enraged ? 'Enraged ' : ''}${t.label}${n.enemies ? ': ' + n.enemies.map(k => DATA.enemies[k].name).join(', ') : ''}, row ${n.row}` : `Unknown, row ${n.row}`;
       dots += `<g class="node ${isReach ? 'reach' : ''}" data-id="${n.id}" transform="translate(${p.x},${p.y})" ${isReach ? 'tabindex="0" role="button"' : ''} aria-label="${esc(label)}">
-        <circle class="ring" r="${r}" fill="${fill}" stroke="${here ? '#d6a14a' : visited ? '#6b5a44' : vis ? '#4a3d31' : '#2a231c'}" stroke-width="2"/>
+        ${n.enraged && vis ? `<circle r="${r + 6}" fill="none" stroke="#ff3a1a" stroke-width="2.5" class="enraged"><title>Enraged elite</title></circle>` : ''}<circle class="ring" r="${r}" fill="${fill}" stroke="${here ? '#d6a14a' : visited ? '#6b5a44' : vis ? '#4a3d31' : '#2a231c'}" stroke-width="2"/>
         ${run.online && NET.s ? run.members.map((m, i) => NET.s.votes[i] === n.id ? `<circle cx="${-r + 4 + 9 * i}" cy="${r + 4}" r="4" fill="${CC[m.cls]}" stroke="#111"/>` : '').join('') : ''}
         ${vis ? `<path d="${t.path}" transform="scale(${n.id === 'boss' ? 1.25 : .95})" fill="${visited && !here ? '#6b5a44' : t.color}" opacity="${visited && !here ? .7 : 1}"/>` : `<text y="5" text-anchor="middle" fill="#4a3d31" font-size="15" font-weight="700">?</text>`}
       </g>`;
     }
+    // planned routes (A solid blue, B dashed purple) drawn on top of the edges
+    let planSvg = '';
+    if (interactive) for (const [slot, col, dash] of [['B', '#c084fc', '7 5'], ['A', '#4fd1ff', '']]) {
+      const P = planOf(slot); if (!P.length) continue; const pts = [run.at, ...P].filter(Boolean);
+      for (let i = 1; i < pts.length; i++) { const a = pos(nodes[pts[i - 1]]), b = pos(nodes[pts[i]]); planSvg += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${col}" stroke-width="${slot === MP.slot ? 6 : 4}" stroke-linecap="round" stroke-dasharray="${dash}" opacity="${slot === MP.slot ? .85 : .55}"/>`; }
+      for (const k of P) { const p = pos(nodes[k]); planSvg += `<circle cx="${p.x}" cy="${p.y}" r="${k === 'boss' ? 27 : 21}" fill="none" stroke="${col}" stroke-width="2.5" stroke-dasharray="${dash}" opacity=".9"/>`; }
+    }
     let rowsTxt = '';
     for (let r = 1; r <= ROWS; r++) { const y = PADY + (ROWS + 1 - r) * RH; rowsTxt += `<text x="8" y="${y + 4}" fill="#6b5a44" font-size="11">${r}</text>`; }
-    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="group" aria-label="Map">${rowsTxt}${edges}${dots}</svg>`;
+    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="group" aria-label="Map">${rowsTxt}${edges}${planSvg}${dots}</svg>`;
   }
   function mapPeek() {
     if (!run) return;
@@ -1779,6 +1792,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     const n = run.map.nodes[id], t = NODE[n.type];
     let s = `<b style="color:${t.color}">${t.label}</b> <span class="muted">&middot; row ${n.row > ROWS ? 'boss' : n.row}</span><br>`;
     if (n.enemies) s += n.enemies.map(k => { const e = DATA.enemies[k]; return `${esc(e.name)} <span class="muted">(${e.tier === 'Elite' || e.tier === 'Boss' ? e.tier : 'Tier ' + e.tier}, ${Math.round(e.hp * Math.pow(1.5, run.level))} HP, ${esc(e.creature)}, weak to ${e.weak})</span> <button class="pilebtn" data-loot="${k}">Loot table</button> <button class="pilebtn" data-deck="${k}">Deck</button><br><span class="muted">${esc(e.desc || '')}</span>`; }).join('<br>');
+    if (n.enraged) s += '<div style="margin:2px 0 4px"><b style="color:#ff5a3a">Enraged!</b> <span class="muted">+50% HP and damage. Drops twice the loot, plus a guaranteed Blue item (25% chance it is Epic).</span></div>';
     if (n.type === 'rest' && n.campfire) s += '<b>Halfway campfire</b> (one is always on row 7). ';
     if (n.type === 'rest') s += `<span class="muted">Heal 30% of your max HP, or extract and keep ${n.campfire ? '75%' : 'half'} of your sack.</span>`;
     if (n.type === 'shrine') s += `<span class="muted">${esc(SHRINES.find(x => x.key === n.shrine).text)}</span>`;
@@ -1795,7 +1809,57 @@ body.aiming { cursor: grabbing; user-select: none; }
       ${voted.length ? `<div style="margin-top:4px">${voted.map(x => `<b style="color:${CC[x.m.cls]}">${esc(x.m.name)}</b> &rarr; ${where(S.votes[x.i])}`).join('<br>')}</div>` : ''}
       ${voted.length && waiting.length ? `<div class="muted">Waiting for ${waiting.map(x => esc(x.m.name)).join(', ')} (up to ${VOTE_S}s).</div>` : ''}`;
   }
-  $('mapScroll').addEventListener('click', (ev) => { const g = ev.target.closest('.node.reach'); if (g) travel(g.dataset.id); });
+  $('mapScroll').addEventListener('click', (ev) => {
+    if (MP.on && canPlan()) { const g = ev.target.closest('.node'); if (g) planClick(g.dataset.id); return; }
+    const g = ev.target.closest('.node.reach'); if (g) travel(g.dataset.id);
+  });
+  // ---------- route planner: the party leader (or a solo player) clicks nodes to draw up to two routes (A and B) and compare them
+  const MP = { on: false, slot: 'A', run: null };
+  function planOf(slot) { if (!run) return []; run.plan = run.plan || { A: [], B: [] }; return run.plan[slot]; }
+  const canPlan = () => run && !run.over && (!run.online || netHost());
+  // drop the part of each route that is behind the party; a route the party left is cleared
+  function trimPlans() {
+    if (!run) return; if (MP.run !== run) { MP.run = run; MP.on = false; MP.slot = 'A'; }
+    for (const slot of ['A', 'B']) { const P = planOf(slot); const i = P.indexOf(run.at); if (i >= 0) P.splice(0, i + 1); else if (P.length && run.map.nodes[P[0]].row <= run.currentRow()) P.length = 0; }
+  }
+  function planPath(from, to) { // shortest way down the map from a node (or the start) to another
+    const nodes = run.map.nodes, startSet = from ? nodes[from].next : run.reachable(); const prev = {}, q = [];
+    for (const k of startSet) { prev[k] = null; q.push(k); }
+    while (q.length) { const k = q.shift(); if (k === to) { const out = []; let c = k; while (c != null) { out.unshift(c); c = prev[c]; } return out; } for (const n of nodes[k].next) if (!(n in prev)) { prev[n] = k; q.push(n); } }
+    return null;
+  }
+  function planClick(id) {
+    const P = planOf(MP.slot), at = P.indexOf(id);
+    if (at >= 0) P.splice(at); // clicking a planned node cuts the route back to before it
+    else { const path = planPath(P.length ? P[P.length - 1] : run.at, id); if (!path) { const el = $('planHint'); if (el) el.textContent = "Can't get there from the end of this route. Click a node further down the map."; return; } P.push(...path); }
+    sharePlan(); renderMap();
+  }
+  function sharePlan() { if (run && run.online && netHost() && NET.s) netSend('plan', { sid: NET.s.sid, A: planOf('A'), B: planOf('B') }); }
+  function planSummary(P) {
+    const nodes = run.map.nodes, by = {}, mobs = {}, shr = {}; let enr = 0;
+    for (const k of P) { const n = nodes[k]; by[n.type] = (by[n.type] || 0) + 1; if (n.enraged) enr++; if (n.type === 'shrine') { const s = SHRINES.find(x => x.key === n.shrine); shr[s ? s.name.replace('Shrine of ', '') : '?'] = (shr[s ? s.name.replace('Shrine of ', '') : '?'] || 0) + 1; }
+      for (const e of n.enemies || []) { const m = mobs[e] || (mobs[e] = { n: 0, enr: 0 }); m.n++; if (n.enraged) m.enr++; } }
+    const line = (type, extra) => by[type] ? `<div><b style="color:${NODE[type].color}">${by[type]} ${NODE[type].label.toLowerCase()}${by[type] > 1 && !/\//.test(NODE[type].label) ? 's' : ''}</b>${extra ? ' <span class="muted">' + extra + '</span>' : ''}</div>` : '';
+    const last = nodes[P[P.length - 1]];
+    return `<div class="muted" style="font-size:12px">${P.length} nodes, to ${last.id === 'boss' ? 'the boss' : 'row ' + last.row}</div>
+      ${line('fight')}${line('elite', enr ? `(${enr} Enraged!)` : '')}${line('merchant')}${line('rest')}${line('shrine', Object.entries(shr).map(([k, v]) => v > 1 ? k + ' x' + v : k).join(', '))}${line('boss')}
+      <div class="planmobs">${Object.entries(mobs).sort((a, b) => b[1].n - a[1].n).map(([k, m]) => { const e = DATA.enemies[k]; return `<div><span>${m.n}x</span> ${m.enr ? '<b style="color:#ff5a3a">Enraged</b> ' : ''}${esc(e.name)} <span class="muted">${e.tier === 'Elite' || e.tier === 'Boss' ? e.tier : 'T' + e.tier}</span> <button class="pilebtn" data-loot="${k}">Loot</button></div>`; }).join('')}</div>`;
+  }
+  function renderPlan() {
+    const el = $('planBox'); if (!el || !run) return;
+    if (run.over) { el.innerHTML = ''; return; }
+    const mine = canPlan(), A = planOf('A'), B = planOf('B');
+    el.innerHTML = `<div class="planhead"><b>Route planner</b>
+        ${mine ? `<button class="btn ${MP.on ? 'primary' : ''}" id="planToggle">${MP.on ? 'Drawing: click nodes' : 'Plan a route'}</button>
+        ${['A', 'B'].map(s => `<button class="cxchip ${MP.slot === s ? 'on' : ''}" data-pslot="${s}" style="${s === 'A' ? 'border-color:#4fd1ff' : 'border-color:#c084fc'}">Route ${s}${planOf(s).length ? ' (' + planOf(s).length + ')' : ''}</button>`).join('')}
+        <button class="pilebtn" id="planClear">Clear ${MP.slot}</button>` : `<span class="muted">${A.length || B.length ? 'The party leader\'s plan.' : 'The party leader can draw a route here.'}</span>`}</div>
+      ${mine && MP.on ? `<p class="muted" id="planHint" style="margin:2px 0;font-size:12px">Click nodes down the map to draw Route ${MP.slot} (gaps fill in with the shortest way). Click a planned node to cut the route back. Turn drawing off to travel.</p>` : ''}
+      ${A.length || B.length ? `<div class="plancols">${[['A', A, '#4fd1ff'], ['B', B, '#c084fc']].filter(x => x[1].length).map(([s, P, c]) => `<div class="plancol" style="--pc:${c}"><b style="color:${c}">Route ${s}</b>${planSummary(P)}</div>`).join('')}</div>` : ''}`;
+    if ($('planToggle')) $('planToggle').onclick = () => { MP.on = !MP.on; renderMap(); };
+    el.querySelectorAll('[data-pslot]').forEach(b => b.onclick = () => { MP.slot = b.dataset.pslot; MP.on = true; renderMap(); });
+    if ($('planClear')) $('planClear').onclick = () => { planOf(MP.slot).length = 0; sharePlan(); renderMap(); };
+  }
+  $('planBox').addEventListener('click', (ev) => { const b = ev.target.closest('[data-loot]'); if (b) lootModal(b.dataset.loot); });
   $('mapScroll').addEventListener('keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('.node.reach')) { ev.preventDefault(); travel(ev.target.dataset.id); } });
   $('mapScroll').addEventListener('mouseover', (ev) => { const g = ev.target.closest('.node'); if (g && run.visible(run.map.nodes[g.dataset.id])) { focusNode = g.dataset.id; nodeInfo(g.dataset.id); } });
   $('mapScroll').addEventListener('focusin', (ev) => { const g = ev.target.closest('.node'); if (g) { focusNode = g.dataset.id; nodeInfo(g.dataset.id); } });

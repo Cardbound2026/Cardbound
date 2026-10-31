@@ -561,6 +561,9 @@ body.aiming { cursor: grabbing; user-select: none; }
   #updBanner .btn { padding: 4px 12px; font-size: 14px; } #updBanner { width: max-content; position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 32px); padding: 8px 14px; background: #2a1f12; border: 1px solid var(--accent); border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,.6); }
   .rlrolls { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; margin: -2px 0 4px 8px; } .rlrolls .win { text-decoration: underline; }
   .ilink { cursor: pointer; font-weight: 700; text-decoration: none; } .ilink:hover { text-decoration: underline; } .linkview { display: grid; justify-items: start; }
+  .planbox { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 8px; } .planhead { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; } .planhead .btn { padding: 4px 12px; font-size: 14px; }
+  .plancols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 6px; } .plancol { border-left: 3px solid var(--pc); padding-left: 8px; font-size: 14px; } .planmobs { margin-top: 4px; font-size: 13px; } .planmobs span:first-child { display: inline-block; min-width: 26px; color: var(--accent); }
+  .node .enraged { animation: pulse 1.2s ease-in-out infinite; }
 </style>
 </head>
 <body>
@@ -607,6 +610,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       <div class="mapscroll" id="mapScroll"></div>
       <div class="info" id="nodeInfo"></div>
       <div class="legend" id="legend"></div>
+      <div class="planbox" id="planBox"></div>
     </div>
     <aside class="side">
       <div class="panel" id="charPanel"></div>
@@ -1601,6 +1605,7 @@ class Combat {
 
   makeEnemy(key, i) {
     const en = this.makeEnemy0(key, i);
+    if (this.opts.enraged && en.tier === 'Elite') { en.maxHp = en.hp = Math.round(en.hp * 1.5); en.dmgTune *= 1.5; en.name = 'Enraged ' + en.name; en.enraged = true; } // 10% of maps: +50% HP and damage, double loot
     if (this.raid) {
       const n = this.partySize, k = 1 + RAID.manaStep * (n - 1), d = en.d;
       en.maxMana = Math.round(d.maxMana * k); en.regen = Math.round(d.regen * k); en.regenK = k; en.drawPlus = n >= 6 ? 1 : 0; en.draw = d.draw + en.drawPlus; en.dmgTune *= RAID.dmg * (d.raidDmg || 1);
@@ -2462,8 +2467,53 @@ const SHRINES = [
 ];
 const SLOTS = ['Weapon', 'Off-hand', 'Helm', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves', 'Belt', 'Pants', 'Boots', 'Ring 1', 'Ring 2'];
 
+// map rules (Oct 31): every row has 3 to 5 nodes, at most 3 rows have only 3, at least 5 rows have exactly 4;
+// at least 5 shrines; never more than 4 fights (incl. elites) in a row along any path; 10% of maps hide one Enraged elite
+const MAP_RULES = { minRow: 3, maxThreeRows: 3, minFourRows: 5, minShrines: 5, maxFightRun: 4, enragedChance: 0.1 };
+function rowCounts(nodes) { const n = {}; for (let r = 1; r <= ROWS; r++) n[r] = 0; for (const x of Object.values(nodes)) if (x.row >= 1 && x.row <= ROWS) n[x.row]++; return n; }
+function topologyOk(nodes) {
+  const n = rowCounts(nodes), v = Object.values(n);
+  if (v.some(k => k < MAP_RULES.minRow) || v.filter(k => k === 3).length > MAP_RULES.maxThreeRows || v.filter(k => k === 4).length < MAP_RULES.minFourRows) return false;
+  const all = Object.values(nodes).filter(x => x.row >= 1 && x.row <= ROWS);
+  return all.every(x => (x.row === ROWS || x.next.length) && (x.row === 1 || all.some(p => p.row === x.row - 1 && p.next.includes(x.id))));
+}
+// add or remove single nodes until the row counts follow MAP_RULES (edges never cross)
+function repairRows(rng, nodes) {
+  const id = (r, c) => r + ':' + c, has = (r, c) => !!nodes[id(r, c)], edge = (a, b) => nodes[a] && nodes[a].next.includes(b);
+  const tryAdd = (r) => {
+    for (const c of shuffle([0, 1, 2, 3, 4].filter(c => !has(r, c)), rng)) {
+      const ps = r === 1 ? [null] : shuffle([c - 1, c, c + 1].filter(p => p >= 0 && p < COLS && has(r - 1, p) && !(p !== c && edge(id(r - 1, c), id(r, p)))), rng);
+      const qs = r === ROWS ? [null] : shuffle([c - 1, c, c + 1].filter(q => q >= 0 && q < COLS && has(r + 1, q) && !(q !== c && edge(id(r, q), id(r + 1, c)))), rng);
+      if (!ps.length || !qs.length) continue;
+      const n = nodes[id(r, c)] = { id: id(r, c), row: r, col: c, next: [] };
+      if (ps[0] !== null) nodes[id(r - 1, ps[0])].next.push(n.id);
+      if (qs[0] !== null) n.next.push(id(r + 1, qs[0]));
+      return true;
+    }
+    return false;
+  };
+  const tryRemove = (r) => {
+    for (const c of shuffle([0, 1, 2, 3, 4].filter(c => has(r, c)), rng)) {
+      const n = nodes[id(r, c)], parents = Object.values(nodes).filter(p => p.next.includes(n.id));
+      const kidsOk = n.next.every(k => Object.values(nodes).some(p => p !== n && p.next.includes(k)));
+      if (parents.every(p => p.next.length >= 2) && kidsOk && (r !== 1 || rowCounts(nodes)[1] > MAP_RULES.minRow)) { for (const p of parents) p.next = p.next.filter(k => k !== n.id); delete nodes[n.id]; return true; }
+    }
+    return false;
+  };
+  for (let r = 1; r <= ROWS; r++) { let g = 0; while (rowCounts(nodes)[r] < MAP_RULES.minRow && g++ < 5 && tryAdd(r)); }
+  for (let g = 0; g < 40; g++) {
+    const n = rowCounts(nodes), rows = Object.keys(n).map(Number), three = rows.filter(r => n[r] === 3), four = rows.filter(r => n[r] === 4), five = rows.filter(r => n[r] === 5);
+    if (three.length > MAP_RULES.maxThreeRows) { if (!shuffle(three, rng).some(r => tryAdd(r))) break; continue; }
+    if (four.length < MAP_RULES.minFourRows) { if (shuffle(five, rng).some(r => tryRemove(r))) continue; if (shuffle(three, rng).some(r => tryAdd(r))) continue; break; }
+    break;
+  }
+}
 function generateMap(rng, data, partySize, mapKey) {
-  mapKey = mapKey || 'physical';
+  let last = null;
+  for (let t = 0; t < 30; t++) { const nodes = mapTopology(rng); repairRows(rng, nodes); last = nodes; if (topologyOk(nodes)) break; }
+  return finishMap(rng, data, partySize, mapKey, last);
+}
+function mapTopology(rng) {
   const nodes = {}, edges = new Set();
   const id = (r, c) => r + ':' + c;
   const starts = new Set();
@@ -2502,6 +2552,17 @@ function generateMap(rng, data, partySize, mapKey) {
     // nodes created in the next row need a way forward
     for (let c = 0; c < COLS; c++) { const m = nodes[id(r + 1, c)]; if (m && r + 1 < ROWS && !m.next.length) { const t = [c, c - 1, c + 1].find(x => nodes[id(r + 2, x)]); const nc = t ?? c; if (!nodes[id(r + 2, nc)]) nodes[id(r + 2, nc)] = { id: id(r + 2, nc), row: r + 2, col: nc, next: [] }; m.next.push(id(r + 2, nc)); } }
   }
+  return nodes;
+}
+function finishMap(rng, data, partySize, mapKey, nodes) {
+  mapKey = mapKey || 'physical';
+  const id = (r, c) => r + ':' + c, starts = new Set(Object.values(nodes).filter(n => n.row === 1).map(n => n.col));
+  // untangle crossing edges: (r,a)->(r+1,b) and (r,b)->(r+1,a) become straight lines (same nodes stay connected)
+  for (const n of Object.values(nodes)) for (const k of n.next.slice()) {
+    const t = nodes[k]; if (!t || t.col === n.col) continue;
+    const o = nodes[id(n.row, t.col)], back = id(n.row + 1, n.col);
+    if (o && o.next.includes(back) && nodes[back]) { n.next = n.next.filter(x => x !== k); if (!n.next.includes(back)) n.next.push(back); o.next = o.next.filter(x => x !== back); if (!o.next.includes(k)) o.next.push(k); }
+  }
   const boss = { id: 'boss', row: ROWS + 1, col: 2, next: [], type: 'boss' };
   nodes.boss = boss;
   for (const n of Object.values(nodes)) if (n.row === ROWS) n.next = ['boss'];
@@ -2531,6 +2592,16 @@ function generateMap(rng, data, partySize, mapKey) {
   const mids = shuffle(list.filter(n => n.type === 'fight' && n.row >= 6 && n.row <= 11), rng);
   while (rests.filter(n => n.row < ROWS).length < 1 && mids.length) { mids.pop().type = 'rest'; rests = list.filter(n => n.type === 'rest'); }
   while (rests.length > 8) { const x = rests.find(n => n.row < ROWS && !n.campfire); if (!x) break; x.type = 'fight'; rests = list.filter(n => n.type === 'rest'); }
+  // never more than 4 fights in a row along any path: the 5th becomes a shrine
+  const isFight = (n) => n.type === 'fight' || n.type === 'elite', streak = {};
+  for (let r = 1; r <= ROWS; r++) for (const n of list.filter(x => x.row === r)) {
+    const parents = list.filter(p => p.row === r - 1 && p.next.includes(n.id)), before = Math.max(0, ...parents.map(p => streak[p.id] || 0));
+    if (isFight(n) && before + 1 > MAP_RULES.maxFightRun) n.type = 'shrine';
+    streak[n.id] = isFight(n) ? before + 1 : 0;
+  }
+  // at least 5 shrines: turn random fights (rows 2-13) into shrines
+  const spare = shuffle(list.filter(n => n.type === 'fight' && n.row >= 2 && n.row < ROWS), rng);
+  while (list.filter(n => n.type === 'shrine').length < MAP_RULES.minShrines && spare.length) spare.pop().type = 'shrine';
   // enemies
   const byTier = { 1: [], 2: [], 3: [], Elite: [] };
   for (const [k, e] of Object.entries(data.enemies)) if (byTier[e.tier] && (e.map || 'physical') === mapKey) byTier[e.tier].push(k);
@@ -2541,6 +2612,8 @@ function generateMap(rng, data, partySize, mapKey) {
     if (n.type === 'elite') n.enemies = [elites[ei++ % elites.length]];
     if (n.type === 'shrine') n.shrine = SHRINES[ri(rng, 0, SHRINES.length - 1)].key;
   }
+  // 10% of maps: one elite is Enraged (+50% HP and damage, double loot, a guaranteed Blue or better item)
+  if (rng() < MAP_RULES.enragedChance) { const els = list.filter(n => n.type === 'elite'); if (els.length) els[Math.floor(rng() * els.length)].enraged = true; }
   boss.enemies = [(data.maps && data.maps[mapKey] && data.maps[mapKey].boss) || 'warlord_gorrath_the_iron_tide'];
   return { nodes, starts: [...starts].map(c => id(1, c)).filter(k => nodes[k]) };
 }
@@ -2604,7 +2677,7 @@ class Run {
     if (['fight', 'elite', 'boss'].includes(n.type)) {
       const buffs = this.activeBuffs();
       const party = this.members.map(m => ({ cls: m.cls, name: m.name, gear: m.gear, deck: m.deck || undefined, hp: m.hp, mana: m.mana, buffs }));
-      this.combat = new Combat({ party, enemies: n.enemies, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : this.opts.partyStep, mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * (this.members.length - 1) : 1 });
+      this.combat = new Combat({ party, enemies: n.enemies, enraged: !!n.enraged, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : this.opts.partyStep, mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * (this.members.length - 1) : 1 });
       this.note(`Row ${n.row}: ${n.type === 'boss' ? 'the boss' : n.type === 'elite' ? 'an elite' : 'a fight'} against ${n.enemies.map(k => this.data.enemies[k].name).join(', ')}.`);
     } else if (n.type === 'rest') { this.pending = { type: 'rest', heals: this.members.map(m => Math.min(m.stats.maxHp - m.hp, Math.round(m.stats.maxHp * 0.3))), keep: n.campfire ? 0.75 : 0.5 }; this.pending.heal = this.pending.heals[0]; }
     else if (n.type === 'shrine') { const s = SHRINES.find(x => x.key === n.shrine); this.buffs.push({ key: s.key, name: s.name, buff: s.buff, fights: 2 }); this.pending = { type: 'shrine', shrine: s }; this.note(`Row ${n.row}: ${s.name}. ${s.text}`); }
@@ -2643,10 +2716,13 @@ class Run {
       const regen = m.stats.healthRegen; if (regen && !fell) m.hp = Math.min(m.stats.maxHp, m.hp + regen);
       const drops = []; let gold = 0;
       for (const e of cb.enemies) {  // every hero rolls their own loot
-        drops.push(...rollDrops(this.data, this.rng, e.key, this.level, this.luck(m), m.cls));
-        drops.push(...rollCards(this.rng, m.cls, this.data.enemies[e.key].tier, this.luck(m)));
-        drops.push(...rollNamedCards(this.data, this.rng, e.key, m.cls, this.luck(m)));
-        const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * Math.pow(1.5, this.level));
+        for (let k = 0; k < (e.enraged ? 2 : 1); k++) { // an Enraged elite drops everything twice
+          drops.push(...rollDrops(this.data, this.rng, e.key, this.level, this.luck(m), m.cls));
+          drops.push(...rollCards(this.rng, m.cls, this.data.enemies[e.key].tier, this.luck(m)));
+          drops.push(...rollNamedCards(this.data, this.rng, e.key, m.cls, this.luck(m)));
+          const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * Math.pow(1.5, this.level));
+        }
+        if (e.enraged) { const pool = this.data.enemies[e.key].pool; if (pool && pool.length) { const it = rollItem(this.data, this.rng, pool[Math.floor(this.rng() * pool.length)], this.rng() < 0.25 * (1 + this.luck(m) / 100) ? 'Purple (Epic)' : 'Blue', this.level); if (it) drops.push(it); } } // plus a guaranteed Blue, 25% Epic
       }
       m.sack.push(...drops); m.gold += gold;
       per.push({ drops, gold, fell });
@@ -2704,7 +2780,7 @@ class Run {
   }
 }
 
-const API = { Run, generateMap, SHRINES, SLOTS, ROWS, COLS };
+const API = { Run, generateMap, SHRINES, SLOTS, ROWS, COLS, MAP_RULES };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBRun = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -4291,8 +4367,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793479225939';
-  const CB_BUILD = '59860b9e04'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793480112483';
+  const CB_BUILD = 'ea45b8bcbc'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -4589,6 +4665,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
         if (p.to !== SOC.me || NET.duelIn.some(d => d.from === p.from)) return;
         NET.duelIn.push({ from: p.from, name: p.name, cls: p.cls }); sysChat(`${p.name} challenges you to a duel.`); renderSocial(); return;
       }
+      case 'plan': { if (!S || p.sid !== S.sid || p.from !== S.host || !run) return; run.plan = { A: Array.isArray(p.A) ? p.A.filter(k => run.map.nodes[k]) : [], B: Array.isArray(p.B) ? p.B.filter(k => run.map.nodes[k]) : [] }; if (!$('scrMap').hidden) renderMap(); return; }
       case 'insp-req': case 'insp': case 'tr-ask': case 'tr-ans': case 'tr-offer': case 'tr-acc': case 'tr-cancel': gearNetIn(p); return;
       case 'duel-answer': {
         if (p.to !== SOC.me || !NET.duelOut || NET.duelOut !== p.from) return;
@@ -4845,6 +4922,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-10-31', items: [
+      ['Maps', 'New map rules: every row has at least 3 nodes, at most 3 rows have only 3, at least 5 rows have 4. Every map has at least 5 shrines, and no path has more than 4 fights in a row. Crossing paths are straightened out.'],
+      ['Maps', 'Enraged elites: 10% of maps hide one (red pulsing ring). +50% HP and damage, drops twice the loot plus a guaranteed Blue item (25% chance it is Epic, more with Luck).'],
+      ['Maps', 'Route planner (under the map): the party leader clicks nodes to draw Route A and Route B, and sees a summary of each: fights, elites, shops, rests, shrines and every monster with its loot table. The party sees the leader\'s routes.'],
+      ['Gear', 'Clicking a gear slot to compare items now has a Salvage button on every stash item, for instant gold.'],
       ['Combat', 'Party fights are laid out in a grid: 2x2 for 3-4 heroes, 3 across for 5-6, 4-5 across in big raids. Status tags are shortened (hover for the full name). Several monsters line up two by two.'],
       ['Raids', 'You can see who has ended their turn: a green check on the turn bar and "Done" under their name; everyone else shows "playing...".'],
       ['Raids', 'Raid bosses are tougher: Gorrath +30% HP, Vashkar +50% HP and +25% damage, all the others +40% HP. Raid bosses resist 25% of Bleed, Poison and Burn damage.'],
@@ -5176,16 +5257,21 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   document.addEventListener('click', (ev) => {
     const d = ev.target.closest('[data-dslot]'); if (!d || !d.closest('#hpGear')) return;
     gtip.hidden = true;
-    const sl = d.dataset.dslot, c = CBHub.char(profile, heroKey), it = c.gear.find(g => g.slot === sl);
+    slotPicker(d.dataset.dslot);
+  });
+  // a gear slot: what's equipped, and every stash item that fits it, compared with your gear (equip or salvage right here)
+  function slotPicker(sl) {
+    const c = CBHub.char(profile, heroKey), it = c.gear.find(g => g.slot === sl);
     const fits = profile.stash.filter(x => x.kind !== 'card' && CBHub.slotOptions(x).includes(sl) && !(x.slot === 'Codex' && x.cls && x.cls !== hcls())).sort((a, b) => (b.ilvl || 0) - (a.ilvl || 0));
-    const choose = fits.map(x => itemHtml(x, `<div class="acts">${upBadge(x, c.gear)}<button class="btn" data-eq="${x.id}">Equip</button></div>`)).join('');
+    const choose = fits.map(x => itemHtml(x, `<div class="acts">${upBadge(x, c.gear)}<button class="btn" data-eq="${x.id}">Equip</button><button class="btn" data-salv="${x.id}" title="Scrap it for gold right now">Salvage +${CBHub.salvageValue(x)}g</button></div>`)).join('');
     modal(`<h2>${sl}</h2>${it ? itemHtml(it, `<div class="acts"><button class="btn" id="mUneq">Unequip to stash</button></div>`) : '<p class="muted">Nothing equipped.</p>'}
       <h3 style="font-size:18px;color:var(--accent);margin-top:10px">From your stash (${fits.length})</h3><div class="list" style="max-height:340px">${choose || '<span class="muted">Nothing in the stash fits this slot.</span>'}</div>
       <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     $('mClose').onclick = closeModal;
     if ($('mUneq')) $('mUneq').onclick = () => { if (!CBHub.unequip(profile, heroKey, sl)) return toast('Stash is full.'); save(); closeModal(); renderHub(); };
     for (const b of $('modalBox').querySelectorAll('[data-eq]')) b.onclick = () => { const r = CBHub.equip(profile, heroKey, b.dataset.eq, sl); if (!r.ok) return toast(r.why); save(); closeModal(); renderHub(); };
-  });
+    for (const b of $('modalBox').querySelectorAll('[data-salv]')) b.onclick = () => { const sc = $('modalBox').querySelector('.list') ? $('modalBox').querySelector('.list').scrollTop : 0; const g = CBHub.salvage(profile, b.dataset.salv); if (!g) return; save(); renderHub(); slotPicker(sl); const l = $('modalBox').querySelector('.list'); if (l) l.scrollTop = sc; sysChat(`Salvaged for ${g} gold.`); };
+  }
 
   // ---------- inspecting another player (they answer with their hero's gear and deck)
   const INS = { waiting: null };
@@ -5637,7 +5723,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function pos(n) { return { x: PADX + n.col * CW, y: PADY + (ROWS + 1 - n.row) * RH }; }
   function renderMap(scroll) {
     if (typeof retrack === 'function') try { retrack(); } catch (e) {}
+    trimPlans();
     $('mapScroll').innerHTML = mapSvg(true);
+    renderPlan();
     const curRow = run.currentRow(), W = PADX * 2 + (COLS - 1) * CW, H = PADY * 2 + ROWS * RH, reach = new Set(run.over ? [] : run.reachable());
     if (scroll) { const target = PADY + (ROWS + 1 - Math.max(1, curRow + 2)) * RH; const sc = $('mapScroll'); sc.scrollTop = Math.max(0, target - sc.clientHeight / 2); }
     $('legend').innerHTML = Object.entries(NODE).map(([k, t]) => `<span><svg width="16" height="16" viewBox="-11 -11 22 22"><path d="${t.path}" fill="${t.color}"/></svg>${t.label}</span>`).join('');
@@ -5660,16 +5748,23 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       const p = pos(n), vis = run.visible(n), t = NODE[n.type], isReach = reach.has(n.id), visited = run.visited.includes(n.id), here = run.at === n.id;
       const r = n.id === 'boss' ? 22 : 16;
       const fill = here ? '#3a2c17' : visited ? '#2a2219' : '#1d1813';
-      const label = vis ? `${t.label}${n.enemies ? ': ' + n.enemies.map(k => DATA.enemies[k].name).join(', ') : ''}, row ${n.row}` : `Unknown, row ${n.row}`;
+      const label = vis ? `${n.enraged ? 'Enraged ' : ''}${t.label}${n.enemies ? ': ' + n.enemies.map(k => DATA.enemies[k].name).join(', ') : ''}, row ${n.row}` : `Unknown, row ${n.row}`;
       dots += `<g class="node ${isReach ? 'reach' : ''}" data-id="${n.id}" transform="translate(${p.x},${p.y})" ${isReach ? 'tabindex="0" role="button"' : ''} aria-label="${esc(label)}">
-        <circle class="ring" r="${r}" fill="${fill}" stroke="${here ? '#d6a14a' : visited ? '#6b5a44' : vis ? '#4a3d31' : '#2a231c'}" stroke-width="2"/>
+        ${n.enraged && vis ? `<circle r="${r + 6}" fill="none" stroke="#ff3a1a" stroke-width="2.5" class="enraged"><title>Enraged elite</title></circle>` : ''}<circle class="ring" r="${r}" fill="${fill}" stroke="${here ? '#d6a14a' : visited ? '#6b5a44' : vis ? '#4a3d31' : '#2a231c'}" stroke-width="2"/>
         ${run.online && NET.s ? run.members.map((m, i) => NET.s.votes[i] === n.id ? `<circle cx="${-r + 4 + 9 * i}" cy="${r + 4}" r="4" fill="${CC[m.cls]}" stroke="#111"/>` : '').join('') : ''}
         ${vis ? `<path d="${t.path}" transform="scale(${n.id === 'boss' ? 1.25 : .95})" fill="${visited && !here ? '#6b5a44' : t.color}" opacity="${visited && !here ? .7 : 1}"/>` : `<text y="5" text-anchor="middle" fill="#4a3d31" font-size="15" font-weight="700">?</text>`}
       </g>`;
     }
+    // planned routes (A solid blue, B dashed purple) drawn on top of the edges
+    let planSvg = '';
+    if (interactive) for (const [slot, col, dash] of [['B', '#c084fc', '7 5'], ['A', '#4fd1ff', '']]) {
+      const P = planOf(slot); if (!P.length) continue; const pts = [run.at, ...P].filter(Boolean);
+      for (let i = 1; i < pts.length; i++) { const a = pos(nodes[pts[i - 1]]), b = pos(nodes[pts[i]]); planSvg += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${col}" stroke-width="${slot === MP.slot ? 6 : 4}" stroke-linecap="round" stroke-dasharray="${dash}" opacity="${slot === MP.slot ? .85 : .55}"/>`; }
+      for (const k of P) { const p = pos(nodes[k]); planSvg += `<circle cx="${p.x}" cy="${p.y}" r="${k === 'boss' ? 27 : 21}" fill="none" stroke="${col}" stroke-width="2.5" stroke-dasharray="${dash}" opacity=".9"/>`; }
+    }
     let rowsTxt = '';
     for (let r = 1; r <= ROWS; r++) { const y = PADY + (ROWS + 1 - r) * RH; rowsTxt += `<text x="8" y="${y + 4}" fill="#6b5a44" font-size="11">${r}</text>`; }
-    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="group" aria-label="Map">${rowsTxt}${edges}${dots}</svg>`;
+    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="group" aria-label="Map">${rowsTxt}${edges}${planSvg}${dots}</svg>`;
   }
   function mapPeek() {
     if (!run) return;
@@ -5687,6 +5782,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const n = run.map.nodes[id], t = NODE[n.type];
     let s = `<b style="color:${t.color}">${t.label}</b> <span class="muted">&middot; row ${n.row > ROWS ? 'boss' : n.row}</span><br>`;
     if (n.enemies) s += n.enemies.map(k => { const e = DATA.enemies[k]; return `${esc(e.name)} <span class="muted">(${e.tier === 'Elite' || e.tier === 'Boss' ? e.tier : 'Tier ' + e.tier}, ${Math.round(e.hp * Math.pow(1.5, run.level))} HP, ${esc(e.creature)}, weak to ${e.weak})</span> <button class="pilebtn" data-loot="${k}">Loot table</button> <button class="pilebtn" data-deck="${k}">Deck</button><br><span class="muted">${esc(e.desc || '')}</span>`; }).join('<br>');
+    if (n.enraged) s += '<div style="margin:2px 0 4px"><b style="color:#ff5a3a">Enraged!</b> <span class="muted">+50% HP and damage. Drops twice the loot, plus a guaranteed Blue item (25% chance it is Epic).</span></div>';
     if (n.type === 'rest' && n.campfire) s += '<b>Halfway campfire</b> (one is always on row 7). ';
     if (n.type === 'rest') s += `<span class="muted">Heal 30% of your max HP, or extract and keep ${n.campfire ? '75%' : 'half'} of your sack.</span>`;
     if (n.type === 'shrine') s += `<span class="muted">${esc(SHRINES.find(x => x.key === n.shrine).text)}</span>`;
@@ -5703,7 +5799,57 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       ${voted.length ? `<div style="margin-top:4px">${voted.map(x => `<b style="color:${CC[x.m.cls]}">${esc(x.m.name)}</b> &rarr; ${where(S.votes[x.i])}`).join('<br>')}</div>` : ''}
       ${voted.length && waiting.length ? `<div class="muted">Waiting for ${waiting.map(x => esc(x.m.name)).join(', ')} (up to ${VOTE_S}s).</div>` : ''}`;
   }
-  $('mapScroll').addEventListener('click', (ev) => { const g = ev.target.closest('.node.reach'); if (g) travel(g.dataset.id); });
+  $('mapScroll').addEventListener('click', (ev) => {
+    if (MP.on && canPlan()) { const g = ev.target.closest('.node'); if (g) planClick(g.dataset.id); return; }
+    const g = ev.target.closest('.node.reach'); if (g) travel(g.dataset.id);
+  });
+  // ---------- route planner: the party leader (or a solo player) clicks nodes to draw up to two routes (A and B) and compare them
+  const MP = { on: false, slot: 'A', run: null };
+  function planOf(slot) { if (!run) return []; run.plan = run.plan || { A: [], B: [] }; return run.plan[slot]; }
+  const canPlan = () => run && !run.over && (!run.online || netHost());
+  // drop the part of each route that is behind the party; a route the party left is cleared
+  function trimPlans() {
+    if (!run) return; if (MP.run !== run) { MP.run = run; MP.on = false; MP.slot = 'A'; }
+    for (const slot of ['A', 'B']) { const P = planOf(slot); const i = P.indexOf(run.at); if (i >= 0) P.splice(0, i + 1); else if (P.length && run.map.nodes[P[0]].row <= run.currentRow()) P.length = 0; }
+  }
+  function planPath(from, to) { // shortest way down the map from a node (or the start) to another
+    const nodes = run.map.nodes, startSet = from ? nodes[from].next : run.reachable(); const prev = {}, q = [];
+    for (const k of startSet) { prev[k] = null; q.push(k); }
+    while (q.length) { const k = q.shift(); if (k === to) { const out = []; let c = k; while (c != null) { out.unshift(c); c = prev[c]; } return out; } for (const n of nodes[k].next) if (!(n in prev)) { prev[n] = k; q.push(n); } }
+    return null;
+  }
+  function planClick(id) {
+    const P = planOf(MP.slot), at = P.indexOf(id);
+    if (at >= 0) P.splice(at); // clicking a planned node cuts the route back to before it
+    else { const path = planPath(P.length ? P[P.length - 1] : run.at, id); if (!path) { const el = $('planHint'); if (el) el.textContent = "Can't get there from the end of this route. Click a node further down the map."; return; } P.push(...path); }
+    sharePlan(); renderMap();
+  }
+  function sharePlan() { if (run && run.online && netHost() && NET.s) netSend('plan', { sid: NET.s.sid, A: planOf('A'), B: planOf('B') }); }
+  function planSummary(P) {
+    const nodes = run.map.nodes, by = {}, mobs = {}, shr = {}; let enr = 0;
+    for (const k of P) { const n = nodes[k]; by[n.type] = (by[n.type] || 0) + 1; if (n.enraged) enr++; if (n.type === 'shrine') { const s = SHRINES.find(x => x.key === n.shrine); shr[s ? s.name.replace('Shrine of ', '') : '?'] = (shr[s ? s.name.replace('Shrine of ', '') : '?'] || 0) + 1; }
+      for (const e of n.enemies || []) { const m = mobs[e] || (mobs[e] = { n: 0, enr: 0 }); m.n++; if (n.enraged) m.enr++; } }
+    const line = (type, extra) => by[type] ? `<div><b style="color:${NODE[type].color}">${by[type]} ${NODE[type].label.toLowerCase()}${by[type] > 1 && !/\//.test(NODE[type].label) ? 's' : ''}</b>${extra ? ' <span class="muted">' + extra + '</span>' : ''}</div>` : '';
+    const last = nodes[P[P.length - 1]];
+    return `<div class="muted" style="font-size:12px">${P.length} nodes, to ${last.id === 'boss' ? 'the boss' : 'row ' + last.row}</div>
+      ${line('fight')}${line('elite', enr ? `(${enr} Enraged!)` : '')}${line('merchant')}${line('rest')}${line('shrine', Object.entries(shr).map(([k, v]) => v > 1 ? k + ' x' + v : k).join(', '))}${line('boss')}
+      <div class="planmobs">${Object.entries(mobs).sort((a, b) => b[1].n - a[1].n).map(([k, m]) => { const e = DATA.enemies[k]; return `<div><span>${m.n}x</span> ${m.enr ? '<b style="color:#ff5a3a">Enraged</b> ' : ''}${esc(e.name)} <span class="muted">${e.tier === 'Elite' || e.tier === 'Boss' ? e.tier : 'T' + e.tier}</span> <button class="pilebtn" data-loot="${k}">Loot</button></div>`; }).join('')}</div>`;
+  }
+  function renderPlan() {
+    const el = $('planBox'); if (!el || !run) return;
+    if (run.over) { el.innerHTML = ''; return; }
+    const mine = canPlan(), A = planOf('A'), B = planOf('B');
+    el.innerHTML = `<div class="planhead"><b>Route planner</b>
+        ${mine ? `<button class="btn ${MP.on ? 'primary' : ''}" id="planToggle">${MP.on ? 'Drawing: click nodes' : 'Plan a route'}</button>
+        ${['A', 'B'].map(s => `<button class="cxchip ${MP.slot === s ? 'on' : ''}" data-pslot="${s}" style="${s === 'A' ? 'border-color:#4fd1ff' : 'border-color:#c084fc'}">Route ${s}${planOf(s).length ? ' (' + planOf(s).length + ')' : ''}</button>`).join('')}
+        <button class="pilebtn" id="planClear">Clear ${MP.slot}</button>` : `<span class="muted">${A.length || B.length ? 'The party leader\'s plan.' : 'The party leader can draw a route here.'}</span>`}</div>
+      ${mine && MP.on ? `<p class="muted" id="planHint" style="margin:2px 0;font-size:12px">Click nodes down the map to draw Route ${MP.slot} (gaps fill in with the shortest way). Click a planned node to cut the route back. Turn drawing off to travel.</p>` : ''}
+      ${A.length || B.length ? `<div class="plancols">${[['A', A, '#4fd1ff'], ['B', B, '#c084fc']].filter(x => x[1].length).map(([s, P, c]) => `<div class="plancol" style="--pc:${c}"><b style="color:${c}">Route ${s}</b>${planSummary(P)}</div>`).join('')}</div>` : ''}`;
+    if ($('planToggle')) $('planToggle').onclick = () => { MP.on = !MP.on; renderMap(); };
+    el.querySelectorAll('[data-pslot]').forEach(b => b.onclick = () => { MP.slot = b.dataset.pslot; MP.on = true; renderMap(); });
+    if ($('planClear')) $('planClear').onclick = () => { planOf(MP.slot).length = 0; sharePlan(); renderMap(); };
+  }
+  $('planBox').addEventListener('click', (ev) => { const b = ev.target.closest('[data-loot]'); if (b) lootModal(b.dataset.loot); });
   $('mapScroll').addEventListener('keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('.node.reach')) { ev.preventDefault(); travel(ev.target.dataset.id); } });
   $('mapScroll').addEventListener('mouseover', (ev) => { const g = ev.target.closest('.node'); if (g && run.visible(run.map.nodes[g.dataset.id])) { focusNode = g.dataset.id; nodeInfo(g.dataset.id); } });
   $('mapScroll').addEventListener('focusin', (ev) => { const g = ev.target.closest('.node'); if (g) { focusNode = g.dataset.id; nodeInfo(g.dataset.id); } });

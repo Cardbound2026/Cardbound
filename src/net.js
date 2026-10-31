@@ -301,6 +301,7 @@
         if (p.to !== SOC.me || NET.duelIn.some(d => d.from === p.from)) return;
         NET.duelIn.push({ from: p.from, name: p.name, cls: p.cls }); sysChat(`${p.name} challenges you to a duel.`); renderSocial(); return;
       }
+      case 'plan': { if (!S || p.sid !== S.sid || p.from !== S.host || !run) return; run.plan = { A: Array.isArray(p.A) ? p.A.filter(k => run.map.nodes[k]) : [], B: Array.isArray(p.B) ? p.B.filter(k => run.map.nodes[k]) : [] }; if (!$('scrMap').hidden) renderMap(); return; }
       case 'insp-req': case 'insp': case 'tr-ask': case 'tr-ans': case 'tr-offer': case 'tr-acc': case 'tr-cancel': gearNetIn(p); return;
       case 'duel-answer': {
         if (p.to !== SOC.me || !NET.duelOut || NET.duelOut !== p.from) return;
