@@ -438,6 +438,15 @@ body.aiming { cursor: grabbing; user-select: none; }
 .chatbox { position: absolute; left: 10px; bottom: 10px; width: min(360px, calc(100% - 20px)); display: grid; gap: 4px; z-index: 3; }
 .chatlog { max-height: 150px; overflow-y: auto; font-size: 13px; line-height: 1.35; padding: 6px 8px; background: rgba(10,8,6,.62); border-radius: 6px; color: #e8dcc6; overflow-wrap: anywhere; }
 .chatlog b { color: var(--accent); font-weight: 700; } .chatlog .sys { color: var(--muted); font-style: italic; }
+.chatlog .cparty { color: #9fd0ff; } .chatlog .cparty b { color: #6fb6ff; }
+.chatlog .cguild { color: #a8e29a; } .chatlog .cguild b { color: #7fd36a; }
+.chatlog .cwhisper { color: #f0b4e6; } .chatlog .cwhisper b { color: #e889d8; }
+/* in a fight the chat docks in a column on the left, like the combat log on the right */
+#scrCombat.withchat { grid-template-columns: 260px minmax(0, 1fr) var(--ledgerW, 340px); }
+.combatchat { align-self: start; }
+.combatchat .chatbox { position: static; width: 100%; }
+.combatchat .chatlog { max-height: calc(100vh - 240px); min-height: 200px; background: rgba(10,8,6,.4); }
+@media (max-width: 1180px) { #scrCombat.withchat { grid-template-columns: minmax(0, 1fr) var(--ledgerW, 300px); } #scrCombat.withchat .combatchat { grid-column: 1 / -1; order: 3; } }
 .chatbox input { background: rgba(20,16,12,.85); border: 1px solid var(--line); border-radius: 5px; padding: 6px 8px; color: var(--text); font: inherit; font-size: 14px; }
 .chatbox input:focus { border-color: var(--accent); outline: none; }
 .prompt { left: 50% !important; transform: translateX(-50%); bottom: auto !important; top: 10px; }
@@ -585,6 +594,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 
   <!-- COMBAT -->
   <section id="scrCombat" class="combatmain" hidden aria-label="Battle">
+    <aside class="panel combatchat" id="combatChat" hidden aria-label="Chat"></aside>
     <div class="field-panel">
       <div class="order" id="order"></div>
       <div class="stage"><div id="playerSlot"></div><div class="vs">vs</div><div class="foes" id="foes"></div><div class="playedpeek" id="playedPeek" hidden aria-live="polite"></div></div>
@@ -3642,7 +3652,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       syncOthers(); renderSocial();
     });
     ch.on('broadcast', { event: 'pos' }, ({ payload }) => moveOther(payload));
-    ch.on('broadcast', { event: 'chat' }, ({ payload }) => addChat(payload));
+    ch.on('broadcast', { event: 'chat' }, ({ payload }) => chatIn(payload));
     ch.on('broadcast', { event: 'invite' }, ({ payload }) => { if (payload.to === SOC.me) gotInvite(payload); });
     ch.on('broadcast', { event: 'invite-reply' }, ({ payload }) => { if (payload.to === SOC.me) gotReply(payload); });
     ch.on('broadcast', { event: 'party' }, ({ payload }) => gotParty(payload));
@@ -3707,22 +3717,57 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   }
 
   // ---------- world chat
+  // channels: world (default), /p party, /g guild, /w Name whisper, /r reply to the last whisper
   function addChat(m) {
     if (!m || !m.text) return;
-    SOC.chat.push({ from: m.uid, name: String(m.name || '?').slice(0, 24), text: String(m.text).slice(0, 200), sys: !!m.sys, at: m.at || Date.now() });
-    SOC.chat = SOC.chat.slice(-60); renderChat();
+    SOC.chat.push({ from: m.uid, name: String(m.name || '?').slice(0, 24), text: String(m.text).slice(0, 200), sys: !!m.sys, at: m.at || Date.now(), ch: m.ch || 'world', toName: m.toName, mine: m.uid === SOC.me });
+    SOC.chat = SOC.chat.slice(-80); renderChat();
   }
   function sysChat(text) { addChat({ sys: true, name: '', text }); }
+  function chatIn(m) {
+    if (!m || m.uid === SOC.me) return;
+    const ch = m.ch || 'world';
+    if (ch === 'whisper') { if (m.to !== SOC.me) return; SOC.lastWhisper = { uid: m.uid, name: m.name }; }
+    else if (ch === 'party') { if (!SOC.party || SOC.party.id !== m.pid) return; }
+    else if (ch === 'guild') { const g = myGuild(); if (!g || g.id !== m.gid) return; }
+    addChat(m);
+  }
+  const myGuild = () => (typeof GUILD !== 'undefined' && GUILD.me) || null;
+  function findOnline(name) { // longest online name that the text starts with (names can contain spaces)
+    const lower = name.toLowerCase(); let best = null;
+    for (const o of SOC.online.values()) for (const n of [o.name, o.acct]) if (n && o.uid !== SOC.me && lower.startsWith(n.toLowerCase()) && (!best || n.length > best.n.length) && (lower.length === n.length || lower[n.length] === ' ')) best = { o, n };
+    return best;
+  }
   function sendChat(text) {
-    text = (text || '').trim().slice(0, 200); if (!text) return;
+    text = (text || '').trim().slice(0, 240); if (!text) return;
     if (!socOn()) { sysChat('Sign in to chat with other players.'); return; }
-    const c = profile.chars[heroKey];
-    const m = { uid: SOC.me, name: c ? c.name : acctName(supaUser), text, at: Date.now() };
+    const c = profile.chars[heroKey], me = { uid: SOC.me, name: c ? c.name : acctName(supaUser), at: Date.now() };
+    let m = null; const cmd = text.match(/^\/(\w+)\s*(.*)$/s);
+    if (!cmd) m = Object.assign(me, { ch: 'world', text });
+    else {
+      const [, k, rest] = cmd, key = k.toLowerCase();
+      if (key === 'help' || key === '?') { sysChat('Chat: just type for world chat. /p party, /g guild, /w Name message to whisper, /r reply to the last whisper, /world (or /s) world.'); return; }
+      if (!rest.trim() && key !== 'help') { sysChat(`Type a message after /${k}.`); return; }
+      if (key === 'world' || key === 's' || key === 'y') m = Object.assign(me, { ch: 'world', text: rest });
+      else if (key === 'p' || key === 'party') { if (!SOC.party) { sysChat('You are not in a party.'); return; } m = Object.assign(me, { ch: 'party', pid: SOC.party.id, text: rest }); }
+      else if (key === 'g' || key === 'guild') { const g = myGuild(); if (!g) { sysChat('You are not in a guild. Visit the Guild Registrar in town.'); return; } m = Object.assign(me, { ch: 'guild', gid: g.id, text: rest }); }
+      else if (key === 'w' || key === 'whisper' || key === 'tell' || key === 'r') {
+        let to, body;
+        if (key === 'r') { if (!SOC.lastWhisper) { sysChat('Nobody has whispered you yet.'); return; } to = SOC.lastWhisper; body = rest; }
+        else { const f = findOnline(rest); if (!f) { sysChat(`Nobody called "${rest.split(' ')[0]}" is online. Use /w Name message.`); return; } to = { uid: f.o.uid, name: f.o.name }; body = rest.slice(f.n.length).trim(); }
+        if (!body) { sysChat('Type a message after the name.'); return; }
+        m = Object.assign(me, { ch: 'whisper', to: to.uid, toName: to.name, text: body }); SOC.lastWhisper = SOC.lastWhisper || null;
+      } else { sysChat(`Unknown command /${k}. Type /help.`); return; }
+    }
+    m.text = m.text.slice(0, 200);
     SOC.ch.send({ type: 'broadcast', event: 'chat', payload: m }); addChat(m);
   }
+  const CHAN = { world: ['', ''], party: ['[Party] ', 'cparty'], guild: ['[Guild] ', 'cguild'], whisper: ['', 'cwhisper'] };
   function renderChat() {
     const el = $('chatLog'); if (!el) return;
-    el.innerHTML = SOC.chat.map(m => m.sys ? `<div class="sys">${esc(m.text)}</div>` : `<div><b>${esc(m.name)}:</b> ${esc(m.text)}</div>`).join('') || `<div class="sys">${socOn() ? 'World chat. Say hello. Press T to type.' : 'Sign in to see other players and chat.'}</div>`;
+    el.innerHTML = SOC.chat.map(m => { if (m.sys) return `<div class="sys">${esc(m.text)}</div>`; const [tag, cls] = CHAN[m.ch] || CHAN.world;
+      const who = m.ch === 'whisper' ? (m.mine ? `To ${esc(m.toName || '?')}` : `From ${esc(m.name)}`) : esc(m.name);
+      return `<div class="${cls}">${tag}<b>${who}:</b> ${esc(m.text)}</div>`; }).join('') || `<div class="sys">${socOn() ? 'World chat. Say hello. Press T to type, /help for channels.' : 'Sign in to see other players and chat.'}</div>`;
     el.scrollTop = el.scrollHeight;
   }
 
@@ -3886,8 +3931,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793460867879';
-  const CB_BUILD = 'dbb2aedc72'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793460961094';
+  const CB_BUILD = '731fc9daea'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -4889,7 +4934,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   }
   $('btnMenu').addEventListener('click', openMenu);
   function hidePeeks() { const pk = document.querySelector('.cardpeek'); if (pk) pk.hidden = true; const gt = document.querySelector('.gtip'); if (gt) gt.hidden = true; }
-  function show(which) { hidePeeks(); $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); retrack(true); }
+  // the chat box lives in the town view; during fights it moves into the left column of the battle screen
+  function placeChat(which) {
+    const box = $('chatBox'), home = $('townWrap'), slot = $('combatChat'); if (!box || !slot) return;
+    const inFight = which === 'combat' && typeof socOn === 'function' && socOn();
+    if (inFight && box.parentElement !== slot) slot.appendChild(box); else if (!inFight && box.parentElement !== home) home.appendChild(box);
+    slot.hidden = !inFight; $('scrCombat').classList.toggle('withchat', inFight);
+    if (typeof renderChat === 'function') renderChat();
+  }
+  function show(which) { placeChat(which); hidePeeks(); $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); retrack(true); }
 
   // ---------- map
   const RH = 58, CW = 78, PADX = 40, PADY = 34;

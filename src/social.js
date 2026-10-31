@@ -25,7 +25,7 @@
       syncOthers(); renderSocial();
     });
     ch.on('broadcast', { event: 'pos' }, ({ payload }) => moveOther(payload));
-    ch.on('broadcast', { event: 'chat' }, ({ payload }) => addChat(payload));
+    ch.on('broadcast', { event: 'chat' }, ({ payload }) => chatIn(payload));
     ch.on('broadcast', { event: 'invite' }, ({ payload }) => { if (payload.to === SOC.me) gotInvite(payload); });
     ch.on('broadcast', { event: 'invite-reply' }, ({ payload }) => { if (payload.to === SOC.me) gotReply(payload); });
     ch.on('broadcast', { event: 'party' }, ({ payload }) => gotParty(payload));
@@ -90,22 +90,57 @@
   }
 
   // ---------- world chat
+  // channels: world (default), /p party, /g guild, /w Name whisper, /r reply to the last whisper
   function addChat(m) {
     if (!m || !m.text) return;
-    SOC.chat.push({ from: m.uid, name: String(m.name || '?').slice(0, 24), text: String(m.text).slice(0, 200), sys: !!m.sys, at: m.at || Date.now() });
-    SOC.chat = SOC.chat.slice(-60); renderChat();
+    SOC.chat.push({ from: m.uid, name: String(m.name || '?').slice(0, 24), text: String(m.text).slice(0, 200), sys: !!m.sys, at: m.at || Date.now(), ch: m.ch || 'world', toName: m.toName, mine: m.uid === SOC.me });
+    SOC.chat = SOC.chat.slice(-80); renderChat();
   }
   function sysChat(text) { addChat({ sys: true, name: '', text }); }
+  function chatIn(m) {
+    if (!m || m.uid === SOC.me) return;
+    const ch = m.ch || 'world';
+    if (ch === 'whisper') { if (m.to !== SOC.me) return; SOC.lastWhisper = { uid: m.uid, name: m.name }; }
+    else if (ch === 'party') { if (!SOC.party || SOC.party.id !== m.pid) return; }
+    else if (ch === 'guild') { const g = myGuild(); if (!g || g.id !== m.gid) return; }
+    addChat(m);
+  }
+  const myGuild = () => (typeof GUILD !== 'undefined' && GUILD.me) || null;
+  function findOnline(name) { // longest online name that the text starts with (names can contain spaces)
+    const lower = name.toLowerCase(); let best = null;
+    for (const o of SOC.online.values()) for (const n of [o.name, o.acct]) if (n && o.uid !== SOC.me && lower.startsWith(n.toLowerCase()) && (!best || n.length > best.n.length) && (lower.length === n.length || lower[n.length] === ' ')) best = { o, n };
+    return best;
+  }
   function sendChat(text) {
-    text = (text || '').trim().slice(0, 200); if (!text) return;
+    text = (text || '').trim().slice(0, 240); if (!text) return;
     if (!socOn()) { sysChat('Sign in to chat with other players.'); return; }
-    const c = profile.chars[heroKey];
-    const m = { uid: SOC.me, name: c ? c.name : acctName(supaUser), text, at: Date.now() };
+    const c = profile.chars[heroKey], me = { uid: SOC.me, name: c ? c.name : acctName(supaUser), at: Date.now() };
+    let m = null; const cmd = text.match(/^\/(\w+)\s*(.*)$/s);
+    if (!cmd) m = Object.assign(me, { ch: 'world', text });
+    else {
+      const [, k, rest] = cmd, key = k.toLowerCase();
+      if (key === 'help' || key === '?') { sysChat('Chat: just type for world chat. /p party, /g guild, /w Name message to whisper, /r reply to the last whisper, /world (or /s) world.'); return; }
+      if (!rest.trim() && key !== 'help') { sysChat(`Type a message after /${k}.`); return; }
+      if (key === 'world' || key === 's' || key === 'y') m = Object.assign(me, { ch: 'world', text: rest });
+      else if (key === 'p' || key === 'party') { if (!SOC.party) { sysChat('You are not in a party.'); return; } m = Object.assign(me, { ch: 'party', pid: SOC.party.id, text: rest }); }
+      else if (key === 'g' || key === 'guild') { const g = myGuild(); if (!g) { sysChat('You are not in a guild. Visit the Guild Registrar in town.'); return; } m = Object.assign(me, { ch: 'guild', gid: g.id, text: rest }); }
+      else if (key === 'w' || key === 'whisper' || key === 'tell' || key === 'r') {
+        let to, body;
+        if (key === 'r') { if (!SOC.lastWhisper) { sysChat('Nobody has whispered you yet.'); return; } to = SOC.lastWhisper; body = rest; }
+        else { const f = findOnline(rest); if (!f) { sysChat(`Nobody called "${rest.split(' ')[0]}" is online. Use /w Name message.`); return; } to = { uid: f.o.uid, name: f.o.name }; body = rest.slice(f.n.length).trim(); }
+        if (!body) { sysChat('Type a message after the name.'); return; }
+        m = Object.assign(me, { ch: 'whisper', to: to.uid, toName: to.name, text: body }); SOC.lastWhisper = SOC.lastWhisper || null;
+      } else { sysChat(`Unknown command /${k}. Type /help.`); return; }
+    }
+    m.text = m.text.slice(0, 200);
     SOC.ch.send({ type: 'broadcast', event: 'chat', payload: m }); addChat(m);
   }
+  const CHAN = { world: ['', ''], party: ['[Party] ', 'cparty'], guild: ['[Guild] ', 'cguild'], whisper: ['', 'cwhisper'] };
   function renderChat() {
     const el = $('chatLog'); if (!el) return;
-    el.innerHTML = SOC.chat.map(m => m.sys ? `<div class="sys">${esc(m.text)}</div>` : `<div><b>${esc(m.name)}:</b> ${esc(m.text)}</div>`).join('') || `<div class="sys">${socOn() ? 'World chat. Say hello. Press T to type.' : 'Sign in to see other players and chat.'}</div>`;
+    el.innerHTML = SOC.chat.map(m => { if (m.sys) return `<div class="sys">${esc(m.text)}</div>`; const [tag, cls] = CHAN[m.ch] || CHAN.world;
+      const who = m.ch === 'whisper' ? (m.mine ? `To ${esc(m.toName || '?')}` : `From ${esc(m.name)}`) : esc(m.name);
+      return `<div class="${cls}">${tag}<b>${who}:</b> ${esc(m.text)}</div>`; }).join('') || `<div class="sys">${socOn() ? 'World chat. Say hello. Press T to type, /help for channels.' : 'Sign in to see other players and chat.'}</div>`;
     el.scrollTop = el.scrollHeight;
   }
 

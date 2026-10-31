@@ -434,6 +434,16 @@ body.aiming { cursor: grabbing; user-select: none; }
 .chatbox { position: absolute; left: 10px; bottom: 10px; width: min(360px, calc(100% - 20px)); display: grid; gap: 4px; z-index: 3; }
 .chatlog { max-height: 150px; overflow-y: auto; font-size: 13px; line-height: 1.35; padding: 6px 8px; background: rgba(10,8,6,.62); border-radius: 6px; color: #e8dcc6; overflow-wrap: anywhere; }
 .chatlog b { color: var(--accent); font-weight: 700; } .chatlog .sys { color: var(--muted); font-style: italic; }
+.chatlog .cparty { color: #9fd0ff; } .chatlog .cparty b { color: #6fb6ff; }
+.chatlog .cguild { color: #a8e29a; } .chatlog .cguild b { color: #7fd36a; }
+.chatlog .cwhisper { color: #f0b4e6; } .chatlog .cwhisper b { color: #e889d8; }
+/* in a fight the chat docks in a column on the left, like the combat log on the right */
+#scrCombat.withchat { grid-template-columns: 260px minmax(0, 1fr) var(--ledgerW, 340px); }
+.combatchat { align-self: start; }
+.combatchat .chatbox { position: static; width: 100%; }
+.combatchat .chatbox input { width: 100%; box-sizing: border-box; min-width: 0; }
+.combatchat .chatlog { max-height: calc(100vh - 240px); min-height: 200px; background: rgba(10,8,6,.4); }
+@media (max-width: 1180px) { #scrCombat.withchat { grid-template-columns: minmax(0, 1fr) var(--ledgerW, 300px); } #scrCombat.withchat .combatchat { grid-column: 1 / -1; order: 3; } }
 .chatbox input { background: rgba(20,16,12,.85); border: 1px solid var(--line); border-radius: 5px; padding: 6px 8px; color: var(--text); font: inherit; font-size: 14px; }
 .chatbox input:focus { border-color: var(--accent); outline: none; }
 .prompt { left: 50% !important; transform: translateX(-50%); bottom: auto !important; top: 10px; }
@@ -578,6 +588,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 
   <!-- COMBAT -->
   <section id="scrCombat" class="combatmain" hidden aria-label="Battle">
+    <aside class="panel combatchat" id="combatChat" hidden aria-label="Chat"></aside>
     <div class="field-panel">
       <div class="order" id="order"></div>
       <div class="stage"><div id="playerSlot"></div><div class="vs">vs</div><div class="foes" id="foes"></div><div class="playedpeek" id="playedPeek" hidden aria-live="polite"></div></div>
@@ -1644,7 +1655,15 @@ body.aiming { cursor: grabbing; user-select: none; }
   }
   $('btnMenu').addEventListener('click', openMenu);
   function hidePeeks() { const pk = document.querySelector('.cardpeek'); if (pk) pk.hidden = true; const gt = document.querySelector('.gtip'); if (gt) gt.hidden = true; }
-  function show(which) { hidePeeks(); $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); retrack(true); }
+  // the chat box lives in the town view; during fights it moves into the left column of the battle screen
+  function placeChat(which) {
+    const box = $('chatBox'), home = $('townWrap'), slot = $('combatChat'); if (!box || !slot) return;
+    const inFight = which === 'combat' && typeof socOn === 'function' && socOn();
+    if (inFight && box.parentElement !== slot) slot.appendChild(box); else if (!inFight && box.parentElement !== home) home.appendChild(box);
+    slot.hidden = !inFight; $('scrCombat').classList.toggle('withchat', inFight);
+    if (typeof renderChat === 'function') renderChat();
+  }
+  function show(which) { placeChat(which); hidePeeks(); $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); retrack(true); }
 
   // ---------- map
   const RH = 58, CW = 78, PADX = 40, PADY = 34;
