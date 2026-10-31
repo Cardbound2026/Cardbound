@@ -542,6 +542,9 @@ body.aiming { cursor: grabbing; user-select: none; }
   #playerSlot.party.raid { display: grid; grid-template-columns: repeat(5, minmax(0, 104px)); gap: 4px; align-items: end; } #playerSlot.raid .unit { width: auto; padding: 4px; } #playerSlot.raid .figure, #playerSlot.raid .figure svg { height: 38px; } #playerSlot.raid .uname b { font-size: 12px; } #playerSlot.raid .tag { font-size: 10px; padding: 0 3px; }
   .order.raid .otile { width: 62px; padding: 2px; } .order.raid .otile .ofig, .order.raid .otile .ofig svg { height: 30px; } .order.raid .otile .onm { font-size: 11px; } .order.raid .otile.now::after { display: none; }
   .cxcods { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; margin-top: 6px; } .cxcod { border-left: 3px solid var(--rc); background: rgba(255,255,255,.03); padding: 8px 10px; border-radius: 6px; display: grid; gap: 4px; } .cxch { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; } .cxch b { color: #f0b070; }
+  #btnUpdates { position: fixed; right: 8px; bottom: 34px; z-index: 40; padding: 5px 12px; font-size: 13px; } #btnUpdates i { display: none; } #btnUpdates.unread i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #e4a93a; margin-left: 6px; box-shadow: 0 0 8px #e4a93a; }
+  .changelog { max-height: 62vh; overflow: auto; padding-right: 6px; } .changelog h3 { color: var(--accent); font-size: 20px; margin: 12px 0 4px; } .changelog ul { margin: 0; padding-left: 18px; } .changelog li { margin: 4px 0; line-height: 1.4; } .clarea { display: inline-block; min-width: 86px; margin-right: 6px; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  #updBanner .btn { padding: 4px 12px; font-size: 14px; } #updBanner { width: max-content; position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 32px); padding: 8px 14px; background: #2a1f12; border: 1px solid var(--accent); border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,.6); }
 </style>
 
 <div class="wrap">
@@ -1551,6 +1554,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 /*GUILD*/
 /*NET*/
 /*RAID*/
+/*UPDATES*/
 /*CODEX*/
 /*GEARUI*/
 /*GLOSSARY*/

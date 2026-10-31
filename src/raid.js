@@ -58,9 +58,9 @@
 
   // ---------- after the fight
   function raidLootRoll(cbt) {
-    const mk = cbt.raidMap, bk = CB.raidKey(mk), d = DATA.enemies[bk], rng = cbt.rng, lvl = cbt.level + 1, out = [];
+    const mk = cbt.raidMap, bk = CB.raidKey(mk), d = DATA.enemies[bk], rng = cbt.rng, lvl = cbt.level + 2, out = []; // +2 map levels = item levels 10 above what the map's boss drops
     const nItems = cbt.players.length + 1;
-    for (let i = 0; i < nItems; i++) { const rar = rng() < 0.45 ? 'Purple (Epic)' : 'Blue'; const it = CB.rollItem(DATA, rng, d.pool[Math.floor(rng() * d.pool.length)], rar, lvl); if (it) out.push(Object.assign(it, { raid: d.name })); }
+    for (let i = 0; i < nItems; i++) { const rar = rng() < Math.min(0.3, 0.1 + 0.01 * cbt.level) ? 'Purple (Epic)' : 'Blue'; /* each piece rolls on its own: 10% Epic at +0, +1% per level (max 30%) */ const it = CB.rollItem(DATA, rng, d.pool[Math.floor(rng() * d.pool.length)], rar, lvl); if (it) out.push(Object.assign(it, { raid: d.name })); }
     const cx = (d.loot || []).filter(x => x.type === 'Codex').map(x => Object.keys(CB.CODEX_BY_KEY).find(k => CB.CODEX_BY_KEY[k].name + ' Codex' === x.item)).filter(Boolean);
     if (cx.length) out.push(Object.assign(CB.makeCodex(DATA, rng, cx[Math.floor(rng() * cx.length)], lvl), { raid: d.name }));
     return out.map(it => ({ it, votes: {}, done: false, winner: null }));
