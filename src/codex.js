@@ -5,7 +5,7 @@
   function ownedCounts() { const c = profile.chars[heroKey], n = {}; if (c) for (const k of [...c.deck, ...c.cards]) n[k.key] = (n[k.key] || 0) + 1; return n; }
   function codexCards() {
     const own = ownedCounts(), q = CX.q.toLowerCase();
-    const all = Object.entries(CARDS).filter(([k, d]) => d.cls && d.rarity !== 'Status' && d.rarity !== 'Token');
+    const all = Object.entries(CARDS).filter(([k, d]) => d.cls && d.rarity !== 'Status' && d.rarity !== 'Token' && !d.removed);
     const list = all.filter(([k, d]) => (CX.cls === 'All' || d.cls === CX.cls) && (CX.rar === 'All' || d.rarity === CX.rar) && (CX.built === 'All' || (CX.built === 'Playable') === !d.designOnly) && (CX.own === 'All' || (CX.own === 'Owned') === !!own[k]) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + (d.id || '')).toLowerCase().includes(q)))
       .sort((a, b) => Object.keys(CLASSES).indexOf(a[1].cls) - Object.keys(CLASSES).indexOf(b[1].cls) || RAR_ORDER[b[1].rarity] - RAR_ORDER[a[1].rarity] || a[1].name.localeCompare(b[1].name));
     const drops = CB.CARD_DROPS;

@@ -2322,7 +2322,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     const p = hero(), party = cb.partySize > 1, wh = watchedHero(p);
     $('order').classList.toggle('raid', !!cb.raid && cb.partySize > 4);
     $('order').innerHTML = `<span class="lbl">Turn<br>order</span>` + cb.order.map((id, i) => { const a = cb.actorById(id); const st = a.hp <= 0 ? 'dead' : cb.raid && a.isPlayer ? (cb.raidDone && cb.raidDone.has(a.id) ? 'done' : cb.phase === 'player' && !cb.over ? 'now' : '') : i === cb.turnIndex && !cb.over ? 'now' : i < cb.turnIndex ? 'done' : '';
-      return `${i ? '<span class="osep" aria-hidden="true">&rsaquo;</span>' : ''}<div class="otile ${a.isPlayer ? 'hero' : 'foe'} ${st}" style="--oc:${a.isPlayer ? CC[a.cls] : '#e0b8a8'}" title="${esc(a.name)}: Initiative ${cb.initiative(a)}, HP ${a.hp}/${a.maxHp}"><span class="oini">${cb.initiative(a)}</span>${cb.raid && a.isPlayer && a.hp > 0 && cb.raidDone && cb.raidDone.has(a.id) ? '<span class="ock" title="Ended their turn">&#10003;</span>' : ''}<div class="ofig">${figure(a)}</div><div class="onm">${a.isPlayer && !party ? 'You' : a === p && cb.myMi != null ? 'You' : esc(a.name)}</div><div class="obar"><i style="width:${Math.max(0, 100 * a.hp / a.maxHp)}%"></i></div></div>`; }).join('') + `<span class="round">Round ${cb.round}</span>${run ? '<button class="pilebtn" id="btnCMap" title="Look at the map (M)">Map</button>' : ''}${cb.practice ? '<button class="pilebtn" id="btnCReset" title="Start a fresh fight">Reset</button><button class="pilebtn" id="btnCLeave">Leave</button>' : ''}`;
+      return `${i ? '<span class="osep" aria-hidden="true">&rsaquo;</span>' : ''}<div class="otile ${a.isPlayer ? 'hero' : 'foe'} ${st}" style="--oc:${a.isPlayer ? CC[a.cls] : '#e0b8a8'}" title="${esc(a.name)}: Initiative ${cb.initiative(a)}, HP ${a.hp}/${a.maxHp}"><span class="oini">${cb.initiative(a)}</span>${cb.raid && a.isPlayer && a.hp > 0 && cb.raidDone && cb.raidDone.has(a.id) ? '<span class="ock" title="Ended their turn">&#10003;</span>' : ''}<div class="ofig">${figure(a)}</div><div class="onm">${a.isPlayer && !party ? 'You' : a === p && cb.myMi != null ? 'You' : esc(a.name)}</div><div class="obar"><i style="width:${Math.max(0, 100 * a.hp / a.maxHp)}%"></i></div></div>`; }).join('') + `<span class="round">Round ${cb.round}</span>${run && run.over && cb.over ? '<button class="btn primary" id="btnCResults" style="padding:4px 12px">Results</button>' : run ? '<button class="pilebtn" id="btnCMap" title="Look at the map (M)">Map</button>' : ''}${cb.practice ? '<button class="pilebtn" id="btnCReset" title="Start a fresh fight">Reset</button><button class="pilebtn" id="btnCLeave">Leave</button>' : ''}`;
     const mine = cb.duel ? [p] : cb.players, foes = cb.duel ? cb.players.filter(x => x !== p) : cb.enemies;
     $('playerSlot').className = cb.raid && cb.partySize > 4 ? 'party raid' : party && !cb.duel ? 'party' : ''; { const n = cb.partySize; $('playerSlot').style.setProperty('--pc', n <= 4 ? 2 : n <= 6 ? 3 : n <= 8 ? 4 : 5); $('playerSlot').parentElement.classList.toggle('bigparty', !cb.duel && n >= 3); $('foes').classList.toggle('many', !cb.duel && cb.enemies.length >= 3); } $('playerSlot').innerHTML = mine.map(unitHtml).join('');
     $('foes').innerHTML = foes.map(unitHtml).join('');
@@ -2399,6 +2399,13 @@ body.aiming { cursor: grabbing; user-select: none; }
   $('foes').addEventListener('click', (ev) => { const b = ev.target.closest('[data-enemy]'); if (b) { ev.stopPropagation(); viewEnemy(b.dataset.enemy); } }, true);
   $('modal').addEventListener('click', (ev) => { if (ev.target === $('modal') && $('mClose')) closeModal(); });
 
+  function toResults() { closeModal(); show('map'); renderMap(true); }
+  function deathScreen() {
+    render();
+    modal(`<h2 class="loss">${run.solo ? 'You fall' : 'The party falls'}</h2><p>${run.solo ? 'You died' : 'Everyone died'} in round ${cb.round}. The loot sack is lost; your equipped gear and deck are safe.</p><p class="muted">Close this to read the combat log and the damage meter. The Results button above the fight takes you on.</p>
+      <div class="row"><button class="btn primary" id="mRes">See the results</button><button class="btn" id="mClose">Look at the fight</button></div>`);
+    $('mRes').onclick = toResults; $('mClose').onclick = closeModal;
+  }
   function combatOver() {
     hidePeeks();
     if (cb && cb.duel) { if (!cb._shown) { cb._shown = true; duelOver(); } return; }
@@ -2409,7 +2416,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (!run || !run.combat) return;
     const result = run.finishCombat();
     if (!result) return;
-    if (result.result === 'loss') { show('map'); renderMap(true); return; }
+    if (result.result === 'loss') { deathScreen(); return; } // stay on the fight so the combat log can be read
     const g = result.gold, d = result.drops;
     const isBoss = run.over === 'victory';
     if (!run.solo) {
@@ -2518,7 +2525,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     if ((ev.key === 'm' || ev.key === 'M') && !$('scrCombat').hidden && $('modal').hidden && $('sheet').hidden && !ev.target.matches('select, input, textarea') && run) { mapPeek(); return; }
     if ((ev.key === 'e' || ev.key === 'E') && !$('scrCombat').hidden && $('modal').hidden && $('sheet').hidden && !ev.target.matches('select, input') && !$('btnEnd').disabled) $('btnEnd').click();
   });
-  $('order').addEventListener('click', (ev) => { if (ev.target.closest('#btnCMap')) mapPeek(); if (ev.target.closest('#btnCReset') && cb && cb.practice) { cb = null; startDummy(); } if (ev.target.closest('#btnCLeave') && cb && cb.practice) leaveDummy(); });
+  $('order').addEventListener('click', (ev) => { if (ev.target.closest('#btnCResults')) return toResults(); if (ev.target.closest('#btnCMap')) mapPeek(); if (ev.target.closest('#btnCReset') && cb && cb.practice) { cb = null; startDummy(); } if (ev.target.closest('#btnCLeave') && cb && cb.practice) leaveDummy(); });
   $('btnEnd').addEventListener('click', () => { if (busy || cb.phase !== 'player') return; selected = null; if (cb.myMi != null) { $('btnEnd').disabled = true; netAct({ t: 'end' }); return; } cb.endPlayerTurn(); render(true); pump(); });
   renderHub(); show('title'); connectAccount();
 })();

@@ -1763,9 +1763,14 @@ function rollDrops(data, rng, enemyKey, level, luck, cls) {
 for (const k of ['envenom', 'plague_bloom', 'toxic_cloud', 'venom_vial', 'fester', 'crippling_poison', 'mind_numbing_poison', 'deadly_toxin', 'wound_poison', 'corrosive_toxin', 'draining_venom', 'poison_nova']) if (C[k]) { C[k].type = 'Attack'; if (C[k].dtype == null) C[k].dtype = k === 'poison_nova' ? 'Nature' : 'Physical'; }
 if (C.seismic_slam) { C.seismic_slam.cost = 0; C.seismic_slam.text = 'Deal damage to all enemies equal to 50% of your current mana. Your mana is not spent.'; }
 if (C.mana_gem) C.mana_gem.cost = 0;
+// Oct 31: Battle Trance is retired: it no longer drops or plays; owned copies become Marching Orders (hub fix)
+const REMOVED_CARDS = { battle_trance: 'marching_orders' };
+for (const k of Object.keys(REMOVED_CARDS)) if (C[k]) { C[k].designOnly = true; C[k].removed = true; }
+function dropRemovedLoot(data) { const names = new Set(Object.keys(REMOVED_CARDS).filter(k => C[k]).map(k => C[k].name)); for (const e of Object.values((data && data.enemies) || {})) if (e.loot) e.loot = e.loot.filter(x => !(x.type === 'Card' && names.has(x.item))); }
+if (DATA) dropRemovedLoot(DATA);
 // Oct 31: Lay on Hands and Mend Wounds can be aimed at any hero in the party (yourself if you play them solo)
 if (C.mend_wounds) Object.assign(C.mend_wounds, { target: 'ally', text: 'Heal an ally (or yourself) for 8 HP.', play: (cb, t) => cb.heal(t && t.isPlayer && t.hp > 0 ? t : cb.player, 8, 'Mend Wounds') });
 if (C.lay_on_hands) Object.assign(C.lay_on_hands, { target: 'ally', text: 'Heal an ally (or yourself) for 30% of their total HP. Exhaust.', play: (cb, t) => { const a = t && t.isPlayer && t.hp > 0 ? t : cb.player; cb.heal(a, Math.round(a.maxHp * 0.3), 'Lay on Hands'); } }); // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
-const API = { CARDS_VERSION: 2, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);

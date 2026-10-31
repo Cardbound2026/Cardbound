@@ -22,6 +22,8 @@ function fix(p) { // tolerate older or partial saves
   p = Object.assign(newProfile(), p || {});
   for (const [k, c] of Object.entries(p.chars)) { if (!c.cls && CLASSES[k]) c.cls = k; c.cards = c.cards || []; c.deck = c.deck || []; c.gear = c.gear || []; c.name = c.name || c.cls; }
   if (p.last && p.last.cls && !p.chars[p.last.cls]) p.last.cls = Object.keys(p.chars)[0] || '';
+  // retired cards (Oct 31: Battle Trance) turn into their replacement, keeping rank and XP
+  for (const c of Object.values(p.chars)) for (const k of [...c.deck, ...c.cards]) if (CB.REMOVED_CARDS[k.key]) k.key = CB.REMOVED_CARDS[k.key];
   // Oct 30: the Paladin starter got more offense (+1 Crusader Strike, +1 Smite); existing Paladins get those two cards in their collection once
   for (const pal of Object.values(p.chars).filter(c => c.cls === 'Paladin')) if (!pal.gotOffense1) { pal.gotOffense1 = true; pal.cards.push({ id: uid('k'), key: 'crusader_strike', rank: 0 }, { id: uid('k'), key: 'smite', rank: 0 }); }
   return p;

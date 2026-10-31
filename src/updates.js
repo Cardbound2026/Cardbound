@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-10-31', items: [
+      ['Combat', 'When you die you stay on the fight screen: read the combat log and damage meter, then press Results to move on.'],
+      ['Cards', 'Battle Trance is retired. Every copy in your decks and collections has become Marching Orders (same rank and XP); it no longer drops, and the test decks use Marching Orders.'],
       ['Gear', 'Hold Shift while pointing at any item (rewards, stash, shops, the map merchant, the Bazaar, items linked in chat) to compare it with what you wear: both items side by side and every stat with its + / - difference. Rings and one-handers compare against both slots.'],
       ['Loot', 'Click a dropped card (fight rewards, the loot sack, raid loot, trades) to see it full size.'],
       ['Rest sites', 'Two more options at the fire: Rummage (roll the loot of one normal monster from this part of the map: gear, cards and gold) and Mend (everyone in the party heals 10%; in a party). In co-op each hero picks for themselves (one can rummage while another rests); Extract is still a party vote.'],
