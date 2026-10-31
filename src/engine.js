@@ -49,7 +49,7 @@ card('assassinate', { cls: 'Rogue', name: 'Assassinate', rarity: 'Gold', type: '
 // --- Mage
 card('fireball', { cls: 'Mage', name: 'Fireball', rarity: 'White', type: 'Skill', cost: 10, target: 'enemy', dtype: 'Fire', text: 'Deal 7 Fire damage and apply 3 Burn.', play: (cb, t) => { cb.hit(t, 7, 'Fireball'); cb.applyDot(t, 'burn', 3); }, tags: { dmg: 7, dot: 6 } });
 card('frostbolt', { cls: 'Mage', name: 'Frostbolt', rarity: 'White', type: 'Skill', cost: 10, target: 'enemy', dtype: 'Frost', text: "Deal 5 Frost damage. Reduce the target's mana regeneration by 5 for 2 turns. Stacks.", play: (cb, t) => { cb.hit(t, 5, 'Frostbolt'); if (t.hp > 0) { t.regenDown.push({ n: 5, turns: 2 }); cb.say('player', `${t.name}'s mana regen drops by 5 for 2 turns.`); } }, tags: { dmg: 5 } });
-card('arcane_missiles', { cls: 'Mage', name: 'Arcane Missiles', rarity: 'White', type: 'Skill', cost: 10, target: 'enemy', dtype: 'Arcane', text: 'Deal 5 Arcane damage. Steal 5 mana from the target.', play: (cb, t) => { cb.hit(t, 5, 'Arcane Missiles'); const s = Math.min(5, t.mana); t.mana -= s; cb.player.mana += s; if (s) cb.say('player', `You steal ${s} mana.`); }, tags: { dmg: 5 } });
+card('arcane_missiles', { cls: 'Mage', name: 'Arcane Missiles', rarity: 'White', type: 'Skill', cost: 10, target: 'enemy', dtype: 'Arcane', text: 'Deal 5 Arcane damage. Steal 5 mana from the target.', play: (cb, t) => { cb.hit(t, 5, 'Arcane Missiles'); const s = cb.drainMana(t, 5); cb.player.mana += s; cb.say('player', s ? `${cb.who(cb.player)} steal${cb.partySize > 1 ? 's' : ''} ${s} mana from ${t.name}${t.mana < 0 ? ' (it will have less next turn)' : ''}.` : `${t.name} has no mana to steal.`); }, tags: { dmg: 5 } });
 card('ice_bolt', { cls: 'Mage', name: 'Ice Bolt', rarity: 'White', type: 'Skill', cost: 10, target: 'enemy', dtype: 'Frost', text: 'Deal 5 Frost damage and apply 4 Chill.', play: (cb, t) => { cb.hit(t, 5, 'Ice Bolt'); cb.applyChill(t, 4); }, tags: { dmg: 5, chill: 4 } });
 card('mana_spring', { cls: 'Mage', name: 'Mana Spring', rarity: 'White', type: 'Skill', cost: 10, target: 'self', text: 'At the start of your next turn, gain 20 mana.', play: (cb) => { cb.player.manaNext += 20; cb.say('player', '+20 mana next turn.'); }, tags: { mana: 10 } });
 card('ward', { cls: 'Mage', name: 'Ward', rarity: 'White', type: 'Skill', cost: 10, target: 'self', text: 'Gain 10 Barrier.', play: (cb) => cb.gainDef(10), tags: { def: 10 } });
@@ -368,12 +368,12 @@ const CUSTOM = {
   purge_the_static: { play: (cb, t, p) => { const n = cb.exhaustStatus(p, 10); for (let i = 0; i < n && !cb.over; i++) D_(cb, t, 10, 'Purge the Static'); } },
   fan_the_flames: { play: (cb, t) => { const e = tgtOf(cb, t); if (e) { e.burn = Math.round(e.burn * 1.5); say(cb, `${e.name}'s Burn rises to ${e.burn}.`); } } },
   cauterized_ward: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const n = e.burn; e.burn = 0; if (n) cb.gainDef(n); } },
-  ashen_drain: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const b = e.burn; e.burn = 0; e.mana = Math.max(0, e.mana - b); cb.eStatus(e, 'fatigue', Math.floor(b / 10), 'discard'); say(cb, `${e.name} loses ${b} mana.`); } },
+  ashen_drain: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const b = e.burn; e.burn = 0; cb.drainMana(e, b); cb.eStatus(e, 'fatigue', Math.floor(b / 10), 'discard'); say(cb, `${e.name} loses ${b} mana.`); } },
   stored_impact: { play: (cb, t, p) => { p.until.storing = true; say(cb, 'Damage you take until your next turn comes back as Barrier.'); } },
   mirror_barrier: { play: (cb, t, p) => { p.block *= 2; say(cb, `Barrier doubled to ${p.block}.`); } },
   barrier_burst: { play: (cb, t, p) => blockToDmg(cb, t, p, 1, 'Barrier Burst') },
   shared_refuge: { play: (cb, t, p) => { const n = p.dmgRound; if (!n) return say(cb, 'You have not taken damage this round.'); for (const a of cb.allies()) cb.defFor(a, n); } },
-  mana_scorch: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const x = Math.min(p.mana, e.maxMana); p.mana -= x; const s = Math.min(e.mana, x); e.mana -= s; say(cb, `${e.name} loses ${s} mana.`); } },
+  mana_scorch: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const x = Math.min(p.mana, e.maxMana); p.mana -= x; const s = cb.drainMana(e, x); say(cb, `${e.name} loses ${s} mana.`); } },
   thought_collapse: { play: (cb, t, p) => { const n = cb.exhaustStatus(p, 10); const e = tgtOf(cb, t); if (e) { cb.eExhaust(e, n); e.drawLess = (e.drawLess || 0) + n; } } },
   time_theft: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; e.baseInit -= 5; p.baseInit += 5; say(cb, `Stole 5 Initiative from ${e.name} for the fight.`); } },
   refill_the_mind: { play: (cb, t, p) => cb.drawCards(p, 10 - p.hand.length) },
@@ -442,7 +442,7 @@ const CUSTOM = {
   twin_verdict: { play: (cb, t, p) => { p.turn.twin = true; say(cb, 'Your next Physical Attack also strikes as Holy.'); } },
   cleansing_flame: { play: (cb, t, p) => { const n = p.burn; p.burn = 0; cb.heal(p, n * 2, 'Cleansing Flame'); } },
   sacred_ash: { play: (cb, t, p) => { const n = p.burn; p.burn = 0; if (n) cb.gainDef(n * 2); } },
-  tithe_of_mana: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const s = Math.min(20, e.mana); e.mana -= s; p.mana += s; say(cb, `Took ${s} mana.`); } },
+  tithe_of_mana: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const s = cb.drainMana(e, 20); p.mana += s; say(cb, `Took ${s} mana.`); } },
   inquisition: { play: (cb, t) => { const e = tgtOf(cb, t); if (e) cb.eExhaust(e, 2); } },
   burden_of_sin: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (e) { const n = debuffMove(cb, p, e, ['weak', 'vulnerable', 'slow', 'bleed', 'poison', 'burn', 'chill']); say(cb, n ? `Your debuffs move to ${e.name}.` : 'No debuffs to move.'); } } },
   divine_communion: { play: (cb, t, p) => { const m = cb.spendAll(p); for (const a of cb.allies()) cb.heal(a, m, 'Divine Communion'); } },
@@ -594,7 +594,7 @@ function runOps(cb, t, ops, label) {
       case 'stealth': p.stealth = true; cb.say('player', `${cb.who(p)} slip${cb.partySize > 1 ? 's' : ''} into Stealth.`); break;
       case 'addCard': for (let k = 0; k < o.n; k++) cb.addToHand(o.key); break;
       case 'selfStatus': for (let k = 0; k < o.n; k++) { const sc = { uid: 'c' + (cb._uid++), key: o.key }; if (o.pile === 'discard') p.discard.push(sc); else p.drawPile.splice(Math.floor(cb.rng() * (p.drawPile.length + 1)), 0, sc); } break;
-      case 'burnMana': case 'stealMana': for (const e of targets(o)) { const s = Math.min(o.n, e.mana || 0); e.mana -= s; if (o.op === 'stealMana') p.mana += s; cb.say('player', `${e.name} loses ${s} mana${o.op === 'stealMana' ? ' to you' : ''}.`); } break;
+      case 'burnMana': case 'stealMana': for (const e of targets(o)) { const s = cb.drainMana(e, o.n); if (o.op === 'stealMana') p.mana += s; cb.say('player', `${e.name} loses ${s} mana${o.op === 'stealMana' ? ' to you' : ''}.`); } break;
       case 'regenDown': for (const e of targets(o)) { (e.regenDown = e.regenDown || []).push({ n: o.n, turns: o.turns }); cb.say('player', `${e.name}'s mana regen drops by ${o.n} for ${o.turns} turns.`); } break;
       case 'nextAttack': p.nextAttackMult = o.mult; cb.say('player', 'Your next Attack deals double damage.'); break;
       case 'nextSkill': p.nextSkillMult = o.mult; cb.say('player', `Your next damaging Skill deals ${Math.round((o.mult - 1) * 100)}% more damage.`); break;
@@ -717,6 +717,9 @@ function intentKind(ops) {
   return 'buff';
 }
 
+// per-enemy tuning on top of the Map 1 design numbers
+const ENEMY_TUNE = { warlord_gorrath_the_iron_tide: { dmg: 0.8 } }; // Oct 30: Warlord hit too hard (War Banner +40 Strength); all his damage -20%
+
 // ---------------- Combat ----------------
 class Combat {
   // opts: cls, gear (items), enemies (keys), level, seed, hp, mana, buffs, data
@@ -777,6 +780,7 @@ class Combat {
   makeEnemy(key, i) {
     const d = this.data.enemies[key];
     const tune = (this.opts.tune || {})[d.tier] || {};
+    const own = ENEMY_TUNE[key] || {};
     const hp = Math.round(d.hp * this.hpMult * (tune.hp || 1));
     const deck = [], phase2 = [];
     for (const c of d.deck) for (let j = 0; j < c.n; j++) {
@@ -787,7 +791,7 @@ class Combat {
       id: 'e' + i, key, name: d.name, tier: d.tier, creature: d.creature, type: d.type, weakTo: d.weak, maxHp: hp, hp, block: 0, parryBack: 0, thorns: 0, thornsTurns: 0,
       mana: 0, maxMana: Math.round(d.maxMana * this.partyScale), regen: Math.round(d.regen * this.partyScale), draw: d.draw + (this.partyScale > 1 ? this.partySize - 1 : 0), baseInit: d.tier === 'Boss' ? 12 : d.tier === 'Elite' ? 11 : 8 + ri(this.rng, 0, 7),
       strength: 0, strTurn: 0, weak: 0, vulnerable: 0, bleed: 0, poison: 0, burn: 0, chill: 0, frozen: false, slow: 0, initNext: 0, regenDown: [], nextBonus: 0,
-      drawPile: shuffle(deck, this.rng), phase2Cards: phase2, phase: 1, d, hand: [], discard: [], plan: [], firstTurn: true, dmgTune: tune.dmg || 1,
+      drawPile: shuffle(deck, this.rng), phase2Cards: phase2, phase: 1, d, hand: [], discard: [], plan: [], firstTurn: true, dmgTune: (tune.dmg || 1) * (own.dmg || 1),
       condemn: 0, unwarded: 0, exposure: 0, costUp: 0, counter: 0, drawLess: 0, weakNext: 0, noHealRound: 0, grievous: 0, exhaustedTotal: 0, lostRound: 0,
     };
   }
@@ -804,6 +808,8 @@ class Combat {
     cost = cost * (p.turn.costX || 1) * (p.costX || 1);
     return Math.max(0, Math.round(cost));
   }
+  // take mana from an enemy: what it holds now, then what it would regenerate for its next turn (its mana can go below 0 until then)
+  drainMana(e, n) { if (!e || n <= 0) return 0; const pool = Math.max(0, e.mana) + (e.isPlayer ? e.regen : this.effRegen(e)); const s = Math.min(n, pool); e.mana -= s; if (!e.isPlayer) this.planEnemy(e, true); return s; }
   pickAlly(p, self) { const pool = this.allies().filter(a => self || a !== p); if (!pool.length) return p; return pool.slice().sort((x, y) => x.hp / x.maxHp - y.hp / y.maxHp)[0]; }
   defFor(a, n) { const was = this.player; this.player = a; const v = this.gainDef(n); this.player = was; return v; }
   spendAll(p) { const m = p.mana; p.mana = 0; this.say('player', `${this.who(p)} spend${this.partySize > 1 ? 's' : ''} all ${m} mana.`); return m; }
@@ -967,7 +973,7 @@ class Combat {
       if (a.defNext) { this.gainDef(a.defNext, 'delayed'); a.defNext = 0; }
       if (a.recovery && a.hp < a.maxHp) this.heal(a, a.recovery, 'Recovery', true);
       a.turnAttacks = 0; a.turnSkills = 0; a.turnElems = []; a.turn = {};
-      if (a.until.grudge) { for (const [eid, n] of Object.entries(a.until.grudge)) { const e = this.actorById(eid); if (e && e.hp > 0) { const s2 = Math.min(n, e.mana); e.mana -= s2; this.say('player', `Grudge: ${e.name} loses ${s2} mana.`); } } }
+      if (a.until.grudge) { for (const [eid, n] of Object.entries(a.until.grudge)) { const e = this.actorById(eid); if (e && e.hp > 0) { const s2 = this.drainMana(e, n); this.say('player', `Grudge: ${e.name} loses ${s2} mana.`); } } }
       if (a.until.stored) { this.gainDef(a.until.stored); this.say('player', 'Stored Impact turns into protection.'); }
       a.until = a.until.storeNext ? { storing: true } : {};
       this.tickTimed(a);
@@ -1117,7 +1123,7 @@ class Combat {
     if (p.isPlayer && p.turn && r.lost > 0) {
       const T = p.turn;
       if (kind === 'Attack' && T.lifesteal) this.heal(p, Math.round(r.lost * T.lifesteal), 'Seal of Light', true);
-      if (T.siphon && e.mana) { const m = Math.min(e.mana, r.lost); e.mana -= m; }
+      if (T.siphon) this.drainMana(e, r.lost);
       if (kind === 'Attack' && T.perfectGuard) this.gainDef(r.lost);
       if (dtype === 'Holy' && T.kindled) { T.kindled = false; e.burn += Math.round(r.lost * 0.5); e.burnBy = p.id; this.say('player', `Kindled Faith: ${e.name} gains ${Math.round(r.lost * 0.5)} Burn.`); }
       if (kind === 'Attack' && T.coated) { T.coated = false; const q = Math.max(1, Math.round(r.lost * 0.25)); e.bleed += q; e.poison += q; e.bleedBy = e.poisonBy = p.id; this.say('player', `Coated Blade: ${q} Bleed and ${q} Poison.`); }

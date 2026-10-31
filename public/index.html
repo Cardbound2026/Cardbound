@@ -325,6 +325,12 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .pilecard.design .cf { filter: grayscale(.55) brightness(.75); }
 .pilecard .dstamp { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%) rotate(-12deg); z-index: 32; background: rgba(20,14,10,.88); border: 1px solid #8a6a3a; color: #e9c98a; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none; }
 .tag.power { background: #2a1f33; border-color: #6a4f8a; color: #d9c2f5; }
+.glq { width: 100%; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; font: inherit; margin-bottom: 6px; }
+.glbody { max-height: 62vh; overflow: auto; padding-right: 4px; }
+.glh { font-size: 18px; color: var(--accent); margin: 10px 0 4px; }
+.gloss { display: grid; grid-template-columns: minmax(150px, 210px) 1fr; gap: 4px 14px; margin: 0; font-size: 14px; }
+.gloss dt { font-weight: 700; color: var(--text); } .gloss dd { margin: 0; color: #d6cab6; }
+@media (max-width: 640px) { .gloss { grid-template-columns: 1fr; } .gloss dd { margin-bottom: 6px; } }
 .pilegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; padding: 6px 4px 30px; }
 .pilecard { position: relative; display: grid; justify-items: center; }
 .pilecard .cf { transition: transform .14s; transform-origin: 50% 60%; }
@@ -561,7 +567,7 @@ card('assassinate', { cls: 'Rogue', name: 'Assassinate', rarity: 'Gold', type: '
 // --- Mage
 card('fireball', { cls: 'Mage', name: 'Fireball', rarity: 'White', type: 'Skill', cost: 10, target: 'enemy', dtype: 'Fire', text: 'Deal 7 Fire damage and apply 3 Burn.', play: (cb, t) => { cb.hit(t, 7, 'Fireball'); cb.applyDot(t, 'burn', 3); }, tags: { dmg: 7, dot: 6 } });
 card('frostbolt', { cls: 'Mage', name: 'Frostbolt', rarity: 'White', type: 'Skill', cost: 10, target: 'enemy', dtype: 'Frost', text: "Deal 5 Frost damage. Reduce the target's mana regeneration by 5 for 2 turns. Stacks.", play: (cb, t) => { cb.hit(t, 5, 'Frostbolt'); if (t.hp > 0) { t.regenDown.push({ n: 5, turns: 2 }); cb.say('player', `${t.name}'s mana regen drops by 5 for 2 turns.`); } }, tags: { dmg: 5 } });
-card('arcane_missiles', { cls: 'Mage', name: 'Arcane Missiles', rarity: 'White', type: 'Skill', cost: 10, target: 'enemy', dtype: 'Arcane', text: 'Deal 5 Arcane damage. Steal 5 mana from the target.', play: (cb, t) => { cb.hit(t, 5, 'Arcane Missiles'); const s = Math.min(5, t.mana); t.mana -= s; cb.player.mana += s; if (s) cb.say('player', `You steal ${s} mana.`); }, tags: { dmg: 5 } });
+card('arcane_missiles', { cls: 'Mage', name: 'Arcane Missiles', rarity: 'White', type: 'Skill', cost: 10, target: 'enemy', dtype: 'Arcane', text: 'Deal 5 Arcane damage. Steal 5 mana from the target.', play: (cb, t) => { cb.hit(t, 5, 'Arcane Missiles'); const s = cb.drainMana(t, 5); cb.player.mana += s; cb.say('player', s ? `${cb.who(cb.player)} steal${cb.partySize > 1 ? 's' : ''} ${s} mana from ${t.name}${t.mana < 0 ? ' (it will have less next turn)' : ''}.` : `${t.name} has no mana to steal.`); }, tags: { dmg: 5 } });
 card('ice_bolt', { cls: 'Mage', name: 'Ice Bolt', rarity: 'White', type: 'Skill', cost: 10, target: 'enemy', dtype: 'Frost', text: 'Deal 5 Frost damage and apply 4 Chill.', play: (cb, t) => { cb.hit(t, 5, 'Ice Bolt'); cb.applyChill(t, 4); }, tags: { dmg: 5, chill: 4 } });
 card('mana_spring', { cls: 'Mage', name: 'Mana Spring', rarity: 'White', type: 'Skill', cost: 10, target: 'self', text: 'At the start of your next turn, gain 20 mana.', play: (cb) => { cb.player.manaNext += 20; cb.say('player', '+20 mana next turn.'); }, tags: { mana: 10 } });
 card('ward', { cls: 'Mage', name: 'Ward', rarity: 'White', type: 'Skill', cost: 10, target: 'self', text: 'Gain 10 Barrier.', play: (cb) => cb.gainDef(10), tags: { def: 10 } });
@@ -880,12 +886,12 @@ const CUSTOM = {
   purge_the_static: { play: (cb, t, p) => { const n = cb.exhaustStatus(p, 10); for (let i = 0; i < n && !cb.over; i++) D_(cb, t, 10, 'Purge the Static'); } },
   fan_the_flames: { play: (cb, t) => { const e = tgtOf(cb, t); if (e) { e.burn = Math.round(e.burn * 1.5); say(cb, `${e.name}'s Burn rises to ${e.burn}.`); } } },
   cauterized_ward: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const n = e.burn; e.burn = 0; if (n) cb.gainDef(n); } },
-  ashen_drain: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const b = e.burn; e.burn = 0; e.mana = Math.max(0, e.mana - b); cb.eStatus(e, 'fatigue', Math.floor(b / 10), 'discard'); say(cb, `${e.name} loses ${b} mana.`); } },
+  ashen_drain: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const b = e.burn; e.burn = 0; cb.drainMana(e, b); cb.eStatus(e, 'fatigue', Math.floor(b / 10), 'discard'); say(cb, `${e.name} loses ${b} mana.`); } },
   stored_impact: { play: (cb, t, p) => { p.until.storing = true; say(cb, 'Damage you take until your next turn comes back as Barrier.'); } },
   mirror_barrier: { play: (cb, t, p) => { p.block *= 2; say(cb, `Barrier doubled to ${p.block}.`); } },
   barrier_burst: { play: (cb, t, p) => blockToDmg(cb, t, p, 1, 'Barrier Burst') },
   shared_refuge: { play: (cb, t, p) => { const n = p.dmgRound; if (!n) return say(cb, 'You have not taken damage this round.'); for (const a of cb.allies()) cb.defFor(a, n); } },
-  mana_scorch: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const x = Math.min(p.mana, e.maxMana); p.mana -= x; const s = Math.min(e.mana, x); e.mana -= s; say(cb, `${e.name} loses ${s} mana.`); } },
+  mana_scorch: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const x = Math.min(p.mana, e.maxMana); p.mana -= x; const s = cb.drainMana(e, x); say(cb, `${e.name} loses ${s} mana.`); } },
   thought_collapse: { play: (cb, t, p) => { const n = cb.exhaustStatus(p, 10); const e = tgtOf(cb, t); if (e) { cb.eExhaust(e, n); e.drawLess = (e.drawLess || 0) + n; } } },
   time_theft: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; e.baseInit -= 5; p.baseInit += 5; say(cb, `Stole 5 Initiative from ${e.name} for the fight.`); } },
   refill_the_mind: { play: (cb, t, p) => cb.drawCards(p, 10 - p.hand.length) },
@@ -954,7 +960,7 @@ const CUSTOM = {
   twin_verdict: { play: (cb, t, p) => { p.turn.twin = true; say(cb, 'Your next Physical Attack also strikes as Holy.'); } },
   cleansing_flame: { play: (cb, t, p) => { const n = p.burn; p.burn = 0; cb.heal(p, n * 2, 'Cleansing Flame'); } },
   sacred_ash: { play: (cb, t, p) => { const n = p.burn; p.burn = 0; if (n) cb.gainDef(n * 2); } },
-  tithe_of_mana: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const s = Math.min(20, e.mana); e.mana -= s; p.mana += s; say(cb, `Took ${s} mana.`); } },
+  tithe_of_mana: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const s = cb.drainMana(e, 20); p.mana += s; say(cb, `Took ${s} mana.`); } },
   inquisition: { play: (cb, t) => { const e = tgtOf(cb, t); if (e) cb.eExhaust(e, 2); } },
   burden_of_sin: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (e) { const n = debuffMove(cb, p, e, ['weak', 'vulnerable', 'slow', 'bleed', 'poison', 'burn', 'chill']); say(cb, n ? `Your debuffs move to ${e.name}.` : 'No debuffs to move.'); } } },
   divine_communion: { play: (cb, t, p) => { const m = cb.spendAll(p); for (const a of cb.allies()) cb.heal(a, m, 'Divine Communion'); } },
@@ -1106,7 +1112,7 @@ function runOps(cb, t, ops, label) {
       case 'stealth': p.stealth = true; cb.say('player', `${cb.who(p)} slip${cb.partySize > 1 ? 's' : ''} into Stealth.`); break;
       case 'addCard': for (let k = 0; k < o.n; k++) cb.addToHand(o.key); break;
       case 'selfStatus': for (let k = 0; k < o.n; k++) { const sc = { uid: 'c' + (cb._uid++), key: o.key }; if (o.pile === 'discard') p.discard.push(sc); else p.drawPile.splice(Math.floor(cb.rng() * (p.drawPile.length + 1)), 0, sc); } break;
-      case 'burnMana': case 'stealMana': for (const e of targets(o)) { const s = Math.min(o.n, e.mana || 0); e.mana -= s; if (o.op === 'stealMana') p.mana += s; cb.say('player', `${e.name} loses ${s} mana${o.op === 'stealMana' ? ' to you' : ''}.`); } break;
+      case 'burnMana': case 'stealMana': for (const e of targets(o)) { const s = cb.drainMana(e, o.n); if (o.op === 'stealMana') p.mana += s; cb.say('player', `${e.name} loses ${s} mana${o.op === 'stealMana' ? ' to you' : ''}.`); } break;
       case 'regenDown': for (const e of targets(o)) { (e.regenDown = e.regenDown || []).push({ n: o.n, turns: o.turns }); cb.say('player', `${e.name}'s mana regen drops by ${o.n} for ${o.turns} turns.`); } break;
       case 'nextAttack': p.nextAttackMult = o.mult; cb.say('player', 'Your next Attack deals double damage.'); break;
       case 'nextSkill': p.nextSkillMult = o.mult; cb.say('player', `Your next damaging Skill deals ${Math.round((o.mult - 1) * 100)}% more damage.`); break;
@@ -1229,6 +1235,9 @@ function intentKind(ops) {
   return 'buff';
 }
 
+// per-enemy tuning on top of the Map 1 design numbers
+const ENEMY_TUNE = { warlord_gorrath_the_iron_tide: { dmg: 0.8 } }; // Oct 30: Warlord hit too hard (War Banner +40 Strength); all his damage -20%
+
 // ---------------- Combat ----------------
 class Combat {
   // opts: cls, gear (items), enemies (keys), level, seed, hp, mana, buffs, data
@@ -1289,6 +1298,7 @@ class Combat {
   makeEnemy(key, i) {
     const d = this.data.enemies[key];
     const tune = (this.opts.tune || {})[d.tier] || {};
+    const own = ENEMY_TUNE[key] || {};
     const hp = Math.round(d.hp * this.hpMult * (tune.hp || 1));
     const deck = [], phase2 = [];
     for (const c of d.deck) for (let j = 0; j < c.n; j++) {
@@ -1299,7 +1309,7 @@ class Combat {
       id: 'e' + i, key, name: d.name, tier: d.tier, creature: d.creature, type: d.type, weakTo: d.weak, maxHp: hp, hp, block: 0, parryBack: 0, thorns: 0, thornsTurns: 0,
       mana: 0, maxMana: Math.round(d.maxMana * this.partyScale), regen: Math.round(d.regen * this.partyScale), draw: d.draw + (this.partyScale > 1 ? this.partySize - 1 : 0), baseInit: d.tier === 'Boss' ? 12 : d.tier === 'Elite' ? 11 : 8 + ri(this.rng, 0, 7),
       strength: 0, strTurn: 0, weak: 0, vulnerable: 0, bleed: 0, poison: 0, burn: 0, chill: 0, frozen: false, slow: 0, initNext: 0, regenDown: [], nextBonus: 0,
-      drawPile: shuffle(deck, this.rng), phase2Cards: phase2, phase: 1, d, hand: [], discard: [], plan: [], firstTurn: true, dmgTune: tune.dmg || 1,
+      drawPile: shuffle(deck, this.rng), phase2Cards: phase2, phase: 1, d, hand: [], discard: [], plan: [], firstTurn: true, dmgTune: (tune.dmg || 1) * (own.dmg || 1),
       condemn: 0, unwarded: 0, exposure: 0, costUp: 0, counter: 0, drawLess: 0, weakNext: 0, noHealRound: 0, grievous: 0, exhaustedTotal: 0, lostRound: 0,
     };
   }
@@ -1316,6 +1326,8 @@ class Combat {
     cost = cost * (p.turn.costX || 1) * (p.costX || 1);
     return Math.max(0, Math.round(cost));
   }
+  // take mana from an enemy: what it holds now, then what it would regenerate for its next turn (its mana can go below 0 until then)
+  drainMana(e, n) { if (!e || n <= 0) return 0; const pool = Math.max(0, e.mana) + (e.isPlayer ? e.regen : this.effRegen(e)); const s = Math.min(n, pool); e.mana -= s; if (!e.isPlayer) this.planEnemy(e, true); return s; }
   pickAlly(p, self) { const pool = this.allies().filter(a => self || a !== p); if (!pool.length) return p; return pool.slice().sort((x, y) => x.hp / x.maxHp - y.hp / y.maxHp)[0]; }
   defFor(a, n) { const was = this.player; this.player = a; const v = this.gainDef(n); this.player = was; return v; }
   spendAll(p) { const m = p.mana; p.mana = 0; this.say('player', `${this.who(p)} spend${this.partySize > 1 ? 's' : ''} all ${m} mana.`); return m; }
@@ -1479,7 +1491,7 @@ class Combat {
       if (a.defNext) { this.gainDef(a.defNext, 'delayed'); a.defNext = 0; }
       if (a.recovery && a.hp < a.maxHp) this.heal(a, a.recovery, 'Recovery', true);
       a.turnAttacks = 0; a.turnSkills = 0; a.turnElems = []; a.turn = {};
-      if (a.until.grudge) { for (const [eid, n] of Object.entries(a.until.grudge)) { const e = this.actorById(eid); if (e && e.hp > 0) { const s2 = Math.min(n, e.mana); e.mana -= s2; this.say('player', `Grudge: ${e.name} loses ${s2} mana.`); } } }
+      if (a.until.grudge) { for (const [eid, n] of Object.entries(a.until.grudge)) { const e = this.actorById(eid); if (e && e.hp > 0) { const s2 = this.drainMana(e, n); this.say('player', `Grudge: ${e.name} loses ${s2} mana.`); } } }
       if (a.until.stored) { this.gainDef(a.until.stored); this.say('player', 'Stored Impact turns into protection.'); }
       a.until = a.until.storeNext ? { storing: true } : {};
       this.tickTimed(a);
@@ -1629,7 +1641,7 @@ class Combat {
     if (p.isPlayer && p.turn && r.lost > 0) {
       const T = p.turn;
       if (kind === 'Attack' && T.lifesteal) this.heal(p, Math.round(r.lost * T.lifesteal), 'Seal of Light', true);
-      if (T.siphon && e.mana) { const m = Math.min(e.mana, r.lost); e.mana -= m; }
+      if (T.siphon) this.drainMana(e, r.lost);
       if (kind === 'Attack' && T.perfectGuard) this.gainDef(r.lost);
       if (dtype === 'Holy' && T.kindled) { T.kindled = false; e.burn += Math.round(r.lost * 0.5); e.burnBy = p.id; this.say('player', `Kindled Faith: ${e.name} gains ${Math.round(r.lost * 0.5)} Burn.`); }
       if (kind === 'Attack' && T.coated) { T.coated = false; const q = Math.max(1, Math.round(r.lost * 0.25)); e.bleed += q; e.poison += q; e.bleedBy = e.poisonBy = p.id; this.say('player', `Coated Blade: ${q} Bleed and ${q} Poison.`); }
@@ -4014,6 +4026,100 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if ($('pmDuel')) $('pmDuel').onclick = () => { closeTalk(); challenge(uid); };
   }
 
+  // ---------- Glossary (Esc menu): every stat and effect, in plain words
+  const GLOSSARY = [
+    ['Stats', [
+      ['Max HP', 'How much damage you can take. HP carries from fight to fight on a run; campfires heal 30%.'],
+      ['Stamina', 'Gear stat: +1 Max HP per point.'],
+      ['Mana', 'Spent to play cards. You start each turn with your regeneration added (double on your first turn of a fight), up to your max. Unspent mana carries over to the next turn.'],
+      ['Mana Regen', 'Mana gained at the start of each of your turns.'],
+      ['Max Mana', 'The most mana you can hold.'],
+      ['Draw', 'Cards drawn at the start of each round. A full hand is 10 cards; extra draws go to the discard pile.'],
+      ['Strength', '+1% damage from Attack cards per point.'],
+      ['Intelligence', '+1% damage from Skill (spell) cards per point.'],
+      ['Dexterity', '+1% to the Block, Barrier or Dodge your cards give per point.'],
+      ['Spirit', '+1% to your healing and to the damage-over-time stacks you apply, per point.'],
+      ['Crit Chance', 'Chance for a hit to critically strike.'],
+      ['Crit Damage', 'How hard a critical strike hits: shown as a multiplier, x1.5 by default.'],
+      ['Initiative', 'Turn order: highest acts first each round (ties are random). Slow and Chill lower it.'],
+      ['Resistance', 'Less damage taken of that element, up to 75%. Every Map 1 item has some Fire resistance.'],
+      ['Elemental Damage', '+% damage for cards of that element (Fire, Frost, Arcane, Nature, Shadow, Holy).'],
+      ['Luck', 'Raises every drop chance: +1% per point.'],
+      ['Multi-hit Chance', 'Chance an Attack hits twice.'],
+      ['Multiplay / Multicast', 'Chance a damaging Attack (Multiplay) or Skill (Multicast) is played again for free.'],
+      ['Bleed Chance', 'Chance your Attacks also apply 3 Bleed.'],
+      ['Lifesteal', 'Heal for this % of the HP damage your hits deal.'],
+      ['Thorns', 'Attackers take this much damage back each time they hit you.'],
+      ['Recovery', 'Heal this much at the start of each of your turns.'],
+      ['Health Regen', 'Heal this much after each fight you win.'],
+      ['Defense Gain', '+% to the Block, Barrier or Dodge you gain.'],
+      ['Gear Score / Deck Level / Power', 'Gear score is the average item level of your 13 slots; deck level rates your best 20 cards; Power is the average of the two.'],
+      ['Item power', 'Shown on upgrade badges: an item\'s stats added up by their value. Stats your class barely uses count for a quarter.'],
+    ]],
+    ['Defense', [
+      ['Block / Barrier / Dodge / Parry', 'Your class\'s defense (Warrior and Paladin: Block, Mage: Barrier, Rogue: Dodge; Parry is Warrior Block). It absorbs damage before HP. Half of it fades at the start of your turn. Poison goes straight past it.'],
+      ['Full parry', 'An enemy hit fully absorbed by your defense. Some cards and Powers trigger on it.'],
+      ['Stealth', 'Single-target enemy cards can\'t pick you. It ends at the start of your next turn, or when you play a card that hits all enemies.'],
+      ['Taunt', 'Enemies must attack this hero until their next turn.'],
+      ['Untouchable / Immune', 'No damage (or no damage of a named type) until your next turn.'],
+      ['Reflect', 'The next debuff on you goes back to the enemy that applied it.'],
+    ]],
+    ['Debuffs', [
+      ['Weak', 'Deals that % less damage. Halves at the end of each turn.'],
+      ['Vulnerable', 'Takes that % more damage. Halves at the end of each turn.'],
+      ['Bleed', 'Takes damage equal to its stacks at the start of its turn (Block absorbs it), then loses 1 stack.'],
+      ['Poison', 'Like Bleed, but ignores Block.'],
+      ['Burn', 'Like Bleed: damage each turn equal to its stacks, then -1.'],
+      ['Chill', 'Lowers Initiative by its stacks. At 10 Chill it Freezes: loses its next turn. Drops by 1 each turn.'],
+      ['Slow', 'Lowers Initiative by its stacks.'],
+      ['Disarm', 'Can\'t play Attacks next turn.'],
+      ['Silence', 'An enemy that is Silenced only plays Attacks on its next turn.'],
+      ['Counterspell', 'The enemy\'s next card does nothing.'],
+      ['Condemnation', 'Takes +1% Holy damage per stack. Halves after each enemy turn.'],
+      ['Unwarded', 'Takes +1% Skill (spell) damage per stack. Halves after each enemy turn.'],
+      ['Exposure', 'Its cards cost 5% more mana per stack.'],
+      ['Cannot heal / Grievous', 'Cannot heal until your next turn / healing received is halved for 2 turns.'],
+      ['Draws fewer', 'The enemy draws that many fewer cards for its next turn.'],
+      ['Mana drain', 'Stealing or burning an enemy\'s mana takes what it has, then what it would regenerate next turn, so it plans fewer cards.'],
+    ]],
+    ['Cards', [
+      ['Attack / Skill / Power', 'Attacks scale with Strength, Skills with Intelligence. A Power is played once and stays active for the whole fight (shown with a ◆ on your hero).'],
+      ['Exhaust', 'Removed for the rest of the fight after it is played.'],
+      ['Retain', 'Stays in your hand at the end of your turn instead of being discarded.'],
+      ['Fatigue', 'Every time your deck reshuffles, a Fatigue (unplayable) is shuffled in. Long fights clog your deck.'],
+      ['Dazed', 'A junk card. Costs 0 and does nothing; playing it exhausts it.'],
+      ['Stun', 'Unplayable junk that stays in the deck.'],
+      ['Cards in enemy decks', 'Some of your cards add cards to an enemy\'s deck: Dazed, Stun and Fatigue are wasted draws; Venom gives 3 Poison, Frostbite 3 Chill, Hex 10 Vulnerable and Living Bomb explodes for 15 Fire damage when drawn.'],
+      ['Ranks (+1 to +10)', 'Feed spare cards to a card at the Scribe to rank it up: bigger numbers, or cheaper to play.'],
+      ['Devotion', 'Paladin. Each stack adds +2 to your next Holy damage, then it is spent.'],
+      ['Blood Debt', 'Warrior. Stores the HP you lose; some cards turn it into damage or Block.'],
+      ['Card rarity', 'White, Green, Blue, Gold. A deck holds 20 to 30 cards: at most 2 Gold, 4 Blue and 6 Green.'],
+    ]],
+    ['Combat', [
+      ['Turn order', 'Everyone acts in Initiative order each round. The bar at the top shows it; the glowing tile is acting now.'],
+      ['Enemy intents', 'The chips above an enemy are the cards it will play next turn, in order, with their damage and who they are aimed at. Crossed-out ones it can\'t afford.'],
+      ['Pressure', 'From round 5, enemies deal 2% more damage every round (10% in duels), so fights end.'],
+      ['Elites and the boss', 'Elites appear from row 5 and always drop a card. The Warlord has a second phase at half HP with new cards.'],
+      ['Party fights', 'A party meets one monster per hero (each with +30% HP per extra hero). Elites and the boss get +85% HP, mana and regen per extra hero instead.'],
+      ['Damage meter', 'The Meter tab next to the combat log: damage done, healing and damage taken, by ability. Click a bar for the breakdown.'],
+    ]],
+    ['The run', [
+      ['Loot sack', 'What you find on a run. Die and it is lost. Extract at a campfire to keep part of it (75% at the row-7 campfire, 50% later), or kill the Warlord to keep it all.'],
+      ['Bank', 'Your gold in town. Merchants on the March take orders paid from the bank; they wait in your stash even if you die.'],
+      ['Map level', 'Each level: enemies have x1.5 HP and deal x1.3 damage, and drops roll higher item levels.'],
+      ['Shrines', 'A buff for your next 2 fights.'],
+    ]],
+  ];
+  function openGlossary(q) {
+    q = (q || '').toLowerCase();
+    const body = GLOSSARY.map(([sec, rows]) => { const r = rows.filter(([t, d]) => !q || (t + ' ' + d).toLowerCase().includes(q)); return r.length ? `<h3 class="glh">${sec}</h3><dl class="gloss">${r.map(([t, d]) => `<dt>${esc(t)}</dt><dd>${esc(d)}</dd>`).join('')}</dl>` : ''; }).join('') || '<p class="muted">Nothing matches.</p>';
+    modal(`<h2>Glossary</h2><input id="glQ" type="search" placeholder="Search stats and effects..." value="${esc(q)}" autocomplete="off" class="glq"><div id="glBody" class="glbody">${body}</div><div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
+    $('modalBox').classList.add('wide');
+    $('mClose').onclick = closeModal;
+    const i = $('glQ'); i.oninput = () => { const v = i.value; openGlossary(v); const j = $('glQ'); j.focus(); j.setSelectionRange(v.length, v.length); };
+    if (!q) i.focus();
+  }
+
   let townReturn = false;
 
   // ---------- settings (this browser)
@@ -4055,6 +4161,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const inRun = run && !run.over, onTitle = !$('scrTitle').hidden;
     modal(`<h2>Menu</h2><div class="menu">
       <button class="btn primary" id="mClose">Resume</button>
+      <button class="btn" id="mnGloss">Glossary: stats and effects</button>
       ${inRun ? `<button class="btn" id="mnLeave">Leave run and return to town</button>` : ''}
       ${cb && cb.duel && !cb.over ? `<button class="btn" id="mnForfeit">Forfeit the duel</button>` : ''}
       ${cb && cb.duel && cb.over ? `<button class="btn" id="mnTown">Return to town</button>` : ''}
@@ -4065,6 +4172,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       <label class="toggle"><input type="checkbox" id="setFast" ${settings.fast ? 'checked' : ''}> Fast enemy turns</label>
     </div>`);
     $('mClose').onclick = closeModal;
+    $('mnGloss').onclick = () => openGlossary();
     $('setFast').onchange = (e) => { settings.fast = e.target.checked; saveSettings(); };
     if ($('mnLeave')) $('mnLeave').onclick = () => {
       modal(`<h2 class="loss">Leave this run?</h2><p>You go back to Emberwatch now. Everything in your loot sack (items, cards and gold found this run) is lost. Gear you are wearing, your deck and any merchant orders are kept.</p><div class="row"><button class="btn" id="mnConfirm">Leave and lose the sack</button><button class="btn primary" id="mClose">Keep playing</button></div>`);
@@ -4090,13 +4198,25 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     closeModal(); toTown();
   }
   $('btnMenu').addEventListener('click', openMenu);
-  function show(which) { $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); retrack(true); }
+  function hidePeeks() { const pk = document.querySelector('.cardpeek'); if (pk) pk.hidden = true; const gt = document.querySelector('.gtip'); if (gt) gt.hidden = true; }
+  function show(which) { hidePeeks(); $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); retrack(true); }
 
   // ---------- map
   const RH = 58, CW = 78, PADX = 40, PADY = 34;
   function pos(n) { return { x: PADX + n.col * CW, y: PADY + (ROWS + 1 - n.row) * RH }; }
   function renderMap(scroll) {
-    const nodes = run.map.nodes, reach = new Set(run.over ? [] : run.reachable());
+    $('mapScroll').innerHTML = mapSvg(true);
+    const curRow = run.currentRow(), W = PADX * 2 + (COLS - 1) * CW, H = PADY * 2 + ROWS * RH, reach = new Set(run.over ? [] : run.reachable());
+    if (scroll) { const target = PADY + (ROWS + 1 - Math.max(1, curRow + 2)) * RH; const sc = $('mapScroll'); sc.scrollTop = Math.max(0, target - sc.clientHeight / 2); }
+    $('legend').innerHTML = Object.entries(NODE).map(([k, t]) => `<span><svg width="16" height="16" viewBox="-11 -11 22 22"><path d="${t.path}" fill="${t.color}"/></svg>${t.label}</span>`).join('');
+    nodeInfo(focusNode && reach.has(focusNode) ? focusNode : [...reach][0]);
+    renderSide();
+    $('topInfo').textContent = `${run.solo ? run.cls : "Party of " + run.members.length} · Map +${run.level} · row ${curRow} of ${ROWS}`;
+    if (run.over) endScreen();
+  }
+  // the map as an SVG; interactive = clickable reachable nodes (the map screen), otherwise a read-only view (the Map button in a fight)
+  function mapSvg(interactive) {
+    const nodes = run.map.nodes, reach = new Set(run.over || !interactive ? [] : run.reachable());
     const W = PADX * 2 + (COLS - 1) * CW, H = PADY * 2 + ROWS * RH;
     let edges = '', dots = '';
     const curRow = run.currentRow();
@@ -4117,13 +4237,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     }
     let rowsTxt = '';
     for (let r = 1; r <= ROWS; r++) { const y = PADY + (ROWS + 1 - r) * RH; rowsTxt += `<text x="8" y="${y + 4}" fill="#6b5a44" font-size="11">${r}</text>`; }
-    $('mapScroll').innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="group" aria-label="Map">${rowsTxt}${edges}${dots}</svg>`;
-    if (scroll) { const target = PADY + (ROWS + 1 - Math.max(1, curRow + 2)) * RH; const sc = $('mapScroll'); sc.scrollTop = Math.max(0, target - sc.clientHeight / 2); }
-    $('legend').innerHTML = Object.entries(NODE).map(([k, t]) => `<span><svg width="16" height="16" viewBox="-11 -11 22 22"><path d="${t.path}" fill="${t.color}"/></svg>${t.label}</span>`).join('');
-    nodeInfo(focusNode && reach.has(focusNode) ? focusNode : [...reach][0]);
-    renderSide();
-    $('topInfo').textContent = `${run.solo ? run.cls : "Party of " + run.members.length} · Map +${run.level} · row ${curRow} of ${ROWS}`;
-    if (run.over) endScreen();
+    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="group" aria-label="Map">${rowsTxt}${edges}${dots}</svg>`;
+  }
+  function mapPeek() {
+    if (!run) return;
+    const curRow = run.currentRow();
+    modal(`<h2>The Broken March <span class="muted" style="font-size:16px">row ${curRow > ROWS ? 'boss' : curRow} of ${ROWS}</span></h2><p class="muted" style="margin:0 0 6px">The gold ring is where you are. You'll pick your next node after the fight.</p>
+      <div class="mapscroll" id="mapPeekScroll" style="max-height:60vh">${mapSvg(false)}</div>
+      <div class="legend">${Object.entries(NODE).map(([k, t]) => `<span><svg width="16" height="16" viewBox="-11 -11 22 22"><path d="${t.path}" fill="${t.color}"/></svg>${t.label}</span>`).join('')}</div>
+      <div class="row"><button class="btn primary" id="mClose">Back to the fight</button></div>`);
+    $('mClose').onclick = closeModal;
+    const sc = $('mapPeekScroll'), target = PADY + (ROWS + 1 - Math.max(1, curRow + 2)) * RH; sc.scrollTop = Math.max(0, target - sc.clientHeight / 2);
   }
   function nodeInfo(id) {
     const el = $('nodeInfo');
@@ -4310,7 +4434,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   });
 
   // ---------- modals
-  function modal(html) { $('modalBox').classList.remove('wide'); $('modalBox').innerHTML = html; $('modal').hidden = false; fitCards($('modalBox')); const f = $('modalBox').querySelector('button'); if (f) f.focus(); }
+  function modal(html) { hidePeeks(); modal2(html); }
+  function modal2(html) { $('modalBox').classList.remove('wide'); $('modalBox').innerHTML = html; $('modal').hidden = false; fitCards($('modalBox')); const f = $('modalBox').querySelector('button'); if (f) f.focus(); }
   function closeModal() { $('modal').hidden = true; }
   let redrawShop = null;
   function pendingModal() {
@@ -4484,7 +4609,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (!cb) return;
     const p = hero(), party = cb.partySize > 1;
     $('order').innerHTML = `<span class="lbl">Turn<br>order</span>` + cb.order.map((id, i) => { const a = cb.actorById(id); const st = a.hp <= 0 ? 'dead' : i === cb.turnIndex && !cb.over ? 'now' : i < cb.turnIndex ? 'done' : '';
-      return `${i ? '<span class="osep" aria-hidden="true">&rsaquo;</span>' : ''}<div class="otile ${a.isPlayer ? 'hero' : 'foe'} ${st}" style="--oc:${a.isPlayer ? CC[a.cls] : '#e0b8a8'}" title="${esc(a.name)}: Initiative ${cb.initiative(a)}, HP ${a.hp}/${a.maxHp}"><span class="oini">${cb.initiative(a)}</span><div class="ofig">${figure(a)}</div><div class="onm">${a.isPlayer && !party ? 'You' : a === p && cb.myMi != null ? 'You' : esc(a.name)}</div><div class="obar"><i style="width:${Math.max(0, 100 * a.hp / a.maxHp)}%"></i></div></div>`; }).join('') + `<span class="round">Round ${cb.round}</span>`;
+      return `${i ? '<span class="osep" aria-hidden="true">&rsaquo;</span>' : ''}<div class="otile ${a.isPlayer ? 'hero' : 'foe'} ${st}" style="--oc:${a.isPlayer ? CC[a.cls] : '#e0b8a8'}" title="${esc(a.name)}: Initiative ${cb.initiative(a)}, HP ${a.hp}/${a.maxHp}"><span class="oini">${cb.initiative(a)}</span><div class="ofig">${figure(a)}</div><div class="onm">${a.isPlayer && !party ? 'You' : a === p && cb.myMi != null ? 'You' : esc(a.name)}</div><div class="obar"><i style="width:${Math.max(0, 100 * a.hp / a.maxHp)}%"></i></div></div>`; }).join('') + `<span class="round">Round ${cb.round}</span>${run ? '<button class="pilebtn" id="btnCMap" title="Look at the map (M)">Map</button>' : ''}`;
     const mine = cb.duel ? [p] : cb.players, foes = cb.duel ? cb.players.filter(x => x !== p) : cb.enemies;
     $('playerSlot').className = party && !cb.duel ? 'party' : ''; $('playerSlot').innerHTML = mine.map(unitHtml).join('');
     $('foes').innerHTML = foes.map(unitHtml).join('');
@@ -4557,6 +4682,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   $('modal').addEventListener('click', (ev) => { if (ev.target === $('modal') && $('mClose')) closeModal(); });
 
   function combatOver() {
+    hidePeeks();
     if (cb && cb.duel) { if (!cb._shown) { cb._shown = true; duelOver(); } return; }
     if (!run || !run.combat) return;
     const result = run.finishCombat();
@@ -4621,8 +4747,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       if (ev.target.matches('input, select, textarea')) return;
       openMenu(); return;
     }
+    if ((ev.key === 'm' || ev.key === 'M') && !$('scrCombat').hidden && $('modal').hidden && !ev.target.matches('select, input, textarea') && run) { mapPeek(); return; }
     if ((ev.key === 'e' || ev.key === 'E') && !$('scrCombat').hidden && $('modal').hidden && !ev.target.matches('select, input') && !$('btnEnd').disabled) $('btnEnd').click();
   });
+  $('order').addEventListener('click', (ev) => { if (ev.target.closest('#btnCMap')) mapPeek(); });
   $('btnEnd').addEventListener('click', () => { if (busy || cb.phase !== 'player') return; selected = null; if (cb.myMi != null) { $('btnEnd').disabled = true; netAct({ t: 'end' }); return; } cb.endPlayerTurn(); render(true); pump(); });
   renderHub(); show('title'); connectAccount();
 })();
