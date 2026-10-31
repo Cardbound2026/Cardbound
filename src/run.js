@@ -18,8 +18,8 @@ const SHRINES = [
 const SLOTS = ['Weapon', 'Off-hand', 'Helm', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves', 'Belt', 'Pants', 'Boots', 'Ring 1', 'Ring 2'];
 
 // map rules (Oct 31): every row has 3 to 5 nodes, at most 3 rows have only 3, at least 5 rows have exactly 4;
-// at least 5 shrines; never more than 4 fights (incl. elites) in a row along any path; 10% of maps hide one Enraged elite
-const MAP_RULES = { minRow: 3, maxThreeRows: 3, minFourRows: 5, minShrines: 5, maxFightRun: 4, enragedChance: 0.1 };
+// 5 or 6 shrines; never more than 4 fights (incl. elites) in a row along any path; 10% of maps hide one Enraged elite
+const MAP_RULES = { minRow: 3, maxThreeRows: 3, minFourRows: 5, minShrines: 5, maxShrines: 6, maxFightRun: 4, enragedChance: 0.1 };
 function rowCounts(nodes) { const n = {}; for (let r = 1; r <= ROWS; r++) n[r] = 0; for (const x of Object.values(nodes)) if (x.row >= 1 && x.row <= ROWS) n[x.row]++; return n; }
 function topologyOk(nodes) {
   const n = rowCounts(nodes), v = Object.values(n);
@@ -107,12 +107,6 @@ function mapTopology(rng) {
 function finishMap(rng, data, partySize, mapKey, nodes) {
   mapKey = mapKey || 'physical';
   const id = (r, c) => r + ':' + c, starts = new Set(Object.values(nodes).filter(n => n.row === 1).map(n => n.col));
-  // untangle crossing edges: (r,a)->(r+1,b) and (r,b)->(r+1,a) become straight lines (same nodes stay connected)
-  for (const n of Object.values(nodes)) for (const k of n.next.slice()) {
-    const t = nodes[k]; if (!t || t.col === n.col) continue;
-    const o = nodes[id(n.row, t.col)], back = id(n.row + 1, n.col);
-    if (o && o.next.includes(back) && nodes[back]) { n.next = n.next.filter(x => x !== k); if (!n.next.includes(back)) n.next.push(back); o.next = o.next.filter(x => x !== back); if (!o.next.includes(k)) o.next.push(k); }
-  }
   const boss = { id: 'boss', row: ROWS + 1, col: 2, next: [], type: 'boss' };
   nodes.boss = boss;
   for (const n of Object.values(nodes)) if (n.row === ROWS) n.next = ['boss'];
@@ -152,6 +146,14 @@ function finishMap(rng, data, partySize, mapKey, nodes) {
   // at least 5 shrines: turn random fights (rows 2-13) into shrines
   const spare = shuffle(list.filter(n => n.type === 'fight' && n.row >= 2 && n.row < ROWS), rng);
   while (list.filter(n => n.type === 'shrine').length < MAP_RULES.minShrines && spare.length) spare.pop().type = 'shrine';
+  // at most 6 shrines: extras become fights where that keeps every fight streak at 4 or less, otherwise merchants or rests
+  const runOk = () => { const st = {}; for (let r = 1; r <= ROWS; r++) for (const n of list.filter(x => x.row === r)) { const b = Math.max(0, ...list.filter(p => p.row === r - 1 && p.next.includes(n.id)).map(p => st[p.id] || 0)); st[n.id] = isFight(n) ? b + 1 : 0; if (st[n.id] > MAP_RULES.maxFightRun) return false; } return true; };
+  const nearRest = (n) => list.some(p => (p.next.includes(n.id) || n.next.includes(p.id)) && p.type === 'rest');
+  for (const n of shuffle(list.filter(x => x.type === 'shrine'), rng)) {
+    if (list.filter(x => x.type === 'shrine').length <= MAP_RULES.maxShrines) break;
+    n.type = 'fight'; if (runOk()) continue;
+    n.type = !nearRest(n) && rng() < 0.4 && list.filter(x => x.type === 'rest').length < 8 ? 'rest' : 'merchant';
+  }
   // enemies
   const byTier = { 1: [], 2: [], 3: [], Elite: [] };
   for (const [k, e] of Object.entries(data.enemies)) if (byTier[e.tier] && (e.map || 'physical') === mapKey) byTier[e.tier].push(k);
@@ -231,7 +233,8 @@ class Run {
       this.note(`Row ${n.row}: ${n.type === 'boss' ? 'the boss' : n.type === 'elite' ? 'an elite' : 'a fight'} against ${n.enemies.map(k => this.data.enemies[k].name).join(', ')}.`);
     } else if (n.type === 'rest') { this.pending = { type: 'rest', heals: this.members.map(m => Math.min(m.stats.maxHp - m.hp, Math.round(m.stats.maxHp * 0.3))), keep: n.campfire ? 0.75 : 0.5 }; this.pending.heal = this.pending.heals[0]; }
     else if (n.type === 'shrine') { const s = SHRINES.find(x => x.key === n.shrine); this.buffs.push({ key: s.key, name: s.name, buff: s.buff, fights: 2 }); this.pending = { type: 'shrine', shrine: s }; this.note(`Row ${n.row}: ${s.name}. ${s.text}`); }
-    else if (n.type === 'merchant') { this.pending = { type: 'merchant', stock: this.merchantStock() }; this.note(`Row ${n.row}: a merchant.`); }
+    else if (n.type === 'merchant') { this.pending = { type: 'merchant', stock: this.merchantStock() }; if (this.online && this.members.length > 1) this.pending.stocks = this.members.map(() => this.merchantStock(5)); // online parties: every hero gets their own stock (Oct 31)
+      this.note(`Row ${n.row}: a merchant.`); }
     return true;
   }
 
@@ -301,10 +304,11 @@ class Run {
   }
   closePending() { this.pending = null; }
 
-  merchantStock() {
+  stockFor(mi) { const p = this.pending; return p && p.stocks ? p.stocks[mi || 0] : p && p.stock; }
+  merchantStock(n) {
     const bases = this.data.gear.bases.filter(b => (b.map || 'physical') === this.mapKey).map(b => b.name);
     const out = [];
-    for (let i = 0; i < 4 + Math.min(4, this.members.length - 1) * 2; i++) {
+    for (let i = 0; i < (n || 4 + Math.min(4, this.members.length - 1) * 2); i++) {
       const x = this.rng() * 100, rar = x < 45 ? 'White' : x < 80 ? 'Green' : 'Blue';
       const item = rollItem(this.data, this.rng, bases[ri(this.rng, 0, bases.length - 1)], rar, this.level);
       item.price = Math.round({ White: 20, Green: 50, Blue: 120 }[rar] * Math.pow(1.5, this.level));
@@ -320,7 +324,7 @@ class Run {
   // order from a merchant with banked gold; delivered to that member's stash
   buy(i, mi) {
     const m = this.members[mi || 0];
-    const st = this.pending && this.pending.stock; if (!st || !st[i] || st[i].sold) return false;
+    const st = this.stockFor(mi); if (!st || !st[i] || st[i].sold) return false;
     const item = st[i]; if (this.bankOf(m) < item.price || m.orders.length >= m.stashFree) return false;
     if (this.sharedBank) this.bankPool -= item.price; else m.bank -= item.price;
     m.spent += item.price; item.sold = true; item.buyer = m.idx;

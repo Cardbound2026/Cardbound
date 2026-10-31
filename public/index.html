@@ -557,13 +557,15 @@ body.aiming { cursor: grabbing; user-select: none; }
   .order.raid .otile { width: 62px; padding: 2px; } .order.raid .otile .ofig, .order.raid .otile .ofig svg { height: 30px; } .order.raid .otile .onm { font-size: 11px; } .order.raid .otile.now::after { display: none; }
   .cxcods { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; margin-top: 6px; } .cxcod { border-left: 3px solid var(--rc); background: rgba(255,255,255,.03); padding: 8px 10px; border-radius: 6px; display: grid; gap: 4px; } .cxch { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; } .cxch b { color: #f0b070; }
   #btnUpdates { position: fixed; right: 8px; bottom: 34px; z-index: 40; padding: 5px 12px; font-size: 13px; } #btnUpdates i { display: none; } #btnUpdates.unread i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #e4a93a; margin-left: 6px; box-shadow: 0 0 8px #e4a93a; }
-  .changelog { max-height: 62vh; overflow: auto; padding-right: 6px; } .changelog h3 { color: var(--accent); font-size: 20px; margin: 12px 0 4px; } .changelog ul { margin: 0; padding-left: 18px; } .changelog li { margin: 4px 0; line-height: 1.4; } .clarea { display: inline-block; min-width: 86px; margin-right: 6px; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .changelog { max-height: 62vh; overflow: auto; padding-right: 6px; } .changelog h3 { color: var(--accent); font-size: 20px; margin: 12px 0 4px; } .changelog ul { margin: 0; padding: 0; list-style: none; } .changelog li { margin: 5px 0; line-height: 1.4; display: grid; grid-template-columns: 100px minmax(0, 1fr); column-gap: 8px; align-items: baseline; } .clarea { display: block; margin-right: 0; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
   #updBanner .btn { padding: 4px 12px; font-size: 14px; } #updBanner { width: max-content; position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 32px); padding: 8px 14px; background: #2a1f12; border: 1px solid var(--accent); border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,.6); }
   .rlrolls { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; margin: -2px 0 4px 8px; } .rlrolls .win { text-decoration: underline; }
   .ilink { cursor: pointer; font-weight: 700; text-decoration: none; } .ilink:hover { text-decoration: underline; } .linkview { display: grid; justify-items: start; }
   .planbox { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 8px; } .planhead { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; } .planhead .btn { padding: 4px 12px; font-size: 14px; }
   .plancols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 6px; } .plancol { border-left: 3px solid var(--pc); padding-left: 8px; font-size: 14px; } .planmobs { margin-top: 4px; font-size: 13px; } .planmobs span:first-child { display: inline-block; min-width: 26px; color: var(--accent); }
   .node .enraged { animation: pulse 1.2s ease-in-out infinite; }
+  [data-cardinfo] .card, [data-cardinfo].item { cursor: pointer; }
+  .cxcod { cursor: pointer; } .cxcod:hover { background: rgba(255,255,255,.06); }
 </style>
 </head>
 <body>
@@ -1517,6 +1519,7 @@ function intentKind(ops) {
 }
 
 // per-enemy tuning on top of the Map 1 design numbers
+const BOSS_CODEX_CHANCE = 0.5;
 const DEBT_CARDS = ['collect_the_debt', 'sanguine_guard', 'pay_in_blood'];
 // enemy card ops that land on heroes (single-target unless the op is marked all)
 const ENEMY_PLAYER_OPS = ['damage', 'execute', 'damageBlock', 'debuff', 'stealMana', 'burnMana', 'drawLess', 'disarm', 'purge', 'shred', 'shredAll', 'tickBleed', 'status'];
@@ -2427,8 +2430,9 @@ function rollDrops(data, rng, enemyKey, level, luck, cls) {
     if (got) out.push(rollItem(data, rng, d.pool[Math.floor(rng() * d.pool.length)], got, level));
   }
   // codexes: bosses list one per class on their loot table (each rolls on its own)
-  // map bosses always drop one codex: the one on their table for the looting hero's class (Oct 31)
+  // map bosses drop one codex half the time (more with Luck): the one on their table for the looting hero's class (Oct 31)
   if (d.tier === 'Boss' && !d.raid) {
+    if (rng() >= Math.min(1, BOSS_CODEX_CHANCE * lk)) return out;
     const all = (d.loot || []).filter(x => x.type === 'Codex'), mine = all.filter(x => x.cls === cls), pick = (mine.length ? mine : all);
     if (pick.length) { const x = pick[Math.floor(rng() * pick.length)], key = Object.keys(CODEX_BY_KEY).find(k => CODEX_BY_KEY[k].name + ' Codex' === x.item); if (key) out.push(makeCodex(data, rng, key, level)); }
     return out;
@@ -2442,7 +2446,7 @@ function rollDrops(data, rng, enemyKey, level, luck, cls) {
 for (const k of ['envenom', 'plague_bloom', 'toxic_cloud', 'venom_vial', 'fester', 'crippling_poison', 'mind_numbing_poison', 'deadly_toxin', 'wound_poison', 'corrosive_toxin', 'draining_venom', 'poison_nova']) if (C[k]) { C[k].type = 'Attack'; if (C[k].dtype == null) C[k].dtype = k === 'poison_nova' ? 'Nature' : 'Physical'; }
 if (C.seismic_slam) { C.seismic_slam.cost = 0; C.seismic_slam.text = 'Deal damage to all enemies equal to 50% of your current mana. Your mana is not spent.'; }
 if (C.mana_gem) C.mana_gem.cost = 0; // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
-const API = { CARDS_VERSION: 2, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { CARDS_VERSION: 2, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -2468,8 +2472,8 @@ const SHRINES = [
 const SLOTS = ['Weapon', 'Off-hand', 'Helm', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves', 'Belt', 'Pants', 'Boots', 'Ring 1', 'Ring 2'];
 
 // map rules (Oct 31): every row has 3 to 5 nodes, at most 3 rows have only 3, at least 5 rows have exactly 4;
-// at least 5 shrines; never more than 4 fights (incl. elites) in a row along any path; 10% of maps hide one Enraged elite
-const MAP_RULES = { minRow: 3, maxThreeRows: 3, minFourRows: 5, minShrines: 5, maxFightRun: 4, enragedChance: 0.1 };
+// 5 or 6 shrines; never more than 4 fights (incl. elites) in a row along any path; 10% of maps hide one Enraged elite
+const MAP_RULES = { minRow: 3, maxThreeRows: 3, minFourRows: 5, minShrines: 5, maxShrines: 6, maxFightRun: 4, enragedChance: 0.1 };
 function rowCounts(nodes) { const n = {}; for (let r = 1; r <= ROWS; r++) n[r] = 0; for (const x of Object.values(nodes)) if (x.row >= 1 && x.row <= ROWS) n[x.row]++; return n; }
 function topologyOk(nodes) {
   const n = rowCounts(nodes), v = Object.values(n);
@@ -2557,12 +2561,6 @@ function mapTopology(rng) {
 function finishMap(rng, data, partySize, mapKey, nodes) {
   mapKey = mapKey || 'physical';
   const id = (r, c) => r + ':' + c, starts = new Set(Object.values(nodes).filter(n => n.row === 1).map(n => n.col));
-  // untangle crossing edges: (r,a)->(r+1,b) and (r,b)->(r+1,a) become straight lines (same nodes stay connected)
-  for (const n of Object.values(nodes)) for (const k of n.next.slice()) {
-    const t = nodes[k]; if (!t || t.col === n.col) continue;
-    const o = nodes[id(n.row, t.col)], back = id(n.row + 1, n.col);
-    if (o && o.next.includes(back) && nodes[back]) { n.next = n.next.filter(x => x !== k); if (!n.next.includes(back)) n.next.push(back); o.next = o.next.filter(x => x !== back); if (!o.next.includes(k)) o.next.push(k); }
-  }
   const boss = { id: 'boss', row: ROWS + 1, col: 2, next: [], type: 'boss' };
   nodes.boss = boss;
   for (const n of Object.values(nodes)) if (n.row === ROWS) n.next = ['boss'];
@@ -2602,6 +2600,14 @@ function finishMap(rng, data, partySize, mapKey, nodes) {
   // at least 5 shrines: turn random fights (rows 2-13) into shrines
   const spare = shuffle(list.filter(n => n.type === 'fight' && n.row >= 2 && n.row < ROWS), rng);
   while (list.filter(n => n.type === 'shrine').length < MAP_RULES.minShrines && spare.length) spare.pop().type = 'shrine';
+  // at most 6 shrines: extras become fights where that keeps every fight streak at 4 or less, otherwise merchants or rests
+  const runOk = () => { const st = {}; for (let r = 1; r <= ROWS; r++) for (const n of list.filter(x => x.row === r)) { const b = Math.max(0, ...list.filter(p => p.row === r - 1 && p.next.includes(n.id)).map(p => st[p.id] || 0)); st[n.id] = isFight(n) ? b + 1 : 0; if (st[n.id] > MAP_RULES.maxFightRun) return false; } return true; };
+  const nearRest = (n) => list.some(p => (p.next.includes(n.id) || n.next.includes(p.id)) && p.type === 'rest');
+  for (const n of shuffle(list.filter(x => x.type === 'shrine'), rng)) {
+    if (list.filter(x => x.type === 'shrine').length <= MAP_RULES.maxShrines) break;
+    n.type = 'fight'; if (runOk()) continue;
+    n.type = !nearRest(n) && rng() < 0.4 && list.filter(x => x.type === 'rest').length < 8 ? 'rest' : 'merchant';
+  }
   // enemies
   const byTier = { 1: [], 2: [], 3: [], Elite: [] };
   for (const [k, e] of Object.entries(data.enemies)) if (byTier[e.tier] && (e.map || 'physical') === mapKey) byTier[e.tier].push(k);
@@ -2681,7 +2687,8 @@ class Run {
       this.note(`Row ${n.row}: ${n.type === 'boss' ? 'the boss' : n.type === 'elite' ? 'an elite' : 'a fight'} against ${n.enemies.map(k => this.data.enemies[k].name).join(', ')}.`);
     } else if (n.type === 'rest') { this.pending = { type: 'rest', heals: this.members.map(m => Math.min(m.stats.maxHp - m.hp, Math.round(m.stats.maxHp * 0.3))), keep: n.campfire ? 0.75 : 0.5 }; this.pending.heal = this.pending.heals[0]; }
     else if (n.type === 'shrine') { const s = SHRINES.find(x => x.key === n.shrine); this.buffs.push({ key: s.key, name: s.name, buff: s.buff, fights: 2 }); this.pending = { type: 'shrine', shrine: s }; this.note(`Row ${n.row}: ${s.name}. ${s.text}`); }
-    else if (n.type === 'merchant') { this.pending = { type: 'merchant', stock: this.merchantStock() }; this.note(`Row ${n.row}: a merchant.`); }
+    else if (n.type === 'merchant') { this.pending = { type: 'merchant', stock: this.merchantStock() }; if (this.online && this.members.length > 1) this.pending.stocks = this.members.map(() => this.merchantStock(5)); // online parties: every hero gets their own stock (Oct 31)
+      this.note(`Row ${n.row}: a merchant.`); }
     return true;
   }
 
@@ -2751,10 +2758,11 @@ class Run {
   }
   closePending() { this.pending = null; }
 
-  merchantStock() {
+  stockFor(mi) { const p = this.pending; return p && p.stocks ? p.stocks[mi || 0] : p && p.stock; }
+  merchantStock(n) {
     const bases = this.data.gear.bases.filter(b => (b.map || 'physical') === this.mapKey).map(b => b.name);
     const out = [];
-    for (let i = 0; i < 4 + Math.min(4, this.members.length - 1) * 2; i++) {
+    for (let i = 0; i < (n || 4 + Math.min(4, this.members.length - 1) * 2); i++) {
       const x = this.rng() * 100, rar = x < 45 ? 'White' : x < 80 ? 'Green' : 'Blue';
       const item = rollItem(this.data, this.rng, bases[ri(this.rng, 0, bases.length - 1)], rar, this.level);
       item.price = Math.round({ White: 20, Green: 50, Blue: 120 }[rar] * Math.pow(1.5, this.level));
@@ -2770,7 +2778,7 @@ class Run {
   // order from a merchant with banked gold; delivered to that member's stash
   buy(i, mi) {
     const m = this.members[mi || 0];
-    const st = this.pending && this.pending.stock; if (!st || !st[i] || st[i].sold) return false;
+    const st = this.stockFor(mi); if (!st || !st[i] || st[i].sold) return false;
     const item = st[i]; if (this.bankOf(m) < item.price || m.orders.length >= m.stashFree) return false;
     if (this.sharedBank) this.bankPool -= item.price; else m.bank -= item.price;
     m.spent += item.price; item.sold = true; item.buyer = m.idx;
@@ -3238,8 +3246,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const v = CB.rankedCard(card.key, card.rank || 0), base = CARDS[card.key];
     const max = (card.rank || 0) >= CB.MAX_RANK, need = max ? 0 : CBHub.rankCost(card);
     const xp = max ? '' : `<div class="il">XP ${card.xp || 0} / ${need.xp} to +${(card.rank || 0) + 1} (and ${need.gold} gold)</div><div class="xpbar"><i style="width:${Math.min(100, 100 * (card.xp || 0) / need.xp)}%"></i></div>`;
-    if (acts !== undefined && !acts.noGrid) return `<div class="dcard">${cardBox(v)}${xp}${acts ? `<div class="acts">${acts}</div>` : ''}</div>`;
-    return `<div class="item" style="--rc:${RC[base.rarity]}"><div class="ih"><b>${esc(v.name)}</b><span>${base.rarity} &middot; ${v.cost} mana</span></div><div class="st">${esc(v.text)}</div>${xp}</div>`;
+    if (acts !== undefined && !acts.noGrid) return `<div class="dcard" data-cardinfo="${card.key}" data-cardrank="${card.rank || 0}" title="Click the card for its ranks and where it drops">${cardBox(v)}${xp}${acts ? `<div class="acts">${acts}</div>` : ''}</div>`;
+    return `<div class="item" data-cardinfo="${card.key}" data-cardrank="${card.rank || 0}" style="--rc:${RC[base.rarity]}"><div class="ih"><b>${esc(v.name)}</b><span>${base.rarity} &middot; ${v.cost} mana</span></div><div class="st">${esc(v.text)}</div>${xp}</div>`;
   }
   function renderDeckTab(c) {
     const chk = CBHub.deckCheck(c.deck), n = chk.counts;
@@ -3254,7 +3262,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if ($('btnFeedAll')) $('btnFeedAll').onclick = feedAll;
   }
   $('hpDeck').addEventListener('click', (ev) => {
-    const b = ev.target.closest('button'); if (!b || b.disabled) return;
+    const b = ev.target.closest('button');
+    if (!b && !ev.shiftKey) { const ci = ev.target.closest('[data-cardinfo]'); if (ci) return cardDetail(ci.dataset.cardinfo, +ci.dataset.cardrank || 0); } // Scribe: click a card for the Compendium card page
+    if (!b || b.disabled) return;
     if (b.dataset.add) { const r = CBHub.addToDeck(profile, heroKey, b.dataset.add); if (!r.ok) return toast(r.why); }
     else if (b.dataset.remove) { const r = CBHub.removeFromDeck(profile, heroKey, b.dataset.remove); if (!r.ok) return toast(r.why); }
     else if (b.dataset.up) return upgradeModal(b.dataset.up);
@@ -4367,8 +4377,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793480112483';
-  const CB_BUILD = 'ea45b8bcbc'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793480494932';
+  const CB_BUILD = '5b00ee861e'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -4922,7 +4932,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-10-31', items: [
-      ['Maps', 'New map rules: every row has at least 3 nodes, at most 3 rows have only 3, at least 5 rows have 4. Every map has at least 5 shrines, and no path has more than 4 fights in a row. Crossing paths are straightened out.'],
+      ['Scribe', 'Click any card at the Scribe to open its Compendium page: rank slider and where it drops.'],
+      ['Compendium', 'Click a codex in the Codexes tab: where it drops (boss and raid), your copies, and example rolls.'],
+      ['Loot', 'Map bosses now drop the codex for your class on 50% of kills (more with Luck), down from every kill.'],
+      ['Merchants', 'In online parties, every hero gets their own merchant stock on the March: no more racing each other for an item.'],
+      ['Maps', 'Maps have 5 or 6 shrines (no more). Extra shrines become fights, merchants or rests. Paths may cross again.'],
+      ['Maps', 'New map rules: every row has at least 3 nodes, at most 3 rows have only 3, at least 5 rows have 4. Every map has at least 5 shrines, and no path has more than 4 fights in a row.'],
       ['Maps', 'Enraged elites: 10% of maps hide one (red pulsing ring). +50% HP and damage, drops twice the loot plus a guaranteed Blue item (25% chance it is Epic, more with Luck).'],
       ['Maps', 'Route planner (under the map): the party leader clicks nodes to draw Route A and Route B, and sees a summary of each: fights, elites, shops, rests, shrines and every monster with its loot table. The party sees the leader\'s routes.'],
       ['Gear', 'Clicking a gear slot to compare items now has a Salvage button on every stash item, for instant gold.'],
@@ -4981,7 +4996,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     updBtn();
     const day = (d) => new Date(d + 'T12:00:00').toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
     modal(`<h2>What's new</h2><p class="muted" style="margin:0">Every update, newest first. You are on build ${esc(CB_BUILD)}.</p>
-      <div class="changelog">${CHANGELOG.map(g => `<h3>${day(g.date)}</h3><ul>${g.items.map(([a, t]) => `<li><span class="clarea">${esc(a)}</span>${esc(t)}</li>`).join('')}</ul>`).join('')}</div>
+      <div class="changelog">${CHANGELOG.map(g => `<h3>${day(g.date)}</h3><ul>${g.items.map(([a, t]) => `<li><span class="clarea">${esc(a)}</span><span>${esc(t)}</span></li>`).join('')}</ul>`).join('')}</div>
       <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal;
   }
@@ -5055,7 +5070,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
           ${t ? `<p><b>${t.rolls} gear rolls per kill</b>, each: ${['White', 'Green', 'Blue', 'Purple (Epic)'].filter(r => t.chance[r]).map(r => `<span style="color:${RC[r]}">${r === 'Purple (Epic)' ? 'Purple' : r} ${t.chance[r]}%</span>`).join(' &middot; ')}</p>
           <p><b>Bases:</b> ${e.pool.map(b => `<button class="pilebtn" data-cxbase="${esc(b)}">${esc(b)}</button>`).join(' ')}</p>` : ''}
           ${cd ? `<p><b>Cards:</b> ${cd.n ? cd.n + ' guaranteed' : cd.chance + '% chance'} for your class (${Object.entries(cd.w).filter(x => x[1]).map(([r, w]) => `${r} ${w}%`).join(', ')}).</p>` : ''}
-          ${(e.loot || []).length ? `<p class="muted"><b>Named drops</b> (each kill rolls these; each hero only gets their own class's cards):</p><div class="cardlist">${e.loot.map(x => `<div class="cardrow" style="--rc:${RC[x.rarity] || 'var(--line)'}"><span class="n">${x.type === 'Codex' && e.tier === 'Boss' ? '100%' : x.pct + '%'}</span><b>${esc(x.item)} <span class="muted">${esc(x.cls)} ${esc(x.rarity)}${x.type === 'Codex' ? ' codex' : ''}</span></b><span class="cst"></span><span class="tx">${esc(x.note || '')}</span></div>`).join('')}</div>` : ''}
+          ${(e.loot || []).length ? `<p class="muted"><b>Named drops</b> (each kill rolls these; each hero only gets their own class's cards):</p><div class="cardlist">${e.loot.map(x => `<div class="cardrow" style="--rc:${RC[x.rarity] || 'var(--line)'}"><span class="n">${x.type === 'Codex' && e.tier === 'Boss' ? Math.round(CB.BOSS_CODEX_CHANCE * 100) + '%' : x.pct + '%'}</span><b>${esc(x.item)} <span class="muted">${esc(x.cls)} ${esc(x.rarity)}${x.type === 'Codex' ? ' codex' : ''}</span></b><span class="cst"></span><span class="tx">${esc(x.note || '')}</span></div>`).join('')}</div>` : ''}
         </div></details>`; }).join('') || '<p class="muted">No enemies match.</p>'}`;
   }
   const statRange = (s, mult) => { const S = DATA.gear.stats[s]; if (!S) return ''; return `${Math.max(1, Math.round(S.min * (mult || 1)))}-${Math.max(1, Math.round(S.max * (mult || 1)))}${S.unit}`; };
@@ -5090,7 +5105,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
         <p class="muted"><b>Dropped by:</b> ${(droppers[b.name] || []).map(esc).join(', ') || 'merchants only'}</p></details>`; }).join('') || '<p class="muted">No bases match.</p>'}</div>`;
   }
   // ---------- card detail: rank slider (+0 to +10) and where it drops
-  function cardDetail(key) {
+  function cardDetail(key, rank0) {
     const d = CARDS[key]; if (!d) return;
     const pool = d.cls && !d.designOnly ? CB.cardPool(d.cls) : [], same = pool.filter(k => CARDS[k].rarity === d.rarity).length;
     const rand = same ? Object.entries(CB.CARD_DROPS).map(([t, x]) => { const tot = Object.values(x.w).reduce((a, b) => a + b, 0), pr = (x.w[d.rarity] || 0) / tot; const per = (x.chance / 100) * pr / same * (x.n || 1) * 100; return [TIER_NAME(t), per]; }).filter(x => x[1] > 0) : [];
@@ -5103,8 +5118,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       <div class="cxdetail">
         <div class="cxrank">
           <div id="cxdCard"></div>
-          <label for="cxdR" class="cxdlab">Rank <b id="cxdRv">+0</b></label>
-          <input type="range" id="cxdR" min="0" max="${CB.MAX_RANK}" step="1" value="0">
+          <label for="cxdR" class="cxdlab">Rank <b id="cxdRv">+${rank0 || 0}</b></label>
+          <input type="range" id="cxdR" min="0" max="${CB.MAX_RANK}" step="1" value="${rank0 || 0}">
           <div class="cxdticks">${Array.from({ length: CB.MAX_RANK + 1 }, (_, i) => `<span>${i}</span>`).join('')}</div>
           <p class="muted" id="cxdCost" style="font-size:12.5px;margin:6px 0 0"></p>
         </div>
@@ -5134,11 +5149,31 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       if (CX.own !== 'All' && (CX.own === 'Owned') !== have.has(key)) continue;
       if (q && !(name + ' ' + text + ' ' + cls).toLowerCase().includes(q)) continue;
       const from = src[name + ' Codex'] || [];
-      rows.push(`<div class="cxcod" style="--rc:${CC[cls]}"><div class="cxch"><b>${esc(name)} Codex</b><span style="color:${CC[cls]}">${cls}</span>${have.has(key) ? '<span class="tag good">Owned</span>' : ''}</div><div>${esc(text)}</div><small class="muted">${from.length ? from.map(f => `${esc(f.boss.split(',')[0])} on ${esc(f.map)} drops it every kill for a ${cls}. The raid ${esc(CB.RAID_NAMES[f.mk] || '')} always drops one of its codexes.`).join(' ') : 'Not on any loot table yet.'}</small></div>`);
+      rows.push(`<div class="cxcod" data-cxcodex="${key}" role="button" tabindex="0" title="Click for drop sources and example rolls" style="--rc:${CC[cls]}"><div class="cxch"><b>${esc(name)} Codex</b><span style="color:${CC[cls]}">${cls}</span>${have.has(key) ? '<span class="tag good">Owned</span>' : ''}</div><div>${esc(text)}</div><small class="muted">${from.length ? from.map(f => `${esc(f.boss.split(',')[0])} on ${esc(f.map)} drops it on ${Math.round(CB.BOSS_CODEX_CHANCE * 100)}% of kills for a ${cls} (more with Luck). The raid ${esc(CB.RAID_NAMES[f.mk] || '')} always drops one of its codexes.`).join(' ') : 'Not on any loot table yet.'}</small></div>`);
     }
     return `<p class="muted" style="margin:0 0 6px">A codex is an item for the Codex slot (Quartermaster): a fixed class passive that shapes a playstyle, plus random stats. Tinker Pip has three test decks for each.</p>
       ${cxChips('cls', ['All', ...Object.keys(CLASSES)], 'Class')}${cxChips('own', ['All', 'Owned', 'Not owned'], 'Owned')}
       <div class="cxcods">${rows.join('') || '<span class="muted">Nothing matches.</span>'}</div>`;
+  }
+  // one codex: passive, where it drops, your copies, and a few example rolls
+  function codexDetail(key) {
+    const cx = CB.CODEX_BY_KEY[key]; if (!cx) return;
+    const name = cx.name + ' Codex', pct = Math.round(CB.BOSS_CODEX_CHANCE * 100);
+    const src = []; for (const [mk, M] of Object.entries(DATA.maps)) { const b = DATA.enemies[M.boss]; if ((b.loot || []).some(x => x.type === 'Codex' && x.item === name)) src.push({ mk, M, b }); }
+    const mine = [...profile.stash.filter(it => it.slot === 'Codex' && it.codex === key).map(it => ({ it, where: 'Stash' })), ...Object.values(profile.chars).flatMap(c => (c.gear || []).filter(g => g.slot === 'Codex' && g.codex === key).map(it => ({ it, where: 'Worn by ' + c.name })))];
+    const rng = CB.makeRng(7 + key.length * 13), ex = [0, 0, 5].map(l => CB.makeCodex(DATA, rng, key, l));
+    const decks = (typeof TDECKS !== 'undefined' ? TDECKS : []).filter(d => d.codex === key).length;
+    modal2(`<h2>${esc(name)} <span class="muted" style="font-size:15px"><span style="color:${CC[cx.cls]}">${esc(cx.cls)}</span> codex</span></h2>
+      <p><b style="color:#f0b070">Passive:</b> ${esc(cx.text)}</p>
+      <h4 style="margin:10px 0 4px;color:var(--accent)">Where it drops</h4>
+      ${src.length ? `<table class="cxdt"><thead><tr><th>Source</th><th>Map</th><th>Chance</th></tr></thead><tbody>${src.map(({ mk, M, b }) => `<tr><td><b>${esc(b.name)}</b> (boss)</td><td>${M.num}. ${esc(M.name)}</td><td>${pct}% per kill for a ${esc(cx.cls)} (more with Luck)</td></tr><tr><td><b>${esc(CB.RAID_NAMES[mk] || 'Raid')}</b> (raid)</td><td>${M.num}. ${esc(M.name)}</td><td>Every kill drops one of this boss's ${(b.loot || []).filter(x => x.type === 'Codex').length} codexes (rolled for the raid)</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Not on any loot table yet.</p>'}
+      <p class="muted" style="font-size:13px">Codexes roll random stats like gear (they are the only source of All Resistances), and they can't be upgraded: farm a better roll. Item level follows the map level it drops on.</p>
+      <h4 style="margin:10px 0 4px;color:var(--accent)">Your copies (${mine.length})</h4>
+      ${mine.length ? `<div class="list">${mine.map(m => itemHtml(m.it, `<div class="il">${esc(m.where)}</div>`)).join('')}</div>` : '<p class="muted">None yet.</p>'}
+      <h4 style="margin:10px 0 4px;color:var(--accent)">Example rolls</h4><div class="list">${ex.map(it => itemHtml(it)).join('')}</div>
+      ${decks ? `<p class="muted" style="font-size:13px">Tinker Pip has ${decks} test decks built around it.</p>` : ''}
+      <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
+    $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal;
   }
   function renderCodex() {
     const el = $('hpCodex'); if (!el) return;
@@ -5150,6 +5185,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   }
   $('hpCodex').addEventListener('click', (ev) => {
     const cc = ev.target.closest('[data-cxcard]'); if (cc) return cardDetail(cc.dataset.cxcard);
+    const cx = ev.target.closest('[data-cxcodex]'); if (cx && !ev.shiftKey) return codexDetail(cx.dataset.cxcodex);
     const t = ev.target.closest('[data-cxtab],[data-cx],[data-cxbase]'); if (!t) return;
     if (t.dataset.cxtab) { CX.tab = t.dataset.cxtab; CX.q = ''; }
     else if (t.dataset.cx) CX[t.dataset.cx] = t.dataset.v;
@@ -6059,7 +6095,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
         const bm = run.members[buyer] || run.m0, bank = run.bankOf(bm);
         const full = bm.orders.length >= bm.stashFree;
         $('modalBox').innerHTML = `<h2>Merchant</h2><p>${run.solo || run.online ? '' : `Ordering for <select id="mBuyer">${run.members.map((m, i) => `<option value="${i}" ${i === buyer ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select>. `}Banked gold: <b>${bank}</b>${bm.orders.length ? ` &middot; ${bm.orders.length} order${bm.orders.length === 1 ? '' : 's'} placed` : ''}. Pay from the bank and the merchant brings it back to town: it waits in your stash, even if you die out here.${full ? ' <b>Your stash is full.</b>' : ''}</p>
-        <div class="shop">${p.stock.map((it, i) => { const cur = bm.gear.find(g => g.slot === run.slotFor(it, bm.idx)); return itemHtml(it, `<div class="il">${upBadge(it, bm.gear)}</div><div class="il">Compare: ${cur ? esc(cur.name) + ' (ilvl ' + cur.ilvl + ')' : 'empty ' + run.slotFor(it, bm.idx)}</div><div><button class="btn" data-buy="${i}" ${it.sold || bank < it.price || full ? 'disabled' : ''}>${it.sold ? 'Ordered' + (run.solo ? '' : ' by ' + esc(run.members[it.buyer].name)) : 'Order for ' + it.price + ' gold'}</button></div>`); }).join('')}</div>
+        <div class="shop">${run.stockFor(buyer).map((it, i) => { const cur = bm.gear.find(g => g.slot === run.slotFor(it, bm.idx)); return itemHtml(it, `<div class="il">${upBadge(it, bm.gear)}</div><div class="il">Compare: ${cur ? esc(cur.name) + ' (ilvl ' + cur.ilvl + ')' : 'empty ' + run.slotFor(it, bm.idx)}</div><div><button class="btn" data-buy="${i}" ${it.sold || bank < it.price || full ? 'disabled' : ''}>${it.sold ? 'Ordered' + (run.solo ? '' : ' by ' + esc(run.members[it.buyer].name)) : 'Order for ' + it.price + ' gold'}</button></div>`); }).join('')}</div>
         <div class="row"><button class="btn primary" id="mLeave">${run.online ? 'Close (vote on the map to move on)' : 'Leave'}</button></div>`;
         $('mLeave').onclick = () => { if (!run.online) run.closePending(); redrawShop = null; closeModal(); renderMap(); };
         for (const b of $('modalBox').querySelectorAll('[data-buy]')) b.onclick = () => { if (run.online) { b.disabled = true; netAct({ t: 'buy', i: +b.dataset.buy }); return; } run.buy(+b.dataset.buy, buyer); draw(); renderSide(); };

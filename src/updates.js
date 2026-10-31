@@ -2,7 +2,12 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-10-31', items: [
-      ['Maps', 'New map rules: every row has at least 3 nodes, at most 3 rows have only 3, at least 5 rows have 4. Every map has at least 5 shrines, and no path has more than 4 fights in a row. Crossing paths are straightened out.'],
+      ['Scribe', 'Click any card at the Scribe to open its Compendium page: rank slider and where it drops.'],
+      ['Compendium', 'Click a codex in the Codexes tab: where it drops (boss and raid), your copies, and example rolls.'],
+      ['Loot', 'Map bosses now drop the codex for your class on 50% of kills (more with Luck), down from every kill.'],
+      ['Merchants', 'In online parties, every hero gets their own merchant stock on the March: no more racing each other for an item.'],
+      ['Maps', 'Maps have 5 or 6 shrines (no more). Extra shrines become fights, merchants or rests. Paths may cross again.'],
+      ['Maps', 'New map rules: every row has at least 3 nodes, at most 3 rows have only 3, at least 5 rows have 4. Every map has at least 5 shrines, and no path has more than 4 fights in a row.'],
       ['Maps', 'Enraged elites: 10% of maps hide one (red pulsing ring). +50% HP and damage, drops twice the loot plus a guaranteed Blue item (25% chance it is Epic, more with Luck).'],
       ['Maps', 'Route planner (under the map): the party leader clicks nodes to draw Route A and Route B, and sees a summary of each: fights, elites, shops, rests, shrines and every monster with its loot table. The party sees the leader\'s routes.'],
       ['Gear', 'Clicking a gear slot to compare items now has a Salvage button on every stash item, for instant gold.'],
@@ -61,7 +66,7 @@
     updBtn();
     const day = (d) => new Date(d + 'T12:00:00').toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
     modal(`<h2>What's new</h2><p class="muted" style="margin:0">Every update, newest first. You are on build ${esc(CB_BUILD)}.</p>
-      <div class="changelog">${CHANGELOG.map(g => `<h3>${day(g.date)}</h3><ul>${g.items.map(([a, t]) => `<li><span class="clarea">${esc(a)}</span>${esc(t)}</li>`).join('')}</ul>`).join('')}</div>
+      <div class="changelog">${CHANGELOG.map(g => `<h3>${day(g.date)}</h3><ul>${g.items.map(([a, t]) => `<li><span class="clarea">${esc(a)}</span><span>${esc(t)}</span></li>`).join('')}</ul>`).join('')}</div>
       <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal;
   }

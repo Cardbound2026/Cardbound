@@ -32,7 +32,7 @@
           ${t ? `<p><b>${t.rolls} gear rolls per kill</b>, each: ${['White', 'Green', 'Blue', 'Purple (Epic)'].filter(r => t.chance[r]).map(r => `<span style="color:${RC[r]}">${r === 'Purple (Epic)' ? 'Purple' : r} ${t.chance[r]}%</span>`).join(' &middot; ')}</p>
           <p><b>Bases:</b> ${e.pool.map(b => `<button class="pilebtn" data-cxbase="${esc(b)}">${esc(b)}</button>`).join(' ')}</p>` : ''}
           ${cd ? `<p><b>Cards:</b> ${cd.n ? cd.n + ' guaranteed' : cd.chance + '% chance'} for your class (${Object.entries(cd.w).filter(x => x[1]).map(([r, w]) => `${r} ${w}%`).join(', ')}).</p>` : ''}
-          ${(e.loot || []).length ? `<p class="muted"><b>Named drops</b> (each kill rolls these; each hero only gets their own class's cards):</p><div class="cardlist">${e.loot.map(x => `<div class="cardrow" style="--rc:${RC[x.rarity] || 'var(--line)'}"><span class="n">${x.type === 'Codex' && e.tier === 'Boss' ? '100%' : x.pct + '%'}</span><b>${esc(x.item)} <span class="muted">${esc(x.cls)} ${esc(x.rarity)}${x.type === 'Codex' ? ' codex' : ''}</span></b><span class="cst"></span><span class="tx">${esc(x.note || '')}</span></div>`).join('')}</div>` : ''}
+          ${(e.loot || []).length ? `<p class="muted"><b>Named drops</b> (each kill rolls these; each hero only gets their own class's cards):</p><div class="cardlist">${e.loot.map(x => `<div class="cardrow" style="--rc:${RC[x.rarity] || 'var(--line)'}"><span class="n">${x.type === 'Codex' && e.tier === 'Boss' ? Math.round(CB.BOSS_CODEX_CHANCE * 100) + '%' : x.pct + '%'}</span><b>${esc(x.item)} <span class="muted">${esc(x.cls)} ${esc(x.rarity)}${x.type === 'Codex' ? ' codex' : ''}</span></b><span class="cst"></span><span class="tx">${esc(x.note || '')}</span></div>`).join('')}</div>` : ''}
         </div></details>`; }).join('') || '<p class="muted">No enemies match.</p>'}`;
   }
   const statRange = (s, mult) => { const S = DATA.gear.stats[s]; if (!S) return ''; return `${Math.max(1, Math.round(S.min * (mult || 1)))}-${Math.max(1, Math.round(S.max * (mult || 1)))}${S.unit}`; };
@@ -67,7 +67,7 @@
         <p class="muted"><b>Dropped by:</b> ${(droppers[b.name] || []).map(esc).join(', ') || 'merchants only'}</p></details>`; }).join('') || '<p class="muted">No bases match.</p>'}</div>`;
   }
   // ---------- card detail: rank slider (+0 to +10) and where it drops
-  function cardDetail(key) {
+  function cardDetail(key, rank0) {
     const d = CARDS[key]; if (!d) return;
     const pool = d.cls && !d.designOnly ? CB.cardPool(d.cls) : [], same = pool.filter(k => CARDS[k].rarity === d.rarity).length;
     const rand = same ? Object.entries(CB.CARD_DROPS).map(([t, x]) => { const tot = Object.values(x.w).reduce((a, b) => a + b, 0), pr = (x.w[d.rarity] || 0) / tot; const per = (x.chance / 100) * pr / same * (x.n || 1) * 100; return [TIER_NAME(t), per]; }).filter(x => x[1] > 0) : [];
@@ -80,8 +80,8 @@
       <div class="cxdetail">
         <div class="cxrank">
           <div id="cxdCard"></div>
-          <label for="cxdR" class="cxdlab">Rank <b id="cxdRv">+0</b></label>
-          <input type="range" id="cxdR" min="0" max="${CB.MAX_RANK}" step="1" value="0">
+          <label for="cxdR" class="cxdlab">Rank <b id="cxdRv">+${rank0 || 0}</b></label>
+          <input type="range" id="cxdR" min="0" max="${CB.MAX_RANK}" step="1" value="${rank0 || 0}">
           <div class="cxdticks">${Array.from({ length: CB.MAX_RANK + 1 }, (_, i) => `<span>${i}</span>`).join('')}</div>
           <p class="muted" id="cxdCost" style="font-size:12.5px;margin:6px 0 0"></p>
         </div>
@@ -111,11 +111,31 @@
       if (CX.own !== 'All' && (CX.own === 'Owned') !== have.has(key)) continue;
       if (q && !(name + ' ' + text + ' ' + cls).toLowerCase().includes(q)) continue;
       const from = src[name + ' Codex'] || [];
-      rows.push(`<div class="cxcod" style="--rc:${CC[cls]}"><div class="cxch"><b>${esc(name)} Codex</b><span style="color:${CC[cls]}">${cls}</span>${have.has(key) ? '<span class="tag good">Owned</span>' : ''}</div><div>${esc(text)}</div><small class="muted">${from.length ? from.map(f => `${esc(f.boss.split(',')[0])} on ${esc(f.map)} drops it every kill for a ${cls}. The raid ${esc(CB.RAID_NAMES[f.mk] || '')} always drops one of its codexes.`).join(' ') : 'Not on any loot table yet.'}</small></div>`);
+      rows.push(`<div class="cxcod" data-cxcodex="${key}" role="button" tabindex="0" title="Click for drop sources and example rolls" style="--rc:${CC[cls]}"><div class="cxch"><b>${esc(name)} Codex</b><span style="color:${CC[cls]}">${cls}</span>${have.has(key) ? '<span class="tag good">Owned</span>' : ''}</div><div>${esc(text)}</div><small class="muted">${from.length ? from.map(f => `${esc(f.boss.split(',')[0])} on ${esc(f.map)} drops it on ${Math.round(CB.BOSS_CODEX_CHANCE * 100)}% of kills for a ${cls} (more with Luck). The raid ${esc(CB.RAID_NAMES[f.mk] || '')} always drops one of its codexes.`).join(' ') : 'Not on any loot table yet.'}</small></div>`);
     }
     return `<p class="muted" style="margin:0 0 6px">A codex is an item for the Codex slot (Quartermaster): a fixed class passive that shapes a playstyle, plus random stats. Tinker Pip has three test decks for each.</p>
       ${cxChips('cls', ['All', ...Object.keys(CLASSES)], 'Class')}${cxChips('own', ['All', 'Owned', 'Not owned'], 'Owned')}
       <div class="cxcods">${rows.join('') || '<span class="muted">Nothing matches.</span>'}</div>`;
+  }
+  // one codex: passive, where it drops, your copies, and a few example rolls
+  function codexDetail(key) {
+    const cx = CB.CODEX_BY_KEY[key]; if (!cx) return;
+    const name = cx.name + ' Codex', pct = Math.round(CB.BOSS_CODEX_CHANCE * 100);
+    const src = []; for (const [mk, M] of Object.entries(DATA.maps)) { const b = DATA.enemies[M.boss]; if ((b.loot || []).some(x => x.type === 'Codex' && x.item === name)) src.push({ mk, M, b }); }
+    const mine = [...profile.stash.filter(it => it.slot === 'Codex' && it.codex === key).map(it => ({ it, where: 'Stash' })), ...Object.values(profile.chars).flatMap(c => (c.gear || []).filter(g => g.slot === 'Codex' && g.codex === key).map(it => ({ it, where: 'Worn by ' + c.name })))];
+    const rng = CB.makeRng(7 + key.length * 13), ex = [0, 0, 5].map(l => CB.makeCodex(DATA, rng, key, l));
+    const decks = (typeof TDECKS !== 'undefined' ? TDECKS : []).filter(d => d.codex === key).length;
+    modal2(`<h2>${esc(name)} <span class="muted" style="font-size:15px"><span style="color:${CC[cx.cls]}">${esc(cx.cls)}</span> codex</span></h2>
+      <p><b style="color:#f0b070">Passive:</b> ${esc(cx.text)}</p>
+      <h4 style="margin:10px 0 4px;color:var(--accent)">Where it drops</h4>
+      ${src.length ? `<table class="cxdt"><thead><tr><th>Source</th><th>Map</th><th>Chance</th></tr></thead><tbody>${src.map(({ mk, M, b }) => `<tr><td><b>${esc(b.name)}</b> (boss)</td><td>${M.num}. ${esc(M.name)}</td><td>${pct}% per kill for a ${esc(cx.cls)} (more with Luck)</td></tr><tr><td><b>${esc(CB.RAID_NAMES[mk] || 'Raid')}</b> (raid)</td><td>${M.num}. ${esc(M.name)}</td><td>Every kill drops one of this boss's ${(b.loot || []).filter(x => x.type === 'Codex').length} codexes (rolled for the raid)</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Not on any loot table yet.</p>'}
+      <p class="muted" style="font-size:13px">Codexes roll random stats like gear (they are the only source of All Resistances), and they can't be upgraded: farm a better roll. Item level follows the map level it drops on.</p>
+      <h4 style="margin:10px 0 4px;color:var(--accent)">Your copies (${mine.length})</h4>
+      ${mine.length ? `<div class="list">${mine.map(m => itemHtml(m.it, `<div class="il">${esc(m.where)}</div>`)).join('')}</div>` : '<p class="muted">None yet.</p>'}
+      <h4 style="margin:10px 0 4px;color:var(--accent)">Example rolls</h4><div class="list">${ex.map(it => itemHtml(it)).join('')}</div>
+      ${decks ? `<p class="muted" style="font-size:13px">Tinker Pip has ${decks} test decks built around it.</p>` : ''}
+      <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
+    $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal;
   }
   function renderCodex() {
     const el = $('hpCodex'); if (!el) return;
@@ -127,6 +147,7 @@
   }
   $('hpCodex').addEventListener('click', (ev) => {
     const cc = ev.target.closest('[data-cxcard]'); if (cc) return cardDetail(cc.dataset.cxcard);
+    const cx = ev.target.closest('[data-cxcodex]'); if (cx && !ev.shiftKey) return codexDetail(cx.dataset.cxcodex);
     const t = ev.target.closest('[data-cxtab],[data-cx],[data-cxbase]'); if (!t) return;
     if (t.dataset.cxtab) { CX.tab = t.dataset.cxtab; CX.q = ''; }
     else if (t.dataset.cx) CX[t.dataset.cx] = t.dataset.v;

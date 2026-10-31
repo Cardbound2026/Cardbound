@@ -553,13 +553,15 @@ body.aiming { cursor: grabbing; user-select: none; }
   .order.raid .otile { width: 62px; padding: 2px; } .order.raid .otile .ofig, .order.raid .otile .ofig svg { height: 30px; } .order.raid .otile .onm { font-size: 11px; } .order.raid .otile.now::after { display: none; }
   .cxcods { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; margin-top: 6px; } .cxcod { border-left: 3px solid var(--rc); background: rgba(255,255,255,.03); padding: 8px 10px; border-radius: 6px; display: grid; gap: 4px; } .cxch { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; } .cxch b { color: #f0b070; }
   #btnUpdates { position: fixed; right: 8px; bottom: 34px; z-index: 40; padding: 5px 12px; font-size: 13px; } #btnUpdates i { display: none; } #btnUpdates.unread i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #e4a93a; margin-left: 6px; box-shadow: 0 0 8px #e4a93a; }
-  .changelog { max-height: 62vh; overflow: auto; padding-right: 6px; } .changelog h3 { color: var(--accent); font-size: 20px; margin: 12px 0 4px; } .changelog ul { margin: 0; padding-left: 18px; } .changelog li { margin: 4px 0; line-height: 1.4; } .clarea { display: inline-block; min-width: 86px; margin-right: 6px; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .changelog { max-height: 62vh; overflow: auto; padding-right: 6px; } .changelog h3 { color: var(--accent); font-size: 20px; margin: 12px 0 4px; } .changelog ul { margin: 0; padding: 0; list-style: none; } .changelog li { margin: 5px 0; line-height: 1.4; display: grid; grid-template-columns: 100px minmax(0, 1fr); column-gap: 8px; align-items: baseline; } .clarea { display: block; margin-right: 0; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
   #updBanner .btn { padding: 4px 12px; font-size: 14px; } #updBanner { width: max-content; position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 32px); padding: 8px 14px; background: #2a1f12; border: 1px solid var(--accent); border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,.6); }
   .rlrolls { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; margin: -2px 0 4px 8px; } .rlrolls .win { text-decoration: underline; }
   .ilink { cursor: pointer; font-weight: 700; text-decoration: none; } .ilink:hover { text-decoration: underline; } .linkview { display: grid; justify-items: start; }
   .planbox { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 8px; } .planhead { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; } .planhead .btn { padding: 4px 12px; font-size: 14px; }
   .plancols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 6px; } .plancol { border-left: 3px solid var(--pc); padding-left: 8px; font-size: 14px; } .planmobs { margin-top: 4px; font-size: 13px; } .planmobs span:first-child { display: inline-block; min-width: 26px; color: var(--accent); }
   .node .enraged { animation: pulse 1.2s ease-in-out infinite; }
+  [data-cardinfo] .card, [data-cardinfo].item { cursor: pointer; }
+  .cxcod { cursor: pointer; } .cxcod:hover { background: rgba(255,255,255,.06); }
 </style>
 
 <div class="wrap">
@@ -945,8 +947,8 @@ body.aiming { cursor: grabbing; user-select: none; }
     const v = CB.rankedCard(card.key, card.rank || 0), base = CARDS[card.key];
     const max = (card.rank || 0) >= CB.MAX_RANK, need = max ? 0 : CBHub.rankCost(card);
     const xp = max ? '' : `<div class="il">XP ${card.xp || 0} / ${need.xp} to +${(card.rank || 0) + 1} (and ${need.gold} gold)</div><div class="xpbar"><i style="width:${Math.min(100, 100 * (card.xp || 0) / need.xp)}%"></i></div>`;
-    if (acts !== undefined && !acts.noGrid) return `<div class="dcard">${cardBox(v)}${xp}${acts ? `<div class="acts">${acts}</div>` : ''}</div>`;
-    return `<div class="item" style="--rc:${RC[base.rarity]}"><div class="ih"><b>${esc(v.name)}</b><span>${base.rarity} &middot; ${v.cost} mana</span></div><div class="st">${esc(v.text)}</div>${xp}</div>`;
+    if (acts !== undefined && !acts.noGrid) return `<div class="dcard" data-cardinfo="${card.key}" data-cardrank="${card.rank || 0}" title="Click the card for its ranks and where it drops">${cardBox(v)}${xp}${acts ? `<div class="acts">${acts}</div>` : ''}</div>`;
+    return `<div class="item" data-cardinfo="${card.key}" data-cardrank="${card.rank || 0}" style="--rc:${RC[base.rarity]}"><div class="ih"><b>${esc(v.name)}</b><span>${base.rarity} &middot; ${v.cost} mana</span></div><div class="st">${esc(v.text)}</div>${xp}</div>`;
   }
   function renderDeckTab(c) {
     const chk = CBHub.deckCheck(c.deck), n = chk.counts;
@@ -961,7 +963,9 @@ body.aiming { cursor: grabbing; user-select: none; }
     if ($('btnFeedAll')) $('btnFeedAll').onclick = feedAll;
   }
   $('hpDeck').addEventListener('click', (ev) => {
-    const b = ev.target.closest('button'); if (!b || b.disabled) return;
+    const b = ev.target.closest('button');
+    if (!b && !ev.shiftKey) { const ci = ev.target.closest('[data-cardinfo]'); if (ci) return cardDetail(ci.dataset.cardinfo, +ci.dataset.cardrank || 0); } // Scribe: click a card for the Compendium card page
+    if (!b || b.disabled) return;
     if (b.dataset.add) { const r = CBHub.addToDeck(profile, heroKey, b.dataset.add); if (!r.ok) return toast(r.why); }
     else if (b.dataset.remove) { const r = CBHub.removeFromDeck(profile, heroKey, b.dataset.remove); if (!r.ok) return toast(r.why); }
     else if (b.dataset.up) return upgradeModal(b.dataset.up);
@@ -2069,7 +2073,7 @@ body.aiming { cursor: grabbing; user-select: none; }
         const bm = run.members[buyer] || run.m0, bank = run.bankOf(bm);
         const full = bm.orders.length >= bm.stashFree;
         $('modalBox').innerHTML = `<h2>Merchant</h2><p>${run.solo || run.online ? '' : `Ordering for <select id="mBuyer">${run.members.map((m, i) => `<option value="${i}" ${i === buyer ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select>. `}Banked gold: <b>${bank}</b>${bm.orders.length ? ` &middot; ${bm.orders.length} order${bm.orders.length === 1 ? '' : 's'} placed` : ''}. Pay from the bank and the merchant brings it back to town: it waits in your stash, even if you die out here.${full ? ' <b>Your stash is full.</b>' : ''}</p>
-        <div class="shop">${p.stock.map((it, i) => { const cur = bm.gear.find(g => g.slot === run.slotFor(it, bm.idx)); return itemHtml(it, `<div class="il">${upBadge(it, bm.gear)}</div><div class="il">Compare: ${cur ? esc(cur.name) + ' (ilvl ' + cur.ilvl + ')' : 'empty ' + run.slotFor(it, bm.idx)}</div><div><button class="btn" data-buy="${i}" ${it.sold || bank < it.price || full ? 'disabled' : ''}>${it.sold ? 'Ordered' + (run.solo ? '' : ' by ' + esc(run.members[it.buyer].name)) : 'Order for ' + it.price + ' gold'}</button></div>`); }).join('')}</div>
+        <div class="shop">${run.stockFor(buyer).map((it, i) => { const cur = bm.gear.find(g => g.slot === run.slotFor(it, bm.idx)); return itemHtml(it, `<div class="il">${upBadge(it, bm.gear)}</div><div class="il">Compare: ${cur ? esc(cur.name) + ' (ilvl ' + cur.ilvl + ')' : 'empty ' + run.slotFor(it, bm.idx)}</div><div><button class="btn" data-buy="${i}" ${it.sold || bank < it.price || full ? 'disabled' : ''}>${it.sold ? 'Ordered' + (run.solo ? '' : ' by ' + esc(run.members[it.buyer].name)) : 'Order for ' + it.price + ' gold'}</button></div>`); }).join('')}</div>
         <div class="row"><button class="btn primary" id="mLeave">${run.online ? 'Close (vote on the map to move on)' : 'Leave'}</button></div>`;
         $('mLeave').onclick = () => { if (!run.online) run.closePending(); redrawShop = null; closeModal(); renderMap(); };
         for (const b of $('modalBox').querySelectorAll('[data-buy]')) b.onclick = () => { if (run.online) { b.disabled = true; netAct({ t: 'buy', i: +b.dataset.buy }); return; } run.buy(+b.dataset.buy, buyer); draw(); renderSide(); };
