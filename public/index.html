@@ -546,6 +546,8 @@ window.CB_FRAMES = {"Mage": {"art": [0.1182, 0.0892, 0.7646, 0.446], "panel": [0
 window.CB_FRAMES = Object.assign(window.CB_FRAMES || {}, {"E:soldier": {"art": [0.1084, 0.0703, 0.7871, 0.4447], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/soldier.webp"}, "E:cursed": {"art": [0.1064, 0.0716, 0.7881, 0.4225], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/cursed.webp"}, "E:construct": {"art": [0.1045, 0.0703, 0.7949, 0.4434], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/construct.webp"}, "E:outlaw": {"art": [0.1064, 0.071, 0.79, 0.4388], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/outlaw.webp"}, "E:brute": {"art": [0.1074, 0.0703, 0.7871, 0.4408], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/brute.webp"}, "E:wild": {"art": [0.1074, 0.0697, 0.7891, 0.4375], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/wild.webp"}});
 // Oct 31: seven more, by element (design/scripts/eframe_key.py keys out the green window)
 window.CB_FRAMES = Object.assign(window.CB_FRAMES, {"E:plague": {"art": [0.1084, 0.0723, 0.7832, 0.4049], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/plague.webp"}, "E:frost": {"art": [0.1094, 0.071, 0.7812, 0.4238], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/frost.webp"}, "E:shadow": {"art": [0.1074, 0.0703, 0.7842, 0.4342], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/shadow.webp"}, "E:fire": {"art": [0.1074, 0.0716, 0.7852, 0.4232], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/fire.webp"}, "E:magma": {"art": [0.1064, 0.071, 0.7881, 0.4238], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/magma.webp"}, "E:stone": {"art": [0.1064, 0.0716, 0.7881, 0.4362], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/stone.webp"}, "E:chains": {"art": [0.1084, 0.0723, 0.7822, 0.4102], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/chains.webp"}});
+// Oct 31: arcane (Shattered Spire), gilded (every boss), water (swamp creatures)
+window.CB_FRAMES = Object.assign(window.CB_FRAMES, {"E:arcane": {"art": [0.1104, 0.0723, 0.7793, 0.4147], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/arcane.webp"}, "E:gilded": {"art": [0.1094, 0.0716, 0.7812, 0.4212], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/gilded.webp"}, "E:water": {"art": [0.1074, 0.0723, 0.7822, 0.4147], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/water.webp"}});
 
 </script>
 <script>
@@ -3663,7 +3665,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILD = '508d07a0ce'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILD = '8bfdf90ea7'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -4667,17 +4669,19 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   const RT = { Enemy: ['#5e554b', '#efb79c'], White: ['#5e554b', '#ece4d4'], Green: ['#2f7a2a', '#86d873'], Blue: ['#2456a8', '#86b6ff'], Gold: ['#9a6610', '#ffcf5a'], Token: ['#5e554b', '#d8d0c0'], Status: ['#5e554b', '#d8d0c0'] };
   const cardVars = (d) => `--cc:${d.ekind ? EKIND_COL[d.ekind] : CC[d.cls] || '#888'};--rg:${GEMC[d.rarity] || '#888'};--rt-light:${(RT[d.rarity] || RT.White)[0]};--rt-dark:${(RT[d.rarity] || RT.White)[1]}`;
   const cardCls = (d) => 'cf' + ((window.CB_FRAMES || {})[d.cls] && CB_FRAMES[d.cls].dark ? ' dark' : '');
-  // ---------- enemy cards: thirteen frames picked by the enemy's map and what it is
+  // ---------- enemy cards: sixteen frames picked by the enemy's map and what it is
   const OUTLAWS = ['camp_thief', 'bandit_cutthroat', 'pit_duelist', 'the_twin_blades', 'pit_champion', 'gravel_king'];
   function eframeOf(key) {
     const e = DATA.enemies[key]; if (!e) return 'soldier';
     const c = e.creature || '', boss = e.tier === 'Boss';
+    if (boss) return 'gilded';                                              // every boss gets the gold scroll frame
+    if (/Toad|Bog|Swamp|Marsh|Mire|Leech|Eel|Drown/.test(e.name)) return 'water';
     switch (e.map) {
       case 'town': return 'stone';
       case 'fire': return c === 'Demon' || boss ? 'chains' : /Elemental|Construct|Giant/.test(c) ? 'magma' : 'fire';
       case 'frost': return 'frost';
       case 'nature': return c === 'Beast' ? 'wild' : 'plague';
-      case 'arcane': return /Construct|Elemental/.test(c) ? 'stone' : c === 'Undead' ? 'shadow' : c === 'Beast' ? 'wild' : 'cursed';
+      case 'arcane': return c === 'Construct' ? 'stone' : c === 'Beast' ? 'wild' : 'arcane';
       case 'shadow': return c === 'Beast' ? 'wild' : c === 'Construct' ? 'stone' : 'shadow';
     }
     if (boss || c === 'Giant') return 'brute';

@@ -1614,17 +1614,19 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   const RT = { Enemy: ['#5e554b', '#efb79c'], White: ['#5e554b', '#ece4d4'], Green: ['#2f7a2a', '#86d873'], Blue: ['#2456a8', '#86b6ff'], Gold: ['#9a6610', '#ffcf5a'], Token: ['#5e554b', '#d8d0c0'], Status: ['#5e554b', '#d8d0c0'] };
   const cardVars = (d) => `--cc:${d.ekind ? EKIND_COL[d.ekind] : CC[d.cls] || '#888'};--rg:${GEMC[d.rarity] || '#888'};--rt-light:${(RT[d.rarity] || RT.White)[0]};--rt-dark:${(RT[d.rarity] || RT.White)[1]}`;
   const cardCls = (d) => 'cf' + ((window.CB_FRAMES || {})[d.cls] && CB_FRAMES[d.cls].dark ? ' dark' : '');
-  // ---------- enemy cards: thirteen frames picked by the enemy's map and what it is
+  // ---------- enemy cards: sixteen frames picked by the enemy's map and what it is
   const OUTLAWS = ['camp_thief', 'bandit_cutthroat', 'pit_duelist', 'the_twin_blades', 'pit_champion', 'gravel_king'];
   function eframeOf(key) {
     const e = DATA.enemies[key]; if (!e) return 'soldier';
     const c = e.creature || '', boss = e.tier === 'Boss';
+    if (boss) return 'gilded';                                              // every boss gets the gold scroll frame
+    if (/Toad|Bog|Swamp|Marsh|Mire|Leech|Eel|Drown/.test(e.name)) return 'water';
     switch (e.map) {
       case 'town': return 'stone';
       case 'fire': return c === 'Demon' || boss ? 'chains' : /Elemental|Construct|Giant/.test(c) ? 'magma' : 'fire';
       case 'frost': return 'frost';
       case 'nature': return c === 'Beast' ? 'wild' : 'plague';
-      case 'arcane': return /Construct|Elemental/.test(c) ? 'stone' : c === 'Undead' ? 'shadow' : c === 'Beast' ? 'wild' : 'cursed';
+      case 'arcane': return c === 'Construct' ? 'stone' : c === 'Beast' ? 'wild' : 'arcane';
       case 'shadow': return c === 'Beast' ? 'wild' : c === 'Construct' ? 'stone' : 'shadow';
     }
     if (boss || c === 'Giant') return 'brute';

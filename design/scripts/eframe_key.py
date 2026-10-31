@@ -14,15 +14,15 @@ for name in sys.argv[1:]:
     win = lab == c                                     # only the window connected to the art center (keeps slime drips etc.)
     win = ndimage.binary_fill_holes(win)
     # soft edge: alpha from greenness in a 3px band around the window
-    wide = name in ('shadow',)  # wispy smoke over the green: key a wider band, mixing by how green each pixel is
-    band = ndimage.binary_dilation(win, iterations=40 if wide else 4) & ~win
-    if wide: band &= (r < 150) & (b < 150)
+    wide = name in ('shadow', 'arcane', 'gilded', 'water')  # wispy smoke over the green: key a wider band, mixing by how green each pixel is
+    ring = ndimage.binary_dilation(win, iterations=40 if wide else 4) & ~win
+    band = ring & (r < 150) & (b < 150) if wide else ring
     alpha = np.full((H, W), 255.0)
     alpha[win] = 0
     t = np.clip((green - 12) / 110, 0, 1) if wide else np.clip((green - 25) / 90, 0, 1)
     alpha[band] = 255 * (1 - t[band])
     # despill the band
-    sp = band & (g > np.maximum(r, b))
+    sp = ring & (g > np.maximum(r, b))   # glows that picked up the green (gold, cyan) keep their own hue
     a[..., 1][sp] = np.maximum(r, b)[sp]
     rgba = np.dstack([a, alpha]).clip(0, 255).astype(np.uint8)
     ys, xs = np.where(win)
