@@ -6,10 +6,22 @@
   const socOn = () => !!(SOC.ch && SOC.me);
 
   function rcOf(c) { const slot = sl => c.gear.find(g => g.slot === sl); const rc = sl => { const it = slot(sl); return it ? it.rarity : null; }; return { helm: rc('Helm'), chest: rc('Chest'), weapon: rc('Weapon'), cloak: rc('Cloak'), boots: rc('Boots') }; }
+  // where I am, for friends and guildmates: "The Cinder Reach +2, row 12 (fighting)", "In Emberwatch", "Raiding ..."
+  function whereText() {
+    try {
+      if (cb && cb.practice) return 'At the training dummy';
+      if (cb && cb.raid) return `Raiding ${CB.RAID_NAMES[cb.raidMap] || 'a raid boss'} +${cb.level}${cb.over ? '' : ` (round ${cb.round})`}`;
+      if (cb && cb.duel) return 'In a duel';
+      if (run) { const row = run.currentRow(), boss = run.at && run.map.nodes[run.at].type === 'boss'; return run.over ? `${run.mapName} +${run.level}: heading home` : `${run.mapName} +${run.level}, ${boss ? 'at the boss' : row ? 'row ' + row : 'setting out'}${run.combat ? ' (fighting)' : ''}`; }
+      if (!$('scrStart').hidden) return 'In Emberwatch';
+      if (!$('scrTitle').hidden) return 'Choosing a hero';
+    } catch (e) {}
+    return 'Online';
+  }
   function myPresence() {
     const c = profile.chars[heroKey];
     const place = !$('scrStart').hidden ? 'town' : run ? 'run' : cb && cb.duel ? 'duel' : 'menu';
-    return { uid: SOC.me, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
+    return { uid: SOC.me, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
   }
 
   async function socStart() {
@@ -251,7 +263,7 @@
   function kick(uid) { if (!SOC.party || SOC.party.leader !== SOC.me) return; gotLeave({ partyId: SOC.party.id, uid }); }
 
   // ---------- social UI: town bar button, party panel, invite cards, Friends sheet
-  function placeText(st) { return !st ? 'Offline' : st.place === 'town' ? 'In Emberwatch' : st.place === 'run' ? 'On the March' : st.place === 'duel' ? 'In a duel' : 'Online'; }
+  function placeText(st) { return !st ? 'Offline' : st.where ? st.where : st.place === 'town' ? 'In Emberwatch' : st.place === 'run' ? 'On the March' : st.place === 'duel' ? 'In a duel' : 'Online'; }
   function renderSocial() {
     const nOn = SOC.friends.filter(f => SOC.online.has(f.id)).length;
     if ($('tbFriends')) { $('tbFriends').hidden = !supa; $('tbFriends').innerHTML = `Friends${SOC.requestsIn.length ? ` <b class="badge">${SOC.requestsIn.length}</b>` : ''} <span class="muted">${socOn() ? nOn + ' online' : 'sign in'}</span>`; }

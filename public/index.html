@@ -3755,10 +3755,22 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   const socOn = () => !!(SOC.ch && SOC.me);
 
   function rcOf(c) { const slot = sl => c.gear.find(g => g.slot === sl); const rc = sl => { const it = slot(sl); return it ? it.rarity : null; }; return { helm: rc('Helm'), chest: rc('Chest'), weapon: rc('Weapon'), cloak: rc('Cloak'), boots: rc('Boots') }; }
+  // where I am, for friends and guildmates: "The Cinder Reach +2, row 12 (fighting)", "In Emberwatch", "Raiding ..."
+  function whereText() {
+    try {
+      if (cb && cb.practice) return 'At the training dummy';
+      if (cb && cb.raid) return `Raiding ${CB.RAID_NAMES[cb.raidMap] || 'a raid boss'} +${cb.level}${cb.over ? '' : ` (round ${cb.round})`}`;
+      if (cb && cb.duel) return 'In a duel';
+      if (run) { const row = run.currentRow(), boss = run.at && run.map.nodes[run.at].type === 'boss'; return run.over ? `${run.mapName} +${run.level}: heading home` : `${run.mapName} +${run.level}, ${boss ? 'at the boss' : row ? 'row ' + row : 'setting out'}${run.combat ? ' (fighting)' : ''}`; }
+      if (!$('scrStart').hidden) return 'In Emberwatch';
+      if (!$('scrTitle').hidden) return 'Choosing a hero';
+    } catch (e) {}
+    return 'Online';
+  }
   function myPresence() {
     const c = profile.chars[heroKey];
     const place = !$('scrStart').hidden ? 'town' : run ? 'run' : cb && cb.duel ? 'duel' : 'menu';
-    return { uid: SOC.me, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
+    return { uid: SOC.me, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
   }
 
   async function socStart() {
@@ -4000,7 +4012,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function kick(uid) { if (!SOC.party || SOC.party.leader !== SOC.me) return; gotLeave({ partyId: SOC.party.id, uid }); }
 
   // ---------- social UI: town bar button, party panel, invite cards, Friends sheet
-  function placeText(st) { return !st ? 'Offline' : st.place === 'town' ? 'In Emberwatch' : st.place === 'run' ? 'On the March' : st.place === 'duel' ? 'In a duel' : 'Online'; }
+  function placeText(st) { return !st ? 'Offline' : st.where ? st.where : st.place === 'town' ? 'In Emberwatch' : st.place === 'run' ? 'On the March' : st.place === 'duel' ? 'In a duel' : 'Online'; }
   function renderSocial() {
     const nOn = SOC.friends.filter(f => SOC.online.has(f.id)).length;
     if ($('tbFriends')) { $('tbFriends').hidden = !supa; $('tbFriends').innerHTML = `Friends${SOC.requestsIn.length ? ` <b class="badge">${SOC.requestsIn.length}</b>` : ''} <span class="muted">${socOn() ? nOn + ' online' : 'sign in'}</span>`; }
@@ -4103,10 +4115,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const nOn = rows.filter(r => SOC.online.has(r.user_id) || r.user_id === SOC.me).length;
     el.innerHTML = `<div class="ghead"><h3>${esc(G.name)}</h3><span class="muted">${rows.length} member${rows.length === 1 ? '' : 's'} &middot; ${nOn} online &middot; you are ${meRank}</span></div>
       ${G.motd ? `<p class="gmotd">${esc(G.motd)}</p>` : ''}
-      <table class="groster"><thead><tr><th>Hero</th><th>Class</th><th>Power</th><th>Rank</th><th>Last online</th><th></th></tr></thead><tbody>${rows.map(r => { const on = SOC.online.has(r.user_id) || r.user_id === SOC.me, o = SOC.online.get(r.user_id);
+      <table class="groster"><thead><tr><th>Hero</th><th>Class</th><th>Power</th><th>Rank</th><th>Where / last online</th><th></th></tr></thead><tbody>${rows.map(r => { const on = SOC.online.has(r.user_id) || r.user_id === SOC.me, o = SOC.online.get(r.user_id);
         const name = (o && o.name) || r.hero_name || r.display_name || 'Unknown', cls = (o && o.cls) || r.hero_class || '';
         const acts = r.user_id === SOC.me ? '' : [meRank === 'leader' && r.rank === 'member' ? `<button class="pilebtn" data-g="promote" data-id="${r.user_id}">Make officer</button>` : '', meRank === 'leader' && r.rank === 'officer' ? `<button class="pilebtn" data-g="demote" data-id="${r.user_id}">Make member</button>` : '', meRank === 'leader' ? `<button class="pilebtn" data-g="lead" data-id="${r.user_id}">Make leader</button>` : '', off && RANK_ORDER[r.rank] > RANK_ORDER[meRank] ? `<button class="pilebtn" data-g="kick" data-id="${r.user_id}">Remove</button>` : ''].join(' ');
-        return `<tr class="${on ? 'on' : ''}"><td><b style="color:${CC[cls] || 'var(--text)'}">${esc(name)}</b>${r.user_id === SOC.me ? ' <span class="muted">(you)</span>' : ''}</td><td>${esc(cls)}</td><td>${r.user_id === SOC.me && profile.chars[heroKey] ? CBHub.powerLevel(profile.chars[heroKey]) : (r.power || 0)}</td><td>${r.rank}</td><td>${on ? '<span class="up">Online</span>' : agoText(r.updated_at)}</td><td>${acts}</td></tr>`; }).join('')}</tbody></table>
+        return `<tr class="${on ? 'on' : ''}"><td><b style="color:${CC[cls] || 'var(--text)'}">${esc(name)}</b>${r.user_id === SOC.me ? ' <span class="muted">(you)</span>' : ''}</td><td>${esc(cls)}</td><td>${r.user_id === SOC.me && profile.chars[heroKey] ? CBHub.powerLevel(profile.chars[heroKey]) : (r.power || 0)}</td><td>${r.rank}</td><td>${on ? `<span class="up">${esc(r.user_id === SOC.me ? whereText() : placeText(o))}</span>` : agoText(r.updated_at)}</td><td>${acts}</td></tr>`; }).join('')}</tbody></table>
       ${off ? `<div class="namerow" style="margin-top:10px"><div class="field"><label for="gInv">Invite a player (their hero name if online, or friend code)</label><input id="gInv" maxlength="24" autocomplete="off" placeholder="Name or friend code"></div><button class="btn primary" data-g="invite">Invite</button></div>` : ''}
       ${meRank === 'leader' ? `<div class="namerow"><div class="field"><label for="gMotd">Message of the day</label><input id="gMotd" maxlength="140" value="${esc(G.motd)}"></div><button class="btn" data-g="motd">Save</button></div>` : ''}
       <p class="down" id="gMsg"></p>
@@ -4177,8 +4189,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793463087737';
-  const CB_BUILD = 'ef3088339c'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793464827078';
+  const CB_BUILD = 'dec2973970'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -5341,12 +5353,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     slot.hidden = !inFight; $('scrCombat').classList.toggle('withchat', inFight);
     if (typeof renderChat === 'function') renderChat();
   }
-  function show(which) { placeChat(which); hidePeeks(); $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); retrack(true); }
+  function show(which) { placeChat(which); if (typeof retrack === 'function') setTimeout(() => { try { retrack(); } catch (e) {} }, 0); hidePeeks(); $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); retrack(true); }
 
   // ---------- map
   const RH = 58, CW = 78, PADX = 40, PADY = 34;
   function pos(n) { return { x: PADX + n.col * CW, y: PADY + (ROWS + 1 - n.row) * RH }; }
   function renderMap(scroll) {
+    if (typeof retrack === 'function') try { retrack(); } catch (e) {}
     $('mapScroll').innerHTML = mapSvg(true);
     const curRow = run.currentRow(), W = PADX * 2 + (COLS - 1) * CW, H = PADY * 2 + ROWS * RH, reach = new Set(run.over ? [] : run.reachable());
     if (scroll) { const target = PADY + (ROWS + 1 - Math.max(1, curRow + 2)) * RH; const sc = $('mapScroll'); sc.scrollTop = Math.max(0, target - sc.clientHeight / 2); }
@@ -5803,6 +5816,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   }
   function render(withPops) {
     if (!cb) return;
+    if (cb.round !== render.whereRound && typeof retrack === 'function') { render.whereRound = cb.round; try { retrack(); } catch (e) {} } // friends see the round/row we're on
     const p = hero(), party = cb.partySize > 1, wh = watchedHero(p);
     $('order').classList.toggle('raid', !!cb.raid && cb.partySize > 4);
     $('order').innerHTML = `<span class="lbl">Turn<br>order</span>` + cb.order.map((id, i) => { const a = cb.actorById(id); const st = a.hp <= 0 ? 'dead' : cb.raid && a.isPlayer ? (cb.raidDone && cb.raidDone.has(a.id) ? 'done' : cb.phase === 'player' && !cb.over ? 'now' : '') : i === cb.turnIndex && !cb.over ? 'now' : i < cb.turnIndex ? 'done' : '';
