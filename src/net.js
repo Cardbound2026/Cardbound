@@ -3,6 +3,7 @@
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
+  const CB_BUILT_AT = +'__CB_BUILT_AT__';
   const CB_BUILD = '__CB_BUILD__'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
@@ -347,3 +348,11 @@
     $('mClose').onclick = closeModal;
     $('mCopy').onclick = async () => { try { await navigator.clipboard.writeText(txt); $('mCopy').textContent = 'Copied'; } catch (e) { $('mCopy').textContent = 'Select the text and copy it'; } };
   }
+
+  // version tag in the bottom-right corner: compare with your co-op partner
+  (function () {
+    const el = document.createElement('div'); el.id = 'verTag';
+    const when = CB_BUILT_AT ? new Date(CB_BUILT_AT).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+    el.textContent = `Build ${CB_BUILD}${when ? ' · ' + when : ''}`; el.title = 'The version you have loaded. Co-op partners must show the same build (reload with Ctrl+F5 if not).';
+    document.body.appendChild(el);
+  })();
