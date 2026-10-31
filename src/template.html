@@ -541,6 +541,10 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   async function connectSupabase() {
     const C = window.CB_CONFIG;
     supa = window.supabase.createClient(C.supabaseUrl, C.supabaseKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit' } });
+    // browsers pause timers in background tabs, so the automatic token renewal can be missed: check again whenever the game is looked at, and every 10 minutes
+    const renew = () => { if (supa && supaUser) supa.auth.getSession().catch(() => {}); };
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) renew(); });
+    window.addEventListener('focus', renew); window.addEventListener('online', renew); setInterval(renew, 10 * 60 * 1000);
     supa.auth.onAuthStateChange((ev, session) => {
       if (session && (!supaUser || supaUser.id !== session.user.id)) attachSupaUser(session.user);
       if (!session && supaUser) { socStop(); supaUser = null; dbRef = null; storeKind = 'local'; renderAccount(); renderSaveNote(); }
@@ -553,7 +557,9 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     try {
       const { data: row, error } = await supa.from('profiles').select('data').eq('user_id', u.id).maybeSingle();
       if (error) throw error;
-      dbRef = { set: async (o) => { const { error: e } = await supa.from('profiles').upsert({ user_id: u.id, data: JSON.parse(o.json), updated_at: new Date(o.savedAt).toISOString() }); if (e) throw e; } };
+      // a sign-in token lasts an hour; if it lapsed (laptop asleep, tab in the background), renew it and try the save once more
+      const up = (o) => supa.from('profiles').upsert({ user_id: u.id, data: JSON.parse(o.json), updated_at: new Date(o.savedAt).toISOString() });
+      dbRef = { set: async (o) => { let { error: e } = await up(o); if (e && /jwt|expired|token/i.test(e.message || '')) { await supa.auth.refreshSession(); ({ error: e } = await up(o)); } if (e) throw e; } };
       storeKind = 'cloud';
       if (row && row.data) { const remote = CBHub.fix(row.data); if ((remote.savedAt || 0) > (profile.savedAt || 0)) { profile = remote; heroCls = profile.last.cls || heroCls; } }
       if (!run) { renderHub(); if (!$('scrTitle').hidden) renderTitle(); }
