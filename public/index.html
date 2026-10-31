@@ -259,6 +259,30 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .pilecard:hover .cf { transform: scale(1.65); z-index: 30; position: relative; filter: drop-shadow(0 12px 22px rgba(0,0,0,.75)); }
 .pilecount { position: absolute; right: 4px; top: 2px; z-index: 31; background: var(--accent); color: #1a130a; font-weight: 800; font-size: 13px; padding: 1px 7px; border-radius: 999px; }
 
+
+/* social: chat, party panel, friends */
+.chatbox { position: absolute; left: 10px; bottom: 10px; width: min(360px, calc(100% - 20px)); display: grid; gap: 4px; z-index: 3; }
+.chatlog { max-height: 150px; overflow-y: auto; font-size: 13px; line-height: 1.35; padding: 6px 8px; background: rgba(10,8,6,.62); border-radius: 6px; color: #e8dcc6; overflow-wrap: anywhere; }
+.chatlog b { color: var(--accent); font-weight: 700; } .chatlog .sys { color: var(--muted); font-style: italic; }
+.chatbox input { background: rgba(20,16,12,.85); border: 1px solid var(--line); border-radius: 5px; padding: 6px 8px; color: var(--text); font: inherit; font-size: 14px; }
+.chatbox input:focus { border-color: var(--accent); outline: none; }
+.prompt { left: 50% !important; transform: translateX(-50%); bottom: auto !important; top: 10px; }
+.partypanel { position: absolute; right: 10px; top: 10px; width: min(280px, calc(100% - 20px)); background: rgba(16,12,9,.88); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: grid; gap: 4px; font-size: 14px; z-index: 3; }
+.partypanel .pph { display: flex; justify-content: space-between; align-items: center; }
+.partypanel .ppm { display: flex; align-items: center; gap: 6px; }
+.partypanel .ppinv { display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 6px; }
+.partypanel .ppinv .btn { padding: 4px 12px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: #5d544b; display: inline-block; flex: none; }
+.dot.on { background: #6fd36a; box-shadow: 0 0 6px #6fd36a; }
+.badge { background: var(--hp); color: #fff; border-radius: 999px; padding: 0 6px; font-size: 12px; }
+.frgrid { display: grid; grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 760px) { .frgrid { grid-template-columns: minmax(0, 1fr); } }
+.frgrid h3 { font-family: var(--f-ui); font-weight: 700; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+.fcode { font-family: var(--f-mono); font-size: 30px; letter-spacing: .18em; color: var(--accent); margin: 2px 0 8px; }
+.frow { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.frow .acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; } .frow .acts .btn { padding: 4px 10px; font-size: 13px; }
+@media (max-width: 600px) { .chatlog { max-height: 90px; } }
+
 /* title / hero select */
 .title { display: grid; gap: 16px; max-width: 1000px; margin: 0 auto; width: 100%; }
 .titlehead { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 10px; }
@@ -327,11 +351,13 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 
   <!-- CAMP: the town overworld -->
   <section id="scrStart" class="camp" aria-label="Town">
-    <div class="townbar"><span id="tbHero"></span><span class="chip" id="tbPower"></span><span class="chip" id="tbGold"></span><span id="acct"></span><span class="muted tbhelp">Walk: arrow keys or WASD, or click/tap where to go. Talk: Space, or click someone.</span></div>
+    <div class="townbar"><span id="tbHero"></span><span class="chip" id="tbPower"></span><span class="chip" id="tbGold"></span><button class="pilebtn" id="tbFriends" hidden>Friends</button><span id="acct"></span><span class="muted tbhelp">Walk: arrow keys or WASD, or click/tap where to go. Talk: Space, or click someone.</span></div>
     <div class="townwrap" id="townWrap">
       <canvas id="town" tabindex="0" aria-label="The town of Emberwatch. Walk to the quartermaster, scribe, chronicler, wagoneer or captain and talk to them."></canvas>
       <div class="prompt" id="prompt" hidden></div>
       <div class="talk" id="talk" hidden role="dialog" aria-live="polite"></div>
+      <div class="chatbox" id="chatBox"><div class="chatlog" id="chatLog" aria-live="polite"></div><input id="chatIn" maxlength="200" placeholder="Press T to chat, Enter to send" autocomplete="off" aria-label="Chat message"></div>
+      <div class="partypanel" id="partyPanel" hidden></div>
     </div>
   </section>
 
@@ -376,7 +402,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   <div id="secHeroes"><div class="heroes" id="heroes" role="tablist" aria-label="Characters"></div></div>
   <div class="sheetgrid" id="sheetGrid">
     <aside id="secChar"><div class="panel" id="hubChar"></div></aside>
-    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div></div>
+    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div><div id="hpFriends"></div></div>
   </div>
 </div></div>
 <div class="modal" id="modal" hidden><div class="box" id="modalBox"></div></div>
@@ -1588,7 +1614,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     supa = window.supabase.createClient(C.supabaseUrl, C.supabaseKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit' } });
     supa.auth.onAuthStateChange((ev, session) => {
       if (session && (!supaUser || supaUser.id !== session.user.id)) attachSupaUser(session.user);
-      if (!session && supaUser) { supaUser = null; dbRef = null; storeKind = 'local'; renderAccount(); renderSaveNote(); }
+      if (!session && supaUser) { socStop(); supaUser = null; dbRef = null; storeKind = 'local'; renderAccount(); renderSaveNote(); }
     });
     const { data } = await supa.auth.getSession();
     if (data && data.session) await attachSupaUser(data.session.user); else { renderAccount(); renderSaveNote(); }
@@ -1604,7 +1630,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       if (!run) { renderHub(); if (!$('scrTitle').hidden) renderTitle(); }
       save();
     } catch (e) { dbRef = null; storeKind = 'local'; toast('Signed in, but your online save could not be reached (' + (e.message || e) + '). Progress keeps saving in this browser.'); }
-    renderAccount(); renderSaveNote();
+    renderAccount(); renderSaveNote(); socStart();
   }
   function acctName(u) { const m = (u && u.user_metadata) || {}; return (m.custom_claims && m.custom_claims.global_name) || m.full_name || m.name || m.user_name || (u && u.email) || 'Signed in'; }
   async function signInDiscord() {
@@ -2019,15 +2045,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
 
   // ---------- characters: one drawing routine for the hero and every NPC
   const RARC = { White: '#9c968a', Green: '#4f8f48', Blue: '#3f74b8', 'Purple (Epic)': '#8461b8', Gold: '#e4a93a' };
-  function heroPal() {
-    const c = CBHub.char(profile, heroCls), slot = sl => c.gear.find(g => g.slot === sl);
-    const rc = sl => { const it = slot(sl); return it ? RARC[it.rarity] || '#9c968a' : null; };
+  function heroPal() { const c = CBHub.char(profile, heroCls); return palFor(heroCls, rcOf(c)); }
+  function palFor(cls, R) {
+    R = R || {}; const rc = (k) => R[k] ? RARC[R[k]] || '#9c968a' : null; const heroCls_ = cls || 'Warrior';
     const base = { Warrior: { chest: '#5a2620', skin: '#c99a76', hair: '#2a1d14', legs: '#2a2420', weapon: 'swordshield', cape: '#3a1612' },
       Rogue: { chest: '#21331e', skin: '#b98d6c', hair: '#141210', legs: '#1b1f19', weapon: 'daggers', cape: '#18231a', helm: 'hood' },
       Mage: { chest: '#202d4c', skin: '#d2ad8c', hair: '#c9c2b2', legs: '#191e2e', weapon: 'staff', cape: '#2a1f44', helm: 'hood' },
-      Paladin: { chest: '#5f5a4a', skin: '#caa07e', hair: '#8a6a3a', legs: '#2e2c26', weapon: 'maceshield', cape: '#6a5420' } }[heroCls];
-    const helmIt = slot('Helm');
-    return Object.assign({}, base, { trim: rc('Chest') || '#9c968a', helm: helmIt ? (base.helm || 'helm') : base.helm || null, helmC: rc('Helm') || '#5a5f66', wpnC: rc('Weapon') || '#9c968a', capeTrim: rc('Cloak'), bootC: rc('Boots'), hero: true });
+      Paladin: { chest: '#5f5a4a', skin: '#caa07e', hair: '#8a6a3a', legs: '#2e2c26', weapon: 'maceshield', cape: '#6a5420' } }[heroCls_];
+    return Object.assign({}, base, { trim: rc('chest') || '#9c968a', helm: R.helm ? (base.helm || 'helm') : base.helm || null, helmC: rc('helm') || '#5a5f66', wpnC: rc('weapon') || '#9c968a', capeTrim: rc('cloak'), bootC: rc('boots'), hero: true });
   }
   function drawChar(g, cx, by, dir, step, pal, s, t) {
     const bob = step ? -1.5 * s : 0, sw = step === 1 ? 1 : step === 2 ? -1 : 0;
@@ -2125,6 +2150,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const hp = heroPos(); const walking = P.mv ? (Math.floor(P.mv.t * 2) % 2 ? 2 : 1) * (P.step % 2 ? 1 : 1) : 0;
     const stepF = P.mv ? ((P.step + (P.mv.t > 0.5 ? 1 : 0)) % 2 ? 1 : 2) : 0;
     list.push({ y: hp.y + 0.5, f: () => drawChar(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, P.dir, stepF, heroPal(), s, t) });
+    for (const o of othersDrawList(TS, s, t)) list.push(o);
     list.sort((a, b) => a.y - b.y); for (const o of list) o.f();
     // embers over the fire
     for (const e of TOWN.embers) { gx.fillStyle = `rgba(255,${150 + (e.life * 80 | 0)},70,${e.life})`; gx.fillRect(e.x * TS, e.y * TS, 2.5 * s, 2.5 * s); }
@@ -2163,9 +2189,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function tryStep(dir) {
     P.dir = dir; const [dx, dy] = DIRS[dir];
     if (!free(P.x + dx, P.y + dy)) return false;
-    P.mv = { fx: P.x, fy: P.y, t: 0 }; P.x += dx; P.y += dy; P.step++; return true;
+    P.mv = { fx: P.x, fy: P.y, t: 0 }; P.x += dx; P.y += dy; P.step++; socPos(); return true;
   }
   function update(dt) {
+    updateOthers(dt);
     // embers
     if (Math.random() < dt / 60) TOWN.embers.push({ x: 12.6 + (Math.random() - 0.5) * 1.2, y: 13.2, vx: (Math.random() - 0.5) * 0.0004, vy: -0.0012 - Math.random() * 0.0008, life: 1 });
     for (const e of TOWN.embers) { e.x += e.vx * dt + Math.sin(TOWN.t / 300 + e.y * 5) * 0.0004 * dt; e.y += e.vy * dt; e.life -= dt / 2200; }
@@ -2225,6 +2252,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const d = KEYDIR[ev.key];
     if (d) { ev.preventDefault(); P.path = []; P.target = null; P.talkTo = null; if (!P.held.includes(d)) P.held.push(d); if (!P.mv && P.dir !== d && !free(P.x + DIRS[d][0], P.y + DIRS[d][1])) P.dir = d; return; }
     if (ev.key === ' ' || ev.key === 'Enter' || ev.key === 'e' || ev.key === 'E') { ev.preventDefault(); const n = interactTarget(); if (n) talk(n); }
+    if (ev.key === 't' || ev.key === 'T') { ev.preventDefault(); P.held = []; $('chatIn').focus(); }
   });
   document.addEventListener('keyup', (ev) => { const d = KEYDIR[ev.key]; if (d) P.held = P.held.filter(x => x !== d); });
   window.addEventListener('blur', () => { P.held = []; });
@@ -2237,6 +2265,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     wagon: { title: 'The Wagon', show: ['secChar', 'secWagon'] },
     heroes: { title: 'Barracks: heroes', show: ['secHeroes', 'secChar'] },
     shop: { title: 'Merchant Dace: wares', show: ['secChar', 'hpShop'] },
+    friends: { title: 'Friends', show: ['hpFriends'] },
   };
   function talk(n) {
     P.held = []; P.path = []; P.target = null;
@@ -2251,13 +2280,19 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function openSheet(kind) {
     const k = SHEETS[kind]; renderHub();
     $('sheetTitle').textContent = k.title;
-    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop']) $(id).hidden = !k.show.includes(id);
+    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends']) $(id).hidden = !k.show.includes(id);
     $('sheetGrid').classList.toggle('solo', !k.show.includes('secChar'));
     $('sheet').hidden = false; $('sheet').dataset.kind = kind; fitCards($('sheet')); $('sheetClose').focus();
+    if (kind === 'friends') { renderFriendsTab(); loadFriends(); }
   }
   function closeSheet() { $('sheet').hidden = true; renderTownBar(); cv.focus({ preventScroll: true }); }
   $('sheetClose').addEventListener('click', closeSheet);
   $('sheet').addEventListener('click', (ev) => { if (ev.target === $('sheet')) closeSheet(); });
+  $('chatIn').addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') { sendChat(ev.target.value); ev.target.value = ''; }
+    if (ev.key === 'Escape') { ev.cbHandled = true; ev.target.blur(); cv.focus({ preventScroll: true }); }
+    ev.stopPropagation();
+  });
   function renderTownBar() {
     if (!profile.chars[heroCls]) return;
     const c = CBHub.char(profile, heroCls);
@@ -2269,12 +2304,271 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (fromRun) { P.x = 13; P.y = 3; P.dir = 'down'; }
     P.mv = null; P.path = []; P.held = []; P.target = null;
     $('talk').hidden = true; $('sheet').hidden = true;
-    sizeTown(); renderTownBar();
+    sizeTown(); renderTownBar(); retrack(true); renderSocial();
     if (!TOWN.running) { TOWN.running = true; TOWN.last = 0; requestAnimationFrame(frame); }
   }
   function townStop() { TOWN.running = false; }
   window.__townTile = (x, y) => { const r = cv.getBoundingClientRect(), c = camera(); return { x: r.left + x * TOWN.TS - c.x + TOWN.TS / 2, y: r.top + y * TOWN.TS - c.y + TOWN.TS / 2 }; }; // test hook
   window.addEventListener('resize', () => { if (TOWN.running) sizeTown(); });
+
+  // ---------- social: other players in Emberwatch, world chat, friends and parties (Supabase Realtime)
+  // One shared channel. Presence says who is online and where; broadcasts carry movement, chat and party messages.
+  const SOC = { ch: null, me: null, card: null, online: new Map(), others: new Map(), chat: [], friends: [], requestsIn: [], requestsOut: [], party: null, invites: [], lastPos: 0, retrackTimer: null };
+  const PARTY_MAX = 4;
+  const socOn = () => !!(SOC.ch && SOC.me);
+
+  function rcOf(c) { const slot = sl => c.gear.find(g => g.slot === sl); const rc = sl => { const it = slot(sl); return it ? it.rarity : null; }; return { helm: rc('Helm'), chest: rc('Chest'), weapon: rc('Weapon'), cloak: rc('Cloak'), boots: rc('Boots') }; }
+  function myPresence() {
+    const c = profile.chars[heroCls];
+    const place = !$('scrStart').hidden ? 'town' : run ? 'run' : 'menu';
+    return { uid: SOC.me, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? heroCls : null, rc: c ? rcOf(c) : {}, place, x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
+  }
+
+  async function socStart() {
+    if (!supa || !supaUser || SOC.ch) return;
+    SOC.me = supaUser.id;
+    await saveCard();
+    loadFriends();
+    const ch = supa.channel('cb-world', { config: { presence: { key: SOC.me }, broadcast: { self: false } } });
+    ch.on('presence', { event: 'sync' }, () => {
+      const was = new Set(SOC.online.keys());
+      SOC.online = new Map();
+      for (const [k, arr] of Object.entries(ch.presenceState())) if (arr && arr.length) SOC.online.set(k, arr[arr.length - 1]);
+      for (const f of SOC.friends) { const on = SOC.online.has(f.id); if (on && !was.has(f.id) && was.size) sysChat(`${f.name} came online.`); }
+      syncOthers(); renderSocial();
+    });
+    ch.on('broadcast', { event: 'pos' }, ({ payload }) => moveOther(payload));
+    ch.on('broadcast', { event: 'chat' }, ({ payload }) => addChat(payload));
+    ch.on('broadcast', { event: 'invite' }, ({ payload }) => { if (payload.to === SOC.me) gotInvite(payload); });
+    ch.on('broadcast', { event: 'invite-reply' }, ({ payload }) => { if (payload.to === SOC.me) gotReply(payload); });
+    ch.on('broadcast', { event: 'party' }, ({ payload }) => gotParty(payload));
+    ch.on('broadcast', { event: 'party-leave' }, ({ payload }) => gotLeave(payload));
+    ch.on('broadcast', { event: 'friend-ping' }, ({ payload }) => { if (payload.to === SOC.me) { loadFriends(); sysChat(`${payload.name} sent you a friend request. Open Friends to accept it.`); } });
+    ch.subscribe(async (status) => { if (status === 'SUBSCRIBED') { await ch.track(myPresence()); renderSocial(); } });
+    SOC.ch = ch;
+    SOC.friendTimer = setInterval(loadFriends, 30000);
+    renderSocial();
+  }
+  async function socStop() {
+    if (SOC.party) leaveParty(true);
+    if (SOC.ch) { try { await SOC.ch.untrack(); await supa.removeChannel(SOC.ch); } catch (e) {} }
+    clearInterval(SOC.friendTimer);
+    Object.assign(SOC, { ch: null, me: null, card: null, online: new Map(), others: new Map(), friends: [], requestsIn: [], requestsOut: [], party: null, invites: [] });
+    renderSocial();
+  }
+  // presence is re-sent at most every 2 seconds (hero, place, party); movement goes out as broadcasts
+  function retrack(now) {
+    if (!socOn()) return;
+    clearTimeout(SOC.retrackTimer);
+    SOC.retrackTimer = setTimeout(() => { if (socOn()) SOC.ch.track(myPresence()); }, now ? 0 : 2000);
+  }
+  function socPos() {
+    if (!socOn() || $('scrStart').hidden) return;
+    SOC.ch.send({ type: 'broadcast', event: 'pos', payload: { uid: SOC.me, x: P.x, y: P.y, dir: P.dir } });
+    retrack();
+  }
+
+  // ---------- other players walking around town
+  function syncOthers() {
+    for (const [uid, st] of SOC.online) {
+      if (uid === SOC.me || st.place !== 'town' || !st.cls) { SOC.others.delete(uid); continue; }
+      const o = SOC.others.get(uid);
+      if (!o) SOC.others.set(uid, { uid, x: st.x, y: st.y, fx: st.x, fy: st.y, t: 1, dir: st.dir || 'down', step: 0, name: st.name, cls: st.cls, rc: st.rc || {}, party: st.party });
+      else Object.assign(o, { name: st.name, cls: st.cls, rc: st.rc || {}, party: st.party });
+    }
+    for (const uid of [...SOC.others.keys()]) if (!SOC.online.has(uid)) SOC.others.delete(uid);
+  }
+  function moveOther(p) {
+    const o = SOC.others.get(p.uid); if (!o) return;
+    const cur = otherPos(o);
+    Object.assign(o, { fx: cur.x, fy: cur.y, x: p.x, y: p.y, t: 0, dir: p.dir, step: o.step + 1 });
+  }
+  function otherPos(o) { const k = Math.min(1, o.t); return { x: o.fx + (o.x - o.fx) * k, y: o.fy + (o.y - o.fy) * k }; }
+  function updateOthers(dt) { for (const o of SOC.others.values()) if (o.t < 1) o.t += dt / STEP_MS; }
+  function othersDrawList(TS, s, t) {
+    const out = [];
+    for (const o of SOC.others.values()) {
+      const p = otherPos(o), moving = o.t < 1;
+      const pal = palFor(o.cls, o.rc || {});
+      out.push({ y: p.y + 0.5, f: () => {
+        drawChar(gx, p.x * TS + TS / 2, p.y * TS + TS * 0.92, o.dir, moving ? ((o.step + (o.t > 0.5 ? 1 : 0)) % 2 ? 1 : 2) : 0, pal, s, t);
+        gx.font = `600 ${Math.round(12 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; gx.textAlign = 'center';
+        const w = gx.measureText(o.name).width + 10, tx = p.x * TS + TS / 2, ty = p.y * TS - TS * 0.12;
+        gx.fillStyle = 'rgba(10,8,6,.78)'; gx.fillRect(tx - w / 2, ty - 13, w, 17);
+        gx.fillStyle = SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0'; gx.fillText(o.name, tx, ty);
+      } });
+    }
+    return out;
+  }
+
+  // ---------- world chat
+  function addChat(m) {
+    if (!m || !m.text) return;
+    SOC.chat.push({ from: m.uid, name: String(m.name || '?').slice(0, 24), text: String(m.text).slice(0, 200), sys: !!m.sys, at: m.at || Date.now() });
+    SOC.chat = SOC.chat.slice(-60); renderChat();
+  }
+  function sysChat(text) { addChat({ sys: true, name: '', text }); }
+  function sendChat(text) {
+    text = (text || '').trim().slice(0, 200); if (!text) return;
+    if (!socOn()) { sysChat('Sign in to chat with other players.'); return; }
+    const c = profile.chars[heroCls];
+    const m = { uid: SOC.me, name: c ? c.name : acctName(supaUser), text, at: Date.now() };
+    SOC.ch.send({ type: 'broadcast', event: 'chat', payload: m }); addChat(m);
+  }
+  function renderChat() {
+    const el = $('chatLog'); if (!el) return;
+    el.innerHTML = SOC.chat.map(m => m.sys ? `<div class="sys">${esc(m.text)}</div>` : `<div><b>${esc(m.name)}:</b> ${esc(m.text)}</div>`).join('') || `<div class="sys">${socOn() ? 'World chat. Say hello. Press T to type.' : 'Sign in to see other players and chat.'}</div>`;
+    el.scrollTop = el.scrollHeight;
+  }
+
+  // ---------- friends (tables: players, friends)
+  async function saveCard() {
+    if (!supa || !supaUser) return;
+    const c = profile.chars[heroCls];
+    const row = { user_id: supaUser.id, display_name: acctName(supaUser).slice(0, 40), hero_name: c ? c.name : null, hero_class: c ? heroCls : null, updated_at: new Date().toISOString() };
+    const { error } = await supa.from('players').upsert(row);
+    if (error) { console.warn('players upsert', error); return; }
+    const { data } = await supa.from('players').select('friend_code').eq('user_id', supaUser.id).maybeSingle();
+    SOC.card = data || null; renderSocial();
+  }
+  async function loadFriends() {
+    if (!supa || !supaUser) return;
+    const { data: rows, error } = await supa.from('friends').select('*');
+    if (error) { console.warn('friends', error); return; }
+    const me = supaUser.id, ids = [...new Set((rows || []).map(r => r.user_id === me ? r.friend_id : r.user_id))];
+    let cards = [];
+    if (ids.length) { const r = await supa.from('players').select('user_id,display_name,hero_name,hero_class').in('user_id', ids); cards = r.data || []; }
+    const card = (id) => cards.find(c => c.user_id === id) || { display_name: 'Unknown' };
+    const label = (id) => { const c = card(id); return c.hero_name ? `${c.hero_name}` : c.display_name; };
+    SOC.friends = (rows || []).filter(r => r.status === 'accepted').map(r => { const id = r.user_id === me ? r.friend_id : r.user_id; return { id, name: label(id), acct: card(id).display_name, cls: card(id).hero_class }; });
+    SOC.requestsIn = (rows || []).filter(r => r.status === 'pending' && r.friend_id === me).map(r => ({ id: r.user_id, name: label(r.user_id), acct: card(r.user_id).display_name }));
+    SOC.requestsOut = (rows || []).filter(r => r.status === 'pending' && r.user_id === me).map(r => ({ id: r.friend_id, name: label(r.friend_id), acct: card(r.friend_id).display_name }));
+    renderSocial();
+  }
+  async function addFriend(code) {
+    code = (code || '').trim().toUpperCase();
+    if (!/^[A-Z0-9]{6}$/.test(code)) return 'Friend codes are 6 letters and numbers, like K7Q2MD.';
+    const { data: p } = await supa.from('players').select('user_id,display_name,hero_name').eq('friend_code', code).maybeSingle();
+    if (!p) return 'No player has that code. Check it and try again.';
+    if (p.user_id === SOC.me) return "That's your own code.";
+    if ([...SOC.friends, ...SOC.requestsOut].some(f => f.id === p.user_id)) return 'You already added them.';
+    if (SOC.requestsIn.some(f => f.id === p.user_id)) { await acceptFriend(p.user_id); return null; }
+    const { error } = await supa.from('friends').insert({ user_id: SOC.me, friend_id: p.user_id, status: 'pending' });
+    if (error) return 'Could not send the request: ' + error.message;
+    if (socOn()) { const c = profile.chars[heroCls]; SOC.ch.send({ type: 'broadcast', event: 'friend-ping', payload: { to: p.user_id, name: c ? c.name : acctName(supaUser) } }); }
+    await loadFriends(); return null;
+  }
+  async function acceptFriend(id) { await supa.from('friends').update({ status: 'accepted' }).eq('user_id', id).eq('friend_id', SOC.me); await loadFriends(); }
+  async function removeFriend(id) { await supa.from('friends').delete().eq('user_id', id).eq('friend_id', SOC.me); await supa.from('friends').delete().eq('user_id', SOC.me).eq('friend_id', id); await loadFriends(); }
+
+  // ---------- parties: the inviter leads; up to 4 players
+  const newPartyId = () => 'p' + Math.random().toString(36).slice(2, 10);
+  function meMember() { const c = profile.chars[heroCls]; return { uid: SOC.me, name: c ? c.name : acctName(supaUser), cls: c ? heroCls : null }; }
+  function invite(uid) {
+    if (!socOn()) return;
+    if (SOC.party && SOC.party.leader !== SOC.me) { toast('Only the party leader can invite.'); return; }
+    if (!SOC.party) SOC.party = { id: newPartyId(), leader: SOC.me, members: [meMember()] };
+    if (SOC.party.members.length >= PARTY_MAX) { toast('The party is full (4 players).'); return; }
+    const c = profile.chars[heroCls];
+    SOC.ch.send({ type: 'broadcast', event: 'invite', payload: { to: uid, from: SOC.me, name: c ? c.name : acctName(supaUser), partyId: SOC.party.id } });
+    const f = SOC.friends.find(x => x.id === uid) || SOC.others.get(uid);
+    sysChat(`Party invite sent to ${f ? f.name : 'player'}.`); retrack(true); renderSocial();
+  }
+  function gotInvite(p) {
+    if (SOC.invites.some(i => i.from === p.from)) return;
+    SOC.invites.push(p); sysChat(`${p.name} invited you to a party.`); renderSocial();
+  }
+  function answerInvite(from, accept) {
+    const inv = SOC.invites.find(i => i.from === from); if (!inv) return;
+    SOC.invites = SOC.invites.filter(i => i.from !== from);
+    if (accept && SOC.party) leaveParty(true);
+    SOC.ch.send({ type: 'broadcast', event: 'invite-reply', payload: Object.assign({ to: from, partyId: inv.partyId, accept }, meMember()) });
+    renderSocial();
+  }
+  function gotReply(p) {
+    if (!SOC.party || SOC.party.id !== p.partyId || SOC.party.leader !== SOC.me) return;
+    if (!p.accept) { sysChat(`${p.name} declined the invite.`); return; }
+    if (SOC.party.members.length >= PARTY_MAX || SOC.party.members.some(m => m.uid === p.uid)) return;
+    SOC.party.members.push({ uid: p.uid, name: p.name, cls: p.cls });
+    sysChat(`${p.name} joined the party.`); sendParty();
+  }
+  function sendParty() { if (socOn() && SOC.party) SOC.ch.send({ type: 'broadcast', event: 'party', payload: SOC.party }); retrack(true); renderSocial(); }
+  function gotParty(pt) {
+    if (!pt) return;
+    const mine = SOC.party && SOC.party.id === pt.id;
+    const inIt = pt.members && pt.members.some(m => m.uid === SOC.me);
+    if (pt.disbanded) { if (mine) { SOC.party = null; sysChat('The party was disbanded.'); retrack(true); renderSocial(); } return; }
+    if (inIt) { if (!mine) sysChat(`You joined ${pt.members.find(m => m.uid === pt.leader)?.name || 'the'}'s party.`); SOC.party = pt; retrack(true); renderSocial(); }
+    else if (mine) { SOC.party = null; sysChat('You left the party.'); retrack(true); renderSocial(); }
+  }
+  function leaveParty(quiet) {
+    if (!SOC.party) return;
+    const pt = SOC.party; SOC.party = null;
+    if (socOn()) {
+      if (pt.leader === SOC.me) SOC.ch.send({ type: 'broadcast', event: 'party', payload: { id: pt.id, disbanded: true } });
+      else SOC.ch.send({ type: 'broadcast', event: 'party-leave', payload: { partyId: pt.id, uid: SOC.me } });
+    }
+    if (!quiet) sysChat('You left the party.');
+    retrack(true); renderSocial();
+  }
+  function gotLeave(p) {
+    if (!SOC.party || SOC.party.id !== p.partyId || SOC.party.leader !== SOC.me) return;
+    const m = SOC.party.members.find(x => x.uid === p.uid); if (!m) return;
+    SOC.party.members = SOC.party.members.filter(x => x.uid !== p.uid);
+    sysChat(`${m.name} left the party.`);
+    if (SOC.party.members.length <= 1) { const id = SOC.party.id; SOC.party = null; if (socOn()) SOC.ch.send({ type: 'broadcast', event: 'party', payload: { id, disbanded: true } }); retrack(true); renderSocial(); }
+    else sendParty();
+  }
+  function kick(uid) { if (!SOC.party || SOC.party.leader !== SOC.me) return; gotLeave({ partyId: SOC.party.id, uid }); }
+
+  // ---------- social UI: town bar button, party panel, invite cards, Friends sheet
+  function placeText(st) { return !st ? 'Offline' : st.place === 'town' ? 'In Emberwatch' : st.place === 'run' ? 'On the March' : 'Online'; }
+  function renderSocial() {
+    const nOn = SOC.friends.filter(f => SOC.online.has(f.id)).length;
+    if ($('tbFriends')) { $('tbFriends').hidden = !supa; $('tbFriends').innerHTML = `Friends${SOC.requestsIn.length ? ` <b class="badge">${SOC.requestsIn.length}</b>` : ''} <span class="muted">${socOn() ? nOn + ' online' : 'sign in'}</span>`; }
+    // party panel
+    const pp = $('partyPanel');
+    if (pp) {
+      const pt = SOC.party;
+      pp.hidden = !pt && !SOC.invites.length;
+      pp.innerHTML = (pt ? `<div class="pph"><b>Party ${pt.members.length}/${PARTY_MAX}</b><button class="pilebtn" id="ppLeave">${pt.leader === SOC.me ? 'Disband' : 'Leave'}</button></div>` + pt.members.map(m => `<div class="ppm"><span class="dot ${SOC.online.has(m.uid) || m.uid === SOC.me ? 'on' : ''}"></span><b style="color:${CC[m.cls] || 'var(--text)'}">${esc(m.name)}</b>${m.uid === pt.leader ? ' <span class="muted">leader</span>' : ''}${pt.leader === SOC.me && m.uid !== SOC.me ? ` <button class="pilebtn" data-kick="${m.uid}">Remove</button>` : ''}</div>`).join('') + `<p class="muted" style="margin:4px 0 0;font-size:12px">Riding out together from the Wagon is coming next.</p>` : '')
+        + SOC.invites.map(i => `<div class="ppinv"><span><b>${esc(i.name)}</b> invites you to a party</span><span><button class="btn primary" data-acc="${i.from}">Join</button> <button class="btn" data-dec="${i.from}">Decline</button></span></div>`).join('');
+    }
+    renderChat();
+    if (!$('sheet').hidden && $('sheet').dataset.kind === 'friends') renderFriendsTab();
+  }
+  function renderFriendsTab() {
+    const el = $('hpFriends'); if (!el) return;
+    if (!supa) { el.innerHTML = '<p class="muted">Friends need the online version of the game.</p>'; return; }
+    if (!supaUser) { el.innerHTML = `<p>Sign in to add friends, see who is online and form parties.</p><button class="btn primary" id="frSignIn">Sign in</button>`; $('frSignIn').onclick = signInModal; return; }
+    const row = (f, actions) => { const st = SOC.online.get(f.id); return `<div class="frow"><span class="dot ${st ? 'on' : ''}"></span><div><b style="color:${CC[(st && st.cls) || f.cls] || 'var(--text)'}">${esc(f.name)}</b> <span class="muted">${esc(f.acct || '')}</span><br><small class="muted">${f.req ? 'Friend request' : placeText(st)}</small></div><div class="acts">${actions}</div></div>`; };
+    const friends = SOC.friends.slice().sort((a, b) => (SOC.online.has(b.id) ? 1 : 0) - (SOC.online.has(a.id) ? 1 : 0) || a.name.localeCompare(b.name));
+    const inParty = (id) => SOC.party && SOC.party.members.some(m => m.uid === id);
+    el.innerHTML = `<div class="frgrid">
+      <div class="panel"><h3>Your friend code</h3><div class="fcode">${esc(SOC.card ? SOC.card.friend_code : '......')}</div><button class="btn" id="frCopy">Copy code</button><p class="muted" style="font-size:13px">Send this to a friend. They type it under Add a friend.</p>
+        <h3 style="margin-top:12px">Add a friend</h3><div class="namerow" style="margin:0"><input id="frCode" maxlength="6" placeholder="Their code" autocomplete="off" style="text-transform:uppercase;min-width:140px"><button class="btn primary" id="frAdd">Send request</button></div><p class="down" id="frMsg" style="margin:4px 0 0;min-height:18px;font-size:13px"></p></div>
+      <div class="panel">
+        ${SOC.requestsIn.length ? `<h3>Requests</h3>${SOC.requestsIn.map(f => row(Object.assign({ req: true }, f), `<button class="btn primary" data-fa="${f.id}">Accept</button><button class="btn" data-fr="${f.id}">Decline</button>`)).join('')}` : ''}
+        <h3>Friends (${SOC.friends.filter(f => SOC.online.has(f.id)).length} online)</h3>
+        ${friends.map(f => row(f, `${SOC.online.has(f.id) && !inParty(f.id) ? `<button class="btn primary" data-inv="${f.id}">Invite to party</button>` : inParty(f.id) ? '<span class="muted">In your party</span>' : ''}<button class="btn" data-fr="${f.id}">Remove</button>`)).join('') || '<p class="muted">No friends yet. Share your code, or add theirs.</p>'}
+        ${SOC.requestsOut.length ? `<h3 style="margin-top:10px">Sent requests</h3>${SOC.requestsOut.map(f => row(Object.assign({ req: true }, f), `<button class="btn" data-fr="${f.id}">Cancel</button>`)).join('')}` : ''}
+        ${[...SOC.others.values()].filter(o => !SOC.friends.some(f => f.id === o.uid)).length ? `<h3 style="margin-top:10px">Also in Emberwatch</h3>${[...SOC.others.values()].filter(o => !SOC.friends.some(f => f.id === o.uid)).map(o => row({ id: o.uid, name: o.name, cls: o.cls }, !inParty(o.uid) ? `<button class="btn" data-inv="${o.uid}">Invite to party</button>` : '')).join('')}` : ''}
+      </div></div>`;
+    $('frCopy').onclick = async () => { try { await navigator.clipboard.writeText(SOC.card ? SOC.card.friend_code : ''); $('frCopy').textContent = 'Copied'; } catch (e) { $('frCopy').textContent = 'Select and copy the code'; } };
+    const add = async () => { $('frMsg').textContent = 'Sending...'; const err = await addFriend($('frCode').value); $('frMsg').textContent = err || 'Request sent. It appears in their Friends tab.'; $('frMsg').className = err ? 'down' : 'up'; };
+    $('frAdd').onclick = add; $('frCode').onkeydown = (e) => { if (e.key === 'Enter') add(); };
+  }
+  document.addEventListener('click', (ev) => {
+    const t = ev.target.closest('[data-inv],[data-fa],[data-fr],[data-acc],[data-dec],[data-kick],#ppLeave,#tbFriends'); if (!t) return;
+    if (t.id === 'tbFriends') { openSheet('friends'); return; }
+    if (t.id === 'ppLeave') { leaveParty(); return; }
+    if (t.dataset.inv) invite(t.dataset.inv);
+    if (t.dataset.fa) acceptFriend(t.dataset.fa);
+    if (t.dataset.fr) removeFriend(t.dataset.fr);
+    if (t.dataset.acc) answerInvite(t.dataset.acc, true);
+    if (t.dataset.dec) answerInvite(t.dataset.dec, false);
+    if (t.dataset.kick) kick(t.dataset.kick);
+  });
 
   let townReturn = false;
 
@@ -2294,7 +2588,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if ($('btnTitleSignIn')) $('btnTitleSignIn').onclick = signInModal;
     $('topInfo').textContent = '';
   }
-  $('heroList').addEventListener('click', (ev) => { const b = ev.target.closest('[data-play]'); if (!b) return; heroCls = b.dataset.play; profile.last.cls = heroCls; save(); renderHub(); show('start'); });
+  $('heroList').addEventListener('click', (ev) => { const b = ev.target.closest('[data-play]'); if (!b) return; heroCls = b.dataset.play; profile.last.cls = heroCls; save(); renderHub(); show('start'); saveCard(); });
   function openCreate() {
     const taken = (k) => !!profile.chars[k];
     if (!createCls || taken(createCls)) createCls = Object.keys(CLASSES).find(k => !taken(k)) || null;
@@ -2307,7 +2601,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (!createCls) { $('createMsg').textContent = 'Pick a class.'; return; }
     const r = CBHub.createChar(profile, createCls, $('heroName').value);
     if (!r.ok) { $('createMsg').textContent = r.why; return; }
-    heroCls = createCls; $('heroName').value = ''; $('createPanel').hidden = true; save(); renderHub(); show('start');
+    heroCls = createCls; $('heroName').value = ''; $('createPanel').hidden = true; save(); renderHub(); show('start'); saveCard();
   };
   $('btnCreate').onclick = doCreate; $('heroName').addEventListener('keydown', (e) => { if (e.key === 'Enter') doCreate(); });
   $('btnCancelCreate').onclick = () => { $('createPanel').hidden = true; };
@@ -2347,7 +2641,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     closeModal(); toTown();
   }
   $('btnMenu').addEventListener('click', openMenu);
-  function show(which) { $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); }
+  function show(which) { $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); retrack(true); }
 
   // ---------- map
   const RH = 58, CW = 78, PADX = 40, PADY = 34;

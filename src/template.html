@@ -255,6 +255,30 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .pilecard:hover .cf { transform: scale(1.65); z-index: 30; position: relative; filter: drop-shadow(0 12px 22px rgba(0,0,0,.75)); }
 .pilecount { position: absolute; right: 4px; top: 2px; z-index: 31; background: var(--accent); color: #1a130a; font-weight: 800; font-size: 13px; padding: 1px 7px; border-radius: 999px; }
 
+
+/* social: chat, party panel, friends */
+.chatbox { position: absolute; left: 10px; bottom: 10px; width: min(360px, calc(100% - 20px)); display: grid; gap: 4px; z-index: 3; }
+.chatlog { max-height: 150px; overflow-y: auto; font-size: 13px; line-height: 1.35; padding: 6px 8px; background: rgba(10,8,6,.62); border-radius: 6px; color: #e8dcc6; overflow-wrap: anywhere; }
+.chatlog b { color: var(--accent); font-weight: 700; } .chatlog .sys { color: var(--muted); font-style: italic; }
+.chatbox input { background: rgba(20,16,12,.85); border: 1px solid var(--line); border-radius: 5px; padding: 6px 8px; color: var(--text); font: inherit; font-size: 14px; }
+.chatbox input:focus { border-color: var(--accent); outline: none; }
+.prompt { left: 50% !important; transform: translateX(-50%); bottom: auto !important; top: 10px; }
+.partypanel { position: absolute; right: 10px; top: 10px; width: min(280px, calc(100% - 20px)); background: rgba(16,12,9,.88); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: grid; gap: 4px; font-size: 14px; z-index: 3; }
+.partypanel .pph { display: flex; justify-content: space-between; align-items: center; }
+.partypanel .ppm { display: flex; align-items: center; gap: 6px; }
+.partypanel .ppinv { display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 6px; }
+.partypanel .ppinv .btn { padding: 4px 12px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: #5d544b; display: inline-block; flex: none; }
+.dot.on { background: #6fd36a; box-shadow: 0 0 6px #6fd36a; }
+.badge { background: var(--hp); color: #fff; border-radius: 999px; padding: 0 6px; font-size: 12px; }
+.frgrid { display: grid; grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 760px) { .frgrid { grid-template-columns: minmax(0, 1fr); } }
+.frgrid h3 { font-family: var(--f-ui); font-weight: 700; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+.fcode { font-family: var(--f-mono); font-size: 30px; letter-spacing: .18em; color: var(--accent); margin: 2px 0 8px; }
+.frow { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.frow .acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; } .frow .acts .btn { padding: 4px 10px; font-size: 13px; }
+@media (max-width: 600px) { .chatlog { max-height: 90px; } }
+
 /* title / hero select */
 .title { display: grid; gap: 16px; max-width: 1000px; margin: 0 auto; width: 100%; }
 .titlehead { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 10px; }
@@ -320,11 +344,13 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 
   <!-- CAMP: the town overworld -->
   <section id="scrStart" class="camp" aria-label="Town">
-    <div class="townbar"><span id="tbHero"></span><span class="chip" id="tbPower"></span><span class="chip" id="tbGold"></span><span id="acct"></span><span class="muted tbhelp">Walk: arrow keys or WASD, or click/tap where to go. Talk: Space, or click someone.</span></div>
+    <div class="townbar"><span id="tbHero"></span><span class="chip" id="tbPower"></span><span class="chip" id="tbGold"></span><button class="pilebtn" id="tbFriends" hidden>Friends</button><span id="acct"></span><span class="muted tbhelp">Walk: arrow keys or WASD, or click/tap where to go. Talk: Space, or click someone.</span></div>
     <div class="townwrap" id="townWrap">
       <canvas id="town" tabindex="0" aria-label="The town of Emberwatch. Walk to the quartermaster, scribe, chronicler, wagoneer or captain and talk to them."></canvas>
       <div class="prompt" id="prompt" hidden></div>
       <div class="talk" id="talk" hidden role="dialog" aria-live="polite"></div>
+      <div class="chatbox" id="chatBox"><div class="chatlog" id="chatLog" aria-live="polite"></div><input id="chatIn" maxlength="200" placeholder="Press T to chat, Enter to send" autocomplete="off" aria-label="Chat message"></div>
+      <div class="partypanel" id="partyPanel" hidden></div>
     </div>
   </section>
 
@@ -369,7 +395,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   <div id="secHeroes"><div class="heroes" id="heroes" role="tablist" aria-label="Characters"></div></div>
   <div class="sheetgrid" id="sheetGrid">
     <aside id="secChar"><div class="panel" id="hubChar"></div></aside>
-    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div></div>
+    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div><div id="hpFriends"></div></div>
   </div>
 </div></div>
 <div class="modal" id="modal" hidden><div class="box" id="modalBox"></div></div>
@@ -446,7 +472,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     supa = window.supabase.createClient(C.supabaseUrl, C.supabaseKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit' } });
     supa.auth.onAuthStateChange((ev, session) => {
       if (session && (!supaUser || supaUser.id !== session.user.id)) attachSupaUser(session.user);
-      if (!session && supaUser) { supaUser = null; dbRef = null; storeKind = 'local'; renderAccount(); renderSaveNote(); }
+      if (!session && supaUser) { socStop(); supaUser = null; dbRef = null; storeKind = 'local'; renderAccount(); renderSaveNote(); }
     });
     const { data } = await supa.auth.getSession();
     if (data && data.session) await attachSupaUser(data.session.user); else { renderAccount(); renderSaveNote(); }
@@ -462,7 +488,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       if (!run) { renderHub(); if (!$('scrTitle').hidden) renderTitle(); }
       save();
     } catch (e) { dbRef = null; storeKind = 'local'; toast('Signed in, but your online save could not be reached (' + (e.message || e) + '). Progress keeps saving in this browser.'); }
-    renderAccount(); renderSaveNote();
+    renderAccount(); renderSaveNote(); socStart();
   }
   function acctName(u) { const m = (u && u.user_metadata) || {}; return (m.custom_claims && m.custom_claims.global_name) || m.full_name || m.name || m.user_name || (u && u.email) || 'Signed in'; }
   async function signInDiscord() {
@@ -877,15 +903,14 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 
   // ---------- characters: one drawing routine for the hero and every NPC
   const RARC = { White: '#9c968a', Green: '#4f8f48', Blue: '#3f74b8', 'Purple (Epic)': '#8461b8', Gold: '#e4a93a' };
-  function heroPal() {
-    const c = CBHub.char(profile, heroCls), slot = sl => c.gear.find(g => g.slot === sl);
-    const rc = sl => { const it = slot(sl); return it ? RARC[it.rarity] || '#9c968a' : null; };
+  function heroPal() { const c = CBHub.char(profile, heroCls); return palFor(heroCls, rcOf(c)); }
+  function palFor(cls, R) {
+    R = R || {}; const rc = (k) => R[k] ? RARC[R[k]] || '#9c968a' : null; const heroCls_ = cls || 'Warrior';
     const base = { Warrior: { chest: '#5a2620', skin: '#c99a76', hair: '#2a1d14', legs: '#2a2420', weapon: 'swordshield', cape: '#3a1612' },
       Rogue: { chest: '#21331e', skin: '#b98d6c', hair: '#141210', legs: '#1b1f19', weapon: 'daggers', cape: '#18231a', helm: 'hood' },
       Mage: { chest: '#202d4c', skin: '#d2ad8c', hair: '#c9c2b2', legs: '#191e2e', weapon: 'staff', cape: '#2a1f44', helm: 'hood' },
-      Paladin: { chest: '#5f5a4a', skin: '#caa07e', hair: '#8a6a3a', legs: '#2e2c26', weapon: 'maceshield', cape: '#6a5420' } }[heroCls];
-    const helmIt = slot('Helm');
-    return Object.assign({}, base, { trim: rc('Chest') || '#9c968a', helm: helmIt ? (base.helm || 'helm') : base.helm || null, helmC: rc('Helm') || '#5a5f66', wpnC: rc('Weapon') || '#9c968a', capeTrim: rc('Cloak'), bootC: rc('Boots'), hero: true });
+      Paladin: { chest: '#5f5a4a', skin: '#caa07e', hair: '#8a6a3a', legs: '#2e2c26', weapon: 'maceshield', cape: '#6a5420' } }[heroCls_];
+    return Object.assign({}, base, { trim: rc('chest') || '#9c968a', helm: R.helm ? (base.helm || 'helm') : base.helm || null, helmC: rc('helm') || '#5a5f66', wpnC: rc('weapon') || '#9c968a', capeTrim: rc('cloak'), bootC: rc('boots'), hero: true });
   }
   function drawChar(g, cx, by, dir, step, pal, s, t) {
     const bob = step ? -1.5 * s : 0, sw = step === 1 ? 1 : step === 2 ? -1 : 0;
@@ -983,6 +1008,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     const hp = heroPos(); const walking = P.mv ? (Math.floor(P.mv.t * 2) % 2 ? 2 : 1) * (P.step % 2 ? 1 : 1) : 0;
     const stepF = P.mv ? ((P.step + (P.mv.t > 0.5 ? 1 : 0)) % 2 ? 1 : 2) : 0;
     list.push({ y: hp.y + 0.5, f: () => drawChar(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, P.dir, stepF, heroPal(), s, t) });
+    for (const o of othersDrawList(TS, s, t)) list.push(o);
     list.sort((a, b) => a.y - b.y); for (const o of list) o.f();
     // embers over the fire
     for (const e of TOWN.embers) { gx.fillStyle = `rgba(255,${150 + (e.life * 80 | 0)},70,${e.life})`; gx.fillRect(e.x * TS, e.y * TS, 2.5 * s, 2.5 * s); }
@@ -1021,9 +1047,10 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   function tryStep(dir) {
     P.dir = dir; const [dx, dy] = DIRS[dir];
     if (!free(P.x + dx, P.y + dy)) return false;
-    P.mv = { fx: P.x, fy: P.y, t: 0 }; P.x += dx; P.y += dy; P.step++; return true;
+    P.mv = { fx: P.x, fy: P.y, t: 0 }; P.x += dx; P.y += dy; P.step++; socPos(); return true;
   }
   function update(dt) {
+    updateOthers(dt);
     // embers
     if (Math.random() < dt / 60) TOWN.embers.push({ x: 12.6 + (Math.random() - 0.5) * 1.2, y: 13.2, vx: (Math.random() - 0.5) * 0.0004, vy: -0.0012 - Math.random() * 0.0008, life: 1 });
     for (const e of TOWN.embers) { e.x += e.vx * dt + Math.sin(TOWN.t / 300 + e.y * 5) * 0.0004 * dt; e.y += e.vy * dt; e.life -= dt / 2200; }
@@ -1083,6 +1110,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     const d = KEYDIR[ev.key];
     if (d) { ev.preventDefault(); P.path = []; P.target = null; P.talkTo = null; if (!P.held.includes(d)) P.held.push(d); if (!P.mv && P.dir !== d && !free(P.x + DIRS[d][0], P.y + DIRS[d][1])) P.dir = d; return; }
     if (ev.key === ' ' || ev.key === 'Enter' || ev.key === 'e' || ev.key === 'E') { ev.preventDefault(); const n = interactTarget(); if (n) talk(n); }
+    if (ev.key === 't' || ev.key === 'T') { ev.preventDefault(); P.held = []; $('chatIn').focus(); }
   });
   document.addEventListener('keyup', (ev) => { const d = KEYDIR[ev.key]; if (d) P.held = P.held.filter(x => x !== d); });
   window.addEventListener('blur', () => { P.held = []; });
@@ -1095,6 +1123,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     wagon: { title: 'The Wagon', show: ['secChar', 'secWagon'] },
     heroes: { title: 'Barracks: heroes', show: ['secHeroes', 'secChar'] },
     shop: { title: 'Merchant Dace: wares', show: ['secChar', 'hpShop'] },
+    friends: { title: 'Friends', show: ['hpFriends'] },
   };
   function talk(n) {
     P.held = []; P.path = []; P.target = null;
@@ -1109,13 +1138,19 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   function openSheet(kind) {
     const k = SHEETS[kind]; renderHub();
     $('sheetTitle').textContent = k.title;
-    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop']) $(id).hidden = !k.show.includes(id);
+    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends']) $(id).hidden = !k.show.includes(id);
     $('sheetGrid').classList.toggle('solo', !k.show.includes('secChar'));
     $('sheet').hidden = false; $('sheet').dataset.kind = kind; fitCards($('sheet')); $('sheetClose').focus();
+    if (kind === 'friends') { renderFriendsTab(); loadFriends(); }
   }
   function closeSheet() { $('sheet').hidden = true; renderTownBar(); cv.focus({ preventScroll: true }); }
   $('sheetClose').addEventListener('click', closeSheet);
   $('sheet').addEventListener('click', (ev) => { if (ev.target === $('sheet')) closeSheet(); });
+  $('chatIn').addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') { sendChat(ev.target.value); ev.target.value = ''; }
+    if (ev.key === 'Escape') { ev.cbHandled = true; ev.target.blur(); cv.focus({ preventScroll: true }); }
+    ev.stopPropagation();
+  });
   function renderTownBar() {
     if (!profile.chars[heroCls]) return;
     const c = CBHub.char(profile, heroCls);
@@ -1127,13 +1162,14 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     if (fromRun) { P.x = 13; P.y = 3; P.dir = 'down'; }
     P.mv = null; P.path = []; P.held = []; P.target = null;
     $('talk').hidden = true; $('sheet').hidden = true;
-    sizeTown(); renderTownBar();
+    sizeTown(); renderTownBar(); retrack(true); renderSocial();
     if (!TOWN.running) { TOWN.running = true; TOWN.last = 0; requestAnimationFrame(frame); }
   }
   function townStop() { TOWN.running = false; }
   window.__townTile = (x, y) => { const r = cv.getBoundingClientRect(), c = camera(); return { x: r.left + x * TOWN.TS - c.x + TOWN.TS / 2, y: r.top + y * TOWN.TS - c.y + TOWN.TS / 2 }; }; // test hook
   window.addEventListener('resize', () => { if (TOWN.running) sizeTown(); });
 
+/*SOCIAL*/
   let townReturn = false;
 
   // ---------- settings (this browser)
@@ -1152,7 +1188,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     if ($('btnTitleSignIn')) $('btnTitleSignIn').onclick = signInModal;
     $('topInfo').textContent = '';
   }
-  $('heroList').addEventListener('click', (ev) => { const b = ev.target.closest('[data-play]'); if (!b) return; heroCls = b.dataset.play; profile.last.cls = heroCls; save(); renderHub(); show('start'); });
+  $('heroList').addEventListener('click', (ev) => { const b = ev.target.closest('[data-play]'); if (!b) return; heroCls = b.dataset.play; profile.last.cls = heroCls; save(); renderHub(); show('start'); saveCard(); });
   function openCreate() {
     const taken = (k) => !!profile.chars[k];
     if (!createCls || taken(createCls)) createCls = Object.keys(CLASSES).find(k => !taken(k)) || null;
@@ -1165,7 +1201,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     if (!createCls) { $('createMsg').textContent = 'Pick a class.'; return; }
     const r = CBHub.createChar(profile, createCls, $('heroName').value);
     if (!r.ok) { $('createMsg').textContent = r.why; return; }
-    heroCls = createCls; $('heroName').value = ''; $('createPanel').hidden = true; save(); renderHub(); show('start');
+    heroCls = createCls; $('heroName').value = ''; $('createPanel').hidden = true; save(); renderHub(); show('start'); saveCard();
   };
   $('btnCreate').onclick = doCreate; $('heroName').addEventListener('keydown', (e) => { if (e.key === 'Enter') doCreate(); });
   $('btnCancelCreate').onclick = () => { $('createPanel').hidden = true; };
@@ -1205,7 +1241,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     closeModal(); toTown();
   }
   $('btnMenu').addEventListener('click', openMenu);
-  function show(which) { $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); }
+  function show(which) { $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); retrack(true); }
 
   // ---------- map
   const RH = 58, CW = 78, PADX = 40, PADY = 34;
