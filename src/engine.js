@@ -827,13 +827,15 @@ const DEBT_CARDS = ['collect_the_debt', 'sanguine_guard', 'pay_in_blood'];
 const ENEMY_PLAYER_OPS = ['damage', 'execute', 'damageBlock', 'debuff', 'stealMana', 'burnMana', 'drawLess', 'disarm', 'purge', 'shred', 'shredAll', 'tickBleed', 'status'];
 // ---------------- Raids: one per map, 2 to 10 heroes, the map's boss made raid-sized
 // hp: x the map boss (then x heroes); dmg: damage x; manaStep: boss mana/regen +3% per extra hero; +1 draw at 6+ heroes
-const RAID = { hp: 1.5, dmg: 1.25, manaStep: 0.03, min: 2, max: 10, lockMs: 7 * 24 * 3600 * 1000 };
+const RAID = { hp: 1.5, dmg: 1.25, dotResist: 0.25, manaStep: 0.03, min: 2, max: 10, lockMs: 7 * 24 * 3600 * 1000 };
 const RAID_NAMES = { physical: 'Gorrath, the Unbroken Tide', fire: 'Vashkar, the Sunken Sun', frost: 'Sylvaine, the Endless Winter', nature: 'Thornheart, the World-Root', arcane: 'Ilvar, the Shattered Star', shadow: 'The Hollow King Ascendant' };
+// per-boss tuning from the first raid nights (Oct 31): every raid boss needed 30-50% more HP; Vashkar also hits harder
+const RAID_TUNE = { physical: { hp: 1.3 }, fire: { hp: 1.5, dmg: 1.25 }, frost: { hp: 1.4 }, nature: { hp: 1.4 }, arcane: { hp: 1.4 }, shadow: { hp: 1.4 } };
 function raidKey(mk) { return 'raid_' + mk; }
 function raidBoss(data, mk) {
   const k = raidKey(mk); if (data.enemies[k]) return k;
   const m = data.maps && data.maps[mk]; if (!m) return null; const b = data.enemies[m.boss]; if (!b) return null;
-  data.enemies[k] = Object.assign(JSON.parse(JSON.stringify(b)), { name: RAID_NAMES[mk] || b.name + ' (Raid)', hp: Math.round(b.hp * RAID.hp), raid: true, map: mk,
+  data.enemies[k] = Object.assign(JSON.parse(JSON.stringify(b)), { name: RAID_NAMES[mk] || b.name + ' (Raid)', hp: Math.round(b.hp * RAID.hp * ((RAID_TUNE[mk] || {}).hp || 1)), raidDmg: (RAID_TUNE[mk] || {}).dmg || 1, raid: true, map: mk,
     arch: 'Raid boss: every attack hits every hero', desc: `${b.name.split(',')[0]} returns, raid-sized. Every attack and debuff hits the whole raid. Only one hero a round can land non-damaging debuffs on it.` });
   return k;
 }
@@ -866,7 +868,7 @@ class Combat {
     this.duel = !!this.opts.duel; // duel: two heroes, no monsters; each hero's "enemies" are the other hero
     this.enemies = this.duel ? [] : this.opts.enemies.map((key, i) => this.makeEnemy(key, i));
     if (this.duel) this.say('sys', `Duel: ${this.players.map(p => p.name).join(' vs ')}. Last hero standing wins. From round ${PRESSURE_START} every hit lands harder.`);
-    else if (this.raid) this.say('sys', `Raid starts. Level +${this.level}, ${this.partySize} heroes: boss HP x${this.hpMult.toFixed(2)}, damage x${(this.dmgMult * RAID.dmg).toFixed(2)}. Every boss attack hits every hero. Only one hero a round can land non-damaging debuffs on it.`);
+    else if (this.raid) this.say('sys', `Raid starts. Level +${this.level}, ${this.partySize} heroes: boss HP x${this.hpMult.toFixed(2)}, damage x${(this.dmgMult * RAID.dmg).toFixed(2)}. Every boss attack hits every hero. Only one hero a round can land non-damaging debuffs on it, and it resists 25% of damage over time.`);
     else this.say('sys', `Fight starts. Map level +${this.level}${this.partySize > 1 ? `, party of ${this.partySize}` : ''}: enemy HP x${this.hpMult.toFixed(2)}${this.partySize > 1 ? ` and +${this.partySize - 1} card draw` : ''}, damage x${this.dmgMult.toFixed(2)}; enemies resist their own type by ${Math.round(this.typeResist * 100)}%.`);
     this.startRound();
   }
@@ -910,7 +912,7 @@ class Combat {
     const en = this.makeEnemy0(key, i);
     if (this.raid) {
       const n = this.partySize, k = 1 + RAID.manaStep * (n - 1), d = en.d;
-      en.maxMana = Math.round(d.maxMana * k); en.regen = Math.round(d.regen * k); en.regenK = k; en.drawPlus = n >= 6 ? 1 : 0; en.draw = d.draw + en.drawPlus; en.dmgTune *= RAID.dmg;
+      en.maxMana = Math.round(d.maxMana * k); en.regen = Math.round(d.regen * k); en.regenK = k; en.drawPlus = n >= 6 ? 1 : 0; en.draw = d.draw + en.drawPlus; en.dmgTune *= RAID.dmg * (d.raidDmg || 1);
       for (const c of [...en.drawPile, ...en.phase2Cards]) { let hit = false; for (const o of c.ops) if (ENEMY_PLAYER_OPS.includes(o.op)) { o.all = true; hit = true; } if (hit && !/every player|each of their/.test(c.text)) c.text += ' Hits every hero.'; }
     }
     return en;
@@ -1270,6 +1272,7 @@ class Combat {
 
   applyHit(src, tgt, amount, o) {
     o = o || {};
+    if (o.isDot && this.raid && tgt && !tgt.isPlayer) amount = Math.round(amount * (1 - RAID.dotResist)); // raid bosses shrug off a quarter of Bleed/Poison/Burn
     let dmg = amount, absorbed = 0;
     if (tgt.block > 0 && !o.ignoreBlock) { absorbed = Math.min(tgt.block, dmg); tgt.block -= absorbed; dmg -= absorbed; }
     if (tgt.isPlayer && dmg > 0 && tgt.mana > 0 && tgt.powers && tgt.powers.some(x => x.key === 'mana_shell')) { const m = Math.min(tgt.mana, dmg); tgt.mana -= m; dmg -= m; absorbed += m; }
@@ -1742,6 +1745,7 @@ function rollDrops(data, rng, enemyKey, level, luck, cls) {
 // Oct 31: the Rogue's poison cards are Attacks, so they scale with Strength (poison stacks scale with Strength too, see applyDot)
 for (const k of ['envenom', 'plague_bloom', 'toxic_cloud', 'venom_vial', 'fester', 'crippling_poison', 'mind_numbing_poison', 'deadly_toxin', 'wound_poison', 'corrosive_toxin', 'draining_venom', 'poison_nova']) if (C[k]) { C[k].type = 'Attack'; if (C[k].dtype == null) C[k].dtype = k === 'poison_nova' ? 'Nature' : 'Physical'; }
 if (C.seismic_slam) { C.seismic_slam.cost = 0; C.seismic_slam.text = 'Deal damage to all enemies equal to 50% of your current mana. Your mana is not spent.'; }
+if (C.mana_gem) C.mana_gem.cost = 0; // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
 const API = { CARDS_VERSION: 2, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -338,10 +338,20 @@ body.aiming { cursor: grabbing; user-select: none; }
 .partypick { border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px 8px; margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; }
 .partypick legend { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 0 4px; }
 .partypick label { display: inline-flex; gap: 5px; align-items: center; }
-#playerSlot.party { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; }
-#playerSlot.party .unit { width: min(150px, calc(50vw - 30px)); padding: 6px; }
-#playerSlot.party .figure, #playerSlot.party .figure svg { height: 64px; }
-#playerSlot.party .uname b { font-size: 14px; }
+/* party fights: heroes in a grid (2x2 for 3-4, 3 across for 5-6, 4-5 across for raids), compact names and status tags */
+#playerSlot.party { display: grid; grid-template-columns: repeat(var(--pc, 2), minmax(0, 1fr)); gap: 6px; align-items: end; }
+#playerSlot.party .unit { width: auto; min-width: 0; padding: 5px; gap: 3px; }
+#playerSlot.party .figure, #playerSlot.party .figure svg { height: 52px; }
+#playerSlot.party .uname b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+#playerSlot.party .uname small { font-size: 10px; }
+#playerSlot.party .bar span { font-size: 11px; }
+#playerSlot.party .tags { gap: 2px; }
+#playerSlot.party .tag { font-size: 10.5px; padding: 0 4px; line-height: 16px; }
+.stage.bigparty { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+.foes.many { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; align-items: end; }
+.foes.many .unit { width: auto; min-width: 0; padding: 5px; gap: 3px; } .foes.many .figure, .foes.many .figure svg { height: 52px; } .foes.many .uname b { font-size: 13px; } .foes.many .uname small { font-size: 10px; white-space: normal; } .foes.many .intent { font-size: 11px; padding: 1px 5px; } .foes.many .deckbtn { font-size: 11px; padding: 1px 6px; }
+.rdone { color: #7fd36a; font-weight: 800; } .rwait { color: var(--muted); font-size: 10px; }
+.order .otile .ock { position: absolute; top: 2px; left: 4px; color: #7fd36a; font-weight: 900; font-size: 13px; text-shadow: 0 0 4px #000; }
 .unit.viewing { box-shadow: 0 0 0 2px var(--accent) inset; }
 .memrow { display: grid; grid-template-columns: 70px 1fr auto; gap: 8px; align-items: center; font-size: 13px; margin: 4px 0; }
 .memrow b { color: var(--mc); }
@@ -539,12 +549,14 @@ body.aiming { cursor: grabbing; user-select: none; }
   .raidlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; margin-top: 10px; }
   .raidhead { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; } .raidhead b { color: var(--accent); font-size: 18px; }
   .raidloot { display: grid; gap: 8px; max-height: 60vh; overflow: auto; } .rlrow { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; } .rlvote { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; max-width: 260px; }
-  #playerSlot.party.raid { display: grid; grid-template-columns: repeat(5, minmax(0, 104px)); gap: 4px; align-items: end; } #playerSlot.raid .unit { width: auto; padding: 4px; } #playerSlot.raid .figure, #playerSlot.raid .figure svg { height: 38px; } #playerSlot.raid .uname b { font-size: 12px; } #playerSlot.raid .tag { font-size: 10px; padding: 0 3px; }
+  #playerSlot.raid .figure, #playerSlot.raid .figure svg { height: 38px; } #playerSlot.raid .uname b { font-size: 12px; } #playerSlot.raid .tag { font-size: 10px; padding: 0 3px; }
   .order.raid .otile { width: 62px; padding: 2px; } .order.raid .otile .ofig, .order.raid .otile .ofig svg { height: 30px; } .order.raid .otile .onm { font-size: 11px; } .order.raid .otile.now::after { display: none; }
   .cxcods { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; margin-top: 6px; } .cxcod { border-left: 3px solid var(--rc); background: rgba(255,255,255,.03); padding: 8px 10px; border-radius: 6px; display: grid; gap: 4px; } .cxch { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; } .cxch b { color: #f0b070; }
   #btnUpdates { position: fixed; right: 8px; bottom: 34px; z-index: 40; padding: 5px 12px; font-size: 13px; } #btnUpdates i { display: none; } #btnUpdates.unread i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #e4a93a; margin-left: 6px; box-shadow: 0 0 8px #e4a93a; }
   .changelog { max-height: 62vh; overflow: auto; padding-right: 6px; } .changelog h3 { color: var(--accent); font-size: 20px; margin: 12px 0 4px; } .changelog ul { margin: 0; padding-left: 18px; } .changelog li { margin: 4px 0; line-height: 1.4; } .clarea { display: inline-block; min-width: 86px; margin-right: 6px; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
   #updBanner .btn { padding: 4px 12px; font-size: 14px; } #updBanner { width: max-content; position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 32px); padding: 8px 14px; background: #2a1f12; border: 1px solid var(--accent); border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,.6); }
+  .rlrolls { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; margin: -2px 0 4px 8px; } .rlrolls .win { text-decoration: underline; }
+  .ilink { cursor: pointer; font-weight: 700; text-decoration: none; } .ilink:hover { text-decoration: underline; } .linkview { display: grid; justify-items: start; }
 </style>
 
 <div class="wrap">
@@ -987,13 +999,13 @@ body.aiming { cursor: grabbing; user-select: none; }
 
   // ---------- history tab
   function renderLogTab() {
-    const L = { victory: 'Killed the boss', extracted: 'Extracted', dead: 'Died', abandoned: 'Left early' };
-    $('hpLog').innerHTML = profile.history.length ? `<div class="list tall">${profile.history.map((h, i) => `<div class="item" style="--rc:${h.result === 'dead' ? 'var(--hp)' : h.result === 'victory' ? 'var(--r-gold)' : 'var(--good)'}"><div class="ih"><b>${L[h.result] || h.result}</b><span>${h.cls} &middot; Map +${h.level}</span></div><div class="st">Row ${h.row > ROWS ? 'boss' : h.row}. Brought home ${h.items} item${h.items === 1 ? '' : 's'}, ${h.cards} card${h.cards === 1 ? '' : 's'}, ${h.gold} gold.</div><div class="il">${new Date(h.at).toLocaleString()}${h.meter ? ` <button class="pilebtn" data-histmeter="${i}">Damage meter</button>` : ''}</div></div>`).join('')}</div>` : '<span class="muted">No runs yet.</span>';
+    const L = { victory: 'Killed the boss', extracted: 'Extracted', dead: 'Died', abandoned: 'Left early', 'raid-win': 'Raid kill', 'raid-loss': 'Raid wipe' };
+    $('hpLog').innerHTML = profile.history.length ? `<div class="list tall">${profile.history.map((h, i) => `<div class="item" style="--rc:${h.result === 'dead' || h.result === 'raid-loss' ? 'var(--hp)' : h.result === 'victory' || h.result === 'raid-win' ? 'var(--r-gold)' : 'var(--good)'}"><div class="ih"><b>${L[h.result] || h.result}</b><span>${h.cls} &middot; ${h.raid ? 'Raid' : 'Map'} +${h.level}</span></div><div class="st">${h.raid ? `${esc(h.boss || 'Raid boss')} with ${h.party ? h.party.length : '?'} heroes: ${h.result === 'raid-win' ? 'killed' : 'wiped'} in ${h.rounds} round${h.rounds === 1 ? '' : 's'}.${h.loot != null ? ` You won ${h.loot} item${h.loot === 1 ? '' : 's'}.` : ''}` : `Row ${h.row > ROWS ? 'boss' : h.row}. Brought home ${h.items} item${h.items === 1 ? '' : 's'}, ${h.cards} card${h.cards === 1 ? '' : 's'}, ${h.gold} gold.`}</div><div class="il">${new Date(h.at).toLocaleString()}${h.meter ? ` <button class="pilebtn" data-histmeter="${i}">Damage meter</button>` : ''}</div></div>`).join('')}</div>` : '<span class="muted">No runs yet.</span>';
   }
   function histMeter(i) {
     const h = profile.history[i]; if (!h || !h.meter) return;
     MT.hist = h.meter; MT.open = {};
-    const M = DATA.maps[h.map];
+    const M = h.raid ? { name: h.boss || 'Raid' } : DATA.maps[h.map];
     modal(`<h2>Damage meter</h2><p class="muted" style="margin:0">${esc(h.name || h.cls)}${h.party ? ` with ${h.party.length - 1} other${h.party.length > 2 ? 's' : ''}` : ''} &middot; ${M ? esc(M.name) + ' ' : 'Map '}+${h.level} &middot; ${h.fights != null ? h.fights + ' fight' + (h.fights === 1 ? '' : 's') + ' won &middot; ' : ''}${new Date(h.at).toLocaleString()}</p><div id="hMeter" class="meter"></div><div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     renderMeter($('hMeter'), 'hist'); $('mClose').onclick = closeModal;
   }
@@ -1886,13 +1898,13 @@ body.aiming { cursor: grabbing; user-select: none; }
   function cardBox(d, w) { const f = cardFace(d); return f ? `<div class="${cardCls(d)}" style="${cardVars(d)}${w ? ';--cw:' + w + 'px' : ''}" role="img" aria-label="${esc(d.name + ': ' + d.text)}">${f}</div>` : ''; }
 
   function itemHtml(it, extra) {
-    if (it.kind === 'card') { const d = CARDS[it.key]; return `<div class="item" style="--rc:${RC[d.rarity]};grid-template-columns:auto 1fr;align-items:center;column-gap:10px">${cardBox(d, 96)}<div><div class="ih"><b>${esc(d.name)}</b></div><div class="il">${d.rarity} card &middot; ${d.cost} mana</div>${extra || ''}</div></div>`; }
+    if (it.kind === 'card') { const d = CARDS[it.key]; return `<div class="item" data-ilink="${linkKey(it)}" style="--rc:${RC[d.rarity]};grid-template-columns:auto 1fr;align-items:center;column-gap:10px">${cardBox(d, 96)}<div><div class="ih"><b>${esc(d.name)}</b></div><div class="il">${d.rarity} card &middot; ${d.cost} mana</div>${extra || ''}</div></div>`; }
     const nice = (k) => k.replace('Elemental/Holy Damage:', '').replace('Resistance:', '') + (k.startsWith('Elemental') ? ' Damage' : k.startsWith('Resistance:') ? ' Resistance' : '');
     const pct = (k) => /Chance|Damage|Resistance|Dexterity|Strength|Intelligence|Spirit|Defense|Lifesteal|Efficiency/.test(k) ? '%' : '';
     const stats = Object.entries(it.stats || {}).map(([k, v]) => `+${v}${pct(k)} ${nice(k)}`).join(', ');
     const wf = CB.weaponFlat(it), imp = [wf ? `+${wf} damage per Attack hit` : '', ...Object.entries(it.imp2 || {}).map(([k, v]) => k === 'Draw' ? `${v} draw` : k === 'Regen' ? `${v} regen` : `+${v}${pct(k)} ${nice(k)}`)].filter(Boolean).join(', ');
     const lines = (it.lines || []).map(l => `${nice(l.stat)} ${l.v} (${l.lo}-${l.hi})`).join(' · ');
-    return `<div class="item" style="--rc:${RC[it.rarity] || 'var(--r-white)'}" title="${esc(lines ? 'Each roll: ' + lines : '')}"><div class="ih"><b>${esc(it.name)}</b><span>${it.rarity === 'Purple (Epic)' ? 'Purple' : it.rarity} &middot; ilvl ${it.ilvl}</span></div><div class="il">${esc(it.label || it.slot)}</div>${it.passive ? `<div class="st" style="color:#f0b070"><b>Passive:</b> ${esc((it.codex && CB.CODEX_BY_KEY[it.codex] && CB.CODEX_BY_KEY[it.codex].text) || it.passive)}</div>` : ''}<div class="st">${esc(stats)}${imp ? '<br><span class="muted">Implicit: ' + esc(imp) + '</span>' : ''}</div>${extra || ''}</div>`;
+    return `<div class="item" data-ilink="${linkKey(it)}" style="--rc:${RC[it.rarity] || 'var(--r-white)'}" title="${esc((lines ? 'Each roll: ' + lines + '. ' : '') + 'Shift-click to link it in chat.')}"><div class="ih"><b>${esc(it.name)}</b><span>${it.rarity === 'Purple (Epic)' ? 'Purple' : it.rarity} &middot; ilvl ${it.ilvl}</span></div><div class="il">${esc(it.label || it.slot)}</div>${it.passive ? `<div class="st" style="color:#f0b070"><b>Passive:</b> ${esc((it.codex && CB.CODEX_BY_KEY[it.codex] && CB.CODEX_BY_KEY[it.codex].text) || it.passive)}</div>` : ''}<div class="st">${esc(stats)}${imp ? '<br><span class="muted">Implicit: ' + esc(imp) + '</span>' : ''}</div>${extra || ''}</div>`;
   }
 
   function renderSideParty() {
@@ -2134,6 +2146,14 @@ body.aiming { cursor: grabbing; user-select: none; }
       return `<span class="intent ${kind}${planned ? '' : ' skip'}" data-e="${e.id}" data-cu="${c.uid}" title="${esc(c.name)} (${c.cost} mana): ${esc(c.text)}${c.dtype !== 'Physical' && dmg ? ' [' + c.dtype + ']' : ''}${mk ? ' Aimed at ' + esc(mk.name) + '.' : ''}${planned ? '' : ' (not enough mana: discarded)'}">${ICON[kind]}${num !== '' ? num : esc(c.name)}${tg}</span>`;
     }).join('') || '<span class="tag">no cards</span>';
   }
+  // party fights: shorter status tags (full text on hover)
+  const SHORT = [[/^Block /, 'Blk '], [/^Barrier /, 'Bar '], [/^Dodge /, 'Ddg '], [/^Parry /, 'Pry '], [/^Weak /, 'Wk '], [/^Vulnerable |^Vuln /, 'Vul '], [/^Bleed /, 'Bld '], [/^Poison /, 'Psn '], [/^Burn /, 'Brn '], [/^Chill /, 'Chl '], [/^Slow /, 'Slw '], [/^Stealth$/, 'Stlth'], [/^Divine Shield$/, 'Shield'], [/^Disarmed$/, 'Disarm'], [/^Blood Debt /, 'Debt '], [/^Devotion /, 'Dev '], [/^Taunting$/, 'Taunt']];
+  function shortTags(html) {
+    return html.replace(/<span class="tag([^"]*)"([^>]*)>([^<]*)<\/span>/g, (m, c, attrs, txt) => {
+      let t = txt; for (const [re, r] of SHORT) if (re.test(t)) { t = t.replace(re, r); break; }
+      return t === txt ? m : `<span class="tag${c}"${/title=/.test(attrs) ? attrs : attrs + ` title="${txt}"`}>${t}</span>`;
+    });
+  }
   function unitHtml(a) {
     const isNow = (cb.raid && a.isPlayer ? cb.canAct(a) : cb.current === a) && !cb.over, targetable = (cb.duel ? a.isPlayer && a !== hero() : !a.isPlayer) && a.hp > 0 && selected && CARDS[selected.key].target === 'enemy';
     const pct = Math.max(0, 100 * a.hp / a.maxHp), ini = cb.initiative(a);
@@ -2142,9 +2162,9 @@ body.aiming { cursor: grabbing; user-select: none; }
       ${a.isPlayer ? '' : `<div class="intents">${intentHtml(a)}</div>`}
       ${a.isPlayer ? '' : `<button class="pilebtn deckbtn" data-enemy="${a.id}">Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}</button>`}
       <div class="figure">${figure(a)}</div>
-      <div class="uname"><b ${a.isPlayer ? `style="color:${CC[a.cls]}"` : ''}>${esc(a.name)}</b><small>${sub}</small></div>
+      <div class="uname"><b ${a.isPlayer ? `style="color:${CC[a.cls]}"` : ''}>${esc(a.name)}</b><small>${cb.raid && a.isPlayer && a.hp > 0 && !cb.over ? (cb.raidDone && cb.raidDone.has(a.id) ? '<span class="rdone" title="Ended their turn">&#10003; Done</span>' : cb.phase === 'player' ? '<span class="rwait">playing...</span>' : '') : sub}</small></div>
       <div class="bar"><i style="width:${pct}%"></i><span>${a.hp} / ${a.maxHp}</span></div>
-      <div class="tags">${tags(a)}${cb.duel && a !== hero() ? `<span class="tag">Hand ${a.hand.length} &middot; Mana ${a.mana}</span>` : ''}</div></div>`;
+      <div class="tags">${a.isPlayer && cb.partySize > 2 && !cb.duel ? shortTags(tags(a)) : tags(a)}${cb.duel && a !== hero() ? `<span class="tag">Hand ${a.hand.length} &middot; Mana ${a.mana}</span>` : ''}</div></div>`;
   }
   function popups() {
     for (const a of [...cb.players, ...cb.enemies]) {
@@ -2177,9 +2197,9 @@ body.aiming { cursor: grabbing; user-select: none; }
     const p = hero(), party = cb.partySize > 1, wh = watchedHero(p);
     $('order').classList.toggle('raid', !!cb.raid && cb.partySize > 4);
     $('order').innerHTML = `<span class="lbl">Turn<br>order</span>` + cb.order.map((id, i) => { const a = cb.actorById(id); const st = a.hp <= 0 ? 'dead' : cb.raid && a.isPlayer ? (cb.raidDone && cb.raidDone.has(a.id) ? 'done' : cb.phase === 'player' && !cb.over ? 'now' : '') : i === cb.turnIndex && !cb.over ? 'now' : i < cb.turnIndex ? 'done' : '';
-      return `${i ? '<span class="osep" aria-hidden="true">&rsaquo;</span>' : ''}<div class="otile ${a.isPlayer ? 'hero' : 'foe'} ${st}" style="--oc:${a.isPlayer ? CC[a.cls] : '#e0b8a8'}" title="${esc(a.name)}: Initiative ${cb.initiative(a)}, HP ${a.hp}/${a.maxHp}"><span class="oini">${cb.initiative(a)}</span><div class="ofig">${figure(a)}</div><div class="onm">${a.isPlayer && !party ? 'You' : a === p && cb.myMi != null ? 'You' : esc(a.name)}</div><div class="obar"><i style="width:${Math.max(0, 100 * a.hp / a.maxHp)}%"></i></div></div>`; }).join('') + `<span class="round">Round ${cb.round}</span>${run ? '<button class="pilebtn" id="btnCMap" title="Look at the map (M)">Map</button>' : ''}${cb.practice ? '<button class="pilebtn" id="btnCReset" title="Start a fresh fight">Reset</button><button class="pilebtn" id="btnCLeave">Leave</button>' : ''}`;
+      return `${i ? '<span class="osep" aria-hidden="true">&rsaquo;</span>' : ''}<div class="otile ${a.isPlayer ? 'hero' : 'foe'} ${st}" style="--oc:${a.isPlayer ? CC[a.cls] : '#e0b8a8'}" title="${esc(a.name)}: Initiative ${cb.initiative(a)}, HP ${a.hp}/${a.maxHp}"><span class="oini">${cb.initiative(a)}</span>${cb.raid && a.isPlayer && a.hp > 0 && cb.raidDone && cb.raidDone.has(a.id) ? '<span class="ock" title="Ended their turn">&#10003;</span>' : ''}<div class="ofig">${figure(a)}</div><div class="onm">${a.isPlayer && !party ? 'You' : a === p && cb.myMi != null ? 'You' : esc(a.name)}</div><div class="obar"><i style="width:${Math.max(0, 100 * a.hp / a.maxHp)}%"></i></div></div>`; }).join('') + `<span class="round">Round ${cb.round}</span>${run ? '<button class="pilebtn" id="btnCMap" title="Look at the map (M)">Map</button>' : ''}${cb.practice ? '<button class="pilebtn" id="btnCReset" title="Start a fresh fight">Reset</button><button class="pilebtn" id="btnCLeave">Leave</button>' : ''}`;
     const mine = cb.duel ? [p] : cb.players, foes = cb.duel ? cb.players.filter(x => x !== p) : cb.enemies;
-    $('playerSlot').className = cb.raid && cb.partySize > 4 ? 'party raid' : party && !cb.duel ? 'party' : ''; $('playerSlot').innerHTML = mine.map(unitHtml).join('');
+    $('playerSlot').className = cb.raid && cb.partySize > 4 ? 'party raid' : party && !cb.duel ? 'party' : ''; { const n = cb.partySize; $('playerSlot').style.setProperty('--pc', n <= 4 ? 2 : n <= 6 ? 3 : n <= 8 ? 4 : 5); $('playerSlot').parentElement.classList.toggle('bigparty', !cb.duel && n >= 3); $('foes').classList.toggle('many', !cb.duel && cb.enemies.length >= 3); } $('playerSlot').innerHTML = mine.map(unitHtml).join('');
     $('foes').innerHTML = foes.map(unitHtml).join('');
     if (withPops) popups(); else snapshot();
     $('orb').textContent = p.mana;

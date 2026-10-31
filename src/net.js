@@ -38,11 +38,11 @@
     const me = mySpec({ kind, level, map }); if (me.err) { toast(`You ${me.err.replace(/^is /, 'are ').replace(/^has /, 'have ').replace(/^needs /, 'need ').replace(/their/, 'your')}.`); return; }
     const sid = newSid();
     NET.pend = { sid, kind, uids, level, map, specs: { [SOC.me]: me }, at: Date.now() };
-    NET.pend.timer = setTimeout(() => { if (!NET.pend || NET.pend.sid !== sid) return; clearInterval(NET.pend.again); const miss = uids.filter(u => !NET.pend.specs[u]).map(nameOfUid); NET.pend = null; toast(`${miss.join(', ')} didn't answer. ${kind === 'duel' ? 'The duel' : kind === 'raid' ? 'The raid' : 'The run'} is called off. If they're online, ask them to reload the page (both of you should be on the latest version).`); }, 15000);
+    NET.pend.timer = setTimeout(() => { if (!NET.pend || NET.pend.sid !== sid) return; clearInterval(NET.pend.again); const miss = uids.filter(u => !NET.pend.specs[u]).map(nameOfUid); NET.pend = null; if (kind !== 'duel') netSend('cancel', { sid, why: `${miss.join(', ')} did not answer the ready check` }); toast(`${miss.join(', ')} didn't answer. ${kind === 'duel' ? 'The duel' : kind === 'raid' ? 'The raid' : 'The run'} is called off. If they're online, ask them to reload the page (both of you should be on the latest version).`); }, kind === 'duel' ? 15000 : 32000); // ready checks give everyone 25 seconds
     // realtime messages can get lost: ask again every 2 seconds until everyone has answered
     NET.pend.again = setInterval(() => { if (!NET.pend || NET.pend.sid !== sid) return; netSend('req', { sid, kind, uids, level, map, build: CB_BUILD }); }, 2000);
     netSend('req', { sid, kind, uids, level, map, build: CB_BUILD });
-    sysChat(kind === 'duel' ? 'Setting up the duel...' : kind === 'raid' ? 'Gathering the raid...' : 'Gathering the party at the Wagon...');
+    sysChat(kind === 'duel' ? 'Setting up the duel...' : `Ready check sent: waiting for everyone to click Ready (${uids.length - 1} to go).`);
     netCheckSpecs();
   }
   function netCheckSpecs() {
@@ -190,6 +190,42 @@
     renderMap();
   }
 
+  // ---------- ready check (guests): the leader's start request asks everyone to click Ready
+  function readyCheck() {
+    const R = NET.rc, p = R.p, what = p.kind === 'raid' ? `the raid: <b>${esc(CB.RAID_NAMES[p.map] || 'raid boss')}</b> (+${p.level})` : `a Wagon run on <b>${esc((DATA.maps[p.map] || {}).name || 'the March')}</b> (+${p.level})`;
+    const draw = () => {
+      if (NET.rc !== R || R.ans !== null) return;
+      const left = Math.max(0, 25 - Math.floor((Date.now() - R.at) / 1000));
+      if (!left) { answerReady(false, true); return; }
+      const el = $('rcLeft'); if (el && !$('modal').hidden && el.dataset.sid === R.sid) el.textContent = left;
+      else { modal(`<h2>Ready check</h2><p>${esc(nameOfUid(p.from))} is starting ${what}.</p><p class="muted">Are you ready? <span id="rcLeft" data-sid="${R.sid}">${left}</span>s</p><div class="row"><button class="btn primary" id="rcYes">Ready</button><button class="btn" id="rcNo">Not ready</button></div>`);
+        $('rcYes').onclick = () => answerReady(true); $('rcNo').onclick = () => answerReady(false); }
+    };
+    draw(); clearInterval(R.timer); R.timer = setInterval(() => { if (NET.rc !== R || R.ans !== null) { clearInterval(R.timer); return; } draw(); }, 500);
+  }
+  function answerReady(yes, timedOut) {
+    const R = NET.rc; if (!R || R.ans !== null) return;
+    R.ans = yes ? 'ready' : 'no'; clearInterval(R.timer);
+    if ($('rcYes') && !$('modal').hidden) closeModal();
+    if (yes) { sysChat('You are ready. Waiting for the rest of the party...'); answerReq(R.p); }
+    else { netSend('spec', { sid: R.sid, to: R.p.from, spec: { err: timedOut ? 'did not answer the ready check' : 'is not ready', notReady: true } }); sysChat(timedOut ? 'You missed the ready check.' : 'You said you are not ready.'); }
+  }
+  function answerReq(p) {
+    if (!NET.wait || NET.wait.sid !== p.sid) sysChat(`${nameOfUid(p.from)} is ${p.kind === 'duel' ? 'starting the duel' : p.kind === 'raid' ? 'starting a raid' : 'setting out'}...`);
+    const spec = mySpec(p);
+    netSend('spec', { sid: p.sid, to: p.from, spec });
+    // if the start doesn't arrive, ask the host for it again
+    if (!spec.err && (!NET.wait || NET.wait.sid !== p.sid)) {
+      const W = NET.wait = { sid: p.sid, host: p.from, tries: 0 };
+      W.timer = setInterval(() => {
+        if (NET.wait !== W || (NET.s && NET.s.sid === W.sid)) { clearInterval(W.timer); if (NET.wait === W) NET.wait = null; return; }
+        if (++W.tries > 5) { clearInterval(W.timer); NET.wait = null; toast(`The start from ${nameOfUid(W.host)} never arrived. Ask them to set out again (reload the page if it keeps happening).`); return; }
+        netSend('needgo', { sid: W.sid, to: W.host });
+      }, 2500);
+    }
+    if (spec.err) toast(`${nameOfUid(p.from)} tried to start ${p.kind === 'duel' ? 'a duel' : p.kind === 'raid' ? 'a raid' : 'a run'}, but you ${spec.err.replace(/^is /, 'are ').replace(/^has /, 'have ').replace(/^needs /, 'need ').replace(/their/, 'your')}.`);
+  }
+
   // ---------- incoming messages
   function netIn(p) {
     if (!p || p.from === SOC.me) return;
@@ -208,27 +244,28 @@
         clearStale();
         if (NET.s) { if (NET.s.sid !== p.sid) netSend('spec', { sid: p.sid, to: p.from, spec: { err: 'is already in a game' } }); return; }
         if (p.build !== CB_BUILD) { netSend('spec', { sid: p.sid, to: p.from, spec: { err: 'is on a different version of the game. Both of you reload the page (Ctrl+F5), then try again' } }); if (NET.verWarn !== p.sid) { NET.verWarn = p.sid; toast(`${nameOfUid(p.from)} tried to start ${p.kind === 'duel' ? 'a duel' : p.kind === 'raid' ? 'a raid' : 'a run'}, but you two are on different versions of the game. Both of you reload the page (Ctrl+F5), then try again.`); } return; }
-        if (!NET.wait || NET.wait.sid !== p.sid) sysChat(`${nameOfUid(p.from)} is ${p.kind === 'duel' ? 'starting the duel' : p.kind === 'raid' ? 'starting a raid' : 'setting out'}...`);
-        const spec = mySpec(p);
-        netSend('spec', { sid: p.sid, to: p.from, spec });
-        // if the start doesn't arrive, ask the host for it again
-        if (!spec.err && (!NET.wait || NET.wait.sid !== p.sid)) {
-          const W = NET.wait = { sid: p.sid, host: p.from, tries: 0 };
-          W.timer = setInterval(() => {
-            if (NET.wait !== W || (NET.s && NET.s.sid === W.sid)) { clearInterval(W.timer); if (NET.wait === W) NET.wait = null; return; }
-            if (++W.tries > 5) { clearInterval(W.timer); NET.wait = null; toast(`The start from ${nameOfUid(W.host)} never arrived. Ask them to set out again (reload the page if it keeps happening).`); return; }
-            netSend('needgo', { sid: W.sid, to: W.host });
-          }, 2500);
+        const spec0 = mySpec(p);
+        // Wagon runs and raids start with a ready check: the leader waits until everyone clicks Ready (Oct 31)
+        if (!spec0.err && p.kind !== 'duel') {
+          if (!NET.rc || NET.rc.sid !== p.sid) { NET.rc = { sid: p.sid, p, ans: null, at: Date.now() }; readyCheck(); }
+          NET.rc.p = p;
+          if (NET.rc.ans === null || NET.rc.ans === 'cancelled') return;
+          if (NET.rc.ans === 'no') { netSend('spec', { sid: p.sid, to: p.from, spec: { err: 'is not ready', notReady: true } }); return; }
         }
-        if (spec.err) toast(`${nameOfUid(p.from)} tried to start ${p.kind === 'duel' ? 'a duel' : p.kind === 'raid' ? 'a raid' : 'a run'}, but you ${spec.err.replace(/^is /, 'are ').replace(/^has /, 'have ').replace(/^needs /, 'need ').replace(/their/, 'your')}.`);
+        answerReq(p);
         return;
       }
       case 'spec': {
         const P = NET.pend; if (!P || P.sid !== p.sid || p.to !== SOC.me || !P.uids.includes(p.from)) return;
-        if (p.spec.err) { clearTimeout(P.timer); clearInterval(P.again); NET.pend = null; toast(`${nameOfUid(p.from)} ${p.spec.err}. ${P.kind === 'duel' ? 'The duel' : P.kind === 'raid' ? 'The raid' : 'The run'} is called off.`); netSend('cancel', { sid: P.sid }); return; }
+        if (p.spec.err) { clearTimeout(P.timer); clearInterval(P.again); NET.pend = null; netSend('cancel', { sid: P.sid, why: `${nameOfUid(p.from)} ${p.spec.err === 'is not ready' ? 'was not ready' : p.spec.err}` }); toast(`${nameOfUid(p.from)} ${p.spec.err === 'is not ready' ? 'was not ready' : p.spec.err}. ${P.kind === 'duel' ? 'The duel' : P.kind === 'raid' ? 'The raid' : 'The run'} is called off.`); netSend('cancel', { sid: P.sid }); return; }
+        if (!P.specs[p.from] && P.kind !== 'duel') sysChat(`Ready check: ${nameOfUid(p.from)} is ready (${Object.keys(P.specs).length + 1}/${P.uids.length}).`);
         P.specs[p.from] = p.spec; netCheckSpecs(); return;
       }
-      case 'cancel': if (NET.wait && NET.wait.sid === p.sid) { clearInterval(NET.wait.timer); NET.wait = null; } return;
+      case 'cancel': {
+        if (NET.wait && NET.wait.sid === p.sid) { clearInterval(NET.wait.timer); NET.wait = null; }
+        if (NET.rc && NET.rc.sid === p.sid && NET.rc.ans !== 'cancelled') { const was = NET.rc.ans; NET.rc.ans = 'cancelled'; clearInterval(NET.rc.timer); if ($('rcYes') && !$('modal').hidden) closeModal(); if (p.why) { const kind = NET.rc.p.kind === 'raid' ? 'The raid' : 'The run'; if (was === 'no') sysChat(`${kind} is called off.`); else toast(`${p.why}. ${kind} is called off.`); } }
+        return;
+      }
       case 'needgo': { const g = NET.lastGo; if (p.to === SOC.me && g && g.sid === p.sid && NET.s && NET.s.sid === g.sid && g.uids.includes(p.from)) netSend('go', g); return; }
       case 'go': {
         if (!p.uids.includes(SOC.me)) return;

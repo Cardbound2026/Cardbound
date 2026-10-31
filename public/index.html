@@ -342,10 +342,20 @@ body.aiming { cursor: grabbing; user-select: none; }
 .partypick { border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px 8px; margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; }
 .partypick legend { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 0 4px; }
 .partypick label { display: inline-flex; gap: 5px; align-items: center; }
-#playerSlot.party { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; }
-#playerSlot.party .unit { width: min(150px, calc(50vw - 30px)); padding: 6px; }
-#playerSlot.party .figure, #playerSlot.party .figure svg { height: 64px; }
-#playerSlot.party .uname b { font-size: 14px; }
+/* party fights: heroes in a grid (2x2 for 3-4, 3 across for 5-6, 4-5 across for raids), compact names and status tags */
+#playerSlot.party { display: grid; grid-template-columns: repeat(var(--pc, 2), minmax(0, 1fr)); gap: 6px; align-items: end; }
+#playerSlot.party .unit { width: auto; min-width: 0; padding: 5px; gap: 3px; }
+#playerSlot.party .figure, #playerSlot.party .figure svg { height: 52px; }
+#playerSlot.party .uname b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+#playerSlot.party .uname small { font-size: 10px; }
+#playerSlot.party .bar span { font-size: 11px; }
+#playerSlot.party .tags { gap: 2px; }
+#playerSlot.party .tag { font-size: 10.5px; padding: 0 4px; line-height: 16px; }
+.stage.bigparty { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+.foes.many { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; align-items: end; }
+.foes.many .unit { width: auto; min-width: 0; padding: 5px; gap: 3px; } .foes.many .figure, .foes.many .figure svg { height: 52px; } .foes.many .uname b { font-size: 13px; } .foes.many .uname small { font-size: 10px; white-space: normal; } .foes.many .intent { font-size: 11px; padding: 1px 5px; } .foes.many .deckbtn { font-size: 11px; padding: 1px 6px; }
+.rdone { color: #7fd36a; font-weight: 800; } .rwait { color: var(--muted); font-size: 10px; }
+.order .otile .ock { position: absolute; top: 2px; left: 4px; color: #7fd36a; font-weight: 900; font-size: 13px; text-shadow: 0 0 4px #000; }
 .unit.viewing { box-shadow: 0 0 0 2px var(--accent) inset; }
 .memrow { display: grid; grid-template-columns: 70px 1fr auto; gap: 8px; align-items: center; font-size: 13px; margin: 4px 0; }
 .memrow b { color: var(--mc); }
@@ -543,12 +553,14 @@ body.aiming { cursor: grabbing; user-select: none; }
   .raidlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; margin-top: 10px; }
   .raidhead { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; } .raidhead b { color: var(--accent); font-size: 18px; }
   .raidloot { display: grid; gap: 8px; max-height: 60vh; overflow: auto; } .rlrow { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; } .rlvote { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; max-width: 260px; }
-  #playerSlot.party.raid { display: grid; grid-template-columns: repeat(5, minmax(0, 104px)); gap: 4px; align-items: end; } #playerSlot.raid .unit { width: auto; padding: 4px; } #playerSlot.raid .figure, #playerSlot.raid .figure svg { height: 38px; } #playerSlot.raid .uname b { font-size: 12px; } #playerSlot.raid .tag { font-size: 10px; padding: 0 3px; }
+  #playerSlot.raid .figure, #playerSlot.raid .figure svg { height: 38px; } #playerSlot.raid .uname b { font-size: 12px; } #playerSlot.raid .tag { font-size: 10px; padding: 0 3px; }
   .order.raid .otile { width: 62px; padding: 2px; } .order.raid .otile .ofig, .order.raid .otile .ofig svg { height: 30px; } .order.raid .otile .onm { font-size: 11px; } .order.raid .otile.now::after { display: none; }
   .cxcods { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; margin-top: 6px; } .cxcod { border-left: 3px solid var(--rc); background: rgba(255,255,255,.03); padding: 8px 10px; border-radius: 6px; display: grid; gap: 4px; } .cxch { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; } .cxch b { color: #f0b070; }
   #btnUpdates { position: fixed; right: 8px; bottom: 34px; z-index: 40; padding: 5px 12px; font-size: 13px; } #btnUpdates i { display: none; } #btnUpdates.unread i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #e4a93a; margin-left: 6px; box-shadow: 0 0 8px #e4a93a; }
   .changelog { max-height: 62vh; overflow: auto; padding-right: 6px; } .changelog h3 { color: var(--accent); font-size: 20px; margin: 12px 0 4px; } .changelog ul { margin: 0; padding-left: 18px; } .changelog li { margin: 4px 0; line-height: 1.4; } .clarea { display: inline-block; min-width: 86px; margin-right: 6px; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
   #updBanner .btn { padding: 4px 12px; font-size: 14px; } #updBanner { width: max-content; position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 32px); padding: 8px 14px; background: #2a1f12; border: 1px solid var(--accent); border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,.6); }
+  .rlrolls { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; margin: -2px 0 4px 8px; } .rlrolls .win { text-decoration: underline; }
+  .ilink { cursor: pointer; font-weight: 700; text-decoration: none; } .ilink:hover { text-decoration: underline; } .linkview { display: grid; justify-items: start; }
 </style>
 </head>
 <body>
@@ -1506,13 +1518,15 @@ const DEBT_CARDS = ['collect_the_debt', 'sanguine_guard', 'pay_in_blood'];
 const ENEMY_PLAYER_OPS = ['damage', 'execute', 'damageBlock', 'debuff', 'stealMana', 'burnMana', 'drawLess', 'disarm', 'purge', 'shred', 'shredAll', 'tickBleed', 'status'];
 // ---------------- Raids: one per map, 2 to 10 heroes, the map's boss made raid-sized
 // hp: x the map boss (then x heroes); dmg: damage x; manaStep: boss mana/regen +3% per extra hero; +1 draw at 6+ heroes
-const RAID = { hp: 1.5, dmg: 1.25, manaStep: 0.03, min: 2, max: 10, lockMs: 7 * 24 * 3600 * 1000 };
+const RAID = { hp: 1.5, dmg: 1.25, dotResist: 0.25, manaStep: 0.03, min: 2, max: 10, lockMs: 7 * 24 * 3600 * 1000 };
 const RAID_NAMES = { physical: 'Gorrath, the Unbroken Tide', fire: 'Vashkar, the Sunken Sun', frost: 'Sylvaine, the Endless Winter', nature: 'Thornheart, the World-Root', arcane: 'Ilvar, the Shattered Star', shadow: 'The Hollow King Ascendant' };
+// per-boss tuning from the first raid nights (Oct 31): every raid boss needed 30-50% more HP; Vashkar also hits harder
+const RAID_TUNE = { physical: { hp: 1.3 }, fire: { hp: 1.5, dmg: 1.25 }, frost: { hp: 1.4 }, nature: { hp: 1.4 }, arcane: { hp: 1.4 }, shadow: { hp: 1.4 } };
 function raidKey(mk) { return 'raid_' + mk; }
 function raidBoss(data, mk) {
   const k = raidKey(mk); if (data.enemies[k]) return k;
   const m = data.maps && data.maps[mk]; if (!m) return null; const b = data.enemies[m.boss]; if (!b) return null;
-  data.enemies[k] = Object.assign(JSON.parse(JSON.stringify(b)), { name: RAID_NAMES[mk] || b.name + ' (Raid)', hp: Math.round(b.hp * RAID.hp), raid: true, map: mk,
+  data.enemies[k] = Object.assign(JSON.parse(JSON.stringify(b)), { name: RAID_NAMES[mk] || b.name + ' (Raid)', hp: Math.round(b.hp * RAID.hp * ((RAID_TUNE[mk] || {}).hp || 1)), raidDmg: (RAID_TUNE[mk] || {}).dmg || 1, raid: true, map: mk,
     arch: 'Raid boss: every attack hits every hero', desc: `${b.name.split(',')[0]} returns, raid-sized. Every attack and debuff hits the whole raid. Only one hero a round can land non-damaging debuffs on it.` });
   return k;
 }
@@ -1545,7 +1559,7 @@ class Combat {
     this.duel = !!this.opts.duel; // duel: two heroes, no monsters; each hero's "enemies" are the other hero
     this.enemies = this.duel ? [] : this.opts.enemies.map((key, i) => this.makeEnemy(key, i));
     if (this.duel) this.say('sys', `Duel: ${this.players.map(p => p.name).join(' vs ')}. Last hero standing wins. From round ${PRESSURE_START} every hit lands harder.`);
-    else if (this.raid) this.say('sys', `Raid starts. Level +${this.level}, ${this.partySize} heroes: boss HP x${this.hpMult.toFixed(2)}, damage x${(this.dmgMult * RAID.dmg).toFixed(2)}. Every boss attack hits every hero. Only one hero a round can land non-damaging debuffs on it.`);
+    else if (this.raid) this.say('sys', `Raid starts. Level +${this.level}, ${this.partySize} heroes: boss HP x${this.hpMult.toFixed(2)}, damage x${(this.dmgMult * RAID.dmg).toFixed(2)}. Every boss attack hits every hero. Only one hero a round can land non-damaging debuffs on it, and it resists 25% of damage over time.`);
     else this.say('sys', `Fight starts. Map level +${this.level}${this.partySize > 1 ? `, party of ${this.partySize}` : ''}: enemy HP x${this.hpMult.toFixed(2)}${this.partySize > 1 ? ` and +${this.partySize - 1} card draw` : ''}, damage x${this.dmgMult.toFixed(2)}; enemies resist their own type by ${Math.round(this.typeResist * 100)}%.`);
     this.startRound();
   }
@@ -1589,7 +1603,7 @@ class Combat {
     const en = this.makeEnemy0(key, i);
     if (this.raid) {
       const n = this.partySize, k = 1 + RAID.manaStep * (n - 1), d = en.d;
-      en.maxMana = Math.round(d.maxMana * k); en.regen = Math.round(d.regen * k); en.regenK = k; en.drawPlus = n >= 6 ? 1 : 0; en.draw = d.draw + en.drawPlus; en.dmgTune *= RAID.dmg;
+      en.maxMana = Math.round(d.maxMana * k); en.regen = Math.round(d.regen * k); en.regenK = k; en.drawPlus = n >= 6 ? 1 : 0; en.draw = d.draw + en.drawPlus; en.dmgTune *= RAID.dmg * (d.raidDmg || 1);
       for (const c of [...en.drawPile, ...en.phase2Cards]) { let hit = false; for (const o of c.ops) if (ENEMY_PLAYER_OPS.includes(o.op)) { o.all = true; hit = true; } if (hit && !/every player|each of their/.test(c.text)) c.text += ' Hits every hero.'; }
     }
     return en;
@@ -1949,6 +1963,7 @@ class Combat {
 
   applyHit(src, tgt, amount, o) {
     o = o || {};
+    if (o.isDot && this.raid && tgt && !tgt.isPlayer) amount = Math.round(amount * (1 - RAID.dotResist)); // raid bosses shrug off a quarter of Bleed/Poison/Burn
     let dmg = amount, absorbed = 0;
     if (tgt.block > 0 && !o.ignoreBlock) { absorbed = Math.min(tgt.block, dmg); tgt.block -= absorbed; dmg -= absorbed; }
     if (tgt.isPlayer && dmg > 0 && tgt.mana > 0 && tgt.powers && tgt.powers.some(x => x.key === 'mana_shell')) { const m = Math.min(tgt.mana, dmg); tgt.mana -= m; dmg -= m; absorbed += m; }
@@ -2421,6 +2436,7 @@ function rollDrops(data, rng, enemyKey, level, luck, cls) {
 // Oct 31: the Rogue's poison cards are Attacks, so they scale with Strength (poison stacks scale with Strength too, see applyDot)
 for (const k of ['envenom', 'plague_bloom', 'toxic_cloud', 'venom_vial', 'fester', 'crippling_poison', 'mind_numbing_poison', 'deadly_toxin', 'wound_poison', 'corrosive_toxin', 'draining_venom', 'poison_nova']) if (C[k]) { C[k].type = 'Attack'; if (C[k].dtype == null) C[k].dtype = k === 'poison_nova' ? 'Nature' : 'Physical'; }
 if (C.seismic_slam) { C.seismic_slam.cost = 0; C.seismic_slam.text = 'Deal damage to all enemies equal to 50% of your current mana. Your mana is not spent.'; }
+if (C.mana_gem) C.mana_gem.cost = 0; // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
 const API = { CARDS_VERSION: 2, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -3204,13 +3220,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
 
   // ---------- history tab
   function renderLogTab() {
-    const L = { victory: 'Killed the boss', extracted: 'Extracted', dead: 'Died', abandoned: 'Left early' };
-    $('hpLog').innerHTML = profile.history.length ? `<div class="list tall">${profile.history.map((h, i) => `<div class="item" style="--rc:${h.result === 'dead' ? 'var(--hp)' : h.result === 'victory' ? 'var(--r-gold)' : 'var(--good)'}"><div class="ih"><b>${L[h.result] || h.result}</b><span>${h.cls} &middot; Map +${h.level}</span></div><div class="st">Row ${h.row > ROWS ? 'boss' : h.row}. Brought home ${h.items} item${h.items === 1 ? '' : 's'}, ${h.cards} card${h.cards === 1 ? '' : 's'}, ${h.gold} gold.</div><div class="il">${new Date(h.at).toLocaleString()}${h.meter ? ` <button class="pilebtn" data-histmeter="${i}">Damage meter</button>` : ''}</div></div>`).join('')}</div>` : '<span class="muted">No runs yet.</span>';
+    const L = { victory: 'Killed the boss', extracted: 'Extracted', dead: 'Died', abandoned: 'Left early', 'raid-win': 'Raid kill', 'raid-loss': 'Raid wipe' };
+    $('hpLog').innerHTML = profile.history.length ? `<div class="list tall">${profile.history.map((h, i) => `<div class="item" style="--rc:${h.result === 'dead' || h.result === 'raid-loss' ? 'var(--hp)' : h.result === 'victory' || h.result === 'raid-win' ? 'var(--r-gold)' : 'var(--good)'}"><div class="ih"><b>${L[h.result] || h.result}</b><span>${h.cls} &middot; ${h.raid ? 'Raid' : 'Map'} +${h.level}</span></div><div class="st">${h.raid ? `${esc(h.boss || 'Raid boss')} with ${h.party ? h.party.length : '?'} heroes: ${h.result === 'raid-win' ? 'killed' : 'wiped'} in ${h.rounds} round${h.rounds === 1 ? '' : 's'}.${h.loot != null ? ` You won ${h.loot} item${h.loot === 1 ? '' : 's'}.` : ''}` : `Row ${h.row > ROWS ? 'boss' : h.row}. Brought home ${h.items} item${h.items === 1 ? '' : 's'}, ${h.cards} card${h.cards === 1 ? '' : 's'}, ${h.gold} gold.`}</div><div class="il">${new Date(h.at).toLocaleString()}${h.meter ? ` <button class="pilebtn" data-histmeter="${i}">Damage meter</button>` : ''}</div></div>`).join('')}</div>` : '<span class="muted">No runs yet.</span>';
   }
   function histMeter(i) {
     const h = profile.history[i]; if (!h || !h.meter) return;
     MT.hist = h.meter; MT.open = {};
-    const M = DATA.maps[h.map];
+    const M = h.raid ? { name: h.boss || 'Raid' } : DATA.maps[h.map];
     modal(`<h2>Damage meter</h2><p class="muted" style="margin:0">${esc(h.name || h.cls)}${h.party ? ` with ${h.party.length - 1} other${h.party.length > 2 ? 's' : ''}` : ''} &middot; ${M ? esc(M.name) + ' ' : 'Map '}+${h.level} &middot; ${h.fights != null ? h.fights + ' fight' + (h.fights === 1 ? '' : 's') + ' won &middot; ' : ''}${new Date(h.at).toLocaleString()}</p><div id="hMeter" class="meter"></div><div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     renderMeter($('hMeter'), 'hist'); $('mClose').onclick = closeModal;
   }
@@ -3892,7 +3908,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // channels: world (default), /p party, /g guild, /w Name whisper, /r reply to the last whisper
   function addChat(m) {
     if (!m || !m.text) return;
-    SOC.chat.push({ from: m.uid, name: String(m.name || '?').slice(0, 24), text: String(m.text).slice(0, 200), sys: !!m.sys, at: m.at || Date.now(), ch: m.ch || 'world', toName: m.toName, mine: m.uid === SOC.me });
+    SOC.chat.push({ from: m.uid, name: String(m.name || '?').slice(0, 24), text: String(m.text).slice(0, 200), sys: !!m.sys, at: m.at || Date.now(), ch: m.ch || 'world', toName: m.toName, mine: m.uid === SOC.me, items: Array.isArray(m.items) ? m.items.slice(0, 3) : undefined });
     SOC.chat = SOC.chat.slice(-80); renderChat();
   }
   function sysChat(text) { addChat({ sys: true, name: '', text }); }
@@ -3932,14 +3948,42 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       } else { sysChat(`Unknown command /${k}. Type /help.`); return; }
     }
     m.text = m.text.slice(0, 200);
+    const links = (SOC.links || []).filter(l => m.text.includes(l.tok)).slice(0, 3); SOC.links = [];
+    if (links.length) m.items = links.map(l => ({ tok: l.tok, it: l.it }));
     SOC.ch.send({ type: 'broadcast', event: 'chat', payload: m }); addChat(m);
+  }
+  // ---------- item links: shift-click any item (stash, shop, loot, gear slot...) to drop "[Item name]" into the chat box;
+  // the item travels with the message and anyone can click the name to see it
+  const ILINK = new Map(); let ilinkN = 0;
+  function linkKey(it) { if (ILINK.size > 1500) ILINK.clear(); const k = 'L' + (ilinkN++); ILINK.set(k, it); return k; }
+  function linkName(it) { return it.kind === 'card' ? (CARDS[it.key] ? CARDS[it.key].name : 'Card') + (it.rank ? ' +' + it.rank : '') : it.name || 'Item'; }
+  function slimItem(it) { const o = JSON.parse(JSON.stringify(it)); for (const k of ['id', 'price', 'sold', 'test']) delete o[k]; return o; }
+  function insertLink(it) {
+    const box = $('chatIn'); if (!box) return;
+    const tok = `[${linkName(it)}]`;
+    SOC.links = (SOC.links || []).filter(l => l.tok !== tok).slice(-4); SOC.links.push({ tok, it: slimItem(it) });
+    box.value = (box.value && !/\s$/.test(box.value) ? box.value + ' ' : box.value) + tok + ' ';
+    box.focus(); box.setSelectionRange(box.value.length, box.value.length);
+  }
+  document.addEventListener('click', (ev) => {
+    if (!ev.shiftKey) return;
+    const a = ev.target.closest('[data-ilink],[data-tip]'); if (!a) return;
+    const it = a.dataset.ilink ? ILINK.get(a.dataset.ilink) : ((typeof TIPS !== 'undefined' && TIPS.get(a.dataset.tip)) || {}).it; if (!it) return;
+    ev.preventDefault(); ev.stopPropagation(); insertLink(it);
+  }, true);
+  document.addEventListener('click', (ev) => { const a = ev.target.closest('[data-chatlink]'); if (!a) return; const [i, j] = a.dataset.chatlink.split(':').map(Number); const m = SOC.chat[i], l = m && m.items && m.items[j]; if (l && l.it) showLinked(l.it); });
+  function showLinked(it) {
+    const body = it.kind === 'card' ? (cardBox(CB.rankedCard(it.key, it.rank || 0), 230) || itemHtml(it)) : itemHtml(it);
+    modal(`<h2>${esc(linkName(it))}</h2><div class="linkview">${body}</div><p class="muted" style="font-size:13px">Linked in chat. Shift-click your own items to link them.</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
+    fitCards($('modalBox')); $('mClose').onclick = closeModal;
   }
   const CHAN = { world: ['', ''], party: ['[Party] ', 'cparty'], guild: ['[Guild] ', 'cguild'], whisper: ['', 'cwhisper'] };
   function renderChat() {
     const el = $('chatLog'); if (!el) return;
-    el.innerHTML = SOC.chat.map(m => { if (m.sys) return `<div class="sys">${esc(m.text)}</div>`; const [tag, cls] = CHAN[m.ch] || CHAN.world;
+    el.innerHTML = SOC.chat.map((m, i) => { if (m.sys) return `<div class="sys">${esc(m.text)}</div>`; const [tag, cls] = CHAN[m.ch] || CHAN.world;
       const who = m.ch === 'whisper' ? (m.mine ? `To ${esc(m.toName || '?')}` : `From ${esc(m.name)}`) : esc(m.name);
-      return `<div class="${cls}">${tag}<b>${who}:</b> ${esc(m.text)}</div>`; }).join('') || `<div class="sys">${socOn() ? 'World chat. Say hello. Press T to type, /help for channels.' : 'Sign in to see other players and chat.'}</div>`;
+      let body = esc(m.text); (m.items || []).forEach((l, j) => { if (!l || !l.it || !l.tok) return; const r = l.it.kind === 'card' ? (CARDS[l.it.key] || {}).rarity : l.it.rarity; body = body.split(esc(l.tok)).join(`<a class="ilink" data-chatlink="${i}:${j}" style="color:${RC[r] || 'var(--accent)'}" role="button" tabindex="0">${esc(l.tok)}</a>`); });
+      return `<div class="${cls}">${tag}<b>${who}:</b> ${body}</div>`; }).join('') || `<div class="sys">${socOn() ? 'World chat. Say hello. Press T to type, /help for channels.' : 'Sign in to see other players and chat.'}</div>`;
     el.scrollTop = el.scrollHeight;
   }
 
@@ -4179,7 +4223,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       ${G.motd ? `<p class="gmotd">${esc(G.motd)}</p>` : ''}
       <table class="groster"><thead><tr><th>Hero</th><th>Class</th><th>Power</th><th>Rank</th><th>Where / last online</th><th></th></tr></thead><tbody>${rows.map(r => { const on = SOC.online.has(r.user_id) || r.user_id === SOC.me, o = SOC.online.get(r.user_id);
         const name = (o && o.name) || r.hero_name || r.display_name || 'Unknown', cls = (o && o.cls) || r.hero_class || '';
-        const acts = r.user_id === SOC.me ? '' : [meRank === 'leader' && r.rank === 'member' ? `<button class="pilebtn" data-g="promote" data-id="${r.user_id}">Make officer</button>` : '', meRank === 'leader' && r.rank === 'officer' ? `<button class="pilebtn" data-g="demote" data-id="${r.user_id}">Make member</button>` : '', meRank === 'leader' ? `<button class="pilebtn" data-g="lead" data-id="${r.user_id}">Make leader</button>` : '', off && RANK_ORDER[r.rank] > RANK_ORDER[meRank] ? `<button class="pilebtn" data-g="kick" data-id="${r.user_id}">Remove</button>` : ''].join(' ');
+        const acts = r.user_id === SOC.me ? '' : [on && !(SOC.party && SOC.party.members.some(m => m.uid === r.user_id)) && (!SOC.party || SOC.party.leader === SOC.me) ? `<button class="pilebtn" data-inv="${r.user_id}">Invite to party</button>` : '', on ? `<button class="pilebtn" data-whisper="${r.user_id}">Message</button>` : '', meRank === 'leader' && r.rank === 'member' ? `<button class="pilebtn" data-g="promote" data-id="${r.user_id}">Make officer</button>` : '', meRank === 'leader' && r.rank === 'officer' ? `<button class="pilebtn" data-g="demote" data-id="${r.user_id}">Make member</button>` : '', meRank === 'leader' ? `<button class="pilebtn" data-g="lead" data-id="${r.user_id}">Make leader</button>` : '', off && RANK_ORDER[r.rank] > RANK_ORDER[meRank] ? `<button class="pilebtn" data-g="kick" data-id="${r.user_id}">Remove</button>` : ''].join(' ');
         return `<tr class="${on ? 'on' : ''}"><td><b style="color:${CC[cls] || 'var(--text)'}">${esc(name)}</b>${r.user_id === SOC.me ? ' <span class="muted">(you)</span>' : ''}</td><td>${esc(cls)}</td><td>${r.user_id === SOC.me && profile.chars[heroKey] ? CBHub.powerLevel(profile.chars[heroKey]) : (r.power || 0)}</td><td>${r.rank}</td><td>${on ? `<span class="up">${esc(r.user_id === SOC.me ? whereText() : placeText(o))}</span>` : agoText(r.updated_at)}</td><td>${acts}</td></tr>`; }).join('')}</tbody></table>
       ${off ? `<div class="namerow" style="margin-top:10px"><div class="field"><label for="gInv">Invite a player (their hero name if online, or friend code)</label><input id="gInv" maxlength="24" autocomplete="off" placeholder="Name or friend code"></div><button class="btn primary" data-g="invite">Invite</button></div>` : ''}
       ${meRank === 'leader' ? `<div class="namerow"><div class="field"><label for="gMotd">Message of the day</label><input id="gMotd" maxlength="140" value="${esc(G.motd)}"></div><button class="btn" data-g="motd">Save</button></div>` : ''}
@@ -4247,8 +4291,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793476457535';
-  const CB_BUILD = '2ea04431e8'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793479225939';
+  const CB_BUILD = '59860b9e04'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -4282,11 +4326,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const me = mySpec({ kind, level, map }); if (me.err) { toast(`You ${me.err.replace(/^is /, 'are ').replace(/^has /, 'have ').replace(/^needs /, 'need ').replace(/their/, 'your')}.`); return; }
     const sid = newSid();
     NET.pend = { sid, kind, uids, level, map, specs: { [SOC.me]: me }, at: Date.now() };
-    NET.pend.timer = setTimeout(() => { if (!NET.pend || NET.pend.sid !== sid) return; clearInterval(NET.pend.again); const miss = uids.filter(u => !NET.pend.specs[u]).map(nameOfUid); NET.pend = null; toast(`${miss.join(', ')} didn't answer. ${kind === 'duel' ? 'The duel' : kind === 'raid' ? 'The raid' : 'The run'} is called off. If they're online, ask them to reload the page (both of you should be on the latest version).`); }, 15000);
+    NET.pend.timer = setTimeout(() => { if (!NET.pend || NET.pend.sid !== sid) return; clearInterval(NET.pend.again); const miss = uids.filter(u => !NET.pend.specs[u]).map(nameOfUid); NET.pend = null; if (kind !== 'duel') netSend('cancel', { sid, why: `${miss.join(', ')} did not answer the ready check` }); toast(`${miss.join(', ')} didn't answer. ${kind === 'duel' ? 'The duel' : kind === 'raid' ? 'The raid' : 'The run'} is called off. If they're online, ask them to reload the page (both of you should be on the latest version).`); }, kind === 'duel' ? 15000 : 32000); // ready checks give everyone 25 seconds
     // realtime messages can get lost: ask again every 2 seconds until everyone has answered
     NET.pend.again = setInterval(() => { if (!NET.pend || NET.pend.sid !== sid) return; netSend('req', { sid, kind, uids, level, map, build: CB_BUILD }); }, 2000);
     netSend('req', { sid, kind, uids, level, map, build: CB_BUILD });
-    sysChat(kind === 'duel' ? 'Setting up the duel...' : kind === 'raid' ? 'Gathering the raid...' : 'Gathering the party at the Wagon...');
+    sysChat(kind === 'duel' ? 'Setting up the duel...' : `Ready check sent: waiting for everyone to click Ready (${uids.length - 1} to go).`);
     netCheckSpecs();
   }
   function netCheckSpecs() {
@@ -4434,6 +4478,42 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     renderMap();
   }
 
+  // ---------- ready check (guests): the leader's start request asks everyone to click Ready
+  function readyCheck() {
+    const R = NET.rc, p = R.p, what = p.kind === 'raid' ? `the raid: <b>${esc(CB.RAID_NAMES[p.map] || 'raid boss')}</b> (+${p.level})` : `a Wagon run on <b>${esc((DATA.maps[p.map] || {}).name || 'the March')}</b> (+${p.level})`;
+    const draw = () => {
+      if (NET.rc !== R || R.ans !== null) return;
+      const left = Math.max(0, 25 - Math.floor((Date.now() - R.at) / 1000));
+      if (!left) { answerReady(false, true); return; }
+      const el = $('rcLeft'); if (el && !$('modal').hidden && el.dataset.sid === R.sid) el.textContent = left;
+      else { modal(`<h2>Ready check</h2><p>${esc(nameOfUid(p.from))} is starting ${what}.</p><p class="muted">Are you ready? <span id="rcLeft" data-sid="${R.sid}">${left}</span>s</p><div class="row"><button class="btn primary" id="rcYes">Ready</button><button class="btn" id="rcNo">Not ready</button></div>`);
+        $('rcYes').onclick = () => answerReady(true); $('rcNo').onclick = () => answerReady(false); }
+    };
+    draw(); clearInterval(R.timer); R.timer = setInterval(() => { if (NET.rc !== R || R.ans !== null) { clearInterval(R.timer); return; } draw(); }, 500);
+  }
+  function answerReady(yes, timedOut) {
+    const R = NET.rc; if (!R || R.ans !== null) return;
+    R.ans = yes ? 'ready' : 'no'; clearInterval(R.timer);
+    if ($('rcYes') && !$('modal').hidden) closeModal();
+    if (yes) { sysChat('You are ready. Waiting for the rest of the party...'); answerReq(R.p); }
+    else { netSend('spec', { sid: R.sid, to: R.p.from, spec: { err: timedOut ? 'did not answer the ready check' : 'is not ready', notReady: true } }); sysChat(timedOut ? 'You missed the ready check.' : 'You said you are not ready.'); }
+  }
+  function answerReq(p) {
+    if (!NET.wait || NET.wait.sid !== p.sid) sysChat(`${nameOfUid(p.from)} is ${p.kind === 'duel' ? 'starting the duel' : p.kind === 'raid' ? 'starting a raid' : 'setting out'}...`);
+    const spec = mySpec(p);
+    netSend('spec', { sid: p.sid, to: p.from, spec });
+    // if the start doesn't arrive, ask the host for it again
+    if (!spec.err && (!NET.wait || NET.wait.sid !== p.sid)) {
+      const W = NET.wait = { sid: p.sid, host: p.from, tries: 0 };
+      W.timer = setInterval(() => {
+        if (NET.wait !== W || (NET.s && NET.s.sid === W.sid)) { clearInterval(W.timer); if (NET.wait === W) NET.wait = null; return; }
+        if (++W.tries > 5) { clearInterval(W.timer); NET.wait = null; toast(`The start from ${nameOfUid(W.host)} never arrived. Ask them to set out again (reload the page if it keeps happening).`); return; }
+        netSend('needgo', { sid: W.sid, to: W.host });
+      }, 2500);
+    }
+    if (spec.err) toast(`${nameOfUid(p.from)} tried to start ${p.kind === 'duel' ? 'a duel' : p.kind === 'raid' ? 'a raid' : 'a run'}, but you ${spec.err.replace(/^is /, 'are ').replace(/^has /, 'have ').replace(/^needs /, 'need ').replace(/their/, 'your')}.`);
+  }
+
   // ---------- incoming messages
   function netIn(p) {
     if (!p || p.from === SOC.me) return;
@@ -4452,27 +4532,28 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
         clearStale();
         if (NET.s) { if (NET.s.sid !== p.sid) netSend('spec', { sid: p.sid, to: p.from, spec: { err: 'is already in a game' } }); return; }
         if (p.build !== CB_BUILD) { netSend('spec', { sid: p.sid, to: p.from, spec: { err: 'is on a different version of the game. Both of you reload the page (Ctrl+F5), then try again' } }); if (NET.verWarn !== p.sid) { NET.verWarn = p.sid; toast(`${nameOfUid(p.from)} tried to start ${p.kind === 'duel' ? 'a duel' : p.kind === 'raid' ? 'a raid' : 'a run'}, but you two are on different versions of the game. Both of you reload the page (Ctrl+F5), then try again.`); } return; }
-        if (!NET.wait || NET.wait.sid !== p.sid) sysChat(`${nameOfUid(p.from)} is ${p.kind === 'duel' ? 'starting the duel' : p.kind === 'raid' ? 'starting a raid' : 'setting out'}...`);
-        const spec = mySpec(p);
-        netSend('spec', { sid: p.sid, to: p.from, spec });
-        // if the start doesn't arrive, ask the host for it again
-        if (!spec.err && (!NET.wait || NET.wait.sid !== p.sid)) {
-          const W = NET.wait = { sid: p.sid, host: p.from, tries: 0 };
-          W.timer = setInterval(() => {
-            if (NET.wait !== W || (NET.s && NET.s.sid === W.sid)) { clearInterval(W.timer); if (NET.wait === W) NET.wait = null; return; }
-            if (++W.tries > 5) { clearInterval(W.timer); NET.wait = null; toast(`The start from ${nameOfUid(W.host)} never arrived. Ask them to set out again (reload the page if it keeps happening).`); return; }
-            netSend('needgo', { sid: W.sid, to: W.host });
-          }, 2500);
+        const spec0 = mySpec(p);
+        // Wagon runs and raids start with a ready check: the leader waits until everyone clicks Ready (Oct 31)
+        if (!spec0.err && p.kind !== 'duel') {
+          if (!NET.rc || NET.rc.sid !== p.sid) { NET.rc = { sid: p.sid, p, ans: null, at: Date.now() }; readyCheck(); }
+          NET.rc.p = p;
+          if (NET.rc.ans === null || NET.rc.ans === 'cancelled') return;
+          if (NET.rc.ans === 'no') { netSend('spec', { sid: p.sid, to: p.from, spec: { err: 'is not ready', notReady: true } }); return; }
         }
-        if (spec.err) toast(`${nameOfUid(p.from)} tried to start ${p.kind === 'duel' ? 'a duel' : p.kind === 'raid' ? 'a raid' : 'a run'}, but you ${spec.err.replace(/^is /, 'are ').replace(/^has /, 'have ').replace(/^needs /, 'need ').replace(/their/, 'your')}.`);
+        answerReq(p);
         return;
       }
       case 'spec': {
         const P = NET.pend; if (!P || P.sid !== p.sid || p.to !== SOC.me || !P.uids.includes(p.from)) return;
-        if (p.spec.err) { clearTimeout(P.timer); clearInterval(P.again); NET.pend = null; toast(`${nameOfUid(p.from)} ${p.spec.err}. ${P.kind === 'duel' ? 'The duel' : P.kind === 'raid' ? 'The raid' : 'The run'} is called off.`); netSend('cancel', { sid: P.sid }); return; }
+        if (p.spec.err) { clearTimeout(P.timer); clearInterval(P.again); NET.pend = null; netSend('cancel', { sid: P.sid, why: `${nameOfUid(p.from)} ${p.spec.err === 'is not ready' ? 'was not ready' : p.spec.err}` }); toast(`${nameOfUid(p.from)} ${p.spec.err === 'is not ready' ? 'was not ready' : p.spec.err}. ${P.kind === 'duel' ? 'The duel' : P.kind === 'raid' ? 'The raid' : 'The run'} is called off.`); netSend('cancel', { sid: P.sid }); return; }
+        if (!P.specs[p.from] && P.kind !== 'duel') sysChat(`Ready check: ${nameOfUid(p.from)} is ready (${Object.keys(P.specs).length + 1}/${P.uids.length}).`);
         P.specs[p.from] = p.spec; netCheckSpecs(); return;
       }
-      case 'cancel': if (NET.wait && NET.wait.sid === p.sid) { clearInterval(NET.wait.timer); NET.wait = null; } return;
+      case 'cancel': {
+        if (NET.wait && NET.wait.sid === p.sid) { clearInterval(NET.wait.timer); NET.wait = null; }
+        if (NET.rc && NET.rc.sid === p.sid && NET.rc.ans !== 'cancelled') { const was = NET.rc.ans; NET.rc.ans = 'cancelled'; clearInterval(NET.rc.timer); if ($('rcYes') && !$('modal').hidden) closeModal(); if (p.why) { const kind = NET.rc.p.kind === 'raid' ? 'The raid' : 'The run'; if (was === 'no') sysChat(`${kind} is called off.`); else toast(`${p.why}. ${kind} is called off.`); } }
+        return;
+      }
       case 'needgo': { const g = NET.lastGo; if (p.to === SOC.me && g && g.sid === p.sid && NET.s && NET.s.sid === g.sid && g.uids.includes(p.from)) netSend('go', g); return; }
       case 'go': {
         if (!p.uids.includes(SOC.me)) return;
@@ -4657,19 +4738,19 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
         <li><b>2 to 10 heroes.</b> The boss gets more HP for each hero (and a little more mana from 3 on). Each extra hero adds one more piece of loot.</li>
         <li><b>Everyone plays at once.</b> No turn order: all heroes play their hands, and the boss acts once everyone has ended their turn.</li>
         <li><b>Every boss attack hits the whole raid.</b> Its debuffs land on everyone too.</li>
-        <li><b>Debuff resistant.</b> Only one hero a round can land non-damaging debuffs on it (Weak, Vulnerable, Slow, Chill, mana burn, discards...). The first hero to debuff it each round claims that round. Damage and damage over time always land.</li>
+        <li><b>Debuff resistant.</b> Only one hero a round can land non-damaging debuffs on it (Weak, Vulnerable, Slow, Chill, mana burn, discards...). The first hero to debuff it each round claims that round. Damage always lands, but raid bosses shrug off 25% of damage over time (Bleed, Poison, Burn).</li>
         <li><b>Weekly lockout.</b> Killing a raid boss locks that hero out of that raid for 7 days. Wiping costs nothing (no gear or gold lost): try as often as you like.</li>
-        <li><b>Loot is rolled.</b> Everyone picks Need, Greed or Pass on each item. Need beats Greed; ties roll 1-100 in chat.</li>
+        <li><b>Loot is rolled.</b> Everyone picks Need, Greed or Pass on each item. Everyone who wants it rolls 1-100 (shown on the loot screen and in chat); the highest Need wins, or the highest Greed if nobody needs it.</li>
       </ul>
       <p class="${n >= CB.RAID.min && lead ? '' : 'alert'}" style="margin:6px 0">${partyLine}</p></div>
       <div class="raidlist">${Object.values(DATA.maps).map(M => {
         const mk = M.key, best = raidBest(c, mk), left = raidLockLeft(c, mk), lv = Math.max(0, Math.min(best, RAIDS.lvl[mk] != null ? RAIDS.lvl[mk] : best));
-        const bossE = DATA.enemies[M.boss], name = CB.RAID_NAMES[mk] || bossE.name;
+        const bossE = DATA.enemies[M.boss], name = CB.RAID_NAMES[mk] || bossE.name, rbHp = DATA.enemies[CB.raidBoss(DATA, mk)].hp / bossE.hp, rbDmg = DATA.enemies[CB.raidKey(mk)].raidDmg || 1;
         const state = best < 0 ? `<span class="tag bad">Locked</span> Beat ${esc(bossE.name.split(',')[0])} on ${esc(M.name)} to unlock.` : left ? `<span class="tag bad">Killed this week</span> Back in ${fmtLeft(left)}.` : `<span class="tag good">Unlocked</span> up to +${best}.`;
         const can = best >= 0 && !left && socOn() && pt && n >= CB.RAID.min && n <= CB.RAID.max && lead;
         return `<div class="panel raidrow" data-raid="${mk}"><div class="raidhead"><b>${esc(name)}</b><span class="muted">Map ${M.num}: ${esc(M.name)}</span></div>
           <div class="muted">${state}</div>
-          ${best >= 0 ? `<div class="field" style="margin:6px 0"><label>Level <b>+${lv}</b> &middot; boss HP x${(Math.pow(1.5, lv) * CB.RAID.hp * n).toFixed(1)} for ${n} hero${n > 1 ? 'es' : ''}, damage x${(Math.pow(1.3, lv) * CB.RAID.dmg).toFixed(2)}</label><input type="range" min="0" max="${best}" step="1" value="${lv}" data-raidlvl="${mk}" ${best > 0 ? '' : 'disabled'}></div>` : ''}
+          ${best >= 0 ? `<div class="field" style="margin:6px 0"><label>Level <b>+${lv}</b> &middot; boss HP x${(Math.pow(1.5, lv) * rbHp * n).toFixed(1)} for ${n} hero${n > 1 ? 'es' : ''}, damage x${(Math.pow(1.3, lv) * CB.RAID.dmg * rbDmg).toFixed(2)}</label><input type="range" min="0" max="${best}" step="1" value="${lv}" data-raidlvl="${mk}" ${best > 0 ? '' : 'disabled'}></div>` : ''}
           <div class="row"><button class="btn ${can ? 'primary' : ''}" data-raidgo="${mk}" ${can ? '' : 'disabled'}>Start the raid</button><button class="btn" data-raidinfo="${mk}">Look at the boss</button></div></div>`;
       }).join('')}</div>`;
   }
@@ -4694,8 +4775,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (cx.length) out.push(Object.assign(CB.makeCodex(DATA, rng, cx[Math.floor(rng() * cx.length)], lvl), { raid: d.name }));
     return out.map(it => ({ it, votes: {}, done: false, winner: null }));
   }
+  // the Chronicler keeps raids too, with the fight's damage meter
+  function raidHistory(won) {
+    if (cb._hist) return;
+    const c = profile.chars[heroKey], r = (o) => Object.fromEntries(Object.entries(o || {}).filter(x => x[1] > 0).map(([k, v]) => [k, Math.round(v)]));
+    const meter = Object.values(cb.meter || {}).map(m => ({ id: m.id, name: m.name, isPlayer: m.isPlayer, cls: m.cls, dealt: r(m.dealt), healed: r(m.healed), taken: r(m.taken), absorbed: Math.round(m.absorbed || 0) }));
+    const h = cb._hist = { raid: true, result: won ? 'raid-win' : 'raid-loss', boss: CB.RAID_NAMES[cb.raidMap] || 'Raid boss', map: cb.raidMap, level: cb.level, cls: c ? c.cls : '', name: c ? c.name : '', party: cb.players.map(p => p.cls), rounds: cb.round, meter: meter.length ? meter : undefined, loot: won ? 0 : undefined, at: Date.now() };
+    profile.history.unshift(h); profile.history = profile.history.slice(0, 20); save();
+  }
   function raidOver() {
     const S = NET.s, won = cb.over === 'win', mk = cb.raidMap, c = profile.chars[heroKey];
+    raidHistory(won);
     if (!won) {
       modal(`<h2 class="loss">The raid falls</h2><p>${esc(CB.RAID_NAMES[mk] || 'The boss')} wiped the raid in ${cb.round} rounds. Nothing is lost: no gear, no gold, and no lockout. Regroup and try again.</p><div class="row"><button class="btn primary" id="mNew">Back to Emberwatch</button><button class="btn" id="mClose">Look at the fight</button></div>`);
       $('mNew').onclick = backToTown; $('mClose').onclick = closeModal; return;
@@ -4711,11 +4801,18 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     modal(`<h2>${esc(CB.RAID_NAMES[cb.raidMap] || 'The raid boss')} falls</h2><p>Won in ${cb.round} rounds. This hero is locked out of this raid for 7 days. ${all ? 'All loot is handed out.' : `Roll on each item: <b>Need</b> beats <b>Greed</b>; ties roll 1-100 (watch the chat).${left ? ` Unanswered rolls count as Pass in ${left}s.` : ''}`}</p>
       <div class="raidloot">${cb.raidLoot.map((x, i) => { const v = x.votes[mi];
         return `<div class="rlrow">${itemHtml(x.it)}<div class="rlvote">${x.done ? (x.winner != null ? `<b style="color:${CC[cb.players[x.winner].cls]}">${x.winner === mi ? 'You win it' : esc(nm(x.winner)) + ' wins'}</b> <span class="muted">(${x.how})</span>` : '<span class="muted">Everyone passed.</span>')
-          : v ? `<span class="muted">You chose ${v}. Waiting for ${Object.keys(x.votes).length}/${raidVoters().length}...</span>` : ['need', 'greed', 'pass'].map(k => `<button class="btn ${k === 'need' ? 'primary' : ''}" data-rl="${i}" data-rv="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div></div>`; }).join('')}</div>
+          : v ? `<span class="muted">You chose ${v}. Waiting for ${Object.keys(x.votes).length}/${raidVoters().length}...</span>` : ['need', 'greed', 'pass'].map(k => `<button class="btn ${k === 'need' ? 'primary' : ''}" data-rl="${i}" data-rv="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div>
+          ${x.done ? `<div class="rlrolls">${rollLine(x).map(([j, ch, r]) => `<span style="color:${CC[cb.players[j].cls]}" class="${j === x.winner ? 'win' : ''}">${esc(nm(j))}: ${ch}${r != null ? ' <b>' + r + '</b>' : ''}</span>`).join('')}</div>` : ''}</div>`; }).join('')}</div>
       <div class="row"><button class="btn ${all ? 'primary' : ''}" id="mNew">${all ? 'Back to Emberwatch' : 'Leave (pass on the rest)'}</button><button class="btn" id="mClose">Look at the fight</button></div>`);
     $('modalBox').classList.add('wide');
     $('mNew').onclick = () => { if (NET.s && !all) netLeave(); backToTown(); }; $('mClose').onclick = closeModal;
     $('modalBox').querySelectorAll('[data-rl]').forEach(b => b.onclick = () => { b.parentElement.querySelectorAll('button').forEach(x => x.disabled = true); netAct({ t: 'roll', i: +b.dataset.rl, v: b.dataset.rv }); });
+  }
+  // everyone's choice and roll for one item, highest first: [playerIndex, 'Need'|'Greed'|'Pass'|'-', roll]
+  function rollLine(x) {
+    const order = { Need: 0, Greed: 1, Pass: 2, '-': 3 };
+    return (NET.s ? NET.s.uids.map((u, i) => i) : cb.players.map((p, i) => i)).map(j => { const v = x.votes[j]; return [j, v ? v[0].toUpperCase() + v.slice(1) : '-', x.rolls ? x.rolls[j] : null]; })
+      .sort((a, b) => order[a[1]] - order[b[1]] || (b[2] || 0) - (a[2] || 0));
   }
   const raidVoters = () => NET.s ? NET.s.uids.map((u, i) => i).filter(i => !NET.s.gone[i]) : [];
   // applied in the same order on every computer (lockstep), so the dice come out the same everywhere
@@ -4730,16 +4827,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     x.done = true; const voters = raidVoters(), need = voters.filter(i => x.votes[i] === 'need'), greed = voters.filter(i => x.votes[i] === 'greed');
     const pool = need.length ? need : greed, kind = need.length ? 'Need' : 'Greed', nm = (i) => cb.players[i].name, iname = x.it.name || 'item';
     if (!pool.length) { sysChat(`Everyone passed on ${iname}.`); return; }
-    if (pool.length === 1) { x.winner = pool[0]; x.how = kind.toLowerCase(); sysChat(`${nm(x.winner)} wins ${iname} (${kind}, uncontested).`); }
-    else {
-      let cands = pool, line = [];
-      for (let g = 0; g < 10; g++) {
-        const rolls = cands.map(i => [i, CB.ri(cb.rng, 1, 100)]); line.push(rolls.map(([i, r]) => `${nm(i)} ${r}`).join(', '));
-        const top = Math.max(...rolls.map(r => r[1])); cands = rolls.filter(r => r[1] === top).map(r => r[0]); if (cands.length === 1) break;
-      }
-      x.winner = cands[0]; x.how = `${kind} roll`;
-      sysChat(`${kind} rolls for ${iname}: ${line.join(' | tie, reroll: ')}. ${nm(x.winner)} wins it.`);
-    }
+    // everyone who chose Need or Greed rolls 1-100 so the whole raid can see the dice; Need beats Greed; ties in the winning group reroll
+    x.rolls = {}; for (const i of [...need, ...greed]) x.rolls[i] = CB.ri(cb.rng, 1, 100);
+    let cands = pool.slice(), top = Math.max(...cands.map(i => x.rolls[i])); cands = cands.filter(i => x.rolls[i] === top); const re = [];
+    for (let g = 0; g < 10 && cands.length > 1; g++) { const rr = cands.map(i => [i, CB.ri(cb.rng, 1, 100)]); re.push(rr.map(([i, r]) => `${nm(i)} ${r}`).join(', ')); const t2 = Math.max(...rr.map(r => r[1])); cands = rr.filter(r => r[1] === t2).map(r => r[0]); }
+    x.winner = cands[0]; x.how = `${kind} ${x.rolls[x.winner]}${re.length ? ', won the reroll' : ''}`;
+    sysChat(`Rolls for ${iname}: ${rollLine(x).filter(r => r[1] !== '-').map(([j, ch, r]) => `${nm(j)} ${ch}${r != null ? ' ' + r : ''}`).join(', ')}${re.length ? ` | tie, reroll: ${re.join(' | ')}` : ''}. ${nm(x.winner)} wins it (${kind}).`);
+    if (x.winner === cb.myMi && cb._hist) cb._hist.loot = (cb._hist.loot || 0) + 1;
     if (x.winner === cb.myMi) {
       const it = Object.assign({ id: 'g' + Math.random().toString(36).slice(2, 10) }, x.it, { slot: /^Ring/.test(x.it.slot) ? 'Ring' : x.it.slot });
       if (profile.stash.length < CBHub.STASH_MAX) { profile.stash.unshift(it); save(); sysChat(`${iname} is in your stash.`); }
@@ -4751,6 +4845,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-10-31', items: [
+      ['Combat', 'Party fights are laid out in a grid: 2x2 for 3-4 heroes, 3 across for 5-6, 4-5 across in big raids. Status tags are shortened (hover for the full name). Several monsters line up two by two.'],
+      ['Raids', 'You can see who has ended their turn: a green check on the turn bar and "Done" under their name; everyone else shows "playing...".'],
+      ['Raids', 'Raid bosses are tougher: Gorrath +30% HP, Vashkar +50% HP and +25% damage, all the others +40% HP. Raid bosses resist 25% of Bleed, Poison and Burn damage.'],
+      ['Raids', 'Loot rolls are public: everyone who picks Need or Greed rolls 1-100, and the loot screen and chat show every pick and roll. Highest Need wins, otherwise highest Greed.'],
+      ['Raids', 'Chronicler Osk keeps raid kills and wipes too, with the damage meter.'],
+      ['Co-op', 'Ready check: when the leader starts a Wagon run or a raid, everyone gets a Ready / Not ready popup (25 seconds). If someone isn\'t ready, everyone is told who, and the start is called off.'],
+      ['Chat', 'Item links: shift-click any item (stash, shop, loot, gear slots) to put [Item name] in the chat box. Anyone can click the link to see the item.'],
+      ['Social', 'The guild roster has Invite to party and Message buttons for online members.'],
+      ['Cards', 'Mana Gem costs 0.'],
       ['Online', 'Fixed big parties and raids silently failing: the game was sending too many messages for our server plan once 4+ players were around (it dropped everyone\'s messages for a moment). Town movement is now batched, status updates are throttled, and party invites retry until they get through.'],
       ['Loot', 'Map bosses always drop a codex now: every kill gives each hero the codex on that boss\'s table for their class (with fresh random stats).'],
       ['Testing', 'Tinker Pip: "Full Blue gear kit" equips a complete Blue set for your class, for testing raids. Your old gear goes to the stash; your codex stays on.'],
@@ -5703,13 +5806,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function cardBox(d, w) { const f = cardFace(d); return f ? `<div class="${cardCls(d)}" style="${cardVars(d)}${w ? ';--cw:' + w + 'px' : ''}" role="img" aria-label="${esc(d.name + ': ' + d.text)}">${f}</div>` : ''; }
 
   function itemHtml(it, extra) {
-    if (it.kind === 'card') { const d = CARDS[it.key]; return `<div class="item" style="--rc:${RC[d.rarity]};grid-template-columns:auto 1fr;align-items:center;column-gap:10px">${cardBox(d, 96)}<div><div class="ih"><b>${esc(d.name)}</b></div><div class="il">${d.rarity} card &middot; ${d.cost} mana</div>${extra || ''}</div></div>`; }
+    if (it.kind === 'card') { const d = CARDS[it.key]; return `<div class="item" data-ilink="${linkKey(it)}" style="--rc:${RC[d.rarity]};grid-template-columns:auto 1fr;align-items:center;column-gap:10px">${cardBox(d, 96)}<div><div class="ih"><b>${esc(d.name)}</b></div><div class="il">${d.rarity} card &middot; ${d.cost} mana</div>${extra || ''}</div></div>`; }
     const nice = (k) => k.replace('Elemental/Holy Damage:', '').replace('Resistance:', '') + (k.startsWith('Elemental') ? ' Damage' : k.startsWith('Resistance:') ? ' Resistance' : '');
     const pct = (k) => /Chance|Damage|Resistance|Dexterity|Strength|Intelligence|Spirit|Defense|Lifesteal|Efficiency/.test(k) ? '%' : '';
     const stats = Object.entries(it.stats || {}).map(([k, v]) => `+${v}${pct(k)} ${nice(k)}`).join(', ');
     const wf = CB.weaponFlat(it), imp = [wf ? `+${wf} damage per Attack hit` : '', ...Object.entries(it.imp2 || {}).map(([k, v]) => k === 'Draw' ? `${v} draw` : k === 'Regen' ? `${v} regen` : `+${v}${pct(k)} ${nice(k)}`)].filter(Boolean).join(', ');
     const lines = (it.lines || []).map(l => `${nice(l.stat)} ${l.v} (${l.lo}-${l.hi})`).join(' · ');
-    return `<div class="item" style="--rc:${RC[it.rarity] || 'var(--r-white)'}" title="${esc(lines ? 'Each roll: ' + lines : '')}"><div class="ih"><b>${esc(it.name)}</b><span>${it.rarity === 'Purple (Epic)' ? 'Purple' : it.rarity} &middot; ilvl ${it.ilvl}</span></div><div class="il">${esc(it.label || it.slot)}</div>${it.passive ? `<div class="st" style="color:#f0b070"><b>Passive:</b> ${esc((it.codex && CB.CODEX_BY_KEY[it.codex] && CB.CODEX_BY_KEY[it.codex].text) || it.passive)}</div>` : ''}<div class="st">${esc(stats)}${imp ? '<br><span class="muted">Implicit: ' + esc(imp) + '</span>' : ''}</div>${extra || ''}</div>`;
+    return `<div class="item" data-ilink="${linkKey(it)}" style="--rc:${RC[it.rarity] || 'var(--r-white)'}" title="${esc((lines ? 'Each roll: ' + lines + '. ' : '') + 'Shift-click to link it in chat.')}"><div class="ih"><b>${esc(it.name)}</b><span>${it.rarity === 'Purple (Epic)' ? 'Purple' : it.rarity} &middot; ilvl ${it.ilvl}</span></div><div class="il">${esc(it.label || it.slot)}</div>${it.passive ? `<div class="st" style="color:#f0b070"><b>Passive:</b> ${esc((it.codex && CB.CODEX_BY_KEY[it.codex] && CB.CODEX_BY_KEY[it.codex].text) || it.passive)}</div>` : ''}<div class="st">${esc(stats)}${imp ? '<br><span class="muted">Implicit: ' + esc(imp) + '</span>' : ''}</div>${extra || ''}</div>`;
   }
 
   function renderSideParty() {
@@ -5951,6 +6054,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       return `<span class="intent ${kind}${planned ? '' : ' skip'}" data-e="${e.id}" data-cu="${c.uid}" title="${esc(c.name)} (${c.cost} mana): ${esc(c.text)}${c.dtype !== 'Physical' && dmg ? ' [' + c.dtype + ']' : ''}${mk ? ' Aimed at ' + esc(mk.name) + '.' : ''}${planned ? '' : ' (not enough mana: discarded)'}">${ICON[kind]}${num !== '' ? num : esc(c.name)}${tg}</span>`;
     }).join('') || '<span class="tag">no cards</span>';
   }
+  // party fights: shorter status tags (full text on hover)
+  const SHORT = [[/^Block /, 'Blk '], [/^Barrier /, 'Bar '], [/^Dodge /, 'Ddg '], [/^Parry /, 'Pry '], [/^Weak /, 'Wk '], [/^Vulnerable |^Vuln /, 'Vul '], [/^Bleed /, 'Bld '], [/^Poison /, 'Psn '], [/^Burn /, 'Brn '], [/^Chill /, 'Chl '], [/^Slow /, 'Slw '], [/^Stealth$/, 'Stlth'], [/^Divine Shield$/, 'Shield'], [/^Disarmed$/, 'Disarm'], [/^Blood Debt /, 'Debt '], [/^Devotion /, 'Dev '], [/^Taunting$/, 'Taunt']];
+  function shortTags(html) {
+    return html.replace(/<span class="tag([^"]*)"([^>]*)>([^<]*)<\/span>/g, (m, c, attrs, txt) => {
+      let t = txt; for (const [re, r] of SHORT) if (re.test(t)) { t = t.replace(re, r); break; }
+      return t === txt ? m : `<span class="tag${c}"${/title=/.test(attrs) ? attrs : attrs + ` title="${txt}"`}>${t}</span>`;
+    });
+  }
   function unitHtml(a) {
     const isNow = (cb.raid && a.isPlayer ? cb.canAct(a) : cb.current === a) && !cb.over, targetable = (cb.duel ? a.isPlayer && a !== hero() : !a.isPlayer) && a.hp > 0 && selected && CARDS[selected.key].target === 'enemy';
     const pct = Math.max(0, 100 * a.hp / a.maxHp), ini = cb.initiative(a);
@@ -5959,9 +6070,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       ${a.isPlayer ? '' : `<div class="intents">${intentHtml(a)}</div>`}
       ${a.isPlayer ? '' : `<button class="pilebtn deckbtn" data-enemy="${a.id}">Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}</button>`}
       <div class="figure">${figure(a)}</div>
-      <div class="uname"><b ${a.isPlayer ? `style="color:${CC[a.cls]}"` : ''}>${esc(a.name)}</b><small>${sub}</small></div>
+      <div class="uname"><b ${a.isPlayer ? `style="color:${CC[a.cls]}"` : ''}>${esc(a.name)}</b><small>${cb.raid && a.isPlayer && a.hp > 0 && !cb.over ? (cb.raidDone && cb.raidDone.has(a.id) ? '<span class="rdone" title="Ended their turn">&#10003; Done</span>' : cb.phase === 'player' ? '<span class="rwait">playing...</span>' : '') : sub}</small></div>
       <div class="bar"><i style="width:${pct}%"></i><span>${a.hp} / ${a.maxHp}</span></div>
-      <div class="tags">${tags(a)}${cb.duel && a !== hero() ? `<span class="tag">Hand ${a.hand.length} &middot; Mana ${a.mana}</span>` : ''}</div></div>`;
+      <div class="tags">${a.isPlayer && cb.partySize > 2 && !cb.duel ? shortTags(tags(a)) : tags(a)}${cb.duel && a !== hero() ? `<span class="tag">Hand ${a.hand.length} &middot; Mana ${a.mana}</span>` : ''}</div></div>`;
   }
   function popups() {
     for (const a of [...cb.players, ...cb.enemies]) {
@@ -5994,9 +6105,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const p = hero(), party = cb.partySize > 1, wh = watchedHero(p);
     $('order').classList.toggle('raid', !!cb.raid && cb.partySize > 4);
     $('order').innerHTML = `<span class="lbl">Turn<br>order</span>` + cb.order.map((id, i) => { const a = cb.actorById(id); const st = a.hp <= 0 ? 'dead' : cb.raid && a.isPlayer ? (cb.raidDone && cb.raidDone.has(a.id) ? 'done' : cb.phase === 'player' && !cb.over ? 'now' : '') : i === cb.turnIndex && !cb.over ? 'now' : i < cb.turnIndex ? 'done' : '';
-      return `${i ? '<span class="osep" aria-hidden="true">&rsaquo;</span>' : ''}<div class="otile ${a.isPlayer ? 'hero' : 'foe'} ${st}" style="--oc:${a.isPlayer ? CC[a.cls] : '#e0b8a8'}" title="${esc(a.name)}: Initiative ${cb.initiative(a)}, HP ${a.hp}/${a.maxHp}"><span class="oini">${cb.initiative(a)}</span><div class="ofig">${figure(a)}</div><div class="onm">${a.isPlayer && !party ? 'You' : a === p && cb.myMi != null ? 'You' : esc(a.name)}</div><div class="obar"><i style="width:${Math.max(0, 100 * a.hp / a.maxHp)}%"></i></div></div>`; }).join('') + `<span class="round">Round ${cb.round}</span>${run ? '<button class="pilebtn" id="btnCMap" title="Look at the map (M)">Map</button>' : ''}${cb.practice ? '<button class="pilebtn" id="btnCReset" title="Start a fresh fight">Reset</button><button class="pilebtn" id="btnCLeave">Leave</button>' : ''}`;
+      return `${i ? '<span class="osep" aria-hidden="true">&rsaquo;</span>' : ''}<div class="otile ${a.isPlayer ? 'hero' : 'foe'} ${st}" style="--oc:${a.isPlayer ? CC[a.cls] : '#e0b8a8'}" title="${esc(a.name)}: Initiative ${cb.initiative(a)}, HP ${a.hp}/${a.maxHp}"><span class="oini">${cb.initiative(a)}</span>${cb.raid && a.isPlayer && a.hp > 0 && cb.raidDone && cb.raidDone.has(a.id) ? '<span class="ock" title="Ended their turn">&#10003;</span>' : ''}<div class="ofig">${figure(a)}</div><div class="onm">${a.isPlayer && !party ? 'You' : a === p && cb.myMi != null ? 'You' : esc(a.name)}</div><div class="obar"><i style="width:${Math.max(0, 100 * a.hp / a.maxHp)}%"></i></div></div>`; }).join('') + `<span class="round">Round ${cb.round}</span>${run ? '<button class="pilebtn" id="btnCMap" title="Look at the map (M)">Map</button>' : ''}${cb.practice ? '<button class="pilebtn" id="btnCReset" title="Start a fresh fight">Reset</button><button class="pilebtn" id="btnCLeave">Leave</button>' : ''}`;
     const mine = cb.duel ? [p] : cb.players, foes = cb.duel ? cb.players.filter(x => x !== p) : cb.enemies;
-    $('playerSlot').className = cb.raid && cb.partySize > 4 ? 'party raid' : party && !cb.duel ? 'party' : ''; $('playerSlot').innerHTML = mine.map(unitHtml).join('');
+    $('playerSlot').className = cb.raid && cb.partySize > 4 ? 'party raid' : party && !cb.duel ? 'party' : ''; { const n = cb.partySize; $('playerSlot').style.setProperty('--pc', n <= 4 ? 2 : n <= 6 ? 3 : n <= 8 ? 4 : 5); $('playerSlot').parentElement.classList.toggle('bigparty', !cb.duel && n >= 3); $('foes').classList.toggle('many', !cb.duel && cb.enemies.length >= 3); } $('playerSlot').innerHTML = mine.map(unitHtml).join('');
     $('foes').innerHTML = foes.map(unitHtml).join('');
     if (withPops) popups(); else snapshot();
     $('orb').textContent = p.mana;

@@ -123,7 +123,7 @@
   // channels: world (default), /p party, /g guild, /w Name whisper, /r reply to the last whisper
   function addChat(m) {
     if (!m || !m.text) return;
-    SOC.chat.push({ from: m.uid, name: String(m.name || '?').slice(0, 24), text: String(m.text).slice(0, 200), sys: !!m.sys, at: m.at || Date.now(), ch: m.ch || 'world', toName: m.toName, mine: m.uid === SOC.me });
+    SOC.chat.push({ from: m.uid, name: String(m.name || '?').slice(0, 24), text: String(m.text).slice(0, 200), sys: !!m.sys, at: m.at || Date.now(), ch: m.ch || 'world', toName: m.toName, mine: m.uid === SOC.me, items: Array.isArray(m.items) ? m.items.slice(0, 3) : undefined });
     SOC.chat = SOC.chat.slice(-80); renderChat();
   }
   function sysChat(text) { addChat({ sys: true, name: '', text }); }
@@ -163,14 +163,42 @@
       } else { sysChat(`Unknown command /${k}. Type /help.`); return; }
     }
     m.text = m.text.slice(0, 200);
+    const links = (SOC.links || []).filter(l => m.text.includes(l.tok)).slice(0, 3); SOC.links = [];
+    if (links.length) m.items = links.map(l => ({ tok: l.tok, it: l.it }));
     SOC.ch.send({ type: 'broadcast', event: 'chat', payload: m }); addChat(m);
+  }
+  // ---------- item links: shift-click any item (stash, shop, loot, gear slot...) to drop "[Item name]" into the chat box;
+  // the item travels with the message and anyone can click the name to see it
+  const ILINK = new Map(); let ilinkN = 0;
+  function linkKey(it) { if (ILINK.size > 1500) ILINK.clear(); const k = 'L' + (ilinkN++); ILINK.set(k, it); return k; }
+  function linkName(it) { return it.kind === 'card' ? (CARDS[it.key] ? CARDS[it.key].name : 'Card') + (it.rank ? ' +' + it.rank : '') : it.name || 'Item'; }
+  function slimItem(it) { const o = JSON.parse(JSON.stringify(it)); for (const k of ['id', 'price', 'sold', 'test']) delete o[k]; return o; }
+  function insertLink(it) {
+    const box = $('chatIn'); if (!box) return;
+    const tok = `[${linkName(it)}]`;
+    SOC.links = (SOC.links || []).filter(l => l.tok !== tok).slice(-4); SOC.links.push({ tok, it: slimItem(it) });
+    box.value = (box.value && !/\s$/.test(box.value) ? box.value + ' ' : box.value) + tok + ' ';
+    box.focus(); box.setSelectionRange(box.value.length, box.value.length);
+  }
+  document.addEventListener('click', (ev) => {
+    if (!ev.shiftKey) return;
+    const a = ev.target.closest('[data-ilink],[data-tip]'); if (!a) return;
+    const it = a.dataset.ilink ? ILINK.get(a.dataset.ilink) : ((typeof TIPS !== 'undefined' && TIPS.get(a.dataset.tip)) || {}).it; if (!it) return;
+    ev.preventDefault(); ev.stopPropagation(); insertLink(it);
+  }, true);
+  document.addEventListener('click', (ev) => { const a = ev.target.closest('[data-chatlink]'); if (!a) return; const [i, j] = a.dataset.chatlink.split(':').map(Number); const m = SOC.chat[i], l = m && m.items && m.items[j]; if (l && l.it) showLinked(l.it); });
+  function showLinked(it) {
+    const body = it.kind === 'card' ? (cardBox(CB.rankedCard(it.key, it.rank || 0), 230) || itemHtml(it)) : itemHtml(it);
+    modal(`<h2>${esc(linkName(it))}</h2><div class="linkview">${body}</div><p class="muted" style="font-size:13px">Linked in chat. Shift-click your own items to link them.</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
+    fitCards($('modalBox')); $('mClose').onclick = closeModal;
   }
   const CHAN = { world: ['', ''], party: ['[Party] ', 'cparty'], guild: ['[Guild] ', 'cguild'], whisper: ['', 'cwhisper'] };
   function renderChat() {
     const el = $('chatLog'); if (!el) return;
-    el.innerHTML = SOC.chat.map(m => { if (m.sys) return `<div class="sys">${esc(m.text)}</div>`; const [tag, cls] = CHAN[m.ch] || CHAN.world;
+    el.innerHTML = SOC.chat.map((m, i) => { if (m.sys) return `<div class="sys">${esc(m.text)}</div>`; const [tag, cls] = CHAN[m.ch] || CHAN.world;
       const who = m.ch === 'whisper' ? (m.mine ? `To ${esc(m.toName || '?')}` : `From ${esc(m.name)}`) : esc(m.name);
-      return `<div class="${cls}">${tag}<b>${who}:</b> ${esc(m.text)}</div>`; }).join('') || `<div class="sys">${socOn() ? 'World chat. Say hello. Press T to type, /help for channels.' : 'Sign in to see other players and chat.'}</div>`;
+      let body = esc(m.text); (m.items || []).forEach((l, j) => { if (!l || !l.it || !l.tok) return; const r = l.it.kind === 'card' ? (CARDS[l.it.key] || {}).rarity : l.it.rarity; body = body.split(esc(l.tok)).join(`<a class="ilink" data-chatlink="${i}:${j}" style="color:${RC[r] || 'var(--accent)'}" role="button" tabindex="0">${esc(l.tok)}</a>`); });
+      return `<div class="${cls}">${tag}<b>${who}:</b> ${body}</div>`; }).join('') || `<div class="sys">${socOn() ? 'World chat. Say hello. Press T to type, /help for channels.' : 'Sign in to see other players and chat.'}</div>`;
     el.scrollTop = el.scrollHeight;
   }
 
