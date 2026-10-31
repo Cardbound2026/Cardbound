@@ -80,6 +80,67 @@ card('dazed', { name: 'Dazed', rarity: 'Status', type: 'Status', cost: 0, target
 card('stun', { name: 'Stun', rarity: 'Status', type: 'Status', cost: null, target: 'none', text: 'Unplayable. Stays in your deck for the rest of the fight.' });
 
 // ---------------- Classes ----------------
+// ---------------- Generated cards (design/scripts/gen_cards.py from the Card Database) ----------------
+// Hand-written cards above keep their code and just get their Card ID. Every other designed card is added: with ops the engine
+// can run (playable, can drop), or as design-only (shown in the Codex, never dropped, can't be played).
+const GEN = (typeof module !== 'undefined' && module.exports) ? require('./cards_gen.js') : (root.CB_CARDS_GEN || []);
+const slug = (n) => n.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+function genTags(ops) {
+  const t = {}; for (const o of ops) {
+    if (o.op === 'dmg' && !t.dmg) { t.dmg = o.n; if (o.all) t.aoe = 1; if (o.times > 1) t.hits = o.times; }
+    if (o.op === 'def') t.def = (t.def || 0) + o.n; if (o.op === 'heal' || o.op === 'healAlly') t.heal = o.n; if (o.op === 'draw') t.draw = o.n;
+    if (o.op === 'nextAttack') t.setup = 'attack'; if (o.op === 'nextSkill') t.setup = 'skill'; if (o.op === 'str') t.setup = 'str';
+  } return t;
+}
+for (const g of GEN) {
+  const have = Object.values(C).find(c => c.name === g.name && c.cls === g.cls);
+  if (have) { have.id = g.id; continue; }
+  let key = slug(g.name); if (C[key]) key += '_' + g.cls.slice(0, 3).toLowerCase();
+  const playable = !!g.ops, onDraw = playable && g.ops.find(o => o.op === 'onDraw');
+  const unplayable = playable && g.ops.some(o => o.op === 'unplayable');
+  card(key, { id: g.id, cls: g.cls, name: g.name, rarity: g.rarity, type: g.type === 'Power' ? 'Power' : g.type, cost: unplayable ? null : g.cost, target: g.target, dtype: g.dtype || (g.type === 'Attack' ? 'Physical' : undefined),
+    text: g.text, exhaust: !!g.exhaust, retain: playable && g.ops.some(o => o.op === 'retain'), designOnly: !playable, onDraw: onDraw ? onDraw.ops : null,
+    play: playable ? (cb, t) => runOps(cb, t, g.ops, g.name) : null, tags: playable ? genTags(g.ops) : {} });
+}
+// run a generated card's effects; t = the chosen enemy (or null)
+function runOps(cb, t, ops, label) {
+  const p = cb.player;
+  const targets = (o) => o.all ? cb.alive() : [t && t.hp > 0 ? t : cb.alive().find(x => !x.stealth)].filter(Boolean);
+  for (const o of ops) {
+    if (cb.over) break;
+    switch (o.op) {
+      case 'dmg': for (let k = 0; k < (o.times || 1) && !cb.over; k++) for (const e of targets(o)) { cb.hit(e, o.n, label); if (o.perHit && e.hp > 0 && !cb.over) cb.applyDot(e, o.perHit.key, o.perHit.n); } break;
+      case 'dot': for (const e of targets(o)) cb.applyDot(e, o.key, o.n); break;
+      case 'debuff': for (const e of targets(o)) { e[o.key] = (e[o.key] || 0) + o.n; cb.say('player', `${e.name} gains ${o.n} ${o.key[0].toUpperCase() + o.key.slice(1)} (now ${e[o.key]}).`); } break;
+      case 'chill': for (const e of targets(o)) cb.applyChill(e, o.n); break;
+      case 'def': cb.gainDef(o.n); break;
+      case 'heal': for (const a of o.party ? cb.allies() : [p]) cb.heal(a, o.n, label); break;
+      case 'healAlly': { const a = cb.allies().slice().sort((x, y) => x.hp / x.maxHp - y.hp / y.maxHp)[0]; if (a) cb.heal(a, o.n, label); break; }
+      case 'draw': cb.drawCards(p, o.n); break;
+      case 'mana': p.mana += o.n; cb.say('player', `+${o.n} mana (${p.mana}).`); break;
+      case 'manaNext': p.manaNext += o.n; cb.say('player', `+${o.n} mana next turn.`); break;
+      case 'drawNext': p.drawNext = (p.drawNext || 0) + o.n; cb.say('player', `Draw ${o.n} more next round.`); break;
+      case 'str': if (o.combat) p.strCombat += o.n; else p.strTurn += o.n; cb.say('player', `+${o.n} Strength ${o.combat ? 'for the fight' : 'this turn'}.`); break;
+      case 'regen': p.regen += o.n; cb.say('player', `+${o.n} mana regeneration for the fight.`); break;
+      case 'maxMana': p.maxMana += o.n; cb.say('player', `+${o.n} maximum mana for the fight.`); break;
+      case 'loseHp': p.hp = Math.max(1, p.hp - o.n); cb.say('player', `${cb.who(p)} lose${cb.partySize > 1 ? 's' : ''} ${o.n} HP. HP ${p.hp}/${p.maxHp}.`); break;
+      case 'stealth': p.stealth = true; cb.say('player', `${cb.who(p)} slip${cb.partySize > 1 ? 's' : ''} into Stealth.`); break;
+      case 'addCard': for (let k = 0; k < o.n; k++) cb.addToHand(o.key); break;
+      case 'selfStatus': for (let k = 0; k < o.n; k++) { const sc = { uid: 'c' + (cb._uid++), key: o.key }; if (o.pile === 'discard') p.discard.push(sc); else p.drawPile.splice(Math.floor(cb.rng() * (p.drawPile.length + 1)), 0, sc); } break;
+      case 'burnMana': case 'stealMana': for (const e of targets(o)) { const s = Math.min(o.n, e.mana || 0); e.mana -= s; if (o.op === 'stealMana') p.mana += s; cb.say('player', `${e.name} loses ${s} mana${o.op === 'stealMana' ? ' to you' : ''}.`); } break;
+      case 'regenDown': for (const e of targets(o)) { (e.regenDown = e.regenDown || []).push({ n: o.n, turns: o.turns }); cb.say('player', `${e.name}'s mana regen drops by ${o.n} for ${o.turns} turns.`); } break;
+      case 'nextAttack': p.nextAttackMult = o.mult; cb.say('player', 'Your next Attack deals double damage.'); break;
+      case 'nextSkill': p.nextSkillMult = o.mult; cb.say('player', `Your next damaging Skill deals ${Math.round((o.mult - 1) * 100)}% more damage.`); break;
+      case 'init': p.initNext = o.n; break;
+      case 'negate': p.negateDebuff = true; cb.say('player', 'The next debuff on you is negated.'); break;
+      case 'cleanse': { let n = o.n; for (const k of ['vulnerable', 'weak', 'bleed', 'poison', 'burn', 'slow', 'chill']) if (n > 0 && p[k]) { p[k] = 0; n--; } p.disarmNext = n > 0 ? false : p.disarmNext; cb.say('player', 'Debuffs removed.'); break; }
+      case 'cleanseDot': for (const k of o.keys) p[k] = 0; cb.say('player', `${o.keys.join(', ')} removed.`); break;
+      case 'allyDef': for (const a of cb.allies().filter(x => x !== p)) { cb.player = a; cb.gainDef(o.n); } cb.player = p; break;
+      case 'cycle': { const n = p.hand.length; p.discard.push(...p.hand.splice(0)); cb.drawCards(p, n + o.plus); break; }
+    }
+  }
+}
+
 const CLASSES = {
   Warrior: { defense: 'Block', blurb: 'Sword and shield. Hits, blocks, and gets stronger after taking a hit (Battle Fever).', deck: [['battle_fever', 1], ['execute', 1], ['shield_wall', 1], ['bloodthirst', 1], ['shield_up', 1], ['whirlwind', 1], ['battle_shout', 1], ['defend', 3], ['pommel_strike', 1], ['shield_bash', 2], ['strike', 7]] },
   Rogue: { defense: 'Dodge', blurb: 'Quick hits, Dodge, Bleed and Poison. Hide skips an enemy\'s single-target attacks.', deck: [['assassinate', 1], ['coup_de_grace', 1], ['evasion', 1], ['blur', 1], ['garrote', 1], ['hide', 1], ['envenom', 1], ['evade', 5], ['slip_away', 1], ['stab', 5], ['throwing_stars', 1], ['twin_daggers', 1]] },
@@ -280,7 +341,7 @@ class Combat {
       }
       const c = a.drawPile.pop();
       if (a.hand.length >= 10) { a.discard.push(c); if (a.isPlayer) this.say('sys', `Hand full: ${C[c.key].name} went to the discard pile.`); }
-      else a.hand.push(c);
+      else { a.hand.push(c); if (a.isPlayer && C[c.key].onDraw) { const was = this.player; this.player = a; this.say('player', `${C[c.key].name} is drawn.`); runOps(this, null, C[c.key].onDraw, C[c.key].name); this.player = was; } }
     }
   }
 
@@ -289,7 +350,7 @@ class Combat {
     this.say('round', `Round ${this.round}` + (this.pressure() ? ` (Pressure: ${this.duel ? 'every hit deals' : 'enemies deal'} +${Math.round(this.pressure() * 100)}%)` : ''));
     for (const p of this.alivePlayers()) {
       this.player = p; p.attackedThisRound = false;
-      const n = Math.max(0, p.draw - p.drawLess);
+      const n = Math.max(0, p.draw - p.drawLess + (p.drawNext || 0)); p.drawNext = 0;
       if (p.drawLess) this.say('enemy', `${this.who(p)} draw${this.partySize > 1 ? 's' : ''} ${p.drawLess} fewer card this round.`);
       p.drawLess = 0;
       this.drawCards(p, n);
@@ -504,6 +565,7 @@ class Combat {
   canPlay(c) {
     const d = this.card(c), p = this.player;
     if (this.phase !== 'player' || this.over) return { ok: false, why: 'Not your turn' };
+    if (d.designOnly) return { ok: false, why: 'Not built yet' };
     if (d.cost == null) return { ok: false, why: 'Unplayable' };
     if (p.locked && d.cost > 0) return { ok: false, why: 'In Stealth: 0-cost only' };
     if (p.disarmed && d.type === 'Attack') return { ok: false, why: 'Disarmed' };
@@ -540,9 +602,9 @@ class Combat {
 
   endPlayerTurn() {
     if (this.phase !== 'player') return;
-    const p = this.player; const kept = p.hand.length;
-    p.discard.push(...p.hand.splice(0));
-    if (kept) this.say('player', `End turn: ${kept} card${kept > 1 ? 's' : ''} discarded.`);
+    const p = this.player; const keep = p.hand.filter(c => this.card(c).retain), kept = p.hand.length - keep.length;
+    p.discard.push(...p.hand.filter(c => !keep.includes(c))); p.hand = keep;
+    if (kept) this.say('player', `End turn: ${kept} card${kept > 1 ? 's' : ''} discarded${keep.length ? `, ${keep.length} retained` : ''}.`);
     p.strTurn = 0; p.disarmed = false; p.locked = false;
     p.weak = Math.floor(p.weak / 2); p.vulnerable = Math.floor(p.vulnerable / 2); if (p.slow) p.slow = Math.max(0, p.slow - 1); if (p.chill) p.chill = Math.max(0, p.chill - 1);
     this.nextTurn();
@@ -706,7 +768,7 @@ function rankedCard(key, rank) {
   } else { v.mult = 1; if (d.cost != null) v.cost = Math.max(Math.ceil(d.cost * 0.6), d.cost - rank); }
   return v;
 }
-function cardPool(cls) { return Object.keys(C).filter(k => C[k].cls === cls && ['White', 'Green', 'Blue', 'Gold'].includes(C[k].rarity)); }
+function cardPool(cls) { return Object.keys(C).filter(k => C[k].cls === cls && !C[k].designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(C[k].rarity)); }
 // Card drops: normal kills sometimes drop a card; elites always drop a Green or better; the boss drops two Blue or Gold.
 const CARD_DROPS = {
   1: { chance: 30, w: { White: 75, Green: 21, Blue: 4, Gold: 0 } },
