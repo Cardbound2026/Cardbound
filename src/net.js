@@ -8,7 +8,12 @@
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
   const newSid = () => 's' + Math.random().toString(36).slice(2, 10);
-  function netSend(type, payload) { if (socOn()) SOC.ch.send({ type: 'broadcast', event: 'net', payload: Object.assign({ type, from: SOC.me }, payload) }); }
+  const NETLOG = []; const nlog = (dir, type, extra) => { NETLOG.push(`${new Date().toISOString().slice(11, 19)} ${dir} ${type}${extra ? ' ' + extra : ''}`); if (NETLOG.length > 60) NETLOG.shift(); };
+  function netSend(type, payload) {
+    if (!socOn()) { nlog('x', type, '(not connected)'); return; }
+    if (type !== 'hb') nlog('>', type, payload && payload.seq != null ? '#' + payload.seq : payload && payload.a ? payload.a.t : '');
+    Promise.resolve(SOC.ch.send({ type: 'broadcast', event: 'net', payload: Object.assign({ type, from: SOC.me }, payload) })).then(r => { if (r && r !== 'ok') nlog('!', type, 'send result: ' + r); }).catch(e => nlog('!', type, 'send failed: ' + (e && e.message || e)));
+  }
   function nameOfUid(uid) { const m = SOC.party && SOC.party.members.find(x => x.uid === uid); if (m) return m.name; const o = SOC.online.get(uid); return o ? o.name : 'A player'; }
 
   // what I bring: my current hero, gear, deck, bank and stash space
@@ -21,11 +26,16 @@
   }
 
   // ---------- starting a session: the host asks everyone for their hero, then sends the seed
+  // a session whose run/fight is already gone is stale (left without the usual exit): drop it instead of blocking new games
+  function clearStale() { if (NET.s && !run && !cb) { nlog('!', 'stale session cleared', NET.s.sid); netEnd(); } if (NET.pend && Date.now() - (NET.pend.at || 0) > 20000) { clearTimeout(NET.pend.timer); clearInterval(NET.pend.again); NET.pend = null; } }
   function netStart(kind, uids, level, map) {
-    if (!socOn() || NET.s || NET.pend) return;
+    clearStale();
+    if (!socOn()) { toast('You are not connected to the online world. Reload the page and sign in again.'); return; }
+    if (NET.s) { toast('You are still in another co-op game. Finish or leave it first (Esc menu).'); return; }
+    if (NET.pend) { toast('Already setting out: waiting for the party to answer.'); return; }
     const me = mySpec(); if (me.err) { toast(`You ${me.err.replace(/^is /, 'are ').replace(/^has /, 'have ').replace(/^needs /, 'need ').replace(/their/, 'your')}.`); return; }
     const sid = newSid();
-    NET.pend = { sid, kind, uids, level, map, specs: { [SOC.me]: me } };
+    NET.pend = { sid, kind, uids, level, map, specs: { [SOC.me]: me }, at: Date.now() };
     NET.pend.timer = setTimeout(() => { if (!NET.pend || NET.pend.sid !== sid) return; clearInterval(NET.pend.again); const miss = uids.filter(u => !NET.pend.specs[u]).map(nameOfUid); NET.pend = null; toast(`${miss.join(', ')} didn't answer. ${kind === 'duel' ? 'The duel' : 'The run'} is called off. If they're online, ask them to reload the page (both of you should be on the latest version).`); }, 15000);
     // realtime messages can get lost: ask again every 2 seconds until everyone has answered
     NET.pend.again = setInterval(() => { if (!NET.pend || NET.pend.sid !== sid) return; netSend('req', { sid, kind, uids, level, map, build: CB_BUILD }); }, 2000);
@@ -82,7 +92,7 @@
     while (!busy && NET.s === S && S.buf.has(S.seq)) {
       const a = S.buf.get(S.seq); S.buf.delete(S.seq); S.log[S.seq] = a; S.seq++;
       if (a.aid && S.outbox) S.outbox.delete(a.aid);
-      try { netApply(a); } catch (e) { console.error('net apply', a, e); }
+      try { netApply(a); } catch (e) { console.error('net apply', a, e); nlog('!', 'apply ' + a.t, String(e && e.message || e).slice(0, 80)); sysChat(`Game error while syncing (${a.t}): ${String(e && e.message || e).slice(0, 80)}`); }
     }
     if (NET.s === S && !busy) autoSkip();
   }
@@ -96,7 +106,8 @@
     }
     switch (a.t) {
       case 'vote': {
-        if (!run || run.over || run.combat || (run.pending && run.pending.type === 'rest') || !run.reachable().includes(a.node)) return;
+        if (!run || run.over || run.combat || (run.pending && run.pending.type === 'rest')) return;
+        if (!run.reachable().includes(a.node)) { sysChat(`Out of sync: ${who} voted for a node your map doesn't have. Both of you: leave the run and reload the page.`); return; }
         if (!Object.keys(S.votes).length) S.voteAt = Date.now();
         S.votes[mi] = a.node;
         if (tallyDone(S.votes)) resolveMove(); else { renderMap(); if (run.pending && $('modal').hidden === false && run.pending.type === 'merchant' && redrawShop) redrawShop(); }
@@ -161,6 +172,7 @@
   function netIn(p) {
     if (!p || p.from === SOC.me) return;
     const S = NET.s;
+    if (p.type !== 'hb') nlog('<', p.type, (nameOfUid(p.from) || '').slice(0, 12) + (p.seq != null ? ' #' + p.seq : '') + (p.a ? ' ' + p.a.t : ''));
     if (S && p.sid === S.sid) { S.seen = S.seen || {}; S.seen[p.from] = Date.now(); }
     switch (p.type) {
       case 'hb': {
@@ -171,6 +183,7 @@
       }
       case 'req': {
         if (!p.uids.includes(SOC.me)) return;
+        clearStale();
         if (NET.s) { if (NET.s.sid !== p.sid) netSend('spec', { sid: p.sid, to: p.from, spec: { err: 'is already in a game' } }); return; }
         if (p.build !== CB_BUILD) { netSend('spec', { sid: p.sid, to: p.from, spec: { err: 'is on a different version of the game. Both of you reload the page (Ctrl+F5), then try again' } }); if (NET.verWarn !== p.sid) { NET.verWarn = p.sid; toast(`${nameOfUid(p.from)} tried to start ${p.kind === 'duel' ? 'a duel' : 'a run'}, but you two are on different versions of the game. Both of you reload the page (Ctrl+F5), then try again.`); } return; }
         if (!NET.wait || NET.wait.sid !== p.sid) sysChat(`${nameOfUid(p.from)} is ${p.kind === 'duel' ? 'starting the duel' : 'setting out'}...`);
@@ -196,7 +209,9 @@
       case 'cancel': if (NET.wait && NET.wait.sid === p.sid) { clearInterval(NET.wait.timer); NET.wait = null; } return;
       case 'needgo': { const g = NET.lastGo; if (p.to === SOC.me && g && g.sid === p.sid && NET.s && NET.s.sid === g.sid && g.uids.includes(p.from)) netSend('go', g); return; }
       case 'go': {
-        if (!p.uids.includes(SOC.me) || NET.s) return;
+        if (!p.uids.includes(SOC.me)) return;
+        clearStale();
+        if (NET.s) { if (NET.s.sid !== p.sid && NET.busySid !== p.sid) { NET.busySid = p.sid; sysChat(`${nameOfUid(p.from)} set out, but you are still in another co-op game. Leave it (Esc menu), then ask them to set out again.`); } return; }
         if (run || cb) { if (NET.busySid === p.sid) return; NET.busySid = p.sid; toast(`${nameOfUid(p.from)} set out, but you're still in another run or fight. Finish or leave it, then ask them to set out again.`); return; }
         if (NET.wait) { clearInterval(NET.wait.timer); NET.wait = null; }
         netBegin(p); return;
@@ -310,4 +325,25 @@
       if (heir) netSend('host', { sid: S.sid, host: heir, seq: S.next });
     } else netAct({ t: 'leave' });
     netEnd();
+  }
+
+  // ---------- connection details (Esc menu): everything needed to see where co-op breaks
+  function netReport() {
+    const S = NET.s, now = Date.now(), ago = (t) => t ? Math.round((now - t) / 1000) + 's ago' : 'never';
+    const L = [`Build ${CB_BUILD} · you ${SOC.me ? SOC.me.slice(0, 8) : '-'} · connected ${socOn() ? 'yes' : 'no'} · ${SOC.online ? SOC.online.size : 0} online`];
+    if (SOC.party) L.push('Party: ' + SOC.party.members.map(m => `${m.name}${m.uid === SOC.party.leader ? ' (leader)' : ''}${m.uid === SOC.me ? ' (you)' : ''} online:${m.uid === SOC.me || SOC.online.has(m.uid) ? 'yes' : 'NO'}${S && S.seen && S.seen[m.uid] ? ' heard ' + ago(S.seen[m.uid]) : ''}`).join(' | '));
+    else L.push('Party: none');
+    if (NET.pend) L.push(`Starting ${NET.pend.kind}: answers from ${Object.keys(NET.pend.specs).length}/${NET.pend.uids.length}`);
+    if (S) L.push(`Session ${S.kind} ${S.sid} · host ${S.host === SOC.me ? 'you' : nameOfUid(S.host)} · applied #${S.seq - 1} · next #${S.next} · buffered ${S.buf.size} · unconfirmed ${S.outbox ? S.outbox.size : 0} · gone ${Object.keys(S.gone).filter(k => S.gone[k]).map(i => S.uids[i] ? nameOfUid(S.uids[i]) : i).join(',') || 'none'} · votes ${JSON.stringify(S.votes)}`);
+    else L.push('Session: none');
+    L.push(`Screen: ${['scrTitle', 'scrStart', 'scrMap', 'scrCombat'].filter(id => !$(id).hidden).join(',')} · run ${run ? (run.mapKey + ' row ' + run.currentRow() + (run.combat ? ' in fight' : '')) : 'none'} · busy ${busy}`);
+    L.push('--- recent messages (> sent, < received, ! problem)'); L.push(...NETLOG.slice(-40));
+    return L.join('\n');
+  }
+  function openNetReport() {
+    const txt = netReport();
+    modal(`<h2>Connection details</h2><p class="muted" style="margin:0">If co-op gets stuck, open this on <b>both</b> computers and send both texts. Both "Build" values must match.</p><pre class="netrep">${esc(txt)}</pre><div class="row"><button class="btn primary" id="mCopy">Copy</button><button class="btn" id="mClose">Close</button></div>`);
+    $('modalBox').classList.add('wide');
+    $('mClose').onclick = closeModal;
+    $('mCopy').onclick = async () => { try { await navigator.clipboard.writeText(txt); $('mCopy').textContent = 'Copied'; } catch (e) { $('mCopy').textContent = 'Select the text and copy it'; } };
   }

@@ -301,6 +301,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 body.aiming { cursor: grabbing; user-select: none; }
 .unit.droptgt { border-color: rgba(201,71,47,.7); }
 .unit.dropover { background: rgba(201,71,47,.25); box-shadow: 0 0 0 2px var(--hp), 0 0 18px rgba(201,71,47,.6); }
+.netrep { background: #0e0b09; border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; font: 12px/1.45 ui-monospace, Consolas, monospace; white-space: pre-wrap; word-break: break-word; max-height: 55vh; overflow: auto; margin: 6px 0; }
 .mappick { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; margin: 8px 0 0; }
 .mapchip { text-align: left; background: #1a1612; border: 1px solid var(--line); border-left: 4px solid var(--ec); border-radius: 6px; padding: 6px 9px; color: var(--text); cursor: pointer; font: inherit; }
 .mapchip b { display: block; font-size: 14px; }
@@ -1532,6 +1533,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       ${!run && !onTitle ? `<button class="btn" id="mnHeroes">Switch hero</button>` : ''}
       ${!run && !cb && !onTitle && profile.chars[heroCls] ? `<button class="btn" id="mnDelHero">Delete ${esc(profile.chars[heroCls].name)}...</button><button class="btn" id="mnWipe">Start fresh (delete everything)...</button>` : ''}
       ${supa ? (supaUser ? `<button class="btn" id="mnSignOut">Sign out (${esc(acctName(supaUser))})</button>` : `<button class="btn" id="mnSignIn">Sign in to save online</button>`) : ''}
+      ${typeof socOn === 'function' && socOn() ? `<button class="btn" id="mnNet">Connection details (co-op)</button>` : ''}
       <h3 style="font-size:20px;margin-top:6px">Settings</h3>
       <label class="toggle"><input type="checkbox" id="setFast" ${settings.fast ? 'checked' : ''}> Fast enemy turns</label>
     </div>`);
@@ -1546,6 +1548,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     if ($('mnDummyReset')) $('mnDummyReset').onclick = () => { closeModal(); cb = null; startDummy(); };
     if ($('mnDummyLeave')) $('mnDummyLeave').onclick = leaveDummy;
     if ($('mnForfeit')) $('mnForfeit').onclick = () => { closeModal(); if (netOn()) netAct({ t: 'leave' }); else backToTown(); };
+    if ($('mnNet')) $('mnNet').onclick = openNetReport;
     if ($('mnDelHero')) $('mnDelHero').onclick = () => deleteHeroFlow(heroCls);
     if ($('mnWipe')) $('mnWipe').onclick = wipeFlow;
     if ($('mnHeroes')) $('mnHeroes').onclick = () => { closeModal(); $('sheet').hidden = true; show('title'); };
