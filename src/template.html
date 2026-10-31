@@ -1673,6 +1673,27 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     if (a.isPlayer && a.disarmed) t.push(`<span class="tag bad">Disarmed</span>`);
     if (a.isPlayer && a.powers && a.powers.length) for (const pw of a.powers) t.push(`<span class="tag power" title="${esc(pw.name)}: ${esc(pw.text)}">&#9670; ${esc(pw.name)}</span>`);
     if (a.isPlayer && a.nextAttackFlat) t.push(`<span class="tag good">Next Attack +${a.nextAttackFlat}</span>`);
+    if (a.isPlayer) {
+      if (a.devotion) t.push(`<span class="tag good" title="Your next Holy damage gets +2 per stack">Devotion ${a.devotion}</span>`);
+      if (a.bloodDebt) t.push(`<span class="tag" title="HP you have lost, stored for Blood Debt cards">Blood Debt ${a.bloodDebt}</span>`);
+      const U = a.until || {};
+      if (U.taunt) t.push(`<span class="tag block" title="Enemies must attack this hero">Taunting</span>`);
+      if (U.immune) t.push(`<span class="tag good">Untouchable</span>`);
+      if (U.guarding) t.push(`<span class="tag block">Guarding ${esc((cb.actorById(U.guarding) || {}).name || '')}</span>`);
+      if (U.reflect) t.push(`<span class="tag good">Reflect</span>`);
+      if (U.debuffImmune) t.push(`<span class="tag good">Debuff immune</span>`);
+      if (U.noDie) t.push(`<span class="tag good">Cannot fall</span>`);
+      if (U.convert || U.convertNext) t.push(`<span class="tag">Hits become ${U.convert || U.convertNext}</span>`);
+      if (U.immuneTypes && U.immuneTypes.length) t.push(`<span class="tag good">No ${U.immuneTypes.join('/')} damage</span>`);
+      if (U.backDmg) t.push(`<span class="tag good">Counter ${U.backDmg}</span>`);
+      for (const x of a.timed || []) { const L = { keepBlock: 'Block locked', critBuff: 'Crit up', mirror: 'Mirror Image', noBleed: 'Bleed immune', poisonBlock: 'Poison blockable', fortify: 'Fortify', relentless: 'Relentless', endless: 'Endless Blades', defX: 'Defense x2', warEngine: 'Regen x3', bleedX: 'Bleed x2', adrenaline: 'Adrenaline' }[x.key]; if (L) t.push(`<span class="tag good">${L} ${x.turns}</span>`); }
+      if (a.turn && cb.current === a) { const T = a.turn; if (T.twice) t.push(`<span class="tag good">Next ${T.twice.type === 'any' ? 'card' : T.twice.type} twice</span>`); if (T.nextFree || T.freeAll) t.push(`<span class="tag good">Free</span>`); if (T.noDraw) t.push(`<span class="tag bad">No draws</span>`); if (T.killMana) t.push(`<span class="tag good">Kill: +${T.killMana} mana</span>`); }
+    } else {
+      for (const [k, l, tip] of [['condemn', 'Condemn', 'Takes more Holy damage (%)'], ['unwarded', 'Unwarded', 'Takes more Skill damage (%)'], ['exposure', 'Exposure', 'Its cards cost 5% more per stack']]) if (a[k]) t.push(`<span class="tag bad" title="${tip}">${l} ${a[k]}</span>`);
+      if (a.counter) t.push(`<span class="tag bad">Countered</span>`); if (a.silenced) t.push(`<span class="tag bad">Silenced</span>`); if (a.disarmed) t.push(`<span class="tag bad">Disarmed</span>`);
+      if (a.drawLess) t.push(`<span class="tag bad">Draws -${a.drawLess}</span>`); if (a.weakNext) t.push(`<span class="tag bad">Next hit -30%</span>`);
+      if (a.noHealRound >= cb.round) t.push(`<span class="tag bad">No healing</span>`); if (a.grievous) t.push(`<span class="tag bad">Grievous</span>`); if (a.deathmark) t.push(`<span class="tag bad">Deathmark</span>`);
+    }
     if (a.isPlayer && a.hot && a.hot.length) t.push(`<span class="tag good">Regrowth ${a.hot.reduce((s, x) => s + x.n, 0)}/turn</span>`);
     for (const [k, l] of [['weak', 'Weak'], ['vulnerable', 'Vuln'], ['bleed', 'Bleed'], ['poison', 'Poison'], ['burn', 'Burn'], ['chill', 'Chill'], ['slow', 'Slow']]) if (a[k]) t.push(`<span class="tag bad">${l} ${a[k]}${k === 'weak' || k === 'vulnerable' ? '%' : ''}</span>`);
     if (a.frozen) t.push(`<span class="tag bad">Frozen</span>`);
@@ -1685,6 +1706,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   function intentHtml(e) {
     if (e.hp <= 0) return '';
     return e.hand.map(c => {
+      if (c.status) return `<span class="intent skip" title="${esc(c.name)}: ${esc(c.text)}">${esc(c.name)}</span>`;
       const planned = e.plan.includes(c.uid), kind = CB.intentKind(c.ops);
       let num = '';
       const dmg = c.ops.find(o => o.op === 'damage' || o.op === 'execute'), blk = c.ops.find(o => o.op === 'block' || o.op === 'parry');
@@ -1739,7 +1761,8 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     else if (cb.myMi != null) hint.innerHTML = `Your turn. Click a card to play it. E ends your turn.<span id="tclock"></span>`;
     else hint.textContent = party ? `${p.name}'s turn. Click a card to play it. E ends ${p.name}'s turn.` : 'Your turn. Click a card to play it. E ends your turn.';
     $('hand').innerHTML = p.hand.map(c => {
-      const d = cb.card(c), chk = myTurn ? cb.canPlay(c) : { ok: false, why: cb.over ? 'Fight over' : 'Not your turn' }, face = d.type !== 'Status' && cardFace(d);
+      const d0 = cb.card(c), ec = d0.cost != null ? cb.costOf(p, d0, c) : null, d = ec != null && ec !== d0.cost ? Object.assign(Object.create(d0), { cost: ec }) : d0;
+      const chk = myTurn ? cb.canPlay(c) : { ok: false, why: cb.over ? 'Fight over' : 'Not your turn' }, face = d.type !== 'Status' && cardFace(d);
       const n = p.hand.length, k = p.hand.indexOf(c), mid = (n - 1) / 2, rot = (k - mid) * Math.min(5, 26 / Math.max(1, n)), off = Math.abs(k - mid) ** 1.6 * 4;
       if (face) return `<button class="${cardCls(d)} ${selected && selected.uid === c.uid ? 'selected' : ''}" style="${cardVars(d)};--rot:${rot.toFixed(1)};--off:${off.toFixed(1)};--z:${k + 1}" data-uid="${c.uid}" ${chk.ok && !busy ? '' : 'disabled'} title="${chk.ok ? (d.target === 'enemy' ? 'Single enemy' : d.target === 'all' ? 'All enemies' : 'Self') : esc(chk.why)}" aria-label="${esc(d.name + ', ' + d.cost + ' mana: ' + d.text)}">${face}</button>`;
       return `<button class="card ${d.type === 'Status' ? 'status' : ''} ${selected && selected.uid === c.uid ? 'selected' : ''}" style="--rc:${RC[d.rarity]}" data-uid="${c.uid}" ${chk.ok && !busy ? '' : 'disabled'} title="${chk.ok ? '' : esc(chk.why)}">
