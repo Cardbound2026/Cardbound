@@ -1468,6 +1468,16 @@ body.aiming { cursor: grabbing; user-select: none; }
     if ((ev.key === 'c' || ev.key === 'C') && !ev.ctrlKey && !ev.metaKey) { ev.preventDefault(); P.held = []; closeTalk(); openSheet('char'); }
   });
   document.addEventListener('keyup', (ev) => { const d = KEYDIR[ev.key]; if (d) P.held = P.held.filter(x => x !== d); });
+  // G opens (or closes) the guild window from anywhere: town, the map, a fight
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && !$('sheet').hidden && $('scrStart').hidden && $('modal').hidden) { closeSheet(); ev.cbHandled = true; return; } // the guild window over the map or a fight
+    if ((ev.key !== 'g' && ev.key !== 'G') || ev.ctrlKey || ev.metaKey || ev.altKey || ev.target.matches('input, select, textarea')) return;
+    if (!$('scrTitle').hidden || !profile.chars[heroKey] || !$('modal').hidden) return;
+    ev.preventDefault(); P.held = [];
+    if (!$('sheet').hidden && $('sheet').dataset.kind === 'guild') { closeSheet(); return; }
+    if (!$('talk').hidden) closeTalk();
+    openSheet('guild');
+  });
   window.addEventListener('blur', () => { P.held = []; });
 
   // ---------- talking and the sheets NPCs open
@@ -2351,8 +2361,8 @@ body.aiming { cursor: grabbing; user-select: none; }
       if (ev.target.matches('input, select, textarea')) return;
       openMenu(); return;
     }
-    if ((ev.key === 'm' || ev.key === 'M') && !$('scrCombat').hidden && $('modal').hidden && !ev.target.matches('select, input, textarea') && run) { mapPeek(); return; }
-    if ((ev.key === 'e' || ev.key === 'E') && !$('scrCombat').hidden && $('modal').hidden && !ev.target.matches('select, input') && !$('btnEnd').disabled) $('btnEnd').click();
+    if ((ev.key === 'm' || ev.key === 'M') && !$('scrCombat').hidden && $('modal').hidden && $('sheet').hidden && !ev.target.matches('select, input, textarea') && run) { mapPeek(); return; }
+    if ((ev.key === 'e' || ev.key === 'E') && !$('scrCombat').hidden && $('modal').hidden && $('sheet').hidden && !ev.target.matches('select, input') && !$('btnEnd').disabled) $('btnEnd').click();
   });
   $('order').addEventListener('click', (ev) => { if (ev.target.closest('#btnCMap')) mapPeek(); if (ev.target.closest('#btnCReset') && cb && cb.practice) { cb = null; startDummy(); } if (ev.target.closest('#btnCLeave') && cb && cb.practice) leaveDummy(); });
   $('btnEnd').addEventListener('click', () => { if (busy || cb.phase !== 'player') return; selected = null; if (cb.myMi != null) { $('btnEnd').disabled = true; netAct({ t: 'end' }); return; } cb.endPlayerTurn(); render(true); pump(); });

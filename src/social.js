@@ -294,7 +294,7 @@
       <div class="panel">
         ${SOC.requestsIn.length ? `<h3>Requests</h3>${SOC.requestsIn.map(f => row(Object.assign({ req: true }, f), `<button class="btn primary" data-fa="${f.id}">Accept</button><button class="btn" data-fr="${f.id}">Decline</button>`)).join('')}` : ''}
         <h3>Friends (${SOC.friends.filter(f => SOC.online.has(f.id)).length} online)</h3>
-        ${friends.map(f => row(f, `${SOC.online.has(f.id) ? `<button class="btn" data-insp="${f.id}">Inspect</button><button class="btn" data-trade="${f.id}">Trade</button>` : ''}${SOC.online.has(f.id) && !inParty(f.id) ? `<button class="btn primary" data-inv="${f.id}">Invite to party</button>` : inParty(f.id) ? '<span class="muted">In your party</span>' : ''}<button class="btn" data-fr="${f.id}">Remove</button>`)).join('') || '<p class="muted">No friends yet. Share your code, or add theirs.</p>'}
+        ${friends.map(f => row(f, `${canGuildInvite(f.id) ? `<button class="btn" data-ginv="${f.id}">Invite to guild</button>` : ''}${SOC.online.has(f.id) ? `<button class="btn" data-whisper="${f.id}">Message</button><button class="btn" data-insp="${f.id}">Inspect</button><button class="btn" data-trade="${f.id}">Trade</button>` : ''}${SOC.online.has(f.id) && !inParty(f.id) ? `<button class="btn primary" data-inv="${f.id}">Invite to party</button>` : inParty(f.id) ? '<span class="muted">In your party</span>' : ''}<button class="btn" data-fr="${f.id}">Remove</button>`)).join('') || '<p class="muted">No friends yet. Share your code, or add theirs.</p>'}
         ${SOC.requestsOut.length ? `<h3 style="margin-top:10px">Sent requests</h3>${SOC.requestsOut.map(f => row(Object.assign({ req: true }, f), `<button class="btn" data-fr="${f.id}">Cancel</button>`)).join('')}` : ''}
         ${[...SOC.others.values()].filter(o => !SOC.friends.some(f => f.id === o.uid)).length ? `<h3 style="margin-top:10px">Also in Emberwatch</h3>${[...SOC.others.values()].filter(o => !SOC.friends.some(f => f.id === o.uid)).map(o => row({ id: o.uid, name: o.name, cls: o.cls }, !inParty(o.uid) ? `<button class="btn" data-inv="${o.uid}">Invite to party</button>` : '')).join('')}` : ''}
       </div></div>`;
@@ -302,6 +302,15 @@
     const add = async () => { $('frMsg').textContent = 'Sending...'; const err = await addFriend($('frCode').value); $('frMsg').textContent = err || 'Request sent. It appears in their Friends tab.'; $('frMsg').className = err ? 'down' : 'up'; };
     $('frAdd').onclick = add; $('frCode').onkeydown = (e) => { if (e.key === 'Enter') add(); };
   }
+  // start a whisper: fills the chat box with "/w Name " and puts the cursor there
+  function whisperTo(uid) {
+    const st = SOC.online.get(uid), f = SOC.friends.find(x => x.id === uid), name = (st && st.name) || (f && f.name);
+    if (!name || !SOC.online.has(uid)) { toast('They are not online.'); return; }
+    if (!$('talk').hidden) closeTalk();
+    if (!$('sheet').hidden) closeSheet();
+    const box = $('chatIn'); box.value = `/w ${name} `; box.focus(); box.setSelectionRange(box.value.length, box.value.length);
+  }
+  document.addEventListener('click', (ev) => { const w = ev.target.closest('[data-whisper]'); if (w) { ev.stopPropagation(); whisperTo(w.dataset.whisper); } }, true);
   document.addEventListener('click', (ev) => {
     const t = ev.target.closest('[data-inv],[data-fa],[data-fr],[data-acc],[data-dec],[data-kick],[data-duel],[data-dacc],[data-ddec],#ppLeave,#tbFriends'); if (!t) return;
     if (t.dataset.duel) { challenge(t.dataset.duel); return; }

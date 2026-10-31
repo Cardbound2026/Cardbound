@@ -2,6 +2,22 @@
   // One guild per player. Leaders and officers invite; the invited player accepts; the roster shows power and last time online.
   const GUILD = { me: null, roster: [], invites: [], err: null, busy: false, loadedAt: 0 };
   const GUILD_COST = 50;
+  const canGuildInvite = (uid) => !!(GUILD.me && ['leader', 'officer'].includes(GUILD.me.rank) && uid !== SOC.me && !GUILD.roster.some(r => r.user_id === uid));
+  // invite one player by account id (from the roster box, a friend row, or clicking them in town); returns an error message or null
+  async function guildInviteUid(uid, name) {
+    const G = GUILD.me; if (!G || !supa) return 'You are not in a guild.';
+    if (!['leader', 'officer'].includes(G.rank)) return 'Only the guild leader and officers can invite.';
+    if (GUILD.roster.some(r => r.user_id === uid)) return `${name} is already in the guild.`;
+    const { error } = await supa.from('guild_invites').insert({ guild_id: G.id, user_id: uid, invited_by: SOC.me });
+    if (error && !/duplicate|unique/i.test(error.message || '')) return 'Could not invite: ' + error.message;
+    if (socOn()) SOC.ch.send({ type: 'broadcast', event: 'guild', payload: { kind: 'invite', to: uid, gname: G.name, from: SOC.me, name: (profile.chars[heroKey] || {}).name } });
+    sysChat(`You invited ${name} to ${G.name}.`); return null;
+  }
+  document.addEventListener('click', async (ev) => {
+    const b = ev.target.closest('[data-ginv]'); if (!b) return; ev.stopPropagation();
+    const uid = b.dataset.ginv, st = SOC.online.get(uid), f = SOC.friends.find(x => x.id === uid), name = (st && st.name) || (f && f.name) || 'them';
+    b.disabled = true; const err = await guildInviteUid(uid, name); if (err) toast(err); else b.textContent = 'Invited';
+  }, true);
   const isSetupErr = (e) => e && /relation|does not exist|schema cache|column/i.test(e.message || '') ;
   async function guildLoad() {
     if (!supa || !supaUser) return;
@@ -87,11 +103,7 @@
         const f = typeof findOnline === 'function' ? findOnline(q) : null; if (f && f.n.length === q.length) target = { id: f.o.uid, name: f.o.name };
         if (!target) { const { data } = await supa.from('players').select('user_id,hero_name,display_name').eq('friend_code', q.toUpperCase()).maybeSingle(); if (data) target = { id: data.user_id, name: data.hero_name || data.display_name }; }
         if (!target) return gMsg(`No online hero called "${q}" and no friend code like that.`);
-        if (GUILD.roster.some(r => r.user_id === target.id)) return gMsg(`${target.name} is already in the guild.`);
-        const { error } = await supa.from('guild_invites').insert({ guild_id: G.id, user_id: target.id, invited_by: me });
-        if (error && !/duplicate|unique/i.test(error.message || '')) return gMsg('Could not invite: ' + error.message);
-        if (socOn()) SOC.ch.send({ type: 'broadcast', event: 'guild', payload: { kind: 'invite', to: target.id, gname: G.name, from: SOC.me, name: (profile.chars[heroKey] || {}).name } });
-        gMsg(`Invited ${target.name}.`); sysChat(`You invited ${target.name} to ${G.name}.`);
+        const err = await guildInviteUid(target.id, target.name); gMsg(err || `Invited ${target.name}.`);
       }
       else if (kind === 'kick') { const { error } = await supa.from('guild_members').delete().eq('user_id', id).eq('guild_id', G.id); if (error) return gMsg(error.message); guildPing(G.id, id); }
       else if (kind === 'promote' || kind === 'demote') { const { error } = await supa.from('guild_members').update({ rank: kind === 'promote' ? 'officer' : 'member' }).eq('user_id', id).eq('guild_id', G.id); if (error) return gMsg(error.message); guildPing(G.id); }

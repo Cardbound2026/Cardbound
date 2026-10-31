@@ -214,7 +214,7 @@
     const st = SOC.online.get(uid) || {}, o = SOC.others.get(uid) || {};
     const inParty = SOC.party && SOC.party.members.some(m => m.uid === uid), mineParty = SOC.party && SOC.party.members.some(m => m.uid === SOC.me);
     $('talk').innerHTML = `<b style="color:${CC[o.cls || st.cls] || 'var(--text)'}">${esc(o.name || st.name || 'Player')}</b><p>${esc(o.cls || st.cls || '')} &middot; ${placeText(st)}</p>
-      <div class="row"><button class="btn primary" data-insp="${uid}">Inspect</button><button class="btn" data-trade="${uid}">Trade</button>${!inParty && (!SOC.party || SOC.party.leader === SOC.me) ? `<button class="btn" id="pmInv">Invite to party</button>` : ''}${inParty && mineParty ? `<button class="btn" id="pmDuel">Duel</button>` : ''}<button class="btn" id="tBye">Close</button></div>`;
+      <div class="row"><button class="btn primary" data-whisper="${uid}">Message</button><button class="btn" data-insp="${uid}">Inspect</button><button class="btn" data-trade="${uid}">Trade</button>${canGuildInvite(uid) ? `<button class="btn" data-ginv="${uid}">Invite to guild</button>` : ''}${!inParty && (!SOC.party || SOC.party.leader === SOC.me) ? `<button class="btn" id="pmInv">Invite to party</button>` : ''}${inParty && mineParty ? `<button class="btn" id="pmDuel">Duel</button>` : ''}<button class="btn" id="tBye">Close</button></div>`;
     $('talk').hidden = false; updatePrompt();
     $('tBye').onclick = closeTalk;
     if ($('pmInv')) $('pmInv').onclick = () => { closeTalk(); invite(uid); };

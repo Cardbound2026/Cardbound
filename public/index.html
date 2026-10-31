@@ -3679,6 +3679,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if ((ev.key === 'c' || ev.key === 'C') && !ev.ctrlKey && !ev.metaKey) { ev.preventDefault(); P.held = []; closeTalk(); openSheet('char'); }
   });
   document.addEventListener('keyup', (ev) => { const d = KEYDIR[ev.key]; if (d) P.held = P.held.filter(x => x !== d); });
+  // G opens (or closes) the guild window from anywhere: town, the map, a fight
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && !$('sheet').hidden && $('scrStart').hidden && $('modal').hidden) { closeSheet(); ev.cbHandled = true; return; } // the guild window over the map or a fight
+    if ((ev.key !== 'g' && ev.key !== 'G') || ev.ctrlKey || ev.metaKey || ev.altKey || ev.target.matches('input, select, textarea')) return;
+    if (!$('scrTitle').hidden || !profile.chars[heroKey] || !$('modal').hidden) return;
+    ev.preventDefault(); P.held = [];
+    if (!$('sheet').hidden && $('sheet').dataset.kind === 'guild') { closeSheet(); return; }
+    if (!$('talk').hidden) closeTalk();
+    openSheet('guild');
+  });
   window.addEventListener('blur', () => { P.held = []; });
 
   // ---------- talking and the sheets NPCs open
@@ -4043,7 +4053,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       <div class="panel">
         ${SOC.requestsIn.length ? `<h3>Requests</h3>${SOC.requestsIn.map(f => row(Object.assign({ req: true }, f), `<button class="btn primary" data-fa="${f.id}">Accept</button><button class="btn" data-fr="${f.id}">Decline</button>`)).join('')}` : ''}
         <h3>Friends (${SOC.friends.filter(f => SOC.online.has(f.id)).length} online)</h3>
-        ${friends.map(f => row(f, `${SOC.online.has(f.id) ? `<button class="btn" data-insp="${f.id}">Inspect</button><button class="btn" data-trade="${f.id}">Trade</button>` : ''}${SOC.online.has(f.id) && !inParty(f.id) ? `<button class="btn primary" data-inv="${f.id}">Invite to party</button>` : inParty(f.id) ? '<span class="muted">In your party</span>' : ''}<button class="btn" data-fr="${f.id}">Remove</button>`)).join('') || '<p class="muted">No friends yet. Share your code, or add theirs.</p>'}
+        ${friends.map(f => row(f, `${canGuildInvite(f.id) ? `<button class="btn" data-ginv="${f.id}">Invite to guild</button>` : ''}${SOC.online.has(f.id) ? `<button class="btn" data-whisper="${f.id}">Message</button><button class="btn" data-insp="${f.id}">Inspect</button><button class="btn" data-trade="${f.id}">Trade</button>` : ''}${SOC.online.has(f.id) && !inParty(f.id) ? `<button class="btn primary" data-inv="${f.id}">Invite to party</button>` : inParty(f.id) ? '<span class="muted">In your party</span>' : ''}<button class="btn" data-fr="${f.id}">Remove</button>`)).join('') || '<p class="muted">No friends yet. Share your code, or add theirs.</p>'}
         ${SOC.requestsOut.length ? `<h3 style="margin-top:10px">Sent requests</h3>${SOC.requestsOut.map(f => row(Object.assign({ req: true }, f), `<button class="btn" data-fr="${f.id}">Cancel</button>`)).join('')}` : ''}
         ${[...SOC.others.values()].filter(o => !SOC.friends.some(f => f.id === o.uid)).length ? `<h3 style="margin-top:10px">Also in Emberwatch</h3>${[...SOC.others.values()].filter(o => !SOC.friends.some(f => f.id === o.uid)).map(o => row({ id: o.uid, name: o.name, cls: o.cls }, !inParty(o.uid) ? `<button class="btn" data-inv="${o.uid}">Invite to party</button>` : '')).join('')}` : ''}
       </div></div>`;
@@ -4051,6 +4061,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const add = async () => { $('frMsg').textContent = 'Sending...'; const err = await addFriend($('frCode').value); $('frMsg').textContent = err || 'Request sent. It appears in their Friends tab.'; $('frMsg').className = err ? 'down' : 'up'; };
     $('frAdd').onclick = add; $('frCode').onkeydown = (e) => { if (e.key === 'Enter') add(); };
   }
+  // start a whisper: fills the chat box with "/w Name " and puts the cursor there
+  function whisperTo(uid) {
+    const st = SOC.online.get(uid), f = SOC.friends.find(x => x.id === uid), name = (st && st.name) || (f && f.name);
+    if (!name || !SOC.online.has(uid)) { toast('They are not online.'); return; }
+    if (!$('talk').hidden) closeTalk();
+    if (!$('sheet').hidden) closeSheet();
+    const box = $('chatIn'); box.value = `/w ${name} `; box.focus(); box.setSelectionRange(box.value.length, box.value.length);
+  }
+  document.addEventListener('click', (ev) => { const w = ev.target.closest('[data-whisper]'); if (w) { ev.stopPropagation(); whisperTo(w.dataset.whisper); } }, true);
   document.addEventListener('click', (ev) => {
     const t = ev.target.closest('[data-inv],[data-fa],[data-fr],[data-acc],[data-dec],[data-kick],[data-duel],[data-dacc],[data-ddec],#ppLeave,#tbFriends'); if (!t) return;
     if (t.dataset.duel) { challenge(t.dataset.duel); return; }
@@ -4070,6 +4089,22 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // One guild per player. Leaders and officers invite; the invited player accepts; the roster shows power and last time online.
   const GUILD = { me: null, roster: [], invites: [], err: null, busy: false, loadedAt: 0 };
   const GUILD_COST = 50;
+  const canGuildInvite = (uid) => !!(GUILD.me && ['leader', 'officer'].includes(GUILD.me.rank) && uid !== SOC.me && !GUILD.roster.some(r => r.user_id === uid));
+  // invite one player by account id (from the roster box, a friend row, or clicking them in town); returns an error message or null
+  async function guildInviteUid(uid, name) {
+    const G = GUILD.me; if (!G || !supa) return 'You are not in a guild.';
+    if (!['leader', 'officer'].includes(G.rank)) return 'Only the guild leader and officers can invite.';
+    if (GUILD.roster.some(r => r.user_id === uid)) return `${name} is already in the guild.`;
+    const { error } = await supa.from('guild_invites').insert({ guild_id: G.id, user_id: uid, invited_by: SOC.me });
+    if (error && !/duplicate|unique/i.test(error.message || '')) return 'Could not invite: ' + error.message;
+    if (socOn()) SOC.ch.send({ type: 'broadcast', event: 'guild', payload: { kind: 'invite', to: uid, gname: G.name, from: SOC.me, name: (profile.chars[heroKey] || {}).name } });
+    sysChat(`You invited ${name} to ${G.name}.`); return null;
+  }
+  document.addEventListener('click', async (ev) => {
+    const b = ev.target.closest('[data-ginv]'); if (!b) return; ev.stopPropagation();
+    const uid = b.dataset.ginv, st = SOC.online.get(uid), f = SOC.friends.find(x => x.id === uid), name = (st && st.name) || (f && f.name) || 'them';
+    b.disabled = true; const err = await guildInviteUid(uid, name); if (err) toast(err); else b.textContent = 'Invited';
+  }, true);
   const isSetupErr = (e) => e && /relation|does not exist|schema cache|column/i.test(e.message || '') ;
   async function guildLoad() {
     if (!supa || !supaUser) return;
@@ -4155,11 +4190,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
         const f = typeof findOnline === 'function' ? findOnline(q) : null; if (f && f.n.length === q.length) target = { id: f.o.uid, name: f.o.name };
         if (!target) { const { data } = await supa.from('players').select('user_id,hero_name,display_name').eq('friend_code', q.toUpperCase()).maybeSingle(); if (data) target = { id: data.user_id, name: data.hero_name || data.display_name }; }
         if (!target) return gMsg(`No online hero called "${q}" and no friend code like that.`);
-        if (GUILD.roster.some(r => r.user_id === target.id)) return gMsg(`${target.name} is already in the guild.`);
-        const { error } = await supa.from('guild_invites').insert({ guild_id: G.id, user_id: target.id, invited_by: me });
-        if (error && !/duplicate|unique/i.test(error.message || '')) return gMsg('Could not invite: ' + error.message);
-        if (socOn()) SOC.ch.send({ type: 'broadcast', event: 'guild', payload: { kind: 'invite', to: target.id, gname: G.name, from: SOC.me, name: (profile.chars[heroKey] || {}).name } });
-        gMsg(`Invited ${target.name}.`); sysChat(`You invited ${target.name} to ${G.name}.`);
+        const err = await guildInviteUid(target.id, target.name); gMsg(err || `Invited ${target.name}.`);
       }
       else if (kind === 'kick') { const { error } = await supa.from('guild_members').delete().eq('user_id', id).eq('guild_id', G.id); if (error) return gMsg(error.message); guildPing(G.id, id); }
       else if (kind === 'promote' || kind === 'demote') { const { error } = await supa.from('guild_members').update({ rank: kind === 'promote' ? 'officer' : 'member' }).eq('user_id', id).eq('guild_id', G.id); if (error) return gMsg(error.message); guildPing(G.id); }
@@ -4189,8 +4220,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793464827078';
-  const CB_BUILD = 'dec2973970'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793465202694';
+  const CB_BUILD = '502da01f81'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -5026,7 +5057,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const st = SOC.online.get(uid) || {}, o = SOC.others.get(uid) || {};
     const inParty = SOC.party && SOC.party.members.some(m => m.uid === uid), mineParty = SOC.party && SOC.party.members.some(m => m.uid === SOC.me);
     $('talk').innerHTML = `<b style="color:${CC[o.cls || st.cls] || 'var(--text)'}">${esc(o.name || st.name || 'Player')}</b><p>${esc(o.cls || st.cls || '')} &middot; ${placeText(st)}</p>
-      <div class="row"><button class="btn primary" data-insp="${uid}">Inspect</button><button class="btn" data-trade="${uid}">Trade</button>${!inParty && (!SOC.party || SOC.party.leader === SOC.me) ? `<button class="btn" id="pmInv">Invite to party</button>` : ''}${inParty && mineParty ? `<button class="btn" id="pmDuel">Duel</button>` : ''}<button class="btn" id="tBye">Close</button></div>`;
+      <div class="row"><button class="btn primary" data-whisper="${uid}">Message</button><button class="btn" data-insp="${uid}">Inspect</button><button class="btn" data-trade="${uid}">Trade</button>${canGuildInvite(uid) ? `<button class="btn" data-ginv="${uid}">Invite to guild</button>` : ''}${!inParty && (!SOC.party || SOC.party.leader === SOC.me) ? `<button class="btn" id="pmInv">Invite to party</button>` : ''}${inParty && mineParty ? `<button class="btn" id="pmDuel">Duel</button>` : ''}<button class="btn" id="tBye">Close</button></div>`;
     $('talk').hidden = false; updatePrompt();
     $('tBye').onclick = closeTalk;
     if ($('pmInv')) $('pmInv').onclick = () => { closeTalk(); invite(uid); };
@@ -6009,8 +6040,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       if (ev.target.matches('input, select, textarea')) return;
       openMenu(); return;
     }
-    if ((ev.key === 'm' || ev.key === 'M') && !$('scrCombat').hidden && $('modal').hidden && !ev.target.matches('select, input, textarea') && run) { mapPeek(); return; }
-    if ((ev.key === 'e' || ev.key === 'E') && !$('scrCombat').hidden && $('modal').hidden && !ev.target.matches('select, input') && !$('btnEnd').disabled) $('btnEnd').click();
+    if ((ev.key === 'm' || ev.key === 'M') && !$('scrCombat').hidden && $('modal').hidden && $('sheet').hidden && !ev.target.matches('select, input, textarea') && run) { mapPeek(); return; }
+    if ((ev.key === 'e' || ev.key === 'E') && !$('scrCombat').hidden && $('modal').hidden && $('sheet').hidden && !ev.target.matches('select, input') && !$('btnEnd').disabled) $('btnEnd').click();
   });
   $('order').addEventListener('click', (ev) => { if (ev.target.closest('#btnCMap')) mapPeek(); if (ev.target.closest('#btnCReset') && cb && cb.practice) { cb = null; startDummy(); } if (ev.target.closest('#btnCLeave') && cb && cb.practice) leaveDummy(); });
   $('btnEnd').addEventListener('click', () => { if (busy || cb.phase !== 'player') return; selected = null; if (cb.myMi != null) { $('btnEnd').disabled = true; netAct({ t: 'end' }); return; } cb.endPlayerTurn(); render(true); pump(); });
