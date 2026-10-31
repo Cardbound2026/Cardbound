@@ -26,6 +26,13 @@ function fix(p) { // tolerate older or partial saves
 // character creation: one hero per class for now, each with a name the player picks
 const NAME_RE = /^[A-Za-z][A-Za-z '\-]{1,15}$/;
 function nameProblem(name) { name = (name || '').trim(); if (name.length < 2) return 'Names need at least 2 letters.'; if (name.length > 16) return 'Names can be at most 16 characters.'; if (!NAME_RE.test(name)) return 'Use letters, spaces, apostrophes or hyphens, starting with a letter.'; return null; }
+// delete a hero for good: their gear, deck, cards and records go with them; the shared stash and gold stay
+function deleteChar(p, cls) {
+  if (!p.chars[cls]) return { ok: false, why: 'No such hero' };
+  delete p.chars[cls];
+  if (p.last) { if (p.last.cls === cls) p.last.cls = Object.keys(p.chars)[0] || 'Warrior'; if (p.last.party) p.last.party = p.last.party.filter(k => k !== cls); }
+  return { ok: true };
+}
 function createChar(p, cls, name) {
   if (p.chars[cls]) return { ok: false, why: `You already have a ${cls}.` };
   const why = nameProblem(name); if (why) return { ok: false, why };
@@ -152,6 +159,6 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered };
 }
 
-const API = { SLOTS, STASH_MAX, newProfile, fix, char, createChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { SLOTS, STASH_MAX, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -278,6 +278,8 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .tdcard .acts { display: flex; gap: 6px; margin-top: 4px; }
 .tdcard .acts .btn { padding: 3px 10px; font-size: 13px; }
 .tdlist { display: flex; flex-wrap: wrap; gap: 3px 10px; font-size: 12.5px; }
+.btn.danger { background: #8a2a1c; border-color: #b5462f; color: #fff; }
+.btn.danger:disabled { opacity: .45; cursor: not-allowed; }
 .mappick { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; margin: 8px 0 0; }
 .mapchip { text-align: left; background: #1a1612; border: 1px solid var(--line); border-left: 4px solid var(--ec); border-radius: 6px; padding: 6px 9px; color: var(--text); cursor: pointer; font: inherit; }
 .mapchip b { display: block; font-size: 14px; }
@@ -1414,14 +1416,44 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   let createCls = null;
   function renderTitle() {
     const chars = Object.values(profile.chars).sort((a, b) => (a.created || 0) - (b.created || 0));
-    $('heroList').innerHTML = chars.map(c => `<div class="herocard" style="--cc:${CC[c.cls]}"><b>${esc(c.name)}</b><small>${c.cls} &middot; Power ${CBHub.powerLevel(c)} &middot; ${c.runs} run${c.runs === 1 ? '' : 's'}${c.bossKills ? ` &middot; ${c.bossKills} boss kill${c.bossKills === 1 ? '' : 's'}` : ''}</small><button class="btn primary play" data-play="${c.cls}">Enter Emberwatch</button></div>`).join('')
+    $('heroList').innerHTML = chars.map(c => `<div class="herocard" style="--cc:${CC[c.cls]}"><b>${esc(c.name)}</b><small>${c.cls} &middot; Power ${CBHub.powerLevel(c)} &middot; ${c.runs} run${c.runs === 1 ? '' : 's'}${c.bossKills ? ` &middot; ${c.bossKills} boss kill${c.bossKills === 1 ? '' : 's'}` : ''}</small><div class="row" style="display:flex;gap:6px;align-items:center"><button class="btn primary play" data-play="${c.cls}">Enter Emberwatch</button><button class="pilebtn" data-delhero="${c.cls}" title="Delete this hero">Delete</button></div></div>`).join('')
       + (chars.length < 4 ? `<button class="herocard new" id="btnNewHero">+ Create a hero</button>` : '');
     if ($('btnNewHero')) $('btnNewHero').onclick = openCreate;
     if (!chars.length) openCreate();
+    $('heroList').insertAdjacentHTML('beforeend', chars.length || profile.stash.length || profile.gold ? `<p class="savenote" style="grid-column:1/-1;margin:4px 0 0">Want a clean slate? <button class="pilebtn" id="btnWipe">Start fresh: delete everything</button></p>` : '');
+    if ($('btnWipe')) $('btnWipe').onclick = wipeFlow;
     $('titleAcct').innerHTML = supa ? (supaUser ? `<span class="muted">Signed in as ${esc(acctName(supaUser))}</span>` : `<button class="btn" id="btnTitleSignIn">Sign in to save online</button>`) : '';
     if ($('btnTitleSignIn')) $('btnTitleSignIn').onclick = signInModal;
     $('topInfo').textContent = '';
   }
+  // ---------- deleting heroes / starting fresh (type the name or RESET to confirm; it can't be undone)
+  function confirmTyped(title, body, word, onOk) {
+    modal(`<h2 class="loss">${title}</h2>${body}<div class="field"><label for="delWord">Type <b>${esc(word)}</b> to confirm</label><input id="delWord" autocomplete="off" style="background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:8px;color:var(--text);font:inherit"></div>
+      <div class="row"><button class="btn" id="mClose">Cancel</button><button class="btn danger" id="mDel" disabled>Delete</button></div>`);
+    const inp = $('delWord'), ok = $('mDel'); inp.focus();
+    inp.oninput = () => { ok.disabled = inp.value.trim().toLowerCase() !== word.toLowerCase(); };
+    inp.onkeydown = (e) => { if (e.key === 'Enter' && !ok.disabled) ok.click(); };
+    $('mClose').onclick = closeModal; ok.onclick = () => { closeModal(); onOk(); };
+  }
+  function busyElsewhere() { if (run || cb) { toast('Finish or leave your run or fight first.'); return true; } return false; }
+  function afterRosterChange() {
+    if (!profile.chars[heroCls]) heroCls = Object.keys(profile.chars)[0] || 'Warrior';
+    profile.last.cls = heroCls; save(); if (typeof saveCard === 'function') Promise.resolve().then(saveCard).catch(() => {});
+    if (typeof retrack === 'function') try { retrack(true); } catch (e) {}
+    if (!Object.keys(profile.chars).length) { $('sheet').hidden = true; show('title'); renderTitle(); return; }
+    renderHub(); if (!$('scrTitle').hidden) renderTitle();
+  }
+  function deleteHeroFlow(cls) {
+    if (busyElsewhere()) return; const c = profile.chars[cls]; if (!c) return;
+    confirmTyped(`Delete ${esc(c.name)}?`, `<p>This permanently deletes your ${cls} <b>${esc(c.name)}</b>: their equipped gear, deck, card collection, level and records. The shared stash and banked gold stay. This cannot be undone.</p>`, c.name,
+      () => { CBHub.deleteChar(profile, cls); afterRosterChange(); toast(`${c.name} is gone. You can create a new ${cls} any time.`); });
+  }
+  function wipeFlow() {
+    if (busyElsewhere()) return;
+    confirmTyped('Start fresh?', `<p>This deletes <b>everything</b> on this account: every hero, the shared stash, all gold, run history and merchant stock. You start over with nothing. This cannot be undone.</p>`, 'RESET',
+      () => { const keep = { savedAt: Date.now() }; profile = CBHub.fix(Object.assign(CBHub.newProfile(), keep)); heroCls = 'Warrior'; afterRosterChange(); toast('Everything was deleted. Create a hero to begin again.'); });
+  }
+  $('heroList').addEventListener('click', (ev) => { const d = ev.target.closest('[data-delhero]'); if (d) return deleteHeroFlow(d.dataset.delhero); });
   $('heroList').addEventListener('click', (ev) => { const b = ev.target.closest('[data-play]'); if (!b) return; heroCls = b.dataset.play; profile.last.cls = heroCls; save(); renderHub(); show('start'); saveCard(); });
   function openCreate() {
     const taken = (k) => !!profile.chars[k];
@@ -1452,6 +1484,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       ${cb && cb.practice ? `<button class="btn" id="mnDummyReset">Reset the dummy (fresh fight)</button><button class="btn" id="mnDummyLeave">Leave the dummy and return to town</button>` : ''}
       ${run && run.over ? `<button class="btn" id="mnTown">Return to town</button>` : ''}
       ${!run && !onTitle ? `<button class="btn" id="mnHeroes">Switch hero</button>` : ''}
+      ${!run && !cb && !onTitle && profile.chars[heroCls] ? `<button class="btn" id="mnDelHero">Delete ${esc(profile.chars[heroCls].name)}...</button><button class="btn" id="mnWipe">Start fresh (delete everything)...</button>` : ''}
       ${supa ? (supaUser ? `<button class="btn" id="mnSignOut">Sign out (${esc(acctName(supaUser))})</button>` : `<button class="btn" id="mnSignIn">Sign in to save online</button>`) : ''}
       <h3 style="font-size:20px;margin-top:6px">Settings</h3>
       <label class="toggle"><input type="checkbox" id="setFast" ${settings.fast ? 'checked' : ''}> Fast enemy turns</label>
@@ -1467,6 +1500,8 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     if ($('mnDummyReset')) $('mnDummyReset').onclick = () => { closeModal(); cb = null; startDummy(); };
     if ($('mnDummyLeave')) $('mnDummyLeave').onclick = leaveDummy;
     if ($('mnForfeit')) $('mnForfeit').onclick = () => { closeModal(); if (netOn()) netAct({ t: 'leave' }); else backToTown(); };
+    if ($('mnDelHero')) $('mnDelHero').onclick = () => deleteHeroFlow(heroCls);
+    if ($('mnWipe')) $('mnWipe').onclick = wipeFlow;
     if ($('mnHeroes')) $('mnHeroes').onclick = () => { closeModal(); $('sheet').hidden = true; show('title'); };
     if ($('mnSignIn')) $('mnSignIn').onclick = signInModal;
     if ($('mnSignOut')) $('mnSignOut').onclick = async () => { closeModal(); await supa.auth.signOut(); };
