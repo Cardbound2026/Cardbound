@@ -25,16 +25,20 @@
     const me = mySpec(); if (me.err) { toast(`You ${me.err.replace(/^is /, 'are ').replace(/^has /, 'have ').replace(/^needs /, 'need ').replace(/their/, 'your')}.`); return; }
     const sid = newSid();
     NET.pend = { sid, kind, uids, level, map, specs: { [SOC.me]: me } };
-    NET.pend.timer = setTimeout(() => { if (!NET.pend || NET.pend.sid !== sid) return; const miss = uids.filter(u => !NET.pend.specs[u]).map(nameOfUid); NET.pend = null; toast(`${miss.join(', ')} didn't answer. ${kind === 'duel' ? 'The duel' : 'The run'} is called off.`); }, 10000);
+    NET.pend.timer = setTimeout(() => { if (!NET.pend || NET.pend.sid !== sid) return; clearInterval(NET.pend.again); const miss = uids.filter(u => !NET.pend.specs[u]).map(nameOfUid); NET.pend = null; toast(`${miss.join(', ')} didn't answer. ${kind === 'duel' ? 'The duel' : 'The run'} is called off. If they're online, ask them to reload the page (both of you should be on the latest version).`); }, 15000);
+    // realtime messages can get lost: ask again every 2 seconds until everyone has answered
+    NET.pend.again = setInterval(() => { if (!NET.pend || NET.pend.sid !== sid) return; netSend('req', { sid, kind, uids, level, map }); }, 2000);
     netSend('req', { sid, kind, uids, level, map });
     sysChat(kind === 'duel' ? 'Setting up the duel...' : 'Gathering the party at the Wagon...');
     netCheckSpecs();
   }
   function netCheckSpecs() {
     const P = NET.pend; if (!P || !P.uids.every(u => P.specs[u])) return;
-    clearTimeout(P.timer); NET.pend = null;
+    clearTimeout(P.timer); clearInterval(P.again); NET.pend = null;
     const go = { sid: P.sid, kind: P.kind, host: SOC.me, uids: P.uids, level: P.level, map: P.map, seed: Math.floor(Math.random() * 2147483646) + 1, specs: P.uids.map(u => P.specs[u]) };
     netSend('go', go); netBegin(go);
+    // send the start again a few times in case it got lost (players who already started ignore repeats)
+    NET.lastGo = go; for (const ms of [1000, 3000, 6000]) setTimeout(() => { if (NET.lastGo === go && NET.s && NET.s.sid === go.sid) netSend('go', go); }, ms);
   }
   function netBegin(go) {
     const S = NET.s = { sid: go.sid, kind: go.kind, host: go.host, uids: go.uids, mi: go.uids.indexOf(SOC.me), seq: 1, next: 1, buf: new Map(), log: [], votes: {}, camp: {}, gone: {}, voteAt: 0, turnKey: '', turnAt: 0, missing: {} };
@@ -153,16 +157,31 @@
         if (NET.s) { netSend('spec', { sid: p.sid, to: p.from, spec: { err: 'is already in a game' } }); return; }
         const spec = mySpec();
         netSend('spec', { sid: p.sid, to: p.from, spec });
+        // if the start doesn't arrive, ask the host for it again
+        if (!spec.err && (!NET.wait || NET.wait.sid !== p.sid)) {
+          const W = NET.wait = { sid: p.sid, host: p.from, tries: 0 };
+          W.timer = setInterval(() => {
+            if (NET.wait !== W || (NET.s && NET.s.sid === W.sid)) { clearInterval(W.timer); if (NET.wait === W) NET.wait = null; return; }
+            if (++W.tries > 5) { clearInterval(W.timer); NET.wait = null; toast(`The start from ${nameOfUid(W.host)} never arrived. Ask them to set out again (reload the page if it keeps happening).`); return; }
+            netSend('needgo', { sid: W.sid, to: W.host });
+          }, 2500);
+        }
         if (spec.err) toast(`${nameOfUid(p.from)} tried to start ${p.kind === 'duel' ? 'a duel' : 'a run'}, but you ${spec.err.replace(/^is /, 'are ').replace(/^has /, 'have ').replace(/^needs /, 'need ').replace(/their/, 'your')}.`);
         return;
       }
       case 'spec': {
         const P = NET.pend; if (!P || P.sid !== p.sid || p.to !== SOC.me || !P.uids.includes(p.from)) return;
-        if (p.spec.err) { clearTimeout(P.timer); NET.pend = null; toast(`${nameOfUid(p.from)} ${p.spec.err}. ${P.kind === 'duel' ? 'The duel' : 'The run'} is called off.`); netSend('cancel', { sid: P.sid }); return; }
+        if (p.spec.err) { clearTimeout(P.timer); clearInterval(P.again); NET.pend = null; toast(`${nameOfUid(p.from)} ${p.spec.err}. ${P.kind === 'duel' ? 'The duel' : 'The run'} is called off.`); netSend('cancel', { sid: P.sid }); return; }
         P.specs[p.from] = p.spec; netCheckSpecs(); return;
       }
-      case 'cancel': return;
-      case 'go': { if (!p.uids.includes(SOC.me) || NET.s) return; if (run || cb) return; netBegin(p); return; }
+      case 'cancel': if (NET.wait && NET.wait.sid === p.sid) { clearInterval(NET.wait.timer); NET.wait = null; } return;
+      case 'needgo': { const g = NET.lastGo; if (p.to === SOC.me && g && g.sid === p.sid && NET.s && NET.s.sid === g.sid && g.uids.includes(p.from)) netSend('go', g); return; }
+      case 'go': {
+        if (!p.uids.includes(SOC.me) || NET.s) return;
+        if (run || cb) { if (NET.busySid === p.sid) return; NET.busySid = p.sid; toast(`${nameOfUid(p.from)} set out, but you're still in another run or fight. Finish or leave it, then ask them to set out again.`); return; }
+        if (NET.wait) { clearInterval(NET.wait.timer); NET.wait = null; }
+        netBegin(p); return;
+      }
       case 'act': {
         if (!S || p.sid !== S.sid || !netHost()) return;
         const mi = S.uids.indexOf(p.from); if (mi < 0 || S.gone[mi]) return;
