@@ -1606,20 +1606,27 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     } catch (e) { dbRef = null; storeKind = 'local'; toast('Signed in, but your online save could not be reached (' + (e.message || e) + '). Progress keeps saving in this browser.'); }
     renderAccount(); renderSaveNote();
   }
+  function acctName(u) { const m = (u && u.user_metadata) || {}; return (m.custom_claims && m.custom_claims.global_name) || m.full_name || m.name || m.user_name || (u && u.email) || 'Signed in'; }
+  async function signInDiscord() {
+    const { error } = await supa.auth.signInWithOAuth({ provider: 'discord', options: { redirectTo: location.origin + location.pathname } });
+    if (error) toast('Discord sign-in could not start: ' + error.message);
+  }
   function renderAccount() {
     const el = $('acct'); if (!el) return;
     if (!supa) { el.innerHTML = ''; return; }
-    el.innerHTML = supaUser ? `<span class="chip" title="Signed in">${esc(supaUser.email || 'Signed in')}</span> <button class="pilebtn" id="btnSignOut">Sign out</button>` : `<button class="btn primary" id="btnSignIn" style="padding:4px 12px">Sign in to save online</button>`;
+    el.innerHTML = supaUser ? `<span class="chip" title="Signed in">${esc(acctName(supaUser))}</span> <button class="pilebtn" id="btnSignOut">Sign out</button>` : `<button class="btn primary" id="btnSignIn" style="padding:4px 12px">Sign in to save online</button>`;
     if ($('btnSignIn')) $('btnSignIn').onclick = signInModal;
     if ($('btnSignOut')) $('btnSignOut').onclick = async () => { await supa.auth.signOut(); };
     if (!$('scrTitle').hidden) renderTitle();
   }
   function signInModal() {
-    modal(`<h2>Sign in</h2><p>Enter your email and we'll send you a sign-in link. No password needed. Your characters, stash and decks then follow you to any device.</p>
+    modal(`<h2>Sign in</h2><p>Your heroes, stash and decks then follow you to any device, and you can chat and form parties with friends.</p>
+      <button class="btn primary" id="siDiscord" style="background:#5865F2;border-color:#5865F2;color:#fff;justify-self:start;padding:10px 18px">Sign in with Discord</button>
+      <p class="muted" style="margin-top:6px">Or get a sign-in link by email (no password):</p>
       <div class="field"><label for="siEmail">Email</label><input id="siEmail" type="email" autocomplete="email" style="background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:8px;color:var(--text);font:inherit"></div>
       <p id="siMsg" class="muted"></p>
       <div class="row"><button class="btn primary" id="siSend">Email me a link</button><button class="btn" id="mClose">Cancel</button></div>`);
-    $('mClose').onclick = closeModal; $('siEmail').focus();
+    $('mClose').onclick = closeModal; $('siDiscord').onclick = signInDiscord;
     const send = async () => {
       const email = $('siEmail').value.trim(); if (!/^\S+@\S+\.\S+$/.test(email)) { $('siMsg').textContent = 'Enter a valid email address.'; return; }
       let last = 0; try { last = +localStorage.getItem('cb-signin-sent') || 0; } catch (e) {}
@@ -2283,7 +2290,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       + (chars.length < 4 ? `<button class="herocard new" id="btnNewHero">+ Create a hero</button>` : '');
     if ($('btnNewHero')) $('btnNewHero').onclick = openCreate;
     if (!chars.length) openCreate();
-    $('titleAcct').innerHTML = supa ? (supaUser ? `<span class="muted">Signed in as ${esc(supaUser.email || '')}</span>` : `<button class="btn" id="btnTitleSignIn">Sign in to save online</button>`) : '';
+    $('titleAcct').innerHTML = supa ? (supaUser ? `<span class="muted">Signed in as ${esc(acctName(supaUser))}</span>` : `<button class="btn" id="btnTitleSignIn">Sign in to save online</button>`) : '';
     if ($('btnTitleSignIn')) $('btnTitleSignIn').onclick = signInModal;
     $('topInfo').textContent = '';
   }
@@ -2313,7 +2320,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       ${inRun ? `<button class="btn" id="mnLeave">Leave run and return to town</button>` : ''}
       ${run && run.over ? `<button class="btn" id="mnTown">Return to town</button>` : ''}
       ${!run && !onTitle ? `<button class="btn" id="mnHeroes">Switch hero</button>` : ''}
-      ${supa ? (supaUser ? `<button class="btn" id="mnSignOut">Sign out (${esc(supaUser.email || '')})</button>` : `<button class="btn" id="mnSignIn">Sign in to save online</button>`) : ''}
+      ${supa ? (supaUser ? `<button class="btn" id="mnSignOut">Sign out (${esc(acctName(supaUser))})</button>` : `<button class="btn" id="mnSignIn">Sign in to save online</button>`) : ''}
       <h3 style="font-size:20px;margin-top:6px">Settings</h3>
       <label class="toggle"><input type="checkbox" id="setFast" ${settings.fast ? 'checked' : ''}> Fast enemy turns</label>
     </div>`);
