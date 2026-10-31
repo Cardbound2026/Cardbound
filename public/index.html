@@ -2396,7 +2396,7 @@ function rollNamedCards(data, rng, enemyKey, cls, luck) {
   }
   return out;
 }
-function rollDrops(data, rng, enemyKey, level, luck) {
+function rollDrops(data, rng, enemyKey, level, luck, cls) {
   const d = data.enemies[enemyKey], G = data.gear;
   const table = G.drops[d.tier]; const out = [];
   if (!table || !d.pool.length) return out;
@@ -2407,6 +2407,12 @@ function rollDrops(data, rng, enemyKey, level, luck) {
     if (got) out.push(rollItem(data, rng, d.pool[Math.floor(rng() * d.pool.length)], got, level));
   }
   // codexes: bosses list one per class on their loot table (each rolls on its own)
+  // map bosses always drop one codex: the one on their table for the looting hero's class (Oct 31)
+  if (d.tier === 'Boss' && !d.raid) {
+    const all = (d.loot || []).filter(x => x.type === 'Codex'), mine = all.filter(x => x.cls === cls), pick = (mine.length ? mine : all);
+    if (pick.length) { const x = pick[Math.floor(rng() * pick.length)], key = Object.keys(CODEX_BY_KEY).find(k => CODEX_BY_KEY[k].name + ' Codex' === x.item); if (key) out.push(makeCodex(data, rng, key, level)); }
+    return out;
+  }
   for (const x of d.loot || []) if (x.type === 'Codex' && rng() * 100 < (x.pct || 0) * lk) { const key = Object.keys(CODEX_BY_KEY).find(k => CODEX_BY_KEY[k].name + ' Codex' === x.item); if (key) out.push(makeCodex(data, rng, key, level)); }
   return out;
 }
@@ -2621,7 +2627,7 @@ class Run {
       const regen = m.stats.healthRegen; if (regen && !fell) m.hp = Math.min(m.stats.maxHp, m.hp + regen);
       const drops = []; let gold = 0;
       for (const e of cb.enemies) {  // every hero rolls their own loot
-        drops.push(...rollDrops(this.data, this.rng, e.key, this.level, this.luck(m)));
+        drops.push(...rollDrops(this.data, this.rng, e.key, this.level, this.luck(m), m.cls));
         drops.push(...rollCards(this.rng, m.cls, this.data.enemies[e.key].tier, this.luck(m)));
         drops.push(...rollNamedCards(this.data, this.rng, e.key, m.cls, this.luck(m)));
         const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * Math.pow(1.5, this.level));
@@ -4224,8 +4230,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793466865116';
-  const CB_BUILD = 'f648ed8471'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793475245790';
+  const CB_BUILD = '40701277c5'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -4729,6 +4735,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-10-31', items: [
+      ['Loot', 'Map bosses always drop a codex now: every kill gives each hero the codex on that boss\'s table for their class (with fresh random stats).'],
+      ['Testing', 'Tinker Pip: "Full Blue gear kit" equips a complete Blue set for your class, for testing raids. Your old gear goes to the stash; your codex stays on.'],
       ['Updates', 'This changelog: the "What\'s new" button in the bottom-right corner. A dot means there is something you haven\'t read.'],
       ['Updates', 'New-version warning: when a new build is out you get a banner. In town with nothing open, the game reloads itself after a short countdown (you can cancel).'],
       ['Raids', 'Raid loot is now 10 item levels above what the map\'s boss drops. Each piece rolls on its own: 10% chance to be Epic at +0, +1% per raid level (up to 30%), otherwise Blue. Plus one codex.'],
@@ -4846,7 +4854,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
           ${t ? `<p><b>${t.rolls} gear rolls per kill</b>, each: ${['White', 'Green', 'Blue', 'Purple (Epic)'].filter(r => t.chance[r]).map(r => `<span style="color:${RC[r]}">${r === 'Purple (Epic)' ? 'Purple' : r} ${t.chance[r]}%</span>`).join(' &middot; ')}</p>
           <p><b>Bases:</b> ${e.pool.map(b => `<button class="pilebtn" data-cxbase="${esc(b)}">${esc(b)}</button>`).join(' ')}</p>` : ''}
           ${cd ? `<p><b>Cards:</b> ${cd.n ? cd.n + ' guaranteed' : cd.chance + '% chance'} for your class (${Object.entries(cd.w).filter(x => x[1]).map(([r, w]) => `${r} ${w}%`).join(', ')}).</p>` : ''}
-          ${(e.loot || []).length ? `<p class="muted"><b>Named drops</b> (each kill rolls these; each hero only gets their own class's cards):</p><div class="cardlist">${e.loot.map(x => `<div class="cardrow" style="--rc:${RC[x.rarity] || 'var(--line)'}"><span class="n">${x.pct}%</span><b>${esc(x.item)} <span class="muted">${esc(x.cls)} ${esc(x.rarity)}${x.type === 'Codex' ? ' codex' : ''}</span></b><span class="cst"></span><span class="tx">${esc(x.note || '')}</span></div>`).join('')}</div>` : ''}
+          ${(e.loot || []).length ? `<p class="muted"><b>Named drops</b> (each kill rolls these; each hero only gets their own class's cards):</p><div class="cardlist">${e.loot.map(x => `<div class="cardrow" style="--rc:${RC[x.rarity] || 'var(--line)'}"><span class="n">${x.type === 'Codex' && e.tier === 'Boss' ? '100%' : x.pct + '%'}</span><b>${esc(x.item)} <span class="muted">${esc(x.cls)} ${esc(x.rarity)}${x.type === 'Codex' ? ' codex' : ''}</span></b><span class="cst"></span><span class="tx">${esc(x.note || '')}</span></div>`).join('')}</div>` : ''}
         </div></details>`; }).join('') || '<p class="muted">No enemies match.</p>'}`;
   }
   const statRange = (s, mult) => { const S = DATA.gear.stats[s]; if (!S) return ''; return `${Math.max(1, Math.round(S.min * (mult || 1)))}-${Math.max(1, Math.round(S.max * (mult || 1)))}${S.unit}`; };
@@ -4925,7 +4933,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       if (CX.own !== 'All' && (CX.own === 'Owned') !== have.has(key)) continue;
       if (q && !(name + ' ' + text + ' ' + cls).toLowerCase().includes(q)) continue;
       const from = src[name + ' Codex'] || [];
-      rows.push(`<div class="cxcod" style="--rc:${CC[cls]}"><div class="cxch"><b>${esc(name)} Codex</b><span style="color:${CC[cls]}">${cls}</span>${have.has(key) ? '<span class="tag good">Owned</span>' : ''}</div><div>${esc(text)}</div><small class="muted">${from.length ? from.map(f => `Drops from ${esc(f.boss.split(',')[0])} on ${esc(f.map)} (${f.pct}% per kill, more with Luck). The raid ${esc(CB.RAID_NAMES[f.mk] || '')} always drops one of its codexes.`).join(' ') : 'Not on any loot table yet.'}</small></div>`);
+      rows.push(`<div class="cxcod" style="--rc:${CC[cls]}"><div class="cxch"><b>${esc(name)} Codex</b><span style="color:${CC[cls]}">${cls}</span>${have.has(key) ? '<span class="tag good">Owned</span>' : ''}</div><div>${esc(text)}</div><small class="muted">${from.length ? from.map(f => `${esc(f.boss.split(',')[0])} on ${esc(f.map)} drops it every kill for a ${cls}. The raid ${esc(CB.RAID_NAMES[f.mk] || '')} always drops one of its codexes.`).join(' ') : 'Not on any loot table yet.'}</small></div>`);
     }
     return `<p class="muted" style="margin:0 0 6px">A codex is an item for the Codex slot (Quartermaster): a fixed class passive that shapes a playstyle, plus random stats. Tinker Pip has three test decks for each.</p>
       ${cxChips('cls', ['All', ...Object.keys(CLASSES)], 'Class')}${cxChips('own', ['All', 'Owned', 'Not owned'], 'Owned')}
@@ -5315,6 +5323,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       <div class="cxtop"><div class="tabs cxtabs" role="tablist">${[['decks', 'Test decks'], ['cards', `${hcls()} cards`], ['codex', 'Codexes'], ['misc', 'Gold']].map(([k, l]) => `<button role="tab" aria-selected="${TV.tab === k}" data-tvtab="${k}">${l}</button>`).join('')}</div>
         ${TV.tab === 'cards' ? `<input id="tvQ" type="search" placeholder="Search ${hcls()} cards by name or text..." value="${esc(TV.q)}" autocomplete="off">` : ''}
         <button class="btn" data-tvshop="1" title="Merchant Dace normally restocks every 12 hours">Restock Merchant Dace now</button>
+        <button class="btn" data-tvkit="Blue" title="Equips a full set of Blue gear for your class (the set the raid balance was tuned with). Your current gear goes to the stash; your codex stays on.">Full Blue gear kit</button>
         <button class="btn" data-tvraid="reset" title="Raid kills lock a hero out of that raid for 7 days">Reset raid lockouts</button>
         <button class="btn" data-tvraid="unlock" title="Counts every map's boss as beaten at +10 for this hero, so every raid opens">Unlock all raids (+10)</button></div>
       ${TV.tab === 'decks' ? testDecksHtml(c) : TV.tab === 'cards' ? `<div class="cxchips">${['All', 'White', 'Green', 'Blue', 'Gold'].map(r => `<button class="cxchip ${TV.rar === r ? 'on' : ''}" data-tvrar="${r}">${r}</button>`).join('')}<button class="btn primary" data-tvall="1" style="margin-left:auto">Take one of each${q || TV.rar !== 'All' ? ' shown' : ''} (${cards.length})</button></div>
@@ -5325,13 +5334,21 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     fitCards(el);
   }
   $('hpTest').addEventListener('click', (ev) => {
-    const b = ev.target.closest('[data-tvtab],[data-tvrar],[data-tvcard],[data-tvall],[data-tvcx],[data-tvgold],[data-tvshop],[data-tvraid],[data-tvdeck],[data-tvpeek]'); if (!b) return;
+    const b = ev.target.closest('[data-tvtab],[data-tvrar],[data-tvcard],[data-tvall],[data-tvcx],[data-tvgold],[data-tvshop],[data-tvraid],[data-tvkit],[data-tvdeck],[data-tvpeek]'); if (!b) return;
     if (b.dataset.tvdeck) return loadTestDeck(b.dataset.tvdeck);
     if (b.dataset.tvpeek) { TV.open = TV.open === b.dataset.tvpeek ? null : b.dataset.tvpeek; return renderTestVendor(); }
     const c = profile.chars[heroKey];
     if (b.dataset.tvtab) TV.tab = b.dataset.tvtab;
     else if (b.dataset.tvrar) TV.rar = b.dataset.tvrar;
     else if (b.dataset.tvcard) { c.cards.push({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), key: b.dataset.tvcard, rank: 0 }); save(); }
+    else if (b.dataset.tvkit) {
+      const c = profile.chars[heroKey]; if (!c) return;
+      const kit = CB.presetGear(c.cls, b.dataset.tvkit).map(g => Object.assign({ id: 'g' + Math.random().toString(36).slice(2, 10), test: true }, g));
+      const old = (c.gear || []).filter(g => g.slot !== 'Codex'); let kept = 0, lost = 0;
+      for (const g of old) { if (profile.stash.length < CBHub.STASH_MAX) { profile.stash.unshift(Object.assign({}, g, { slot: /^Ring/.test(g.slot) ? 'Ring' : g.slot })); kept++; } else lost++; }
+      c.gear = [...kit, ...(c.gear || []).filter(g => g.slot === 'Codex')]; save(); renderHub();
+      toast(`${c.name} is wearing a full ${b.dataset.tvkit} kit. ${kept} old item${kept === 1 ? '' : 's'} moved to the stash${lost ? `; ${lost} didn't fit and were dropped` : ''}.`);
+    }
     else if (b.dataset.tvraid) { const c = profile.chars[heroKey]; if (!c) return; if (b.dataset.tvraid === 'reset') { c.raidLocks = {}; toast(`${c.name}'s raid lockouts are cleared.`); } else { c.mapKills = c.mapKills || {}; for (const mk of Object.keys(DATA.maps)) c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], 10); toast(`${c.name} counts as having beaten every map's boss at +10: all raids are open.`); } save(); }
     else if (b.dataset.tvshop) { CBHub.refreshShop(profile, DATA, profile.last.level || 0); save(); toast(`Merchant Dace has new stock (map level +${profile.last.level || 0}, ${DATA.maps[curMap()].name} gear).`); }
     else if (b.dataset.tvall) { const q = TV.q.toLowerCase(); let n = 0; for (const [k, d] of Object.entries(CARDS)) if (d.cls === hcls() && !d.designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(d.rarity) && (TV.rar === 'All' || d.rarity === TV.rar) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + d.rarity).toLowerCase().includes(q)) && ++n) c.cards.push({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), key: k, rank: 0 }); save(); toast(`Added ${n} ${hcls()} card${n === 1 ? '' : 's'} to ${c.name}'s collection.`); }

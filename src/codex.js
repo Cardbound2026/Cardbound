@@ -32,7 +32,7 @@
           ${t ? `<p><b>${t.rolls} gear rolls per kill</b>, each: ${['White', 'Green', 'Blue', 'Purple (Epic)'].filter(r => t.chance[r]).map(r => `<span style="color:${RC[r]}">${r === 'Purple (Epic)' ? 'Purple' : r} ${t.chance[r]}%</span>`).join(' &middot; ')}</p>
           <p><b>Bases:</b> ${e.pool.map(b => `<button class="pilebtn" data-cxbase="${esc(b)}">${esc(b)}</button>`).join(' ')}</p>` : ''}
           ${cd ? `<p><b>Cards:</b> ${cd.n ? cd.n + ' guaranteed' : cd.chance + '% chance'} for your class (${Object.entries(cd.w).filter(x => x[1]).map(([r, w]) => `${r} ${w}%`).join(', ')}).</p>` : ''}
-          ${(e.loot || []).length ? `<p class="muted"><b>Named drops</b> (each kill rolls these; each hero only gets their own class's cards):</p><div class="cardlist">${e.loot.map(x => `<div class="cardrow" style="--rc:${RC[x.rarity] || 'var(--line)'}"><span class="n">${x.pct}%</span><b>${esc(x.item)} <span class="muted">${esc(x.cls)} ${esc(x.rarity)}${x.type === 'Codex' ? ' codex' : ''}</span></b><span class="cst"></span><span class="tx">${esc(x.note || '')}</span></div>`).join('')}</div>` : ''}
+          ${(e.loot || []).length ? `<p class="muted"><b>Named drops</b> (each kill rolls these; each hero only gets their own class's cards):</p><div class="cardlist">${e.loot.map(x => `<div class="cardrow" style="--rc:${RC[x.rarity] || 'var(--line)'}"><span class="n">${x.type === 'Codex' && e.tier === 'Boss' ? '100%' : x.pct + '%'}</span><b>${esc(x.item)} <span class="muted">${esc(x.cls)} ${esc(x.rarity)}${x.type === 'Codex' ? ' codex' : ''}</span></b><span class="cst"></span><span class="tx">${esc(x.note || '')}</span></div>`).join('')}</div>` : ''}
         </div></details>`; }).join('') || '<p class="muted">No enemies match.</p>'}`;
   }
   const statRange = (s, mult) => { const S = DATA.gear.stats[s]; if (!S) return ''; return `${Math.max(1, Math.round(S.min * (mult || 1)))}-${Math.max(1, Math.round(S.max * (mult || 1)))}${S.unit}`; };
@@ -111,7 +111,7 @@
       if (CX.own !== 'All' && (CX.own === 'Owned') !== have.has(key)) continue;
       if (q && !(name + ' ' + text + ' ' + cls).toLowerCase().includes(q)) continue;
       const from = src[name + ' Codex'] || [];
-      rows.push(`<div class="cxcod" style="--rc:${CC[cls]}"><div class="cxch"><b>${esc(name)} Codex</b><span style="color:${CC[cls]}">${cls}</span>${have.has(key) ? '<span class="tag good">Owned</span>' : ''}</div><div>${esc(text)}</div><small class="muted">${from.length ? from.map(f => `Drops from ${esc(f.boss.split(',')[0])} on ${esc(f.map)} (${f.pct}% per kill, more with Luck). The raid ${esc(CB.RAID_NAMES[f.mk] || '')} always drops one of its codexes.`).join(' ') : 'Not on any loot table yet.'}</small></div>`);
+      rows.push(`<div class="cxcod" style="--rc:${CC[cls]}"><div class="cxch"><b>${esc(name)} Codex</b><span style="color:${CC[cls]}">${cls}</span>${have.has(key) ? '<span class="tag good">Owned</span>' : ''}</div><div>${esc(text)}</div><small class="muted">${from.length ? from.map(f => `${esc(f.boss.split(',')[0])} on ${esc(f.map)} drops it every kill for a ${cls}. The raid ${esc(CB.RAID_NAMES[f.mk] || '')} always drops one of its codexes.`).join(' ') : 'Not on any loot table yet.'}</small></div>`);
     }
     return `<p class="muted" style="margin:0 0 6px">A codex is an item for the Codex slot (Quartermaster): a fixed class passive that shapes a playstyle, plus random stats. Tinker Pip has three test decks for each.</p>
       ${cxChips('cls', ['All', ...Object.keys(CLASSES)], 'Class')}${cxChips('own', ['All', 'Owned', 'Not owned'], 'Owned')}

@@ -198,7 +198,7 @@ class Run {
       const regen = m.stats.healthRegen; if (regen && !fell) m.hp = Math.min(m.stats.maxHp, m.hp + regen);
       const drops = []; let gold = 0;
       for (const e of cb.enemies) {  // every hero rolls their own loot
-        drops.push(...rollDrops(this.data, this.rng, e.key, this.level, this.luck(m)));
+        drops.push(...rollDrops(this.data, this.rng, e.key, this.level, this.luck(m), m.cls));
         drops.push(...rollCards(this.rng, m.cls, this.data.enemies[e.key].tier, this.luck(m)));
         drops.push(...rollNamedCards(this.data, this.rng, e.key, m.cls, this.luck(m)));
         const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * Math.pow(1.5, this.level));

@@ -1717,7 +1717,7 @@ function rollNamedCards(data, rng, enemyKey, cls, luck) {
   }
   return out;
 }
-function rollDrops(data, rng, enemyKey, level, luck) {
+function rollDrops(data, rng, enemyKey, level, luck, cls) {
   const d = data.enemies[enemyKey], G = data.gear;
   const table = G.drops[d.tier]; const out = [];
   if (!table || !d.pool.length) return out;
@@ -1728,6 +1728,12 @@ function rollDrops(data, rng, enemyKey, level, luck) {
     if (got) out.push(rollItem(data, rng, d.pool[Math.floor(rng() * d.pool.length)], got, level));
   }
   // codexes: bosses list one per class on their loot table (each rolls on its own)
+  // map bosses always drop one codex: the one on their table for the looting hero's class (Oct 31)
+  if (d.tier === 'Boss' && !d.raid) {
+    const all = (d.loot || []).filter(x => x.type === 'Codex'), mine = all.filter(x => x.cls === cls), pick = (mine.length ? mine : all);
+    if (pick.length) { const x = pick[Math.floor(rng() * pick.length)], key = Object.keys(CODEX_BY_KEY).find(k => CODEX_BY_KEY[k].name + ' Codex' === x.item); if (key) out.push(makeCodex(data, rng, key, level)); }
+    return out;
+  }
   for (const x of d.loot || []) if (x.type === 'Codex' && rng() * 100 < (x.pct || 0) * lk) { const key = Object.keys(CODEX_BY_KEY).find(k => CODEX_BY_KEY[k].name + ' Codex' === x.item); if (key) out.push(makeCodex(data, rng, key, level)); }
   return out;
 }
