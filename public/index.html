@@ -548,6 +548,8 @@ window.CB_FRAMES = Object.assign(window.CB_FRAMES || {}, {"E:soldier": {"art": [
 window.CB_FRAMES = Object.assign(window.CB_FRAMES, {"E:plague": {"art": [0.1084, 0.0723, 0.7832, 0.4049], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/plague.webp"}, "E:frost": {"art": [0.1094, 0.071, 0.7812, 0.4238], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/frost.webp"}, "E:shadow": {"art": [0.1074, 0.0703, 0.7842, 0.4342], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/shadow.webp"}, "E:fire": {"art": [0.1074, 0.0716, 0.7852, 0.4232], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/fire.webp"}, "E:magma": {"art": [0.1064, 0.071, 0.7881, 0.4238], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/magma.webp"}, "E:stone": {"art": [0.1064, 0.0716, 0.7881, 0.4362], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/stone.webp"}, "E:chains": {"art": [0.1084, 0.0723, 0.7822, 0.4102], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/chains.webp"}});
 // Oct 31: arcane (Shattered Spire), gilded (every boss), water (swamp creatures)
 window.CB_FRAMES = Object.assign(window.CB_FRAMES, {"E:arcane": {"art": [0.1104, 0.0723, 0.7793, 0.4147], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/arcane.webp"}, "E:gilded": {"art": [0.1094, 0.0716, 0.7812, 0.4212], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/gilded.webp"}, "E:water": {"art": [0.1074, 0.0723, 0.7822, 0.4147], "panel": [0.135, 0.565, 0.73, 0.3], "gem": [0.125, 0.0835, 0.066], "dark": true, "src": "img/eframes/water.webp"}});
+// Oct 31: junk frame for status cards (Dazed, Stun, Fatigue, and the status cards your cards put in enemy decks)
+window.CB_FRAMES = Object.assign(window.CB_FRAMES, {"S:junk": {"art": [0.0752, 0.0599, 0.8486, 0.4492], "panel": [0.12, 0.565, 0.76, 0.3], "gem": [0.134, 0.05, 0.063], "dark": true, "src": "img/eframes/junk.webp"}});
 
 </script>
 <script>
@@ -3665,7 +3667,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILD = '8bfdf90ea7'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILD = '6fdd3c7025'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -4640,9 +4642,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
 
   // ---------- framed card face (class frame art + live text)
   const GEMC = { Enemy: '#a3402c', White: '#d8d2c4', Green: '#4fae4a', Blue: '#3f7fe0', Gold: '#e6a52c', Token: '#9a8f82', Status: '#6c6258' };
-  function cardIcon(d) { if (d.ekind) return ICON[d.ekind]; return d.type === 'Attack' ? ICON.attack : d.tags && (d.tags.def || d.tags.heal) ? ICON.defend : ICON.buff; }
+  function cardIcon(d) { if (d.ekind === 'status' || d.type === 'Status') return ICON.debuff || ICON.buff; if (d.ekind) return ICON[d.ekind]; return d.type === 'Attack' ? ICON.attack : d.tags && (d.tags.def || d.tags.heal) ? ICON.defend : ICON.buff; }
   function cardFace(d, o) {
-    o = o || {}; const F = (window.CB_FRAMES || {})[d.cls]; if (!F) return null;
+    o = o || {}; const F = (window.CB_FRAMES || {})[d.cls] || (d.type === 'Status' || d.ekind === 'status' ? (window.CB_FRAMES || {})['S:junk'] : null); if (!F) return null;
     const pct = (v) => (v * 100).toFixed(2) + '%';
     const L = (r) => `left:${pct(r[0])};top:${pct(r[1])};width:${pct(r[2])};height:${pct(r[3])}`;
     const g = F.gem, gr = g[2] * 0.82;
@@ -4651,7 +4653,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const name = d.rank ? d.name.replace(/ \+\d+$/, '') : d.name;
     const art = (window.CB_ART || {})[d.key];
     return `<span class="fart" style="${L(F.art)}">${art ? `<img src="${art}" alt="" draggable="false">` : cardIcon(d)}</span><img class="fimg" src="${F.src}" alt="" draggable="false">
-      ${d.cost != null ? `<span class="fgem" style="left:${pct(g[0] - gr)};top:${pct(g[1] - gr / 1.5)};width:${pct(gr * 2)};aspect-ratio:1">${d.cost}</span>` : ''}
+      ${d.cost != null && d.cost < 999 ? `<span class="fgem" style="left:${pct(g[0] - gr)};top:${pct(g[1] - gr / 1.5)};width:${pct(gr * 2)};aspect-ratio:1">${d.cost}</span>` : ''}
       ${d.rank ? `<span class="frank">+${d.rank}</span>` : ''}
       <span class="fpanel" style="${L(F.panel)}"><span class="fname">${esc(name)}</span><span class="ftype">${type}</span><span class="ftext ${len > 95 ? 'vlong' : len > 62 ? 'long' : ''}">${text}</span></span>`;
   }
@@ -4668,7 +4670,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // rarity color for the type line: a darker shade on parchment and stone, a brighter one on the Warrior's dark panel
   const RT = { Enemy: ['#5e554b', '#efb79c'], White: ['#5e554b', '#ece4d4'], Green: ['#2f7a2a', '#86d873'], Blue: ['#2456a8', '#86b6ff'], Gold: ['#9a6610', '#ffcf5a'], Token: ['#5e554b', '#d8d0c0'], Status: ['#5e554b', '#d8d0c0'] };
   const cardVars = (d) => `--cc:${d.ekind ? EKIND_COL[d.ekind] : CC[d.cls] || '#888'};--rg:${GEMC[d.rarity] || '#888'};--rt-light:${(RT[d.rarity] || RT.White)[0]};--rt-dark:${(RT[d.rarity] || RT.White)[1]}`;
-  const cardCls = (d) => 'cf' + ((window.CB_FRAMES || {})[d.cls] && CB_FRAMES[d.cls].dark ? ' dark' : '');
+  const cardCls = (d) => 'cf' + (((window.CB_FRAMES || {})[d.cls] && CB_FRAMES[d.cls].dark) || d.type === 'Status' || d.ekind === 'status' ? ' dark' : '') + (d.type === 'Status' || d.ekind === 'status' ? ' junk' : '');
   // ---------- enemy cards: sixteen frames picked by the enemy's map and what it is
   const OUTLAWS = ['camp_thief', 'bandit_cutthroat', 'pit_duelist', 'the_twin_blades', 'pit_champion', 'gravel_king'];
   function eframeOf(key) {
@@ -4690,8 +4692,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (/Beast/.test(e.creature)) return 'wild';
     return OUTLAWS.includes(key) ? 'outlaw' : 'soldier';
   }
-  const EKIND_COL = { attack: '#c9472f', defend: '#4f93e6', debuff: '#8461b8', buff: '#e4a93a' };
+  const EKIND_COL = { attack: '#c9472f', defend: '#4f93e6', debuff: '#8461b8', buff: '#e4a93a', status: '#8a8578' };
   function enemyCardD(c, key) {
+    if (c.kind === 'Status') return { cls: 'S:junk', name: c.name, cost: null, text: c.text, type: 'Status', rarity: 'Status', key: 'status:' + (c.status || c.name), ekind: 'status' };
     const k = CB.intentKind(c.ops || CB.parseEnemyCard(c.text));
     return { cls: 'E:' + eframeOf(key), name: c.name, cost: c.cost, text: c.text, dtype: c.dtype, type: { attack: 'Attack', defend: 'Defense', debuff: 'Debuff', buff: 'Buff' }[k], rarity: 'Enemy', key: 'enemy:' + key + ':' + c.name, ekind: k };
   }
@@ -4987,7 +4990,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     else hint.textContent = party ? `${p.name}'s turn. Click a card to play it. E ends ${p.name}'s turn.` : 'Your turn. Click a card to play it. E ends your turn.';
     $('hand').innerHTML = p.hand.map(c => {
       const d0 = cb.card(c), ec = d0.cost != null ? cb.costOf(p, d0, c) : null, d = ec != null && ec !== d0.cost ? Object.assign(Object.create(d0), { cost: ec }) : d0;
-      const chk = myTurn ? cb.canPlay(c) : { ok: false, why: cb.over ? 'Fight over' : 'Not your turn' }, face = d.type !== 'Status' && cardFace(d);
+      const chk = myTurn ? cb.canPlay(c) : { ok: false, why: cb.over ? 'Fight over' : 'Not your turn' }, face = cardFace(d);
       const n = p.hand.length, k = p.hand.indexOf(c), mid = (n - 1) / 2, rot = (k - mid) * Math.min(5, 26 / Math.max(1, n)), off = Math.abs(k - mid) ** 1.6 * 4;
       if (face) return `<button class="${cardCls(d)} ${selected && selected.uid === c.uid ? 'selected' : ''}" style="${cardVars(d)};--rot:${rot.toFixed(1)};--off:${off.toFixed(1)};--z:${k + 1}" data-uid="${c.uid}" ${chk.ok && !busy ? '' : 'disabled'} title="${chk.ok ? (d.target === 'enemy' ? 'Single enemy' : d.target === 'all' ? 'All enemies' : 'Self') : esc(chk.why)}" aria-label="${esc(d.name + ', ' + d.cost + ' mana: ' + d.text)}">${face}</button>`;
       return `<button class="card ${d.type === 'Status' ? 'status' : ''} ${selected && selected.uid === c.uid ? 'selected' : ''}" style="--rc:${RC[d.rarity]}" data-uid="${c.uid}" ${chk.ok && !busy ? '' : 'disabled'} title="${chk.ok ? '' : esc(chk.why)}">
