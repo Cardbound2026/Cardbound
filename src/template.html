@@ -280,6 +280,20 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .tdlist { display: flex; flex-wrap: wrap; gap: 3px 10px; font-size: 12.5px; }
 .btn.danger { background: #8a2a1c; border-color: #b5462f; color: #fff; }
 .btn.danger:disabled { opacity: .45; cursor: not-allowed; }
+.sacksplit { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 4px 0; }
+@media (max-width: 640px) { .sacksplit { grid-template-columns: 1fr; } }
+.sacksplit h4 { margin: 0 0 6px; font-size: 14px; }
+.sacksplit .list { max-height: 34vh; overflow: auto; }
+.lostcol .item { opacity: .55; filter: grayscale(.6); }
+.stage { position: relative; }
+.playedpeek { position: absolute; left: 50%; top: 4px; transform: translateX(-50%); z-index: 20; display: grid; justify-items: center; gap: 4px; pointer-events: none; filter: drop-shadow(0 12px 24px rgba(0,0,0,.8)); animation: ppin .25s ease-out; transition: opacity .35s, transform .35s; }
+.playedpeek.out { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+.playedpeek .ppcap { background: rgba(12,9,7,.88); border: 1px solid #6b5132; border-radius: 4px; padding: 3px 10px; font-size: 13px; }
+@keyframes ppin { from { opacity: 0; transform: translateX(-50%) scale(.85); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
+#hand.watching .cf, #hand.watching .card { filter: saturate(.75) brightness(.92); }
+#hand.watching { outline: 1px dashed rgba(224,160,80,.35); outline-offset: 4px; border-radius: 8px; }
+.cf .ftext b.lup { color: #3f9a3a; text-shadow: 0 0 6px rgba(120,255,120,.35); }
+.cf .ftext b.ldown { color: #b0402f; text-decoration: underline dotted; }
 .mappick { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; margin: 8px 0 0; }
 .mapchip { text-align: left; background: #1a1612; border: 1px solid var(--line); border-left: 4px solid var(--ec); border-radius: 6px; padding: 6px 9px; color: var(--text); cursor: pointer; font: inherit; }
 .mapchip b { display: block; font-size: 14px; }
@@ -532,7 +546,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   <section id="scrCombat" class="combatmain" hidden aria-label="Battle">
     <div class="field-panel">
       <div class="order" id="order"></div>
-      <div class="stage"><div id="playerSlot"></div><div class="vs">vs</div><div class="foes" id="foes"></div></div>
+      <div class="stage"><div id="playerSlot"></div><div class="vs">vs</div><div class="foes" id="foes"></div><div class="playedpeek" id="playedPeek" hidden aria-live="polite"></div></div>
       <div class="hud">
         <div class="mana"><div class="orb" id="orb">0</div><div><b>Mana</b><small id="manaSub"></small></div></div>
         <div class="piles" id="piles"></div>
@@ -1662,7 +1676,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     const pct = (v) => (v * 100).toFixed(2) + '%';
     const L = (r) => `left:${pct(r[0])};top:${pct(r[1])};width:${pct(r[2])};height:${pct(r[3])}`;
     const g = F.gem, gr = g[2] * 0.82;
-    const text = esc(d.text).replace(/(\d+)/g, '<b>$1</b>'), len = d.text.length;
+    const text = esc(d.text).replace(/(\d+)/g, '<b>$1</b>').replace(/\u0001<b>(\d+)<\/b>\u0002/g, '<b class="lup">$1</b>').replace(/\u0003<b>(\d+)<\/b>\u0004/g, '<b class="ldown">$1</b>'), len = d.text.replace(/[\u0001-\u0004]/g, '').length;
     const type = `${d.type}${d.dtype && d.dtype !== 'Physical' ? ' · ' + d.dtype : ''}`;
     const name = d.rank ? d.name.replace(/ \+\d+$/, '') : d.name;
     const art = (window.CB_ART || {})[d.key];
@@ -1836,6 +1850,13 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       $('modal').hidden = false; draw(); $('mLeave').focus();
     }
   }
+  // what comes home and what was left behind (extracting keeps a random 75% or half; dying loses it all)
+  function sackSplit(m) {
+    const k = m.kept || { items: [], gold: 0 }, keepSet = new Set(k.items);
+    const lost = (m.sack || []).filter(it => !keepSet.has(it)), goldLost = Math.max(0, (m.gold || 0) - (k.gold || 0));
+    return `<div class="sacksplit"><div><h4 class="up">Coming home: ${k.items.length} item${k.items.length === 1 ? '' : 's'}, ${k.gold} gold</h4><div class="list">${k.items.map(it => itemHtml(it)).join('') || '<span class="muted">Nothing.</span>'}</div></div>
+      <div class="lostcol"><h4 class="down">Lost: ${lost.length} item${lost.length === 1 ? '' : 's'}${goldLost ? `, ${goldLost} gold` : ''}</h4><div class="list">${lost.map(it => itemHtml(it)).join('') || '<span class="muted">Nothing lost.</span>'}</div></div></div>`;
+  }
   function endScreen() {
     if (!run.solo) return endScreenParty();
     const k = run.kept || { items: [], gold: 0 };
@@ -1843,8 +1864,9 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     const sub = (run.over === 'victory' ? `${esc(bossName())} is dead. You keep the whole sack.` : run.over === 'extracted' ? `You made it out alive. ${run.kept && run.sack.length && run.kept.items.length / run.sack.length > 0.6 ? '75%' : 'Half'} of the sack survived the trip.` : 'You died on the March. The sack is lost.') + (run.orders.length ? ` ${run.orders.length} merchant order${run.orders.length === 1 ? ' is' : 's are'} waiting in your stash.` : '');
     modal(`<h2 class="${run.over === 'dead' ? 'loss' : ''}">${title}</h2><p>${sub}</p>
       <dl class="kv"><dt>Furthest row</dt><dd>${run.currentRow() > ROWS ? 'Boss' : run.currentRow()}</dd><dt>Fights won</dt><dd>${run.fightsWon}</dd><dt>Items kept</dt><dd>${k.items.length}</dd><dt>Gold kept</dt><dd>${k.gold}</dd></dl>
-      <div class="list">${k.items.map(it => itemHtml(it)).join('') || '<span class="muted">Nothing kept.</span>'}</div>
+      ${sackSplit(run)}
       <div class="row"><button class="btn primary" id="mNew">Return to camp</button><button class="btn" id="mMap">Look at the map</button></div>`);
+    $('modalBox').classList.add('wide');
     if (!run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run, run.myMi); save(); }
     $('mNew').onclick = backToTown;
     $('mMap').onclick = () => closeModal();
@@ -1855,8 +1877,9 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     const sub = run.over === 'victory' ? `${esc(bossName())} is dead. Everyone keeps their whole sack.` : run.over === 'extracted' ? 'The party made it out alive with part of every sack.' : 'The whole party fell. Every sack is lost.';
     modal(`<h2 class="${run.over === 'dead' ? 'loss' : ''}">${title}</h2><p>${sub} Merchant orders are waiting in the stash.</p>
       <dl class="kv"><dt>Furthest row</dt><dd>${run.currentRow() > ROWS ? 'Boss' : run.currentRow()}</dd><dt>Fights won</dt><dd>${run.fightsWon}</dd></dl>
-      ${run.members.map(m => { const k = m.kept || { items: [], gold: 0 }; return `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${k.items.length} item${k.items.length === 1 ? '' : 's'}, ${k.gold} gold${m.orders.length ? `, ${m.orders.length} order${m.orders.length === 1 ? '' : 's'}` : ''}</div><div class="list">${k.items.map(it => itemHtml(it)).join('')}</div>`; }).join('')}
+      ${run.members.map(m => { const k = m.kept || { items: [], gold: 0 }; return `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${k.items.length} item${k.items.length === 1 ? '' : 's'}, ${k.gold} gold${m.orders.length ? `, ${m.orders.length} order${m.orders.length === 1 ? '' : 's'}` : ''}</div>${sackSplit(m)}`; }).join('')}
       <div class="row"><button class="btn primary" id="mNew">Return to camp</button><button class="btn" id="mMap">Look at the map</button></div>`);
+    $('modalBox').classList.add('wide');
     if (!run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run, run.myMi); save(); }
     $('mNew').onclick = backToTown;
     $('mMap').onclick = () => closeModal();
@@ -1981,9 +2004,24 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     }
     snapshot();
   }
+  // co-op: on a partner's turn you watch their hand (read-only); "Show my hand" flips back until the turn changes
+  let watchMine = false, watchKey = '';
+  function watchedHero(p) {
+    if (cb.myMi == null || cb.duel || cb.over || cb.phase !== 'player' || !cb.current || !cb.current.isPlayer || cb.current === p) return null;
+    const key = cb.round + ':' + cb.turnIndex; if (key !== watchKey) { watchKey = key; watchMine = false; }
+    return watchMine ? null : cb.current;
+  }
+  // the card someone else just played, shown big in the middle of the field for a moment
+  let playedTimer = null;
+  function showPlayed(who, c, tgt) {
+    const el = $('playedPeek'); if (!el || !cb) return; const d = cb.card(c);
+    el.innerHTML = `<div class="ppcap"><b style="color:${CC[who.cls] || 'var(--text)'}">${esc(who.name)}</b> plays${tgt && tgt !== who ? ` on <b>${esc(tgt.name)}</b>` : ''}</div>${cardBox(d, 170) || `<div class="cardrow">${esc(d.name)}</div>`}`;
+    el.hidden = false; el.classList.remove('out'); fitCards(el); clearTimeout(playedTimer);
+    playedTimer = setTimeout(() => { el.classList.add('out'); playedTimer = setTimeout(() => { el.hidden = true; }, 350); }, 2200);
+  }
   function render(withPops) {
     if (!cb) return;
-    const p = hero(), party = cb.partySize > 1;
+    const p = hero(), party = cb.partySize > 1, wh = watchedHero(p);
     $('order').innerHTML = `<span class="lbl">Turn<br>order</span>` + cb.order.map((id, i) => { const a = cb.actorById(id); const st = a.hp <= 0 ? 'dead' : i === cb.turnIndex && !cb.over ? 'now' : i < cb.turnIndex ? 'done' : '';
       return `${i ? '<span class="osep" aria-hidden="true">&rsaquo;</span>' : ''}<div class="otile ${a.isPlayer ? 'hero' : 'foe'} ${st}" style="--oc:${a.isPlayer ? CC[a.cls] : '#e0b8a8'}" title="${esc(a.name)}: Initiative ${cb.initiative(a)}, HP ${a.hp}/${a.maxHp}"><span class="oini">${cb.initiative(a)}</span><div class="ofig">${figure(a)}</div><div class="onm">${a.isPlayer && !party ? 'You' : a === p && cb.myMi != null ? 'You' : esc(a.name)}</div><div class="obar"><i style="width:${Math.max(0, 100 * a.hp / a.maxHp)}%"></i></div></div>`; }).join('') + `<span class="round">Round ${cb.round}</span>${run ? '<button class="pilebtn" id="btnCMap" title="Look at the map (M)">Map</button>' : ''}${cb.practice ? '<button class="pilebtn" id="btnCReset" title="Start a fresh fight">Reset</button><button class="pilebtn" id="btnCLeave">Leave</button>' : ''}`;
     const mine = cb.duel ? [p] : cb.players, foes = cb.duel ? cb.players.filter(x => x !== p) : cb.enemies;
@@ -1998,20 +2036,23 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     $('btnEnd').disabled = !myTurn || busy;
     const hint = $('hint'); hint.classList.remove('alert');
     if (cb.over) hint.textContent = cb.over === 'win' ? 'Victory.' : 'Defeat.';
-    else if (!myTurn) hint.innerHTML = `${cb.current ? esc(cb.current.isPlayer ? (party ? cb.current.name : 'You') : cb.current.name) : ''} ${cb.current && cb.current.isPlayer && cb.myMi != null ? 'is taking their turn' : 'acting'}...<span id="tclock"></span>`;
+    else if (!myTurn) hint.innerHTML = `${cb.current ? esc(cb.current.isPlayer ? (party ? cb.current.name : 'You') : cb.current.name) : ''} ${cb.current && cb.current.isPlayer && cb.myMi != null ? 'is taking their turn' : 'acting'}...<span id="tclock"></span>`
+      + (wh ? ` <span class="muted">Showing ${esc(wh.name)}'s hand (${wh.mana} mana).</span> <button class="pilebtn" id="btnWatch">Show my hand</button>` : cb.myMi != null && !cb.duel && cb.current && cb.current.isPlayer && cb.current !== p && !cb.over ? ` <button class="pilebtn" id="btnWatch">Show ${esc(cb.current.name)}'s hand</button>` : '');
     else if (selected) { hint.textContent = `Choose a target for ${CARDS[selected.key].name} (Esc to cancel).`; hint.classList.add('alert'); }
     else if (cb.myMi != null) hint.innerHTML = `Your turn. Click a card to play it. E ends your turn.<span id="tclock"></span>`;
     else hint.textContent = party ? `${p.name}'s turn. Click a card to play it. E ends ${p.name}'s turn.` : 'Your turn. Click a card to play it. E ends your turn.';
-    $('hand').innerHTML = p.hand.map(c => {
-      const d0 = cb.card(c), ec = d0.cost != null ? cb.costOf(p, d0, c) : null, d = ec != null && ec !== d0.cost ? Object.assign(Object.create(d0), { cost: ec }) : d0;
+    const hp = wh || p; $('hand').classList.toggle('watching', !!wh);
+    $('hand').innerHTML = hp.hand.map(c => {
+      const d0 = cb.card(c), ec = d0.cost != null ? cb.costOf(hp, d0, c) : null, lt = cb.liveText(hp, d0), d = (ec != null && ec !== d0.cost) || lt !== d0.text ? Object.assign(Object.create(d0), { cost: ec != null ? ec : d0.cost, text: lt }) : d0;
       const chk = myTurn ? cb.canPlay(c) : { ok: false, why: cb.over ? 'Fight over' : 'Not your turn' }, face = cardFace(d);
-      const n = p.hand.length, k = p.hand.indexOf(c), mid = (n - 1) / 2, rot = (k - mid) * Math.min(5, 26 / Math.max(1, n)), off = Math.abs(k - mid) ** 1.6 * 4;
+      const n = hp.hand.length, k = hp.hand.indexOf(c), mid = (n - 1) / 2, rot = (k - mid) * Math.min(5, 26 / Math.max(1, n)), off = Math.abs(k - mid) ** 1.6 * 4;
       if (face) return `<button class="${cardCls(d)} ${selected && selected.uid === c.uid ? 'selected' : ''}" style="${cardVars(d)};--rot:${rot.toFixed(1)};--off:${off.toFixed(1)};--z:${k + 1}" data-uid="${c.uid}" ${chk.ok && !busy ? '' : 'disabled'} title="${chk.ok ? (d.target === 'enemy' ? 'Single enemy' : d.target === 'all' ? 'All enemies' : 'Self') : esc(chk.why)}" aria-label="${esc(d.name + ', ' + d.cost + ' mana: ' + d.text)}">${face}</button>`;
       return `<button class="card ${d.type === 'Status' ? 'status' : ''} ${selected && selected.uid === c.uid ? 'selected' : ''}" style="--rc:${RC[d.rarity]}" data-uid="${c.uid}" ${chk.ok && !busy ? '' : 'disabled'} title="${chk.ok ? '' : esc(chk.why)}">
         ${d.cost != null ? `<span class="cost">${d.cost}</span>` : ''}<span class="cname">${esc(d.name)}</span><span class="ctype">${d.rarity} ${d.type}${d.dtype && d.dtype !== 'Physical' ? ' · ' + d.dtype : ''}</span>
         <span class="ctext">${esc(d.text)}</span><span class="cfoot">${chk.ok ? (d.target === 'enemy' ? 'Single enemy' : d.target === 'all' ? 'All enemies' : 'Self') : esc(chk.why)}</span></button>`;
     }).join('') || `<span class="hint">${myTurn ? 'No cards in hand.' : ''}</span>`;
     fitCards($('hand'));
+    if ($('btnWatch')) $('btnWatch').onclick = () => { watchMine = !watchMine; render(); };
     if (!$('pCMeter').hidden) renderMeter($('meterC'));
     const logEl = $('log');
     logEl.innerHTML = cb.log.slice(-250).map(l => `<div class="k-${l.kind}">${esc(l.text)}</div>`).join('');

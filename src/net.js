@@ -116,7 +116,7 @@
         return;
       }
       case 'buy': { if (!run || !run.pending || run.pending.type !== 'merchant') return; run.buy(a.i, mi); if (redrawShop && !$('modal').hidden) redrawShop(); renderSide(); return; }
-      case 'play': { if (!cb || cb.over || cb.phase !== 'player' || cb.current !== cb.players[mi]) return; if (selected && mi === S.mi) selected = null; cb.play(a.uid, a.tgt); render(true); if (cb.over) combatOver(); return; }
+      case 'play': { if (!cb || cb.over || cb.phase !== 'player' || cb.current !== cb.players[mi]) return; if (selected && mi === S.mi) selected = null; const who = cb.players[mi], pc = who.hand.find(c => c.uid === a.uid), tg = a.tgt && cb.actorById(a.tgt); const ok = cb.play(a.uid, a.tgt); if (ok && pc && mi !== S.mi) showPlayed(who, pc, tg); render(true); if (cb.over) combatOver(); return; }
       case 'end': { if (!cb || cb.over || cb.phase !== 'player' || cb.current !== cb.players[mi]) return; if (mi === S.mi) selected = null; if (a.auto) cb.say('sys', `${cb.current.name} ran out of time.`); cb.endPlayerTurn(); render(true); pump(); return; }
       case 'leave': {
         if (S.gone[mi]) return; S.gone[mi] = true;

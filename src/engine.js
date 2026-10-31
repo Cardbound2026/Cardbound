@@ -735,9 +735,9 @@ function parseEnemyCard(text) {
   else if ((m = s.match(/[Dd]eal (\d+) (?:(?:Shadow|Fire|Arcane|Frost|Nature|Holy|Physical) )?damage/))) ops.push({ op: 'damage', n: +m[1] });
   if ((m = s.match(/Each hit applies (\d+) (Bleed|Burn|Poison|Chill)/))) ops.forEach(o => { if (o.op === 'damage') o.dotPerHit = { key: m[2].toLowerCase(), n: +m[1] }; });
   if (/heal for 50% of the damage dealt/.test(s)) ops.forEach(o => { if (o.op === 'damage') o.lifesteal = 0.5; });
-  if ((m = s.match(/^Another enemy gains (\d+) Block/))) ops.push({ op: 'blockAlly', n: +m[1] });
+  if ((m = s.match(/^Another (?:enemy|friendly target) gains (\d+) Block/))) ops.push({ op: 'blockAlly', n: +m[1] });
   else if ((m = s.match(/[Gg]ain (\d+) (?:Block|Dodge)/))) ops.push({ op: 'block', n: +m[1] });
-  if ((m = s.match(/All other enemies gain (\d+) Block/))) ops.push({ op: 'blockOthers', n: +m[1] });
+  if ((m = s.match(/All other (?:enemies|friendly targets) gain (\d+) Block/))) ops.push({ op: 'blockOthers', n: +m[1] });
   if ((m = s.match(/Gain (\d+) Parry\. Attacks into it take (\d+) damage back/))) ops.push({ op: 'parry', n: +m[1], back: +m[2] });
   else if ((m = s.match(/Gain (\d+) Parry/))) ops.push({ op: 'parry', n: +m[1], back: 0 });
   if ((m = s.match(/Gain (\d+) Thorns for (\d+) turns/))) ops.push({ op: 'thorns', n: +m[1], turns: +m[2] });
@@ -746,8 +746,8 @@ function parseEnemyCard(text) {
   if ((m = s.match(/[Bb]urn (\d+) of the target's mana/))) ops.push({ op: 'burnMana', n: +m[1] });
   if ((m = s.match(/^Gain (\d+) mana/))) ops.push({ op: 'gainMana', n: +m[1] });
   for (const x of s.matchAll(/apply (\d+) (Bleed|Weak|Vulnerable|Slow|Burn|Poison|Chill|Unwarded|Exposure)( to every player)?/gi)) ops.push({ op: 'debuff', key: x[2].toLowerCase(), n: +x[1], all: !!x[3] });
-  if ((m = s.match(/^All enemies heal (\d+) HP/))) ops.push({ op: 'teamHeal', n: +m[1] });
-  if ((m = s.match(/All enemies gain (\d+) Strength/))) ops.push({ op: 'teamStrength', n: +m[1] });
+  if ((m = s.match(/^All (?:enemies|friendly targets) heal (\d+) HP/))) ops.push({ op: 'teamHeal', n: +m[1] });
+  if ((m = s.match(/All (?:enemies|friendly targets) gain (\d+) Strength/))) ops.push({ op: 'teamStrength', n: +m[1] });
   else if ((m = s.match(/Gain (\d+) Strength this turn/))) ops.push({ op: 'strTurn', n: +m[1] });
   else if ((m = s.match(/Gain (\d+) Strength for the rest of combat/))) ops.push({ op: 'strCombat', n: +m[1] });
   if ((m = s.match(/(\d+) Initiative next turn/))) ops.push({ op: 'initNext', n: +m[1] });
@@ -773,6 +773,7 @@ function intentKind(ops) {
 }
 
 // per-enemy tuning on top of the Map 1 design numbers
+const DEBT_CARDS = ['collect_the_debt', 'sanguine_guard', 'pay_in_blood'];
 const ENEMY_TUNE = { warlord_gorrath_the_iron_tide: { dmg: 0.8 } }; // Oct 30: Warlord hit too hard (War Banner +40 Strength); all his damage -20%
 
 // ---------------- Combat ----------------
@@ -831,6 +832,8 @@ class Combat {
       else deck.push({ uid: 'c' + (this._uid++), key: x.key, rank: x.rank || 0 });
     }
     p.drawPile = shuffle(deck, this.rng);
+    // Blood Debt only matters for the Bloodbound codex and the cards that spend or grow it
+    p.debtUser = !!(cxItem && cxItem.codex === 'bloodbound') || deck.some(c => DEBT_CARDS.includes(c.key));
     return p;
   }
   alivePlayers() { return this.players.filter(p => p.hp > 0); }
@@ -923,7 +926,7 @@ class Combat {
     const def = POWERS[key]; if (def && def.onPlay) { const was = this.player; this.player = p; def.onPlay(this, p, pw); this.player = was; }
     if (!fromAura && key !== 'aura_mastery' && this.has(p, 'aura_mastery')) for (const a of this.allies()) if (a !== p) this.addPower(a, key, name, text, true);
   }
-  loseHp(p, n, label) { const b0 = p.hp; p.hp = Math.max(1, p.hp - n); p.bloodDebt += Math.round((b0 - p.hp) * (this.has(p, 'pay_in_blood') ? 1.5 : 1)); p.dmgRound += b0 - p.hp; this.say('player', `${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${n} HP (${label}). HP ${p.hp}/${p.maxHp}.`); this.fire(p, 'loseHp'); }
+  loseHp(p, n, label) { const b0 = p.hp; p.hp = Math.max(1, p.hp - n); if (p.debtUser) p.bloodDebt += Math.round((b0 - p.hp) * (this.has(p, 'pay_in_blood') ? 1.5 : 1)); p.dmgRound += b0 - p.hp; this.say('player', `${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${n} HP (${label}). HP ${p.hp}/${p.maxHp}.`); this.fire(p, 'loseHp'); }
   cleanse(p, n) { let left = n, removed = 0; for (const k of ['vulnerable', 'weak', 'bleed', 'poison', 'burn', 'slow', 'chill']) if (left > 0 && p[k]) { removed += p[k]; p[k] = 0; left--; } if (left > 0) p.disarmNext = false; this.say('player', removed ? `${this.who(p)}: debuffs removed.` : 'No debuffs to remove.'); this.fire(p, 'onCleanse', removed); }
   powerHit(p, e, n, label, dtype, kind) {
     const keep = [this._playing, this.player, this._rankMult, this._attackMult, this._skillMult, this._cmult];
@@ -939,6 +942,32 @@ class Combat {
   initiative(a) { return a.baseInit + (a.initNext || 0) - (a.slow || 0) - (a.chill || 0) + (a.isPlayer && a.powers.length ? this.pwSum(a, 'initPlus') : 0); }
   pressure() { if (this.opts.practice) return 0; return this.round >= PRESSURE_START ? (this.round - PRESSURE_START + 1) * PRESSURE_STEP * (this.duel ? 5 : 1) : 0; } // duels ramp 5x faster so they end
   card(c) { return c.rank ? (c._v || (c._v = rankedCard(c.key, c.rank))) : C[c.key]; }
+  // card text with live numbers: damage and defense as they would land right now from this hero's stats, gear and active buffs
+  // (before the target's own resistance, weakness, Vulnerable or Block). Changed numbers are wrapped \u0001n\u0002 (up) or \u0003n\u0004 (down).
+  liveText(p, d) {
+    if (!p || !p.isPlayer || !d || !d.text || d.type === 'Status' || d.type === 'Power') return d && d.text;
+    const kind = d.type, pow = p.powers.length > 0, T = p.turn || {};
+    const dmgMult = (dtype) => {
+      if (T.attackDtype && kind === 'Attack') dtype = T.attackDtype;
+      const stat = kind === 'Attack' ? p.strength + p.strTurn + p.strCombat : p.intelligence + (p.intTurn || 0);
+      const setup = kind === 'Attack' ? (p.nextAttackMult || 1) : (d.tags && d.tags.dmg ? (p.nextSkillMult || 1) : 1);
+      let m = (1 + stat / 100) * (1 + (p.elem[dtype] || 0) / 100) * (1 - Math.min(p.weak, 90) / 100) * setup * (T.nextMult || 1);
+      if (pow) { try { m *= this.pwProd(p, 'cardMult', d); } catch (e) {} }
+      return m;
+    };
+    let flat = 0;
+    if (kind === 'Attack') flat += (p.nextAttackFlat || 0) + (p.windUp ? Math.floor((d.cost || 0) / 5) : 0);
+    if (kind === 'Skill' && d.tags && d.tags.dmg) flat += T.skillFlat || 0;
+    if (pow) { try { flat += this.pwSum(p, 'flat', d); } catch (e) {} }
+    const mark = (n0, n1) => n1 > n0 ? '\u0001' + n1 + '\u0002' : n1 < n0 ? '\u0003' + n1 + '\u0004' : String(n1);
+    const EL = '(Fire|Frost|Arcane|Nature|Shadow|Holy|Physical)';
+    let t = d.text.replace(new RegExp('\\b(\\d+)( ' + EL + ')? damage(?! back)', 'g'), (m, n, sp, el) => { const v = Math.max(0, Math.round((+n + flat) * dmgMult(el || d.dtype || 'Physical'))); return mark(+n, v) + (sp || '') + ' damage'; });
+    t = t.replace(/\b([Dd]eal) (\d+) (instead|more)/g, (m, w, n, x) => `${w} ${mark(+n, Math.max(0, Math.round((+n + flat) * dmgMult(d.dtype || 'Physical'))))} ${x}`);
+    let defM = 1 + (p.dexterity || 0) / 100; if (T.defX || this.hasTimed(p, 'defX')) defM *= 2;
+    if (pow) { try { defM *= this.pwProd(p, 'defMult') * this.pwProd(p, 'defMultFn'); } catch (e) {} }
+    t = t.replace(/\b([Gg]ains?) (\d+) (Block|Barrier|Dodge|Parry)/g, (m, w, n, k) => `${w} ${mark(+n, Math.round(+n * defM))} ${k}`);
+    return t;
+  }
   addToHand(key) { const p = this.player; const c = { uid: 'c' + (this._uid++), key }; if (p.hand.length >= 10) { p.discard.push(c); this.say('sys', `Hand full: ${C[key].name} went to the discard pile.`); this.fire(p, 'handFull'); } else p.hand.push(c); }
   statusCount() { const p = this.player; return [...p.drawPile, ...p.hand, ...p.discard].filter(c => C[c.key].type === 'Status').length; }
 
@@ -1110,7 +1139,7 @@ class Combat {
     const before = tgt.hp;
     tgt.hp = Math.max(0, tgt.hp - dmg);
     if (tgt.isPlayer && tgt.hp <= 0 && (tgt.until.noDie || this.hasTimed(tgt, 'noDie'))) { tgt.hp = 1; this.say('heal', `${tgt.name} refuses to fall (Divine Intervention).`); }
-    if (tgt.isPlayer && before > tgt.hp) { const lostHp = before - tgt.hp; tgt.dmgRound += lostHp; this.allyLost && this.allyLost.add(tgt.id); tgt.bloodDebt += Math.round(lostHp * (this.has(tgt, 'pay_in_blood') ? 1.5 : 1)); if (tgt.until.storing) tgt.until.stored = (tgt.until.stored || 0) + lostHp; if (tgt.until.grudge && src && !src.isPlayer) tgt.until.grudge[src.id] = (tgt.until.grudge[src.id] || 0) + lostHp; }
+    if (tgt.isPlayer && before > tgt.hp) { const lostHp = before - tgt.hp; tgt.dmgRound += lostHp; this.allyLost && this.allyLost.add(tgt.id); if (tgt.debtUser) tgt.bloodDebt += Math.round(lostHp * (this.has(tgt, 'pay_in_blood') ? 1.5 : 1)); if (tgt.until.storing) tgt.until.stored = (tgt.until.stored || 0) + lostHp; if (tgt.until.grudge && src && !src.isPlayer) tgt.until.grudge[src.id] = (tgt.until.grudge[src.id] || 0) + lostHp; }
     const real = before - tgt.hp, label = o.label || 'Attack';
     if (src) { const m = this.mtr(src).dealt; m[label] = (m[label] || 0) + real; }
     { const t = this.mtr(tgt); const k = src ? src.name : label; t.taken[k] = (t.taken[k] || 0) + real; t.absorbed += absorbed; }
@@ -1402,7 +1431,7 @@ class Combat {
         case 'burnMana': { const s = Math.min(op.n, p.mana); p.mana -= s; this.say('enemy', `${e.name} burns ${s} of your mana.`); break; }
         case 'gainMana': e.mana += op.n; this.say('enemy', `${e.name} gains ${op.n} mana.`); break;
         case 'debuff': this.debuffPlayer(op.key, op.n, e); break;
-        case 'teamStrength': for (const x of this.alive()) x.strTurn += op.n; this.say('enemy', `All enemies gain ${op.n} Strength this round.`); break;
+        case 'teamStrength': for (const x of this.alive()) x.strTurn += op.n; this.say('enemy', `${e.name} and its allies gain ${op.n} Strength this round.`); break;
         case 'strTurn': e.strTurn += op.n; this.say('enemy', `${e.name} gains ${op.n} Strength this round.`); break;
         case 'strCombat': e.strength += op.n; this.say('enemy', `${e.name} gains ${op.n} Strength for the fight (now ${e.strength}).`); break;
         case 'initNext': e.initNext = op.n; break;
