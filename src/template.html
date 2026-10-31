@@ -324,6 +324,11 @@ body.aiming { cursor: grabbing; user-select: none; }
 .amushop { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
 .amucard { --rc: #8fc3ff; } .amucard.on { box-shadow: 0 0 0 1px var(--accent) inset; }
 .amunums { font-size: 15px; margin: 2px 0; } .amunums b { font-size: 20px; }
+.ghead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; } .ghead h3 { margin: 0; color: var(--accent); }
+.gmotd { margin: 4px 0 8px; padding: 6px 10px; border-left: 3px solid #7fd36a; background: rgba(127,211,106,.06); font-style: italic; }
+.groster { width: 100%; border-collapse: collapse; font-size: 14px; }
+.groster th { text-align: left; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--line); padding: 4px 6px; }
+.groster td { padding: 5px 6px; border-bottom: 1px solid #2a231b; } .groster tr:not(.on) td { color: #bcae98; }
 .mappick { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; margin: 8px 0 0; }
 .mapchip { text-align: left; background: #1a1612; border: 1px solid var(--line); border-left: 4px solid var(--ec); border-radius: 6px; padding: 6px 9px; color: var(--text); cursor: pointer; font: inherit; }
 .mapchip b { display: block; font-size: 14px; }
@@ -610,7 +615,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   <div id="secHeroes"><div class="heroes" id="heroes" role="tablist" aria-label="Characters"></div></div>
   <div class="sheetgrid" id="sheetGrid">
     <aside id="secChar"><div class="panel" id="hubChar"></div></aside>
-    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div><div id="hpFriends"></div><div id="hpCodex"></div><div id="hpTest"></div><div id="hpAmu"></div></div>
+    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div><div id="hpFriends"></div><div id="hpCodex"></div><div id="hpTest"></div><div id="hpAmu"></div><div id="hpGuild"></div></div>
   </div>
 </div></div>
 <div class="modal" id="modal" hidden><div class="box" id="modalBox"></div></div>
@@ -1061,6 +1066,8 @@ body.aiming { cursor: grabbing; user-select: none; }
       lines: ['Four of you bunk here. Pick who rides out next.'] },
     { id: 'merchant', name: 'Merchant Dace', x: 20, y: 12, dir: 'down', open: 'shop', btn: 'Browse wares', pal: { skin: '#b88a6a', hair: '#2a1d14', chest: '#5a4a1e', trim: '#e4a93a', legs: '#2a2418', helm: 'cap', helmC: '#5a2a22', cape: null, weapon: null },
       lines: ['Coin from the bank, goods to your stash. My wagons bring new stock every twelve hours.', 'I also take orders out on the March. My runners always make it home.'] },
+    { id: 'guildmaster', name: 'Guildmaster Vorn', x: 3, y: 11, dir: 'right', open: 'guild', btn: 'Guilds', pal: { skin: '#b8906e', hair: '#4a3a2a', chest: '#2f4a2a', trim: '#7fd36a', legs: '#22301f', helm: null, cape: '#2a3a22', weapon: 'staff', wpnC: '#7fd36a' },
+      lines: ['A guild is a promise: we ride together, we share what we learn.', 'Found one for fifty gold, or bring me an invitation.'] },
     { id: 'jeweler', name: 'Jeweler Rook', x: 22, y: 11, dir: 'left', open: 'amulets', btn: 'Browse amulets', pal: { skin: '#c9a080', hair: '#d8d0c4', chest: '#2e3a4a', trim: '#8fc3ff', legs: '#1f2630', helm: null, cape: '#3a2a4a', weapon: null },
       lines: ['Six points of focus in every pendant. How you split them between cards and mana is up to you.', 'Big spells want mana. Cheap combos want cards. Choose your pendant accordingly.'] },
     { id: 'tinker', name: 'Tinker Pip (test)', x: 16, y: 4, dir: 'down', open: 'test', btn: 'Free test goods', pal: { skin: '#d8b090', hair: '#e0802a', chest: '#3a4a2a', trim: '#e0802a', legs: '#2a2418', helm: 'cap', helmC: '#e0802a', cape: null, weapon: 'hammer' },
@@ -1460,6 +1467,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     codex: { title: 'The Codex: cards, enemies and gear', show: ['hpCodex'] },
     test: { title: 'Tinker Pip: free test goods (temporary)', show: ['hpTest'] },
     amulets: { title: 'Jeweler Rook: amulets', show: ['secChar', 'hpAmu'] },
+    guild: { title: 'Guildmaster Vorn: guilds', show: ['hpGuild'] },
   };
   function talk(n) {
     P.held = []; P.path = []; P.target = null;
@@ -1474,13 +1482,14 @@ body.aiming { cursor: grabbing; user-select: none; }
   function openSheet(kind) {
     const k = SHEETS[kind]; if (k.gtab) GT.tab = k.gtab; renderHub();
     $('sheetTitle').textContent = k.title;
-    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends', 'hpCodex', 'hpTest', 'hpAmu']) $(id).hidden = !k.show.includes(id);
+    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends', 'hpCodex', 'hpTest', 'hpAmu', 'hpGuild']) $(id).hidden = !k.show.includes(id);
     $('sheetGrid').classList.toggle('solo', !k.show.includes('secChar'));
     $('sheet').hidden = false; $('sheet').dataset.kind = kind; fitCards($('sheet')); $('sheetClose').focus();
     if (kind === 'friends') { renderFriendsTab(); loadFriends(); }
     if (kind === 'codex') renderCodex();
     if (kind === 'test') renderTestVendor();
     if (kind === 'amulets') renderAmuShop();
+    if (kind === 'guild') { renderGuild(); guildLoad(); }
   }
   function closeSheet() { $('sheet').hidden = true; renderTownBar(); cv.focus({ preventScroll: true }); }
   $('sheetClose').addEventListener('click', closeSheet);
@@ -1510,6 +1519,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   window.addEventListener('resize', () => { if (TOWN.running) sizeTown(); });
 
 /*SOCIAL*/
+/*GUILD*/
 /*NET*/
 /*CODEX*/
 /*GEARUI*/

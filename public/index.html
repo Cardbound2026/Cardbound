@@ -328,6 +328,11 @@ body.aiming { cursor: grabbing; user-select: none; }
 .amushop { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
 .amucard { --rc: #8fc3ff; } .amucard.on { box-shadow: 0 0 0 1px var(--accent) inset; }
 .amunums { font-size: 15px; margin: 2px 0; } .amunums b { font-size: 20px; }
+.ghead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; } .ghead h3 { margin: 0; color: var(--accent); }
+.gmotd { margin: 4px 0 8px; padding: 6px 10px; border-left: 3px solid #7fd36a; background: rgba(127,211,106,.06); font-style: italic; }
+.groster { width: 100%; border-collapse: collapse; font-size: 14px; }
+.groster th { text-align: left; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--line); padding: 4px 6px; }
+.groster td { padding: 5px 6px; border-bottom: 1px solid #2a231b; } .groster tr:not(.on) td { color: #bcae98; }
 .mappick { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; margin: 8px 0 0; }
 .mapchip { text-align: left; background: #1a1612; border: 1px solid var(--line); border-left: 4px solid var(--ec); border-radius: 6px; padding: 6px 9px; color: var(--text); cursor: pointer; font: inherit; }
 .mapchip b { display: block; font-size: 14px; }
@@ -445,6 +450,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 #scrCombat.withchat { grid-template-columns: 260px minmax(0, 1fr) var(--ledgerW, 340px); }
 .combatchat { align-self: start; }
 .combatchat .chatbox { position: static; width: 100%; }
+.combatchat .chatbox input { width: 100%; box-sizing: border-box; min-width: 0; }
 .combatchat .chatlog { max-height: calc(100vh - 240px); min-height: 200px; background: rgba(10,8,6,.4); }
 @media (max-width: 1180px) { #scrCombat.withchat { grid-template-columns: minmax(0, 1fr) var(--ledgerW, 300px); } #scrCombat.withchat .combatchat { grid-column: 1 / -1; order: 3; } }
 .chatbox input { background: rgba(20,16,12,.85); border: 1px solid var(--line); border-radius: 5px; padding: 6px 8px; color: var(--text); font: inherit; font-size: 14px; }
@@ -616,7 +622,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   <div id="secHeroes"><div class="heroes" id="heroes" role="tablist" aria-label="Characters"></div></div>
   <div class="sheetgrid" id="sheetGrid">
     <aside id="secChar"><div class="panel" id="hubChar"></div></aside>
-    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div><div id="hpFriends"></div><div id="hpCodex"></div><div id="hpTest"></div><div id="hpAmu"></div></div>
+    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div><div id="hpFriends"></div><div id="hpCodex"></div><div id="hpTest"></div><div id="hpAmu"></div><div id="hpGuild"></div></div>
   </div>
 </div></div>
 <div class="modal" id="modal" hidden><div class="box" id="modalBox"></div></div>
@@ -3177,6 +3183,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       lines: ['Four of you bunk here. Pick who rides out next.'] },
     { id: 'merchant', name: 'Merchant Dace', x: 20, y: 12, dir: 'down', open: 'shop', btn: 'Browse wares', pal: { skin: '#b88a6a', hair: '#2a1d14', chest: '#5a4a1e', trim: '#e4a93a', legs: '#2a2418', helm: 'cap', helmC: '#5a2a22', cape: null, weapon: null },
       lines: ['Coin from the bank, goods to your stash. My wagons bring new stock every twelve hours.', 'I also take orders out on the March. My runners always make it home.'] },
+    { id: 'guildmaster', name: 'Guildmaster Vorn', x: 3, y: 11, dir: 'right', open: 'guild', btn: 'Guilds', pal: { skin: '#b8906e', hair: '#4a3a2a', chest: '#2f4a2a', trim: '#7fd36a', legs: '#22301f', helm: null, cape: '#2a3a22', weapon: 'staff', wpnC: '#7fd36a' },
+      lines: ['A guild is a promise: we ride together, we share what we learn.', 'Found one for fifty gold, or bring me an invitation.'] },
     { id: 'jeweler', name: 'Jeweler Rook', x: 22, y: 11, dir: 'left', open: 'amulets', btn: 'Browse amulets', pal: { skin: '#c9a080', hair: '#d8d0c4', chest: '#2e3a4a', trim: '#8fc3ff', legs: '#1f2630', helm: null, cape: '#3a2a4a', weapon: null },
       lines: ['Six points of focus in every pendant. How you split them between cards and mana is up to you.', 'Big spells want mana. Cheap combos want cards. Choose your pendant accordingly.'] },
     { id: 'tinker', name: 'Tinker Pip (test)', x: 16, y: 4, dir: 'down', open: 'test', btn: 'Free test goods', pal: { skin: '#d8b090', hair: '#e0802a', chest: '#3a4a2a', trim: '#e0802a', legs: '#2a2418', helm: 'cap', helmC: '#e0802a', cape: null, weapon: 'hammer' },
@@ -3576,6 +3584,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     codex: { title: 'The Codex: cards, enemies and gear', show: ['hpCodex'] },
     test: { title: 'Tinker Pip: free test goods (temporary)', show: ['hpTest'] },
     amulets: { title: 'Jeweler Rook: amulets', show: ['secChar', 'hpAmu'] },
+    guild: { title: 'Guildmaster Vorn: guilds', show: ['hpGuild'] },
   };
   function talk(n) {
     P.held = []; P.path = []; P.target = null;
@@ -3590,13 +3599,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function openSheet(kind) {
     const k = SHEETS[kind]; if (k.gtab) GT.tab = k.gtab; renderHub();
     $('sheetTitle').textContent = k.title;
-    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends', 'hpCodex', 'hpTest', 'hpAmu']) $(id).hidden = !k.show.includes(id);
+    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends', 'hpCodex', 'hpTest', 'hpAmu', 'hpGuild']) $(id).hidden = !k.show.includes(id);
     $('sheetGrid').classList.toggle('solo', !k.show.includes('secChar'));
     $('sheet').hidden = false; $('sheet').dataset.kind = kind; fitCards($('sheet')); $('sheetClose').focus();
     if (kind === 'friends') { renderFriendsTab(); loadFriends(); }
     if (kind === 'codex') renderCodex();
     if (kind === 'test') renderTestVendor();
     if (kind === 'amulets') renderAmuShop();
+    if (kind === 'guild') { renderGuild(); guildLoad(); }
   }
   function closeSheet() { $('sheet').hidden = true; renderTownBar(); cv.focus({ preventScroll: true }); }
   $('sheetClose').addEventListener('click', closeSheet);
@@ -3653,6 +3663,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     });
     ch.on('broadcast', { event: 'pos' }, ({ payload }) => moveOther(payload));
     ch.on('broadcast', { event: 'chat' }, ({ payload }) => chatIn(payload));
+    ch.on('broadcast', { event: 'guild' }, ({ payload }) => guildIn(payload));
     ch.on('broadcast', { event: 'invite' }, ({ payload }) => { if (payload.to === SOC.me) gotInvite(payload); });
     ch.on('broadcast', { event: 'invite-reply' }, ({ payload }) => { if (payload.to === SOC.me) gotReply(payload); });
     ch.on('broadcast', { event: 'party' }, ({ payload }) => gotParty(payload));
@@ -3660,6 +3671,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     ch.on('broadcast', { event: 'net' }, ({ payload }) => netIn(payload));
     ch.on('broadcast', { event: 'friend-ping' }, ({ payload }) => { if (payload.to === SOC.me) { loadFriends(); sysChat(`${payload.name} sent you a friend request. Open Friends to accept it.`); } });
     ch.subscribe(async (status) => { if (status === 'SUBSCRIBED') { await ch.track(myPresence()); renderSocial(); } });
+    setTimeout(() => guildLoad(), 500);
+    if (!SOC.cardTimer) SOC.cardTimer = setInterval(() => { if (supaUser) saveCard(); }, 5 * 60 * 1000); // keeps 'last online' fresh
     SOC.ch = ch;
     SOC.friendTimer = setInterval(loadFriends, 30000);
     renderSocial();
@@ -3776,7 +3789,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (!supa || !supaUser) return;
     const c = profile.chars[heroKey];
     const row = { user_id: supaUser.id, display_name: acctName(supaUser).slice(0, 40), hero_name: c ? c.name : null, hero_class: c ? c.cls : null, updated_at: new Date().toISOString() };
-    const { error } = await supa.from('players').upsert(row);
+    if (SOC.hasPower !== false && c) row.power = CBHub.powerLevel(c);
+    let { error } = await supa.from('players').upsert(row);
+    if (error && 'power' in row && /power|column/i.test(error.message || '')) { SOC.hasPower = false; delete row.power; ({ error } = await supa.from('players').upsert(row)); }
     if (error) { console.warn('players upsert', error); return; }
     const { data } = await supa.from('players').select('friend_code').eq('user_id', supaUser.id).maybeSingle();
     SOC.card = data || null; renderSocial();
@@ -3926,13 +3941,131 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (t.dataset.kick) kick(t.dataset.kick);
   });
 
+  // ---------- guilds (tables: guilds, guild_members, guild_invites; players.power): Guildmaster Vorn in town
+  // One guild per player. Leaders and officers invite; the invited player accepts; the roster shows power and last time online.
+  const GUILD = { me: null, roster: [], invites: [], err: null, busy: false, loadedAt: 0 };
+  const GUILD_COST = 50;
+  const isSetupErr = (e) => e && /relation|does not exist|schema cache|column/i.test(e.message || '') ;
+  async function guildLoad() {
+    if (!supa || !supaUser) return;
+    try {
+      const me = supaUser.id;
+      const { data: mem, error } = await supa.from('guild_members').select('guild_id,rank').eq('user_id', me).maybeSingle();
+      if (error) { GUILD.err = isSetupErr(error) ? 'setup' : (error.message || 'error'); renderGuild(); return; }
+      GUILD.err = null; GUILD.me = null; GUILD.roster = [];
+      if (mem) {
+        const { data: g } = await supa.from('guilds').select('id,name,leader,motd').eq('id', mem.guild_id).maybeSingle();
+        if (g) {
+          GUILD.me = { id: g.id, name: g.name, leader: g.leader, motd: g.motd || '', rank: mem.rank };
+          const { data: ms } = await supa.from('guild_members').select('user_id,rank,joined_at').eq('guild_id', g.id);
+          const ids = (ms || []).map(m => m.user_id);
+          const { data: cards } = ids.length ? await supa.from('players').select('user_id,display_name,hero_name,hero_class,power,updated_at').in('user_id', ids) : { data: [] };
+          GUILD.roster = (ms || []).map(m => Object.assign({ rank: m.rank, joined_at: m.joined_at }, (cards || []).find(c => c.user_id === m.user_id) || { user_id: m.user_id }));
+        }
+      }
+      const { data: inv } = await supa.from('guild_invites').select('guild_id,invited_by,created_at').eq('user_id', me);
+      const gids = (inv || []).map(i => i.guild_id);
+      const { data: gs } = gids.length ? await supa.from('guilds').select('id,name').in('id', gids) : { data: [] };
+      GUILD.invites = (inv || []).map(i => ({ guild_id: i.guild_id, name: ((gs || []).find(g => g.id === i.guild_id) || {}).name || 'A guild' }));
+      GUILD.loadedAt = Date.now();
+    } catch (e) { GUILD.err = String(e && e.message || e); }
+    renderGuild(); if (typeof renderSocial === 'function') renderSocial();
+  }
+  const RANK_ORDER = { leader: 0, officer: 1, member: 2 };
+  const agoText = (t) => { if (!t) return 'never'; const s = (Date.now() - new Date(t).getTime()) / 1000; return s < 120 ? 'just now' : s < 3600 ? Math.round(s / 60) + ' min ago' : s < 86400 ? Math.round(s / 3600) + ' h ago' : Math.round(s / 86400) + ' days ago'; };
+  function renderGuild() {
+    const el = $('hpGuild'); if (!el || el.hidden) return;
+    if (!supa || !supaUser) { el.innerHTML = '<p>Sign in to join or create a guild.</p>'; return; }
+    if (GUILD.err === 'setup') { el.innerHTML = `<p class="down">Guilds need a one-time database update. Open Supabase, then SQL Editor, New query, paste the file <b>supabase/schema.sql</b> from the game's repository, and press Run. Then reload the game.</p>`; return; }
+    if (GUILD.err) { el.innerHTML = `<p class="down">Could not load guilds: ${esc(GUILD.err)}</p><button class="btn" data-g="reload">Try again</button>`; return; }
+    const G = GUILD.me;
+    if (!G) {
+      el.innerHTML = `${GUILD.invites.length ? `<h3>Invitations</h3><div class="list">${GUILD.invites.map(i => `<div class="item" style="--rc:#7fd36a"><div class="ih"><b>${esc(i.name)}</b><span>wants you to join</span></div><div class="acts"><button class="btn primary" data-g="accept" data-id="${i.guild_id}">Join</button><button class="btn" data-g="decline" data-id="${i.guild_id}">Decline</button></div></div>`).join('')}</div>` : ''}
+        <h3>Found a guild</h3><p class="savenote">A guild is a group of players with its own chat (/g) and roster. It costs ${GUILD_COST} gold from your bank (you have ${profile.gold}). You become its leader and can invite others.</p>
+        <div class="namerow"><div class="field"><label for="gName">Guild name</label><input id="gName" maxlength="24" autocomplete="off" placeholder="3 to 24 characters"></div><button class="btn primary" data-g="create" ${profile.gold < GUILD_COST ? 'disabled' : ''}>Found guild (${GUILD_COST} gold)</button></div><p class="down" id="gMsg"></p>`;
+      return;
+    }
+    const meRank = G.rank, off = meRank === 'leader' || meRank === 'officer';
+    const rows = GUILD.roster.slice().sort((a, b) => RANK_ORDER[a.rank] - RANK_ORDER[b.rank] || (SOC.online.has(b.user_id) - SOC.online.has(a.user_id)) || (b.power || 0) - (a.power || 0));
+    const nOn = rows.filter(r => SOC.online.has(r.user_id) || r.user_id === SOC.me).length;
+    el.innerHTML = `<div class="ghead"><h3>${esc(G.name)}</h3><span class="muted">${rows.length} member${rows.length === 1 ? '' : 's'} &middot; ${nOn} online &middot; you are ${meRank}</span></div>
+      ${G.motd ? `<p class="gmotd">${esc(G.motd)}</p>` : ''}
+      <table class="groster"><thead><tr><th>Hero</th><th>Class</th><th>Power</th><th>Rank</th><th>Last online</th><th></th></tr></thead><tbody>${rows.map(r => { const on = SOC.online.has(r.user_id) || r.user_id === SOC.me, o = SOC.online.get(r.user_id);
+        const name = (o && o.name) || r.hero_name || r.display_name || 'Unknown', cls = (o && o.cls) || r.hero_class || '';
+        const acts = r.user_id === SOC.me ? '' : [meRank === 'leader' && r.rank === 'member' ? `<button class="pilebtn" data-g="promote" data-id="${r.user_id}">Make officer</button>` : '', meRank === 'leader' && r.rank === 'officer' ? `<button class="pilebtn" data-g="demote" data-id="${r.user_id}">Make member</button>` : '', meRank === 'leader' ? `<button class="pilebtn" data-g="lead" data-id="${r.user_id}">Make leader</button>` : '', off && RANK_ORDER[r.rank] > RANK_ORDER[meRank] ? `<button class="pilebtn" data-g="kick" data-id="${r.user_id}">Remove</button>` : ''].join(' ');
+        return `<tr class="${on ? 'on' : ''}"><td><b style="color:${CC[cls] || 'var(--text)'}">${esc(name)}</b>${r.user_id === SOC.me ? ' <span class="muted">(you)</span>' : ''}</td><td>${esc(cls)}</td><td>${r.user_id === SOC.me && profile.chars[heroKey] ? CBHub.powerLevel(profile.chars[heroKey]) : (r.power || 0)}</td><td>${r.rank}</td><td>${on ? '<span class="up">Online</span>' : agoText(r.updated_at)}</td><td>${acts}</td></tr>`; }).join('')}</tbody></table>
+      ${off ? `<div class="namerow" style="margin-top:10px"><div class="field"><label for="gInv">Invite a player (their hero name if online, or friend code)</label><input id="gInv" maxlength="24" autocomplete="off" placeholder="Name or friend code"></div><button class="btn primary" data-g="invite">Invite</button></div>` : ''}
+      ${meRank === 'leader' ? `<div class="namerow"><div class="field"><label for="gMotd">Message of the day</label><input id="gMotd" maxlength="140" value="${esc(G.motd)}"></div><button class="btn" data-g="motd">Save</button></div>` : ''}
+      <p class="down" id="gMsg"></p>
+      <div class="row" style="display:flex;gap:8px;margin-top:6px">${meRank === 'leader' && rows.length > 1 ? '' : `<button class="btn" data-g="${meRank === 'leader' ? 'disband' : 'leave'}">${meRank === 'leader' ? 'Disband the guild' : 'Leave the guild'}</button>`}${meRank === 'leader' && rows.length > 1 ? '<span class="muted" style="font-size:12px">To leave, make someone else leader first.</span>' : ''}<button class="btn" data-g="reload">Refresh</button></div>
+      <p class="savenote">Guild chat: type <b>/g</b> and your message.</p>`;
+  }
+  const gMsg = (t) => { const m = $('gMsg'); if (m) m.textContent = t; else toast(t); };
+  async function guildAct(kind, id) {
+    if (GUILD.busy) return; GUILD.busy = true;
+    try {
+      const me = supaUser.id, G = GUILD.me;
+      if (kind === 'reload') {}
+      else if (kind === 'create') {
+        const name = ($('gName').value || '').trim().replace(/\s+/g, ' ');
+        if (name.length < 3 || name.length > 24) return gMsg('Guild names need 3 to 24 characters.');
+        if (profile.gold < GUILD_COST) return gMsg(`You need ${GUILD_COST} gold.`);
+        const gid = (crypto.randomUUID && crypto.randomUUID()) || 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g, () => (Math.random() * 16 | 0).toString(16));
+        let { error } = await supa.from('guilds').insert({ id: gid, name, leader: me });
+        if (error) return gMsg(/duplicate|unique/i.test(error.message || '') ? 'That name is taken.' : 'Could not found the guild: ' + error.message);
+        ({ error } = await supa.from('guild_members').insert({ user_id: me, guild_id: gid, rank: 'leader' }));
+        if (error) { await supa.from('guilds').delete().eq('id', gid); return gMsg('Could not join your new guild: ' + error.message); }
+        profile.gold -= GUILD_COST; save(); renderTownBar(); sysChat(`You founded the guild ${name}.`);
+      }
+      else if (kind === 'accept') {
+        const { error } = await supa.from('guild_members').insert({ user_id: me, guild_id: id, rank: 'member' });
+        if (error) return gMsg('Could not join: ' + error.message);
+        await supa.from('guild_invites').delete().eq('user_id', me);
+        guildPing(id); sysChat('You joined the guild.');
+      }
+      else if (kind === 'decline') await supa.from('guild_invites').delete().eq('user_id', me).eq('guild_id', id);
+      else if (kind === 'invite') {
+        const q = ($('gInv').value || '').trim(); if (!q) return gMsg('Type a hero name or friend code.');
+        let target = null;
+        const f = typeof findOnline === 'function' ? findOnline(q) : null; if (f && f.n.length === q.length) target = { id: f.o.uid, name: f.o.name };
+        if (!target) { const { data } = await supa.from('players').select('user_id,hero_name,display_name').eq('friend_code', q.toUpperCase()).maybeSingle(); if (data) target = { id: data.user_id, name: data.hero_name || data.display_name }; }
+        if (!target) return gMsg(`No online hero called "${q}" and no friend code like that.`);
+        if (GUILD.roster.some(r => r.user_id === target.id)) return gMsg(`${target.name} is already in the guild.`);
+        const { error } = await supa.from('guild_invites').insert({ guild_id: G.id, user_id: target.id, invited_by: me });
+        if (error && !/duplicate|unique/i.test(error.message || '')) return gMsg('Could not invite: ' + error.message);
+        if (socOn()) SOC.ch.send({ type: 'broadcast', event: 'guild', payload: { kind: 'invite', to: target.id, gname: G.name, from: SOC.me, name: (profile.chars[heroKey] || {}).name } });
+        gMsg(`Invited ${target.name}.`); sysChat(`You invited ${target.name} to ${G.name}.`);
+      }
+      else if (kind === 'kick') { const { error } = await supa.from('guild_members').delete().eq('user_id', id).eq('guild_id', G.id); if (error) return gMsg(error.message); guildPing(G.id, id); }
+      else if (kind === 'promote' || kind === 'demote') { const { error } = await supa.from('guild_members').update({ rank: kind === 'promote' ? 'officer' : 'member' }).eq('user_id', id).eq('guild_id', G.id); if (error) return gMsg(error.message); guildPing(G.id); }
+      else if (kind === 'lead') {
+        if (!confirm('Make them the guild leader? You become an officer.')) return;
+        let { error } = await supa.from('guild_members').update({ rank: 'leader' }).eq('user_id', id).eq('guild_id', G.id); if (error) return gMsg(error.message);
+        ({ error } = await supa.from('guilds').update({ leader: id }).eq('id', G.id)); if (error) return gMsg(error.message);
+        await supa.from('guild_members').update({ rank: 'officer' }).eq('user_id', me).eq('guild_id', G.id); guildPing(G.id);
+      }
+      else if (kind === 'motd') { const { error } = await supa.from('guilds').update({ motd: ($('gMotd').value || '').slice(0, 140) }).eq('id', G.id); if (error) return gMsg(error.message); guildPing(G.id); }
+      else if (kind === 'leave') { await supa.from('guild_members').delete().eq('user_id', me); guildPing(G.id); sysChat(`You left ${G.name}.`); }
+      else if (kind === 'disband') { if (!confirm(`Disband ${G.name}? This cannot be undone.`)) return; await supa.from('guilds').delete().eq('id', G.id); guildPing(G.id); sysChat(`${G.name} was disbanded.`); }
+      await guildLoad();
+    } finally { GUILD.busy = false; }
+  }
+  function guildPing(gid, kicked) { if (socOn()) SOC.ch.send({ type: 'broadcast', event: 'guild', payload: { kind: 'update', gid, kicked, from: SOC.me } }); }
+  function guildIn(p) {
+    if (!p || p.from === SOC.me) return;
+    if (p.kind === 'invite' && p.to === SOC.me) { sysChat(`${p.name || 'Someone'} invited you to the guild ${p.gname}. Visit Guildmaster Vorn in town to answer.`); guildLoad(); }
+    if (p.kind === 'update' && GUILD.me && p.gid === GUILD.me.id) { if (p.kicked === SOC.me) sysChat('You were removed from the guild.'); guildLoad(); }
+  }
+  $('hpGuild').addEventListener('click', (ev) => { const b = ev.target.closest('[data-g]'); if (!b || b.disabled) return; guildAct(b.dataset.g, b.dataset.id); });
+  $('hpGuild').addEventListener('keydown', (ev) => { if (ev.key !== 'Enter') return; if (ev.target.id === 'gName') guildAct('create'); if (ev.target.id === 'gInv') guildAct('invite'); if (ev.target.id === 'gMotd') guildAct('motd'); });
+
   // ---------- online play: shared Wagon runs and duels (lockstep, no game server)
   // The host (the party leader, or whoever threw down the duel challenge) numbers every action and broadcasts it.
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793460961094';
-  const CB_BUILD = '731fc9daea'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793461089197';
+  const CB_BUILD = '4cc0616460'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);

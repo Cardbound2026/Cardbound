@@ -26,6 +26,7 @@
     });
     ch.on('broadcast', { event: 'pos' }, ({ payload }) => moveOther(payload));
     ch.on('broadcast', { event: 'chat' }, ({ payload }) => chatIn(payload));
+    ch.on('broadcast', { event: 'guild' }, ({ payload }) => guildIn(payload));
     ch.on('broadcast', { event: 'invite' }, ({ payload }) => { if (payload.to === SOC.me) gotInvite(payload); });
     ch.on('broadcast', { event: 'invite-reply' }, ({ payload }) => { if (payload.to === SOC.me) gotReply(payload); });
     ch.on('broadcast', { event: 'party' }, ({ payload }) => gotParty(payload));
@@ -33,6 +34,8 @@
     ch.on('broadcast', { event: 'net' }, ({ payload }) => netIn(payload));
     ch.on('broadcast', { event: 'friend-ping' }, ({ payload }) => { if (payload.to === SOC.me) { loadFriends(); sysChat(`${payload.name} sent you a friend request. Open Friends to accept it.`); } });
     ch.subscribe(async (status) => { if (status === 'SUBSCRIBED') { await ch.track(myPresence()); renderSocial(); } });
+    setTimeout(() => guildLoad(), 500);
+    if (!SOC.cardTimer) SOC.cardTimer = setInterval(() => { if (supaUser) saveCard(); }, 5 * 60 * 1000); // keeps 'last online' fresh
     SOC.ch = ch;
     SOC.friendTimer = setInterval(loadFriends, 30000);
     renderSocial();
@@ -149,7 +152,9 @@
     if (!supa || !supaUser) return;
     const c = profile.chars[heroKey];
     const row = { user_id: supaUser.id, display_name: acctName(supaUser).slice(0, 40), hero_name: c ? c.name : null, hero_class: c ? c.cls : null, updated_at: new Date().toISOString() };
-    const { error } = await supa.from('players').upsert(row);
+    if (SOC.hasPower !== false && c) row.power = CBHub.powerLevel(c);
+    let { error } = await supa.from('players').upsert(row);
+    if (error && 'power' in row && /power|column/i.test(error.message || '')) { SOC.hasPower = false; delete row.power; ({ error } = await supa.from('players').upsert(row)); }
     if (error) { console.warn('players upsert', error); return; }
     const { data } = await supa.from('players').select('friend_code').eq('user_id', supaUser.id).maybeSingle();
     SOC.card = data || null; renderSocial();

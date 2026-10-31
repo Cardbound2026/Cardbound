@@ -71,3 +71,68 @@ create policy "friends: accept request" on public.friends
 drop policy if exists "friends: remove" on public.friends;
 create policy "friends: remove" on public.friends
   for delete to authenticated using ((select auth.uid()) in (user_id, friend_id));
+
+-- ============================================================
+-- Guilds (Oct 31). One guild per player. The leader creates it; leaders and officers invite;
+-- an invited player joins by adding their own member row; leaders/officers can remove members.
+-- ============================================================
+alter table public.players add column if not exists power integer not null default 0;
+
+create table if not exists public.guilds (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null unique check (char_length(name) between 3 and 24),
+  leader     uuid not null references auth.users (id) on delete cascade,
+  motd       text not null default '',
+  created_at timestamptz not null default now()
+);
+alter table public.guilds enable row level security;
+drop policy if exists "guilds: signed-in can read" on public.guilds;
+create policy "guilds: signed-in can read" on public.guilds for select to authenticated using (true);
+drop policy if exists "guilds: create as leader" on public.guilds;
+create policy "guilds: create as leader" on public.guilds for insert to authenticated with check ((select auth.uid()) = leader);
+drop policy if exists "guilds: leader edits" on public.guilds;
+create policy "guilds: leader edits" on public.guilds for update to authenticated using ((select auth.uid()) = leader) with check (true);
+drop policy if exists "guilds: leader disbands" on public.guilds;
+create policy "guilds: leader disbands" on public.guilds for delete to authenticated using ((select auth.uid()) = leader);
+
+create table if not exists public.guild_members (
+  user_id   uuid primary key references auth.users (id) on delete cascade,
+  guild_id  uuid not null references public.guilds (id) on delete cascade,
+  rank      text not null default 'member' check (rank in ('leader', 'officer', 'member')),
+  joined_at timestamptz not null default now()
+);
+alter table public.guild_members enable row level security;
+
+create table if not exists public.guild_invites (
+  guild_id   uuid not null references public.guilds (id) on delete cascade,
+  user_id    uuid not null references auth.users (id) on delete cascade,
+  invited_by uuid not null references auth.users (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (guild_id, user_id)
+);
+alter table public.guild_invites enable row level security;
+
+-- helper: is the signed-in player a leader/officer of this guild?
+create or replace function public.is_guild_officer(g uuid) returns boolean language sql security definer stable set search_path = public as $$
+  select exists (select 1 from public.guild_members m where m.guild_id = g and m.user_id = auth.uid() and m.rank in ('leader', 'officer'));
+$$;
+
+drop policy if exists "guild_members: signed-in can read" on public.guild_members;
+create policy "guild_members: signed-in can read" on public.guild_members for select to authenticated using (true);
+drop policy if exists "guild_members: join" on public.guild_members;
+create policy "guild_members: join" on public.guild_members for insert to authenticated with check (
+  (select auth.uid()) = user_id and (
+    (rank = 'leader' and exists (select 1 from public.guilds g where g.id = guild_id and g.leader = (select auth.uid())))
+    or (rank = 'member' and exists (select 1 from public.guild_invites i where i.guild_id = guild_members.guild_id and i.user_id = (select auth.uid())))
+  ));
+drop policy if exists "guild_members: officers set rank" on public.guild_members;
+create policy "guild_members: officers set rank" on public.guild_members for update to authenticated using (public.is_guild_officer(guild_id)) with check (public.is_guild_officer(guild_id));
+drop policy if exists "guild_members: leave or remove" on public.guild_members;
+create policy "guild_members: leave or remove" on public.guild_members for delete to authenticated using ((select auth.uid()) = user_id or public.is_guild_officer(guild_id));
+
+drop policy if exists "guild_invites: see own or guild's" on public.guild_invites;
+create policy "guild_invites: see own or guild's" on public.guild_invites for select to authenticated using ((select auth.uid()) = user_id or public.is_guild_officer(guild_id));
+drop policy if exists "guild_invites: officers invite" on public.guild_invites;
+create policy "guild_invites: officers invite" on public.guild_invites for insert to authenticated with check ((select auth.uid()) = invited_by and public.is_guild_officer(guild_id));
+drop policy if exists "guild_invites: answer or cancel" on public.guild_invites;
+create policy "guild_invites: answer or cancel" on public.guild_invites for delete to authenticated using ((select auth.uid()) = user_id or public.is_guild_officer(guild_id));

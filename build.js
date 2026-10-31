@@ -2,7 +2,7 @@
 // Usage: node build.js
 const fs = require('fs'), path = require('path');
 const src = (f) => fs.readFileSync(path.join(__dirname, 'src', f), 'utf8');
-let page = src('template.html').replace('/*SOCIAL*/', () => src('social.js')).replace('/*NET*/', () => src('net.js')).replace('/*CODEX*/', () => src('codex.js')).replace('/*GEARUI*/', () => src('gearui.js')).replace('/*GLOSSARY*/', () => src('glossary.js')).replace('/*TESTVENDOR*/', () => src('testvendor.js'));
+let page = src('template.html').replace('/*SOCIAL*/', () => src('social.js')).replace('/*GUILD*/', () => src('guild.js')).replace('/*NET*/', () => src('net.js')).replace('/*CODEX*/', () => src('codex.js')).replace('/*GEARUI*/', () => src('gearui.js')).replace('/*GLOSSARY*/', () => src('glossary.js')).replace('/*TESTVENDOR*/', () => src('testvendor.js'));
 for (const [mark, file] of [['CONFIG', 'config.js'], ['DATA', 'data.js'], ['FRAMES', 'frames.js'], ['EFRAMES', 'eframes.js'], ['TESTDECKS', 'testdecks.js'], ['ART', 'art.js'], ['CARDSGEN', 'cards_gen.js'], ['ENGINE', 'engine.js'], ['RUN', 'run.js'], ['HUB', 'hub.js']]) page = page.replace(`/*${mark}*/`, () => src(file));
 page = page.replace(/^<meta charset="utf-8">\n/, '');
 page = page.replace('__CB_BUILT_AT__', () => String(Date.now())); // when this build was made (shown in the corner)
