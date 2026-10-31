@@ -44,7 +44,9 @@
     el.innerHTML = `<p class="savenote" style="margin:0 0 8px"><b style="color:#e0802a">Test vendor (temporary).</b> Everything here is free so you can try cards and codexes. Cards go to ${esc(c.name)}'s collection (add them to the deck at the Scribe); codexes go to the stash (equip them in the Codex slot with C).</p>
       <div class="cxtop"><div class="tabs cxtabs" role="tablist">${[['decks', 'Test decks'], ['cards', `${hcls()} cards`], ['codex', 'Codexes'], ['misc', 'Gold']].map(([k, l]) => `<button role="tab" aria-selected="${TV.tab === k}" data-tvtab="${k}">${l}</button>`).join('')}</div>
         ${TV.tab === 'cards' ? `<input id="tvQ" type="search" placeholder="Search ${hcls()} cards by name or text..." value="${esc(TV.q)}" autocomplete="off">` : ''}
-        <button class="btn" data-tvshop="1" title="Merchant Dace normally restocks every 12 hours">Restock Merchant Dace now</button></div>
+        <button class="btn" data-tvshop="1" title="Merchant Dace normally restocks every 12 hours">Restock Merchant Dace now</button>
+        <button class="btn" data-tvraid="reset" title="Raid kills lock a hero out of that raid for 7 days">Reset raid lockouts</button>
+        <button class="btn" data-tvraid="unlock" title="Counts every map's boss as beaten at +10 for this hero, so every raid opens">Unlock all raids (+10)</button></div>
       ${TV.tab === 'decks' ? testDecksHtml(c) : TV.tab === 'cards' ? `<div class="cxchips">${['All', 'White', 'Green', 'Blue', 'Gold'].map(r => `<button class="cxchip ${TV.rar === r ? 'on' : ''}" data-tvrar="${r}">${r}</button>`).join('')}<button class="btn primary" data-tvall="1" style="margin-left:auto">Take one of each${q || TV.rar !== 'All' ? ' shown' : ''} (${cards.length})</button></div>
         <div class="pilegrid cxgrid nozoom">${cards.length ? '' : '<span class="muted">No cards match.</span>'}${cards.map(([k, d]) => `<div class="pilecard" style="display:grid;gap:4px;justify-items:center">${cardBox(d, 140)}${own[k] ? `<span class="pilecount">x${own[k]}</span>` : ''}<button class="pilebtn" data-tvcard="${k}">Take</button></div>`).join('')}</div>`
       : TV.tab === 'codex' ? `<p class="muted">Stash space: ${room}. Codexes roll random stats at map level +${profile.last.level || 0} (the Wagon's level). Only that class can equip one.</p>
@@ -53,13 +55,14 @@
     fitCards(el);
   }
   $('hpTest').addEventListener('click', (ev) => {
-    const b = ev.target.closest('[data-tvtab],[data-tvrar],[data-tvcard],[data-tvall],[data-tvcx],[data-tvgold],[data-tvshop],[data-tvdeck],[data-tvpeek]'); if (!b) return;
+    const b = ev.target.closest('[data-tvtab],[data-tvrar],[data-tvcard],[data-tvall],[data-tvcx],[data-tvgold],[data-tvshop],[data-tvraid],[data-tvdeck],[data-tvpeek]'); if (!b) return;
     if (b.dataset.tvdeck) return loadTestDeck(b.dataset.tvdeck);
     if (b.dataset.tvpeek) { TV.open = TV.open === b.dataset.tvpeek ? null : b.dataset.tvpeek; return renderTestVendor(); }
     const c = profile.chars[heroKey];
     if (b.dataset.tvtab) TV.tab = b.dataset.tvtab;
     else if (b.dataset.tvrar) TV.rar = b.dataset.tvrar;
     else if (b.dataset.tvcard) { c.cards.push({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), key: b.dataset.tvcard, rank: 0 }); save(); }
+    else if (b.dataset.tvraid) { const c = profile.chars[heroKey]; if (!c) return; if (b.dataset.tvraid === 'reset') { c.raidLocks = {}; toast(`${c.name}'s raid lockouts are cleared.`); } else { c.mapKills = c.mapKills || {}; for (const mk of Object.keys(DATA.maps)) c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], 10); toast(`${c.name} counts as having beaten every map's boss at +10: all raids are open.`); } save(); }
     else if (b.dataset.tvshop) { CBHub.refreshShop(profile, DATA, profile.last.level || 0); save(); toast(`Merchant Dace has new stock (map level +${profile.last.level || 0}, ${DATA.maps[curMap()].name} gear).`); }
     else if (b.dataset.tvall) { const q = TV.q.toLowerCase(); let n = 0; for (const [k, d] of Object.entries(CARDS)) if (d.cls === hcls() && !d.designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(d.rarity) && (TV.rar === 'All' || d.rarity === TV.rar) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + d.rarity).toLowerCase().includes(q)) && ++n) c.cards.push({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), key: k, rank: 0 }); save(); toast(`Added ${n} ${hcls()} card${n === 1 ? '' : 's'} to ${c.name}'s collection.`); }
     else if (b.dataset.tvcx) { if (profile.stash.length >= CBHub.STASH_MAX) return toast('Stash is full.'); const it = CB.makeCodex(DATA, CB.makeRng(Date.now() % 2147483646), b.dataset.tvcx, profile.last.level || 0); profile.stash.unshift(Object.assign({ id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, it)); save(); }

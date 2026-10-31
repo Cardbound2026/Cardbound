@@ -1,7 +1,8 @@
   // ---------- social: other players in Emberwatch, world chat, friends and parties (Supabase Realtime)
   // One shared channel. Presence says who is online and where; broadcasts carry movement, chat and party messages.
   const SOC = { ch: null, me: null, card: null, online: new Map(), others: new Map(), chat: [], friends: [], requestsIn: [], requestsOut: [], party: null, invites: [], lastPos: 0, retrackTimer: null };
-  const PARTY_MAX = 4;
+  const PARTY_MAX = 10; // raids take up to 10; Wagon runs take up to 4 (WAGON_MAX)
+  const WAGON_MAX = 4;
   const socOn = () => !!(SOC.ch && SOC.me);
 
   function rcOf(c) { const slot = sl => c.gear.find(g => g.slot === sl); const rc = sl => { const it = slot(sl); return it ? it.rarity : null; }; return { helm: rc('Helm'), chest: rc('Chest'), weapon: rc('Weapon'), cloak: rc('Cloak'), boots: rc('Boots') }; }
@@ -196,7 +197,7 @@
     if (!socOn()) return;
     if (SOC.party && SOC.party.leader !== SOC.me) { toast('Only the party leader can invite.'); return; }
     if (!SOC.party) SOC.party = { id: newPartyId(), leader: SOC.me, members: [meMember()] };
-    if (SOC.party.members.length >= PARTY_MAX) { toast('The party is full (4 players).'); return; }
+    if (SOC.party.members.length >= PARTY_MAX) { toast(`The party is full (${PARTY_MAX} players).`); return; }
     const c = profile.chars[heroKey];
     SOC.ch.send({ type: 'broadcast', event: 'invite', payload: { to: uid, from: SOC.me, name: c ? c.name : acctName(supaUser), partyId: SOC.party.id } });
     const f = SOC.friends.find(x => x.id === uid) || SOC.others.get(uid);

@@ -18,9 +18,10 @@
   function nameOfUid(uid) { const m = SOC.party && SOC.party.members.find(x => x.uid === uid); if (m) return m.name; const o = SOC.online.get(uid); return o ? o.name : 'A player'; }
 
   // what I bring: my current hero, gear, deck, bank and stash space
-  function mySpec() {
+  function mySpec(req) {
     if (run || cb) return { err: 'is already on the March or in a fight' };
     const c = profile.chars[heroKey]; if (!c) return { err: 'has no hero yet' };
+    if (req && req.kind === 'raid') { const why = raidBlock(c, req.map, req.level); if (why) return { err: why }; }
     const chk = CBHub.deckCheck(c.deck); if (!chk.ok) return { err: `needs to fix their deck (it ${chk.problems.join(', ')})` };
     const o = CBHub.runOpts(profile, heroKey); delete o.members;
     return Object.assign(o, { uid: SOC.me });
@@ -34,14 +35,14 @@
     if (!socOn()) { toast('You are not connected to the online world. Reload the page and sign in again.'); return; }
     if (NET.s) { toast('You are still in another co-op game. Finish or leave it first (Esc menu).'); return; }
     if (NET.pend) { toast('Already setting out: waiting for the party to answer.'); return; }
-    const me = mySpec(); if (me.err) { toast(`You ${me.err.replace(/^is /, 'are ').replace(/^has /, 'have ').replace(/^needs /, 'need ').replace(/their/, 'your')}.`); return; }
+    const me = mySpec({ kind, level, map }); if (me.err) { toast(`You ${me.err.replace(/^is /, 'are ').replace(/^has /, 'have ').replace(/^needs /, 'need ').replace(/their/, 'your')}.`); return; }
     const sid = newSid();
     NET.pend = { sid, kind, uids, level, map, specs: { [SOC.me]: me }, at: Date.now() };
-    NET.pend.timer = setTimeout(() => { if (!NET.pend || NET.pend.sid !== sid) return; clearInterval(NET.pend.again); const miss = uids.filter(u => !NET.pend.specs[u]).map(nameOfUid); NET.pend = null; toast(`${miss.join(', ')} didn't answer. ${kind === 'duel' ? 'The duel' : 'The run'} is called off. If they're online, ask them to reload the page (both of you should be on the latest version).`); }, 15000);
+    NET.pend.timer = setTimeout(() => { if (!NET.pend || NET.pend.sid !== sid) return; clearInterval(NET.pend.again); const miss = uids.filter(u => !NET.pend.specs[u]).map(nameOfUid); NET.pend = null; toast(`${miss.join(', ')} didn't answer. ${kind === 'duel' ? 'The duel' : kind === 'raid' ? 'The raid' : 'The run'} is called off. If they're online, ask them to reload the page (both of you should be on the latest version).`); }, 15000);
     // realtime messages can get lost: ask again every 2 seconds until everyone has answered
     NET.pend.again = setInterval(() => { if (!NET.pend || NET.pend.sid !== sid) return; netSend('req', { sid, kind, uids, level, map, build: CB_BUILD }); }, 2000);
     netSend('req', { sid, kind, uids, level, map, build: CB_BUILD });
-    sysChat(kind === 'duel' ? 'Setting up the duel...' : 'Gathering the party at the Wagon...');
+    sysChat(kind === 'duel' ? 'Setting up the duel...' : kind === 'raid' ? 'Gathering the raid...' : 'Gathering the party at the Wagon...');
     netCheckSpecs();
   }
   function netCheckSpecs() {
@@ -59,13 +60,17 @@
       run = null;
       cb = new CB.Combat({ duel: true, party: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, uid: s.uid })), seed: go.seed, data: DATA });
       cb.myMi = S.mi; startCombatUI();
+    } else if (go.kind === 'raid') {
+      run = null; const bk = CB.raidBoss(DATA, go.map);
+      cb = new CB.Combat({ raid: true, party: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, uid: s.uid })), enemies: [bk], level: go.level, seed: go.seed, data: DATA });
+      cb.myMi = S.mi; cb.raidMap = go.map; startCombatUI();
     } else {
       run = new Run({ members: go.specs.map(s => ({ key: s.key, cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, bank: s.bank, stashFree: s.stashFree })), level: go.level, map: go.map || 'physical', seed: go.seed, data: DATA });
       run.online = true; run.myMi = S.mi; run.uids = go.uids.slice();
       show('map'); renderMap(true);
       if (go.host !== SOC.me) { modal(`<h2>Your party sets out</h2><p>${esc(nameOfUid(go.host))} is leading ${go.specs.map(x => esc(x.name)).join(', ')} onto <b>${esc(run.mapName)}</b> (+${go.level}).</p><p class="muted">Click a node on the map to vote where to go. The party moves when everyone has voted (ties are a coin flip; after 45 seconds the votes in count).</p><div class="row"><button class="btn primary" id="mClose">Let's go</button></div>`); $('mClose').onclick = closeModal; }
     }
-    sysChat(go.kind === 'duel' ? `Duel: ${go.specs.map(s => s.name).join(' vs ')}.` : `The party sets out: ${go.specs.map(s => s.name).join(', ')}.`);
+    sysChat(go.kind === 'duel' ? `Duel: ${go.specs.map(s => s.name).join(' vs ')}.` : go.kind === 'raid' ? `The raid begins: ${go.specs.map(s => s.name).join(', ')} against ${CB.RAID_NAMES[go.map]} (+${go.level}).` : `The party sets out: ${go.specs.map(s => s.name).join(', ')}.`);
     retrack(true);
   }
   function netEnd() { NET.s = null; NET.pend = null; retrack(true); }
@@ -105,6 +110,22 @@
       if (!cb || cb.over) return;
       if (a.t === 'leave') { S.gone[mi] = true; const p = cb.players[mi]; if (p.hp > 0) { cb.say('loss', `${p.name} leaves the duel.`); p.hp = 0; cb.onDeath(p); } render(); combatOver(); return; }
     }
+    if (S.kind === 'raid') {
+      if (!cb) return;
+      if (a.t === 'roll' || a.t === 'rollforce') { raidRollIn(a); return; }
+      if (a.t === 'leave') {
+        if (S.gone[mi]) return; S.gone[mi] = true; if (mi !== S.mi) sysChat(`${who} left the raid.`);
+        const p = cb.players[mi]; if (!cb.over && p.hp > 0) { cb.say('loss', `${p.name} leaves the raid.`); p.hp = 0; cb.onDeath(p); }
+        if (cb.raidLoot) raidRollIn({ t: 'check' });
+        else if (!$('scrCombat').hidden) { render(); if (cb.over) combatOver(); else pump(); }
+        return;
+      }
+      if (cb.over) return;
+      const p = cb.players[mi]; if (!cb.canAct(p)) return;
+      if (a.t === 'play') { if (mi === S.mi) selected = null; cb.playAs(p, a.uid, a.tgt); render(true); if (cb.over) combatOver(); else if (cb.phase === 'enemy') pump(); return; }
+      if (a.t === 'end') { if (mi === S.mi) selected = null; if (a.auto) cb.say('sys', `${p.name} ran out of time.`); cb.endTurnAs(p); render(true); if (cb.over) combatOver(); else pump(); return; }
+      return;
+    }
     switch (a.t) {
       case 'vote': {
         if (!run || run.over || run.combat || (run.pending && run.pending.type === 'rest')) return;
@@ -143,7 +164,7 @@
   }
   // a hero whose player left skips their turns
   function autoSkip() {
-    const S = NET.s; if (!S || !cb || cb.over || busy) return;
+    const S = NET.s; if (!S || !cb || cb.over || busy || cb.raid) return;
     let g = 0;
     while (cb && !cb.over && cb.phase === 'player' && S.gone[cb.players.indexOf(cb.current)] && g++ < 10) cb.endPlayerTurn();
     if (cb && cb.phase === 'enemy' && !busy) { render(); pump(); }
@@ -186,9 +207,9 @@
         if (!p.uids.includes(SOC.me)) return;
         clearStale();
         if (NET.s) { if (NET.s.sid !== p.sid) netSend('spec', { sid: p.sid, to: p.from, spec: { err: 'is already in a game' } }); return; }
-        if (p.build !== CB_BUILD) { netSend('spec', { sid: p.sid, to: p.from, spec: { err: 'is on a different version of the game. Both of you reload the page (Ctrl+F5), then try again' } }); if (NET.verWarn !== p.sid) { NET.verWarn = p.sid; toast(`${nameOfUid(p.from)} tried to start ${p.kind === 'duel' ? 'a duel' : 'a run'}, but you two are on different versions of the game. Both of you reload the page (Ctrl+F5), then try again.`); } return; }
-        if (!NET.wait || NET.wait.sid !== p.sid) sysChat(`${nameOfUid(p.from)} is ${p.kind === 'duel' ? 'starting the duel' : 'setting out'}...`);
-        const spec = mySpec();
+        if (p.build !== CB_BUILD) { netSend('spec', { sid: p.sid, to: p.from, spec: { err: 'is on a different version of the game. Both of you reload the page (Ctrl+F5), then try again' } }); if (NET.verWarn !== p.sid) { NET.verWarn = p.sid; toast(`${nameOfUid(p.from)} tried to start ${p.kind === 'duel' ? 'a duel' : p.kind === 'raid' ? 'a raid' : 'a run'}, but you two are on different versions of the game. Both of you reload the page (Ctrl+F5), then try again.`); } return; }
+        if (!NET.wait || NET.wait.sid !== p.sid) sysChat(`${nameOfUid(p.from)} is ${p.kind === 'duel' ? 'starting the duel' : p.kind === 'raid' ? 'starting a raid' : 'setting out'}...`);
+        const spec = mySpec(p);
         netSend('spec', { sid: p.sid, to: p.from, spec });
         // if the start doesn't arrive, ask the host for it again
         if (!spec.err && (!NET.wait || NET.wait.sid !== p.sid)) {
@@ -199,12 +220,12 @@
             netSend('needgo', { sid: W.sid, to: W.host });
           }, 2500);
         }
-        if (spec.err) toast(`${nameOfUid(p.from)} tried to start ${p.kind === 'duel' ? 'a duel' : 'a run'}, but you ${spec.err.replace(/^is /, 'are ').replace(/^has /, 'have ').replace(/^needs /, 'need ').replace(/their/, 'your')}.`);
+        if (spec.err) toast(`${nameOfUid(p.from)} tried to start ${p.kind === 'duel' ? 'a duel' : p.kind === 'raid' ? 'a raid' : 'a run'}, but you ${spec.err.replace(/^is /, 'are ').replace(/^has /, 'have ').replace(/^needs /, 'need ').replace(/their/, 'your')}.`);
         return;
       }
       case 'spec': {
         const P = NET.pend; if (!P || P.sid !== p.sid || p.to !== SOC.me || !P.uids.includes(p.from)) return;
-        if (p.spec.err) { clearTimeout(P.timer); clearInterval(P.again); NET.pend = null; toast(`${nameOfUid(p.from)} ${p.spec.err}. ${P.kind === 'duel' ? 'The duel' : 'The run'} is called off.`); netSend('cancel', { sid: P.sid }); return; }
+        if (p.spec.err) { clearTimeout(P.timer); clearInterval(P.again); NET.pend = null; toast(`${nameOfUid(p.from)} ${p.spec.err}. ${P.kind === 'duel' ? 'The duel' : P.kind === 'raid' ? 'The raid' : 'The run'} is called off.`); netSend('cancel', { sid: P.sid }); return; }
         P.specs[p.from] = p.spec; netCheckSpecs(); return;
       }
       case 'cancel': if (NET.wait && NET.wait.sid === p.sid) { clearInterval(NET.wait.timer); NET.wait = null; } return;
@@ -304,16 +325,22 @@
     for (const [u, t] of Object.entries(S.missing)) { const i = S.uids.indexOf(u); if (i >= 0 && !S.gone[i] && now - t > GONE_S * 1000) hostSeq({ t: 'leave', mi: i }); }
     if (S.voteAt && now - S.voteAt > VOTE_S * 1000) { S.voteAt = 0; hostSeq({ t: 'force' }); }
     if (cb && !cb.over && cb.phase === 'player' && !busy) {
-      const key = cb.round + ':' + cb.turnIndex;
+      const key = cb.round + ':' + (cb.raid ? 'raid' : cb.turnIndex);
       if (S.turnKey !== key) { S.turnKey = key; S.turnAt = now; }
-      else if (now - S.turnAt > TURN_S * 1000) { S.turnAt = now + 5000; const mi = cb.players.indexOf(cb.current); if (mi >= 0) hostSeq({ t: 'end', mi, auto: true }); }
+      else if (now - S.turnAt > TURN_S * 1000) {
+        S.turnAt = now + 5000;
+        if (cb.raid) cb.players.forEach((p, mi) => { if (cb.canAct(p)) hostSeq({ t: 'end', mi, auto: true }); });
+        else { const mi = cb.players.indexOf(cb.current); if (mi >= 0) hostSeq({ t: 'end', mi, auto: true }); }
+      }
     }
+    // raid loot: unanswered rolls count as Pass after the vote timer
+    if (cb && cb.raid && cb.raidLoot && S.lootAt && !S.lootForced && now - S.lootAt > VOTE_S * 1000 && cb.raidLoot.some(x => !x.done)) { S.lootForced = true; hostSeq({ t: 'rollforce' }); }
     netClock();
   }, 1000);
   // everyone shows the turn clock (counted locally from when the turn began here)
   function netClock() {
     const S = NET.s, el = $('tclock'); if (!S || !cb || !el) return;
-    const key = cb.round + ':' + cb.turnIndex;
+    const key = cb.round + ':' + (cb.raid ? 'raid' : cb.turnIndex);
     if (S.clockKey !== key) { S.clockKey = key; S.clockAt = Date.now(); }
     const left = Math.max(0, TURN_S - Math.floor((Date.now() - S.clockAt) / 1000));
     el.textContent = cb.phase === 'player' && !cb.over && left <= 30 ? ` (${left}s left)` : '';

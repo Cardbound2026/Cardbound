@@ -812,6 +812,20 @@ function intentKind(ops) {
 
 // per-enemy tuning on top of the Map 1 design numbers
 const DEBT_CARDS = ['collect_the_debt', 'sanguine_guard', 'pay_in_blood'];
+// enemy card ops that land on heroes (single-target unless the op is marked all)
+const ENEMY_PLAYER_OPS = ['damage', 'execute', 'damageBlock', 'debuff', 'stealMana', 'burnMana', 'drawLess', 'disarm', 'purge', 'shred', 'shredAll', 'tickBleed', 'status'];
+// ---------------- Raids: one per map, 2 to 10 heroes, the map's boss made raid-sized
+// hp: x the map boss (then x heroes); dmg: damage x; manaStep: boss mana/regen +3% per extra hero; +1 draw at 6+ heroes
+const RAID = { hp: 1.5, dmg: 1.25, manaStep: 0.03, min: 2, max: 10, lockMs: 7 * 24 * 3600 * 1000 };
+const RAID_NAMES = { physical: 'Gorrath, the Unbroken Tide', fire: 'Vashkar, the Sunken Sun', frost: 'Sylvaine, the Endless Winter', nature: 'Thornheart, the World-Root', arcane: 'Ilvar, the Shattered Star', shadow: 'The Hollow King Ascendant' };
+function raidKey(mk) { return 'raid_' + mk; }
+function raidBoss(data, mk) {
+  const k = raidKey(mk); if (data.enemies[k]) return k;
+  const m = data.maps && data.maps[mk]; if (!m) return null; const b = data.enemies[m.boss]; if (!b) return null;
+  data.enemies[k] = Object.assign(JSON.parse(JSON.stringify(b)), { name: RAID_NAMES[mk] || b.name + ' (Raid)', hp: Math.round(b.hp * RAID.hp), raid: true, map: mk,
+    arch: 'Raid boss: every attack hits every hero', desc: `${b.name.split(',')[0]} returns, raid-sized. Every attack and debuff hits the whole raid. Only one hero a round can land non-damaging debuffs on it.` });
+  return k;
+}
 const ENEMY_TUNE = { warlord_gorrath_the_iron_tide: { dmg: 0.8 } }; // Oct 30: Warlord hit too hard (War Banner +40 Strength); all his damage -20%
 
 // ---------------- Combat ----------------
@@ -832,13 +846,15 @@ class Combat {
     this.player = this.players[0];       // the hero currently acting, or the one an enemy card is aimed at
     this.gear = sumGear(party[0].gear || STARTER_GEAR[party[0].cls]);
     this.partySize = this.players.length;
-    this.partyScale = 1 + (this.opts.partyStep != null ? this.opts.partyStep : 0.85) * (this.partySize - 1); // 1 when a party fight brings one monster per hero instead // each extra hero: enemies get +85% HP, mana and regen, and +1 draw
+    this.raid = !!this.opts.raid; // raid: everyone plays at once, then the boss acts; boss HP scales 1:1 with heroes
+    this.partyScale = this.raid ? this.partySize : 1 + (this.opts.partyStep != null ? this.opts.partyStep : 0.85) * (this.partySize - 1); // 1 when a party fight brings one monster per hero instead // each extra hero: enemies get +85% HP, mana and regen, and +1 draw
     this.hpMult = Math.pow(1.5, this.level) * this.partyScale * (this.opts.mobHp || 1); this.dmgMult = Math.pow(1.3, this.level); // mobHp: extra HP when a party meets one monster per hero
     this.levelHpMult = Math.pow(1.5, this.level);
     this.typeResist = Math.min(1, 0.05 + 0.05 * this.level);
     this.duel = !!this.opts.duel; // duel: two heroes, no monsters; each hero's "enemies" are the other hero
     this.enemies = this.duel ? [] : this.opts.enemies.map((key, i) => this.makeEnemy(key, i));
     if (this.duel) this.say('sys', `Duel: ${this.players.map(p => p.name).join(' vs ')}. Last hero standing wins. From round ${PRESSURE_START} every hit lands harder.`);
+    else if (this.raid) this.say('sys', `Raid starts. Level +${this.level}, ${this.partySize} heroes: boss HP x${this.hpMult.toFixed(2)}, damage x${(this.dmgMult * RAID.dmg).toFixed(2)}. Every boss attack hits every hero. Only one hero a round can land non-damaging debuffs on it.`);
     else this.say('sys', `Fight starts. Map level +${this.level}${this.partySize > 1 ? `, party of ${this.partySize}` : ''}: enemy HP x${this.hpMult.toFixed(2)}${this.partySize > 1 ? ` and +${this.partySize - 1} card draw` : ''}, damage x${this.dmgMult.toFixed(2)}; enemies resist their own type by ${Math.round(this.typeResist * 100)}%.`);
     this.startRound();
   }
@@ -879,6 +895,15 @@ class Combat {
   who(p) { return this.partySize > 1 ? p.name : 'You'; }
 
   makeEnemy(key, i) {
+    const en = this.makeEnemy0(key, i);
+    if (this.raid) {
+      const n = this.partySize, k = 1 + RAID.manaStep * (n - 1), d = en.d;
+      en.maxMana = Math.round(d.maxMana * k); en.regen = Math.round(d.regen * k); en.regenK = k; en.drawPlus = n >= 6 ? 1 : 0; en.draw = d.draw + en.drawPlus; en.dmgTune *= RAID.dmg;
+      for (const c of [...en.drawPile, ...en.phase2Cards]) { let hit = false; for (const o of c.ops) if (ENEMY_PLAYER_OPS.includes(o.op)) { o.all = true; hit = true; } if (hit && !/every player|each of their/.test(c.text)) c.text += ' Hits every hero.'; }
+    }
+    return en;
+  }
+  makeEnemy0(key, i) {
     const d = this.data.enemies[key];
     const tune = (this.opts.tune || {})[d.tier] || {};
     const own = ENEMY_TUNE[key] || {};
@@ -1047,6 +1072,11 @@ class Combat {
       this.drawCards(p, n);
     }
     for (const e of this.foes()) if (this.round === 1) this.drawCards(e, e.draw);
+    if (this.raid) {
+      this.order = [...this.alivePlayers(), ...this.foes()].map(a => a.id); this.turnIndex = -1;
+      for (const e of this.foes()) this.planEnemy(e);
+      this.raidPlayerPhase(); return;
+    }
     const actors = [...this.alivePlayers(), ...this.foes()].map(a => ({ a, ini: this.initiative(a), tie: this.rng() }));
     actors.sort((x, y) => y.ini - x.ini || y.tie - x.tie);
     this.order = actors.map(x => x.a.id);
@@ -1079,7 +1109,53 @@ class Combat {
   }
 
   actorById(id) { return this.players.find(p => p.id === id) || this.enemies.find(e => e.id === id); }
-  get current() { return this.order ? this.actorById(this.order[this.turnIndex]) : null; }
+  get current() { if (this.raid && this.phase === 'player') return this.player; return this.order ? this.actorById(this.order[this.turnIndex]) : null; }
+
+  // ----- raids: every hero takes their turn at the same time; the boss acts when all have ended their turn
+  raidPlayerPhase() {
+    this.raidDone = new Set(); this.raidDebuffer = null; this.raidN = this.order.filter(id => this.actorById(id).isPlayer).length;
+    this.phase = 'between'; this._raidStarting = true;
+    for (const p of this.alivePlayers()) {
+      this.player = p; this.beginTurn(p); if (this.over) { this._raidStarting = false; return; }
+      if (p.hp <= 0) { this.raidDone.add(p.id); continue; }
+      if (p.frozen) { p.frozen = false; this.say('crit', `${p.name} is Frozen and loses the turn.`); p.discard.push(...p.hand.splice(0)); if (p.chill) p.chill = 0; this.raidDone.add(p.id); }
+    }
+    this._raidStarting = false;
+    this.player = this.alivePlayers().find(p => !this.raidDone.has(p.id)) || this.alivePlayers()[0] || this.players[0];
+    this.phase = 'player';
+    this.say('sys', 'Everyone plays at once. The boss acts when every hero has ended their turn.');
+    this.raidCheck();
+  }
+  raidCheck() {
+    if (!this.raid || this.phase !== 'player' || this.over || this._raidStarting) return;
+    if (this.alivePlayers().every(p => this.raidDone.has(p.id))) { this.phase = 'between'; this.turnIndex = this.raidN - 1; this.nextTurn(); }
+  }
+  canAct(p) {
+    if (!p || this.phase !== 'player' || this.over || p.hp <= 0) return false;
+    return this.raid ? !this.raidDone.has(p.id) : this.current === p;
+  }
+  playAs(p, uid, targetId) { if (!this.canAct(p)) return false; this.player = p; return this.raidGuard(p, () => this.play(uid, targetId)); }
+  endTurnAs(p) { if (!this.canAct(p)) return false; this.player = p; this.raidGuard(p, () => this.endPlayerTurn()); return true; }
+  // raid bosses resist debuff stacking: only one hero a round can land non-damaging debuffs (Weak, Vulnerable, Slow, Chill, mana burn, discard, Silence...)
+  raidGuard(p, fn) {
+    if (!this.raid) return fn();
+    const UP = ['weak', 'vulnerable', 'slow', 'chill', 'condemn', 'unwarded', 'exposure', 'costUp', 'counter', 'weakNext', 'noHealRound', 'grievous', 'drawLess', 'drawLessTurns'], ON = ['frozen', 'silenced', 'disarmed'];
+    const snap = this.enemies.map(e => ({ v: Object.fromEntries([...UP, ...ON, 'strength', 'strTurn', 'mana'].map(k => [k, e[k]])), rd: JSON.parse(JSON.stringify(e.regenDown)), hand: e.hand.slice(), draw: e.drawPile.slice(), disc: e.discard.slice(), plan: e.plan.slice() }));
+    const r = fn();
+    this.enemies.forEach((e, i) => {
+      const S = snap[i], rdSum = (l) => l.reduce((t, x) => t + x.n, 0);
+      const worse = UP.filter(k => (e[k] || 0) > (S.v[k] || 0)), on = ON.filter(k => e[k] && !S.v[k]);
+      const str = (e.strength < S.v.strength) || (e.strTurn < S.v.strTurn), mana = e.mana < S.v.mana, rd = rdSum(e.regenDown) > rdSum(S.rd), cards = e.hand.length < S.hand.length;
+      if (!worse.length && !on.length && !str && !mana && !rd && !cards) return;
+      if (!this.raidDebuffer || this.raidDebuffer === p.id) { if (!this.raidDebuffer) { this.raidDebuffer = p.id; this.say('sys', `${p.name} has the debuffs this round: only they can weaken ${e.name} until next round.`); } return; }
+      for (const k of worse) e[k] = S.v[k]; for (const k of on) e[k] = S.v[k];
+      if (str) { e.strength = S.v.strength; e.strTurn = S.v.strTurn; } if (mana) e.mana = S.v.mana; if (rd) e.regenDown = S.rd;
+      if (cards) { e.hand = S.hand; e.drawPile = S.draw; e.discard = S.disc; e.plan = S.plan; }
+      const who = this.actorById(this.raidDebuffer);
+      this.say('enemy', `${e.name} resists ${p.name}'s debuffs: ${who ? who.name : 'another hero'} already weakened it this round.`);
+    });
+    return r;
+  }
 
   nextTurn() {
     if (this.over) return;
@@ -1206,6 +1282,7 @@ class Combat {
       if (this.duel) { this.winner = this.alivePlayers()[0] || null; this.say('win', `${a.name} falls. ${this.winner ? this.winner.name + ' wins the duel' : 'The duel is a draw'} in ${this.round} round${this.round > 1 ? 's' : ''}.`); this.over = 'duel'; this.phase = 'over'; return; }
       if (!this.alivePlayers().length) { this.say('loss', this.partySize > 1 ? 'The whole party falls.' : 'You fall.'); this.over = 'loss'; this.phase = 'over'; return; }
       this.say('loss', `${a.name} falls! The rest of the party fights on.`);
+      if (this.raid) { if (this.raidDone) this.raidDone.add(a.id); this.raidCheck(); return; }
       if (this.current === a && this.phase === 'player') { this.phase = 'between'; this.nextTurn(); }
       return;
     }
@@ -1340,9 +1417,10 @@ class Combat {
     this.say('enemy', txt[key]);
   }
 
-  canPlay(c) {
-    const d = this.card(c), p = this.player;
+  canPlay(c, who) {
+    const d = this.card(c), p = who || this.player;
     if (this.phase !== 'player' || this.over) return { ok: false, why: 'Not your turn' };
+    if (this.raid && !this.canAct(p)) return { ok: false, why: 'Turn ended' };
     if (d.designOnly) return { ok: false, why: 'Not built yet' };
     if (d.cost == null) return { ok: false, why: 'Unplayable' };
     const cost = this.costOf(p, d, c);
@@ -1417,6 +1495,7 @@ class Combat {
     if (kept) this.say('player', `End turn: ${kept} card${kept > 1 ? 's' : ''} discarded${keep.length ? `, ${keep.length} retained` : ''}.`);
     p.strTurn = 0; p.intTurn = 0; p.disarmed = false; p.locked = false; p.turn = { carry: true }; if (p.dexTurn) { p.dexterity -= p.dexTurn; p.dexTurn = 0; }
     p.weak = Math.floor(p.weak / 2); p.vulnerable = Math.floor(p.vulnerable / 2); if (p.slow) p.slow = Math.max(0, p.slow - 1); if (p.chill) p.chill = Math.max(0, p.chill - 1); p.unwarded = Math.floor((p.unwarded || 0) / 2); p.exposure = Math.floor((p.exposure || 0) / 2);
+    if (this.raid) { this.raidDone.add(p.id); this.say('sys', `${p.name} ends their turn.`); this.raidCheck(); return; }
     this.nextTurn();
   }
 
@@ -1510,8 +1589,8 @@ class Combat {
   phaseTwo(e) {
     e.phase = 2;
     for (const c of e.phase2Cards) e.drawPile.splice(Math.floor(this.rng() * (e.drawPile.length + 1)), 0, c);
-    if (e.d.draw2) e.draw = e.d.draw2;
-    if (e.d.regen2) e.regen = e.d.regen2;
+    if (e.d.draw2) e.draw = e.d.draw2 + (e.drawPlus || 0);
+    if (e.d.regen2) e.regen = Math.round(e.d.regen2 * (e.regenK || 1));
     this.say('crit', `${e.name} enters PHASE 2. New cards join its deck; it now draws ${e.draw} and regenerates ${e.regen}.`);
   }
 
@@ -1519,7 +1598,7 @@ class Combat {
     if (e.hand.length) e.discard.push(...e.hand.splice(0).filter(c => !c.exhaust));
     e.silenced = 0; e.disarmed = 0;
     const less = e.drawLess || 0; e.drawLess = 0; if (e.drawLessTurns > 0) { e.drawLessTurns--; if (e.drawLessTurns > 0) e.drawLess = 1; }
-    if (e.hp > 0) { this.drawCards(e, Math.max(0, (e.d.tier === 'Boss' && e.phase === 1 && e.hp <= e.maxHp / 2 && e.d.draw2 ? e.d.draw2 : e.draw) - less)); if (less) this.say('player', `${e.name} draws ${less} fewer.`); this.planEnemy(e); }
+    if (e.hp > 0) { this.drawCards(e, Math.max(0, (e.d.tier === 'Boss' && e.phase === 1 && e.hp <= e.maxHp / 2 && e.d.draw2 ? e.d.draw2 + (e.drawPlus || 0) : e.draw) - less)); if (less) this.say('player', `${e.name} draws ${less} fewer.`); this.planEnemy(e); }
     e.weak = Math.floor(e.weak / 2); e.vulnerable = Math.floor(e.vulnerable / 2); if (e.chill) e.chill = Math.max(0, e.chill - 1);
     e.condemn = Math.floor((e.condemn || 0) / 2); e.unwarded = Math.floor((e.unwarded || 0) / 2);
     if (e.d.tier === 'Boss' && e.phase === 1 && e.hp <= e.maxHp / 2 && e.hp > 0) this.phaseTwo(e);
@@ -1644,6 +1723,6 @@ function rollDrops(data, rng, enemyKey, level, luck) {
 // Oct 31: the Rogue's poison cards are Attacks, so they scale with Strength (poison stacks scale with Strength too, see applyDot)
 for (const k of ['envenom', 'plague_bloom', 'toxic_cloud', 'venom_vial', 'fester', 'crippling_poison', 'mind_numbing_poison', 'deadly_toxin', 'wound_poison', 'corrosive_toxin', 'draining_venom', 'poison_nova']) if (C[k]) { C[k].type = 'Attack'; if (C[k].dtype == null) C[k].dtype = k === 'poison_nova' ? 'Nature' : 'Physical'; }
 if (C.seismic_slam) { C.seismic_slam.cost = 0; C.seismic_slam.text = 'Deal damage to all enemies equal to 50% of your current mana. Your mana is not spent.'; }
-const API = { CARDS_VERSION: 2, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { CARDS_VERSION: 2, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);
