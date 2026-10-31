@@ -451,6 +451,31 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .modal p { margin: 0; color: #d6cab6; }
 .modal .row { display: flex; gap: 10px; flex-wrap: wrap; }
 .shop { display: grid; gap: 8px; }
+
+/* ===== UI art pass (Oct 31): painted frames, plaque buttons, battle backdrops (art in design/ui, keyed by design/scripts/ui_key.py) ===== */
+.sheetbox, .modal .box { border: 62px solid transparent; border-image: url(img/ui/frame_big.webp) 330 fill / 62px / 14px round; background: none; border-radius: 0; padding: 2px 6px; }
+.modal .box { padding: 0 4px; }
+.panel, .talk { border: 32px solid transparent; border-image: url(img/ui/frame_thin.webp) 190 fill / 32px / 6px round; background: none; border-radius: 0; padding: 2px 4px; }
+.talk { padding: 2px 6px; }
+.btn.primary { border: 0; border-style: solid; border-width: 12px 30px; border-color: transparent; border-image: url(img/ui/button.webp) 78 225 fill / 12px 30px round; background: none; color: #f3dfb0; text-shadow: 0 1px 2px #000, 0 0 8px rgba(255,160,60,.35); border-radius: 0; padding: 3px 8px; outline: none; transition: filter .12s, transform .08s; }
+.btn.primary:hover:not(:disabled) { filter: brightness(1.18) drop-shadow(0 0 6px rgba(255,150,50,.45)); }
+.btn.primary:active:not(:disabled) { transform: translateY(1px); }
+.btn.primary:focus-visible { outline: none; filter: brightness(1.22) drop-shadow(0 0 8px rgba(255,170,70,.7)); }
+#scrTitle { background: linear-gradient(180deg, rgba(12,9,7,.55), rgba(12,9,7,.92) 70%), url(img/ui/bg_physical.webp) center 20% / cover no-repeat; border-radius: 10px; padding: 18px 20px 30px; min-height: calc(100vh - 110px); align-content: start; }
+.btn.primary:disabled { filter: grayscale(.8) brightness(.7); color: #b9ab93; }
+.endturn.btn.primary { border-width: 16px 40px; border-image-width: 16px 40px; padding: 0 12px; font-size: 24px; }
+.btn:not(.primary) { background: linear-gradient(180deg, #2d241b, #1b1611); border-color: #5e4630; color: #e8d8ba; box-shadow: inset 0 1px 0 rgba(255,220,160,.08); }
+.btn:not(.primary):hover:not(:disabled) { border-color: #a07a46; color: #fff1d6; }
+/* battle backdrop: the map's painting behind the fight (maps without one yet get a tinted gradient) */
+#scrCombat .field-panel { position: relative; background: #0d0a08; border: 0; isolation: isolate; }
+#scrCombat .field-panel::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: 8px; background: var(--battle-bg, radial-gradient(120% 90% at 50% 0%, #2a2219 0%, #15110d 70%)) center 30% / cover no-repeat; filter: brightness(.82) saturate(1.05); }
+#scrCombat .field-panel::after { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: 8px; pointer-events: none; background: radial-gradient(130% 100% at 50% 40%, transparent 45%, rgba(0,0,0,.55) 100%), linear-gradient(180deg, transparent 55%, rgba(8,6,4,.85) 100%); }
+#scrCombat[data-map="physical"] { --battle-bg: url(img/ui/bg_physical.webp); }
+#scrCombat[data-map="fire"] { --battle-bg: radial-gradient(120% 90% at 50% 10%, #4a1d0c 0%, #1d0d07 55%, #0b0605 100%); }
+#scrCombat[data-map="frost"] { --battle-bg: radial-gradient(120% 90% at 50% 10%, #1d3446 0%, #0e1820 55%, #070a0e 100%); }
+#scrCombat[data-map="nature"] { --battle-bg: radial-gradient(120% 90% at 50% 10%, #1e3a1a 0%, #0f1a0d 55%, #070b06 100%); }
+#scrCombat[data-map="arcane"] { --battle-bg: radial-gradient(120% 90% at 50% 10%, #2e1f4a 0%, #150f24 55%, #08060e 100%); }
+#scrCombat[data-map="shadow"] { --battle-bg: radial-gradient(120% 90% at 50% 10%, #2a2230 0%, #120e16 55%, #07060a 100%); }
 </style>
 
 <div class="wrap">
@@ -1856,7 +1881,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     cb.practice = true; $('sheet').hidden = true; startCombatUI();
   }
   function leaveDummy() { closeModal(); cb = null; townReturn = true; show('start'); renderHub(); }
-  function startCombatUI() { closeModal(); if (run && run.online) cb.myMi = run.myMi; viewHero = null; selected = null; busy = false; lastHp = {}; lastBlock = {}; show('combat'); snapshot(); render(); pump(); }
+  function startCombatUI() { closeModal(); $('scrCombat').dataset.map = run && run.mapKey ? run.mapKey : 'physical'; if (run && run.online) cb.myMi = run.myMi; viewHero = null; selected = null; busy = false; lastHp = {}; lastBlock = {}; show('combat'); snapshot(); render(); pump(); }
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
   async function pump() {
     if (busy) return; busy = true; const me = cb; // a pump belongs to one fight: if the fight is replaced or left mid-turn (training dummy reset/leave), it stops
