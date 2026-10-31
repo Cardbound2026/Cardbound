@@ -129,7 +129,7 @@ for r in rows[5:]:
         ops += o
     if ops is not None and any(o['op'] == 'unplayable' for o in ops) and not any(o['op'] == 'onDraw' for o in ops): ops = None
     if ops is not None and not any(o['op'] in ('dmg', 'def', 'heal', 'draw', 'mana', 'manaNext', 'str', 'regen', 'maxMana', 'dot', 'debuff', 'chill', 'stealth', 'addCard', 'burnMana', 'stealMana', 'nextAttack', 'nextSkill', 'init', 'onDraw', 'manaNext', 'drawNext', 'negate', 'healAlly', 'cleanse', 'cleanseDot', 'regenDown', 'cycle', 'selfStatus', 'allyDef') for o in ops): ops = None
-    if ops is not None and d['Card Type'] == 'Power': ops = None  # powers need their own engine support
+    # Powers: simple ones keep their ops (applied once, then shown as an active Power); the engine's POWERS table handles the rest
     if ops is not None:  # 'each hit applies' belongs to the damage before it
         merged = []
         for o in ops:

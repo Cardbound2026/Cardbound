@@ -320,6 +320,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .trst { min-height: 18px; margin: 6px 0 0; font-size: 13px; font-weight: 700; }
 .pilecard.design .cf { filter: grayscale(.55) brightness(.75); }
 .pilecard .dstamp { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%) rotate(-12deg); z-index: 32; background: rgba(20,14,10,.88); border: 1px solid #8a6a3a; color: #e9c98a; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none; }
+.tag.power { background: #2a1f33; border-color: #6a4f8a; color: #d9c2f5; }
 .pilegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; padding: 6px 4px 30px; }
 .pilecard { position: relative; display: grid; justify-items: center; }
 .pilecard .cf { transition: transform .14s; transform-origin: 50% 60%; }
@@ -1670,6 +1671,9 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     if (a.isPlayer && a.negateDebuff) t.push(`<span class="tag good">Divine Shield</span>`);
     if (a.isPlayer && a.defNext) t.push(`<span class="tag block">+${a.defNext} next turn</span>`);
     if (a.isPlayer && a.disarmed) t.push(`<span class="tag bad">Disarmed</span>`);
+    if (a.isPlayer && a.powers && a.powers.length) for (const pw of a.powers) t.push(`<span class="tag power" title="${esc(pw.name)}: ${esc(pw.text)}">&#9670; ${esc(pw.name)}</span>`);
+    if (a.isPlayer && a.nextAttackFlat) t.push(`<span class="tag good">Next Attack +${a.nextAttackFlat}</span>`);
+    if (a.isPlayer && a.hot && a.hot.length) t.push(`<span class="tag good">Regrowth ${a.hot.reduce((s, x) => s + x.n, 0)}/turn</span>`);
     for (const [k, l] of [['weak', 'Weak'], ['vulnerable', 'Vuln'], ['bleed', 'Bleed'], ['poison', 'Poison'], ['burn', 'Burn'], ['chill', 'Chill'], ['slow', 'Slow']]) if (a[k]) t.push(`<span class="tag bad">${l} ${a[k]}${k === 'weak' || k === 'vulnerable' ? '%' : ''}</span>`);
     if (a.frozen) t.push(`<span class="tag bad">Frozen</span>`);
     if (!a.isPlayer && a.parryBack) t.push(`<span class="tag bad" title="Attacks into its Parry take damage back">Riposte</span>`);
