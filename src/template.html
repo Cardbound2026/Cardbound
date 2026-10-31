@@ -563,6 +563,11 @@ body.aiming { cursor: grabbing; user-select: none; }
   [data-cardinfo] .card, [data-cardinfo].item { cursor: pointer; }
   .cxcod { cursor: pointer; } .cxcod:hover { background: rgba(255,255,255,.06); }
   .bzacts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; } .bzacts input { width: 90px; } #tbShop.primary { border-color: var(--accent); color: var(--accent); }
+  .maploot { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; max-height: 64vh; overflow: auto; } .maploot h4 { color: var(--accent); margin: 6px 0 4px; } .mlslot { font-size: 13.5px; margin: 3px 0; } [data-cxcard].cardrow { cursor: pointer; }
+  #playerSlot .unit.targetable, .unit.allytgt { border-color: #7fd36a; background: rgba(127,211,106,.08); cursor: pointer; } #playerSlot .unit.dropover { background: rgba(127,211,106,.2); }
+  /* chat stays usable beside the big windows (link items and cards into it) */
+  @media (min-width: 1000px) { body.sheetopen #townWrap #chatBox, body.modalopen #townWrap #chatBox { position: fixed; left: 12px; bottom: 12px; width: 300px; z-index: 21; background: rgba(12,10,8,.94); border: 1px solid var(--line); border-radius: 8px; padding: 6px; }
+    body.sheetopen .sheet { padding-left: 330px; } body.modalopen .modal { padding-left: 330px; } }
 </style>
 
 <div class="wrap">
@@ -832,7 +837,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       <p class="savenote" id="lvlInfo"></p>
       ${onlineParty() ? onlineWagonHtml() : `<fieldset class="partypick"><legend>Party (play them all yourself, in Initiative order)</legend>${heroKeys().map(k => `<label><input type="checkbox" data-party="${k}" ${k === heroKey ? 'checked disabled' : (profile.last.party || []).includes(k) ? 'checked' : ''}> ${esc(profile.chars[k].name)} <span class="muted">(${profile.chars[k].cls})</span></label>`).join('')}</fieldset>
       <p class="savenote" id="partyNote" style="margin:4px 0 0"></p>`}
-      <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn primary" id="btnStart" ${chk.ok && (!onlineParty() || SOC.party.leader === SOC.me) ? '' : 'disabled'}>${onlineParty() ? (SOC.party.leader === SOC.me ? `Set out with the party (${SOC.party.members.length})` : 'Waiting for the leader') : 'Set out'}</button></div>
+      <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn" id="btnMapLoot" title="Everything this map can drop">Map loot</button><button class="btn primary" id="btnStart" ${chk.ok && (!onlineParty() || SOC.party.leader === SOC.me) ? '' : 'disabled'}>${onlineParty() ? (SOC.party.leader === SOC.me ? `Set out with the party (${SOC.party.members.length})` : 'Waiting for the leader') : 'Set out'}</button></div>
       ${chk.ok ? '' : `<p class="down" style="margin:6px 0 0;font-size:13px">Fix your deck first: it ${chk.problems.join(', ')}.</p>`}
       <p class="savenote" style="margin:8px 0 0">Equipped gear and your deck are safe. Only the loot sack is at risk: die and it's gone. Extract at the row-7 campfire (there's always one) to keep 75%, at any later campfire to keep half, or kill the boss to keep it all. Anything you order from a merchant is paid from the bank and waits in your stash, even if you die.</p>
       <details style="margin-top:8px;font-size:13px;color:#d6cab6"><summary style="cursor:pointer;color:var(--text);font-weight:600">How a run works</summary>
@@ -845,6 +850,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     $('selLevel').onchange = () => save();
     lvlInfo();
     $('btnStart').onclick = startRun;
+    $('btnMapLoot').onclick = () => mapLootModal(mk, +$('selLevel').value);
     $('hubWagon').querySelectorAll('[data-map]').forEach(b => b.onclick = () => { profile.last.map = b.dataset.map; save(); renderHub(); });
     const partyNote = () => { const n = 1 + $('hubWagon').querySelectorAll('[data-party]:checked:not(:disabled)').length; $('partyNote').textContent = n > 1 ? `Party of ${n}: enemies get +${Math.round(85 * (n - 1))}% HP, mana and regen and draw ${n - 1} more card${n > 2 ? 's' : ''}. Every hero rolls their own loot; one who falls loses their sack and gets up at half HP.` : 'Solo run. Tick more heroes to bring a party.'; };
     if ($('partyNote')) { $('hubWagon').querySelector('.partypick').addEventListener('change', partyNote); partyNote(); }
@@ -1571,6 +1577,8 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (kind === 'guild') { renderGuild(); guildLoad(); }
     if (kind === 'raid') renderRaid();
   }
+  // body classes for "a big window is open" (the chat box floats beside it)
+  for (const [id, cls] of [['sheet', 'sheetopen'], ['modal', 'modalopen']]) { const el = $(id), sync = () => document.body.classList.toggle(cls, !el.hidden && !$('scrStart').hidden); new MutationObserver(sync).observe(el, { attributes: true, attributeFilter: ['hidden'] }); }
   function closeSheet() { $('sheet').hidden = true; renderTownBar(); cv.focus({ preventScroll: true }); }
   $('sheetClose').addEventListener('click', closeSheet);
   $('sheet').addEventListener('click', (ev) => { if (ev.target === $('sheet')) closeSheet(); });
@@ -2252,7 +2260,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     });
   }
   function unitHtml(a) {
-    const isNow = (cb.raid && a.isPlayer ? cb.canAct(a) : cb.current === a) && !cb.over, targetable = (cb.duel ? a.isPlayer && a !== hero() : !a.isPlayer) && a.hp > 0 && selected && CARDS[selected.key].target === 'enemy';
+    const isNow = (cb.raid && a.isPlayer ? cb.canAct(a) : cb.current === a) && !cb.over, targetable = a.hp > 0 && !!selected && ((CARDS[selected.key].target === 'enemy' && (cb.duel ? a.isPlayer && a !== hero() : !a.isPlayer)) || (CARDS[selected.key].target === 'ally' && a.isPlayer && !cb.duel));
     const pct = Math.max(0, 100 * a.hp / a.maxHp), ini = cb.initiative(a);
     const sub = a.isPlayer ? (cb.raid ? "" : `Init ${ini}`) : `${a.tier === 'Elite' || a.tier === 'Boss' ? a.tier + ' &middot; ' : ''}${a.type} &middot; weak ${a.weakTo} &middot; Init ${ini}`;
     return `<div class="unit ${isNow ? 'active' : ''} ${a.isPlayer && cb.partySize > 1 && a === viewHero && !isNow ? 'viewing' : ''} ${a.hp <= 0 ? 'dead' : ''} ${targetable ? 'targetable' : ''}" data-id="${a.id}" ${targetable ? 'role="button" tabindex="0"' : ''}>
@@ -2319,10 +2327,10 @@ body.aiming { cursor: grabbing; user-select: none; }
       const d0 = cb.card(c), ec = d0.cost != null ? cb.costOf(hp, d0, c) : null, lt = cb.liveText(hp, d0), d = (ec != null && ec !== d0.cost) || lt !== d0.text ? Object.assign(Object.create(d0), { cost: ec != null ? ec : d0.cost, text: lt }) : d0;
       const chk = myTurn ? cb.canPlay(c, hp) : { ok: false, why: cb.over ? 'Fight over' : 'Not your turn' }, face = cardFace(d);
       const n = hp.hand.length, k = hp.hand.indexOf(c), mid = (n - 1) / 2, rot = (k - mid) * Math.min(5, 26 / Math.max(1, n)), off = Math.abs(k - mid) ** 1.6 * 4;
-      if (face) return `<button class="${cardCls(d)} ${selected && selected.uid === c.uid ? 'selected' : ''}" style="${cardVars(d)};--rot:${rot.toFixed(1)};--off:${off.toFixed(1)};--z:${k + 1}" data-uid="${c.uid}" ${chk.ok && !busy ? '' : 'disabled'} title="${chk.ok ? (d.target === 'enemy' ? 'Single enemy' : d.target === 'all' ? 'All enemies' : 'Self') : esc(chk.why)}" aria-label="${esc(d.name + ', ' + d.cost + ' mana: ' + d.text)}">${face}</button>`;
+      if (face) return `<button class="${cardCls(d)} ${selected && selected.uid === c.uid ? 'selected' : ''}" style="${cardVars(d)};--rot:${rot.toFixed(1)};--off:${off.toFixed(1)};--z:${k + 1}" data-uid="${c.uid}" ${chk.ok && !busy ? '' : 'disabled'} title="${chk.ok ? (d.target === 'enemy' ? 'Single enemy' : d.target === 'all' ? 'All enemies' : d.target === 'ally' ? 'Ally' : 'Self') : esc(chk.why)}" aria-label="${esc(d.name + ', ' + d.cost + ' mana: ' + d.text)}">${face}</button>`;
       return `<button class="card ${d.type === 'Status' ? 'status' : ''} ${selected && selected.uid === c.uid ? 'selected' : ''}" style="--rc:${RC[d.rarity]}" data-uid="${c.uid}" ${chk.ok && !busy ? '' : 'disabled'} title="${chk.ok ? '' : esc(chk.why)}">
         ${d.cost != null ? `<span class="cost">${d.cost}</span>` : ''}<span class="cname">${esc(d.name)}</span><span class="ctype">${d.rarity} ${d.type}${d.dtype && d.dtype !== 'Physical' ? ' · ' + d.dtype : ''}</span>
-        <span class="ctext">${esc(d.text)}</span><span class="cfoot">${chk.ok ? (d.target === 'enemy' ? 'Single enemy' : d.target === 'all' ? 'All enemies' : 'Self') : esc(chk.why)}</span></button>`;
+        <span class="ctext">${esc(d.text)}</span><span class="cfoot">${chk.ok ? (d.target === 'enemy' ? 'Single enemy' : d.target === 'all' ? 'All enemies' : d.target === 'ally' ? 'Ally' : 'Self') : esc(chk.why)}</span></button>`;
     }).join('') || `<span class="hint">${myTurn ? 'No cards in hand.' : ''}</span>`;
     fitCards($('hand'));
     if ($('btnWatch')) $('btnWatch').onclick = () => { watchMine = !watchMine; render(); };
@@ -2438,22 +2446,24 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (!D.moved) { if (Math.hypot(ev.clientX - D.x0, ev.clientY - D.y0) < 10) return; D.moved = true; selected = null;
       const g = D.ghost = document.createElement('div'); g.className = 'dragghost'; g.innerHTML = cardBox(liveD(D.c), 190) || ''; document.body.appendChild(g); fitCards(g);
       D.b.classList.add('dragging'); document.body.classList.add('aiming');
-      if (d.target === 'enemy') for (const u of $('foes').querySelectorAll('.unit')) { const a = cb.actorById(u.dataset.id); if (a && a.hp > 0) u.classList.add('droptgt'); } }
+      if (d.target === 'enemy') for (const u of $('foes').querySelectorAll('.unit')) { const a = cb.actorById(u.dataset.id); if (a && a.hp > 0) u.classList.add('droptgt'); }
+      if (d.target === 'ally' && !cb.duel) for (const u of $('playerSlot').querySelectorAll('.unit')) { const a = cb.actorById(u.dataset.id); if (a && a.hp > 0) u.classList.add('droptgt', 'allytgt'); } }
     D.ghost.style.transform = `translate(${ev.clientX - 95}px, ${ev.clientY - 300}px)`; // card sits above the pointer so the target stays visible
-    const u = document.elementFromPoint(ev.clientX, ev.clientY); const unit = u && u.closest('#foes .unit.droptgt');
-    const tid = d.target === 'enemy' && unit ? unit.dataset.id : null;
-    if (tid !== D.tgt) { D.tgt = tid; for (const x of $('foes').querySelectorAll('.unit.droptgt')) x.classList.toggle('dropover', x.dataset.id === tid); D.ghost.innerHTML = cardBox(liveD(D.c, tid && cb.actorById(tid)), 190) || ''; fitCards(D.ghost); }
-    if (d.target !== 'enemy') { const armed = ev.clientY < $('hand').getBoundingClientRect().top - 10; if (armed !== D.armed) { D.armed = armed; D.ghost.classList.toggle('armed', armed); } }
+    const u = document.elementFromPoint(ev.clientX, ev.clientY); const unit = u && u.closest('#foes .unit.droptgt, #playerSlot .unit.droptgt');
+    const tid = (d.target === 'enemy' || d.target === 'ally') && unit ? unit.dataset.id : null;
+    if (tid !== D.tgt) { D.tgt = tid; for (const x of document.querySelectorAll('#foes .unit.droptgt, #playerSlot .unit.droptgt')) x.classList.toggle('dropover', x.dataset.id === tid); D.ghost.innerHTML = cardBox(liveD(D.c, tid && cb.actorById(tid)), 190) || ''; fitCards(D.ghost); }
+    if (d.target !== 'enemy' && !(d.target === 'ally' && D.tgt)) { const armed = ev.clientY < $('hand').getBoundingClientRect().top - 10; if (armed !== D.armed) { D.armed = armed; D.ghost.classList.toggle('armed', armed); } }
     else D.ghost.classList.toggle('armed', !!D.tgt);
   });
   document.addEventListener('pointerup', () => {
     if (!drag) return; const D = drag; drag = null; if (!D.moved) return;
     eatClick = true; setTimeout(() => { eatClick = false; }, 0);
     if (D.ghost) D.ghost.remove(); D.b.classList.remove('dragging'); document.body.classList.remove('aiming');
-    for (const x of $('foes').querySelectorAll('.droptgt')) x.classList.remove('droptgt', 'dropover');
+    for (const x of document.querySelectorAll('.droptgt')) x.classList.remove('droptgt', 'dropover', 'allytgt');
     if (!cb || busy || !hero().hand.includes(D.c) || !cb.canPlay(D.c, hero()).ok) return render();
     const d = cb.card(D.c);
     if (d.target === 'enemy') { if (D.tgt) playCard(D.c, D.tgt); else render(); }
+    else if (d.target === 'ally' && (D.tgt || D.armed)) playCard(D.c, D.tgt || hero().id);
     else if (D.armed) playCard(D.c, cb.alive()[0] && cb.alive()[0].id); else render();
   });
   // click-to-select mode: hovering a target updates the selected card's numbers too
@@ -2467,12 +2477,14 @@ body.aiming { cursor: grabbing; user-select: none; }
     const c = hero().hand.find(x => x.uid === b.dataset.uid); if (!c) return;
     const d = CARDS[c.key];
     if (d.target === 'enemy' && cb.alive().length > 1) { selected = (selected && selected.uid === c.uid) ? null : c; render(); return; }
-    selected = null; const tgt = cb.alive()[0] && cb.alive()[0].id;
+    if (d.target === 'ally' && !cb.duel && cb.alivePlayers().length > 1) { selected = (selected && selected.uid === c.uid) ? null : c; render(); return; } // pick which hero to heal
+    selected = null; const tgt = d.target === 'ally' ? hero().id : cb.alive()[0] && cb.alive()[0].id;
     if (cb.myMi != null) { b.disabled = true; netAct({ t: 'play', uid: c.uid, tgt }); return; }
     cb.play(c.uid, tgt); render(true); if (cb.over) combatOver();
   });
   function pickTarget(id) { if (!selected) return; playCard(selected, id); }
   $('foes').addEventListener('click', (ev) => { const u = ev.target.closest('.unit.targetable'); if (u) pickTarget(u.dataset.id); });
+  $('playerSlot').addEventListener('click', (ev) => { const u = ev.target.closest('.unit.targetable'); if (u) pickTarget(u.dataset.id); });
   $('foes').addEventListener('keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('.unit.targetable')) { ev.preventDefault(); pickTarget(ev.target.dataset.id); } });
   document.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape') {

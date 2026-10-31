@@ -567,6 +567,11 @@ body.aiming { cursor: grabbing; user-select: none; }
   [data-cardinfo] .card, [data-cardinfo].item { cursor: pointer; }
   .cxcod { cursor: pointer; } .cxcod:hover { background: rgba(255,255,255,.06); }
   .bzacts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; } .bzacts input { width: 90px; } #tbShop.primary { border-color: var(--accent); color: var(--accent); }
+  .maploot { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; max-height: 64vh; overflow: auto; } .maploot h4 { color: var(--accent); margin: 6px 0 4px; } .mlslot { font-size: 13.5px; margin: 3px 0; } [data-cxcard].cardrow { cursor: pointer; }
+  #playerSlot .unit.targetable, .unit.allytgt { border-color: #7fd36a; background: rgba(127,211,106,.08); cursor: pointer; } #playerSlot .unit.dropover { background: rgba(127,211,106,.2); }
+  /* chat stays usable beside the big windows (link items and cards into it) */
+  @media (min-width: 1000px) { body.sheetopen #townWrap #chatBox, body.modalopen #townWrap #chatBox { position: fixed; left: 12px; bottom: 12px; width: 300px; z-index: 21; background: rgba(12,10,8,.94); border: 1px solid var(--line); border-radius: 8px; padding: 6px; }
+    body.sheetopen .sheet { padding-left: 330px; } body.modalopen .modal { padding-left: 330px; } }
 </style>
 </head>
 <body>
@@ -701,6 +706,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.
 (function (root) {
 'use strict';
 const DATA = (typeof module !== 'undefined' && module.exports) ? null : root.CB_DATA;
+const GEN_OPS = {}; // generated cards' effect lists by key (ranked versions can tweak them)
 
 // ---------------- RNG ----------------
 function makeRng(seed) {
@@ -1324,6 +1330,7 @@ for (const g of GEN) {
   card(key, { id: g.id, cls: g.cls, name: g.name, rarity: g.rarity, type: g.type === 'Power' ? 'Power' : g.type, cost: unplayable ? null : g.cost, target: g.target, dtype: g.dtype || (g.type === 'Attack' ? 'Physical' : undefined),
     text: g.text, exhaust: !!g.exhaust, retain: playable && g.ops.some(o => o.op === 'retain'), designOnly: !playable, onDraw: onDraw ? onDraw.ops : null,
     play: playable ? (cb, t) => runOps(cb, t, g.ops, g.name) : null, tags: playable ? genTags(g.ops) : {} });
+  if (playable) GEN_OPS[key] = g.ops;
 }
 // run a generated card's effects; t = the chosen enemy (or null)
 function runOps(cb, t, ops, label) {
@@ -1703,7 +1710,8 @@ class Combat {
     const def = POWERS[key]; if (def && def.onPlay) { const was = this.player; this.player = p; def.onPlay(this, p, pw); this.player = was; }
     if (!fromAura && key !== 'aura_mastery' && this.has(p, 'aura_mastery')) for (const a of this.allies()) if (a !== p) this.addPower(a, key, name, text, true);
   }
-  loseHp(p, n, label) { const b0 = p.hp; p.hp = Math.max(1, p.hp - n); if (p.debtUser) p.bloodDebt += Math.round((b0 - p.hp) * (this.has(p, 'pay_in_blood') ? 1.5 : 1)); p.dmgRound += b0 - p.hp; this.say('player', `${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${n} HP (${label}). HP ${p.hp}/${p.maxHp}.`); this.fire(p, 'loseHp'); }
+  // paying HP can kill you (Oct 31): the card still finishes, then you fall. Divine Intervention-style 'cannot fall' still holds at 1
+  loseHp(p, n, label) { const b0 = p.hp; p.hp = (p.until && p.until.noDie) || this.hasTimed(p, 'noDie') ? Math.max(1, p.hp - n) : Math.max(0, p.hp - n); if (p.debtUser) p.bloodDebt += Math.round((b0 - p.hp) * (this.has(p, 'pay_in_blood') ? 1.5 : 1)); p.dmgRound += b0 - p.hp; this.say('player', `${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${n} HP (${label}). HP ${p.hp}/${p.maxHp}.`); this.fire(p, 'loseHp'); if (p.hp <= 0) { if (this._playing) this._pendingDeath = p; else this.onDeath(p); } }
   cleanse(p, n) { let left = n, removed = 0; for (const k of ['vulnerable', 'weak', 'bleed', 'poison', 'burn', 'slow', 'chill']) if (left > 0 && p[k]) { removed += p[k]; p[k] = 0; left--; } if (left > 0) p.disarmNext = false; this.say('player', removed ? `${this.who(p)}: debuffs removed.` : 'No debuffs to remove.'); this.fire(p, 'onCleanse', removed); }
   powerHit(p, e, n, label, dtype, kind) {
     const keep = [this._playing, this.player, this._rankMult, this._attackMult, this._skillMult, this._cmult];
@@ -2155,7 +2163,8 @@ class Combat {
     if (!this.canPlay(c).ok) return false;
     let tgt = null;
     if (d.target === 'enemy') { const pool = this.alive().filter(x => !x.stealth); tgt = pool.find(e => e.id === targetId) || pool[0]; if (!tgt) return false; }
-    const paid = this.costOf(p, d, c); p.mana -= paid; p.hand.splice(idx, 1); this.stats.cardsPlayed++; this._lastTarget = tgt; this._forced = 0; this._paid = paid; this._spentAll = null;
+    else if (d.target === 'ally') tgt = this.allies().find(a => a.id === targetId) || p; // heals aimed at a party member
+    const paid = this.costOf(p, d, c); p.mana -= paid; p.hand.splice(idx, 1); this.stats.cardsPlayed++; this._lastTarget = d.target === 'ally' ? null : tgt; this._forced = 0; this._paid = paid; this._spentAll = null;
     const T = p.turn; let twice = T.twice && (T.twice.type === 'any' || T.twice.type === d.type) ? T.twice : null; if (twice) T.twice = null;
     if (T.nextFree) T.nextFree = false; if (T.nextCost) T.nextCost = 0;
     const echoArc = T.echoArcane && d.type === 'Skill' && d.dtype === 'Arcane'; if (echoArc) T.echoArcane = false;
@@ -2178,7 +2187,7 @@ class Combat {
     const twin = T.twin && d.type === 'Attack' && (d.dtype || 'Physical') === 'Physical'; if (twin) { T.twin = false; times++; }
     for (let i = 0; i < times && !this.over; i++) {
       if (storm) { for (const e of this.alive()) if (!this.over) d.play(this, e); continue; }
-      if (tgt && tgt.hp <= 0) tgt = this.alive()[0]; if (d.target === 'enemy' && !tgt) break;
+      if (tgt && tgt.hp <= 0 && d.target !== 'ally') tgt = this.alive()[0]; if (d.target === 'enemy' && !tgt) break;
       if (twin && i === times - 1) { const was = this._playing; this._playing = Object.assign(Object.create(d), { dtype: 'Holy' }); d.play(this, tgt); this._playing = was; } else d.play(this, tgt);
       if (T.sweep > 0 && d.type === 'Attack' && d.target === 'enemy' && i === 0) { const o2 = this.alive().find(x => x !== tgt); if (o2) { T.sweep--; this.say('player', `Sweeping Strikes: ${d.name} also hits ${o2.name}.`); d.play(this, o2); } }
     }
@@ -2191,7 +2200,7 @@ class Combat {
     if (d.type === 'Skill' && d.tags.dmg && this.has(p, 'elemental_memory')) {
       const SEC = { fireball: [['dot', 'burn', 3]], pyroblast: [['dot', 'burn', 6]], ice_bolt: [['chill', 4]], blizzard: [['chill', 4]], frostbolt: [['regen', 5]] };
       const mine = SEC[d.key] || (GEN_SEC[d.name] || []);
-      if (p.memSec && p.memName !== d.name && tgt && tgt.hp > 0) { for (const s of p.memSec) { if (s[0] === 'dot') this.applyDot(tgt, s[1], s[2]); if (s[0] === 'chill') this.applyChill(tgt, s[1]); if (s[0] === 'debuff') tgt[s[1]] = (tgt[s[1]] || 0) + s[2]; if (s[0] === 'regen') (tgt.regenDown = tgt.regenDown || []).push({ n: s[1], turns: 2 }); } this.say('player', `Elemental Memory: ${p.memName}'s effect carries over.`); }
+      if (p.memSec && p.memName !== d.name && tgt && tgt.hp > 0 && d.target !== 'ally') { for (const s of p.memSec) { if (s[0] === 'dot') this.applyDot(tgt, s[1], s[2]); if (s[0] === 'chill') this.applyChill(tgt, s[1]); if (s[0] === 'debuff') tgt[s[1]] = (tgt[s[1]] || 0) + s[2]; if (s[0] === 'regen') (tgt.regenDown = tgt.regenDown || []).push({ n: s[1], turns: 2 }); } this.say('player', `Elemental Memory: ${p.memName}'s effect carries over.`); }
       if (mine.length) { p.memSec = mine; p.memName = d.name; }
     }
     if (d.type === 'Attack' || d.type === 'Skill') p.prevType = d.type;
@@ -2199,6 +2208,7 @@ class Combat {
     if (this._skillMult !== 1) p.nextSkillMult = 1;
     this._playing = null; this._rankMult = 1; this._attackMult = 1; this._skillMult = 1; this._spentAll = null;
     (d.exhaust ? p.exhaust : p.discard).push(c);
+    if (this._pendingDeath) { const q = this._pendingDeath; this._pendingDeath = null; if (q.hp <= 0 && !q.dead) { this.say('loss', `${q.name} paid with their last HP.`); this.onDeath(q); } }
     return true;
   }
 
@@ -2384,8 +2394,12 @@ function rankedCard(key, rank) {
     v.mult = 1 + (d.rarity === 'Blue' || d.rarity === 'Gold' ? 0.08 : 0.10) * rank;
     v.text = d.text.replace(/\b(\d+)(?!%)\b/g, (m, n) => +n >= 8 ? String(Math.round(n * v.mult)) : m);
   } else { v.mult = 1; if (d.cost != null) v.cost = Math.max(Math.ceil(d.cost * 0.6), d.cost - rank); }
+  // cards whose ranks add Strength instead (Oct 31): Bloodlust +5 Strength per rank
+  const sp = RANK_STR[key], g = sp && GEN_OPS[key];
+  if (g) { const ops = g.map(o => o.op === 'str' ? Object.assign({}, o, { n: o.n + sp * rank }) : o); v.text = d.text.replace(/Gain (\d+) Strength/, (m, n) => `Gain ${+n + sp * rank} Strength`); v.play = (cb, t) => runOps(cb, t, ops, d.name); }
   return v;
 }
+const RANK_STR = { bloodlust: 5 };
 function cardPool(cls) { return Object.keys(C).filter(k => C[k].cls === cls && !C[k].designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(C[k].rarity)); }
 // Card drops: normal kills sometimes drop a card; elites always drop a Green or better; the boss drops two Blue or Gold.
 const CARD_DROPS = {
@@ -2451,7 +2465,10 @@ function rollDrops(data, rng, enemyKey, level, luck, cls) {
 // Oct 31: the Rogue's poison cards are Attacks, so they scale with Strength (poison stacks scale with Strength too, see applyDot)
 for (const k of ['envenom', 'plague_bloom', 'toxic_cloud', 'venom_vial', 'fester', 'crippling_poison', 'mind_numbing_poison', 'deadly_toxin', 'wound_poison', 'corrosive_toxin', 'draining_venom', 'poison_nova']) if (C[k]) { C[k].type = 'Attack'; if (C[k].dtype == null) C[k].dtype = k === 'poison_nova' ? 'Nature' : 'Physical'; }
 if (C.seismic_slam) { C.seismic_slam.cost = 0; C.seismic_slam.text = 'Deal damage to all enemies equal to 50% of your current mana. Your mana is not spent.'; }
-if (C.mana_gem) C.mana_gem.cost = 0; // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
+if (C.mana_gem) C.mana_gem.cost = 0;
+// Oct 31: Lay on Hands and Mend Wounds can be aimed at any hero in the party (yourself if you play them solo)
+if (C.mend_wounds) Object.assign(C.mend_wounds, { target: 'ally', text: 'Heal an ally (or yourself) for 8 HP.', play: (cb, t) => cb.heal(t && t.isPlayer && t.hp > 0 ? t : cb.player, 8, 'Mend Wounds') });
+if (C.lay_on_hands) Object.assign(C.lay_on_hands, { target: 'ally', text: 'Heal an ally (or yourself) for 30% of their total HP. Exhaust.', play: (cb, t) => { const a = t && t.isPlayer && t.hp > 0 ? t : cb.player; cb.heal(a, Math.round(a.maxHp * 0.3), 'Lay on Hands'); } }); // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
 const API = { CARDS_VERSION: 2, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -2479,11 +2496,13 @@ const SLOTS = ['Weapon', 'Off-hand', 'Helm', 'Amulet', 'Cloak', 'Chest', 'Bracer
 
 // map rules (Oct 31): every row has 3 to 5 nodes, at most 3 rows have only 3, at least 5 rows have exactly 4;
 // 5 or 6 shrines; never more than 4 fights (incl. elites) in a row along any path; 10% of maps hide one Enraged elite
-const MAP_RULES = { minRow: 3, maxThreeRows: 3, minFourRows: 5, minShrines: 5, maxShrines: 6, maxFightRun: 4, enragedChance: 0.1 };
+const MAP_RULES = { minRow: 3, maxThreeRows: 3, minFourRows: 5, maxEdgeCol: 11, minShrines: 5, maxShrines: 6, maxFightRun: 4, enragedChance: 0.1 };
 function rowCounts(nodes) { const n = {}; for (let r = 1; r <= ROWS; r++) n[r] = 0; for (const x of Object.values(nodes)) if (x.row >= 1 && x.row <= ROWS) n[x.row]++; return n; }
 function topologyOk(nodes) {
   const n = rowCounts(nodes), v = Object.values(n);
   if (v.some(k => k < MAP_RULES.minRow) || v.filter(k => k === 3).length > MAP_RULES.maxThreeRows || v.filter(k => k === 4).length < MAP_RULES.minFourRows) return false;
+  const inCol = (c) => Object.values(nodes).filter(x => x.row >= 1 && x.row <= ROWS && x.col === c).length;
+  if (inCol(0) > MAP_RULES.maxEdgeCol || inCol(COLS - 1) > MAP_RULES.maxEdgeCol) return false; // the far left and right columns: 11 nodes at most
   const all = Object.values(nodes).filter(x => x.row >= 1 && x.row <= ROWS);
   return all.every(x => (x.row === ROWS || x.next.length) && (x.row === 1 || all.some(p => p.row === x.row - 1 && p.next.includes(x.id))));
 }
@@ -2502,8 +2521,8 @@ function repairRows(rng, nodes) {
     }
     return false;
   };
-  const tryRemove = (r) => {
-    for (const c of shuffle([0, 1, 2, 3, 4].filter(c => has(r, c)), rng)) {
+  const tryRemove = (r, only) => {
+    for (const c of shuffle([0, 1, 2, 3, 4].filter(c => has(r, c) && (only == null || c === only)), rng)) {
       const n = nodes[id(r, c)], parents = Object.values(nodes).filter(p => p.next.includes(n.id));
       const kidsOk = n.next.every(k => Object.values(nodes).some(p => p !== n && p.next.includes(k)));
       if (parents.every(p => p.next.length >= 2) && kidsOk && (r !== 1 || rowCounts(nodes)[1] > MAP_RULES.minRow)) { for (const p of parents) p.next = p.next.filter(k => k !== n.id); delete nodes[n.id]; return true; }
@@ -2516,6 +2535,14 @@ function repairRows(rng, nodes) {
     if (three.length > MAP_RULES.maxThreeRows) { if (!shuffle(three, rng).some(r => tryAdd(r))) break; continue; }
     if (four.length < MAP_RULES.minFourRows) { if (shuffle(five, rng).some(r => tryRemove(r))) continue; if (shuffle(three, rng).some(r => tryAdd(r))) continue; break; }
     break;
+  }
+  // far left / far right columns: at most 11 nodes each (take nodes out of rows that can spare one)
+  for (const c of [0, COLS - 1]) for (let g = 0; g < 20; g++) {
+    const n = rowCounts(nodes), col = Object.values(nodes).filter(x => x.col === c && x.row >= 1 && x.row <= ROWS);
+    if (col.length <= MAP_RULES.maxEdgeCol) break;
+    const threes = Object.values(n).filter(k => k === 3).length, fours = Object.values(n).filter(k => k === 4).length;
+    const rows = shuffle(col.map(x => x.row), rng).sort((a, b) => n[b] - n[a]).filter(r => n[r] === 5 || (n[r] === 4 && threes < MAP_RULES.maxThreeRows && fours > MAP_RULES.minFourRows));
+    if (!rows.some(r => tryRemove(r, c))) break;
   }
 }
 function generateMap(rng, data, partySize, mapKey) {
@@ -3136,7 +3163,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       <p class="savenote" id="lvlInfo"></p>
       ${onlineParty() ? onlineWagonHtml() : `<fieldset class="partypick"><legend>Party (play them all yourself, in Initiative order)</legend>${heroKeys().map(k => `<label><input type="checkbox" data-party="${k}" ${k === heroKey ? 'checked disabled' : (profile.last.party || []).includes(k) ? 'checked' : ''}> ${esc(profile.chars[k].name)} <span class="muted">(${profile.chars[k].cls})</span></label>`).join('')}</fieldset>
       <p class="savenote" id="partyNote" style="margin:4px 0 0"></p>`}
-      <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn primary" id="btnStart" ${chk.ok && (!onlineParty() || SOC.party.leader === SOC.me) ? '' : 'disabled'}>${onlineParty() ? (SOC.party.leader === SOC.me ? `Set out with the party (${SOC.party.members.length})` : 'Waiting for the leader') : 'Set out'}</button></div>
+      <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn" id="btnMapLoot" title="Everything this map can drop">Map loot</button><button class="btn primary" id="btnStart" ${chk.ok && (!onlineParty() || SOC.party.leader === SOC.me) ? '' : 'disabled'}>${onlineParty() ? (SOC.party.leader === SOC.me ? `Set out with the party (${SOC.party.members.length})` : 'Waiting for the leader') : 'Set out'}</button></div>
       ${chk.ok ? '' : `<p class="down" style="margin:6px 0 0;font-size:13px">Fix your deck first: it ${chk.problems.join(', ')}.</p>`}
       <p class="savenote" style="margin:8px 0 0">Equipped gear and your deck are safe. Only the loot sack is at risk: die and it's gone. Extract at the row-7 campfire (there's always one) to keep 75%, at any later campfire to keep half, or kill the boss to keep it all. Anything you order from a merchant is paid from the bank and waits in your stash, even if you die.</p>
       <details style="margin-top:8px;font-size:13px;color:#d6cab6"><summary style="cursor:pointer;color:var(--text);font-weight:600">How a run works</summary>
@@ -3149,6 +3176,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     $('selLevel').onchange = () => save();
     lvlInfo();
     $('btnStart').onclick = startRun;
+    $('btnMapLoot').onclick = () => mapLootModal(mk, +$('selLevel').value);
     $('hubWagon').querySelectorAll('[data-map]').forEach(b => b.onclick = () => { profile.last.map = b.dataset.map; save(); renderHub(); });
     const partyNote = () => { const n = 1 + $('hubWagon').querySelectorAll('[data-party]:checked:not(:disabled)').length; $('partyNote').textContent = n > 1 ? `Party of ${n}: enemies get +${Math.round(85 * (n - 1))}% HP, mana and regen and draw ${n - 1} more card${n > 2 ? 's' : ''}. Every hero rolls their own loot; one who falls loses their sack and gets up at half HP.` : 'Solo run. Tick more heroes to bring a party.'; };
     if ($('partyNote')) { $('hubWagon').querySelector('.partypick').addEventListener('change', partyNote); partyNote(); }
@@ -3875,6 +3903,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (kind === 'guild') { renderGuild(); guildLoad(); }
     if (kind === 'raid') renderRaid();
   }
+  // body classes for "a big window is open" (the chat box floats beside it)
+  for (const [id, cls] of [['sheet', 'sheetopen'], ['modal', 'modalopen']]) { const el = $(id), sync = () => document.body.classList.toggle(cls, !el.hidden && !$('scrStart').hidden); new MutationObserver(sync).observe(el, { attributes: true, attributeFilter: ['hidden'] }); }
   function closeSheet() { $('sheet').hidden = true; renderTownBar(); cv.focus({ preventScroll: true }); }
   $('sheetClose').addEventListener('click', closeSheet);
   $('sheet').addEventListener('click', (ev) => { if (ev.target === $('sheet')) closeSheet(); });
@@ -4088,8 +4118,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   }
   document.addEventListener('click', (ev) => {
     if (!ev.shiftKey) return;
-    const a = ev.target.closest('[data-ilink],[data-tip]'); if (!a) return;
-    const it = a.dataset.ilink ? ILINK.get(a.dataset.ilink) : ((typeof TIPS !== 'undefined' && TIPS.get(a.dataset.tip)) || {}).it; if (!it) return;
+    const a = ev.target.closest('[data-ilink],[data-tip],[data-cardinfo],[data-cxcard],[data-dcard]'); if (!a) return;
+    let it = null;
+    if (a.dataset.ilink) it = ILINK.get(a.dataset.ilink);
+    else if (a.dataset.tip) it = ((typeof TIPS !== 'undefined' && TIPS.get(a.dataset.tip)) || {}).it;
+    else if (a.dataset.cardinfo) it = { kind: 'card', key: a.dataset.cardinfo, rank: +a.dataset.cardrank || 0 }; // cards link too (Scribe, deck, Compendium)
+    else if (a.dataset.cxcard) it = { kind: 'card', key: a.dataset.cxcard, rank: 0 };
+    else if (a.dataset.dcard) { const c = profile.chars[heroKey], k = c && [...c.deck, ...c.cards].find(x => x.id === a.dataset.dcard); if (k) it = { kind: 'card', key: k.key, rank: k.rank || 0 }; }
+    if (!it || (it.kind === 'card' && !CARDS[it.key])) return;
     ev.preventDefault(); ev.stopPropagation(); insertLink(it);
   }, true);
   document.addEventListener('click', (ev) => { const a = ev.target.closest('[data-chatlink]'); if (!a) return; const [i, j] = a.dataset.chatlink.split(':').map(Number); const m = SOC.chat[i], l = m && m.items && m.items[j]; if (l && l.it) showLinked(l.it); });
@@ -4412,8 +4448,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793482085242';
-  const CB_BUILD = 'b6ac9471ba'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793484915300';
+  const CB_BUILD = '25f8761d5f'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -5110,6 +5146,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-10-31', items: [
+      ['Wagon', 'New "Map loot" button at the Wagon: every codex, every named card for your class, every gear base by slot, rarity odds and all the monsters of the chosen map.'],
+      ['Combat', 'Paying HP can kill you now: the card still resolves, then you fall (Divine Intervention-style "cannot fall" effects still save you).'],
+      ['Cards', 'Lay on Hands and Mend Wounds can heal any hero in your party: click the card, then the hero (or drag the card onto them).'],
+      ['Cards', 'Bloodlust gains +5 Strength per upgrade rank (30 at +0, 80 at +10).'],
+      ['Maps', 'The far left and far right columns of a map never have more than 11 nodes.'],
+      ['Chat', 'The chat box floats beside open windows (character, Scribe, stash...) so you can link from them. Cards can be linked too: shift-click a card at the Scribe, in your deck or in the Compendium.'],
       ['Gear', 'Max Mana now only rolls on chest armor, and gear can add at most +60 max mana in total (base 20, so 80 is the most). Older items keep their Max Mana, but anything over the cap does nothing; the character sheet says "capped".'],
       ['Bazaar', 'The town grew: walk east down the main street, through the gate, into the round Bazaar. Inside the market square you get a "Set up shop" button: list stash items (up to 12) at your own prices, name your shop and open it.'],
       ['Bazaar', 'An open shop shows a striped sign over your head and keeps you in place (close it to walk again). Others click you and pick Browse shop to buy. Gold and the item change hands right away; the seller has to be online. Listings are kept between visits.'],
@@ -5356,6 +5398,34 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       ${decks ? `<p class="muted" style="font-size:13px">Tinker Pip has ${decks} test decks built around it.</p>` : ''}
       <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal;
+  }
+  // the Wagon's "Map loot" button: everything a map can drop, in one place
+  function mapLootModal(mk, lvl) {
+    const M = DATA.maps[mk], G = DATA.gear, cls = hcls(); if (!M) return;
+    const mobs = Object.entries(DATA.enemies).filter(([k, e]) => (e.map || 'physical') === mk && ['1', '2', '3', 'Elite', 'Boss'].includes(e.tier));
+    const tierOrder = { 1: 0, 2: 1, 3: 2, Elite: 3, Boss: 4 };
+    mobs.sort((a, b) => tierOrder[a[1].tier] - tierOrder[b[1].tier] || a[1].name.localeCompare(b[1].name));
+    const bases = new Map(); for (const [k, e] of mobs) for (const b of e.pool || []) { const x = bases.get(b) || { from: [] }; x.from.push(e.name); bases.set(b, x); }
+    const bySlot = {}; for (const [b, x] of bases) { const bb = G.bases.find(z => z.name === b); const A = bb && G.arche[bb.arch]; const sl = A ? (/Shield|Focus/.test(A.slot) ? 'Off-hand' : /Axe|Sword|Dagger|Mace|Wand|Maul|Warhammer|Staff/.test(A.slot) ? 'Weapon' : A.slot) : 'Other'; (bySlot[sl] = bySlot[sl] || []).push({ b, label: bb ? bb.label : '', from: x.from }); }
+    const cards = []; for (const [k, e] of mobs) for (const x of e.loot || []) if (x.type === 'Card') cards.push({ x, e, key: Object.keys(CARDS).find(q => CARDS[q].name === x.item && CARDS[q].cls === x.cls) });
+    const mine = cards.filter(c => c.x.cls === cls).sort((a, b) => RAR_ORDER[CARDS[b.key] ? CARDS[b.key].rarity : 'White'] - RAR_ORDER[CARDS[a.key] ? CARDS[a.key].rarity : 'White'] || b.x.pct - a.x.pct);
+    const boss = DATA.enemies[M.boss], cx = (boss.loot || []).filter(x => x.type === 'Codex');
+    const drops = (t) => { const d = G.drops[t]; return d ? `${d.rolls} roll${d.rolls > 1 ? 's' : ''}: ${['Purple (Epic)', 'Blue', 'Green', 'White'].filter(r => d.chance[r]).map(r => `${r === 'Purple (Epic)' ? 'Epic' : r} ${d.chance[r]}%`).join(', ')}` : ''; };
+    modal(`<h2>${esc(M.name)} +${lvl}: what drops</h2>
+      <p class="muted" style="margin:0 0 6px">Gear rolls item level ${Math.max(1, 5 * lvl)} to ${5 * lvl + 5}, with a ${esc(M.dropResist || '')} Resistance implicit. Each kill rolls on its own (Luck raises every chance).</p>
+      <div class="maploot">
+        <div><h4>Codexes (boss)</h4>${cx.map(x => `<div class="cardrow" style="--rc:${RC.Codex}"><span class="n" style="color:${CC[x.cls]}">${esc(x.cls)}</span><b>${esc(x.item)}</b><span class="cst">${Math.round(CB.BOSS_CODEX_CHANCE * 100)}% per kill for a ${esc(x.cls)}</span></div>`).join('') || '<span class="muted">None.</span>'}
+          <h4>${esc(cls)} cards (named drops)</h4>${mine.map(c => `<div class="cardrow" style="--rc:${RC[CARDS[c.key] ? CARDS[c.key].rarity : 'White']}" ${c.key ? `data-cxcard="${c.key}" role="button" tabindex="0"` : ''}><span class="n">${c.x.pct}%</span><b>${esc(c.x.item)}</b><span class="cst">${esc(c.e.name)}</span></div>`).join('') || '<span class="muted">None for your class here.</span>'}
+          <p class="muted" style="font-size:12px">Every kill can also roll a random card of your class. ${cards.length - mine.length} more named cards here are for other classes.</p></div>
+        <div><h4>Gear by slot (${bases.size} item bases)</h4>${Object.keys(bySlot).sort().map(sl => `<div class="mlslot"><b>${esc(sl)}</b> ${bySlot[sl].map(x => `<span title="Dropped by ${esc(x.from.join(', '))}">${esc(x.b)}</span>`).join(', ')}</div>`).join('')}
+          <h4>Rarity odds per kill</h4>${['1', '2', '3', 'Elite', 'Boss'].map(t => `<div class="mlslot"><b>${t === 'Elite' || t === 'Boss' ? t : 'Tier ' + t}</b> ${drops(t)}</div>`).join('')}</div>
+        <div><h4>Monsters (${mobs.length})</h4>${mobs.map(([k, e]) => `<div class="mlslot"><span class="muted">${e.tier === 'Elite' || e.tier === 'Boss' ? e.tier : 'T' + e.tier}</span> ${esc(e.name)} <button class="pilebtn" data-mlloot="${k}">Loot</button></div>`).join('')}</div>
+      </div>
+      <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
+    $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal;
+    $('modalBox').querySelectorAll('[data-mlloot]').forEach(b => b.onclick = () => lootModal(b.dataset.mlloot));
+    $('mClose').focus(); $('modalBox').querySelector('.maploot').scrollTop = 0;
+    $('modalBox').querySelectorAll('[data-cxcard]').forEach(b => b.onclick = () => cardDetail(b.dataset.cxcard));
   }
   function renderCodex() {
     const el = $('hpCodex'); if (!el) return;
@@ -6427,7 +6497,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     });
   }
   function unitHtml(a) {
-    const isNow = (cb.raid && a.isPlayer ? cb.canAct(a) : cb.current === a) && !cb.over, targetable = (cb.duel ? a.isPlayer && a !== hero() : !a.isPlayer) && a.hp > 0 && selected && CARDS[selected.key].target === 'enemy';
+    const isNow = (cb.raid && a.isPlayer ? cb.canAct(a) : cb.current === a) && !cb.over, targetable = a.hp > 0 && !!selected && ((CARDS[selected.key].target === 'enemy' && (cb.duel ? a.isPlayer && a !== hero() : !a.isPlayer)) || (CARDS[selected.key].target === 'ally' && a.isPlayer && !cb.duel));
     const pct = Math.max(0, 100 * a.hp / a.maxHp), ini = cb.initiative(a);
     const sub = a.isPlayer ? (cb.raid ? "" : `Init ${ini}`) : `${a.tier === 'Elite' || a.tier === 'Boss' ? a.tier + ' &middot; ' : ''}${a.type} &middot; weak ${a.weakTo} &middot; Init ${ini}`;
     return `<div class="unit ${isNow ? 'active' : ''} ${a.isPlayer && cb.partySize > 1 && a === viewHero && !isNow ? 'viewing' : ''} ${a.hp <= 0 ? 'dead' : ''} ${targetable ? 'targetable' : ''}" data-id="${a.id}" ${targetable ? 'role="button" tabindex="0"' : ''}>
@@ -6494,10 +6564,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       const d0 = cb.card(c), ec = d0.cost != null ? cb.costOf(hp, d0, c) : null, lt = cb.liveText(hp, d0), d = (ec != null && ec !== d0.cost) || lt !== d0.text ? Object.assign(Object.create(d0), { cost: ec != null ? ec : d0.cost, text: lt }) : d0;
       const chk = myTurn ? cb.canPlay(c, hp) : { ok: false, why: cb.over ? 'Fight over' : 'Not your turn' }, face = cardFace(d);
       const n = hp.hand.length, k = hp.hand.indexOf(c), mid = (n - 1) / 2, rot = (k - mid) * Math.min(5, 26 / Math.max(1, n)), off = Math.abs(k - mid) ** 1.6 * 4;
-      if (face) return `<button class="${cardCls(d)} ${selected && selected.uid === c.uid ? 'selected' : ''}" style="${cardVars(d)};--rot:${rot.toFixed(1)};--off:${off.toFixed(1)};--z:${k + 1}" data-uid="${c.uid}" ${chk.ok && !busy ? '' : 'disabled'} title="${chk.ok ? (d.target === 'enemy' ? 'Single enemy' : d.target === 'all' ? 'All enemies' : 'Self') : esc(chk.why)}" aria-label="${esc(d.name + ', ' + d.cost + ' mana: ' + d.text)}">${face}</button>`;
+      if (face) return `<button class="${cardCls(d)} ${selected && selected.uid === c.uid ? 'selected' : ''}" style="${cardVars(d)};--rot:${rot.toFixed(1)};--off:${off.toFixed(1)};--z:${k + 1}" data-uid="${c.uid}" ${chk.ok && !busy ? '' : 'disabled'} title="${chk.ok ? (d.target === 'enemy' ? 'Single enemy' : d.target === 'all' ? 'All enemies' : d.target === 'ally' ? 'Ally' : 'Self') : esc(chk.why)}" aria-label="${esc(d.name + ', ' + d.cost + ' mana: ' + d.text)}">${face}</button>`;
       return `<button class="card ${d.type === 'Status' ? 'status' : ''} ${selected && selected.uid === c.uid ? 'selected' : ''}" style="--rc:${RC[d.rarity]}" data-uid="${c.uid}" ${chk.ok && !busy ? '' : 'disabled'} title="${chk.ok ? '' : esc(chk.why)}">
         ${d.cost != null ? `<span class="cost">${d.cost}</span>` : ''}<span class="cname">${esc(d.name)}</span><span class="ctype">${d.rarity} ${d.type}${d.dtype && d.dtype !== 'Physical' ? ' · ' + d.dtype : ''}</span>
-        <span class="ctext">${esc(d.text)}</span><span class="cfoot">${chk.ok ? (d.target === 'enemy' ? 'Single enemy' : d.target === 'all' ? 'All enemies' : 'Self') : esc(chk.why)}</span></button>`;
+        <span class="ctext">${esc(d.text)}</span><span class="cfoot">${chk.ok ? (d.target === 'enemy' ? 'Single enemy' : d.target === 'all' ? 'All enemies' : d.target === 'ally' ? 'Ally' : 'Self') : esc(chk.why)}</span></button>`;
     }).join('') || `<span class="hint">${myTurn ? 'No cards in hand.' : ''}</span>`;
     fitCards($('hand'));
     if ($('btnWatch')) $('btnWatch').onclick = () => { watchMine = !watchMine; render(); };
@@ -6613,22 +6683,24 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (!D.moved) { if (Math.hypot(ev.clientX - D.x0, ev.clientY - D.y0) < 10) return; D.moved = true; selected = null;
       const g = D.ghost = document.createElement('div'); g.className = 'dragghost'; g.innerHTML = cardBox(liveD(D.c), 190) || ''; document.body.appendChild(g); fitCards(g);
       D.b.classList.add('dragging'); document.body.classList.add('aiming');
-      if (d.target === 'enemy') for (const u of $('foes').querySelectorAll('.unit')) { const a = cb.actorById(u.dataset.id); if (a && a.hp > 0) u.classList.add('droptgt'); } }
+      if (d.target === 'enemy') for (const u of $('foes').querySelectorAll('.unit')) { const a = cb.actorById(u.dataset.id); if (a && a.hp > 0) u.classList.add('droptgt'); }
+      if (d.target === 'ally' && !cb.duel) for (const u of $('playerSlot').querySelectorAll('.unit')) { const a = cb.actorById(u.dataset.id); if (a && a.hp > 0) u.classList.add('droptgt', 'allytgt'); } }
     D.ghost.style.transform = `translate(${ev.clientX - 95}px, ${ev.clientY - 300}px)`; // card sits above the pointer so the target stays visible
-    const u = document.elementFromPoint(ev.clientX, ev.clientY); const unit = u && u.closest('#foes .unit.droptgt');
-    const tid = d.target === 'enemy' && unit ? unit.dataset.id : null;
-    if (tid !== D.tgt) { D.tgt = tid; for (const x of $('foes').querySelectorAll('.unit.droptgt')) x.classList.toggle('dropover', x.dataset.id === tid); D.ghost.innerHTML = cardBox(liveD(D.c, tid && cb.actorById(tid)), 190) || ''; fitCards(D.ghost); }
-    if (d.target !== 'enemy') { const armed = ev.clientY < $('hand').getBoundingClientRect().top - 10; if (armed !== D.armed) { D.armed = armed; D.ghost.classList.toggle('armed', armed); } }
+    const u = document.elementFromPoint(ev.clientX, ev.clientY); const unit = u && u.closest('#foes .unit.droptgt, #playerSlot .unit.droptgt');
+    const tid = (d.target === 'enemy' || d.target === 'ally') && unit ? unit.dataset.id : null;
+    if (tid !== D.tgt) { D.tgt = tid; for (const x of document.querySelectorAll('#foes .unit.droptgt, #playerSlot .unit.droptgt')) x.classList.toggle('dropover', x.dataset.id === tid); D.ghost.innerHTML = cardBox(liveD(D.c, tid && cb.actorById(tid)), 190) || ''; fitCards(D.ghost); }
+    if (d.target !== 'enemy' && !(d.target === 'ally' && D.tgt)) { const armed = ev.clientY < $('hand').getBoundingClientRect().top - 10; if (armed !== D.armed) { D.armed = armed; D.ghost.classList.toggle('armed', armed); } }
     else D.ghost.classList.toggle('armed', !!D.tgt);
   });
   document.addEventListener('pointerup', () => {
     if (!drag) return; const D = drag; drag = null; if (!D.moved) return;
     eatClick = true; setTimeout(() => { eatClick = false; }, 0);
     if (D.ghost) D.ghost.remove(); D.b.classList.remove('dragging'); document.body.classList.remove('aiming');
-    for (const x of $('foes').querySelectorAll('.droptgt')) x.classList.remove('droptgt', 'dropover');
+    for (const x of document.querySelectorAll('.droptgt')) x.classList.remove('droptgt', 'dropover', 'allytgt');
     if (!cb || busy || !hero().hand.includes(D.c) || !cb.canPlay(D.c, hero()).ok) return render();
     const d = cb.card(D.c);
     if (d.target === 'enemy') { if (D.tgt) playCard(D.c, D.tgt); else render(); }
+    else if (d.target === 'ally' && (D.tgt || D.armed)) playCard(D.c, D.tgt || hero().id);
     else if (D.armed) playCard(D.c, cb.alive()[0] && cb.alive()[0].id); else render();
   });
   // click-to-select mode: hovering a target updates the selected card's numbers too
@@ -6642,12 +6714,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const c = hero().hand.find(x => x.uid === b.dataset.uid); if (!c) return;
     const d = CARDS[c.key];
     if (d.target === 'enemy' && cb.alive().length > 1) { selected = (selected && selected.uid === c.uid) ? null : c; render(); return; }
-    selected = null; const tgt = cb.alive()[0] && cb.alive()[0].id;
+    if (d.target === 'ally' && !cb.duel && cb.alivePlayers().length > 1) { selected = (selected && selected.uid === c.uid) ? null : c; render(); return; } // pick which hero to heal
+    selected = null; const tgt = d.target === 'ally' ? hero().id : cb.alive()[0] && cb.alive()[0].id;
     if (cb.myMi != null) { b.disabled = true; netAct({ t: 'play', uid: c.uid, tgt }); return; }
     cb.play(c.uid, tgt); render(true); if (cb.over) combatOver();
   });
   function pickTarget(id) { if (!selected) return; playCard(selected, id); }
   $('foes').addEventListener('click', (ev) => { const u = ev.target.closest('.unit.targetable'); if (u) pickTarget(u.dataset.id); });
+  $('playerSlot').addEventListener('click', (ev) => { const u = ev.target.closest('.unit.targetable'); if (u) pickTarget(u.dataset.id); });
   $('foes').addEventListener('keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('.unit.targetable')) { ev.preventDefault(); pickTarget(ev.target.dataset.id); } });
   document.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape') {

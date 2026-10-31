@@ -184,8 +184,14 @@
   }
   document.addEventListener('click', (ev) => {
     if (!ev.shiftKey) return;
-    const a = ev.target.closest('[data-ilink],[data-tip]'); if (!a) return;
-    const it = a.dataset.ilink ? ILINK.get(a.dataset.ilink) : ((typeof TIPS !== 'undefined' && TIPS.get(a.dataset.tip)) || {}).it; if (!it) return;
+    const a = ev.target.closest('[data-ilink],[data-tip],[data-cardinfo],[data-cxcard],[data-dcard]'); if (!a) return;
+    let it = null;
+    if (a.dataset.ilink) it = ILINK.get(a.dataset.ilink);
+    else if (a.dataset.tip) it = ((typeof TIPS !== 'undefined' && TIPS.get(a.dataset.tip)) || {}).it;
+    else if (a.dataset.cardinfo) it = { kind: 'card', key: a.dataset.cardinfo, rank: +a.dataset.cardrank || 0 }; // cards link too (Scribe, deck, Compendium)
+    else if (a.dataset.cxcard) it = { kind: 'card', key: a.dataset.cxcard, rank: 0 };
+    else if (a.dataset.dcard) { const c = profile.chars[heroKey], k = c && [...c.deck, ...c.cards].find(x => x.id === a.dataset.dcard); if (k) it = { kind: 'card', key: k.key, rank: k.rank || 0 }; }
+    if (!it || (it.kind === 'card' && !CARDS[it.key])) return;
     ev.preventDefault(); ev.stopPropagation(); insertLink(it);
   }, true);
   document.addEventListener('click', (ev) => { const a = ev.target.closest('[data-chatlink]'); if (!a) return; const [i, j] = a.dataset.chatlink.split(':').map(Number); const m = SOC.chat[i], l = m && m.items && m.items[j]; if (l && l.it) showLinked(l.it); });

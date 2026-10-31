@@ -137,6 +137,34 @@
       <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal;
   }
+  // the Wagon's "Map loot" button: everything a map can drop, in one place
+  function mapLootModal(mk, lvl) {
+    const M = DATA.maps[mk], G = DATA.gear, cls = hcls(); if (!M) return;
+    const mobs = Object.entries(DATA.enemies).filter(([k, e]) => (e.map || 'physical') === mk && ['1', '2', '3', 'Elite', 'Boss'].includes(e.tier));
+    const tierOrder = { 1: 0, 2: 1, 3: 2, Elite: 3, Boss: 4 };
+    mobs.sort((a, b) => tierOrder[a[1].tier] - tierOrder[b[1].tier] || a[1].name.localeCompare(b[1].name));
+    const bases = new Map(); for (const [k, e] of mobs) for (const b of e.pool || []) { const x = bases.get(b) || { from: [] }; x.from.push(e.name); bases.set(b, x); }
+    const bySlot = {}; for (const [b, x] of bases) { const bb = G.bases.find(z => z.name === b); const A = bb && G.arche[bb.arch]; const sl = A ? (/Shield|Focus/.test(A.slot) ? 'Off-hand' : /Axe|Sword|Dagger|Mace|Wand|Maul|Warhammer|Staff/.test(A.slot) ? 'Weapon' : A.slot) : 'Other'; (bySlot[sl] = bySlot[sl] || []).push({ b, label: bb ? bb.label : '', from: x.from }); }
+    const cards = []; for (const [k, e] of mobs) for (const x of e.loot || []) if (x.type === 'Card') cards.push({ x, e, key: Object.keys(CARDS).find(q => CARDS[q].name === x.item && CARDS[q].cls === x.cls) });
+    const mine = cards.filter(c => c.x.cls === cls).sort((a, b) => RAR_ORDER[CARDS[b.key] ? CARDS[b.key].rarity : 'White'] - RAR_ORDER[CARDS[a.key] ? CARDS[a.key].rarity : 'White'] || b.x.pct - a.x.pct);
+    const boss = DATA.enemies[M.boss], cx = (boss.loot || []).filter(x => x.type === 'Codex');
+    const drops = (t) => { const d = G.drops[t]; return d ? `${d.rolls} roll${d.rolls > 1 ? 's' : ''}: ${['Purple (Epic)', 'Blue', 'Green', 'White'].filter(r => d.chance[r]).map(r => `${r === 'Purple (Epic)' ? 'Epic' : r} ${d.chance[r]}%`).join(', ')}` : ''; };
+    modal(`<h2>${esc(M.name)} +${lvl}: what drops</h2>
+      <p class="muted" style="margin:0 0 6px">Gear rolls item level ${Math.max(1, 5 * lvl)} to ${5 * lvl + 5}, with a ${esc(M.dropResist || '')} Resistance implicit. Each kill rolls on its own (Luck raises every chance).</p>
+      <div class="maploot">
+        <div><h4>Codexes (boss)</h4>${cx.map(x => `<div class="cardrow" style="--rc:${RC.Codex}"><span class="n" style="color:${CC[x.cls]}">${esc(x.cls)}</span><b>${esc(x.item)}</b><span class="cst">${Math.round(CB.BOSS_CODEX_CHANCE * 100)}% per kill for a ${esc(x.cls)}</span></div>`).join('') || '<span class="muted">None.</span>'}
+          <h4>${esc(cls)} cards (named drops)</h4>${mine.map(c => `<div class="cardrow" style="--rc:${RC[CARDS[c.key] ? CARDS[c.key].rarity : 'White']}" ${c.key ? `data-cxcard="${c.key}" role="button" tabindex="0"` : ''}><span class="n">${c.x.pct}%</span><b>${esc(c.x.item)}</b><span class="cst">${esc(c.e.name)}</span></div>`).join('') || '<span class="muted">None for your class here.</span>'}
+          <p class="muted" style="font-size:12px">Every kill can also roll a random card of your class. ${cards.length - mine.length} more named cards here are for other classes.</p></div>
+        <div><h4>Gear by slot (${bases.size} item bases)</h4>${Object.keys(bySlot).sort().map(sl => `<div class="mlslot"><b>${esc(sl)}</b> ${bySlot[sl].map(x => `<span title="Dropped by ${esc(x.from.join(', '))}">${esc(x.b)}</span>`).join(', ')}</div>`).join('')}
+          <h4>Rarity odds per kill</h4>${['1', '2', '3', 'Elite', 'Boss'].map(t => `<div class="mlslot"><b>${t === 'Elite' || t === 'Boss' ? t : 'Tier ' + t}</b> ${drops(t)}</div>`).join('')}</div>
+        <div><h4>Monsters (${mobs.length})</h4>${mobs.map(([k, e]) => `<div class="mlslot"><span class="muted">${e.tier === 'Elite' || e.tier === 'Boss' ? e.tier : 'T' + e.tier}</span> ${esc(e.name)} <button class="pilebtn" data-mlloot="${k}">Loot</button></div>`).join('')}</div>
+      </div>
+      <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
+    $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal;
+    $('modalBox').querySelectorAll('[data-mlloot]').forEach(b => b.onclick = () => lootModal(b.dataset.mlloot));
+    $('mClose').focus(); $('modalBox').querySelector('.maploot').scrollTop = 0;
+    $('modalBox').querySelectorAll('[data-cxcard]').forEach(b => b.onclick = () => cardDetail(b.dataset.cxcard));
+  }
   function renderCodex() {
     const el = $('hpCodex'); if (!el) return;
     el.innerHTML = `<div class="cxtop"><div class="tabs cxtabs" role="tablist">${[['cards', 'Cards'], ['enemies', 'Bestiary & loot'], ['gear', 'Gear bases'], ['codexes', 'Codexes']].map(([k, l]) => `<button role="tab" aria-selected="${CX.tab === k}" data-cxtab="${k}">${l}</button>`).join('')}</div>

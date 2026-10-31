@@ -19,11 +19,13 @@ const SLOTS = ['Weapon', 'Off-hand', 'Helm', 'Amulet', 'Cloak', 'Chest', 'Bracer
 
 // map rules (Oct 31): every row has 3 to 5 nodes, at most 3 rows have only 3, at least 5 rows have exactly 4;
 // 5 or 6 shrines; never more than 4 fights (incl. elites) in a row along any path; 10% of maps hide one Enraged elite
-const MAP_RULES = { minRow: 3, maxThreeRows: 3, minFourRows: 5, minShrines: 5, maxShrines: 6, maxFightRun: 4, enragedChance: 0.1 };
+const MAP_RULES = { minRow: 3, maxThreeRows: 3, minFourRows: 5, maxEdgeCol: 11, minShrines: 5, maxShrines: 6, maxFightRun: 4, enragedChance: 0.1 };
 function rowCounts(nodes) { const n = {}; for (let r = 1; r <= ROWS; r++) n[r] = 0; for (const x of Object.values(nodes)) if (x.row >= 1 && x.row <= ROWS) n[x.row]++; return n; }
 function topologyOk(nodes) {
   const n = rowCounts(nodes), v = Object.values(n);
   if (v.some(k => k < MAP_RULES.minRow) || v.filter(k => k === 3).length > MAP_RULES.maxThreeRows || v.filter(k => k === 4).length < MAP_RULES.minFourRows) return false;
+  const inCol = (c) => Object.values(nodes).filter(x => x.row >= 1 && x.row <= ROWS && x.col === c).length;
+  if (inCol(0) > MAP_RULES.maxEdgeCol || inCol(COLS - 1) > MAP_RULES.maxEdgeCol) return false; // the far left and right columns: 11 nodes at most
   const all = Object.values(nodes).filter(x => x.row >= 1 && x.row <= ROWS);
   return all.every(x => (x.row === ROWS || x.next.length) && (x.row === 1 || all.some(p => p.row === x.row - 1 && p.next.includes(x.id))));
 }
@@ -42,8 +44,8 @@ function repairRows(rng, nodes) {
     }
     return false;
   };
-  const tryRemove = (r) => {
-    for (const c of shuffle([0, 1, 2, 3, 4].filter(c => has(r, c)), rng)) {
+  const tryRemove = (r, only) => {
+    for (const c of shuffle([0, 1, 2, 3, 4].filter(c => has(r, c) && (only == null || c === only)), rng)) {
       const n = nodes[id(r, c)], parents = Object.values(nodes).filter(p => p.next.includes(n.id));
       const kidsOk = n.next.every(k => Object.values(nodes).some(p => p !== n && p.next.includes(k)));
       if (parents.every(p => p.next.length >= 2) && kidsOk && (r !== 1 || rowCounts(nodes)[1] > MAP_RULES.minRow)) { for (const p of parents) p.next = p.next.filter(k => k !== n.id); delete nodes[n.id]; return true; }
@@ -56,6 +58,14 @@ function repairRows(rng, nodes) {
     if (three.length > MAP_RULES.maxThreeRows) { if (!shuffle(three, rng).some(r => tryAdd(r))) break; continue; }
     if (four.length < MAP_RULES.minFourRows) { if (shuffle(five, rng).some(r => tryRemove(r))) continue; if (shuffle(three, rng).some(r => tryAdd(r))) continue; break; }
     break;
+  }
+  // far left / far right columns: at most 11 nodes each (take nodes out of rows that can spare one)
+  for (const c of [0, COLS - 1]) for (let g = 0; g < 20; g++) {
+    const n = rowCounts(nodes), col = Object.values(nodes).filter(x => x.col === c && x.row >= 1 && x.row <= ROWS);
+    if (col.length <= MAP_RULES.maxEdgeCol) break;
+    const threes = Object.values(n).filter(k => k === 3).length, fours = Object.values(n).filter(k => k === 4).length;
+    const rows = shuffle(col.map(x => x.row), rng).sort((a, b) => n[b] - n[a]).filter(r => n[r] === 5 || (n[r] === 4 && threes < MAP_RULES.maxThreeRows && fours > MAP_RULES.minFourRows));
+    if (!rows.some(r => tryRemove(r, c))) break;
   }
 }
 function generateMap(rng, data, partySize, mapKey) {

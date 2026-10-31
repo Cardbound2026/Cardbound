@@ -3,6 +3,7 @@
 (function (root) {
 'use strict';
 const DATA = (typeof module !== 'undefined' && module.exports) ? null : root.CB_DATA;
+const GEN_OPS = {}; // generated cards' effect lists by key (ranked versions can tweak them)
 
 // ---------------- RNG ----------------
 function makeRng(seed) {
@@ -626,6 +627,7 @@ for (const g of GEN) {
   card(key, { id: g.id, cls: g.cls, name: g.name, rarity: g.rarity, type: g.type === 'Power' ? 'Power' : g.type, cost: unplayable ? null : g.cost, target: g.target, dtype: g.dtype || (g.type === 'Attack' ? 'Physical' : undefined),
     text: g.text, exhaust: !!g.exhaust, retain: playable && g.ops.some(o => o.op === 'retain'), designOnly: !playable, onDraw: onDraw ? onDraw.ops : null,
     play: playable ? (cb, t) => runOps(cb, t, g.ops, g.name) : null, tags: playable ? genTags(g.ops) : {} });
+  if (playable) GEN_OPS[key] = g.ops;
 }
 // run a generated card's effects; t = the chosen enemy (or null)
 function runOps(cb, t, ops, label) {
@@ -1005,7 +1007,8 @@ class Combat {
     const def = POWERS[key]; if (def && def.onPlay) { const was = this.player; this.player = p; def.onPlay(this, p, pw); this.player = was; }
     if (!fromAura && key !== 'aura_mastery' && this.has(p, 'aura_mastery')) for (const a of this.allies()) if (a !== p) this.addPower(a, key, name, text, true);
   }
-  loseHp(p, n, label) { const b0 = p.hp; p.hp = Math.max(1, p.hp - n); if (p.debtUser) p.bloodDebt += Math.round((b0 - p.hp) * (this.has(p, 'pay_in_blood') ? 1.5 : 1)); p.dmgRound += b0 - p.hp; this.say('player', `${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${n} HP (${label}). HP ${p.hp}/${p.maxHp}.`); this.fire(p, 'loseHp'); }
+  // paying HP can kill you (Oct 31): the card still finishes, then you fall. Divine Intervention-style 'cannot fall' still holds at 1
+  loseHp(p, n, label) { const b0 = p.hp; p.hp = (p.until && p.until.noDie) || this.hasTimed(p, 'noDie') ? Math.max(1, p.hp - n) : Math.max(0, p.hp - n); if (p.debtUser) p.bloodDebt += Math.round((b0 - p.hp) * (this.has(p, 'pay_in_blood') ? 1.5 : 1)); p.dmgRound += b0 - p.hp; this.say('player', `${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${n} HP (${label}). HP ${p.hp}/${p.maxHp}.`); this.fire(p, 'loseHp'); if (p.hp <= 0) { if (this._playing) this._pendingDeath = p; else this.onDeath(p); } }
   cleanse(p, n) { let left = n, removed = 0; for (const k of ['vulnerable', 'weak', 'bleed', 'poison', 'burn', 'slow', 'chill']) if (left > 0 && p[k]) { removed += p[k]; p[k] = 0; left--; } if (left > 0) p.disarmNext = false; this.say('player', removed ? `${this.who(p)}: debuffs removed.` : 'No debuffs to remove.'); this.fire(p, 'onCleanse', removed); }
   powerHit(p, e, n, label, dtype, kind) {
     const keep = [this._playing, this.player, this._rankMult, this._attackMult, this._skillMult, this._cmult];
@@ -1457,7 +1460,8 @@ class Combat {
     if (!this.canPlay(c).ok) return false;
     let tgt = null;
     if (d.target === 'enemy') { const pool = this.alive().filter(x => !x.stealth); tgt = pool.find(e => e.id === targetId) || pool[0]; if (!tgt) return false; }
-    const paid = this.costOf(p, d, c); p.mana -= paid; p.hand.splice(idx, 1); this.stats.cardsPlayed++; this._lastTarget = tgt; this._forced = 0; this._paid = paid; this._spentAll = null;
+    else if (d.target === 'ally') tgt = this.allies().find(a => a.id === targetId) || p; // heals aimed at a party member
+    const paid = this.costOf(p, d, c); p.mana -= paid; p.hand.splice(idx, 1); this.stats.cardsPlayed++; this._lastTarget = d.target === 'ally' ? null : tgt; this._forced = 0; this._paid = paid; this._spentAll = null;
     const T = p.turn; let twice = T.twice && (T.twice.type === 'any' || T.twice.type === d.type) ? T.twice : null; if (twice) T.twice = null;
     if (T.nextFree) T.nextFree = false; if (T.nextCost) T.nextCost = 0;
     const echoArc = T.echoArcane && d.type === 'Skill' && d.dtype === 'Arcane'; if (echoArc) T.echoArcane = false;
@@ -1480,7 +1484,7 @@ class Combat {
     const twin = T.twin && d.type === 'Attack' && (d.dtype || 'Physical') === 'Physical'; if (twin) { T.twin = false; times++; }
     for (let i = 0; i < times && !this.over; i++) {
       if (storm) { for (const e of this.alive()) if (!this.over) d.play(this, e); continue; }
-      if (tgt && tgt.hp <= 0) tgt = this.alive()[0]; if (d.target === 'enemy' && !tgt) break;
+      if (tgt && tgt.hp <= 0 && d.target !== 'ally') tgt = this.alive()[0]; if (d.target === 'enemy' && !tgt) break;
       if (twin && i === times - 1) { const was = this._playing; this._playing = Object.assign(Object.create(d), { dtype: 'Holy' }); d.play(this, tgt); this._playing = was; } else d.play(this, tgt);
       if (T.sweep > 0 && d.type === 'Attack' && d.target === 'enemy' && i === 0) { const o2 = this.alive().find(x => x !== tgt); if (o2) { T.sweep--; this.say('player', `Sweeping Strikes: ${d.name} also hits ${o2.name}.`); d.play(this, o2); } }
     }
@@ -1493,7 +1497,7 @@ class Combat {
     if (d.type === 'Skill' && d.tags.dmg && this.has(p, 'elemental_memory')) {
       const SEC = { fireball: [['dot', 'burn', 3]], pyroblast: [['dot', 'burn', 6]], ice_bolt: [['chill', 4]], blizzard: [['chill', 4]], frostbolt: [['regen', 5]] };
       const mine = SEC[d.key] || (GEN_SEC[d.name] || []);
-      if (p.memSec && p.memName !== d.name && tgt && tgt.hp > 0) { for (const s of p.memSec) { if (s[0] === 'dot') this.applyDot(tgt, s[1], s[2]); if (s[0] === 'chill') this.applyChill(tgt, s[1]); if (s[0] === 'debuff') tgt[s[1]] = (tgt[s[1]] || 0) + s[2]; if (s[0] === 'regen') (tgt.regenDown = tgt.regenDown || []).push({ n: s[1], turns: 2 }); } this.say('player', `Elemental Memory: ${p.memName}'s effect carries over.`); }
+      if (p.memSec && p.memName !== d.name && tgt && tgt.hp > 0 && d.target !== 'ally') { for (const s of p.memSec) { if (s[0] === 'dot') this.applyDot(tgt, s[1], s[2]); if (s[0] === 'chill') this.applyChill(tgt, s[1]); if (s[0] === 'debuff') tgt[s[1]] = (tgt[s[1]] || 0) + s[2]; if (s[0] === 'regen') (tgt.regenDown = tgt.regenDown || []).push({ n: s[1], turns: 2 }); } this.say('player', `Elemental Memory: ${p.memName}'s effect carries over.`); }
       if (mine.length) { p.memSec = mine; p.memName = d.name; }
     }
     if (d.type === 'Attack' || d.type === 'Skill') p.prevType = d.type;
@@ -1501,6 +1505,7 @@ class Combat {
     if (this._skillMult !== 1) p.nextSkillMult = 1;
     this._playing = null; this._rankMult = 1; this._attackMult = 1; this._skillMult = 1; this._spentAll = null;
     (d.exhaust ? p.exhaust : p.discard).push(c);
+    if (this._pendingDeath) { const q = this._pendingDeath; this._pendingDeath = null; if (q.hp <= 0 && !q.dead) { this.say('loss', `${q.name} paid with their last HP.`); this.onDeath(q); } }
     return true;
   }
 
@@ -1686,8 +1691,12 @@ function rankedCard(key, rank) {
     v.mult = 1 + (d.rarity === 'Blue' || d.rarity === 'Gold' ? 0.08 : 0.10) * rank;
     v.text = d.text.replace(/\b(\d+)(?!%)\b/g, (m, n) => +n >= 8 ? String(Math.round(n * v.mult)) : m);
   } else { v.mult = 1; if (d.cost != null) v.cost = Math.max(Math.ceil(d.cost * 0.6), d.cost - rank); }
+  // cards whose ranks add Strength instead (Oct 31): Bloodlust +5 Strength per rank
+  const sp = RANK_STR[key], g = sp && GEN_OPS[key];
+  if (g) { const ops = g.map(o => o.op === 'str' ? Object.assign({}, o, { n: o.n + sp * rank }) : o); v.text = d.text.replace(/Gain (\d+) Strength/, (m, n) => `Gain ${+n + sp * rank} Strength`); v.play = (cb, t) => runOps(cb, t, ops, d.name); }
   return v;
 }
+const RANK_STR = { bloodlust: 5 };
 function cardPool(cls) { return Object.keys(C).filter(k => C[k].cls === cls && !C[k].designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(C[k].rarity)); }
 // Card drops: normal kills sometimes drop a card; elites always drop a Green or better; the boss drops two Blue or Gold.
 const CARD_DROPS = {
@@ -1753,7 +1762,10 @@ function rollDrops(data, rng, enemyKey, level, luck, cls) {
 // Oct 31: the Rogue's poison cards are Attacks, so they scale with Strength (poison stacks scale with Strength too, see applyDot)
 for (const k of ['envenom', 'plague_bloom', 'toxic_cloud', 'venom_vial', 'fester', 'crippling_poison', 'mind_numbing_poison', 'deadly_toxin', 'wound_poison', 'corrosive_toxin', 'draining_venom', 'poison_nova']) if (C[k]) { C[k].type = 'Attack'; if (C[k].dtype == null) C[k].dtype = k === 'poison_nova' ? 'Nature' : 'Physical'; }
 if (C.seismic_slam) { C.seismic_slam.cost = 0; C.seismic_slam.text = 'Deal damage to all enemies equal to 50% of your current mana. Your mana is not spent.'; }
-if (C.mana_gem) C.mana_gem.cost = 0; // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
+if (C.mana_gem) C.mana_gem.cost = 0;
+// Oct 31: Lay on Hands and Mend Wounds can be aimed at any hero in the party (yourself if you play them solo)
+if (C.mend_wounds) Object.assign(C.mend_wounds, { target: 'ally', text: 'Heal an ally (or yourself) for 8 HP.', play: (cb, t) => cb.heal(t && t.isPlayer && t.hp > 0 ? t : cb.player, 8, 'Mend Wounds') });
+if (C.lay_on_hands) Object.assign(C.lay_on_hands, { target: 'ally', text: 'Heal an ally (or yourself) for 30% of their total HP. Exhaust.', play: (cb, t) => { const a = t && t.isPlayer && t.hp > 0 ? t : cb.player; cb.heal(a, Math.round(a.maxHp * 0.3), 'Lay on Hands'); } }); // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
 const API = { CARDS_VERSION: 2, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);
