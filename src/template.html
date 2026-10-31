@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<title>Cardbound: The Broken March</title>
+<title>Cardbound</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -252,6 +252,12 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .hand .cf.selected { transform: translateY(-48px) rotate(0deg) scale(1.18); z-index: 49; filter: drop-shadow(0 0 12px rgba(214,161,74,.85)); }
 @media (max-width: 700px) { .hand .cf { --cw: 156px; margin-left: calc(var(--cw) * -0.45); } .hand .cf:hover:not(:disabled) { transform: translateY(-36px) scale(1.15); } }
 @media (prefers-reduced-motion: reduce) { .hand .cf { transition: none; } }
+.mappick { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; margin: 8px 0 0; }
+.mapchip { text-align: left; background: #1a1612; border: 1px solid var(--line); border-left: 4px solid var(--ec); border-radius: 6px; padding: 6px 9px; color: var(--text); cursor: pointer; font: inherit; }
+.mapchip b { display: block; font-size: 14px; }
+.mapchip small { color: var(--muted); font-size: 12px; }
+.mapchip.on { background: #2a2219; border-color: var(--ec); box-shadow: 0 0 0 1px var(--ec) inset; }
+.mapchip:disabled { cursor: default; opacity: .75; }
 .partypick { border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px 8px; margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; }
 .partypick legend { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 0 4px; }
 .partypick label { display: inline-flex; gap: 5px; align-items: center; }
@@ -403,7 +409,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 
 <div class="wrap">
   <header class="top">
-    <div class="brand"><h1>Cardbound</h1><span>Map 1 &middot; The Broken March &middot; prototype v4 &middot; town</span></div>
+    <div class="brand"><h1>Cardbound</h1><span id="brandLine">prototype v5 &middot; town</span></div>
     <span id="topInfo" class="muted"></span>
     <button class="btn" id="btnMenu" title="Menu (Esc)">Menu</button>
   </header>
@@ -523,7 +529,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     rest: { color: '#e2b34a', label: 'Rest / extract', path: 'M0-8c3 4 6 6 3 11-1 2-5 2-6 0-3-5 3-7 3-11zM-8 7h16v2h-16z' },
     shrine: { color: '#9fd0ff', label: 'Shrine', path: 'M0-9l6 9-6 9-6-9z' },
     merchant: { color: '#7cc261', label: 'Merchant', path: 'M-6-2h12l-2 10h-8zM-3-2c0-6 6-6 6 0' },
-    boss: { color: '#ff5a3c', label: 'Warlord', path: 'M-10 6l2-12 5 6 3-9 3 9 5-6 2 12z' },
+    boss: { color: '#ff5a3c', label: 'Boss', path: 'M-10 6l2-12 5 6 3-9 3 9 5-6 2 12z' },
   };
   let profile = null, lastResult = null, run = null, cb = null, selected = null, busy = false, lastHp = {}, lastBlock = {}, chosenCls = 'Warrior', focusNode = null;
 
@@ -649,19 +655,21 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       <dl class="kv"><dt>Max HP</dt><dd>${s.maxHp}</dd><dt>Mana</dt><dd>${s.maxMana} max, +${s.regen}/turn</dd><dt>Draw per round</dt><dd>${s.draw}</dd>
       <dt>Strength / Intelligence</dt><dd>+${s.strength}% / +${s.intelligence}%</dd><dt>Dexterity (${CLASSES[heroCls].defense})</dt><dd>+${s.dexterity + s.defGain}%</dd>
       <dt>Crit</dt><dd>${s.crit}% x${s.critMult.toFixed(2)}</dd><dt>Initiative</dt><dd>${s.init}</dd>
-      <dt>Runs / best row / Warlord kills</dt><dd>${c.runs} / ${c.best > ROWS ? 'Boss' : c.best} / ${c.bossKills}</dd></dl>
+      <dt>Runs / best row / boss kills</dt><dd>${c.runs} / ${c.best > ROWS ? 'Boss' : c.best} / ${c.bossKills}</dd></dl>
       <p class="savenote" style="margin:8px 0 0">Gear score is the average item level of your 13 slots. Deck level is your best 20 cards against a perfect +10 deck. Power is the average of the two (0 to 100).</p>`;
-    const chk = CBHub.deckCheck(c.deck), lvl = profile.last.level || 0;
+    const chk = CBHub.deckCheck(c.deck), lvl = profile.last.level || 0, mk = curMap(), M = DATA.maps[mk], amLead = !onlineParty() || SOC.party.leader === SOC.me;
     $('hubWagon').innerHTML = `<h3 style="font-size:24px;color:var(--accent)">The Wagon</h3>
-      <div class="field" style="margin:8px 0"><label for="selLevel">Map 1: The Broken March &middot; level <b id="lvlOut">+${lvl}</b></label><input type="range" id="selLevel" min="0" max="19" step="1" value="${lvl}"></div>
+      <div class="mappick">${Object.values(DATA.maps).map(m => `<button class="mapchip${m.key === mk ? ' on' : ''}" data-map="${m.key}" style="--ec:${ELC[m.element]}" ${amLead ? '' : 'disabled'}><b>${m.num}. ${esc(m.name)}</b><small>${m.element} &middot; boss ${esc(DATA.enemies[m.boss].name)}</small></button>`).join('')}</div>
+      <p class="savenote" style="margin:4px 0 0">${mapBlurb(mk)}</p>
+      <div class="field" style="margin:8px 0"><label for="selLevel">Map ${M.num}: ${esc(M.name)} &middot; level <b id="lvlOut">+${lvl}</b></label><input type="range" id="selLevel" min="0" max="19" step="1" value="${lvl}"></div>
       <p class="savenote" id="lvlInfo"></p>
       ${onlineParty() ? onlineWagonHtml() : `<fieldset class="partypick"><legend>Party (play them all yourself, in Initiative order)</legend>${Object.keys(CLASSES).filter(k => profile.chars[k]).map(k => `<label><input type="checkbox" data-party="${k}" ${k === heroCls ? 'checked disabled' : (profile.last.party || []).includes(k) ? 'checked' : ''}> ${esc(profile.chars[k].name)} <span class="muted">(${k})</span></label>`).join('')}</fieldset>
       <p class="savenote" id="partyNote" style="margin:4px 0 0"></p>`}
       <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn primary" id="btnStart" ${chk.ok && (!onlineParty() || SOC.party.leader === SOC.me) ? '' : 'disabled'}>${onlineParty() ? (SOC.party.leader === SOC.me ? `Set out with the party (${SOC.party.members.length})` : 'Waiting for the leader') : 'Set out'}</button></div>
       ${chk.ok ? '' : `<p class="down" style="margin:6px 0 0;font-size:13px">Fix your deck first: it ${chk.problems.join(', ')}.</p>`}
-      <p class="savenote" style="margin:8px 0 0">Equipped gear and your deck are safe. Only the loot sack is at risk: die and it's gone. Extract at the row-7 campfire (there's always one) to keep 75%, at any later campfire to keep half, or kill the Warlord to keep it all. Anything you order from a merchant is paid from the bank and waits in your stash, even if you die.</p>
+      <p class="savenote" style="margin:8px 0 0">Equipped gear and your deck are safe. Only the loot sack is at risk: die and it's gone. Extract at the row-7 campfire (there's always one) to keep 75%, at any later campfire to keep half, or kill the boss to keep it all. Anything you order from a merchant is paid from the bank and waits in your stash, even if you die.</p>
       <details style="margin-top:8px;font-size:13px;color:#d6cab6"><summary style="cursor:pointer;color:var(--text);font-weight:600">How a run works</summary>
-      <p><b>The map:</b> 14 rows, then the Warlord. Every node and its enemies are visible. Rows 1 to 4 are tier 1, 5 to 9 tier 2, 10 to 14 tier 3; elites appear from row 5.</p>
+      <p><b>The map:</b> 14 rows, then the map's boss. Every node and its enemies are visible. Rows 1 to 4 are tier 1, 5 to 9 tier 2, 10 to 14 tier 3; elites appear from row 5.</p>
       <p><b>HP and mana carry over</b> between fights. Campfires heal 30% of max HP or let you extract. Shrines buff the next 2 fights. Merchants take orders paid from your banked gold and deliver them to your stash in town.</p>
       <p><b>Fights:</b> draw 4 a round, 20 mana regen. Enemies draw their next hand when their turn ends, so you see what they'll do. Enemy Block resets each enemy turn; half of yours carries over. Every hit's math is in the combat log.</p>
       <p><b>Loot:</b> kills drop gear, cards and gold into the sack. Cards come home to your collection; feed spares into deck cards to rank them up.</p></details>`;
@@ -670,6 +678,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     $('selLevel').onchange = () => save();
     lvlInfo();
     $('btnStart').onclick = startRun;
+    $('hubWagon').querySelectorAll('[data-map]').forEach(b => b.onclick = () => { profile.last.map = b.dataset.map; save(); renderHub(); });
     const partyNote = () => { const n = 1 + $('hubWagon').querySelectorAll('[data-party]:checked:not(:disabled)').length; $('partyNote').textContent = n > 1 ? `Party of ${n}: enemies get +${Math.round(85 * (n - 1))}% HP, mana and regen and draw ${n - 1} more card${n > 2 ? 's' : ''}. Every hero rolls their own loot; one who falls loses their sack and gets up at half HP.` : 'Solo run. Tick more heroes to bring a party.'; };
     if ($('partyNote')) { $('hubWagon').querySelector('.partypick').addEventListener('change', partyNote); partyNote(); }
     renderGearTab(c); renderDeckTab(c); renderLogTab(); renderShopTab(c);
@@ -683,15 +692,23 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     return `<div class="partypick" style="padding:8px 10px"><b>Online party</b> &middot; ${pt.members.map(m => `<span style="color:${CC[m.cls] || 'var(--text)'}">${esc(m.name)}</span>${m.uid === pt.leader ? ' <span class="muted">(leader)</span>' : ''}`).join(', ')}
       <p class="savenote" style="margin:4px 0 0">${pt.leader === SOC.me ? 'You pick the map level and set out; everyone comes along.' : `${esc(lead ? lead.name : 'The leader')} picks the level and sets out; you'll ride along automatically.`} Each player brings their own hero, gear and deck and controls only that hero. The party votes on every step of the map (ties go to a coin flip). Enemies get +85% HP, mana and regen per extra hero. Everyone takes their own loot home.</p></div>`;
   }
+  // ---------- maps: six of them, each with its own element, enemies, boss and the resistance its gear rolls
+  const ELC = { Physical: '#c9c2b2', Fire: '#ff7a3c', Frost: '#7fd3ff', Nature: '#7fd36a', Arcane: '#c48bff', Shadow: '#9a8cb8' };
+  function curMap() { const k = profile.last.map; return DATA.maps[k] ? k : 'physical'; }
+  function mapBlurb(mk) {
+    const M = DATA.maps[mk], prev = Object.values(DATA.maps).find(m => m.dropResist === M.element);
+    return M.dmgScale ? `${esc(M.theme || '')} Enemies hit ${Math.round((M.dmgScale - 1) * 100)}% harder than on the Broken March${prev && prev.key !== mk ? `: bring ${M.element} Resistance, which gear from ${esc(prev.name)} rolls` : ''}.` : `${esc(M.theme || '')} The starting road.`;
+  }
+  function bossName(r) { r = r || run; const M = DATA.maps[(r && r.mapKey) || 'physical']; return M ? DATA.enemies[M.boss].name.split(',')[0].replace(/ of the .*/, '') : 'the boss'; }
   function startRun() {
-    const lvl = +$('selLevel').value;
-    if (onlineParty()) { if (SOC.party.leader !== SOC.me) return; profile.last.level = lvl; save(); $('sheet').hidden = true; netStart('run', SOC.party.members.map(m => m.uid), lvl); return; }
+    const lvl = +$('selLevel').value, mk = curMap();
+    if (onlineParty()) { if (SOC.party.leader !== SOC.me) return; profile.last.level = lvl; save(); $('sheet').hidden = true; netStart('run', SOC.party.members.map(m => m.uid), lvl, mk); return; }
     const extra = [...$('hubWagon').querySelectorAll('[data-party]:checked:not(:disabled)')].map(x => x.dataset.party);
     const party = [heroCls, ...extra];
     for (const k of extra) { const d = CBHub.deckCheck(CBHub.char(profile, k).deck); if (!d.ok) return toast(`${k}'s deck ${d.problems.join(', ')}. Fix it at the Scribe first.`); }
-    profile.last = { cls: heroCls, level: lvl, party: extra }; save(); $('sheet').hidden = true;
+    profile.last = { cls: heroCls, level: lvl, party: extra, map: mk }; save(); $('sheet').hidden = true;
     const base = party.length > 1 ? CBHub.partyOpts(profile, party) : CBHub.runOpts(profile, heroCls);
-    run = new Run(Object.assign(base, { level: lvl, seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA }));
+    run = new Run(Object.assign(base, { level: lvl, map: mk, seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA }));
     show('map'); renderMap(true);
   }
 
@@ -783,7 +800,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 
   // ---------- history tab
   function renderLogTab() {
-    const L = { victory: 'Killed the Warlord', extracted: 'Extracted', dead: 'Died', abandoned: 'Left early' };
+    const L = { victory: 'Killed the boss', extracted: 'Extracted', dead: 'Died', abandoned: 'Left early' };
     $('hpLog').innerHTML = profile.history.length ? `<div class="list tall">${profile.history.map(h => `<div class="item" style="--rc:${h.result === 'dead' ? 'var(--hp)' : h.result === 'victory' ? 'var(--r-gold)' : 'var(--good)'}"><div class="ih"><b>${L[h.result] || h.result}</b><span>${h.cls} &middot; Map +${h.level}</span></div><div class="st">Row ${h.row > ROWS ? 'boss' : h.row}. Brought home ${h.items} item${h.items === 1 ? '' : 's'}, ${h.cards} card${h.cards === 1 ? '' : 's'}, ${h.gold} gold.</div><div class="il">${new Date(h.at).toLocaleString()}</div></div>`).join('')}</div>` : '<span class="muted">No runs yet.</span>';
   }
 
@@ -848,7 +865,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     { id: 'chron', name: 'Chronicler Osk', x: 16, y: 13, dir: 'left', open: 'log', btn: 'Run history', pal: { skin: '#a87f62', hair: '#1c1612', chest: '#3a2f22', trim: '#a6978a', legs: '#2a2219', helm: null, cape: null, weapon: 'quill' },
       lines: ['I write down who comes back. And who doesn\'t.'] },
     { id: 'wagon', name: 'Wagoneer Brann', x: 14, y: 3, dir: 'down', open: 'wagon', btn: 'Pick a road', pal: { skin: '#c08a66', hair: '#5a3a22', chest: '#4b3a26', trim: '#d6a14a', legs: '#2d2418', helm: 'cap', helmC: '#3b2f22', cape: null, weapon: 'whip' },
-      lines: ['The March won\'t ride itself. How rough do you want the road?', 'Half the sack if you bail at a campfire. All of it if the Warlord drops.'] },
+      lines: ['Which road, and how rough?', 'Half the sack if you bail at a campfire. All of it if the boss drops.', 'Six roads now. Each one hits with its own element: farm the one before it for the right resistance.'] },
     { id: 'captain', name: 'Captain Ilsa', x: 6, y: 11, dir: 'down', open: 'heroes', btn: 'Heroes', pal: { skin: '#d2a684', hair: '#7a2d1e', chest: '#5a5f66', trim: '#c9c2b2', legs: '#30343a', helm: null, cape: '#6b1f1a', weapon: 'sword' },
       lines: ['Four of you bunk here. Pick who rides out next.'] },
     { id: 'merchant', name: 'Merchant Dace', x: 20, y: 12, dir: 'down', open: 'shop', btn: 'Browse wares', pal: { skin: '#b88a6a', hair: '#2a1d14', chest: '#5a4a1e', trim: '#e4a93a', legs: '#2a2418', helm: 'cap', helmC: '#5a2a22', cape: null, weapon: null },
@@ -856,7 +873,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     { id: 'tinker', name: 'Tinker Pip (test)', x: 16, y: 4, dir: 'down', open: 'test', btn: 'Free test goods', pal: { skin: '#d8b090', hair: '#e0802a', chest: '#3a4a2a', trim: '#e0802a', legs: '#2a2418', helm: 'cap', helmC: '#e0802a', cape: null, weapon: 'hammer' },
       lines: ['Testing, testing! Every card, every codex, free. Don\'t tell the merchants.'] },
     { id: 'archivist', name: 'Archivist Mora', x: 10, y: 7, dir: 'down', open: 'codex', btn: 'Open the Codex', pal: { skin: '#cfa889', hair: '#9c9488', chest: '#3a2a3e', trim: '#b48cd8', legs: '#22182a', helm: 'hood', helmC: '#3a2a3e', cape: null, weapon: 'book' },
-      lines: ['Every card, every beast on the March, every scrap of iron worth wearing. It is all written here.', 'Ask before you ride. The Codex knows what drops where.'] },
+      lines: ['Every card, every beast on every road, every scrap of iron worth wearing. It is all written here.', 'Ask before you ride. The Codex knows what drops where.'] },
   ];
   for (const n of NPCS) { n.home = n.dir; solid.add(K(n.x, n.y)); }
 
@@ -1295,7 +1312,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   let createCls = null;
   function renderTitle() {
     const chars = Object.values(profile.chars).sort((a, b) => (a.created || 0) - (b.created || 0));
-    $('heroList').innerHTML = chars.map(c => `<div class="herocard" style="--cc:${CC[c.cls]}"><b>${esc(c.name)}</b><small>${c.cls} &middot; Power ${CBHub.powerLevel(c)} &middot; ${c.runs} run${c.runs === 1 ? '' : 's'}${c.bossKills ? ` &middot; ${c.bossKills} Warlord kill${c.bossKills === 1 ? '' : 's'}` : ''}</small><button class="btn primary play" data-play="${c.cls}">Enter Emberwatch</button></div>`).join('')
+    $('heroList').innerHTML = chars.map(c => `<div class="herocard" style="--cc:${CC[c.cls]}"><b>${esc(c.name)}</b><small>${c.cls} &middot; Power ${CBHub.powerLevel(c)} &middot; ${c.runs} run${c.runs === 1 ? '' : 's'}${c.bossKills ? ` &middot; ${c.bossKills} boss kill${c.bossKills === 1 ? '' : 's'}` : ''}</small><button class="btn primary play" data-play="${c.cls}">Enter Emberwatch</button></div>`).join('')
       + (chars.length < 4 ? `<button class="herocard new" id="btnNewHero">+ Create a hero</button>` : '');
     if ($('btnNewHero')) $('btnNewHero').onclick = openCreate;
     if (!chars.length) openCreate();
@@ -1359,7 +1376,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     if (netOn()) netLeave();
     cb = null; run.combat = null; run.pending = null;
     for (const m of run.members) m.kept = { items: [], gold: 0 };
-    run.over = 'abandoned'; run.note('Left the March early. The loot sack is lost.');
+    run.over = 'abandoned'; run.note('Left the road early. The loot sack is lost.');
     closeModal(); toTown();
   }
   $('btnMenu').addEventListener('click', openMenu);
@@ -1376,7 +1393,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     $('legend').innerHTML = Object.entries(NODE).map(([k, t]) => `<span><svg width="16" height="16" viewBox="-11 -11 22 22"><path d="${t.path}" fill="${t.color}"/></svg>${t.label}</span>`).join('');
     nodeInfo(focusNode && reach.has(focusNode) ? focusNode : [...reach][0]);
     renderSide();
-    $('topInfo').textContent = `${run.solo ? run.cls : "Party of " + run.members.length} · Map +${run.level} · row ${curRow} of ${ROWS}`;
+    $('topInfo').textContent = `${run.solo ? run.cls : "Party of " + run.members.length} · ${run.mapName || 'Map'} +${run.level} · row ${curRow} of ${ROWS}`;
     if (run.over) endScreen();
   }
   // the map as an SVG; interactive = clickable reachable nodes (the map screen), otherwise a read-only view (the Map button in a fight)
@@ -1407,7 +1424,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   function mapPeek() {
     if (!run) return;
     const curRow = run.currentRow();
-    modal(`<h2>The Broken March <span class="muted" style="font-size:16px">row ${curRow > ROWS ? 'boss' : curRow} of ${ROWS}</span></h2><p class="muted" style="margin:0 0 6px">The gold ring is where you are. You'll pick your next node after the fight.</p>
+    modal(`<h2>${esc(run.mapName || 'The map')} <span class="muted" style="font-size:16px">row ${curRow > ROWS ? 'boss' : curRow} of ${ROWS}</span></h2><p class="muted" style="margin:0 0 6px">The gold ring is where you are. You'll pick your next node after the fight.</p>
       <div class="mapscroll" id="mapPeekScroll" style="max-height:60vh">${mapSvg(false)}</div>
       <div class="legend">${Object.entries(NODE).map(([k, t]) => `<span><svg width="16" height="16" viewBox="-11 -11 22 22"><path d="${t.path}" fill="${t.color}"/></svg>${t.label}</span>`).join('')}</div>
       <div class="row"><button class="btn primary" id="mClose">Back to the fight</button></div>`);
@@ -1557,7 +1574,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       <dl class="kv"><dt>Mana carried</dt><dd>${run.mana} / ${s.maxMana} (+${s.regen}/turn)</dd><dt>Draw per round</dt><dd>${s.draw}</dd>
       <dt>Strength / Intelligence</dt><dd>+${s.strength}% / +${s.intelligence}%</dd><dt>Dexterity (${CLASSES[run.cls].defense})</dt><dd>+${s.dexterity + s.defGain}%</dd>
       <dt>Crit</dt><dd>${s.crit}% x${s.critMult.toFixed(2)}</dd><dt>Initiative</dt><dd>${s.init}</dd>
-      <dt>Physical / Fire / Shadow resist</dt><dd>${s.resist.Physical || 0}% / ${s.resist.Fire || 0}% / ${s.resist.Shadow || 0}%</dd>
+      ${(() => { const el = DATA.maps[run.mapKey || 'physical'].element, ks = el === 'Physical' ? ['Physical', 'Fire'] : ['Physical', el]; return `<dt>${ks.join(' / ')} resist</dt><dd>${ks.map(k => (s.resist[k] || 0) + '%').join(' / ')}</dd>`; })()}
       <dt>Fights won</dt><dd>${run.fightsWon}</dd></dl>
       ${run.over ? '<div style="margin-top:8px"><button class="btn primary" id="btnCamp">Return to camp</button></div>' : ''}
       ${run.buffs.length ? '<div class="tags" style="margin-top:6px">' + run.buffs.map(x => `<span class="tag good">${esc(x.name.replace('Shrine of ', ''))}: ${x.fights} fight${x.fights > 1 ? 's' : ''}</span>`).join('') + '</div>' : ''}`;
@@ -1619,9 +1636,9 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     }
     if (p.type === 'rest') {
       const sackN = run.sack.length;
-      modal(`<h2>Rest site</h2><p>The fire is warm. You can rest, or pack up and leave the March with what you carry.</p>
+      modal(`<h2>Rest site</h2><p>The fire is warm. You can rest, or pack up and leave the road with what you carry.</p>
         <div class="row"><button class="btn primary" id="mRest">${run.solo ? `Rest: heal ${p.heal} HP` : 'Rest: everyone heals 30%'}</button><button class="btn" id="mExtract">Extract: keep ${p.keep > 0.5 ? '75%' : 'half'} of ${sackN} item${sackN === 1 ? '' : 's'} and ${run.gold} gold</button></div>
-        <p class="muted">${p.keep > 0.5 ? 'This is the halfway campfire: extracting here keeps 75% of your sack. Later campfires keep only half.' : 'Extracting here keeps a random half of your sack.'} Beating the Warlord keeps everything.</p>`);
+        <p class="muted">${p.keep > 0.5 ? 'This is the halfway campfire: extracting here keeps 75% of your sack. Later campfires keep only half.' : 'Extracting here keeps a random half of your sack.'} Beating ${esc(bossName())} keeps everything.</p>`);
       $('mRest').onclick = () => { run.rest(); closeModal(); renderMap(); };
       $('mExtract').onclick = () => { run.extract(); closeModal(); renderMap(); };
     } else if (p.type === 'shrine') {
@@ -1646,7 +1663,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     if (!run.solo) return endScreenParty();
     const k = run.kept || { items: [], gold: 0 };
     const title = run.over === 'victory' ? 'Victory' : run.over === 'extracted' ? 'Extracted' : 'Fallen';
-    const sub = (run.over === 'victory' ? 'The Warlord is dead. You keep the whole sack.' : run.over === 'extracted' ? `You left the March alive. ${run.kept && run.sack.length && run.kept.items.length / run.sack.length > 0.6 ? '75%' : 'Half'} of the sack survived the trip.` : 'You died on the March. The sack is lost.') + (run.orders.length ? ` ${run.orders.length} merchant order${run.orders.length === 1 ? ' is' : 's are'} waiting in your stash.` : '');
+    const sub = (run.over === 'victory' ? `${esc(bossName())} is dead. You keep the whole sack.` : run.over === 'extracted' ? `You made it out alive. ${run.kept && run.sack.length && run.kept.items.length / run.sack.length > 0.6 ? '75%' : 'Half'} of the sack survived the trip.` : 'You died on the March. The sack is lost.') + (run.orders.length ? ` ${run.orders.length} merchant order${run.orders.length === 1 ? ' is' : 's are'} waiting in your stash.` : '');
     modal(`<h2 class="${run.over === 'dead' ? 'loss' : ''}">${title}</h2><p>${sub}</p>
       <dl class="kv"><dt>Furthest row</dt><dd>${run.currentRow() > ROWS ? 'Boss' : run.currentRow()}</dd><dt>Fights won</dt><dd>${run.fightsWon}</dd><dt>Items kept</dt><dd>${k.items.length}</dd><dt>Gold kept</dt><dd>${k.gold}</dd></dl>
       <div class="list">${k.items.map(it => itemHtml(it)).join('') || '<span class="muted">Nothing kept.</span>'}</div>
@@ -1658,7 +1675,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 
   function endScreenParty() {
     const title = run.over === 'victory' ? 'Victory' : run.over === 'extracted' ? 'Extracted' : 'Wiped out';
-    const sub = run.over === 'victory' ? 'The Warlord is dead. Everyone keeps their whole sack.' : run.over === 'extracted' ? 'The party left the March alive with part of every sack.' : 'The whole party fell on the March. Every sack is lost.';
+    const sub = run.over === 'victory' ? `${esc(bossName())} is dead. Everyone keeps their whole sack.` : run.over === 'extracted' ? 'The party made it out alive with part of every sack.' : 'The whole party fell. Every sack is lost.';
     modal(`<h2 class="${run.over === 'dead' ? 'loss' : ''}">${title}</h2><p>${sub} Merchant orders are waiting in the stash.</p>
       <dl class="kv"><dt>Furthest row</dt><dd>${run.currentRow() > ROWS ? 'Boss' : run.currentRow()}</dd><dt>Fights won</dt><dd>${run.fightsWon}</dd></dl>
       ${run.members.map(m => { const k = m.kept || { items: [], gold: 0 }; return `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${k.items.length} item${k.items.length === 1 ? '' : 's'}, ${k.gold} gold${m.orders.length ? `, ${m.orders.length} order${m.orders.length === 1 ? '' : 's'}` : ''}</div><div class="list">${k.items.map(it => itemHtml(it)).join('')}</div>`; }).join('')}
@@ -1856,13 +1873,13 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     const g = result.gold, d = result.drops;
     const isBoss = run.over === 'victory';
     if (!run.solo) {
-      modal(`<h2>${isBoss ? 'The Warlord falls' : 'Victory'}</h2><p>Won in ${result.rounds} rounds. Each hero rolled their own loot.</p>
+      modal(`<h2>${isBoss ? esc(bossName()) + ' falls' : 'Victory'}</h2><p>Won in ${result.rounds} rounds. Each hero rolled their own loot.</p>
         ${run.members.map((m, i) => run.online && i !== run.myMi ? `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${m.hp}/${m.stats.maxHp} HP${result.per[i].fell ? ' (fell)' : ''} &middot; ${result.per[i].drops.length} drop${result.per[i].drops.length === 1 ? '' : 's'}, +${result.per[i].gold} gold</div>` : (() => { const r = result.per[i]; return `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${m.hp}/${m.stats.maxHp} HP${r.fell ? ' (fell: sack lost, back up at half HP)' : ''} &middot; +${r.gold} gold</div><div class="list">${r.drops.map(it => itemHtml(it)).join('') || '<span class="muted">No gear or cards.</span>'}</div>`; })()).join('')}
         <div class="row"><button class="btn primary" id="mBack">${isBoss ? 'See the results' : 'Back to the map'}</button></div>`);
       $('mBack').onclick = () => { closeModal(); show('map'); renderMap(true); };
       return;
     }
-    modal(`<h2>${isBoss ? 'The Warlord falls' : 'Victory'}</h2><p>Won in ${result.rounds} rounds. HP ${run.hp}/${run.maxHp}${run.stats.healthRegen ? ` (incl. ${run.stats.healthRegen} Health Regen)` : ''}, mana ${run.mana} carried into the next fight.</p>
+    modal(`<h2>${isBoss ? esc(bossName()) + ' falls' : 'Victory'}</h2><p>Won in ${result.rounds} rounds. HP ${run.hp}/${run.maxHp}${run.stats.healthRegen ? ` (incl. ${run.stats.healthRegen} Health Regen)` : ''}, mana ${run.mana} carried into the next fight.</p>
       <p><b>Into the sack:</b> ${g} gold${d.length ? ' and:' : '. No gear or cards dropped.'}</p><div class="list">${d.map(it => itemHtml(it)).join('')}</div>
       <div class="row"><button class="btn primary" id="mBack">${isBoss ? 'See the results' : 'Back to the map'}</button></div>`);
     $('mBack').onclick = () => { closeModal(); show('map'); renderMap(true); };

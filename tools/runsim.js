@@ -15,7 +15,11 @@ function choose(run) {
 }
 
 function playRun(cls, seed) {
-  const run = new Run({ cls, level, gearPreset: gear, seed, data: DATA });
+  // MAP=fire etc. picks the map; PREP=1 moves the gear's Fire implicit to the map's element (a hero who farmed the previous map); MAPDMG scales that map's enemy damage
+  const mk = process.env.MAP || 'physical', el = DATA.maps ? DATA.maps[mk].element : 'Physical';
+  if (process.env.MAPDMG && DATA.maps) DATA.maps[mk].dmgScale = +process.env.MAPDMG;
+  let g0 = undefined; if (process.env.PREP && el !== 'Fire') g0 = CB.presetGear(cls, gear).map(g => { const x = JSON.parse(JSON.stringify(g)); if (x.stats && x.stats['Resistance:Fire']) { x.stats['Resistance:' + el] = (x.stats['Resistance:' + el] || 0) + x.stats['Resistance:Fire']; delete x.stats['Resistance:Fire']; } return x; });
+  const run = new Run({ map: mk, cls, level, gearPreset: gear, gear: g0, seed, data: DATA });
   let guard = 0;
   while (!run.over && guard++ < 200) {
     if (run.combat) {

@@ -20,20 +20,20 @@
   }
 
   // ---------- starting a session: the host asks everyone for their hero, then sends the seed
-  function netStart(kind, uids, level) {
+  function netStart(kind, uids, level, map) {
     if (!socOn() || NET.s || NET.pend) return;
     const me = mySpec(); if (me.err) { toast(`You ${me.err.replace(/^is /, 'are ').replace(/^has /, 'have ').replace(/^needs /, 'need ').replace(/their/, 'your')}.`); return; }
     const sid = newSid();
-    NET.pend = { sid, kind, uids, level, specs: { [SOC.me]: me } };
+    NET.pend = { sid, kind, uids, level, map, specs: { [SOC.me]: me } };
     NET.pend.timer = setTimeout(() => { if (!NET.pend || NET.pend.sid !== sid) return; const miss = uids.filter(u => !NET.pend.specs[u]).map(nameOfUid); NET.pend = null; toast(`${miss.join(', ')} didn't answer. ${kind === 'duel' ? 'The duel' : 'The run'} is called off.`); }, 10000);
-    netSend('req', { sid, kind, uids, level });
+    netSend('req', { sid, kind, uids, level, map });
     sysChat(kind === 'duel' ? 'Setting up the duel...' : 'Gathering the party at the Wagon...');
     netCheckSpecs();
   }
   function netCheckSpecs() {
     const P = NET.pend; if (!P || !P.uids.every(u => P.specs[u])) return;
     clearTimeout(P.timer); NET.pend = null;
-    const go = { sid: P.sid, kind: P.kind, host: SOC.me, uids: P.uids, level: P.level, seed: Math.floor(Math.random() * 2147483646) + 1, specs: P.uids.map(u => P.specs[u]) };
+    const go = { sid: P.sid, kind: P.kind, host: SOC.me, uids: P.uids, level: P.level, map: P.map, seed: Math.floor(Math.random() * 2147483646) + 1, specs: P.uids.map(u => P.specs[u]) };
     netSend('go', go); netBegin(go);
   }
   function netBegin(go) {
@@ -44,7 +44,7 @@
       cb = new CB.Combat({ duel: true, party: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, uid: s.uid })), seed: go.seed, data: DATA });
       cb.myMi = S.mi; startCombatUI();
     } else {
-      run = new Run({ members: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, bank: s.bank, stashFree: s.stashFree })), level: go.level, seed: go.seed, data: DATA });
+      run = new Run({ members: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, bank: s.bank, stashFree: s.stashFree })), level: go.level, map: go.map || 'physical', seed: go.seed, data: DATA });
       run.online = true; run.myMi = S.mi; run.uids = go.uids.slice();
       show('map'); renderMap(true);
     }

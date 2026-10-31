@@ -111,7 +111,7 @@ function shopDue(p, now) { return !p.shop || !p.shop.at || (now || Date.now()) -
 const SHOP_PRICE = { White: 20, Green: 50, Blue: 120 };
 function shopPrice(rar, level) { return Math.round(SHOP_PRICE[rar] * Math.pow(1.5, level)); }
 function refreshShop(p, data, level, rng, now) {
-  rng = rng || Math.random; const bases = data.gear.bases.map(b => b.name); p.shop = { level, items: [], at: now || Date.now() };
+  rng = rng || Math.random; const mk = (p.last && p.last.map) || 'physical'; let bases = data.gear.bases.filter(b => (b.map || 'physical') === mk).map(b => b.name); if (!bases.length) bases = data.gear.bases.map(b => b.name); p.shop = { level, items: [], at: now || Date.now() };
   for (let i = 0; i < 6; i++) { const x = rng() * 100, rar = x < 35 ? 'White' : x < 78 ? 'Green' : 'Blue'; const it = CB.rollItem(data, rng, bases[Math.floor(rng() * bases.length)], rar, level); it.price = shopPrice(rar, level); p.shop.items.push(it); }
 }
 function buyShop(p, i) {

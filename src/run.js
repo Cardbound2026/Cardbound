@@ -2,7 +2,7 @@
 (function (root) {
 'use strict';
 const CB = (typeof module !== 'undefined' && module.exports) ? require('./engine.js') : root.CB;
-const { makeRng, shuffle, ri, rollItem, rollDrops, sumGear, STARTER_GEAR, presetGear, Combat, rollCards } = CB;
+const { makeRng, shuffle, ri, rollItem, rollDrops, sumGear, STARTER_GEAR, presetGear, Combat, rollCards, rollNamedCards } = CB;
 
 const ROWS = 14, COLS = 5;
 const MOB_HP_STEP = 0.3; // a party fights one monster per hero, each with +30% HP per extra hero (sims: about solo difficulty)
@@ -17,7 +17,8 @@ const SHRINES = [
 ];
 const SLOTS = ['Weapon', 'Off-hand', 'Helm', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves', 'Belt', 'Pants', 'Boots', 'Ring 1', 'Ring 2'];
 
-function generateMap(rng, data, partySize) {
+function generateMap(rng, data, partySize, mapKey) {
+  mapKey = mapKey || 'physical';
   const nodes = {}, edges = new Set();
   const id = (r, c) => r + ':' + c;
   const starts = new Set();
@@ -87,7 +88,7 @@ function generateMap(rng, data, partySize) {
   while (rests.length > 8) { const x = rests.find(n => n.row < ROWS && !n.campfire); if (!x) break; x.type = 'fight'; rests = list.filter(n => n.type === 'rest'); }
   // enemies
   const byTier = { 1: [], 2: [], 3: [], Elite: [] };
-  for (const [k, e] of Object.entries(data.enemies)) if (byTier[e.tier]) byTier[e.tier].push(k);
+  for (const [k, e] of Object.entries(data.enemies)) if (byTier[e.tier] && (e.map || 'physical') === mapKey) byTier[e.tier].push(k);
   const elites = shuffle(byTier.Elite.slice(), rng);
   let ei = 0;
   for (const n of list) {
@@ -95,7 +96,7 @@ function generateMap(rng, data, partySize) {
     if (n.type === 'elite') n.enemies = [elites[ei++ % elites.length]];
     if (n.type === 'shrine') n.shrine = SHRINES[ri(rng, 0, SHRINES.length - 1)].key;
   }
-  boss.enemies = ['warlord_gorrath_the_iron_tide'];
+  boss.enemies = [(data.maps && data.maps[mapKey] && data.maps[mapKey].boss) || 'warlord_gorrath_the_iron_tide'];
   return { nodes, starts: [...starts].map(c => id(1, c)).filter(k => nodes[k]) };
 }
 
@@ -117,9 +118,12 @@ class Run {
         bank: this.sharedBank ? 0 : (sp.bank || 0), spent: 0, orders: [], stashFree: sp.stashFree != null ? sp.stashFree : 99, kept: null, deaths: 0 };
     });
     this.buffs = []; this.log = []; this.meter = {};
-    this.map = generateMap(this.rng, this.data, specs.length);
+    this.mapKey = this.opts.map && this.data.maps && this.data.maps[this.opts.map] ? this.opts.map : 'physical';
+    this.mapName = this.data.maps ? this.data.maps[this.mapKey].name : 'The Broken March';
+    { const bk = this.data.maps ? this.data.maps[this.mapKey].boss : 'warlord_gorrath_the_iron_tide', be = this.data.enemies[bk]; this.bossName = be ? be.name.split(',')[0].replace(/ of the .*/, '') : 'The boss'; }
+    this.map = generateMap(this.rng, this.data, specs.length, this.mapKey);
     this.at = null; this.visited = []; this.over = null; this.fightsWon = 0; this.kills = 0; this.combat = null; this.pending = null;
-    this.note(this.members.length > 1 ? `A party of ${this.members.length} (${this.members.map(m => m.name).join(', ')}) sets out on The Broken March (+${this.level}).` : `A ${this.cls} sets out on The Broken March (+${this.level}).`);
+    this.note(this.members.length > 1 ? `A party of ${this.members.length} (${this.members.map(m => m.name).join(', ')}) sets out on ${this.mapName} (+${this.level}).` : `A ${this.cls} sets out on ${this.mapName} (+${this.level}).`);
   }
   get solo() { return this.members.length === 1; }
   get m0() { return this.members[0]; }
@@ -196,6 +200,7 @@ class Run {
       for (const e of cb.enemies) {  // every hero rolls their own loot
         drops.push(...rollDrops(this.data, this.rng, e.key, this.level, this.luck(m)));
         drops.push(...rollCards(this.rng, m.cls, this.data.enemies[e.key].tier, this.luck(m)));
+        drops.push(...rollNamedCards(this.data, this.rng, e.key, m.cls, this.luck(m)));
         const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * Math.pow(1.5, this.level));
       }
       m.sack.push(...drops); m.gold += gold;
@@ -203,7 +208,7 @@ class Run {
       const nCards = drops.filter(d => d.kind === 'card').length, nGear = drops.length - nCards;
       this.note(`${this.solo ? 'Won' : m.name + ': won'} in ${cb.round} rounds with ${m.hp}/${m.stats.maxHp} HP. Loot: ${nGear} item${nGear === 1 ? '' : 's'}, ${nCards} card${nCards === 1 ? '' : 's'}, ${gold} gold.`);
     });
-    if (n.type === 'boss') { for (const m of this.members) m.kept = { items: m.sack.slice(), gold: m.gold }; this.over = 'victory'; this.note('The Warlord falls. Everyone keeps their whole sack.'); }
+    if (n.type === 'boss') { for (const m of this.members) m.kept = { items: m.sack.slice(), gold: m.gold }; this.over = 'victory'; this.note(`${this.bossName || 'The boss'} falls. Everyone keeps their whole sack.`); }
     return { result: 'win', drops: per[0].drops, gold: per[0].gold, per, rounds: cb.round };
   }
 
@@ -226,7 +231,7 @@ class Run {
   closePending() { this.pending = null; }
 
   merchantStock() {
-    const bases = this.data.gear.bases.map(b => b.name);
+    const bases = this.data.gear.bases.filter(b => (b.map || 'physical') === this.mapKey).map(b => b.name);
     const out = [];
     for (let i = 0; i < 4 + Math.min(4, this.members.length - 1) * 2; i++) {
       const x = this.rng() * 100, rar = x < 45 ? 'White' : x < 80 ? 'Green' : 'Blue';
