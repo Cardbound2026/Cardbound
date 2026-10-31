@@ -474,7 +474,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   <div id="secHeroes"><div class="heroes" id="heroes" role="tablist" aria-label="Characters"></div></div>
   <div class="sheetgrid" id="sheetGrid">
     <aside id="secChar"><div class="panel" id="hubChar"></div></aside>
-    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div><div id="hpFriends"></div><div id="hpCodex"></div></div>
+    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div><div id="hpFriends"></div><div id="hpCodex"></div><div id="hpTest"></div></div>
   </div>
 </div></div>
 <div class="modal" id="modal" hidden><div class="box" id="modalBox"></div></div>
@@ -509,7 +509,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   const CB = window.CB, CBHub = window.CBHub, { CARDS, CLASSES } = CB, { Run, ROWS, COLS, SHRINES, SLOTS } = window.CBRun, DATA = window.CB_DATA;
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
-  const RC = { White: 'var(--r-white)', Green: 'var(--r-green)', Blue: 'var(--r-blue)', Gold: 'var(--r-gold)', 'Purple (Epic)': 'var(--r-purple)', Status: 'var(--r-status)', Token: 'var(--muted)' };
+  const RC = { Codex: '#e0802a', White: 'var(--r-white)', Green: 'var(--r-green)', Blue: 'var(--r-blue)', Gold: 'var(--r-gold)', 'Purple (Epic)': 'var(--r-purple)', Status: 'var(--r-status)', Token: 'var(--muted)' };
   const CC = { Warrior: '#c9472f', Rogue: '#64b25b', Mage: '#4f93e6', Paladin: '#e4a93a' };
   const ICON = {
     attack: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 14l1.2-3.6L11 2.6 13.4 5 5.6 12.8z"/><path d="M10 1.5h4.5V6z"/></svg>',
@@ -853,6 +853,8 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
       lines: ['Four of you bunk here. Pick who rides out next.'] },
     { id: 'merchant', name: 'Merchant Dace', x: 20, y: 12, dir: 'down', open: 'shop', btn: 'Browse wares', pal: { skin: '#b88a6a', hair: '#2a1d14', chest: '#5a4a1e', trim: '#e4a93a', legs: '#2a2418', helm: 'cap', helmC: '#5a2a22', cape: null, weapon: null },
       lines: ['Coin from the bank, goods to your stash. My wagons bring new stock every twelve hours.', 'I also take orders out on the March. My runners always make it home.'] },
+    { id: 'tinker', name: 'Tinker Pip (test)', x: 16, y: 4, dir: 'down', open: 'test', btn: 'Free test goods', pal: { skin: '#d8b090', hair: '#e0802a', chest: '#3a4a2a', trim: '#e0802a', legs: '#2a2418', helm: 'cap', helmC: '#e0802a', cape: null, weapon: 'hammer' },
+      lines: ['Testing, testing! Every card, every codex, free. Don\'t tell the merchants.'] },
     { id: 'archivist', name: 'Archivist Mora', x: 10, y: 7, dir: 'down', open: 'codex', btn: 'Open the Codex', pal: { skin: '#cfa889', hair: '#9c9488', chest: '#3a2a3e', trim: '#b48cd8', legs: '#22182a', helm: 'hood', helmC: '#3a2a3e', cape: null, weapon: 'book' },
       lines: ['Every card, every beast on the March, every scrap of iron worth wearing. It is all written here.', 'Ask before you ride. The Codex knows what drops where.'] },
   ];
@@ -1228,6 +1230,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     shop: { title: 'Merchant Dace: wares', show: ['secChar', 'hpShop'] },
     friends: { title: 'Friends', show: ['hpFriends'] },
     codex: { title: 'The Codex: cards, enemies and gear', show: ['hpCodex'] },
+    test: { title: 'Tinker Pip: free test goods (temporary)', show: ['hpTest'] },
   };
   function talk(n) {
     P.held = []; P.path = []; P.target = null;
@@ -1242,11 +1245,12 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   function openSheet(kind) {
     const k = SHEETS[kind]; renderHub();
     $('sheetTitle').textContent = k.title;
-    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends', 'hpCodex']) $(id).hidden = !k.show.includes(id);
+    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends', 'hpCodex', 'hpTest']) $(id).hidden = !k.show.includes(id);
     $('sheetGrid').classList.toggle('solo', !k.show.includes('secChar'));
     $('sheet').hidden = false; $('sheet').dataset.kind = kind; fitCards($('sheet')); $('sheetClose').focus();
     if (kind === 'friends') { renderFriendsTab(); loadFriends(); }
     if (kind === 'codex') renderCodex();
+    if (kind === 'test') renderTestVendor();
   }
   function closeSheet() { $('sheet').hidden = true; renderTownBar(); cv.focus({ preventScroll: true }); }
   $('sheetClose').addEventListener('click', closeSheet);
@@ -1280,6 +1284,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 /*CODEX*/
 /*GEARUI*/
 /*GLOSSARY*/
+/*TESTVENDOR*/
   let townReturn = false;
 
   // ---------- settings (this browser)
@@ -1528,7 +1533,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     const stats = Object.entries(it.stats || {}).map(([k, v]) => `+${v}${pct(k)} ${nice(k)}`).join(', ');
     const imp = Object.entries(it.imp2 || {}).map(([k, v]) => k === 'Draw' ? `${v} draw` : k === 'Regen' ? `${v} regen` : `+${v}${pct(k)} ${nice(k)}`).join(', ');
     const lines = (it.lines || []).map(l => `${nice(l.stat)} ${l.v} (${l.lo}-${l.hi})`).join(' · ');
-    return `<div class="item" style="--rc:${RC[it.rarity] || 'var(--r-white)'}" title="${esc(lines ? 'Each roll: ' + lines : '')}"><div class="ih"><b>${esc(it.name)}</b><span>${it.rarity === 'Purple (Epic)' ? 'Purple' : it.rarity} &middot; ilvl ${it.ilvl}</span></div><div class="il">${esc(it.label || it.slot)}</div><div class="st">${esc(stats)}${imp ? '<br><span class="muted">Implicit: ' + esc(imp) + '</span>' : ''}</div>${extra || ''}</div>`;
+    return `<div class="item" style="--rc:${RC[it.rarity] || 'var(--r-white)'}" title="${esc(lines ? 'Each roll: ' + lines : '')}"><div class="ih"><b>${esc(it.name)}</b><span>${it.rarity === 'Purple (Epic)' ? 'Purple' : it.rarity} &middot; ilvl ${it.ilvl}</span></div><div class="il">${esc(it.label || it.slot)}</div>${it.passive ? `<div class="st" style="color:#f0b070"><b>Passive:</b> ${esc(it.passive)}</div>` : ''}<div class="st">${esc(stats)}${imp ? '<br><span class="muted">Implicit: ' + esc(imp) + '</span>' : ''}</div>${extra || ''}</div>`;
   }
 
   function renderSideParty() {

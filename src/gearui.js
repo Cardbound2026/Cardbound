@@ -1,10 +1,11 @@
   // ---------- character sheet (paperdoll), item tooltips and upgrade checks, inspecting other players, trading
-  const DOLL_L = ['Helm', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves'], DOLL_R = ['Belt', 'Pants', 'Boots', 'Ring 1', 'Ring 2'], DOLL_B = ['Weapon', 'Off-hand'];
+  const DOLL_L = ['Helm', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves'], DOLL_R = ['Belt', 'Pants', 'Boots', 'Ring 1', 'Ring 2', 'Codex'], DOLL_B = ['Weapon', 'Off-hand'];
   const SLOT_PATH = {
     Helm: 'M5 15a7 7 0 0 1 14 0v4H5z M9 19v-4h6v4', Amulet: 'M6 3c0 6 3 9 6 9s6-3 6-9 M12 12v2 M9.5 17a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0',
     Cloak: 'M8 3h8l3 18H5z M12 3v18', Chest: 'M7 4l5 2 5-2 3 4-3 2v10H7V10L4 8z', Bracers: 'M6 5h12v6H6z M6 13h12v6H6z',
     Gloves: 'M7 21v-8L5 9l2-1 2 2V4h2v6V3h2v7V4h2v7l2-3 2 1-3 6v6z', Belt: 'M3 10h18v5H3z M10 9h4v7h-4z', Pants: 'M6 3h12l1 18h-5l-2-11-2 11H5z',
     Boots: 'M8 3h5v11l6 3v4H6v-4l2-2z', Ring: 'M7 14a5 5 0 1 0 10 0a5 5 0 1 0-10 0 M10 4h4l-2 4z',
+    Codex: 'M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z M5 17a3 3 0 0 1 3-3h11 M10 8h5 M10 11h5',
     Weapon: 'M14 3h7v7l-9 9-3-3z M4 20l4-4 M6 15l3 3', 'Off-hand': 'M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z',
   };
   const slotKey = (sl) => /^Ring/.test(sl) ? 'Ring' : sl;
@@ -29,6 +30,7 @@
   // is an item better than what this hero wears? compares item power with the weaker of the slots it can go in
   function upgradeInfo(it, gear, cls) {
     if (!it || it.kind === 'card' || !gear) return null;
+    if (it.slot === 'Codex' && it.cls && it.cls !== (cls || heroCls)) return { kind: 'other', cls: it.cls };
     const cur = CBHub.slotOptions(it).map(sl => gear.find(g => g.slot === sl));
     if (cur.some(x => !x)) return { kind: 'empty' };
     const mine = itemPower(it, cls), worst = cur.reduce((a, b) => itemPower(a, cls) <= itemPower(b, cls) ? a : b), d = mine - itemPower(worst, cls);
@@ -37,6 +39,7 @@
   function upBadge(it, gear, cls) {
     const u = upgradeInfo(it, gear, cls); if (!u) return '';
     if (u.kind === 'empty') return `<span class="upb up" title="You have nothing in this slot">&#9650; Fills an empty slot</span>`;
+    if (u.kind === 'other') return `<span class="upb same">${u.cls} only</span>`;
     const why = `Item power ${u.p} vs ${itemPower(u.vs, cls)} for your ${esc(u.vs.name)}. Power adds up every stat by its value; stats your class barely uses count for a quarter.`;
     return u.kind === 'up' ? `<span class="upb up" title="${why}">&#9650; Upgrade +${u.d} power</span>`
       : u.kind === 'down' ? `<span class="upb down" title="${why}">&#9660; ${u.d} power</span>`
@@ -94,7 +97,7 @@
     const d = ev.target.closest('[data-dslot]'); if (!d || !d.closest('#hpGear')) return;
     gtip.hidden = true;
     const sl = d.dataset.dslot, c = CBHub.char(profile, heroCls), it = c.gear.find(g => g.slot === sl);
-    const fits = profile.stash.filter(x => x.kind !== 'card' && CBHub.slotOptions(x).includes(sl)).sort((a, b) => (b.ilvl || 0) - (a.ilvl || 0));
+    const fits = profile.stash.filter(x => x.kind !== 'card' && CBHub.slotOptions(x).includes(sl) && !(x.slot === 'Codex' && x.cls && x.cls !== heroCls)).sort((a, b) => (b.ilvl || 0) - (a.ilvl || 0));
     const choose = fits.map(x => itemHtml(x, `<div class="acts">${upBadge(x, c.gear)}<button class="btn" data-eq="${x.id}">Equip</button></div>`)).join('');
     modal(`<h2>${sl}</h2>${it ? itemHtml(it, `<div class="acts"><button class="btn" id="mUneq">Unequip to stash</button></div>`) : '<p class="muted">Nothing equipped.</p>'}
       <h3 style="font-size:18px;color:var(--accent);margin-top:10px">From your stash (${fits.length})</h3><div class="list" style="max-height:340px">${choose || '<span class="muted">Nothing in the stash fits this slot.</span>'}</div>

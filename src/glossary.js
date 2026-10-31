@@ -25,6 +25,7 @@
       ['Recovery', 'Heal this much at the start of each of your turns.'],
       ['Health Regen', 'Heal this much after each fight you win.'],
       ['Defense Gain', '+% to the Block, Barrier or Dodge you gain.'],
+      ['Codex', 'A class-only gear slot (bottom right of the character sheet). Random stats like gear (the only source of All Resistances) plus one fixed passive that boosts a playstyle. Codexes drop only from bosses, one per class per boss.'],
       ['Gear Score / Deck Level / Power', 'Gear score is the average item level of your 13 slots; deck level rates your best 20 cards; Power is the average of the two.'],
       ['Item power', 'Shown on upgrade badges: an item\'s stats added up by their value. Stats your class barely uses count for a quarter.'],
     ]],
