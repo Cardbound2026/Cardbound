@@ -872,7 +872,13 @@ class Combat {
   drainMana(e, n) { if (!e || n <= 0) return 0; const q = this.player; if (q && q.isPlayer && this.has(q, 'codex_entropy')) { n = Math.round(n * 1.5); e.exposure = (e.exposure || 0) + 2; } const pool = Math.max(0, e.mana) + (e.isPlayer ? e.regen : this.effRegen(e)); const s = Math.min(n, pool); e.mana -= s; if (!e.isPlayer) this.planEnemy(e, true); return s; }
   pickAlly(p, self) { const pool = this.allies().filter(a => self || a !== p); if (!pool.length) return p; return pool.slice().sort((x, y) => x.hp / x.maxHp - y.hp / y.maxHp)[0]; }
   defFor(a, n) { const was = this.player; this.player = a; const v = this.gainDef(n); this.player = was; return v; }
-  spendAll(p) { const m = p.mana; p.mana = 0; this.say('player', `${this.who(p)} spend${this.partySize > 1 ? 's' : ''} all ${m} mana.`); return m; }
+  // "spend all your mana" cards. If the card is played again (Double Strike, Multi-hit, Divine Echo...), the repeat uses the same amount
+  // instead of finding 0 mana. Mana spent this way counts as mana paid for the card (Colossus, Mana Reflux...).
+  spendAll(p) {
+    if (this._spentAll != null) { this.say('player', `Repeat: as if spending ${this._spentAll} mana again.`); return this._spentAll; }
+    const m = p.mana; p.mana = 0; this._spentAll = m; this._paid = (this._paid || 0) + m;
+    this.say('player', `${this.who(p)} spend${this.partySize > 1 ? 's' : ''} all ${m} mana.`); return m;
+  }
   taunting() { return this.alivePlayers().find(q => q.until.taunt) || null; }
   setTaunt(p) { p.until.taunt = true; for (const e of this.foes()) for (const c of e.hand) if (c.mark) c.mark = p.id; this.say('player', `${p.name} draws every enemy's attention.`); }
   exhaustStatus(p, max) { let n = 0; for (const c of p.hand.slice()) { if (n >= max) break; if (C[c.key].type === 'Status') { p.hand.splice(p.hand.indexOf(c), 1); p.exhaust.push(c); n++; } } if (n) this.say('player', `${n} status card${n > 1 ? 's' : ''} exhausted.`); return n; }
@@ -1277,7 +1283,7 @@ class Combat {
     if (!this.canPlay(c).ok) return false;
     let tgt = null;
     if (d.target === 'enemy') { const pool = this.alive().filter(x => !x.stealth); tgt = pool.find(e => e.id === targetId) || pool[0]; if (!tgt) return false; }
-    const paid = this.costOf(p, d, c); p.mana -= paid; p.hand.splice(idx, 1); this.stats.cardsPlayed++; this._lastTarget = tgt; this._forced = 0; this._paid = paid;
+    const paid = this.costOf(p, d, c); p.mana -= paid; p.hand.splice(idx, 1); this.stats.cardsPlayed++; this._lastTarget = tgt; this._forced = 0; this._paid = paid; this._spentAll = null;
     const T = p.turn; let twice = T.twice && (T.twice.type === 'any' || T.twice.type === d.type) ? T.twice : null; if (twice) T.twice = null;
     if (T.nextFree) T.nextFree = false; if (T.nextCost) T.nextCost = 0;
     const echoArc = T.echoArcane && d.type === 'Skill' && d.dtype === 'Arcane'; if (echoArc) T.echoArcane = false;
@@ -1319,7 +1325,7 @@ class Combat {
     if (d.type === 'Attack' || d.type === 'Skill') p.prevType = d.type;
     if (d.type === 'Attack' && p.nextAttackMult !== 1) p.nextAttackMult = 1;
     if (this._skillMult !== 1) p.nextSkillMult = 1;
-    this._playing = null; this._rankMult = 1; this._attackMult = 1; this._skillMult = 1;
+    this._playing = null; this._rankMult = 1; this._attackMult = 1; this._skillMult = 1; this._spentAll = null;
     (d.exhaust ? p.exhaust : p.discard).push(c);
     return true;
   }
@@ -1556,6 +1562,8 @@ function rollDrops(data, rng, enemyKey, level, luck) {
   return out;
 }
 
+// design changes on top of the card database (Oct 31): Seismic Slam is free; it hits for half your current mana and spends none
+if (C.seismic_slam) { C.seismic_slam.cost = 0; C.seismic_slam.text = 'Deal damage to all enemies equal to 50% of your current mana. Your mana is not spent.'; }
 const API = { CARDS_VERSION: 2, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);
