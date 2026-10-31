@@ -1415,10 +1415,21 @@ function starterAmulet(cls, key) { const a = STARTER_AMULETS.find(x => x[0] === 
 const PRESSURE_START = 5, PRESSURE_STEP = 0.02;
 const ELEMENTS = ['Physical', 'Fire', 'Frost', 'Nature', 'Arcane', 'Shadow'];
 
+// physical weapons add flat damage to every hit of an Attack: 1 for a one-hander, 2 for a two-hander at White and map level 0,
+// x1.1 / 1.2 / 1.3 for Green / Blue / Purple, and x1.12 per map level the weapon dropped on (Oct 31: help for the physical classes)
+const PHYS_WEAPONS = ['1H Axe', '1H Sword', 'Dagger', '1H Mace', '2H Axe', '2H Sword', '2H Maul', '2H Warhammer'];
+const RAR_MULT = { White: 1, Green: 1.1, Blue: 1.2, 'Purple (Epic)': 1.3 };
+let GEAR_BASES = DATA && DATA.gear ? DATA.gear.bases : null;
+function weaponFlat(x) {
+  if (!x || (x.slot !== 'Weapon' && x.slot !== 'Off-hand')) return 0;
+  const arch = x.arch || (GEAR_BASES && (GEAR_BASES.find(b => b.name === x.name) || {}).arch);
+  if (!PHYS_WEAPONS.includes(arch)) return 0;
+  return Math.max(1, Math.round((/^2H/.test(arch) ? 2 : 1) * (RAR_MULT[x.rarity] || 1) * Math.pow(1.12, x.level || 0)));
+}
 function sumGear(items) {
   const t = {}; const add = (k, v) => { t[k] = (t[k] || 0) + v; };
-  let amulet = false;
-  for (const x of items) { if (!x) continue; for (const [k, v] of Object.entries(x.stats || {})) add(k, v); for (const [k, v] of Object.entries(x.imp2 || {})) add(k, v); if (x.slot === 'Amulet') amulet = true; }
+  let amulet = false, weaponDmg = 0;
+  for (const x of items) { if (!x) continue; for (const [k, v] of Object.entries(x.stats || {})) add(k, v); for (const [k, v] of Object.entries(x.imp2 || {})) add(k, v); if (x.slot === 'Amulet') amulet = true; weaponDmg += weaponFlat(x); }
   const res = {}, elem = {};
   for (const [k, v] of Object.entries(t)) { if (k.startsWith('Resistance:')) res[k.slice(11)] = (res[k.slice(11)] || 0) + v; if (k.startsWith('Elemental/Holy Damage:')) elem[k.slice(22)] = (elem[k.slice(22)] || 0) + v; }
   if (t['All Resistances']) for (const el of ELEMENTS) res[el] = (res[el] || 0) + t['All Resistances'];
@@ -1429,7 +1440,7 @@ function sumGear(items) {
     crit: g('Crit Chance'), critDmg: g('Crit Damage'), critMult: BASE.critMult + g('Crit Damage') / 100, init: BASE.init + g('Initiative'),
     maxMana: BASE.maxMana + g('Max Mana'), regen: (amulet ? g('Regen') : BASE.regen) + g('Mana Regen'), draw: amulet ? g('Draw') : BASE.draw,
     multiHit: g('Multi-hit Chance'), multiplay: g('Multiplay Chance'), multicast: g('Multicast Chance'), bleedChance: g('Bleed Chance'), lifesteal: g('Lifesteal'),
-    thorns: g('Thorns'), luck: g('Luck'), healthRegen: g('Health Regen'), recovery: g('Recovery') + g('Party Recovery'), defGain: g('Defense Gain'), resist: res, elem,
+    thorns: g('Thorns'), luck: g('Luck'), healthRegen: g('Health Regen'), recovery: g('Recovery') + g('Party Recovery'), defGain: g('Defense Gain'), resist: res, elem, weaponDmg,
   };
 }
 
@@ -1509,6 +1520,7 @@ class Combat {
   constructor(opts) {
     this.opts = Object.assign({ cls: 'Warrior', enemies: ['deserter'], level: 0, blockReset: 'decay', seed: (Date.now() % 2147483646) + 1 }, opts || {});
     this.data = this.opts.data || DATA;
+    if (!GEAR_BASES && this.data && this.data.gear) GEAR_BASES = this.data.gear.bases;
     this.rng = makeRng(this.opts.seed);
     this.level = this.opts.level;
     this.log = []; this.round = 0; this.over = null;
@@ -1546,7 +1558,7 @@ class Combat {
       stealth: false, locked: false, disarmed: false, disarmNext: false, negateDebuff: false, nextAttackMult: 1, nextSkillMult: 1,
       attackedThisRound: false, drawPile: [], hand: [], discard: [], exhaust: [], reshuffles: 0, firstTurn: true, dead: false,
       poison: 0, burn: 0, chill: 0, frozen: false, regenDown: [], uid: spec.uid || null,
-      unwarded: 0, exposure: 0,
+      unwarded: 0, exposure: 0, weaponDmg: g.weaponDmg || 0,
       turn: {}, until: {}, timed: [], devotion: 0, bloodDebt: 0, dmgRound: 0, rampage: 0, costX: 1,
       powers: [], turnAttacks: 0, turnSkills: 0, turnElems: [], spellCount: 0, prevType: null, nextAttackFlat: 0, nextHolyMult: 1, dexTurn: 0, hot: [],
     };
@@ -1699,7 +1711,7 @@ class Combat {
       return m;
     };
     let flat = 0;
-    if (kind === 'Attack') flat += (p.nextAttackFlat || 0) + (p.windUp ? Math.floor((d.cost || 0) / 5) : 0);
+    if (kind === 'Attack') flat += (p.nextAttackFlat || 0) + (p.weaponDmg || 0) + (p.windUp ? Math.floor((d.cost || 0) / 5) : 0);
     if (kind === 'Skill' && d.tags && d.tags.dmg) flat += T.skillFlat || 0;
     if (pow) { try { flat += this.pwSum(p, 'flat', d); } catch (x) {} }
     const mark = (n0, n1) => n1 > n0 ? '\u0001' + n1 + '\u0002' : n1 < n0 ? '\u0003' + n1 + '\u0004' : String(n1);
@@ -1988,6 +2000,7 @@ class Combat {
       if (cd && cd.key === 'shuriken') base = Math.round((base + this.pwSum(p, 'shurikenPlus')) * this.pwProd(p, 'shurikenX'));
     }
     if (kind === 'Attack' && cd && !cd.isPower && p.nextAttackFlat) base += p.nextAttackFlat;
+    if (kind === 'Attack' && cd && !cd.isPower && p.isPlayer && p.weaponDmg) base += p.weaponDmg;
     if (p.isPlayer && p.turn) {
       if (kind === 'Attack' && p.turn.attackDtype && cd && !cd.isPower) dtype = ctx.dtype = p.turn.attackDtype;
       if (kind === 'Attack' && p.windUp && cd && !cd.isPower) base += Math.floor((cd.cost || 0) / 5);
@@ -2398,7 +2411,7 @@ function rollDrops(data, rng, enemyKey, level, luck) {
 // Oct 31: the Rogue's poison cards are Attacks, so they scale with Strength (poison stacks scale with Strength too, see applyDot)
 for (const k of ['envenom', 'plague_bloom', 'toxic_cloud', 'venom_vial', 'fester', 'crippling_poison', 'mind_numbing_poison', 'deadly_toxin', 'wound_poison', 'corrosive_toxin', 'draining_venom', 'poison_nova']) if (C[k]) { C[k].type = 'Attack'; if (C[k].dtype == null) C[k].dtype = k === 'poison_nova' ? 'Nature' : 'Physical'; }
 if (C.seismic_slam) { C.seismic_slam.cost = 0; C.seismic_slam.text = 'Deal damage to all enemies equal to 50% of your current mana. Your mana is not spent.'; }
-const API = { CARDS_VERSION: 2, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { CARDS_VERSION: 2, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -2836,7 +2849,9 @@ function absorbRun(p, run, mi) {
   }
   p.gold += kept.gold;
   c.runs++; const row = run.currentRow(); c.best = Math.max(c.best, row); if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); }
-  p.history.unshift({ cls: mem.cls, name: mem.name, party: run.members && run.members.length > 1 ? run.members.map(m => m.cls) : undefined, level: run.level, result: run.over, row, items, cards, gold: kept.gold, ordered, at: Date.now() });
+  // the run's damage meter, kept so the Chronicler can show it later (numbers rounded to keep saves small)
+  const meter = Object.values(run.meter || {}).map(m => { const r = (o) => Object.fromEntries(Object.entries(o || {}).filter(x => x[1] > 0).map(([k, v]) => [k, Math.round(v)])); return { id: m.id, name: m.name, isPlayer: m.isPlayer, cls: m.cls, dealt: r(m.dealt), healed: r(m.healed), taken: r(m.taken), absorbed: Math.round(m.absorbed || 0) }; });
+  p.history.unshift({ meter: meter.length ? meter : undefined, map: run.mapKey, fights: run.fightsWon, cls: mem.cls, name: mem.name, party: run.members && run.members.length > 1 ? run.members.map(m => m.cls) : undefined, level: run.level, result: run.over, row, items, cards, gold: kept.gold, ordered, at: Date.now() });
   p.history = p.history.slice(0, 20);
   p.last = Object.assign(p.last || {}, { level: run.level });
   return { items, cards, gold: kept.gold, lost, ordered };
@@ -2994,7 +3009,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       <div class="power"><div><b>${gs}</b><span>Gear score</span></div><div><b>${dl}</b><span>Deck level</span></div><div><b>${CBHub.powerLevel(c)}</b><span>Power</span></div></div>
       <dl class="kv"><dt>Max HP</dt><dd>${s.maxHp}</dd><dt>Mana</dt><dd>${s.maxMana} max, +${s.regen}/turn</dd><dt>Draw per round</dt><dd>${s.draw}</dd>
       <dt>Strength / Intelligence</dt><dd>+${s.strength}% / +${s.intelligence}%</dd><dt>Dexterity (${CLASSES[c.cls].defense})</dt><dd>+${s.dexterity + s.defGain}%</dd>
-      <dt>Crit</dt><dd>${s.crit}% x${s.critMult.toFixed(2)}</dd><dt>Initiative</dt><dd>${s.init}</dd>
+      <dt>Crit</dt><dd>${s.crit}% x${s.critMult.toFixed(2)}</dd><dt>Initiative</dt><dd>${s.init}</dd>${s.weaponDmg ? `<dt>Weapon damage</dt><dd>+${s.weaponDmg} per Attack hit</dd>` : ''}
       <dt>Runs / best row / boss kills</dt><dd>${c.runs} / ${c.best > ROWS ? 'Boss' : c.best} / ${c.bossKills}</dd></dl>
       <p class="savenote" style="margin:8px 0 0">Gear score is the average item level of your 13 slots. Deck level is your best 20 cards against a perfect +10 deck. Power is the average of the two (0 to 100).</p>`;
     const chk = CBHub.deckCheck(c.deck), lvl = profile.last.level || 0, mk = curMap(), M = DATA.maps[mk], amLead = !onlineParty() || SOC.party.leader === SOC.me;
@@ -3180,8 +3195,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // ---------- history tab
   function renderLogTab() {
     const L = { victory: 'Killed the boss', extracted: 'Extracted', dead: 'Died', abandoned: 'Left early' };
-    $('hpLog').innerHTML = profile.history.length ? `<div class="list tall">${profile.history.map(h => `<div class="item" style="--rc:${h.result === 'dead' ? 'var(--hp)' : h.result === 'victory' ? 'var(--r-gold)' : 'var(--good)'}"><div class="ih"><b>${L[h.result] || h.result}</b><span>${h.cls} &middot; Map +${h.level}</span></div><div class="st">Row ${h.row > ROWS ? 'boss' : h.row}. Brought home ${h.items} item${h.items === 1 ? '' : 's'}, ${h.cards} card${h.cards === 1 ? '' : 's'}, ${h.gold} gold.</div><div class="il">${new Date(h.at).toLocaleString()}</div></div>`).join('')}</div>` : '<span class="muted">No runs yet.</span>';
+    $('hpLog').innerHTML = profile.history.length ? `<div class="list tall">${profile.history.map((h, i) => `<div class="item" style="--rc:${h.result === 'dead' ? 'var(--hp)' : h.result === 'victory' ? 'var(--r-gold)' : 'var(--good)'}"><div class="ih"><b>${L[h.result] || h.result}</b><span>${h.cls} &middot; Map +${h.level}</span></div><div class="st">Row ${h.row > ROWS ? 'boss' : h.row}. Brought home ${h.items} item${h.items === 1 ? '' : 's'}, ${h.cards} card${h.cards === 1 ? '' : 's'}, ${h.gold} gold.</div><div class="il">${new Date(h.at).toLocaleString()}${h.meter ? ` <button class="pilebtn" data-histmeter="${i}">Damage meter</button>` : ''}</div></div>`).join('')}</div>` : '<span class="muted">No runs yet.</span>';
   }
+  function histMeter(i) {
+    const h = profile.history[i]; if (!h || !h.meter) return;
+    MT.hist = h.meter; MT.open = {};
+    const M = DATA.maps[h.map];
+    modal(`<h2>Damage meter</h2><p class="muted" style="margin:0">${esc(h.name || h.cls)}${h.party ? ` with ${h.party.length - 1} other${h.party.length > 2 ? 's' : ''}` : ''} &middot; ${M ? esc(M.name) + ' ' : 'Map '}+${h.level} &middot; ${h.fights != null ? h.fights + ' fight' + (h.fights === 1 ? '' : 's') + ' won &middot; ' : ''}${new Date(h.at).toLocaleString()}</p><div id="hMeter" class="meter"></div><div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
+    renderMeter($('hMeter'), 'hist'); $('mClose').onclick = closeModal;
+  }
+  $('hpLog').addEventListener('click', (ev) => { const b = ev.target.closest('[data-histmeter]'); if (b) histMeter(+b.dataset.histmeter); });
 
   // ---------- Jeweler Rook: the five starter pendants (draw/regen splits), any time, for a little gold
   const AMU_PRICE = 25;
@@ -4154,8 +4177,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793462656495';
-  const CB_BUILD = '3937acf63f'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793463087737';
+  const CB_BUILD = 'ef3088339c'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -4857,7 +4880,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       <div class="dcol">${DOLL_R.map(slot).join('')}</div>
       <div class="dbot">${DOLL_B.map(slot).join('')}</div>
       <dl class="kv dstats"><dt>Max HP</dt><dd>${s.maxHp}</dd><dt>Mana</dt><dd>${s.maxMana}, +${s.regen}/turn</dd><dt>Draw</dt><dd>${s.draw}/round</dd>
-        <dt>Strength / Int</dt><dd>+${s.strength}% / +${s.intelligence}%</dd><dt>Dexterity</dt><dd>+${s.dexterity + s.defGain}% ${CLASSES[cls].defense}</dd><dt>Crit</dt><dd>${s.crit}% x${s.critMult.toFixed(2)}</dd>
+        <dt>Strength / Int</dt><dd>+${s.strength}% / +${s.intelligence}%</dd><dt>Dexterity</dt><dd>+${s.dexterity + s.defGain}% ${CLASSES[cls].defense}</dd><dt>Crit</dt><dd>${s.crit}% x${s.critMult.toFixed(2)}</dd>${s.weaponDmg ? `<dt>Weapon damage</dt><dd>+${s.weaponDmg} per Attack hit</dd>` : ''}
         <dt>Initiative</dt><dd>${s.init}</dd><dt>Resist</dt><dd>${res}</dd>${s.luck ? `<dt>Luck</dt><dd>${s.luck}</dd>` : ''}${ch.duels ? `<dt>Duels</dt><dd>${ch.duels.w} won, ${ch.duels.l} lost</dd>` : ''}</dl>
     </div>`;
   }
@@ -5497,7 +5520,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const nice = (k) => k.replace('Elemental/Holy Damage:', '').replace('Resistance:', '') + (k.startsWith('Elemental') ? ' Damage' : k.startsWith('Resistance:') ? ' Resistance' : '');
     const pct = (k) => /Chance|Damage|Resistance|Dexterity|Strength|Intelligence|Spirit|Defense|Lifesteal|Efficiency/.test(k) ? '%' : '';
     const stats = Object.entries(it.stats || {}).map(([k, v]) => `+${v}${pct(k)} ${nice(k)}`).join(', ');
-    const imp = Object.entries(it.imp2 || {}).map(([k, v]) => k === 'Draw' ? `${v} draw` : k === 'Regen' ? `${v} regen` : `+${v}${pct(k)} ${nice(k)}`).join(', ');
+    const wf = CB.weaponFlat(it), imp = [wf ? `+${wf} damage per Attack hit` : '', ...Object.entries(it.imp2 || {}).map(([k, v]) => k === 'Draw' ? `${v} draw` : k === 'Regen' ? `${v} regen` : `+${v}${pct(k)} ${nice(k)}`)].filter(Boolean).join(', ');
     const lines = (it.lines || []).map(l => `${nice(l.stat)} ${l.v} (${l.lo}-${l.hi})`).join(' · ');
     return `<div class="item" style="--rc:${RC[it.rarity] || 'var(--r-white)'}" title="${esc(lines ? 'Each roll: ' + lines : '')}"><div class="ih"><b>${esc(it.name)}</b><span>${it.rarity === 'Purple (Epic)' ? 'Purple' : it.rarity} &middot; ilvl ${it.ilvl}</span></div><div class="il">${esc(it.label || it.slot)}</div>${it.passive ? `<div class="st" style="color:#f0b070"><b>Passive:</b> ${esc((it.codex && CB.CODEX_BY_KEY[it.codex] && CB.CODEX_BY_KEY[it.codex].text) || it.passive)}</div>` : ''}<div class="st">${esc(stats)}${imp ? '<br><span class="muted">Implicit: ' + esc(imp) + '</span>' : ''}</div>${extra || ''}</div>`;
   }
@@ -5522,7 +5545,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       <div class="bar" style="margin:6px 0"><i style="width:${pctHp}%"></i><span>${run.hp} / ${run.maxHp} HP</span></div>
       <dl class="kv"><dt>Mana carried</dt><dd>${run.mana} / ${s.maxMana} (+${s.regen}/turn)</dd><dt>Draw per round</dt><dd>${s.draw}</dd>
       <dt>Strength / Intelligence</dt><dd>+${s.strength}% / +${s.intelligence}%</dd><dt>Dexterity (${CLASSES[run.cls].defense})</dt><dd>+${s.dexterity + s.defGain}%</dd>
-      <dt>Crit</dt><dd>${s.crit}% x${s.critMult.toFixed(2)}</dd><dt>Initiative</dt><dd>${s.init}</dd>
+      <dt>Crit</dt><dd>${s.crit}% x${s.critMult.toFixed(2)}</dd><dt>Initiative</dt><dd>${s.init}</dd>${s.weaponDmg ? `<dt>Weapon damage</dt><dd>+${s.weaponDmg} per Attack hit</dd>` : ''}
       ${(() => { const el = DATA.maps[run.mapKey || 'physical'].element, ks = el === 'Physical' ? ['Physical', 'Fire'] : ['Physical', el]; return `<dt>${ks.join(' / ')} resist</dt><dd>${ks.map(k => (s.resist[k] || 0) + '%').join(' / ')}</dd>`; })()}
       <dt>Fights won</dt><dd>${run.fightsWon}</dd></dl>
       ${run.over ? '<div style="margin-top:8px"><button class="btn primary" id="btnCamp">Return to camp</button></div>' : ''}
@@ -5542,6 +5565,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const out = {};
     const add = (m, key) => { const R = out[key] || (out[key] = { key, name: m.name, isPlayer: m.isPlayer, cls: m.cls, dealt: {}, healed: {}, taken: {}, absorbed: 0 }); for (const f of ['dealt', 'healed', 'taken']) for (const [a, v] of Object.entries(m[f])) R[f][a] = (R[f][a] || 0) + v; R.absorbed += m.absorbed; };
     if (scope === 'run' && run) { for (const m of Object.values(run.meter || {})) add(m, m.id); if (run.combat && run.combat.meter) for (const m of Object.values(run.combat.meter)) add(m, m.isPlayer ? m.id : 'm:' + m.name); }
+    else if (scope === 'hist') for (const m of MT.hist || []) add(m, m.isPlayer ? m.id : 'm:' + m.name);
     else if (cb) for (const m of Object.values(cb.meter || {})) add(m, m.id);
     return Object.values(out);
   }
@@ -5552,7 +5576,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const max = Math.max(1, ...list.map(x => x.total)), sum = Math.max(1, list.reduce((s, x) => s + x.total, 0));
     const rounds = scope === 'fight' && cb ? Math.max(1, cb.round) : 0;
     el.innerHTML = `<div class="cxchips">${MODES.map(([k, l]) => `<button class="cxchip ${MT.mode === k ? 'on' : ''}" data-mmode="${k}">${l}</button>`).join('')}</div>
-      ${run && !forceScope ? `<div class="cxchips">${[['fight', 'This fight'], ['run', 'Whole run']].map(([k, l]) => `<button class="cxchip ${MT.scope === k ? 'on' : ''}" data-mscope="${k}">${l}</button>`).join('')}</div>` : forceScope ? '<p class="muted" style="margin:2px 0 6px;font-size:12px">Totals for the whole run so far.</p>' : ''}
+      ${run && !forceScope ? `<div class="cxchips">${[['fight', 'This fight'], ['run', 'Whole run']].map(([k, l]) => `<button class="cxchip ${MT.scope === k ? 'on' : ''}" data-mscope="${k}">${l}</button>`).join('')}</div>` : forceScope === 'hist' ? '<p class="muted" style="margin:2px 0 6px;font-size:12px">Totals for the whole run.</p>' : forceScope ? '<p class="muted" style="margin:2px 0 6px;font-size:12px">Totals for the whole run so far.</p>' : ''}
       ${list.map(({ r, parts, total }) => { const op = MT.open[r.key]; const col = r.isPlayer ? CC[r.cls] : '#8a3b2c';
         return `<div class="mrow ${op ? 'open' : ''}" data-mk="${esc(r.key)}" role="button" tabindex="0" aria-expanded="${!!op}"><i style="width:${100 * total / max}%;background:${col}"></i><b>${esc(r.name)}</b><span>${total.toLocaleString()}${rounds ? ` <small>(${(total / rounds).toFixed(1)}/rd)</small>` : ''} <small>${Math.round(100 * total / sum)}%</small></span></div>
         ${op ? `<div class="mparts">${parts.map(([a, v]) => `<div><span>${esc(a)}</span><span>${v.toLocaleString()} <small>${Math.round(100 * v / total)}%</small></span></div>`).join('')}${MT.mode === 'taken' && r.absorbed ? `<div class="mabs"><span>Absorbed by Block/Barrier</span><span>${r.absorbed.toLocaleString()}</span></div>` : ''}</div>` : ''}`; }).join('') || `<p class="muted">Nothing yet.</p>`}
@@ -5561,7 +5585,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   document.addEventListener('click', (ev) => {
     const m = ev.target.closest('.meter [data-mmode], .meter [data-mscope], .meter [data-mk]'); if (!m) return;
     if (m.dataset.mmode) MT.mode = m.dataset.mmode; else if (m.dataset.mscope) MT.scope = m.dataset.mscope; else MT.open[m.dataset.mk] = !MT.open[m.dataset.mk];
-    const el = m.closest('.meter'); renderMeter(el, el.id === 'pMeter' ? 'run' : undefined);
+    const el = m.closest('.meter'); renderMeter(el, el.id === 'pMeter' ? 'run' : el.id === 'hMeter' ? 'hist' : undefined);
   });
 
   // ---------- modals

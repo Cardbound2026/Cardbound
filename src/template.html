@@ -798,7 +798,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       <div class="power"><div><b>${gs}</b><span>Gear score</span></div><div><b>${dl}</b><span>Deck level</span></div><div><b>${CBHub.powerLevel(c)}</b><span>Power</span></div></div>
       <dl class="kv"><dt>Max HP</dt><dd>${s.maxHp}</dd><dt>Mana</dt><dd>${s.maxMana} max, +${s.regen}/turn</dd><dt>Draw per round</dt><dd>${s.draw}</dd>
       <dt>Strength / Intelligence</dt><dd>+${s.strength}% / +${s.intelligence}%</dd><dt>Dexterity (${CLASSES[c.cls].defense})</dt><dd>+${s.dexterity + s.defGain}%</dd>
-      <dt>Crit</dt><dd>${s.crit}% x${s.critMult.toFixed(2)}</dd><dt>Initiative</dt><dd>${s.init}</dd>
+      <dt>Crit</dt><dd>${s.crit}% x${s.critMult.toFixed(2)}</dd><dt>Initiative</dt><dd>${s.init}</dd>${s.weaponDmg ? `<dt>Weapon damage</dt><dd>+${s.weaponDmg} per Attack hit</dd>` : ''}
       <dt>Runs / best row / boss kills</dt><dd>${c.runs} / ${c.best > ROWS ? 'Boss' : c.best} / ${c.bossKills}</dd></dl>
       <p class="savenote" style="margin:8px 0 0">Gear score is the average item level of your 13 slots. Deck level is your best 20 cards against a perfect +10 deck. Power is the average of the two (0 to 100).</p>`;
     const chk = CBHub.deckCheck(c.deck), lvl = profile.last.level || 0, mk = curMap(), M = DATA.maps[mk], amLead = !onlineParty() || SOC.party.leader === SOC.me;
@@ -984,8 +984,16 @@ body.aiming { cursor: grabbing; user-select: none; }
   // ---------- history tab
   function renderLogTab() {
     const L = { victory: 'Killed the boss', extracted: 'Extracted', dead: 'Died', abandoned: 'Left early' };
-    $('hpLog').innerHTML = profile.history.length ? `<div class="list tall">${profile.history.map(h => `<div class="item" style="--rc:${h.result === 'dead' ? 'var(--hp)' : h.result === 'victory' ? 'var(--r-gold)' : 'var(--good)'}"><div class="ih"><b>${L[h.result] || h.result}</b><span>${h.cls} &middot; Map +${h.level}</span></div><div class="st">Row ${h.row > ROWS ? 'boss' : h.row}. Brought home ${h.items} item${h.items === 1 ? '' : 's'}, ${h.cards} card${h.cards === 1 ? '' : 's'}, ${h.gold} gold.</div><div class="il">${new Date(h.at).toLocaleString()}</div></div>`).join('')}</div>` : '<span class="muted">No runs yet.</span>';
+    $('hpLog').innerHTML = profile.history.length ? `<div class="list tall">${profile.history.map((h, i) => `<div class="item" style="--rc:${h.result === 'dead' ? 'var(--hp)' : h.result === 'victory' ? 'var(--r-gold)' : 'var(--good)'}"><div class="ih"><b>${L[h.result] || h.result}</b><span>${h.cls} &middot; Map +${h.level}</span></div><div class="st">Row ${h.row > ROWS ? 'boss' : h.row}. Brought home ${h.items} item${h.items === 1 ? '' : 's'}, ${h.cards} card${h.cards === 1 ? '' : 's'}, ${h.gold} gold.</div><div class="il">${new Date(h.at).toLocaleString()}${h.meter ? ` <button class="pilebtn" data-histmeter="${i}">Damage meter</button>` : ''}</div></div>`).join('')}</div>` : '<span class="muted">No runs yet.</span>';
   }
+  function histMeter(i) {
+    const h = profile.history[i]; if (!h || !h.meter) return;
+    MT.hist = h.meter; MT.open = {};
+    const M = DATA.maps[h.map];
+    modal(`<h2>Damage meter</h2><p class="muted" style="margin:0">${esc(h.name || h.cls)}${h.party ? ` with ${h.party.length - 1} other${h.party.length > 2 ? 's' : ''}` : ''} &middot; ${M ? esc(M.name) + ' ' : 'Map '}+${h.level} &middot; ${h.fights != null ? h.fights + ' fight' + (h.fights === 1 ? '' : 's') + ' won &middot; ' : ''}${new Date(h.at).toLocaleString()}</p><div id="hMeter" class="meter"></div><div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
+    renderMeter($('hMeter'), 'hist'); $('mClose').onclick = closeModal;
+  }
+  $('hpLog').addEventListener('click', (ev) => { const b = ev.target.closest('[data-histmeter]'); if (b) histMeter(+b.dataset.histmeter); });
 
   // ---------- Jeweler Rook: the five starter pendants (draw/regen splits), any time, for a little gold
   const AMU_PRICE = 25;
@@ -1866,7 +1874,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     const nice = (k) => k.replace('Elemental/Holy Damage:', '').replace('Resistance:', '') + (k.startsWith('Elemental') ? ' Damage' : k.startsWith('Resistance:') ? ' Resistance' : '');
     const pct = (k) => /Chance|Damage|Resistance|Dexterity|Strength|Intelligence|Spirit|Defense|Lifesteal|Efficiency/.test(k) ? '%' : '';
     const stats = Object.entries(it.stats || {}).map(([k, v]) => `+${v}${pct(k)} ${nice(k)}`).join(', ');
-    const imp = Object.entries(it.imp2 || {}).map(([k, v]) => k === 'Draw' ? `${v} draw` : k === 'Regen' ? `${v} regen` : `+${v}${pct(k)} ${nice(k)}`).join(', ');
+    const wf = CB.weaponFlat(it), imp = [wf ? `+${wf} damage per Attack hit` : '', ...Object.entries(it.imp2 || {}).map(([k, v]) => k === 'Draw' ? `${v} draw` : k === 'Regen' ? `${v} regen` : `+${v}${pct(k)} ${nice(k)}`)].filter(Boolean).join(', ');
     const lines = (it.lines || []).map(l => `${nice(l.stat)} ${l.v} (${l.lo}-${l.hi})`).join(' · ');
     return `<div class="item" style="--rc:${RC[it.rarity] || 'var(--r-white)'}" title="${esc(lines ? 'Each roll: ' + lines : '')}"><div class="ih"><b>${esc(it.name)}</b><span>${it.rarity === 'Purple (Epic)' ? 'Purple' : it.rarity} &middot; ilvl ${it.ilvl}</span></div><div class="il">${esc(it.label || it.slot)}</div>${it.passive ? `<div class="st" style="color:#f0b070"><b>Passive:</b> ${esc((it.codex && CB.CODEX_BY_KEY[it.codex] && CB.CODEX_BY_KEY[it.codex].text) || it.passive)}</div>` : ''}<div class="st">${esc(stats)}${imp ? '<br><span class="muted">Implicit: ' + esc(imp) + '</span>' : ''}</div>${extra || ''}</div>`;
   }
@@ -1891,7 +1899,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       <div class="bar" style="margin:6px 0"><i style="width:${pctHp}%"></i><span>${run.hp} / ${run.maxHp} HP</span></div>
       <dl class="kv"><dt>Mana carried</dt><dd>${run.mana} / ${s.maxMana} (+${s.regen}/turn)</dd><dt>Draw per round</dt><dd>${s.draw}</dd>
       <dt>Strength / Intelligence</dt><dd>+${s.strength}% / +${s.intelligence}%</dd><dt>Dexterity (${CLASSES[run.cls].defense})</dt><dd>+${s.dexterity + s.defGain}%</dd>
-      <dt>Crit</dt><dd>${s.crit}% x${s.critMult.toFixed(2)}</dd><dt>Initiative</dt><dd>${s.init}</dd>
+      <dt>Crit</dt><dd>${s.crit}% x${s.critMult.toFixed(2)}</dd><dt>Initiative</dt><dd>${s.init}</dd>${s.weaponDmg ? `<dt>Weapon damage</dt><dd>+${s.weaponDmg} per Attack hit</dd>` : ''}
       ${(() => { const el = DATA.maps[run.mapKey || 'physical'].element, ks = el === 'Physical' ? ['Physical', 'Fire'] : ['Physical', el]; return `<dt>${ks.join(' / ')} resist</dt><dd>${ks.map(k => (s.resist[k] || 0) + '%').join(' / ')}</dd>`; })()}
       <dt>Fights won</dt><dd>${run.fightsWon}</dd></dl>
       ${run.over ? '<div style="margin-top:8px"><button class="btn primary" id="btnCamp">Return to camp</button></div>' : ''}
@@ -1911,6 +1919,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     const out = {};
     const add = (m, key) => { const R = out[key] || (out[key] = { key, name: m.name, isPlayer: m.isPlayer, cls: m.cls, dealt: {}, healed: {}, taken: {}, absorbed: 0 }); for (const f of ['dealt', 'healed', 'taken']) for (const [a, v] of Object.entries(m[f])) R[f][a] = (R[f][a] || 0) + v; R.absorbed += m.absorbed; };
     if (scope === 'run' && run) { for (const m of Object.values(run.meter || {})) add(m, m.id); if (run.combat && run.combat.meter) for (const m of Object.values(run.combat.meter)) add(m, m.isPlayer ? m.id : 'm:' + m.name); }
+    else if (scope === 'hist') for (const m of MT.hist || []) add(m, m.isPlayer ? m.id : 'm:' + m.name);
     else if (cb) for (const m of Object.values(cb.meter || {})) add(m, m.id);
     return Object.values(out);
   }
@@ -1921,7 +1930,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     const max = Math.max(1, ...list.map(x => x.total)), sum = Math.max(1, list.reduce((s, x) => s + x.total, 0));
     const rounds = scope === 'fight' && cb ? Math.max(1, cb.round) : 0;
     el.innerHTML = `<div class="cxchips">${MODES.map(([k, l]) => `<button class="cxchip ${MT.mode === k ? 'on' : ''}" data-mmode="${k}">${l}</button>`).join('')}</div>
-      ${run && !forceScope ? `<div class="cxchips">${[['fight', 'This fight'], ['run', 'Whole run']].map(([k, l]) => `<button class="cxchip ${MT.scope === k ? 'on' : ''}" data-mscope="${k}">${l}</button>`).join('')}</div>` : forceScope ? '<p class="muted" style="margin:2px 0 6px;font-size:12px">Totals for the whole run so far.</p>' : ''}
+      ${run && !forceScope ? `<div class="cxchips">${[['fight', 'This fight'], ['run', 'Whole run']].map(([k, l]) => `<button class="cxchip ${MT.scope === k ? 'on' : ''}" data-mscope="${k}">${l}</button>`).join('')}</div>` : forceScope === 'hist' ? '<p class="muted" style="margin:2px 0 6px;font-size:12px">Totals for the whole run.</p>' : forceScope ? '<p class="muted" style="margin:2px 0 6px;font-size:12px">Totals for the whole run so far.</p>' : ''}
       ${list.map(({ r, parts, total }) => { const op = MT.open[r.key]; const col = r.isPlayer ? CC[r.cls] : '#8a3b2c';
         return `<div class="mrow ${op ? 'open' : ''}" data-mk="${esc(r.key)}" role="button" tabindex="0" aria-expanded="${!!op}"><i style="width:${100 * total / max}%;background:${col}"></i><b>${esc(r.name)}</b><span>${total.toLocaleString()}${rounds ? ` <small>(${(total / rounds).toFixed(1)}/rd)</small>` : ''} <small>${Math.round(100 * total / sum)}%</small></span></div>
         ${op ? `<div class="mparts">${parts.map(([a, v]) => `<div><span>${esc(a)}</span><span>${v.toLocaleString()} <small>${Math.round(100 * v / total)}%</small></span></div>`).join('')}${MT.mode === 'taken' && r.absorbed ? `<div class="mabs"><span>Absorbed by Block/Barrier</span><span>${r.absorbed.toLocaleString()}</span></div>` : ''}</div>` : ''}`; }).join('') || `<p class="muted">Nothing yet.</p>`}
@@ -1930,7 +1939,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   document.addEventListener('click', (ev) => {
     const m = ev.target.closest('.meter [data-mmode], .meter [data-mscope], .meter [data-mk]'); if (!m) return;
     if (m.dataset.mmode) MT.mode = m.dataset.mmode; else if (m.dataset.mscope) MT.scope = m.dataset.mscope; else MT.open[m.dataset.mk] = !MT.open[m.dataset.mk];
-    const el = m.closest('.meter'); renderMeter(el, el.id === 'pMeter' ? 'run' : undefined);
+    const el = m.closest('.meter'); renderMeter(el, el.id === 'pMeter' ? 'run' : el.id === 'hMeter' ? 'hist' : undefined);
   });
 
   // ---------- modals

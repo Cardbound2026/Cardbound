@@ -740,10 +740,21 @@ function starterAmulet(cls, key) { const a = STARTER_AMULETS.find(x => x[0] === 
 const PRESSURE_START = 5, PRESSURE_STEP = 0.02;
 const ELEMENTS = ['Physical', 'Fire', 'Frost', 'Nature', 'Arcane', 'Shadow'];
 
+// physical weapons add flat damage to every hit of an Attack: 1 for a one-hander, 2 for a two-hander at White and map level 0,
+// x1.1 / 1.2 / 1.3 for Green / Blue / Purple, and x1.12 per map level the weapon dropped on (Oct 31: help for the physical classes)
+const PHYS_WEAPONS = ['1H Axe', '1H Sword', 'Dagger', '1H Mace', '2H Axe', '2H Sword', '2H Maul', '2H Warhammer'];
+const RAR_MULT = { White: 1, Green: 1.1, Blue: 1.2, 'Purple (Epic)': 1.3 };
+let GEAR_BASES = DATA && DATA.gear ? DATA.gear.bases : null;
+function weaponFlat(x) {
+  if (!x || (x.slot !== 'Weapon' && x.slot !== 'Off-hand')) return 0;
+  const arch = x.arch || (GEAR_BASES && (GEAR_BASES.find(b => b.name === x.name) || {}).arch);
+  if (!PHYS_WEAPONS.includes(arch)) return 0;
+  return Math.max(1, Math.round((/^2H/.test(arch) ? 2 : 1) * (RAR_MULT[x.rarity] || 1) * Math.pow(1.12, x.level || 0)));
+}
 function sumGear(items) {
   const t = {}; const add = (k, v) => { t[k] = (t[k] || 0) + v; };
-  let amulet = false;
-  for (const x of items) { if (!x) continue; for (const [k, v] of Object.entries(x.stats || {})) add(k, v); for (const [k, v] of Object.entries(x.imp2 || {})) add(k, v); if (x.slot === 'Amulet') amulet = true; }
+  let amulet = false, weaponDmg = 0;
+  for (const x of items) { if (!x) continue; for (const [k, v] of Object.entries(x.stats || {})) add(k, v); for (const [k, v] of Object.entries(x.imp2 || {})) add(k, v); if (x.slot === 'Amulet') amulet = true; weaponDmg += weaponFlat(x); }
   const res = {}, elem = {};
   for (const [k, v] of Object.entries(t)) { if (k.startsWith('Resistance:')) res[k.slice(11)] = (res[k.slice(11)] || 0) + v; if (k.startsWith('Elemental/Holy Damage:')) elem[k.slice(22)] = (elem[k.slice(22)] || 0) + v; }
   if (t['All Resistances']) for (const el of ELEMENTS) res[el] = (res[el] || 0) + t['All Resistances'];
@@ -754,7 +765,7 @@ function sumGear(items) {
     crit: g('Crit Chance'), critDmg: g('Crit Damage'), critMult: BASE.critMult + g('Crit Damage') / 100, init: BASE.init + g('Initiative'),
     maxMana: BASE.maxMana + g('Max Mana'), regen: (amulet ? g('Regen') : BASE.regen) + g('Mana Regen'), draw: amulet ? g('Draw') : BASE.draw,
     multiHit: g('Multi-hit Chance'), multiplay: g('Multiplay Chance'), multicast: g('Multicast Chance'), bleedChance: g('Bleed Chance'), lifesteal: g('Lifesteal'),
-    thorns: g('Thorns'), luck: g('Luck'), healthRegen: g('Health Regen'), recovery: g('Recovery') + g('Party Recovery'), defGain: g('Defense Gain'), resist: res, elem,
+    thorns: g('Thorns'), luck: g('Luck'), healthRegen: g('Health Regen'), recovery: g('Recovery') + g('Party Recovery'), defGain: g('Defense Gain'), resist: res, elem, weaponDmg,
   };
 }
 
@@ -834,6 +845,7 @@ class Combat {
   constructor(opts) {
     this.opts = Object.assign({ cls: 'Warrior', enemies: ['deserter'], level: 0, blockReset: 'decay', seed: (Date.now() % 2147483646) + 1 }, opts || {});
     this.data = this.opts.data || DATA;
+    if (!GEAR_BASES && this.data && this.data.gear) GEAR_BASES = this.data.gear.bases;
     this.rng = makeRng(this.opts.seed);
     this.level = this.opts.level;
     this.log = []; this.round = 0; this.over = null;
@@ -871,7 +883,7 @@ class Combat {
       stealth: false, locked: false, disarmed: false, disarmNext: false, negateDebuff: false, nextAttackMult: 1, nextSkillMult: 1,
       attackedThisRound: false, drawPile: [], hand: [], discard: [], exhaust: [], reshuffles: 0, firstTurn: true, dead: false,
       poison: 0, burn: 0, chill: 0, frozen: false, regenDown: [], uid: spec.uid || null,
-      unwarded: 0, exposure: 0,
+      unwarded: 0, exposure: 0, weaponDmg: g.weaponDmg || 0,
       turn: {}, until: {}, timed: [], devotion: 0, bloodDebt: 0, dmgRound: 0, rampage: 0, costX: 1,
       powers: [], turnAttacks: 0, turnSkills: 0, turnElems: [], spellCount: 0, prevType: null, nextAttackFlat: 0, nextHolyMult: 1, dexTurn: 0, hot: [],
     };
@@ -1024,7 +1036,7 @@ class Combat {
       return m;
     };
     let flat = 0;
-    if (kind === 'Attack') flat += (p.nextAttackFlat || 0) + (p.windUp ? Math.floor((d.cost || 0) / 5) : 0);
+    if (kind === 'Attack') flat += (p.nextAttackFlat || 0) + (p.weaponDmg || 0) + (p.windUp ? Math.floor((d.cost || 0) / 5) : 0);
     if (kind === 'Skill' && d.tags && d.tags.dmg) flat += T.skillFlat || 0;
     if (pow) { try { flat += this.pwSum(p, 'flat', d); } catch (x) {} }
     const mark = (n0, n1) => n1 > n0 ? '\u0001' + n1 + '\u0002' : n1 < n0 ? '\u0003' + n1 + '\u0004' : String(n1);
@@ -1313,6 +1325,7 @@ class Combat {
       if (cd && cd.key === 'shuriken') base = Math.round((base + this.pwSum(p, 'shurikenPlus')) * this.pwProd(p, 'shurikenX'));
     }
     if (kind === 'Attack' && cd && !cd.isPower && p.nextAttackFlat) base += p.nextAttackFlat;
+    if (kind === 'Attack' && cd && !cd.isPower && p.isPlayer && p.weaponDmg) base += p.weaponDmg;
     if (p.isPlayer && p.turn) {
       if (kind === 'Attack' && p.turn.attackDtype && cd && !cd.isPower) dtype = ctx.dtype = p.turn.attackDtype;
       if (kind === 'Attack' && p.windUp && cd && !cd.isPower) base += Math.floor((cd.cost || 0) / 5);
@@ -1723,6 +1736,6 @@ function rollDrops(data, rng, enemyKey, level, luck) {
 // Oct 31: the Rogue's poison cards are Attacks, so they scale with Strength (poison stacks scale with Strength too, see applyDot)
 for (const k of ['envenom', 'plague_bloom', 'toxic_cloud', 'venom_vial', 'fester', 'crippling_poison', 'mind_numbing_poison', 'deadly_toxin', 'wound_poison', 'corrosive_toxin', 'draining_venom', 'poison_nova']) if (C[k]) { C[k].type = 'Attack'; if (C[k].dtype == null) C[k].dtype = k === 'poison_nova' ? 'Nature' : 'Physical'; }
 if (C.seismic_slam) { C.seismic_slam.cost = 0; C.seismic_slam.text = 'Deal damage to all enemies equal to 50% of your current mana. Your mana is not spent.'; }
-const API = { CARDS_VERSION: 2, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { CARDS_VERSION: 2, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);
