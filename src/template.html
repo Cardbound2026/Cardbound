@@ -571,6 +571,9 @@ body.aiming { cursor: grabbing; user-select: none; }
   .campbtns { flex-wrap: wrap; }
   #cardZoom { position: fixed; inset: 0; z-index: 60; background: rgba(6,5,4,.78); display: grid; place-items: center; cursor: zoom-out; } #cardZoom[hidden] { display: none; } #cardZoom .zoomin { display: grid; justify-items: center; gap: 8px; } #cardZoom p { color: var(--muted); font-size: 13px; margin: 0; }
   .item[data-ilink] .card, .item[data-ilink] .cf { cursor: zoom-in; }
+  .cmppop { position: fixed; z-index: 80; width: min(560px, calc(100vw - 16px)); max-height: calc(100vh - 16px); overflow: auto; background: #15110d; border: 1px solid var(--accent); border-radius: 8px; padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.7); pointer-events: none; display: grid; gap: 8px; }
+  .cmppop[hidden] { display: none; } .cmphead { font-size: 13px; } .cmpcols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .cmplab { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 2px; }
+  .cmptab { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; } .cmptab th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px; border-bottom: 1px solid var(--line); } .cmptab td { padding: 2px 4px; } .cmptab td:nth-child(n+2), .cmptab th:nth-child(n+2) { text-align: right; } .cmptab .cmppow td { border-top: 1px solid var(--line); font-weight: 700; } .cmpblock + .cmpblock { border-top: 1px dashed var(--line); padding-top: 8px; }
 </style>
 
 <div class="wrap">
@@ -2012,7 +2015,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     const stats = Object.entries(it.stats || {}).map(([k, v]) => `+${v}${pct(k)} ${nice(k)}`).join(', ');
     const wf = CB.weaponFlat(it), imp = [wf ? `+${wf} damage per Attack hit` : '', ...Object.entries(it.imp2 || {}).map(([k, v]) => k === 'Draw' ? `${v} draw` : k === 'Regen' ? `${v} regen` : `+${v}${pct(k)} ${nice(k)}`)].filter(Boolean).join(', ');
     const lines = (it.lines || []).map(l => `${nice(l.stat)} ${l.v} (${l.lo}-${l.hi})`).join(' · ');
-    return `<div class="item" data-ilink="${linkKey(it)}" style="--rc:${RC[it.rarity] || 'var(--r-white)'}" title="${esc((lines ? 'Each roll: ' + lines + '. ' : '') + 'Shift-click to link it in chat.')}"><div class="ih"><b>${esc(it.name)}</b><span>${it.rarity === 'Purple (Epic)' ? 'Purple' : it.rarity} &middot; ilvl ${it.ilvl}</span></div><div class="il">${esc(it.label || it.slot)}</div>${it.passive ? `<div class="st" style="color:#f0b070"><b>Passive:</b> ${esc((it.codex && CB.CODEX_BY_KEY[it.codex] && CB.CODEX_BY_KEY[it.codex].text) || it.passive)}</div>` : ''}<div class="st">${esc(stats)}${imp ? '<br><span class="muted">Implicit: ' + esc(imp) + '</span>' : ''}</div>${extra || ''}</div>`;
+    return `<div class="item" data-ilink="${linkKey(it)}" style="--rc:${RC[it.rarity] || 'var(--r-white)'}" title="${esc((lines ? 'Each roll: ' + lines + '. ' : '') + 'Hold Shift to compare with your gear. Shift-click to link it in chat.')}"><div class="ih"><b>${esc(it.name)}</b><span>${it.rarity === 'Purple (Epic)' ? 'Purple' : it.rarity} &middot; ilvl ${it.ilvl}</span></div><div class="il">${esc(it.label || it.slot)}</div>${it.passive ? `<div class="st" style="color:#f0b070"><b>Passive:</b> ${esc((it.codex && CB.CODEX_BY_KEY[it.codex] && CB.CODEX_BY_KEY[it.codex].text) || it.passive)}</div>` : ''}<div class="st">${esc(stats)}${imp ? '<br><span class="muted">Implicit: ' + esc(imp) + '</span>' : ''}</div>${extra || ''}</div>`;
   }
 
   function renderSideParty() {

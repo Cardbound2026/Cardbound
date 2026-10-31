@@ -575,6 +575,9 @@ body.aiming { cursor: grabbing; user-select: none; }
   .campbtns { flex-wrap: wrap; }
   #cardZoom { position: fixed; inset: 0; z-index: 60; background: rgba(6,5,4,.78); display: grid; place-items: center; cursor: zoom-out; } #cardZoom[hidden] { display: none; } #cardZoom .zoomin { display: grid; justify-items: center; gap: 8px; } #cardZoom p { color: var(--muted); font-size: 13px; margin: 0; }
   .item[data-ilink] .card, .item[data-ilink] .cf { cursor: zoom-in; }
+  .cmppop { position: fixed; z-index: 80; width: min(560px, calc(100vw - 16px)); max-height: calc(100vh - 16px); overflow: auto; background: #15110d; border: 1px solid var(--accent); border-radius: 8px; padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.7); pointer-events: none; display: grid; gap: 8px; }
+  .cmppop[hidden] { display: none; } .cmphead { font-size: 13px; } .cmpcols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .cmplab { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 2px; }
+  .cmptab { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; } .cmptab th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px; border-bottom: 1px solid var(--line); } .cmptab td { padding: 2px 4px; } .cmptab td:nth-child(n+2), .cmptab th:nth-child(n+2) { text-align: right; } .cmptab .cmppow td { border-top: 1px solid var(--line); font-weight: 700; } .cmpblock + .cmpblock { border-top: 1px dashed var(--line); padding-top: 8px; }
 </style>
 </head>
 <body>
@@ -4485,8 +4488,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793486106423';
-  const CB_BUILD = '004705d50a'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793487210670';
+  const CB_BUILD = '9220b26099'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -5185,6 +5188,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-10-31', items: [
+      ['Gear', 'Hold Shift while pointing at any item (rewards, stash, shops, the map merchant, the Bazaar, items linked in chat) to compare it with what you wear: both items side by side and every stat with its + / - difference. Rings and one-handers compare against both slots.'],
       ['Loot', 'Click a dropped card (fight rewards, the loot sack, raid loot, trades) to see it full size.'],
       ['Rest sites', 'Two more options at the fire: Rummage (roll the loot of one normal monster from this part of the map: gear, cards and gold) and Mend (everyone in the party heals 10%; in a party). In co-op each hero picks for themselves (one can rummage while another rests); Extract is still a party vote.'],
       ['Wagon', 'New "Map loot" button at the Wagon: every codex, every named card for your class, every gear base by slot, rarity odds and all the monsters of the chosen map.'],
@@ -5536,6 +5540,53 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       : `<span class="upb same" title="${why}">= Even</span>`;
   }
   const myGear = () => (profile.chars[heroKey] || { gear: [] }).gear;
+  // ---------- hold Shift over any item to compare it with what you wear (every stat with + / -)
+  const CMP = { shift: false, el: null, x: 0, y: 0 };
+  const cmpPop = document.createElement('div'); cmpPop.className = 'cmppop'; cmpPop.hidden = true; document.body.appendChild(cmpPop);
+  const wornGear = () => run && run.members ? (run.members[run.online ? run.myMi : 0] || run.members[0]).gear : myGear();
+  function itemStats(it) {
+    const o = {}; for (const src of [it.stats || {}, it.imp2 || {}]) for (const [k, v] of Object.entries(src)) o[k] = (o[k] || 0) + v;
+    const wf = it._merged ? it._wf : CB.weaponFlat(it); if (wf) o['Weapon damage'] = wf; return o;
+  }
+  const statName = (k) => k === 'Draw' ? 'Draw' : k === 'Regen' ? 'Regen' : k === 'Weapon damage' ? 'Damage per Attack hit' : k.replace('Elemental/Holy Damage:', '').replace('Resistance:', '') + (k.startsWith('Elemental') ? ' Damage' : k.startsWith('Resistance:') ? ' Resistance' : '');
+  const statPct = (k) => /Chance|Damage|Resistance|Dexterity|Strength|Intelligence|Spirit|Defense|Lifesteal|Efficiency/.test(k) && k !== 'Weapon damage' ? '%' : '';
+  function cmpTable(it, cur) {
+    const a = itemStats(it), b = cur ? itemStats(cur) : {}, keys = [...new Set([...Object.keys(a), ...Object.keys(b)])];
+    keys.sort((x, y) => Math.abs((a[y] || 0) - (b[y] || 0)) - Math.abs((a[x] || 0) - (b[x] || 0)));
+    const rows = keys.map(k => { const d = (a[k] || 0) - (b[k] || 0), u = statPct(k); return `<tr><td>${esc(statName(k))}</td><td>${a[k] != null ? a[k] + u : '-'}</td><td>${b[k] != null ? b[k] + u : '-'}</td><td class="${d > 0 ? 'up' : d < 0 ? 'down' : 'muted'}">${d > 0 ? '+' : ''}${d ? d + u : '='}</td></tr>`; }).join('');
+    const pd = itemPower(it) - (cur ? itemPower(cur) : 0);
+    return `<table class="cmptab"><thead><tr><th>Stat</th><th>This</th><th>${cur ? 'Worn' : 'Empty'}</th><th>+ / -</th></tr></thead><tbody>${rows}<tr class="cmppow"><td>Item power</td><td>${itemPower(it)}</td><td>${cur ? itemPower(cur) : 0}</td><td class="${pd > 0 ? 'up' : pd < 0 ? 'down' : 'muted'}">${pd > 0 ? '+' : ''}${pd || '='}</td></tr></tbody></table>`;
+  }
+  function itemFromEl(el) {
+    if (el.dataset.ilink) return typeof ILINK !== 'undefined' ? ILINK.get(el.dataset.ilink) : null;
+    if (el.dataset.tip) { const t = TIPS.get(el.dataset.tip); return t && t.it; }
+    if (el.dataset.chatlink) { const [i, j] = el.dataset.chatlink.split(':').map(Number), m = SOC.chat[i], l = m && m.items && m.items[j]; return l && l.it; } // an item linked in chat
+    return null;
+  }
+  function showCmp() {
+    const el = CMP.el, it = el && itemFromEl(el);
+    if (!CMP.shift || !it || it.kind === 'card' || !it.slot) { cmpPop.hidden = true; return; }
+    const gear = wornGear(), slots = CBHub.slotOptions(it), worn = slots.map(sl => ({ sl, cur: gear.find(g => g.slot === sl) }));
+    if (worn.some(w => w.cur === it)) { cmpPop.hidden = true; return; } // hovering your own equipped item
+    if (it.slot === 'Codex' && it.cls && it.cls !== hcls()) { cmpPop.innerHTML = `<p class="muted">${esc(it.cls)} only: your ${esc(hcls())} can't use it.</p>`; }
+    else cmpPop.innerHTML = `<div class="cmphead"><b>Compared with what you wear</b> <span class="muted">(release Shift to close)</span></div>
+      ${worn.map(w => { const off = /^2H/.test(it.hands || '') && w.sl === 'Weapon' ? gear.find(g => g.slot === 'Off-hand') : null; // a two-hander also replaces the off-hand
+        const both = off ? { stats: Object.assign({}, itemStats(w.cur || {}), {}), imp2: {} } : null; if (both) { for (const [k, v] of Object.entries(itemStats(off))) both.stats[k] = (both.stats[k] || 0) + v; delete both.stats['Weapon damage']; both._wf = (CB.weaponFlat(w.cur || {}) || 0) + (CB.weaponFlat(off) || 0); }
+        return `<div class="cmpblock"><div class="cmpcols"><div><div class="cmplab">This item</div>${itemHtml(it)}</div><div><div class="cmplab">Worn: ${esc(w.sl)}</div>${w.cur ? itemHtml(w.cur) : '<div class="item"><span class="muted">Nothing equipped</span></div>'}${off ? `<div class="cmplab" style="margin-top:4px">and your off-hand (a two-hander replaces it)</div>${itemHtml(off)}` : ''}</div></div>${cmpTable(it, both ? Object.assign(both, { _merged: true }) : w.cur)}</div>`; }).join('')}`;
+    cmpPop.hidden = false; gtip.hidden = true;
+    const w = cmpPop.offsetWidth, h = cmpPop.offsetHeight;
+    let x = CMP.x + 18; if (x + w > innerWidth - 8) x = Math.max(8, CMP.x - w - 18);
+    cmpPop.style.left = x + 'px'; cmpPop.style.top = Math.max(8, Math.min(innerHeight - h - 8, CMP.y - 40)) + 'px';
+  }
+  document.addEventListener('mousemove', (ev) => {
+    CMP.x = ev.clientX; CMP.y = ev.clientY;
+    const el = ev.target.closest && ev.target.closest('.item[data-ilink], [data-tip], [data-chatlink]');
+    if (el !== CMP.el) { CMP.el = el; if (CMP.shift) showCmp(); }
+    if (ev.shiftKey !== CMP.shift) { CMP.shift = ev.shiftKey; showCmp(); }
+  });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Shift' && !CMP.shift) { CMP.shift = true; showCmp(); } });
+  document.addEventListener('keyup', (ev) => { if (ev.key === 'Shift') { CMP.shift = false; cmpPop.hidden = true; } });
+  window.addEventListener('blur', () => { CMP.shift = false; cmpPop.hidden = true; });
 
   // hover tooltips for item slots: data-tip points into TIPS
   const TIPS = new Map(); let tipN = 0;
@@ -6287,7 +6338,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const stats = Object.entries(it.stats || {}).map(([k, v]) => `+${v}${pct(k)} ${nice(k)}`).join(', ');
     const wf = CB.weaponFlat(it), imp = [wf ? `+${wf} damage per Attack hit` : '', ...Object.entries(it.imp2 || {}).map(([k, v]) => k === 'Draw' ? `${v} draw` : k === 'Regen' ? `${v} regen` : `+${v}${pct(k)} ${nice(k)}`)].filter(Boolean).join(', ');
     const lines = (it.lines || []).map(l => `${nice(l.stat)} ${l.v} (${l.lo}-${l.hi})`).join(' · ');
-    return `<div class="item" data-ilink="${linkKey(it)}" style="--rc:${RC[it.rarity] || 'var(--r-white)'}" title="${esc((lines ? 'Each roll: ' + lines + '. ' : '') + 'Shift-click to link it in chat.')}"><div class="ih"><b>${esc(it.name)}</b><span>${it.rarity === 'Purple (Epic)' ? 'Purple' : it.rarity} &middot; ilvl ${it.ilvl}</span></div><div class="il">${esc(it.label || it.slot)}</div>${it.passive ? `<div class="st" style="color:#f0b070"><b>Passive:</b> ${esc((it.codex && CB.CODEX_BY_KEY[it.codex] && CB.CODEX_BY_KEY[it.codex].text) || it.passive)}</div>` : ''}<div class="st">${esc(stats)}${imp ? '<br><span class="muted">Implicit: ' + esc(imp) + '</span>' : ''}</div>${extra || ''}</div>`;
+    return `<div class="item" data-ilink="${linkKey(it)}" style="--rc:${RC[it.rarity] || 'var(--r-white)'}" title="${esc((lines ? 'Each roll: ' + lines + '. ' : '') + 'Hold Shift to compare with your gear. Shift-click to link it in chat.')}"><div class="ih"><b>${esc(it.name)}</b><span>${it.rarity === 'Purple (Epic)' ? 'Purple' : it.rarity} &middot; ilvl ${it.ilvl}</span></div><div class="il">${esc(it.label || it.slot)}</div>${it.passive ? `<div class="st" style="color:#f0b070"><b>Passive:</b> ${esc((it.codex && CB.CODEX_BY_KEY[it.codex] && CB.CODEX_BY_KEY[it.codex].text) || it.passive)}</div>` : ''}<div class="st">${esc(stats)}${imp ? '<br><span class="muted">Implicit: ' + esc(imp) + '</span>' : ''}</div>${extra || ''}</div>`;
   }
 
   function renderSideParty() {

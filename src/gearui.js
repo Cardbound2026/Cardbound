@@ -46,6 +46,53 @@
       : `<span class="upb same" title="${why}">= Even</span>`;
   }
   const myGear = () => (profile.chars[heroKey] || { gear: [] }).gear;
+  // ---------- hold Shift over any item to compare it with what you wear (every stat with + / -)
+  const CMP = { shift: false, el: null, x: 0, y: 0 };
+  const cmpPop = document.createElement('div'); cmpPop.className = 'cmppop'; cmpPop.hidden = true; document.body.appendChild(cmpPop);
+  const wornGear = () => run && run.members ? (run.members[run.online ? run.myMi : 0] || run.members[0]).gear : myGear();
+  function itemStats(it) {
+    const o = {}; for (const src of [it.stats || {}, it.imp2 || {}]) for (const [k, v] of Object.entries(src)) o[k] = (o[k] || 0) + v;
+    const wf = it._merged ? it._wf : CB.weaponFlat(it); if (wf) o['Weapon damage'] = wf; return o;
+  }
+  const statName = (k) => k === 'Draw' ? 'Draw' : k === 'Regen' ? 'Regen' : k === 'Weapon damage' ? 'Damage per Attack hit' : k.replace('Elemental/Holy Damage:', '').replace('Resistance:', '') + (k.startsWith('Elemental') ? ' Damage' : k.startsWith('Resistance:') ? ' Resistance' : '');
+  const statPct = (k) => /Chance|Damage|Resistance|Dexterity|Strength|Intelligence|Spirit|Defense|Lifesteal|Efficiency/.test(k) && k !== 'Weapon damage' ? '%' : '';
+  function cmpTable(it, cur) {
+    const a = itemStats(it), b = cur ? itemStats(cur) : {}, keys = [...new Set([...Object.keys(a), ...Object.keys(b)])];
+    keys.sort((x, y) => Math.abs((a[y] || 0) - (b[y] || 0)) - Math.abs((a[x] || 0) - (b[x] || 0)));
+    const rows = keys.map(k => { const d = (a[k] || 0) - (b[k] || 0), u = statPct(k); return `<tr><td>${esc(statName(k))}</td><td>${a[k] != null ? a[k] + u : '-'}</td><td>${b[k] != null ? b[k] + u : '-'}</td><td class="${d > 0 ? 'up' : d < 0 ? 'down' : 'muted'}">${d > 0 ? '+' : ''}${d ? d + u : '='}</td></tr>`; }).join('');
+    const pd = itemPower(it) - (cur ? itemPower(cur) : 0);
+    return `<table class="cmptab"><thead><tr><th>Stat</th><th>This</th><th>${cur ? 'Worn' : 'Empty'}</th><th>+ / -</th></tr></thead><tbody>${rows}<tr class="cmppow"><td>Item power</td><td>${itemPower(it)}</td><td>${cur ? itemPower(cur) : 0}</td><td class="${pd > 0 ? 'up' : pd < 0 ? 'down' : 'muted'}">${pd > 0 ? '+' : ''}${pd || '='}</td></tr></tbody></table>`;
+  }
+  function itemFromEl(el) {
+    if (el.dataset.ilink) return typeof ILINK !== 'undefined' ? ILINK.get(el.dataset.ilink) : null;
+    if (el.dataset.tip) { const t = TIPS.get(el.dataset.tip); return t && t.it; }
+    if (el.dataset.chatlink) { const [i, j] = el.dataset.chatlink.split(':').map(Number), m = SOC.chat[i], l = m && m.items && m.items[j]; return l && l.it; } // an item linked in chat
+    return null;
+  }
+  function showCmp() {
+    const el = CMP.el, it = el && itemFromEl(el);
+    if (!CMP.shift || !it || it.kind === 'card' || !it.slot) { cmpPop.hidden = true; return; }
+    const gear = wornGear(), slots = CBHub.slotOptions(it), worn = slots.map(sl => ({ sl, cur: gear.find(g => g.slot === sl) }));
+    if (worn.some(w => w.cur === it)) { cmpPop.hidden = true; return; } // hovering your own equipped item
+    if (it.slot === 'Codex' && it.cls && it.cls !== hcls()) { cmpPop.innerHTML = `<p class="muted">${esc(it.cls)} only: your ${esc(hcls())} can't use it.</p>`; }
+    else cmpPop.innerHTML = `<div class="cmphead"><b>Compared with what you wear</b> <span class="muted">(release Shift to close)</span></div>
+      ${worn.map(w => { const off = /^2H/.test(it.hands || '') && w.sl === 'Weapon' ? gear.find(g => g.slot === 'Off-hand') : null; // a two-hander also replaces the off-hand
+        const both = off ? { stats: Object.assign({}, itemStats(w.cur || {}), {}), imp2: {} } : null; if (both) { for (const [k, v] of Object.entries(itemStats(off))) both.stats[k] = (both.stats[k] || 0) + v; delete both.stats['Weapon damage']; both._wf = (CB.weaponFlat(w.cur || {}) || 0) + (CB.weaponFlat(off) || 0); }
+        return `<div class="cmpblock"><div class="cmpcols"><div><div class="cmplab">This item</div>${itemHtml(it)}</div><div><div class="cmplab">Worn: ${esc(w.sl)}</div>${w.cur ? itemHtml(w.cur) : '<div class="item"><span class="muted">Nothing equipped</span></div>'}${off ? `<div class="cmplab" style="margin-top:4px">and your off-hand (a two-hander replaces it)</div>${itemHtml(off)}` : ''}</div></div>${cmpTable(it, both ? Object.assign(both, { _merged: true }) : w.cur)}</div>`; }).join('')}`;
+    cmpPop.hidden = false; gtip.hidden = true;
+    const w = cmpPop.offsetWidth, h = cmpPop.offsetHeight;
+    let x = CMP.x + 18; if (x + w > innerWidth - 8) x = Math.max(8, CMP.x - w - 18);
+    cmpPop.style.left = x + 'px'; cmpPop.style.top = Math.max(8, Math.min(innerHeight - h - 8, CMP.y - 40)) + 'px';
+  }
+  document.addEventListener('mousemove', (ev) => {
+    CMP.x = ev.clientX; CMP.y = ev.clientY;
+    const el = ev.target.closest && ev.target.closest('.item[data-ilink], [data-tip], [data-chatlink]');
+    if (el !== CMP.el) { CMP.el = el; if (CMP.shift) showCmp(); }
+    if (ev.shiftKey !== CMP.shift) { CMP.shift = ev.shiftKey; showCmp(); }
+  });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Shift' && !CMP.shift) { CMP.shift = true; showCmp(); } });
+  document.addEventListener('keyup', (ev) => { if (ev.key === 'Shift') { CMP.shift = false; cmpPop.hidden = true; } });
+  window.addEventListener('blur', () => { CMP.shift = false; cmpPop.hidden = true; });
 
   // hover tooltips for item slots: data-tip points into TIPS
   const TIPS = new Map(); let tipN = 0;
