@@ -220,7 +220,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .ledger { display: grid; grid-template-rows: auto minmax(0, 1fr); max-height: calc(100vh - 120px); min-height: 380px; }
 @media (max-width: 980px) { .ledger { max-height: 460px; } }
 .pane { overflow: auto; padding: 4px 4px; min-height: 0; }
-.log { font-family: var(--f-mono); font-size: 12px; line-height: 1.45; display: grid; gap: 3px; }
+.log { font-family: Arial, Helvetica, sans-serif; font-size: 13px; line-height: 1.45; display: grid; gap: 3px; }
 .log div { padding-left: 8px; border-left: 2px solid transparent; overflow-wrap: anywhere; }
 .log .k-round { font-family: var(--f-display); font-size: 18px; color: var(--accent); border: 0; padding: 8px 0 2px; }
 .log .k-sys { color: var(--muted); } .log .k-card { color: #f2e6cf; border-left-color: var(--accent); } .log .k-player { color: #d7cbb6; }
@@ -294,6 +294,13 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 #hand.watching { outline: 1px dashed rgba(224,160,80,.35); outline-offset: 4px; border-radius: 8px; }
 .cf .ftext b.lup { color: #3f9a3a; text-shadow: 0 0 6px rgba(120,255,120,.35); }
 .cf .ftext b.ldown { color: #b0402f; text-decoration: underline dotted; }
+.hand .cf, .hand .card { touch-action: none; }
+.hand .cf.dragging { opacity: .25; }
+.dragghost { position: fixed; left: 0; top: 0; z-index: 500; pointer-events: none; filter: drop-shadow(0 18px 28px rgba(0,0,0,.8)); transition: filter .12s; }
+.dragghost.armed { filter: drop-shadow(0 0 16px rgba(255,170,70,.9)) drop-shadow(0 18px 28px rgba(0,0,0,.8)); }
+body.aiming { cursor: grabbing; user-select: none; }
+.unit.droptgt { border-color: rgba(201,71,47,.7); }
+.unit.dropover { background: rgba(201,71,47,.25); box-shadow: 0 0 0 2px var(--hp), 0 0 18px rgba(201,71,47,.6); }
 .mappick { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; margin: 8px 0 0; }
 .mapchip { text-align: left; background: #1a1612; border: 1px solid var(--line); border-left: 4px solid var(--ec); border-radius: 6px; padding: 6px 9px; color: var(--text); cursor: pointer; font: inherit; }
 .mapchip b { display: block; font-size: 14px; }
@@ -1741,7 +1748,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     const stats = Object.entries(it.stats || {}).map(([k, v]) => `+${v}${pct(k)} ${nice(k)}`).join(', ');
     const imp = Object.entries(it.imp2 || {}).map(([k, v]) => k === 'Draw' ? `${v} draw` : k === 'Regen' ? `${v} regen` : `+${v}${pct(k)} ${nice(k)}`).join(', ');
     const lines = (it.lines || []).map(l => `${nice(l.stat)} ${l.v} (${l.lo}-${l.hi})`).join(' · ');
-    return `<div class="item" style="--rc:${RC[it.rarity] || 'var(--r-white)'}" title="${esc(lines ? 'Each roll: ' + lines : '')}"><div class="ih"><b>${esc(it.name)}</b><span>${it.rarity === 'Purple (Epic)' ? 'Purple' : it.rarity} &middot; ilvl ${it.ilvl}</span></div><div class="il">${esc(it.label || it.slot)}</div>${it.passive ? `<div class="st" style="color:#f0b070"><b>Passive:</b> ${esc(it.passive)}</div>` : ''}<div class="st">${esc(stats)}${imp ? '<br><span class="muted">Implicit: ' + esc(imp) + '</span>' : ''}</div>${extra || ''}</div>`;
+    return `<div class="item" style="--rc:${RC[it.rarity] || 'var(--r-white)'}" title="${esc(lines ? 'Each roll: ' + lines : '')}"><div class="ih"><b>${esc(it.name)}</b><span>${it.rarity === 'Purple (Epic)' ? 'Purple' : it.rarity} &middot; ilvl ${it.ilvl}</span></div><div class="il">${esc(it.label || it.slot)}</div>${it.passive ? `<div class="st" style="color:#f0b070"><b>Passive:</b> ${esc((it.codex && CB.CODEX_BY_KEY[it.codex] && CB.CODEX_BY_KEY[it.codex].text) || it.passive)}</div>` : ''}<div class="st">${esc(stats)}${imp ? '<br><span class="muted">Implicit: ' + esc(imp) + '</span>' : ''}</div>${extra || ''}</div>`;
   }
 
   function renderSideParty() {
@@ -2039,8 +2046,8 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     else if (!myTurn) hint.innerHTML = `${cb.current ? esc(cb.current.isPlayer ? (party ? cb.current.name : 'You') : cb.current.name) : ''} ${cb.current && cb.current.isPlayer && cb.myMi != null ? 'is taking their turn' : 'acting'}...<span id="tclock"></span>`
       + (wh ? ` <span class="muted">Showing ${esc(wh.name)}'s hand (${wh.mana} mana).</span> <button class="pilebtn" id="btnWatch">Show my hand</button>` : cb.myMi != null && !cb.duel && cb.current && cb.current.isPlayer && cb.current !== p && !cb.over ? ` <button class="pilebtn" id="btnWatch">Show ${esc(cb.current.name)}'s hand</button>` : '');
     else if (selected) { hint.textContent = `Choose a target for ${CARDS[selected.key].name} (Esc to cancel).`; hint.classList.add('alert'); }
-    else if (cb.myMi != null) hint.innerHTML = `Your turn. Click a card to play it. E ends your turn.<span id="tclock"></span>`;
-    else hint.textContent = party ? `${p.name}'s turn. Click a card to play it. E ends ${p.name}'s turn.` : 'Your turn. Click a card to play it. E ends your turn.';
+    else if (cb.myMi != null) hint.innerHTML = `Your turn. Drag a card onto its target to play it (or click it). E ends your turn.<span id="tclock"></span>`;
+    else hint.textContent = party ? `${p.name}'s turn. Drag a card onto its target to play it (or click it). E ends ${p.name}'s turn.` : 'Your turn. Drag a card onto its target to play it (or click it). E ends your turn.';
     const hp = wh || p; $('hand').classList.toggle('watching', !!wh);
     $('hand').innerHTML = hp.hand.map(c => {
       const d0 = cb.card(c), ec = d0.cost != null ? cb.costOf(hp, d0, c) : null, lt = cb.liveText(hp, d0), d = (ec != null && ec !== d0.cost) || lt !== d0.text ? Object.assign(Object.create(d0), { cost: ec != null ? ec : d0.cost, text: lt }) : d0;
@@ -2146,7 +2153,49 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
   });
   $('foes').addEventListener('mouseout', (ev) => { if (ev.target.closest('.intent[data-cu]') && !(ev.relatedTarget && ev.relatedTarget.closest && ev.relatedTarget.closest('.intent[data-cu]'))) peek.hidden = true; });
   $('hand').addEventListener('click', () => { peek.hidden = true; });
+  // ---------- drag a card onto an enemy to play it (click-to-select still works). While aiming, the card's numbers include the target.
+  function playCard(c, tgt) {
+    selected = null;
+    if (cb.myMi != null) { netAct({ t: 'play', uid: c.uid, tgt }); render(); return; }
+    cb.play(c.uid, tgt); render(true); if (cb.over) combatOver();
+  }
+  function liveD(c, tgt) { const p = hero(), d0 = cb.card(c), ec = d0.cost != null ? cb.costOf(p, d0, c) : null; return Object.assign(Object.create(d0), { cost: ec != null ? ec : d0.cost, text: cb.liveText(p, d0, tgt || null) }); }
+  let drag = null, eatClick = false;
+  $('hand').addEventListener('pointerdown', (ev) => {
+    if (ev.button !== 0 || !cb) return; const b = ev.target.closest('.card, .cf'); if (!b || b.disabled || busy) return;
+    const c = hero().hand.find(x => x.uid === b.dataset.uid); if (!c) return;
+    drag = { c, b, x0: ev.clientX, y0: ev.clientY, moved: false, tgt: null, armed: false };
+  });
+  document.addEventListener('pointermove', (ev) => {
+    if (!drag) return; const D = drag, d = cb.card(D.c);
+    if (!D.moved) { if (Math.hypot(ev.clientX - D.x0, ev.clientY - D.y0) < 10) return; D.moved = true; selected = null;
+      const g = D.ghost = document.createElement('div'); g.className = 'dragghost'; g.innerHTML = cardBox(liveD(D.c), 190) || ''; document.body.appendChild(g); fitCards(g);
+      D.b.classList.add('dragging'); document.body.classList.add('aiming');
+      if (d.target === 'enemy') for (const u of $('foes').querySelectorAll('.unit')) { const a = cb.actorById(u.dataset.id); if (a && a.hp > 0) u.classList.add('droptgt'); } }
+    D.ghost.style.transform = `translate(${ev.clientX - 95}px, ${ev.clientY - 300}px)`; // card sits above the pointer so the target stays visible
+    const u = document.elementFromPoint(ev.clientX, ev.clientY); const unit = u && u.closest('#foes .unit.droptgt');
+    const tid = d.target === 'enemy' && unit ? unit.dataset.id : null;
+    if (tid !== D.tgt) { D.tgt = tid; for (const x of $('foes').querySelectorAll('.unit.droptgt')) x.classList.toggle('dropover', x.dataset.id === tid); D.ghost.innerHTML = cardBox(liveD(D.c, tid && cb.actorById(tid)), 190) || ''; fitCards(D.ghost); }
+    if (d.target !== 'enemy') { const armed = ev.clientY < $('hand').getBoundingClientRect().top - 10; if (armed !== D.armed) { D.armed = armed; D.ghost.classList.toggle('armed', armed); } }
+    else D.ghost.classList.toggle('armed', !!D.tgt);
+  });
+  document.addEventListener('pointerup', () => {
+    if (!drag) return; const D = drag; drag = null; if (!D.moved) return;
+    eatClick = true; setTimeout(() => { eatClick = false; }, 0);
+    if (D.ghost) D.ghost.remove(); D.b.classList.remove('dragging'); document.body.classList.remove('aiming');
+    for (const x of $('foes').querySelectorAll('.droptgt')) x.classList.remove('droptgt', 'dropover');
+    if (!cb || busy || !hero().hand.includes(D.c) || !cb.canPlay(D.c).ok) return render();
+    const d = cb.card(D.c);
+    if (d.target === 'enemy') { if (D.tgt) playCard(D.c, D.tgt); else render(); }
+    else if (D.armed) playCard(D.c, cb.alive()[0] && cb.alive()[0].id); else render();
+  });
+  // click-to-select mode: hovering a target updates the selected card's numbers too
+  $('foes').addEventListener('mouseover', (ev) => {
+    if (!selected || drag) return; const u = ev.target.closest('.unit.targetable'); const btn = $('hand').querySelector(`[data-uid="${selected.uid}"]`); if (!btn) return;
+    const f = cardFace(liveD(selected, u ? cb.actorById(u.dataset.id) : null)); if (f && btn.classList.contains('cf')) { btn.innerHTML = f; fitCards(btn); }
+  });
   $('hand').addEventListener('click', (ev) => {
+    if (eatClick) return;
     const b = ev.target.closest('.card, .cf'); if (!b || b.disabled || busy) return;
     const c = hero().hand.find(x => x.uid === b.dataset.uid); if (!c) return;
     const d = CARDS[c.key];
@@ -2155,7 +2204,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
     if (cb.myMi != null) { b.disabled = true; netAct({ t: 'play', uid: c.uid, tgt }); return; }
     cb.play(c.uid, tgt); render(true); if (cb.over) combatOver();
   });
-  function pickTarget(id) { if (!selected) return; const c = selected; selected = null; if (cb.myMi != null) { render(); netAct({ t: 'play', uid: c.uid, tgt: id }); return; } cb.play(c.uid, id); render(true); if (cb.over) combatOver(); }
+  function pickTarget(id) { if (!selected) return; playCard(selected, id); }
   $('foes').addEventListener('click', (ev) => { const u = ev.target.closest('.unit.targetable'); if (u) pickTarget(u.dataset.id); });
   $('foes').addEventListener('keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('.unit.targetable')) { ev.preventDefault(); pickTarget(ev.target.dataset.id); } });
   document.addEventListener('keydown', (ev) => {

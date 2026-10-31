@@ -224,7 +224,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .ledger { display: grid; grid-template-rows: auto minmax(0, 1fr); max-height: calc(100vh - 120px); min-height: 380px; }
 @media (max-width: 980px) { .ledger { max-height: 460px; } }
 .pane { overflow: auto; padding: 4px 4px; min-height: 0; }
-.log { font-family: var(--f-mono); font-size: 12px; line-height: 1.45; display: grid; gap: 3px; }
+.log { font-family: Arial, Helvetica, sans-serif; font-size: 13px; line-height: 1.45; display: grid; gap: 3px; }
 .log div { padding-left: 8px; border-left: 2px solid transparent; overflow-wrap: anywhere; }
 .log .k-round { font-family: var(--f-display); font-size: 18px; color: var(--accent); border: 0; padding: 8px 0 2px; }
 .log .k-sys { color: var(--muted); } .log .k-card { color: #f2e6cf; border-left-color: var(--accent); } .log .k-player { color: #d7cbb6; }
@@ -298,6 +298,13 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 #hand.watching { outline: 1px dashed rgba(224,160,80,.35); outline-offset: 4px; border-radius: 8px; }
 .cf .ftext b.lup { color: #3f9a3a; text-shadow: 0 0 6px rgba(120,255,120,.35); }
 .cf .ftext b.ldown { color: #b0402f; text-decoration: underline dotted; }
+.hand .cf, .hand .card { touch-action: none; }
+.hand .cf.dragging { opacity: .25; }
+.dragghost { position: fixed; left: 0; top: 0; z-index: 500; pointer-events: none; filter: drop-shadow(0 18px 28px rgba(0,0,0,.8)); transition: filter .12s; }
+.dragghost.armed { filter: drop-shadow(0 0 16px rgba(255,170,70,.9)) drop-shadow(0 18px 28px rgba(0,0,0,.8)); }
+body.aiming { cursor: grabbing; user-select: none; }
+.unit.droptgt { border-color: rgba(201,71,47,.7); }
+.unit.dropover { background: rgba(201,71,47,.25); box-shadow: 0 0 0 2px var(--hp), 0 0 18px rgba(201,71,47,.6); }
 .mappick { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; margin: 8px 0 0; }
 .mapchip { text-align: left; background: #1a1612; border: 1px solid var(--line); border-left: 4px solid var(--ec); border-radius: 6px; padding: 6px 9px; color: var(--text); cursor: pointer; font: inherit; }
 .mapchip b { display: block; font-size: 14px; }
@@ -1159,7 +1166,7 @@ const CODEXES = {
     ['sunderer', 'Sunderer', 'Your Attacks also apply 3 Vulnerable.'], ['hemorrhage', 'Hemorrhage', '+10% Crit Chance. Your crits apply Bleed equal to 50% of the damage they deal.']],
   Rogue: [['nightstalker', 'Nightstalker', 'Attacks you play while in Stealth deal 50% more damage.'], ['venomancer', 'Venomancer', 'Poison you apply is increased by 2.'],
     ['bloodletter', 'Bloodletter', 'Bleed you apply is increased by 50%.'], ['ninja', 'Ninja', 'Shurikens deal 4 more damage. Start each turn with a Shuriken in hand.'],
-    ['saboteur', 'Saboteur', 'The first enemy card you make an enemy discard or exhaust each round also adds a Dazed to its discard pile.'], ['phantom', 'Phantom', 'Every 20 damage your Dodge prevents gives your next Attack +25% damage (stacks).']],
+    ['saboteur', 'Saboteur', 'The first enemy card you make an enemy discard or exhaust each round also adds a Dazed to its discard pile.'], ['phantom', 'Phantom', 'Every time you Dodge 20 damage, your next Attack deals 25% more damage. Stacks.']],
   Mage: [['heart_of_winter', 'Heart of Winter', 'Frost Skills that cost 20 or more deal 30% more damage.'], ['spellstorm', 'Spellstorm', 'Each Arcane Skill you play makes your Skills cost 5 less for the rest of the turn; every third one draws a card.'],
     ['conflagration', 'Conflagration', 'Applying Burn to a target that is already Burning also deals that much Fire damage at once.'], ['barrier_savant', 'Barrier Savant', 'Barrier you gain is increased by 25%, and cards that spend Barrier hit 25% harder.'],
     ['entropy', 'Entropy', 'Mana you drain or burn from enemies is increased by 50%, and each drain applies 2 Exposure.'], ['archmage', 'Archmage', 'Skills of a different element from your previous two deal 25% more damage.']],
@@ -1563,7 +1570,7 @@ class Combat {
   card(c) { return c.rank ? (c._v || (c._v = rankedCard(c.key, c.rank))) : C[c.key]; }
   // card text with live numbers: damage and defense as they would land right now from this hero's stats, gear and active buffs
   // (before the target's own resistance, weakness, Vulnerable or Block). Changed numbers are wrapped \u0001n\u0002 (up) or \u0003n\u0004 (down).
-  liveText(p, d) {
+  liveText(p, d, e) {
     if (!p || !p.isPlayer || !d || !d.text || d.type === 'Status' || d.type === 'Power') return d && d.text;
     const kind = d.type, pow = p.powers.length > 0, T = p.turn || {};
     const dmgMult = (dtype) => {
@@ -1571,19 +1578,24 @@ class Combat {
       const stat = kind === 'Attack' ? p.strength + p.strTurn + p.strCombat : p.intelligence + (p.intTurn || 0);
       const setup = kind === 'Attack' ? (p.nextAttackMult || 1) : (d.tags && d.tags.dmg ? (p.nextSkillMult || 1) : 1);
       let m = (1 + stat / 100) * (1 + (p.elem[dtype] || 0) / 100) * (1 - Math.min(p.weak, 90) / 100) * setup * (T.nextMult || 1);
-      if (pow) { try { m *= this.pwProd(p, 'cardMult', d); } catch (e) {} }
+      if (pow) { try { m *= this.pwProd(p, 'cardMult', d); } catch (x) {} }
+      if (e && e.hp > 0) { // aimed at a target: its weakness/resistance, Vulnerable, Condemnation and Unwarded too
+        m *= this.typeMod(e, dtype) * (1 + (e.vulnerable || 0) / 100 * (pow ? Math.max(1, ...this.pws(p).map(([, q]) => q.vulnX || 1)) : 1));
+        m *= (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? 1 + (e.unwarded || 0) / 100 : 1);
+        if (e.isPlayer) m *= (1 - Math.min(75, e.resist[dtype] || 0) / 100) * (1 + this.pressure());
+      }
       return m;
     };
     let flat = 0;
     if (kind === 'Attack') flat += (p.nextAttackFlat || 0) + (p.windUp ? Math.floor((d.cost || 0) / 5) : 0);
     if (kind === 'Skill' && d.tags && d.tags.dmg) flat += T.skillFlat || 0;
-    if (pow) { try { flat += this.pwSum(p, 'flat', d); } catch (e) {} }
+    if (pow) { try { flat += this.pwSum(p, 'flat', d); } catch (x) {} }
     const mark = (n0, n1) => n1 > n0 ? '\u0001' + n1 + '\u0002' : n1 < n0 ? '\u0003' + n1 + '\u0004' : String(n1);
     const EL = '(Fire|Frost|Arcane|Nature|Shadow|Holy|Physical)';
     let t = d.text.replace(new RegExp('\\b(\\d+)( ' + EL + ')? damage(?! back)', 'g'), (m, n, sp, el) => { const v = Math.max(0, Math.round((+n + flat) * dmgMult(el || d.dtype || 'Physical'))); return mark(+n, v) + (sp || '') + ' damage'; });
     t = t.replace(/\b([Dd]eal) (\d+) (instead|more)/g, (m, w, n, x) => `${w} ${mark(+n, Math.max(0, Math.round((+n + flat) * dmgMult(d.dtype || 'Physical'))))} ${x}`);
     let defM = 1 + (p.dexterity || 0) / 100; if (T.defX || this.hasTimed(p, 'defX')) defM *= 2;
-    if (pow) { try { defM *= this.pwProd(p, 'defMult') * this.pwProd(p, 'defMultFn'); } catch (e) {} }
+    if (pow) { try { defM *= this.pwProd(p, 'defMult') * this.pwProd(p, 'defMultFn'); } catch (x) {} }
     t = t.replace(/\b([Gg]ains?) (\d+) (Block|Barrier|Dodge|Parry)/g, (m, w, n, k) => `${w} ${mark(+n, Math.round(+n * defM))} ${k}`);
     return t;
   }
@@ -3769,7 +3781,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILD = '0a6ba724b5'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILD = 'ec88ad6736'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -4079,18 +4091,18 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   }
 
   // ---------- the Codex (Archivist Mora): every card, every enemy with its deck and loot, every gear base and what it can roll
-  const CX = { map: null, tab: 'cards', cls: 'All', rar: 'All', built: 'All', tier: 'All', slot: 'All', q: '' };
+  const CX = { own: 'All', map: null, tab: 'cards', cls: 'All', rar: 'All', built: 'All', tier: 'All', slot: 'All', q: '' };
   const TIER_NAME = t => t === 'Elite' || t === 'Boss' ? t : 'Tier ' + t;
   function cxChips(key, vals, label) { return `<div class="cxchips" role="group" aria-label="${label}">${vals.map(v => `<button class="cxchip ${CX[key] === v ? 'on' : ''}" data-cx="${key}" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div>`; }
   function ownedCounts() { const c = profile.chars[heroCls], n = {}; if (c) for (const k of [...c.deck, ...c.cards]) n[k.key] = (n[k.key] || 0) + 1; return n; }
   function codexCards() {
     const own = ownedCounts(), q = CX.q.toLowerCase();
     const all = Object.entries(CARDS).filter(([k, d]) => d.cls && d.rarity !== 'Status' && d.rarity !== 'Token');
-    const list = all.filter(([k, d]) => (CX.cls === 'All' || d.cls === CX.cls) && (CX.rar === 'All' || d.rarity === CX.rar) && (CX.built === 'All' || (CX.built === 'Playable') === !d.designOnly) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + (d.id || '')).toLowerCase().includes(q)))
+    const list = all.filter(([k, d]) => (CX.cls === 'All' || d.cls === CX.cls) && (CX.rar === 'All' || d.rarity === CX.rar) && (CX.built === 'All' || (CX.built === 'Playable') === !d.designOnly) && (CX.own === 'All' || (CX.own === 'Owned') === !!own[k]) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + (d.id || '')).toLowerCase().includes(q)))
       .sort((a, b) => Object.keys(CLASSES).indexOf(a[1].cls) - Object.keys(CLASSES).indexOf(b[1].cls) || RAR_ORDER[b[1].rarity] - RAR_ORDER[a[1].rarity] || a[1].name.localeCompare(b[1].name));
     const drops = CB.CARD_DROPS;
     const nBuilt = all.filter(([k, d]) => !d.designOnly).length;
-    return `${cxChips('cls', ['All', ...Object.keys(CLASSES)], 'Class')}${cxChips('rar', ['All', 'White', 'Green', 'Blue', 'Gold'], 'Rarity')}${cxChips('built', ['All', 'Playable', 'Design only'], 'Built')}
+    return `${cxChips('cls', ['All', ...Object.keys(CLASSES)], 'Class')}${cxChips('rar', ['All', 'White', 'Green', 'Blue', 'Gold'], 'Rarity')}${cxChips('own', ['All', 'Owned', 'Not owned'], 'Owned')}
       <p class="savenote">${list.length} of ${all.length} cards. <b>${nBuilt} are playable</b>; the other ${all.length - nBuilt} are from the card design and are marked <i>Not built yet</i>: they don't drop until their mechanics are added to the game. <b>How cards drop:</b> each kill can drop a card for <i>your</i> class: tier 1 ${drops[1].chance}%, tier 2 ${drops[2].chance}%, tier 3 ${drops[3].chance}% (mostly White, some Green and Blue); elites always drop one Green or better (${drops.Elite.w.Gold}% Gold); the Warlord drops two Blue or Gold. Luck raises every chance. Cards marked <b>owned</b> are in ${esc(profile.chars[heroCls] ? profile.chars[heroCls].name : 'your hero')}'s deck or collection.</p>
       <div class="pilegrid cxgrid">${list.map(([k, d]) => `<div class="pilecard ${d.designOnly ? 'design' : ''}" data-cxcard="${k}" style="cursor:pointer" title="${esc((d.id || '') + (d.designOnly ? ' (not built yet)' : ''))} - click for ranks and drop sources">${cardBox(d, 150) || rowHtml(1, d)}${d.designOnly ? '<span class="dstamp">Not built yet</span>' : ''}${own[k] ? `<span class="pilecount" title="In your deck or collection">owned${own[k] > 1 ? ' x' + own[k] : ''}</span>` : ''}</div>`).join('') || '<span class="muted">No cards match.</span>'}</div>`;
   }
@@ -4883,7 +4895,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const stats = Object.entries(it.stats || {}).map(([k, v]) => `+${v}${pct(k)} ${nice(k)}`).join(', ');
     const imp = Object.entries(it.imp2 || {}).map(([k, v]) => k === 'Draw' ? `${v} draw` : k === 'Regen' ? `${v} regen` : `+${v}${pct(k)} ${nice(k)}`).join(', ');
     const lines = (it.lines || []).map(l => `${nice(l.stat)} ${l.v} (${l.lo}-${l.hi})`).join(' · ');
-    return `<div class="item" style="--rc:${RC[it.rarity] || 'var(--r-white)'}" title="${esc(lines ? 'Each roll: ' + lines : '')}"><div class="ih"><b>${esc(it.name)}</b><span>${it.rarity === 'Purple (Epic)' ? 'Purple' : it.rarity} &middot; ilvl ${it.ilvl}</span></div><div class="il">${esc(it.label || it.slot)}</div>${it.passive ? `<div class="st" style="color:#f0b070"><b>Passive:</b> ${esc(it.passive)}</div>` : ''}<div class="st">${esc(stats)}${imp ? '<br><span class="muted">Implicit: ' + esc(imp) + '</span>' : ''}</div>${extra || ''}</div>`;
+    return `<div class="item" style="--rc:${RC[it.rarity] || 'var(--r-white)'}" title="${esc(lines ? 'Each roll: ' + lines : '')}"><div class="ih"><b>${esc(it.name)}</b><span>${it.rarity === 'Purple (Epic)' ? 'Purple' : it.rarity} &middot; ilvl ${it.ilvl}</span></div><div class="il">${esc(it.label || it.slot)}</div>${it.passive ? `<div class="st" style="color:#f0b070"><b>Passive:</b> ${esc((it.codex && CB.CODEX_BY_KEY[it.codex] && CB.CODEX_BY_KEY[it.codex].text) || it.passive)}</div>` : ''}<div class="st">${esc(stats)}${imp ? '<br><span class="muted">Implicit: ' + esc(imp) + '</span>' : ''}</div>${extra || ''}</div>`;
   }
 
   function renderSideParty() {
@@ -5181,8 +5193,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     else if (!myTurn) hint.innerHTML = `${cb.current ? esc(cb.current.isPlayer ? (party ? cb.current.name : 'You') : cb.current.name) : ''} ${cb.current && cb.current.isPlayer && cb.myMi != null ? 'is taking their turn' : 'acting'}...<span id="tclock"></span>`
       + (wh ? ` <span class="muted">Showing ${esc(wh.name)}'s hand (${wh.mana} mana).</span> <button class="pilebtn" id="btnWatch">Show my hand</button>` : cb.myMi != null && !cb.duel && cb.current && cb.current.isPlayer && cb.current !== p && !cb.over ? ` <button class="pilebtn" id="btnWatch">Show ${esc(cb.current.name)}'s hand</button>` : '');
     else if (selected) { hint.textContent = `Choose a target for ${CARDS[selected.key].name} (Esc to cancel).`; hint.classList.add('alert'); }
-    else if (cb.myMi != null) hint.innerHTML = `Your turn. Click a card to play it. E ends your turn.<span id="tclock"></span>`;
-    else hint.textContent = party ? `${p.name}'s turn. Click a card to play it. E ends ${p.name}'s turn.` : 'Your turn. Click a card to play it. E ends your turn.';
+    else if (cb.myMi != null) hint.innerHTML = `Your turn. Drag a card onto its target to play it (or click it). E ends your turn.<span id="tclock"></span>`;
+    else hint.textContent = party ? `${p.name}'s turn. Drag a card onto its target to play it (or click it). E ends ${p.name}'s turn.` : 'Your turn. Drag a card onto its target to play it (or click it). E ends your turn.';
     const hp = wh || p; $('hand').classList.toggle('watching', !!wh);
     $('hand').innerHTML = hp.hand.map(c => {
       const d0 = cb.card(c), ec = d0.cost != null ? cb.costOf(hp, d0, c) : null, lt = cb.liveText(hp, d0), d = (ec != null && ec !== d0.cost) || lt !== d0.text ? Object.assign(Object.create(d0), { cost: ec != null ? ec : d0.cost, text: lt }) : d0;
@@ -5288,7 +5300,49 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   });
   $('foes').addEventListener('mouseout', (ev) => { if (ev.target.closest('.intent[data-cu]') && !(ev.relatedTarget && ev.relatedTarget.closest && ev.relatedTarget.closest('.intent[data-cu]'))) peek.hidden = true; });
   $('hand').addEventListener('click', () => { peek.hidden = true; });
+  // ---------- drag a card onto an enemy to play it (click-to-select still works). While aiming, the card's numbers include the target.
+  function playCard(c, tgt) {
+    selected = null;
+    if (cb.myMi != null) { netAct({ t: 'play', uid: c.uid, tgt }); render(); return; }
+    cb.play(c.uid, tgt); render(true); if (cb.over) combatOver();
+  }
+  function liveD(c, tgt) { const p = hero(), d0 = cb.card(c), ec = d0.cost != null ? cb.costOf(p, d0, c) : null; return Object.assign(Object.create(d0), { cost: ec != null ? ec : d0.cost, text: cb.liveText(p, d0, tgt || null) }); }
+  let drag = null, eatClick = false;
+  $('hand').addEventListener('pointerdown', (ev) => {
+    if (ev.button !== 0 || !cb) return; const b = ev.target.closest('.card, .cf'); if (!b || b.disabled || busy) return;
+    const c = hero().hand.find(x => x.uid === b.dataset.uid); if (!c) return;
+    drag = { c, b, x0: ev.clientX, y0: ev.clientY, moved: false, tgt: null, armed: false };
+  });
+  document.addEventListener('pointermove', (ev) => {
+    if (!drag) return; const D = drag, d = cb.card(D.c);
+    if (!D.moved) { if (Math.hypot(ev.clientX - D.x0, ev.clientY - D.y0) < 10) return; D.moved = true; selected = null;
+      const g = D.ghost = document.createElement('div'); g.className = 'dragghost'; g.innerHTML = cardBox(liveD(D.c), 190) || ''; document.body.appendChild(g); fitCards(g);
+      D.b.classList.add('dragging'); document.body.classList.add('aiming');
+      if (d.target === 'enemy') for (const u of $('foes').querySelectorAll('.unit')) { const a = cb.actorById(u.dataset.id); if (a && a.hp > 0) u.classList.add('droptgt'); } }
+    D.ghost.style.transform = `translate(${ev.clientX - 95}px, ${ev.clientY - 300}px)`; // card sits above the pointer so the target stays visible
+    const u = document.elementFromPoint(ev.clientX, ev.clientY); const unit = u && u.closest('#foes .unit.droptgt');
+    const tid = d.target === 'enemy' && unit ? unit.dataset.id : null;
+    if (tid !== D.tgt) { D.tgt = tid; for (const x of $('foes').querySelectorAll('.unit.droptgt')) x.classList.toggle('dropover', x.dataset.id === tid); D.ghost.innerHTML = cardBox(liveD(D.c, tid && cb.actorById(tid)), 190) || ''; fitCards(D.ghost); }
+    if (d.target !== 'enemy') { const armed = ev.clientY < $('hand').getBoundingClientRect().top - 10; if (armed !== D.armed) { D.armed = armed; D.ghost.classList.toggle('armed', armed); } }
+    else D.ghost.classList.toggle('armed', !!D.tgt);
+  });
+  document.addEventListener('pointerup', () => {
+    if (!drag) return; const D = drag; drag = null; if (!D.moved) return;
+    eatClick = true; setTimeout(() => { eatClick = false; }, 0);
+    if (D.ghost) D.ghost.remove(); D.b.classList.remove('dragging'); document.body.classList.remove('aiming');
+    for (const x of $('foes').querySelectorAll('.droptgt')) x.classList.remove('droptgt', 'dropover');
+    if (!cb || busy || !hero().hand.includes(D.c) || !cb.canPlay(D.c).ok) return render();
+    const d = cb.card(D.c);
+    if (d.target === 'enemy') { if (D.tgt) playCard(D.c, D.tgt); else render(); }
+    else if (D.armed) playCard(D.c, cb.alive()[0] && cb.alive()[0].id); else render();
+  });
+  // click-to-select mode: hovering a target updates the selected card's numbers too
+  $('foes').addEventListener('mouseover', (ev) => {
+    if (!selected || drag) return; const u = ev.target.closest('.unit.targetable'); const btn = $('hand').querySelector(`[data-uid="${selected.uid}"]`); if (!btn) return;
+    const f = cardFace(liveD(selected, u ? cb.actorById(u.dataset.id) : null)); if (f && btn.classList.contains('cf')) { btn.innerHTML = f; fitCards(btn); }
+  });
   $('hand').addEventListener('click', (ev) => {
+    if (eatClick) return;
     const b = ev.target.closest('.card, .cf'); if (!b || b.disabled || busy) return;
     const c = hero().hand.find(x => x.uid === b.dataset.uid); if (!c) return;
     const d = CARDS[c.key];
@@ -5297,7 +5351,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (cb.myMi != null) { b.disabled = true; netAct({ t: 'play', uid: c.uid, tgt }); return; }
     cb.play(c.uid, tgt); render(true); if (cb.over) combatOver();
   });
-  function pickTarget(id) { if (!selected) return; const c = selected; selected = null; if (cb.myMi != null) { render(); netAct({ t: 'play', uid: c.uid, tgt: id }); return; } cb.play(c.uid, id); render(true); if (cb.over) combatOver(); }
+  function pickTarget(id) { if (!selected) return; playCard(selected, id); }
   $('foes').addEventListener('click', (ev) => { const u = ev.target.closest('.unit.targetable'); if (u) pickTarget(u.dataset.id); });
   $('foes').addEventListener('keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('.unit.targetable')) { ev.preventDefault(); pickTarget(ev.target.dataset.id); } });
   document.addEventListener('keydown', (ev) => {

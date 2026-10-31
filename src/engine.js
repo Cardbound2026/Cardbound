@@ -540,7 +540,7 @@ const CODEXES = {
     ['sunderer', 'Sunderer', 'Your Attacks also apply 3 Vulnerable.'], ['hemorrhage', 'Hemorrhage', '+10% Crit Chance. Your crits apply Bleed equal to 50% of the damage they deal.']],
   Rogue: [['nightstalker', 'Nightstalker', 'Attacks you play while in Stealth deal 50% more damage.'], ['venomancer', 'Venomancer', 'Poison you apply is increased by 2.'],
     ['bloodletter', 'Bloodletter', 'Bleed you apply is increased by 50%.'], ['ninja', 'Ninja', 'Shurikens deal 4 more damage. Start each turn with a Shuriken in hand.'],
-    ['saboteur', 'Saboteur', 'The first enemy card you make an enemy discard or exhaust each round also adds a Dazed to its discard pile.'], ['phantom', 'Phantom', 'Every 20 damage your Dodge prevents gives your next Attack +25% damage (stacks).']],
+    ['saboteur', 'Saboteur', 'The first enemy card you make an enemy discard or exhaust each round also adds a Dazed to its discard pile.'], ['phantom', 'Phantom', 'Every time you Dodge 20 damage, your next Attack deals 25% more damage. Stacks.']],
   Mage: [['heart_of_winter', 'Heart of Winter', 'Frost Skills that cost 20 or more deal 30% more damage.'], ['spellstorm', 'Spellstorm', 'Each Arcane Skill you play makes your Skills cost 5 less for the rest of the turn; every third one draws a card.'],
     ['conflagration', 'Conflagration', 'Applying Burn to a target that is already Burning also deals that much Fire damage at once.'], ['barrier_savant', 'Barrier Savant', 'Barrier you gain is increased by 25%, and cards that spend Barrier hit 25% harder.'],
     ['entropy', 'Entropy', 'Mana you drain or burn from enemies is increased by 50%, and each drain applies 2 Exposure.'], ['archmage', 'Archmage', 'Skills of a different element from your previous two deal 25% more damage.']],
@@ -944,7 +944,7 @@ class Combat {
   card(c) { return c.rank ? (c._v || (c._v = rankedCard(c.key, c.rank))) : C[c.key]; }
   // card text with live numbers: damage and defense as they would land right now from this hero's stats, gear and active buffs
   // (before the target's own resistance, weakness, Vulnerable or Block). Changed numbers are wrapped \u0001n\u0002 (up) or \u0003n\u0004 (down).
-  liveText(p, d) {
+  liveText(p, d, e) {
     if (!p || !p.isPlayer || !d || !d.text || d.type === 'Status' || d.type === 'Power') return d && d.text;
     const kind = d.type, pow = p.powers.length > 0, T = p.turn || {};
     const dmgMult = (dtype) => {
@@ -952,19 +952,24 @@ class Combat {
       const stat = kind === 'Attack' ? p.strength + p.strTurn + p.strCombat : p.intelligence + (p.intTurn || 0);
       const setup = kind === 'Attack' ? (p.nextAttackMult || 1) : (d.tags && d.tags.dmg ? (p.nextSkillMult || 1) : 1);
       let m = (1 + stat / 100) * (1 + (p.elem[dtype] || 0) / 100) * (1 - Math.min(p.weak, 90) / 100) * setup * (T.nextMult || 1);
-      if (pow) { try { m *= this.pwProd(p, 'cardMult', d); } catch (e) {} }
+      if (pow) { try { m *= this.pwProd(p, 'cardMult', d); } catch (x) {} }
+      if (e && e.hp > 0) { // aimed at a target: its weakness/resistance, Vulnerable, Condemnation and Unwarded too
+        m *= this.typeMod(e, dtype) * (1 + (e.vulnerable || 0) / 100 * (pow ? Math.max(1, ...this.pws(p).map(([, q]) => q.vulnX || 1)) : 1));
+        m *= (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? 1 + (e.unwarded || 0) / 100 : 1);
+        if (e.isPlayer) m *= (1 - Math.min(75, e.resist[dtype] || 0) / 100) * (1 + this.pressure());
+      }
       return m;
     };
     let flat = 0;
     if (kind === 'Attack') flat += (p.nextAttackFlat || 0) + (p.windUp ? Math.floor((d.cost || 0) / 5) : 0);
     if (kind === 'Skill' && d.tags && d.tags.dmg) flat += T.skillFlat || 0;
-    if (pow) { try { flat += this.pwSum(p, 'flat', d); } catch (e) {} }
+    if (pow) { try { flat += this.pwSum(p, 'flat', d); } catch (x) {} }
     const mark = (n0, n1) => n1 > n0 ? '\u0001' + n1 + '\u0002' : n1 < n0 ? '\u0003' + n1 + '\u0004' : String(n1);
     const EL = '(Fire|Frost|Arcane|Nature|Shadow|Holy|Physical)';
     let t = d.text.replace(new RegExp('\\b(\\d+)( ' + EL + ')? damage(?! back)', 'g'), (m, n, sp, el) => { const v = Math.max(0, Math.round((+n + flat) * dmgMult(el || d.dtype || 'Physical'))); return mark(+n, v) + (sp || '') + ' damage'; });
     t = t.replace(/\b([Dd]eal) (\d+) (instead|more)/g, (m, w, n, x) => `${w} ${mark(+n, Math.max(0, Math.round((+n + flat) * dmgMult(d.dtype || 'Physical'))))} ${x}`);
     let defM = 1 + (p.dexterity || 0) / 100; if (T.defX || this.hasTimed(p, 'defX')) defM *= 2;
-    if (pow) { try { defM *= this.pwProd(p, 'defMult') * this.pwProd(p, 'defMultFn'); } catch (e) {} }
+    if (pow) { try { defM *= this.pwProd(p, 'defMult') * this.pwProd(p, 'defMultFn'); } catch (x) {} }
     t = t.replace(/\b([Gg]ains?) (\d+) (Block|Barrier|Dodge|Parry)/g, (m, w, n, k) => `${w} ${mark(+n, Math.round(+n * defM))} ${k}`);
     return t;
   }
