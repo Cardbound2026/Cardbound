@@ -93,6 +93,19 @@ body.sheetopen #btnUpdates, body.modalopen #btnUpdates { display: none; }
 .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; align-items: start; }
 .two h3 { font-family: var(--f-ui); font-weight: 700; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 2px 0 6px; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 .list.tall { max-height: 560px; }
+.rechead { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; } .rechead .tabs { flex: 1; margin: 0; } .rechead .btn { padding: 4px 12px; font-size: 13px; }
+.recfilt { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 0 0 6px; font-size: 13px; } .recfilt .chip { cursor: pointer; font: inherit; font-size: 12.5px; padding: 2px 10px; } .recfilt .chip.on { color: #1a1208; background: var(--accent); border-color: var(--accent); }
+.rectable { max-height: 62vh; overflow: auto; } .rectable table { width: 100%; border-collapse: collapse; font-size: 13.5px; } .rectable th { position: sticky; top: 0; background: var(--panel); text-align: left; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 5px 8px; border-bottom: 1px solid var(--line); z-index: 1; }
+.rectable td { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,.05); } .rectable tbody tr { cursor: pointer; } .rectable tbody tr:hover { background: rgba(214,161,74,.08); } .rectable tr.mine td { background: rgba(214,161,74,.06); } .rectable .num { text-align: right; font-variant-numeric: tabular-nums; } .rectable .rk { color: var(--muted); width: 28px; }
+.recgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; } .reccard { border: 1px solid var(--line); border-top: 3px solid var(--ec); border-radius: 6px; padding: 8px 12px 10px; background: rgba(20,16,12,.45); }
+.reccard h4 { margin: 0 0 6px; font-size: 17px; color: var(--ec); } .reccard ol { margin: 0; padding-left: 20px; display: grid; gap: 3px; font-size: 13.5px; } .reccard li { cursor: pointer; } .reccard li:hover b { text-decoration: underline; }
+.reccard .rv { float: right; color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; } .reccard dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; margin: 0; font-size: 13.5px; } .reccard dt { color: var(--muted); } .reccard dd { margin: 0; } .reccard dd .rv { float: none; }
+.recstats { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); margin: -4px 0 4px; } .recstats b { color: var(--text); font-size: 16px; }
+.recmodal { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 14px; } @media (max-width: 760px) { .recmodal { grid-template-columns: 1fr; } }
+.recmodal h3, .modal h3.rech { font-size: 18px; margin: 4px 0 6px; color: var(--accent); } .recgearl { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px; }
+.recgear { display: grid; border-left: 3px solid var(--rc); background: var(--panel2); border-radius: 3px; padding: 4px 8px; font-size: 12.5px; line-height: 1.3; } .recgear > span:first-child { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; } .recgear b { color: var(--rc); } .recgear small { color: #c9bfae; }
+.rectal { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; font-size: 13px; } .rectal .muted { display: inline-block; width: 42px; } .recmaps { font-size: 13px; border-collapse: collapse; width: 100%; } .recmaps td { padding: 2px 4px; border-bottom: 1px solid rgba(255,255,255,.05); }
+.recdeck { display: flex; flex-wrap: wrap; gap: 4px; } .reccardn { font-size: 12.5px; padding: 2px 8px; border-left: 3px solid var(--rc); background: var(--panel2); border-radius: 3px; cursor: help; } .reccardn b { color: var(--accent); }
 .stashgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 6px; align-content: start; } .stashgrid > .muted { grid-column: 1 / -1; }
 .item .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .item .acts .btn { padding: 3px 9px; font-size: 13px; }
@@ -711,7 +724,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   <div id="secHeroes"><div class="heroes" id="heroes" role="tablist" aria-label="Characters"></div></div>
   <div class="sheetgrid" id="sheetGrid">
     <aside id="secChar"><div class="panel" id="hubChar"></div></aside>
-    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div><div id="hpFriends"></div><div id="hpCodex"></div><div id="hpTest"></div><div id="hpAmu"></div><div id="hpGuild"></div><div id="hpRaid"></div></div>
+    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div><div id="hpFriends"></div><div id="hpCodex"></div><div id="hpTest"></div><div id="hpAmu"></div><div id="hpGuild"></div><div id="hpRaid"></div><div id="hpRec"></div></div>
   </div>
 </div></div>
 <div class="modal" id="modal" hidden><div class="box" id="modalBox"></div></div>
@@ -1136,7 +1149,7 @@ const POWERS = {
   open_veins: { dotTicks: { bleed: 2 } },
   sharpened_stars: { shurikenX: 2 },
   shuriken_storm: { turnStart: (cb) => cb.addToHand('shuriken'), shurikenAoe: true },
-  reflexive_volley: { fullBlock: (cb, p, e) => { if (e.hp > 0) cb.powerHit(p, e, shurikenDmg, 'Reflexive Volley', 'Physical', 'Attack'); } },
+  reflexive_volley: { fullBlock: (cb, p, e) => { if (e.hp > 0) cb.powerHit(p, e, Math.round((shurikenDmg + cb.pwSum(p, 'shurikenPlus')) * cb.pwProd(p, 'shurikenX')), 'Reflexive Volley', 'Physical', 'Attack'); } }, // Nov 1: the thrown Shuriken gets Shuriken Mastery / Sharpened Stars / Ninja too
   fleetfooted: { dealt: (cb, p, h) => { if (h.kind === 'Attack' && h.lost > 0 && !h.absorbed) cb.gainDef(2); } },
   first_move: { initPlus: () => 100 },
   nimble: { turnStart: (cb) => cb.gainDef(3) },
@@ -2114,9 +2127,10 @@ class Combat {
     if (kind === 'Attack') flat += (p.nextAttackFlat || 0) + (p.weaponDmg || 0) + (p.windUp ? Math.floor((d.cost || 0) / 5) * (+p.windUp) : 0);
     if (kind === 'Skill' && d.tags && d.tags.dmg) flat += T.skillFlat || 0;
     if (pow) { try { flat += this.pwSum(p, 'flat', d); } catch (x) {} }
+    let shX = 1, shP = 0; if (pow && d.key === 'shuriken') { try { shP = this.pwSum(p, 'shurikenPlus'); shX = this.pwProd(p, 'shurikenX'); } catch (x) {} } // Shuriken Mastery / Sharpened Stars / Ninja show on the card
     const mark = (n0, n1) => n1 > n0 ? '\u0001' + n1 + '\u0002' : n1 < n0 ? '\u0003' + n1 + '\u0004' : String(n1);
     const EL = '(Fire|Frost|Arcane|Nature|Shadow|Holy|Physical)';
-    let t = d.text.replace(new RegExp('\\b(\\d+)( ' + EL + ')? damage(?! back)', 'g'), (m, n, sp, el) => { const v = Math.max(0, Math.round((+n + flat) * dmgMult(el || d.dtype || 'Physical'))); return mark(+n, v) + (sp || '') + ' damage'; });
+    let t = d.text.replace(new RegExp('\\b(\\d+)( ' + EL + ')? damage(?! back)', 'g'), (m, n, sp, el) => { const v = Math.max(0, Math.round(((+n + shP) * shX + flat) * dmgMult(el || d.dtype || 'Physical'))); return mark(+n, v) + (sp || '') + ' damage'; });
     t = t.replace(/\b([Dd]eal) (\d+) (instead|more)/g, (m, w, n, x) => `${w} ${mark(+n, Math.max(0, Math.round((+n + flat) * dmgMult(d.dtype || 'Physical'))))} ${x}`);
     let defM = 1 + (p.dexterity || 0) / 100; if (T.defX || this.hasTimed(p, 'defX')) defM *= 2;
     if (pow) { try { defM *= this.pwProd(p, 'defMult') * this.pwProd(p, 'defMultFn'); } catch (x) {} }
@@ -3605,6 +3619,10 @@ function craftCard(p, key, cardKey) {
   const cost = inkCost(cardKey, c); if ((p.ink || 0) < cost) return { ok: false, why: `Needs ${cost} Ink (you have ${p.ink || 0}).` };
   p.ink -= cost; c.cards.push({ id: uid('k'), key: cardKey, rank: 0 }); (c.seen = c.seen || {})[cardKey] = 1; return { ok: true, cost };
 }
+// Hall of Records (Nov 1): per map, the highest level reached and the furthest row at that level (15 = the boss is dead)
+function noteMapBest(c, mk, lvl, row) { c.mapBest = c.mapBest || {}; const b = c.mapBest[mk]; if (!b || lvl > b.lvl || (lvl === b.lvl && row > b.row)) c.mapBest[mk] = { lvl, row, at: Date.now() }; }
+// progress score for the leaderboard: every map counts its best level x 15 + furthest row (so +1 row 1 beats +0 boss)
+function progressScore(c) { return Object.values(c.mapBest || {}).reduce((s, b) => s + (b.lvl * 15 + b.row), 0); }
 function beatMap(c, mk) { return !!(c && c.mapKills && c.mapKills[mk] != null); }
 
 // ---------- runs
@@ -3640,7 +3658,8 @@ function absorbRun(p, run, mi) {
   p.gold += kept.gold;
   // codex XP from this run's kills; +10% for every codex this hero has maxed
   const xpGain = {}; { const bonus = 1 + 0.1 * maxedCodexes(c); for (const [cx, v] of Object.entries(mem.cxp || {})) { if (!CB.CODEX_BY_KEY[cx]) continue; const st = codexState(c, cx), before = CB.codexLevel(st.xp).level, g = Math.round(v * bonus); st.xp += g; xpGain[cx] = { xp: g, from: before, to: CB.codexLevel(st.xp).level }; } }
-  c.runs++; const row = run.currentRow(); c.best = Math.max(c.best, row); if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); }
+  c.runs++; const row = run.currentRow(); c.best = Math.max(c.best, row);
+  noteMapBest(c, run.mapKey || 'physical', run.level || 0, run.over === 'victory' ? 15 : row); // Hall of Records: furthest level and row per map if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); }
   // the run's damage meter, kept so the Chronicler can show it later (numbers rounded to keep saves small)
   const meter = Object.values(run.meter || {}).map(m => { const r = (o) => Object.fromEntries(Object.entries(o || {}).filter(x => x[1] > 0).map(([k, v]) => [k, Math.round(v)])); return { id: m.id, name: m.name, isPlayer: m.isPlayer, cls: m.cls, dealt: r(m.dealt), healed: r(m.healed), taken: r(m.taken), absorbed: Math.round(m.absorbed || 0) }; });
   p.history.unshift({ meter: meter.length ? meter : undefined, map: run.mapKey, fights: run.fightsWon, cls: mem.cls, name: mem.name, party: run.members && run.members.length > 1 ? run.members.map(m => m.cls) : undefined, level: run.level, result: run.over, row, items, cards, gold: kept.gold, ordered, at: Date.now() });
@@ -3649,7 +3668,7 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain };
 }
 
-const API = { INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -4494,7 +4513,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     updatePrompt(); updateShopBtn();
   }
   function facing() { const [dx, dy] = DIRS[P.dir]; return NPCS.find(n => n.x === P.x + dx && n.y === P.y + dy) || PROPS.find(p => p.kind === 'chest' && p.x === P.x + dx && p.y === P.y + dy) || PROPS.find(p => p.kind === 'wagon' && P.x + dx >= p.x && P.x + dx < p.x + p.w && P.y + dy >= p.y && P.y + dy < p.y + p.h) || PROPS.find(p => p.kind === 'board' && p.x === P.x + dx && p.y === P.y + dy); }
-  function interactTarget() { const f = facing(); if (!f) return null; if (f.name) return f; if (f.kind === 'chest') return NPCS[0]; if (f.kind === 'wagon') return NPCS.find(n => n.id === 'wagon'); if (f.kind === 'board') return NPCS.find(n => n.id === 'chron'); return null; }
+  function interactTarget() { const f = facing(); if (!f) return null; if (f.name) return f; if (f.kind === 'chest') return NPCS[0]; if (f.kind === 'wagon') return NPCS.find(n => n.id === 'wagon'); if (f.kind === 'board') return BOARD; return null; }
   let lastPrompt = '';
   function updatePrompt() {
     const n = interactTarget(); const txt = n && !townBusy() ? `<kbd>Space</kbd> Talk to ${esc(n.name)}` : '';
@@ -4526,7 +4545,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (!free(tx, ty)) return;
     const path = bfs(tx, ty, false); if (path) { P.path = path; P.talkTo = null; P.target = { x: tx, y: ty }; }
   });
-  function interactFor(p) { return p.kind === 'chest' ? NPCS[0] : p.kind === 'wagon' ? NPCS.find(n => n.id === 'wagon') : NPCS.find(n => n.id === 'chron'); }
+  const BOARD = { id: 'board', name: 'Hall of Records', fixed: true, x: 16, y: 12, open: 'records', btn: 'Read the records', lines: ['The notice board: who has gone furthest on every road, and which guilds have felled the raid bosses.', 'Names are carved, scratched and painted over each other. Someone has added a crown next to theirs.'] };
+  function interactFor(p) { return p.kind === 'chest' ? NPCS[0] : p.kind === 'wagon' ? NPCS.find(n => n.id === 'wagon') : p.kind === 'board' ? BOARD : NPCS.find(n => n.id === 'chron'); }
   document.addEventListener('keydown', (ev) => {
     if ($('scrStart').hidden || ev.target.matches('input, select, textarea')) return;
     if (!$('talk').hidden) {
@@ -4570,6 +4590,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     amulets: { title: 'Jeweler Rook: amulets', show: ['secChar', 'hpAmu'] },
     guild: { title: 'Guildmaster Strecks: guilds', show: ['hpGuild'] },
     raid: { title: 'Raid Warden Bagadee: raids', show: ['hpRaid'] },
+    records: { title: 'Hall of Records', show: ['hpRec'] },
   };
   function talk(n) {
     P.held = []; P.path = []; P.target = null;
@@ -4584,7 +4605,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function openSheet(kind) {
     const k = SHEETS[kind]; if (k.gtab) GT.tab = k.gtab; renderHub();
     $('sheetTitle').textContent = k.title;
-    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends', 'hpCodex', 'hpTest', 'hpAmu', 'hpGuild', 'hpRaid']) $(id).hidden = !k.show.includes(id);
+    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends', 'hpCodex', 'hpTest', 'hpAmu', 'hpGuild', 'hpRaid', 'hpRec']) $(id).hidden = !k.show.includes(id);
     $('sheetGrid').classList.toggle('solo', !k.show.includes('secChar'));
     $('sheet').hidden = false; $('sheet').dataset.kind = kind; fitCards($('sheet')); $('sheetClose').focus();
     if (kind === 'friends') { renderFriendsTab(); loadFriends(); }
@@ -4593,6 +4614,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (kind === 'amulets') renderAmuShop();
     if (kind === 'guild') { renderGuild(); guildLoad(); }
     if (kind === 'raid') renderRaid();
+    if (kind === 'records') { renderRecords(); loadRecords(); }
   }
   // body classes for "a big window is open" (the chat box floats beside it)
   for (const [id, cls] of [['sheet', 'sheetopen'], ['modal', 'modalopen']]) { const el = $(id), sync = () => document.body.classList.toggle(cls, !el.hidden && !$('scrStart').hidden); new MutationObserver(sync).observe(el, { attributes: true, attributeFilter: ['hidden'] }); }
@@ -5149,8 +5171,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793509367516';
-  const CB_BUILD = '2d6201b66f'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793542273596';
+  const CB_BUILD = 'a076abc311'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -5651,7 +5673,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       modal(`<h2 class="loss">The raid falls</h2><p>${esc(CB.RAID_NAMES[mk] || 'The boss')} wiped the raid in ${cb.round} rounds. Nothing is lost: no gear, no gold, and no lockout. Regroup and try again.</p><div class="row"><button class="btn primary" id="mNew">Back to Emberwatch</button><button class="btn" id="mClose">Look at the fight</button></div>`);
       $('mNew').onclick = backToTown; $('mClose').onclick = closeModal; return;
     }
-    if (c && !cb._locked) { cb._locked = true; c.raidLocks = c.raidLocks || {}; c.raidLocks[mk] = Date.now(); c.raidKills = (c.raidKills || 0) + 1; save(); }
+    if (S && S.host === SOC.me && typeof recordRaidKill === 'function') recordRaidKill(cb); // Hall of Records: the raid leader writes the kill
+    if (c && !cb._locked) { cb._locked = true; c.raidLocks = c.raidLocks || {}; c.raidLocks[mk] = Date.now(); c.raidKills = (c.raidKills || 0) + 1; save(); if (typeof publishHero === 'function') publishHero(heroKey, true); }
     if (!cb.raidLoot) { cb.raidLoot = raidLootRoll(cb); if (S) S.lootAt = Date.now(); sysChat(`${CB.RAID_NAMES[mk]} falls! ${cb.raidLoot.length} items dropped: roll Need, Greed or Pass.`); }
     raidLootModal();
   }
@@ -5701,6 +5724,124 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       else sysChat(`Your stash is full: ${iname} is lost.`);
     }
   }
+
+  // ---------- Hall of Records (Nov 1): the notice board in town (and Menu). Tables: hero_records, raid_kills (supabase/records.sql)
+  // Every hero publishes a small public snapshot (progress per map, gear, deck, codex talents) when they come home from a run.
+  // Raid leaders record each raid boss kill with their guild, level and number of rounds.
+  const REC = { tab: 'heroes', sort: 'progress', cls: 'All', heroes: null, kills: null, err: null, at: 0, busy: false, pubAt: {} };
+  const recSetupErr = (e) => e && /relation|does not exist|schema cache|column/i.test(e.message || '');
+  const ROWTXT = (r) => r >= 15 ? 'boss killed' : `row ${r}`;
+  function heroSnapshot(c) {
+    const cx = CBHub.wornCodex(c), info = cx ? CBHub.codexInfo(c, cx) : null;
+    const gear = c.gear.map(g => { const o = Object.assign({}, g); delete o.id; delete o.lines; return o; });
+    return { gear, deck: c.deck.map(k => [k.key, k.rank || 0]), codex: cx ? { key: cx, level: info.level, picks: info.picks.slice(0, info.rows) } : null,
+      codexLv: Object.fromEntries(Object.entries(c.codexes || {}).map(([k, st]) => [k, CB.codexLevel(st.xp || 0).level]).filter(x => x[1] > 0)),
+      runs: c.runs || 0, bossKills: c.bossKills || 0, raidKills: c.raidKills || 0, gearScore: CBHub.gearScore(c), deckLevel: CB.deckLevel(c.deck), starter: c.starter };
+  }
+  // publish one hero (throttled to once a minute unless forced)
+  async function publishHero(key, force) {
+    if (!supa || !supaUser) return; const c = profile.chars[key]; if (!c) return;
+    if (!force && Date.now() - (REC.pubAt[key] || 0) < 60000) return; REC.pubAt[key] = Date.now();
+    const row = { user_id: supaUser.id, hero_key: key, hero_name: c.name, hero_class: c.cls, guild_name: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null,
+      progress: CBHub.progressScore(c), power: CBHub.powerLevel(c), maps: c.mapBest || {}, snapshot: heroSnapshot(c), updated_at: new Date().toISOString() };
+    const { error } = await supa.from('hero_records').upsert(row);
+    if (error) { if (recSetupErr(error)) REC.err = 'setup'; else console.warn('hero_records', error); }
+  }
+  async function publishAllHeroes(force) { for (const k of Object.keys(profile.chars || {})) await publishHero(k, force); }
+  // the raid leader records a kill (once per fight)
+  async function recordRaidKill(cbx) {
+    if (!supa || !supaUser || !cbx || cbx._recKill) return; cbx._recKill = true;
+    const G = typeof GUILD !== 'undefined' ? GUILD.me : null;
+    const row = { created_by: supaUser.id, map: cbx.raidMap, level: cbx.level || 0, rounds: cbx.round, guild_id: G ? G.id : null, guild_name: G ? G.name : null,
+      heroes: cbx.players.map(p => ({ name: p.name, cls: p.cls, alive: p.hp > 0 })) };
+    const { error } = await supa.from('raid_kills').insert(row);
+    if (error && !recSetupErr(error)) console.warn('raid_kills', error);
+  }
+  async function loadRecords(force) {
+    if (!supa || !supaUser) { REC.err = 'offline'; renderRecords(); return; }
+    if (REC.busy || (!force && REC.heroes && Date.now() - REC.at < 30000)) { renderRecords(); return; }
+    REC.busy = true; renderRecords();
+    try {
+      await publishAllHeroes(true);
+      const [h, k] = await Promise.all([supa.from('hero_records').select('*').order('progress', { ascending: false }).limit(500), supa.from('raid_kills').select('*').order('killed_at', { ascending: true }).limit(2000)]);
+      if (h.error || k.error) { const e = h.error || k.error; REC.err = recSetupErr(e) ? 'setup' : (e.message || 'error'); }
+      else { REC.err = null; REC.heroes = h.data || []; REC.kills = k.data || []; REC.at = Date.now(); }
+    } catch (e) { REC.err = String(e.message || e); }
+    REC.busy = false; renderRecords();
+  }
+  const mapsInOrder = () => Object.values(DATA.maps).sort((a, b) => a.num - b.num);
+  const bestMapOf = (h) => { let best = null; for (const M of mapsInOrder()) { const b = (h.maps || {})[M.key]; if (b && (!best || b.lvl * 15 + b.row + M.num * .01 > best.score)) best = { M, b, score: b.lvl * 15 + b.row + M.num * .01 }; } return best; };
+  function renderRecords() {
+    const el = $('hpRec'); if (!el) return;
+    const tabs = [['heroes', 'Heroes'], ['maps', 'Map records'], ['raids', 'Raid records']].map(([k, n]) => `<button role="tab" data-rectab="${k}" aria-selected="${REC.tab === k}">${n}</button>`).join('');
+    let body = '';
+    if (REC.err === 'offline') body = '<p class="muted">Sign in to see the Hall of Records: it lists every player\'s heroes.</p>';
+    else if (REC.err === 'setup') body = '<p class="down">The Hall of Records needs a one-time database update: run supabase/records.sql in the Supabase SQL editor.</p>';
+    else if (REC.err) body = `<p class="down">Could not load the records: ${esc(REC.err)}</p>`;
+    else if (!REC.heroes) body = '<p class="muted">Reading the records...</p>';
+    else if (REC.tab === 'heroes') body = recHeroes();
+    else if (REC.tab === 'maps') body = recMaps();
+    else body = recRaids();
+    el.innerHTML = `<div class="rechead"><div class="tabs" role="tablist">${tabs}</div><span class="muted">${REC.busy ? 'Updating...' : REC.at ? 'Updated ' + new Date(REC.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ''}</span><button class="btn" id="recRefresh">Refresh</button></div>${body}`;
+  }
+  function recHeroes() {
+    let list = REC.heroes.filter(h => REC.cls === 'All' || h.hero_class === REC.cls);
+    list = list.slice().sort((a, b) => REC.sort === 'power' ? b.power - a.power || b.progress - a.progress : b.progress - a.progress || b.power - a.power);
+    const filt = `<div class="recfilt"><span class="muted">Sort</span>${[['progress', 'Progress'], ['power', 'Power']].map(([k, n]) => `<button class="chip ${REC.sort === k ? 'on' : ''}" data-recsort="${k}">${n}</button>`).join('')}<span class="muted" style="margin-left:10px">Class</span>${['All', 'Warrior', 'Rogue', 'Mage', 'Paladin'].map(k => `<button class="chip ${REC.cls === k ? 'on' : ''}" data-reccls="${k}">${k}</button>`).join('')}</div>
+      <p class="savenote" style="margin:0 0 6px">Progress adds up every map: 15 points per map level reached plus the furthest row at that level (the boss counts as row 15). Click a hero to see their gear, deck and talents.</p>`;
+    if (!list.length) return filt + '<p class="muted">No heroes yet.</p>';
+    const rows = list.slice(0, 100).map((h, i) => { const bm = bestMapOf(h), cx = h.snapshot && h.snapshot.codex, cxn = cx && CB.CODEX_BY_KEY[cx.key] ? CB.CODEX_BY_KEY[cx.key].name : '';
+      return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td><b style="color:${CC[h.hero_class] || 'var(--text)'}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num">${h.progress}</td><td class="num">${h.power}</td><td>${bm ? `${esc(bm.M.name)} +${bm.b.lvl}, ${ROWTXT(bm.b.row)}` : '<span class="muted">no runs yet</span>'}</td><td class="muted">${cxn ? `${esc(cxn)} Lv ${cx.level}` : ''}</td></tr>`; }).join('');
+    return filt + `<div class="rectable"><table><thead><tr><th>#</th><th>Hero</th><th>Guild</th><th class="num">Progress</th><th class="num">Power</th><th>Furthest</th><th>Codex</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  function recMaps() {
+    return `<p class="savenote" style="margin:0 0 6px">For each road: the highest map level any hero has reached, then the furthest row at that level.</p><div class="recgrid">${mapsInOrder().map(M => {
+      const top = REC.heroes.filter(h => h.maps && h.maps[M.key]).map(h => ({ h, b: h.maps[M.key] })).sort((x, y) => y.b.lvl - x.b.lvl || y.b.row - x.b.row || (x.b.at || 0) - (y.b.at || 0)).slice(0, 5);
+      return `<div class="reccard" style="--ec:${ELC[M.element] || 'var(--accent)'}"><h4>${M.num}. ${esc(M.name)}</h4>${top.length ? `<ol>${top.map(({ h, b }, i) => `<li data-rechero="${h.user_id}|${esc(h.hero_key)}"><b style="color:${CC[h.hero_class]}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.guild_name || '')}</span><span class="rv">+${b.lvl} &middot; ${ROWTXT(b.row)}</span></li>`).join('')}</ol>` : '<p class="muted">Nobody has walked this road yet.</p>'}</div>`; }).join('')}</div>`;
+  }
+  function recRaids() {
+    const who = (k) => k.guild_name ? esc(k.guild_name) : `<span class="muted">No guild</span> (${esc((k.heroes[0] || {}).name || '?')}'s party)`;
+    const when = (k) => new Date(k.killed_at).toLocaleDateString([], { month: 'short', day: 'numeric' });
+    return `<p class="savenote" style="margin:0 0 6px">Every raid kill is recorded by the raid leader, under the leader's guild. Fastest counts the fewest rounds at any level.</p><div class="recgrid">${mapsInOrder().map(M => {
+      const ks = REC.kills.filter(k => k.map === M.key), nm = CB.RAID_NAMES[M.key] || M.name;
+      if (!ks.length) return `<div class="reccard" style="--ec:${ELC[M.element] || 'var(--accent)'}"><h4>${esc(nm)}</h4><p class="muted">Not killed yet. The first guild to bring it down goes here.</p></div>`;
+      const first = ks.slice().sort((a, b) => new Date(a.killed_at) - new Date(b.killed_at))[0], high = ks.slice().sort((a, b) => b.level - a.level || a.rounds - b.rounds)[0], fast = ks.slice().sort((a, b) => a.rounds - b.rounds || b.level - a.level)[0];
+      const guilds = {}; for (const k of ks) { const g = k.guild_name || '(no guild)'; guilds[g] = (guilds[g] || 0) + 1; }
+      return `<div class="reccard" style="--ec:${ELC[M.element] || 'var(--accent)'}"><h4>${esc(nm)}</h4><dl>
+        <dt>First kill</dt><dd>${who(first)} <span class="muted">${when(first)}, +${first.level}</span></dd>
+        <dt>Highest level</dt><dd>${who(high)} <span class="rv">+${high.level}</span> <span class="muted">${high.rounds} rounds</span></dd>
+        <dt>Fastest</dt><dd>${who(fast)} <span class="rv">${fast.rounds} round${fast.rounds === 1 ? '' : 's'}</span> <span class="muted">+${fast.level}</span></dd>
+        <dt>Kills</dt><dd>${ks.length} <span class="muted">by ${Object.keys(guilds).length} guild${Object.keys(guilds).length === 1 ? '' : 's'}</span></dd></dl></div>`; }).join('')}</div>`;
+  }
+  function recHeroModal(uid, key) {
+    const h = (REC.heroes || []).find(x => x.user_id === uid && x.hero_key === key); if (!h) return;
+    const S = h.snapshot || {}, cx = S.codex, cxd = cx && CB.CODEX_BY_KEY[cx.key], tr = cx && CB.TALENTS[cx.key];
+    const gear = (S.gear || []).slice().sort((a, b) => (CBHub.SLOTS.indexOf(a.slot) - CBHub.SLOTS.indexOf(b.slot))).map(g => `<div class="recgear" style="--rc:${RC[g.rarity] || 'var(--line)'}"><span class="muted">${esc(g.slot)}</span><b>${esc(g.name)}</b><span class="muted">${esc(g.rarity === 'Purple (Epic)' ? 'Epic' : g.rarity || '')} &middot; ilvl ${g.ilvl || 1}</span><small>${Object.entries(g.stats || {}).map(([k, v]) => `+${v} ${esc(k.replace(/^(Resistance|Elemental\/Holy Damage):(.*)$/, (m, a, b) => b + (a[0] === 'R' ? ' Res' : ' Dmg')))}`).join(', ')}</small></div>`).join('');
+    const grp = {}; for (const [k, r] of S.deck || []) { const id = k + '|' + r; grp[id] = (grp[id] || 0) + 1; }
+    const deck = Object.entries(grp).map(([id, n]) => { const [k, r] = id.split('|'), d = CARDS[k]; return d ? { d, r: +r, n } : null; }).filter(Boolean).sort((a, b) => (['Gold', 'Blue', 'Green', 'White'].indexOf(a.d.rarity) - ['Gold', 'Blue', 'Green', 'White'].indexOf(b.d.rarity)) || a.d.name.localeCompare(b.d.name))
+      .map(x => `<span class="reccardn" style="--rc:${RC[x.d.rarity]}" title="${esc(x.d.text || '')}">${x.n > 1 ? x.n + 'x ' : ''}${esc(x.d.name)}${x.r ? ` <b>+${x.r}</b>` : ''}</span>`).join('');
+    const tal = cx && tr ? (cx.picks || []).map((j, i) => { if (j == null) return ''; let nm; if (i === 9) { const d = CARDS[tr.cap[j]]; nm = d ? d.name : tr.cap[j]; } else nm = (tr.rows[i][j] || {}).n; return `<li><span class="muted">Lv ${(i + 1) * 2}</span> ${esc(nm || '?')}</li>`; }).join('') : '';
+    const maps = mapsInOrder().map(M => { const b = (h.maps || {})[M.key]; return `<tr><td>${M.num}. ${esc(M.name)}</td><td>${b ? `+${b.lvl}, ${ROWTXT(b.row)}` : '<span class="muted">-</span>'}</td></tr>`; }).join('');
+    modal(`<h2 style="color:${CC[h.hero_class]}">${esc(h.hero_name)} <span class="muted" style="font-size:17px">${esc(h.hero_class)}${h.guild_name ? ' &middot; ' + esc(h.guild_name) : ''}</span></h2>
+      <div class="recstats"><span><b>${h.progress}</b> progress</span><span><b>${h.power}</b> power</span><span><b>${S.gearScore ?? '-'}</b> gear</span><span><b>${S.deckLevel ?? '-'}</b> deck</span><span><b>${S.runs ?? 0}</b> runs</span><span><b>${S.bossKills ?? 0}</b> boss kills</span><span><b>${S.raidKills ?? 0}</b> raid kills</span></div>
+      <div class="recmodal"><div><h3>Gear</h3><div class="recgearl">${gear || '<span class="muted">No gear recorded.</span>'}</div></div>
+      <div><h3>Codex &amp; talents</h3>${cxd ? `<p style="margin:0 0 4px"><b>${esc(cxd.name)} Codex</b> <span class="muted">Lv ${cx.level}</span></p><ul class="rectal">${tal || '<li class="muted">No talents picked.</li>'}</ul>` : '<p class="muted">No codex worn.</p>'}
+        <h3>Map records</h3><table class="recmaps">${maps}</table></div></div>
+      <h3>Deck (${(S.deck || []).length})</h3><div class="recdeck">${deck}</div>
+      <p class="muted" style="font-size:12px;margin:6px 0 0">Snapshot from ${new Date(h.updated_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}.</p>
+      <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
+    $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal;
+  }
+  $('hpRec').addEventListener('click', (ev) => {
+    const t = ev.target.closest('[data-rectab]'); if (t) { REC.tab = t.dataset.rectab; return renderRecords(); }
+    const so = ev.target.closest('[data-recsort]'); if (so) { REC.sort = so.dataset.recsort; return renderRecords(); }
+    const cl = ev.target.closest('[data-reccls]'); if (cl) { REC.cls = cl.dataset.reccls; return renderRecords(); }
+    if (ev.target.closest('#recRefresh')) return loadRecords(true);
+    const h = ev.target.closest('[data-rechero]'); if (h) { const [u, k] = h.dataset.rechero.split('|'); recHeroModal(u, k); }
+  });
+  function openRecords() { closeTalk(); openSheet('records'); }
+  // publish this player's heroes a little after signing in, so the board fills up without anyone opening it
+  setTimeout(function pubLater() { if (supa && supaUser && profile && Object.keys(profile.chars || {}).length) publishAllHeroes(true); else setTimeout(pubLater, 15000); }, 8000);
 
   // ---------- the Bazaar (east of the main street): stand in the round market, set up shop, list stash items at your price.
   // While your shop is open you stay put and others can click you to browse and buy. Sales go player to player:
@@ -5849,6 +5990,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Feature', 'Hall of Records: read the notice board in town (or Menu > Hall of Records). Heroes ranks every hero by progress or power (click one to see their gear, deck, codex talents and map records); Map records shows who has reached the highest level and furthest row on each road; Raid records shows, for every raid boss, the first guild to kill it, the guild that killed it at the highest level, and the fastest kill in rounds. Heroes are posted when you sign in and whenever you come home.'],
+      ['Fix', 'Shuriken Mastery, Sharpened Stars and the Ninja codex now show on the Shuriken card itself (the damage always applied, but the card still said 4).'],
       ['Art', 'Fights are now a battlefield scene: a painted road runs back to a ruined gate (tinted for each map), your heroes stand on the left diagonal and the enemies on the right, each with a clean nameplate on the outside and their intents over their heads. Everyone is drawn at one scale, the layout keeps plates, intents and fighters from covering each other, and big fights (5+ on a side) switch to small plates under the feet. Raids show the heroes as a block of small fighters in rows, and raid bosses now use their map boss\'s inked art. Fights also use more of a wide screen. Thanks to our design tester for the battlefield painting and layout. Menu > "Battlefield view" switches back to the old side-by-side stage.'],
       ['Fix', 'Interface tidy-up: the Quartermaster stash shows items in two columns, windows are a bit wider and stay centred (chat no longer pushes them sideways), the Scribe puts the Ink bar above deck and collection, the Barracks lists heroes beside the stats, Menu checkboxes line up with their labels, and the What\'s new button hides while a window is open.'],
       ['Feature', 'Ink: at the Scribe, break spare cards down for Ink (White 1, Green 4, Blue 10, Gold 25; ranked cards give more), then buy any card of your class with "Buy cards with Ink". Cards you have owned before cost 10 / 40 / 100 / 300; ones you have never found cost 3x. Ink is shared by all your heroes.'],
@@ -7605,6 +7748,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       ${cb && cb.raid ? `<button class="btn" id="mnRaidLeave">${cb.over ? (cb.raidLoot && cb.raidLoot.some(x => !x.done) ? 'Leave (pass on the remaining loot)' : 'Return to town') : 'Leave the raid (your hero falls; no lockout)'}</button>${cb.over && cb.raidLoot ? '<button class="btn" id="mnRaidLoot">Show the loot</button>' : ''}` : ''}
       ${cb && cb.practice ? `<button class="btn" id="mnDummyReset">Reset the dummy (fresh fight)</button><button class="btn" id="mnDummyLeave">Leave the dummy and return to town</button>` : ''}
       ${run && run.over ? `<button class="btn" id="mnTown">Return to town</button>` : ''}
+      ${!run && !cb && !onTitle && typeof openRecords === 'function' ? `<button class="btn" id="mnRec">Hall of Records (leaderboards)</button>` : ''}
       ${!run && !onTitle ? `<button class="btn" id="mnHeroes">Switch hero</button>` : ''}
       ${!run && !cb && !onTitle && profile.chars[heroKey] ? `<button class="btn" id="mnDelHero">Delete ${esc(profile.chars[heroKey].name)}...</button><button class="btn" id="mnWipe">Start fresh (delete everything)...</button>` : ''}
       ${supa ? (supaUser ? `<button class="btn" id="mnSignOut">Sign out (${esc(acctName(supaUser))})</button>` : `<button class="btn" id="mnSignIn">Sign in to save online</button>`) : ''}
@@ -7632,12 +7776,13 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if ($('mnRaidLoot')) $('mnRaidLoot').onclick = raidLootModal;
     if ($('mnDelHero')) $('mnDelHero').onclick = () => deleteHeroFlow(heroKey);
     if ($('mnWipe')) $('mnWipe').onclick = wipeFlow;
+    if ($('mnRec')) $('mnRec').onclick = () => { closeModal(); openRecords(); };
     if ($('mnHeroes')) $('mnHeroes').onclick = () => { closeModal(); $('sheet').hidden = true; show('title'); };
     if ($('mnSignIn')) $('mnSignIn').onclick = signInModal;
     if ($('mnSignOut')) $('mnSignOut').onclick = async () => { closeModal(); await supa.auth.signOut(); };
   }
   function toTown() {
-    if (run && run.over && !run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run, run.myMi); save(); }
+    if (run && run.over && !run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run, run.myMi); save(); if (typeof publishHero === 'function') publishHero(heroKey, true); }
     backToTown();
   }
   function backToTown() { closeModal(); cb = null; run = null; if (netOn()) netEnd(); townReturn = true; show('start'); renderHub();
@@ -8043,7 +8188,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       ${sackSplit(run)}
       <div class="row"><button class="btn primary" id="mNew">Return to camp</button><button class="btn" id="mMap">Look at the map</button></div>`);
     $('modalBox').classList.add('wide');
-    if (!run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run, run.myMi); save(); }
+    if (!run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run, run.myMi); save(); if (typeof publishHero === 'function') publishHero(heroKey, true); }
     $('mNew').onclick = backToTown;
     $('mMap').onclick = () => closeModal();
   }
@@ -8056,7 +8201,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       ${run.members.map(m => { const k = m.kept || { items: [], gold: 0 }; return `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${k.items.length} item${k.items.length === 1 ? '' : 's'}, ${k.gold} gold${m.orders.length ? `, ${m.orders.length} order${m.orders.length === 1 ? '' : 's'}` : ''}</div>${sackSplit(m)}`; }).join('')}
       <div class="row"><button class="btn primary" id="mNew">Return to camp</button><button class="btn" id="mMap">Look at the map</button></div>`);
     $('modalBox').classList.add('wide');
-    if (!run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run, run.myMi); save(); }
+    if (!run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run, run.myMi); save(); if (typeof publishHero === 'function') publishHero(heroKey, true); }
     $('mNew').onclick = backToTown;
     $('mMap').onclick = () => closeModal();
   }

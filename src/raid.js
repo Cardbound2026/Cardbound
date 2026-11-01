@@ -80,7 +80,8 @@
       modal(`<h2 class="loss">The raid falls</h2><p>${esc(CB.RAID_NAMES[mk] || 'The boss')} wiped the raid in ${cb.round} rounds. Nothing is lost: no gear, no gold, and no lockout. Regroup and try again.</p><div class="row"><button class="btn primary" id="mNew">Back to Emberwatch</button><button class="btn" id="mClose">Look at the fight</button></div>`);
       $('mNew').onclick = backToTown; $('mClose').onclick = closeModal; return;
     }
-    if (c && !cb._locked) { cb._locked = true; c.raidLocks = c.raidLocks || {}; c.raidLocks[mk] = Date.now(); c.raidKills = (c.raidKills || 0) + 1; save(); }
+    if (S && S.host === SOC.me && typeof recordRaidKill === 'function') recordRaidKill(cb); // Hall of Records: the raid leader writes the kill
+    if (c && !cb._locked) { cb._locked = true; c.raidLocks = c.raidLocks || {}; c.raidLocks[mk] = Date.now(); c.raidKills = (c.raidKills || 0) + 1; save(); if (typeof publishHero === 'function') publishHero(heroKey, true); }
     if (!cb.raidLoot) { cb.raidLoot = raidLootRoll(cb); if (S) S.lootAt = Date.now(); sysChat(`${CB.RAID_NAMES[mk]} falls! ${cb.raidLoot.length} items dropped: roll Need, Greed or Pass.`); }
     raidLootModal();
   }

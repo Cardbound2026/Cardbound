@@ -114,7 +114,7 @@ const POWERS = {
   open_veins: { dotTicks: { bleed: 2 } },
   sharpened_stars: { shurikenX: 2 },
   shuriken_storm: { turnStart: (cb) => cb.addToHand('shuriken'), shurikenAoe: true },
-  reflexive_volley: { fullBlock: (cb, p, e) => { if (e.hp > 0) cb.powerHit(p, e, shurikenDmg, 'Reflexive Volley', 'Physical', 'Attack'); } },
+  reflexive_volley: { fullBlock: (cb, p, e) => { if (e.hp > 0) cb.powerHit(p, e, Math.round((shurikenDmg + cb.pwSum(p, 'shurikenPlus')) * cb.pwProd(p, 'shurikenX')), 'Reflexive Volley', 'Physical', 'Attack'); } }, // Nov 1: the thrown Shuriken gets Shuriken Mastery / Sharpened Stars / Ninja too
   fleetfooted: { dealt: (cb, p, h) => { if (h.kind === 'Attack' && h.lost > 0 && !h.absorbed) cb.gainDef(2); } },
   first_move: { initPlus: () => 100 },
   nimble: { turnStart: (cb) => cb.gainDef(3) },
@@ -1092,9 +1092,10 @@ class Combat {
     if (kind === 'Attack') flat += (p.nextAttackFlat || 0) + (p.weaponDmg || 0) + (p.windUp ? Math.floor((d.cost || 0) / 5) * (+p.windUp) : 0);
     if (kind === 'Skill' && d.tags && d.tags.dmg) flat += T.skillFlat || 0;
     if (pow) { try { flat += this.pwSum(p, 'flat', d); } catch (x) {} }
+    let shX = 1, shP = 0; if (pow && d.key === 'shuriken') { try { shP = this.pwSum(p, 'shurikenPlus'); shX = this.pwProd(p, 'shurikenX'); } catch (x) {} } // Shuriken Mastery / Sharpened Stars / Ninja show on the card
     const mark = (n0, n1) => n1 > n0 ? '\u0001' + n1 + '\u0002' : n1 < n0 ? '\u0003' + n1 + '\u0004' : String(n1);
     const EL = '(Fire|Frost|Arcane|Nature|Shadow|Holy|Physical)';
-    let t = d.text.replace(new RegExp('\\b(\\d+)( ' + EL + ')? damage(?! back)', 'g'), (m, n, sp, el) => { const v = Math.max(0, Math.round((+n + flat) * dmgMult(el || d.dtype || 'Physical'))); return mark(+n, v) + (sp || '') + ' damage'; });
+    let t = d.text.replace(new RegExp('\\b(\\d+)( ' + EL + ')? damage(?! back)', 'g'), (m, n, sp, el) => { const v = Math.max(0, Math.round(((+n + shP) * shX + flat) * dmgMult(el || d.dtype || 'Physical'))); return mark(+n, v) + (sp || '') + ' damage'; });
     t = t.replace(/\b([Dd]eal) (\d+) (instead|more)/g, (m, w, n, x) => `${w} ${mark(+n, Math.max(0, Math.round((+n + flat) * dmgMult(d.dtype || 'Physical'))))} ${x}`);
     let defM = 1 + (p.dexterity || 0) / 100; if (T.defX || this.hasTimed(p, 'defX')) defM *= 2;
     if (pow) { try { defM *= this.pwProd(p, 'defMult') * this.pwProd(p, 'defMultFn'); } catch (x) {} }
