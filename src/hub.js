@@ -22,6 +22,7 @@ function newProfile() { return { v: VERSION, gold: 0, ink: 0, rerollTokens: 0, s
 function fix(p) { // tolerate older or partial saves
   p = Object.assign(newProfile(), p || {});
   for (const [k, c] of Object.entries(p.chars)) { if (!c.cls && CLASSES[k]) c.cls = k; c.cards = c.cards || []; c.deck = c.deck || []; c.gear = c.gear || []; c.name = c.name || c.cls; }
+  if (CB.itemRules) { for (const it of p.stash || []) CB.itemRules(it); for (const c of Object.values(p.chars)) for (const it of c.gear) CB.itemRules(it); for (const it of (p.shop && p.shop.items) || []) CB.itemRules(it); } // Nov 1: Mana Regen only on amulets, Recovery halved
   if (p.last && p.last.cls && !p.chars[p.last.cls]) p.last.cls = Object.keys(p.chars)[0] || '';
   // retired cards (Oct 31: Battle Trance) turn into their replacement, keeping rank and XP
   for (const c of Object.values(p.chars)) for (const k of [...c.deck, ...c.cards]) if (CB.REMOVED_CARDS[k.key]) k.key = CB.REMOVED_CARDS[k.key];
@@ -69,7 +70,9 @@ const STARTER_1H = ['Arming Sword', 'Dirk', 'Ashwood Wand', 'Flanged Mace'];
 const isOneHand = (item) => (item.slot === 'Weapon' || item.slot === 'Off-hand') && (/^1H/.test(item.hands || '') || STARTER_1H.includes(item.name));
 function slotOptions(item) { if (item.slot === 'Ring' || /^Ring/.test(item.slot)) return ['Ring 1', 'Ring 2']; if (isOneHand(item)) return ['Weapon', 'Off-hand']; return [item.slot]; }
 // Nov 1: a hero with a wager on the Arena board (posted or offered) has its gear and deck locked until the wager is settled
-function arenaLock(p, cls) { return p.arena && p.arena.hero === cls ? 'Locked: this hero has a wager at the Arena. Settle or withdraw it first.' : null; }
+let OUT_CHECK = () => false; // set by the page: true while the hero is out on a run (its gear is a copy that comes home when the run ends)
+function setOutCheck(f) { OUT_CHECK = f; }
+function arenaLock(p, cls) { if (OUT_CHECK(cls)) return 'You\'re out on a run: gear and deck changes wait until you\'re back in town.'; return p.arena && p.arena.hero === cls ? 'Locked: this hero has a wager at the Arena. Settle or withdraw it first.' : null; }
 function equip(p, cls, itemId, slotWanted) {
   { const lk = arenaLock(p, cls); if (lk) return { ok: false, why: lk }; }
   const c = char(p, cls), i = p.stash.findIndex(x => x.id === itemId); if (i < 0) return { ok: false, why: 'Not in stash' };
@@ -240,6 +243,6 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk };
 }
 
-const API = { arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);

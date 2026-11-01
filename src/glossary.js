@@ -4,7 +4,7 @@
       ['Max HP', 'How much damage you can take. HP carries from fight to fight on a run; campfires heal 30%.'],
       ['Stamina', 'Gear stat: +1 Max HP per point.'],
       ['Mana', 'Spent to play cards. You start each turn with your regeneration added (double on your first turn of a fight), up to your max. Unspent mana carries over to the next turn.'],
-      ['Mana Regen', 'Mana gained at the start of each of your turns.'],
+      ['Mana Regen', 'Mana gained at the start of each of your turns. On gear, only amulets have it.'],
       ['Max Mana', 'The most mana you can hold.'],
       ['Draw', 'Cards drawn at the start of each round. A full hand is 10 cards; extra draws go to the discard pile.'],
       ['Strength', '+1% damage from Attack cards per point.'],
@@ -81,6 +81,7 @@
     ['Combat', [
       ['Turn order', 'Everyone acts in Initiative order each round. The bar at the top shows it; the glowing tile is acting now.'],
       ['Enemy intents', 'The chips above an enemy are the cards it will play next turn, in order, with their damage and who they are aimed at. Crossed-out ones it can\'t afford.'],
+      ['Group', 'Some tier 2 and 3 fights are a group (Pack of Wolves, Bandit Party, Magma Golems...): three smaller bodies that share one monster\'s HP and damage. It counts as one monster: one loot roll, one kill. Area damage shines here.'],
       ['Pressure', 'From round 5, enemies deal 2% more damage every round (10% in duels), so fights end.'],
       ['Elites and the boss', 'Elites appear from row 5 and always drop a card. The Warlord has a second phase at half HP with new cards.'],
       ['Party fights', 'A party meets one monster per hero (each with +30% HP per extra hero). Elites and the boss get +85% HP, mana and regen per extra hero instead.'],

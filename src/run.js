@@ -182,7 +182,7 @@ function finishMap(rng, data, partySize, mapKey, nodes, bonus) {
   const elites = shuffle(byTier.Elite.slice(), rng);
   let ei = 0;
   for (const n of list) {
-    if (n.type === 'fight') { const pool = byTier[TIER_ROWS(n.row)]; n.enemies = [pool[ri(rng, 0, pool.length - 1)]]; for (let k = 1; k < Math.min(4, partySize || 1); k++) n.enemies.push(pool[ri(rng, 0, pool.length - 1)]); } // a party meets one monster per hero
+    if (n.type === 'fight') { const pool = byTier[TIER_ROWS(n.row)]; n.enemies = [pool[ri(rng, 0, pool.length - 1)]]; for (let k = 1; k < Math.min(4, partySize || 1); k++) n.enemies.push(pool[ri(rng, 0, pool.length - 1)]); } if (n.type === 'fight' && n.enemies.length > 1) { const solo = byTier[TIER_ROWS(n.row)].filter(k => !data.enemies[k].group); let seen = false; n.enemies = n.enemies.map(k => { if (!data.enemies[k].group) return k; if (!seen) { seen = true; return k; } return solo[ri(rng, 0, solo.length - 1)]; }); } // at most one group per fight // a party meets one monster per hero
     if (n.type === 'elite') n.enemies = [elites[ei++ % elites.length]];
     if (n.type === 'shrine') n.shrine = SHRINES[ri(rng, 0, SHRINES.length - 1)].key;
   }
@@ -275,7 +275,7 @@ class Run {
       R.absorbed += m.absorbed;
     }
     // codex XP (Nov 1): every kill counts for the codex each hero is wearing; a party splits the kills but gets +10% per extra hero
-    { const xp = cb.enemies.filter(e => e.hp <= 0).reduce((s, e) => s + KILL_XP((this.data.enemies[e.key] || {}).tier), 0), N = this.members.length;
+    { const xp = cb.enemies.filter(e => e.hp <= 0 && !e.noLoot).reduce((s, e) => s + KILL_XP((this.data.enemies[e.key] || {}).tier), 0), N = this.members.length;
       if (xp > 0) for (const m of this.members) { const cx = (m.gear.find(g => g && g.slot === 'Codex') || {}).codex; if (cx) m.cxp[cx] = (m.cxp[cx] || 0) + xp / N * (1 + 0.1 * (N - 1)); } }
     for (const b of this.buffs) b.fights--;
     this.buffs = this.buffs.filter(b => b.fights > 0);
@@ -285,7 +285,7 @@ class Run {
       this.note(this.solo ? `Died on row ${n.row}. The loot sack (${this.sack.length} items, ${this.gold} gold) is lost.` : `The party is wiped out on row ${n.row}. Every sack is lost.`);
       return { result: 'loss' };
     }
-    this.fightsWon++; this.kills += cb.enemies.length;
+    this.fightsWon++; this.kills += cb.enemies.filter(e => !e.noLoot).length; // a group counts as one kill
     const per = [];
     this.members.forEach((m, i) => {
       const pl = cb.players[i];
@@ -298,6 +298,7 @@ class Run {
       const regen = m.stats.healthRegen + this.partyTalent('partyHealthRegen'); if (regen && !fell) m.hp = Math.min(m.stats.maxHp, m.hp + regen);
       const drops = []; let gold = 0;
       for (const e of cb.enemies) {  // every hero rolls their own loot
+        if (e.noLoot) continue; // the rest of a group: the group's first body rolls its loot
         for (let k = 0; k < (e.enraged ? 2 : 1); k++) { // an Enraged elite drops everything twice
           drops.push(...rollDrops(this.data, this.rng, e.key, this.level, this.luck(m), m.cls));
           drops.push(...rollCards(this.rng, m.cls, this.data.enemies[e.key].tier, this.luck(m)));

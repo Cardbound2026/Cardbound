@@ -25,7 +25,7 @@
     return `${cxMapChips()}${cxChips('tier', ['All', 'Tier 1', 'Tier 2', 'Tier 3', 'Elite', 'Boss'], 'Tier')}
       <p class="savenote">${list.length} enemies ${M ? `on Map ${M.num}: ${esc(M.name)} (${M.element}${M.dmgScale ? `, enemy damage x${M.dmgScale}` : ''}; its gear rolls ${M.dropResist} Resistance)` : 'across all six maps'}. Stats at map +0: each map level multiplies enemy HP by 1.5 and damage by 1.3. Rows 1 to 4 are tier 1, 5 to 9 tier 2, 10 to 14 tier 3; elites appear from row 5.</p>
       ${list.map(([k, e]) => { const t = G.drops[e.tier], cd = CB.CARD_DROPS[e.tier];
-        return `<details class="cxenemy"><summary><b>${esc(e.name)}</b> <span class="muted">${TIER_NAME(e.tier)} &middot; ${e.hp} HP &middot; ${esc(e.creature)} &middot; ${e.type}, weak to ${e.weak}</span></summary>
+        return `<details class="cxenemy"><summary><b>${esc(e.name)}</b> <span class="muted">${TIER_NAME(e.tier)} &middot; ${e.group ? `group of ${e.group} &times; ${Math.round(e.hp / e.group)} HP` : e.hp + ' HP'} &middot; ${esc(e.creature)} &middot; ${e.type}, weak to ${e.weak}</span></summary>
         <p>${esc(e.desc || '')}</p><p class="muted">${esc(e.arch || '')}. Draws ${e.draw} a round${e.draw2 ? ` (${e.draw2} in phase 2)` : ''}, ${e.maxMana} max mana, +${e.regen} per turn.</p>
         <h4>Deck (${e.deck.reduce((s, x) => s + x.n, 0)} cards)</h4>${enemyGrid(e.deck.map(c => ({ c, n: c.n, tag: c.phase2 ? 'phase 2' : '' })), k, 140)}
         <div><h4>Loot</h4><p><b>Gold:</b> ${e.gold[0]} to ${e.gold[1]} per kill.</p>

@@ -2129,7 +2129,7 @@ function weaponFlat(x) {
 function sumGear(items) {
   const t = {}; const add = (k, v) => { t[k] = (t[k] || 0) + v; };
   let amulet = false, weaponDmg = 0;
-  for (const x of items) { if (!x) continue; for (const [k, v] of Object.entries(x.stats || {})) add(k, v); for (const [k, v] of Object.entries(x.imp2 || {})) add(k, v); if (x.slot === 'Amulet') amulet = true; weaponDmg += weaponFlat(x); }
+  for (const x of items) { if (!x) continue; const ok = (k) => k !== 'Mana Regen' || x.slot === 'Amulet', rv = (k, v) => !x.r2 && x.slot && /Recovery$/.test(k) ? halfUp(v) : v; for (const [k, v] of Object.entries(x.stats || {})) if (ok(k)) add(k, rv(k, v)); for (const [k, v] of Object.entries(x.imp2 || {})) if (ok(k)) add(k, rv(k, v)); if (x.slot === 'Amulet') amulet = true; weaponDmg += weaponFlat(x); }
   const res = {}, elem = {};
   for (const [k, v] of Object.entries(t)) { if (k.startsWith('Resistance:')) res[k.slice(11)] = (res[k.slice(11)] || 0) + v; if (k.startsWith('Elemental/Holy Damage:')) elem[k.slice(22)] = (elem[k.slice(22)] || 0) + v; }
   if (t['All Resistances']) for (const el of ELEMENTS) res[el] = (res[el] || 0) + t['All Resistances'];
@@ -2244,7 +2244,9 @@ class Combat {
     this.levelHpMult = Math.pow(1.5, this.level);
     this.typeResist = Math.min(1, 0.05 + 0.05 * this.level);
     this.duel = !!this.opts.duel; // duel: two heroes, no monsters; each hero's "enemies" are the other hero
-    this.enemies = this.duel ? [] : this.opts.enemies.map((key, i) => this.makeEnemy(key, i));
+    // a group (wolf pack, bandit party...) fills one enemy slot with GROUP_N bodies; only the first one carries the loot
+    const slots = []; if (!this.duel) for (const key of this.opts.enemies) { const d = this.data.enemies[key]; if (d && d.group) for (let j = 0; j < d.group; j++) slots.push([key, j]); else slots.push([key, -1]); }
+    this.enemies = slots.map(([key, j], i) => { const e = this.makeEnemy(key, i); if (j >= 0) { const d = e.d; e.maxHp = e.hp = Math.max(1, Math.round(e.hp / d.group)); e.name = `${d.unit} ${'ABCDEF'[j]}`; e.groupOf = d.name; e.grp = j; if (j > 0) e.noLoot = true; } return e; });
     if (this.duel) this.say('sys', `Duel: ${this.players.map(p => p.name).join(' vs ')}. Last hero standing wins. From round ${PRESSURE_START} every hit lands harder.`);
     else if (this.raid) this.say('sys', `Raid starts. Level +${this.level}, ${this.partySize} heroes: boss HP x${this.hpMult.toFixed(2)}, damage x${(this.dmgMult * RAID.dmg).toFixed(2)}. Every boss attack hits every hero. Only one hero a round can land non-damaging debuffs on it, and it resists 25% of damage over time.`);
     else this.say('sys', `Fight starts. Map level +${this.level}${this.partySize > 1 ? `, party of ${this.partySize}` : ''}: enemy HP x${this.hpMult.toFixed(2)}${this.partySize > 1 ? ` and +${this.partySize - 1} card draw` : ''}, damage x${this.dmgMult.toFixed(2)}; enemies resist their own type by ${Math.round(this.typeResist * 100)}%.`);
@@ -3148,7 +3150,29 @@ class Combat {
 // ---------------- Loot ----------------
 // gear rules (Oct 31): Max Mana only rolls on chest armor, and gear can add at most +60 max mana in total
 const MANA_GEAR_CAP = 60;
-function gearRules(G) { if (!G || G._rules) return; G._rules = true; for (const A of Object.values(G.arche || {})) if (A.weights && A.slot !== 'Chest' && A.weights['Max Mana']) delete A.weights['Max Mana']; }
+function gearRules(G) { if (!G || G._rules) return; G._rules = true; for (const A of Object.values(G.arche || {})) if (A.weights && A.slot !== 'Chest' && A.weights['Max Mana']) delete A.weights['Max Mana'];
+  // Nov 1 (b): Mana Regen only comes from amulets (no gear affix rolls it; the Frost Staff's implicit becomes Frost damage), and Recovery rolls half as much
+  for (const A of Object.values(G.arche || {})) { if (A.weights && A.slot !== 'Amulet') delete A.weights['Mana Regen']; if (A.imp2 === 'Mana Regen') A.imp2 = 'Frost Damage'; }
+  for (const k of ['Recovery', 'Party Recovery']) { const st = G.stats[k]; if (st && !st._half) { st._half = true; st.min = Math.max(1, Math.round(st.min / 2)); st.max = Math.max(1, Math.round(st.max / 2)); st.pts *= 2; } } }
+// Bring an item made before those rules up to date (once; marked r2). Its Mana Regen affix is rerolled into a new stat and its Recovery halved.
+const halfUp = (v) => Math.max(1, Math.ceil(v / 2));
+function itemRules(it, data) {
+  if (!it || it.r2 || it.kind === 'card') return it; it.r2 = 1;
+  data = data || DATA;
+  for (const k of ['Recovery', 'Party Recovery']) {
+    if (it.stats && it.stats[k]) { it.stats = Object.assign({}, it.stats); it.stats[k] = halfUp(it.stats[k]); }
+    if (it.imp2 && it.imp2[k]) { it.imp2 = Object.assign({}, it.imp2); it.imp2[k] = halfUp(it.imp2[k]); }
+    if (it.lines) it.lines = it.lines.map(l => l.stat === k ? Object.assign({}, l, { v: halfUp(l.v), lo: halfUp(l.lo || l.v), hi: halfUp(l.hi || l.v) }) : l);
+  }
+  if (it.slot !== 'Amulet') {
+    if (it.lines) { let h = 11; for (const ch of String(it.name) + (it.ilvl || 0)) h = (h * 31 + ch.charCodeAt(0)) % 2147483647; const rng = makeRng(h || 1);
+      it.lines.forEach((l, i) => { if (l.stat === 'Mana Regen' && !(data && data.gear && rerollAffix(data, rng, it, i))) { it.stats = Object.assign({}, it.stats); it.stats['Mana Regen'] = (it.stats['Mana Regen'] || 0) - l.v; if (it.stats['Mana Regen'] <= 0) delete it.stats['Mana Regen']; } });
+      it.lines = it.lines.filter(l => l.stat !== 'Mana Regen'); }
+    if (it.stats && it.stats['Mana Regen']) { it.stats = Object.assign({}, it.stats); delete it.stats['Mana Regen']; }
+    if (it.imp2 && it.imp2['Mana Regen']) { const v = it.imp2['Mana Regen']; it.imp2 = Object.assign({}, it.imp2); delete it.imp2['Mana Regen']; it.imp2['Elemental/Holy Damage:Frost'] = (it.imp2['Elemental/Holy Damage:Frost'] || 0) + v; }
+  }
+  return it;
+}
 // Nov 1: a Shoulders slot. Three armor kinds (plate, leather, cloth) and one piece of each per map, dropped by that map's monsters
 const SHOULDER_ARCHE = {
   Pauldrons: { slot: 'Shoulders', type: 'Plate', hands: '', imp2: null, weights: { Stamina: 12, Strength: 4, Intelligence: 1, Dexterity: 10, Spirit: 1, 'Crit Damage': 2, 'Health Regen': 3, Thorns: 6, Luck: 2 } },
@@ -3157,7 +3181,49 @@ const SHOULDER_ARCHE = {
 };
 const SHOULDER_BASES = { physical: ['Warband Pauldrons', "Scout's Spaulders", 'Hedge-Mage Mantle'], fire: ['Cinder Pauldrons', 'Charred Spaulders', 'Ember Mantle'], frost: ['Rimeforged Pauldrons', 'Frostbitten Spaulders', 'Hoarfrost Mantle'],
   nature: ['Thornwoven Pauldrons', 'Mossy Spaulders', 'Barkskin Mantle'], arcane: ['Runeforged Pauldrons', 'Spellbound Spaulders', 'Astral Mantle'], shadow: ['Gravesteel Pauldrons', 'Duskhide Spaulders', 'Shroud Mantle'] };
+// ---------- Group mobs (Nov 1): one map slot, three bodies. A group counts as one monster: one loot roll, one kill's XP and gold.
+// Its HP and damage are one normal monster's, split three ways, so a solo hero without area damage has to chew through each body.
+// (dmg: a per-group damage factor, tuned in sims so each group is about as dangerous as that tier's single monsters; bodies dying cut its damage.)
+// Every member plays one card a turn (10 mana, 10 regen, every card costs 10). Tier 2 and 3 only, one of each per map.
+// art: the existing monster whose drawing the members use (smaller). like: the monster whose gear pool and named drops the group shares.
+const GROUP_N = 3;
+const GROUPS = {
+  wolf_pack: { map: 'physical', tier: '2', name: 'Pack of Wolves', unit: 'Wolf', creature: 'Beast', type: 'Physical', weak: 'Fire', hp: 69, dmg: 2.5, art: 'dire_wolf', like: 'dire_wolf', desc: 'Three lean wolves that hunt together and howl each other on.',
+    deck: [[3, 'Bite', 'Deal 5 damage.', 'Attack'], [2, 'Snapping Bite', 'Deal 3 damage and apply 2 Bleed.', 'Attack'], [1, 'Howl', 'All friendly targets gain 10 Strength this turn.', 'Buff'], [1, 'Circle', 'Gain 4 Block.', 'Defense']] },
+  bandit_party: { map: 'physical', tier: '3', name: 'Bandit Party', unit: 'Raider', creature: 'Human', type: 'Physical', weak: 'Arcane', hp: 110, dmg: 1.2, art: 'bandit_cutthroat', like: 'pit_duelist', desc: 'A raiding party off the high road: cutlasses, a crossbow and no manners.',
+    deck: [[3, 'Cutlass', 'Deal 8 damage.', 'Attack'], [2, 'Serrated Cut', 'Deal 5 damage and apply 3 Bleed.', 'Attack'], [1, 'Crossbow Volley', 'Deal 4 damage to every player.', 'Attack'], [1, 'Fall Back', 'Gain 6 Block.', 'Defense']] },
+  ember_whelps: { map: 'fire', tier: '2', name: 'Ember Whelps', unit: 'Whelp', creature: 'Beast', type: 'Fire', weak: 'Frost', hp: 69, dmg: 2.8, art: 'blaze_drake', like: 'blaze_drake', desc: 'A clutch of young drakes, all teeth and sparks.',
+    deck: [[3, 'Fire Spit', 'Deal 5 damage.', 'Attack'], [2, 'Singe', 'Deal 3 damage and apply 2 Burn.', 'Attack'], [1, 'Shriek', 'All friendly targets gain 10 Strength this turn.', 'Buff'], [1, 'Flap', 'Gain 4 Block.', 'Defense']] },
+  magma_golems: { map: 'fire', tier: '3', name: 'Magma Golems', unit: 'Golem', creature: 'Elemental', type: 'Fire', weak: 'Frost', hp: 110, dmg: 1.7, art: 'magma_golem', like: 'pyre_sentinel', desc: 'Three slag-hearted golems poured from the same lava vent.',
+    deck: [[3, 'Slag Fist', 'Deal 8 damage.', 'Attack'], [1, 'Molten Core', 'Deal 5 damage and apply 3 Burn.', 'Attack'], [1, 'Lava Splash', 'Deal 4 damage to every player.', 'Attack'], [2, 'Cool Crust', 'Gain 7 Block.', 'Defense']] },
+  frostfang_pack: { map: 'frost', tier: '2', name: 'Frostfang Pack', unit: 'Frostfang', creature: 'Beast', type: 'Frost', weak: 'Fire', hp: 69, dmg: 1.6, art: 'snow_leopard', like: 'snow_leopard', desc: 'White cats that stalk in threes across the ice.',
+    deck: [[3, 'Pale Bite', 'Deal 5 damage.', 'Attack'], [2, 'Icy Fang', 'Deal 3 damage and apply 2 Chill.', 'Attack'], [1, 'Stalk', 'All friendly targets gain 10 Strength this turn.', 'Buff'], [1, 'Crouch', 'Gain 4 Block.', 'Defense']] },
+  wight_patrol: { map: 'frost', tier: '3', name: 'Barrow Wight Patrol', unit: 'Wight', creature: 'Undead', type: 'Frost', weak: 'Fire', hp: 110, dmg: 1.0, art: 'winter_knight', like: 'winter_knight', desc: 'Frozen dead who still walk their old watch.',
+    deck: [[3, 'Frozen Blade', 'Deal 8 damage.', 'Attack'], [2, 'Grave Chill', 'Deal 5 damage and apply 3 Chill.', 'Attack'], [1, 'Death Rattle', 'Apply 10 Weak to every player.', 'Debuff'], [1, 'Hoarfrost Shield', 'Gain 7 Block.', 'Defense']] },
+  spiderling_swarm: { map: 'nature', tier: '2', name: 'Spiderling Swarm', unit: 'Spiderling', creature: 'Beast', type: 'Nature', weak: 'Fire', hp: 69, dmg: 1.3, art: 'broodmother_spider', like: 'jungle_stalker', desc: 'The broodmother\'s children, already hungry.',
+    deck: [[3, 'Nip', 'Deal 5 damage.', 'Attack'], [2, 'Venom Bite', 'Deal 2 damage and apply 3 Poison.', 'Attack'], [1, 'Web Spit', 'Deal 3 damage and apply 3 Slow.', 'Attack'], [1, 'Skitter', 'Gain 4 Block.', 'Defense']] },
+  raptor_pack: { map: 'nature', tier: '3', name: 'Raptor Pack', unit: 'Raptor', creature: 'Beast', type: 'Nature', weak: 'Fire', hp: 110, dmg: 0.85, art: 'jungle_stalker', like: 'broodmother_spider', desc: 'Clever hunters: one flanks, one feints, one bites.',
+    deck: [[3, 'Slash', 'Deal 8 damage.', 'Attack'], [2, 'Raking Claws', 'Deal 5 damage and apply 3 Bleed.', 'Attack'], [1, 'Pack Tactics', 'All friendly targets gain 15 Strength this turn.', 'Buff'], [1, 'Dodge Back', 'Gain 6 Block.', 'Defense']] },
+  ley_pack: { map: 'arcane', tier: '2', name: 'Ley Hound Pack', unit: 'Ley Pup', creature: 'Beast', type: 'Arcane', weak: 'Shadow', hp: 69, dmg: 1.6, art: 'ley_hound', like: 'ley_hound', desc: 'Young hounds that feed on spilled magic and strip wards with their teeth.',
+    deck: [[3, 'Rune Bite', 'Deal 5 damage.', 'Attack'], [2, 'Unravel', 'Deal 3 damage and apply 10 Unwarded.', 'Attack'], [1, 'Pack Howl', 'All friendly targets gain 10 Strength this turn.', 'Buff'], [1, 'Phase Out', 'Gain 4 Block.', 'Defense']] },
+  armor_squad: { map: 'arcane', tier: '3', name: 'Animated Armor Squad', unit: 'Armor', creature: 'Construct', type: 'Arcane', weak: 'Shadow', hp: 110, dmg: 1.15, art: 'iron_arbiter', like: 'spellblade', desc: 'Empty suits of plate, still drilling for a war that ended.',
+    deck: [[3, 'Rune Blade', 'Deal 8 damage.', 'Attack'], [1, 'Shield Bash', 'Deal 4 damage and gain 4 Block.', 'Attack'], [1, 'Arcane Sweep', 'Deal 4 damage to every player.', 'Attack'], [2, 'Glyph Plating', 'Gain 7 Block.', 'Defense']] },
+  ghoul_pack: { map: 'shadow', tier: '2', name: 'Ghoul Pack', unit: 'Ghoul', creature: 'Undead', type: 'Shadow', weak: 'Fire', hp: 69, dmg: 1.5, art: 'ghoul', like: 'ghoul', desc: 'Crypt scavengers that never feed alone.',
+    deck: [[3, 'Claw', 'Deal 5 damage.', 'Attack'], [2, 'Rotten Claw', 'Deal 3 damage and apply 2 Bleed.', 'Attack'], [1, 'Feast', 'All friendly targets heal 4 HP.', 'Buff'], [1, 'Crouch', 'Gain 4 Block.', 'Defense']] },
+  cultist_coven: { map: 'shadow', tier: '3', name: 'Cultist Coven', unit: 'Cultist', creature: 'Human', type: 'Shadow', weak: 'Fire', hp: 110, dmg: 1.3, art: 'cult_deacon', like: 'death_knight', desc: 'Three voices, one dark prayer.',
+    deck: [[3, 'Shadow Bolt', 'Deal 8 damage.', 'Attack'], [1, 'Dark Litany', 'Deal 4 damage to every player.', 'Attack'], [1, 'Dark Sermon', 'All friendly targets gain 15 Strength this turn.', 'Buff'], [2, 'Unholy Ward', 'Gain 7 Block.', 'Defense']] },
+};
+function groupData(data) {
+  if (!data || !data.enemies || data._groups) return; data._groups = true;
+  for (const [k, g] of Object.entries(GROUPS)) {
+    if (data.enemies[k]) continue; const like = data.enemies[g.like] || {};
+    data.enemies[k] = { name: g.name, tier: g.tier, hp: g.hp, draw: 2, draw2: null, maxMana: 10, regen: 10, regen2: null, creature: g.creature, type: g.type, weak: g.weak, arch: 'Group (3 bodies)', desc: g.desc + ' A group: three bodies, one monster\'s HP and damage split between them.',
+      deck: g.deck.map(([n, name, text, kind]) => ({ name, n, cost: 10, kind, text, phase2: false, dtype: /every player|damage/.test(text) ? g.type : 'Physical' })),
+      gold: g.tier === '3' ? [24, 40] : [12, 24], pool: (like.pool || []).slice(), loot: (like.loot || []).map(x => Object.assign({}, x)), map: g.map, group: GROUP_N, unit: g.unit, art: g.art, dmgScale: g.dmg || 1 };
+  }
+}
 function gearData(data) {
+  groupData(data);
   if (!data || !data.gear || data._shoulders) return; data._shoulders = true; const G = data.gear;
   Object.assign(G.arche, SHOULDER_ARCHE);
   for (const [mk, names] of Object.entries(SHOULDER_BASES)) names.forEach((name, i) => { if (!G.bases.some(b => b.name === name)) G.bases.push({ name, arch: ['Pauldrons', 'Spaulders', 'Mantle'][i], label: ['Plate', 'Leather', 'Cloth'][i] + ' Shoulders', map: mk }); });
@@ -3199,13 +3265,14 @@ function rollItem(data, rng, baseName, rarity, level) {
     if (A.imp2 === 'Draw / regen pool') { const pool = { White: 6, Green: 7, Blue: 8, 'Purple (Epic)': 9 }[rarity]; const d = ri(rng, 3, Math.min(5, pool - 2)); imp2.Draw = d; imp2.Regen = (pool - d) * 10; }
     else if (A.imp2.startsWith('Elemental damage')) imp2['Elemental/Holy Damage:' + ELS[ri(rng, 0, 5)]] = rollStat('Elemental/Holy Damage').v;
     else if (A.imp2 === 'Elemental/Holy Damage') imp2['Elemental/Holy Damage:' + (/Mace|Warhammer/.test(b.arch) ? 'Holy' : ELS[ri(rng, 0, 4)])] = rollStat(A.imp2).v;
+    else if (A.imp2 === 'Frost Damage') imp2['Elemental/Holy Damage:Frost'] = rollStat('Elemental/Holy Damage').v;
     else if (G.stats[A.imp2]) imp2[A.imp2] = rollStat(A.imp2).v;
   }
   const maxPts = (G.implicitMax + 4 * G.affixMax) * 1.3 * lv;
   const ilvl = Math.max(1, Math.min(100, Math.round(5 * level + 5 * Math.min(1, points / maxPts))));
   const slot = /Shield|Focus/.test(A.slot) ? 'Off-hand' : /Axe|Sword|Dagger|Mace|Wand|Maul|Warhammer|Staff/.test(A.slot) ? 'Weapon' : A.slot;
   const out = { name: baseName, label: b.label, arch: b.arch, slot, hands: A.hands, rarity, ilvl, stats, imp2, lines, level };
-  out.rerolls = rerollPotential(out); return out;
+  out.rerolls = rerollPotential(out); out.r2 = 1; return out;
 }
 // ---------- Rerolls (Nov 1): every item drops with a reroll potential (White 0-1, Green 1-2, Blue 2-3, Purple 3-4). Spending a Reroll Token
 // and one point of potential rerolls one affix line of your choice: a new stat and value, rolled like a fresh drop of the same base, rarity and
@@ -3540,7 +3607,7 @@ if (DATA) dropRemovedLoot(DATA);
 // Oct 31: Lay on Hands and Mend Wounds can be aimed at any hero in the party (yourself if you play them solo)
 if (C.mend_wounds) Object.assign(C.mend_wounds, { target: 'ally', text: 'Heal an ally (or yourself) for 8 HP.', play: (cb, t) => cb.heal(t && t.isPlayer && t.hp > 0 ? t : cb.player, 8, 'Mend Wounds') });
 if (C.lay_on_hands) Object.assign(C.lay_on_hands, { target: 'ally', text: 'Heal an ally (or yourself) for 30% of their total HP. Exhaust.', play: (cb, t) => { const a = t && t.isPlayer && t.hp > 0 ? t : cb.player; cb.heal(a, Math.round(a.maxHp * 0.3), 'Lay on Hands'); } }); // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
-const API = { rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { GROUPS, groupData, itemRules, rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -3730,7 +3797,7 @@ function finishMap(rng, data, partySize, mapKey, nodes, bonus) {
   const elites = shuffle(byTier.Elite.slice(), rng);
   let ei = 0;
   for (const n of list) {
-    if (n.type === 'fight') { const pool = byTier[TIER_ROWS(n.row)]; n.enemies = [pool[ri(rng, 0, pool.length - 1)]]; for (let k = 1; k < Math.min(4, partySize || 1); k++) n.enemies.push(pool[ri(rng, 0, pool.length - 1)]); } // a party meets one monster per hero
+    if (n.type === 'fight') { const pool = byTier[TIER_ROWS(n.row)]; n.enemies = [pool[ri(rng, 0, pool.length - 1)]]; for (let k = 1; k < Math.min(4, partySize || 1); k++) n.enemies.push(pool[ri(rng, 0, pool.length - 1)]); } if (n.type === 'fight' && n.enemies.length > 1) { const solo = byTier[TIER_ROWS(n.row)].filter(k => !data.enemies[k].group); let seen = false; n.enemies = n.enemies.map(k => { if (!data.enemies[k].group) return k; if (!seen) { seen = true; return k; } return solo[ri(rng, 0, solo.length - 1)]; }); } // at most one group per fight // a party meets one monster per hero
     if (n.type === 'elite') n.enemies = [elites[ei++ % elites.length]];
     if (n.type === 'shrine') n.shrine = SHRINES[ri(rng, 0, SHRINES.length - 1)].key;
   }
@@ -3823,7 +3890,7 @@ class Run {
       R.absorbed += m.absorbed;
     }
     // codex XP (Nov 1): every kill counts for the codex each hero is wearing; a party splits the kills but gets +10% per extra hero
-    { const xp = cb.enemies.filter(e => e.hp <= 0).reduce((s, e) => s + KILL_XP((this.data.enemies[e.key] || {}).tier), 0), N = this.members.length;
+    { const xp = cb.enemies.filter(e => e.hp <= 0 && !e.noLoot).reduce((s, e) => s + KILL_XP((this.data.enemies[e.key] || {}).tier), 0), N = this.members.length;
       if (xp > 0) for (const m of this.members) { const cx = (m.gear.find(g => g && g.slot === 'Codex') || {}).codex; if (cx) m.cxp[cx] = (m.cxp[cx] || 0) + xp / N * (1 + 0.1 * (N - 1)); } }
     for (const b of this.buffs) b.fights--;
     this.buffs = this.buffs.filter(b => b.fights > 0);
@@ -3833,7 +3900,7 @@ class Run {
       this.note(this.solo ? `Died on row ${n.row}. The loot sack (${this.sack.length} items, ${this.gold} gold) is lost.` : `The party is wiped out on row ${n.row}. Every sack is lost.`);
       return { result: 'loss' };
     }
-    this.fightsWon++; this.kills += cb.enemies.length;
+    this.fightsWon++; this.kills += cb.enemies.filter(e => !e.noLoot).length; // a group counts as one kill
     const per = [];
     this.members.forEach((m, i) => {
       const pl = cb.players[i];
@@ -3846,6 +3913,7 @@ class Run {
       const regen = m.stats.healthRegen + this.partyTalent('partyHealthRegen'); if (regen && !fell) m.hp = Math.min(m.stats.maxHp, m.hp + regen);
       const drops = []; let gold = 0;
       for (const e of cb.enemies) {  // every hero rolls their own loot
+        if (e.noLoot) continue; // the rest of a group: the group's first body rolls its loot
         for (let k = 0; k < (e.enraged ? 2 : 1); k++) { // an Enraged elite drops everything twice
           drops.push(...rollDrops(this.data, this.rng, e.key, this.level, this.luck(m), m.cls));
           drops.push(...rollCards(this.rng, m.cls, this.data.enemies[e.key].tier, this.luck(m)));
@@ -3968,6 +4036,7 @@ function newProfile() { return { v: VERSION, gold: 0, ink: 0, rerollTokens: 0, s
 function fix(p) { // tolerate older or partial saves
   p = Object.assign(newProfile(), p || {});
   for (const [k, c] of Object.entries(p.chars)) { if (!c.cls && CLASSES[k]) c.cls = k; c.cards = c.cards || []; c.deck = c.deck || []; c.gear = c.gear || []; c.name = c.name || c.cls; }
+  if (CB.itemRules) { for (const it of p.stash || []) CB.itemRules(it); for (const c of Object.values(p.chars)) for (const it of c.gear) CB.itemRules(it); for (const it of (p.shop && p.shop.items) || []) CB.itemRules(it); } // Nov 1: Mana Regen only on amulets, Recovery halved
   if (p.last && p.last.cls && !p.chars[p.last.cls]) p.last.cls = Object.keys(p.chars)[0] || '';
   // retired cards (Oct 31: Battle Trance) turn into their replacement, keeping rank and XP
   for (const c of Object.values(p.chars)) for (const k of [...c.deck, ...c.cards]) if (CB.REMOVED_CARDS[k.key]) k.key = CB.REMOVED_CARDS[k.key];
@@ -4015,7 +4084,9 @@ const STARTER_1H = ['Arming Sword', 'Dirk', 'Ashwood Wand', 'Flanged Mace'];
 const isOneHand = (item) => (item.slot === 'Weapon' || item.slot === 'Off-hand') && (/^1H/.test(item.hands || '') || STARTER_1H.includes(item.name));
 function slotOptions(item) { if (item.slot === 'Ring' || /^Ring/.test(item.slot)) return ['Ring 1', 'Ring 2']; if (isOneHand(item)) return ['Weapon', 'Off-hand']; return [item.slot]; }
 // Nov 1: a hero with a wager on the Arena board (posted or offered) has its gear and deck locked until the wager is settled
-function arenaLock(p, cls) { return p.arena && p.arena.hero === cls ? 'Locked: this hero has a wager at the Arena. Settle or withdraw it first.' : null; }
+let OUT_CHECK = () => false; // set by the page: true while the hero is out on a run (its gear is a copy that comes home when the run ends)
+function setOutCheck(f) { OUT_CHECK = f; }
+function arenaLock(p, cls) { if (OUT_CHECK(cls)) return 'You\'re out on a run: gear and deck changes wait until you\'re back in town.'; return p.arena && p.arena.hero === cls ? 'Locked: this hero has a wager at the Arena. Settle or withdraw it first.' : null; }
 function equip(p, cls, itemId, slotWanted) {
   { const lk = arenaLock(p, cls); if (lk) return { ok: false, why: lk }; }
   const c = char(p, cls), i = p.stash.findIndex(x => x.id === itemId); if (i < 0) return { ok: false, why: 'Not in stash' };
@@ -4186,7 +4257,7 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk };
 }
 
-const API = { arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -4195,6 +4266,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
 (function () {
   'use strict';
   const CB = window.CB, CBHub = window.CBHub, { CARDS, CLASSES } = CB, { Run, ROWS, COLS, SHRINES, SLOTS } = window.CBRun, DATA = window.CB_DATA;
+  CBHub.setOutCheck(() => !!run && !(cb && cb.practice));
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
   const RC = { Codex: '#e0802a', White: 'var(--r-white)', Green: 'var(--r-green)', Blue: 'var(--r-blue)', Gold: 'var(--r-gold)', 'Purple (Epic)': 'var(--r-purple)', Status: 'var(--r-status)', Token: 'var(--muted)' };
@@ -4543,6 +4615,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       <p class="muted" style="font-size:12px;margin:0">Hover a card to read it, click it to rank it up. Adding and removing cards happens at the Scribe.</p>`;
   }
   function renderGearTab(c) {
+    if (run && !(cb && cb.practice)) c = Object.assign({}, c, { gear: wornGear() }); // out on a run: show what the hero actually wears there
     const eq = CBHub.SLOTS.map(sl => { const it = c.gear.find(g => g.slot === sl); return it ? itemHtml(it, `<div class="acts"><button class="btn" data-unequip="${sl}">Unequip</button></div>`) : `<div class="item" style="--rc:var(--line)"><span class="muted">${sl}: empty</span></div>`; }).join('');
     const st = profile.stash.map(it => {
       const opts = CBHub.slotOptions(it);
@@ -4569,10 +4642,18 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (b.dataset.unequip) { if (!CBHub.unequip(profile, heroKey, b.dataset.unequip)) return toast(CBHub.arenaLock(profile, heroKey) || 'Stash is full.'); }
     else if (b.dataset.equip) { const r = CBHub.equip(profile, heroKey, b.dataset.equip, b.dataset.slot); if (!r.ok) return toast(r.why); }
     else if (b.dataset.salvage) CBHub.salvage(profile, b.dataset.salvage);
-    else if (b.dataset.breakcx) { const r = CBHub.breakCodex(profile, b.dataset.breakcx); if (!r.ok) return toast(r.why); save(); renderHub(); return toast(`+${r.tokens} Reroll Tokens (you have ${profile.rerollTokens}). Spend them at Jeweler Rook.`); }
+    else if (b.dataset.breakcx) { const r = CBHub.breakCodex(profile, b.dataset.breakcx); if (!r.ok) return toast(r.why); keepScroll(() => { save(); renderHub(); }); return toast(`+${r.tokens} Reroll Tokens (you have ${profile.rerollTokens}). Spend them at Jeweler Rook.`); }
     else return;
-    save(); renderHub();
+    keepScroll(() => { save(); renderHub(); });
   });
+  // re-render without jumping back to the top: remember where every scrolling list in the window was, put it back after
+  const SCROLLERS = '.list, .inkscroll, .feedlist, .trstash';
+  function keepScroll(fn) {
+    const sh = $('sheet'), top = sh.scrollTop, win = scrollY, lists = [...sh.querySelectorAll(SCROLLERS)].map(el => el.scrollTop);
+    fn();
+    sh.scrollTop = top; if (scrollY !== win) scrollTo(0, win);
+    [...sh.querySelectorAll(SCROLLERS)].forEach((el, i) => { if (lists[i]) el.scrollTop = lists[i]; });
+  }
   function toast(t) { modal(`<p>${esc(t)}</p><div class="row"><button class="btn primary" id="mClose">OK</button></div>`); $('mClose').onclick = closeModal; }
 
   // ---------- deck tab
@@ -5266,6 +5347,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // G opens (or closes) the guild window from anywhere: town, the map, a fight
   document.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape' && !$('sheet').hidden && $('scrStart').hidden && $('modal').hidden) { closeSheet(); ev.cbHandled = true; return; } // the guild window over the map or a fight
+    if ((ev.key === 'c' || ev.key === 'C') && $('scrStart').hidden && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.target.matches('input, select, textarea') && $('scrTitle').hidden && profile.chars[heroKey] && $('modal').hidden) {
+      ev.preventDefault(); if (!$('sheet').hidden && $('sheet').dataset.kind === 'char') closeSheet(); else openSheet('char'); return;
+    }
     if ((ev.key !== 'g' && ev.key !== 'G') || ev.ctrlKey || ev.metaKey || ev.altKey || ev.target.matches('input, select, textarea')) return;
     if (!$('scrTitle').hidden || !profile.chars[heroKey] || !$('modal').hidden) return;
     ev.preventDefault(); P.held = [];
@@ -5872,8 +5956,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793561799044';
-  const CB_BUILD = 'bdc739641f'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793567113533';
+  const CB_BUILD = '2ca43a5245'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -6932,6 +7016,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Feature', 'Group fights: tier 2 and 3 rows can now hold a group, three smaller bodies that share one monster\'s HP and damage (Pack of Wolves, Bandit Party, Ember Whelps, Magma Golems, Frostfang Pack, Barrow Wight Patrol, Spiderling Swarm, Raptor Pack, Ley Hound Pack, Animated Armor Squad, Ghoul Pack, Cultist Coven: two per map). A group counts as one monster: one loot roll, one kill, its own gear and card drops. Bring some area damage.'],
+      ['Balance', 'Mana Regen now only appears on amulets. Gear that had a Mana Regen affix had it rerolled into a new stat, and the Frost Staff\'s built-in Mana Regen became Frost damage.'],
+      ['Balance', 'Recovery (and Party Recovery) on gear is halved, on new drops and on gear you already own.'],
+      ['Feature', 'C opens your character sheet during fights and on the map too. While you\'re out on a run it shows the gear you\'re actually wearing, and gear and deck changes wait until you\'re back in town.'],
+      ['Fix', 'Salvaging or breaking an item in the stash keeps your place in the list instead of jumping back to the top.'],
       ['Feature', 'Keyword help everywhere: game terms on cards, gear, merchants, statuses and the combat log (Dread, Bleed, Absorb, Taunt, Crit Chance...) now have a faint dotted underline. Point at one and hold Alt to read its glossary entry.'],
       ['Balance', 'Soul Beacon now Exhausts.'],
       ['Fix', 'A card being dragged could get stuck in the middle of the screen if you right-clicked (or switched windows) mid-drag. Right-click, Esc or leaving the window now cancels the drag and puts the card back in your hand.'],
@@ -7155,7 +7244,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     return `${cxMapChips()}${cxChips('tier', ['All', 'Tier 1', 'Tier 2', 'Tier 3', 'Elite', 'Boss'], 'Tier')}
       <p class="savenote">${list.length} enemies ${M ? `on Map ${M.num}: ${esc(M.name)} (${M.element}${M.dmgScale ? `, enemy damage x${M.dmgScale}` : ''}; its gear rolls ${M.dropResist} Resistance)` : 'across all six maps'}. Stats at map +0: each map level multiplies enemy HP by 1.5 and damage by 1.3. Rows 1 to 4 are tier 1, 5 to 9 tier 2, 10 to 14 tier 3; elites appear from row 5.</p>
       ${list.map(([k, e]) => { const t = G.drops[e.tier], cd = CB.CARD_DROPS[e.tier];
-        return `<details class="cxenemy"><summary><b>${esc(e.name)}</b> <span class="muted">${TIER_NAME(e.tier)} &middot; ${e.hp} HP &middot; ${esc(e.creature)} &middot; ${e.type}, weak to ${e.weak}</span></summary>
+        return `<details class="cxenemy"><summary><b>${esc(e.name)}</b> <span class="muted">${TIER_NAME(e.tier)} &middot; ${e.group ? `group of ${e.group} &times; ${Math.round(e.hp / e.group)} HP` : e.hp + ' HP'} &middot; ${esc(e.creature)} &middot; ${e.type}, weak to ${e.weak}</span></summary>
         <p>${esc(e.desc || '')}</p><p class="muted">${esc(e.arch || '')}. Draws ${e.draw} a round${e.draw2 ? ` (${e.draw2} in phase 2)` : ''}, ${e.maxMana} max mana, +${e.regen} per turn.</p>
         <h4>Deck (${e.deck.reduce((s, x) => s + x.n, 0)} cards)</h4>${enemyGrid(e.deck.map(c => ({ c, n: c.n, tag: c.phase2 ? 'phase 2' : '' })), k, 140)}
         <div><h4>Loot</h4><p><b>Gold:</b> ${e.gold[0]} to ${e.gold[1]} per kill.</p>
@@ -7409,7 +7498,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       if (!a) return null;
       if (a.isPlayer) { const s = M.heroes && M.heroes[a.cls]; return s ? `<img class="inkfig" src="img/ink/hero_${a.cls.toLowerCase()}.webp" style="--s:${s}" alt="" draggable="false">` : null; }
       let k = a.key; if (M.enemies && !M.enemies[k] && window.CB_DATA) { const d = CB_DATA.enemies[k]; if (d && d.raid && d.map && CB_DATA.maps[d.map]) k = CB_DATA.maps[d.map].boss; } // raid bosses wear their map boss's art
-      const s = M.enemies && M.enemies[k]; return s ? `<img class="inkfig" src="img/ink/${k}.webp" style="--s:${s}" alt="" draggable="false">` : null;
+      let sm = 1; if (M.enemies && !M.enemies[k] && window.CB_DATA && CB_DATA.enemies[k] && CB_DATA.enemies[k].art) { k = CB_DATA.enemies[k].art; sm = 0.8; } // group members wear a smaller copy of a monster's art
+      const s = M.enemies && M.enemies[k] && M.enemies[k] * sm; return s ? `<img class="inkfig" src="img/ink/${k}.webp" style="--s:${s}" alt="" draggable="false">` : null;
     },
   };
 })();
@@ -8472,7 +8562,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       ['Max HP', 'How much damage you can take. HP carries from fight to fight on a run; campfires heal 30%.'],
       ['Stamina', 'Gear stat: +1 Max HP per point.'],
       ['Mana', 'Spent to play cards. You start each turn with your regeneration added (double on your first turn of a fight), up to your max. Unspent mana carries over to the next turn.'],
-      ['Mana Regen', 'Mana gained at the start of each of your turns.'],
+      ['Mana Regen', 'Mana gained at the start of each of your turns. On gear, only amulets have it.'],
       ['Max Mana', 'The most mana you can hold.'],
       ['Draw', 'Cards drawn at the start of each round. A full hand is 10 cards; extra draws go to the discard pile.'],
       ['Strength', '+1% damage from Attack cards per point.'],
@@ -8549,6 +8639,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     ['Combat', [
       ['Turn order', 'Everyone acts in Initiative order each round. The bar at the top shows it; the glowing tile is acting now.'],
       ['Enemy intents', 'The chips above an enemy are the cards it will play next turn, in order, with their damage and who they are aimed at. Crossed-out ones it can\'t afford.'],
+      ['Group', 'Some tier 2 and 3 fights are a group (Pack of Wolves, Bandit Party, Magma Golems...): three smaller bodies that share one monster\'s HP and damage. It counts as one monster: one loot roll, one kill. Area damage shines here.'],
       ['Pressure', 'From round 5, enemies deal 2% more damage every round (10% in duels), so fights end.'],
       ['Elites and the boss', 'Elites appear from row 5 and always drop a card. The Warlord has a second phase at half HP with new cards.'],
       ['Party fights', 'A party meets one monster per hero (each with +30% HP per extra hero). Elites and the boss get +85% HP, mana and regen per extra hero instead.'],
@@ -8989,7 +9080,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if (!id) { el.innerHTML = run.over ? '' : '<span class="muted">No path forward.</span>'; return; }
     const n = run.map.nodes[id], t = NODE[n.type];
     let s = `<b style="color:${t.color}">${t.label}</b> <span class="muted">&middot; row ${n.row > ROWS ? 'boss' : n.row}</span><br>`;
-    if (n.enemies) s += n.enemies.map(k => { const e = DATA.enemies[k]; return `${esc(e.name)} <span class="muted">(${e.tier === 'Elite' || e.tier === 'Boss' ? e.tier : 'Tier ' + e.tier}, ${Math.round(e.hp * Math.pow(1.5, run.level))} HP, ${esc(e.creature)}, weak to ${e.weak})</span> <button class="pilebtn" data-loot="${k}">Loot table</button> <button class="pilebtn" data-deck="${k}">Deck</button><br><span class="muted">${esc(e.desc || '')}</span>`; }).join('<br>');
+    if (n.enemies) s += n.enemies.map(k => { const e = DATA.enemies[k]; return `${esc(e.name)} <span class="muted">(${e.tier === 'Elite' || e.tier === 'Boss' ? e.tier : 'Tier ' + e.tier}, ${e.group ? `group of ${e.group}, ${Math.round(e.hp * Math.pow(1.5, run.level) / e.group)} HP each` : Math.round(e.hp * Math.pow(1.5, run.level)) + ' HP'}, ${esc(e.creature)}, weak to ${e.weak})</span> <button class="pilebtn" data-loot="${k}">Loot table</button> <button class="pilebtn" data-deck="${k}">Deck</button><br><span class="muted">${esc(e.desc || '')}</span>`; }).join('<br>');
     if (n.enraged) s += '<div style="margin:2px 0 4px"><b style="color:#ff5a3a">Enraged!</b> <span class="muted">+50% HP and damage. Drops twice the loot, plus a guaranteed Blue item (25% chance it is Epic).</span></div>';
     if (n.type === 'rest' && n.campfire) s += '<b>Halfway campfire</b> (one is always on row 7). ';
     if (n.type === 'rest') s += `<span class="muted">Heal 30% of your max HP, or extract and keep ${n.campfire ? '75%' : 'half'} of your sack.</span>`;

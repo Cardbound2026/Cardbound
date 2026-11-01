@@ -2,6 +2,11 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Feature', 'Group fights: tier 2 and 3 rows can now hold a group, three smaller bodies that share one monster\'s HP and damage (Pack of Wolves, Bandit Party, Ember Whelps, Magma Golems, Frostfang Pack, Barrow Wight Patrol, Spiderling Swarm, Raptor Pack, Ley Hound Pack, Animated Armor Squad, Ghoul Pack, Cultist Coven: two per map). A group counts as one monster: one loot roll, one kill, its own gear and card drops. Bring some area damage.'],
+      ['Balance', 'Mana Regen now only appears on amulets. Gear that had a Mana Regen affix had it rerolled into a new stat, and the Frost Staff\'s built-in Mana Regen became Frost damage.'],
+      ['Balance', 'Recovery (and Party Recovery) on gear is halved, on new drops and on gear you already own.'],
+      ['Feature', 'C opens your character sheet during fights and on the map too. While you\'re out on a run it shows the gear you\'re actually wearing, and gear and deck changes wait until you\'re back in town.'],
+      ['Fix', 'Salvaging or breaking an item in the stash keeps your place in the list instead of jumping back to the top.'],
       ['Feature', 'Keyword help everywhere: game terms on cards, gear, merchants, statuses and the combat log (Dread, Bleed, Absorb, Taunt, Crit Chance...) now have a faint dotted underline. Point at one and hold Alt to read its glossary entry.'],
       ['Balance', 'Soul Beacon now Exhausts.'],
       ['Fix', 'A card being dragged could get stuck in the middle of the screen if you right-clicked (or switched windows) mid-drag. Right-click, Esc or leaving the window now cancels the drag and puts the card back in your hand.'],

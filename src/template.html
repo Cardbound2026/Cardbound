@@ -846,6 +846,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 (function () {
   'use strict';
   const CB = window.CB, CBHub = window.CBHub, { CARDS, CLASSES } = CB, { Run, ROWS, COLS, SHRINES, SLOTS } = window.CBRun, DATA = window.CB_DATA;
+  CBHub.setOutCheck(() => !!run && !(cb && cb.practice));
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
   const RC = { Codex: '#e0802a', White: 'var(--r-white)', Green: 'var(--r-green)', Blue: 'var(--r-blue)', Gold: 'var(--r-gold)', 'Purple (Epic)': 'var(--r-purple)', Status: 'var(--r-status)', Token: 'var(--muted)' };
@@ -1194,6 +1195,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       <p class="muted" style="font-size:12px;margin:0">Hover a card to read it, click it to rank it up. Adding and removing cards happens at the Scribe.</p>`;
   }
   function renderGearTab(c) {
+    if (run && !(cb && cb.practice)) c = Object.assign({}, c, { gear: wornGear() }); // out on a run: show what the hero actually wears there
     const eq = CBHub.SLOTS.map(sl => { const it = c.gear.find(g => g.slot === sl); return it ? itemHtml(it, `<div class="acts"><button class="btn" data-unequip="${sl}">Unequip</button></div>`) : `<div class="item" style="--rc:var(--line)"><span class="muted">${sl}: empty</span></div>`; }).join('');
     const st = profile.stash.map(it => {
       const opts = CBHub.slotOptions(it);
@@ -1220,10 +1222,18 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (b.dataset.unequip) { if (!CBHub.unequip(profile, heroKey, b.dataset.unequip)) return toast(CBHub.arenaLock(profile, heroKey) || 'Stash is full.'); }
     else if (b.dataset.equip) { const r = CBHub.equip(profile, heroKey, b.dataset.equip, b.dataset.slot); if (!r.ok) return toast(r.why); }
     else if (b.dataset.salvage) CBHub.salvage(profile, b.dataset.salvage);
-    else if (b.dataset.breakcx) { const r = CBHub.breakCodex(profile, b.dataset.breakcx); if (!r.ok) return toast(r.why); save(); renderHub(); return toast(`+${r.tokens} Reroll Tokens (you have ${profile.rerollTokens}). Spend them at Jeweler Rook.`); }
+    else if (b.dataset.breakcx) { const r = CBHub.breakCodex(profile, b.dataset.breakcx); if (!r.ok) return toast(r.why); keepScroll(() => { save(); renderHub(); }); return toast(`+${r.tokens} Reroll Tokens (you have ${profile.rerollTokens}). Spend them at Jeweler Rook.`); }
     else return;
-    save(); renderHub();
+    keepScroll(() => { save(); renderHub(); });
   });
+  // re-render without jumping back to the top: remember where every scrolling list in the window was, put it back after
+  const SCROLLERS = '.list, .inkscroll, .feedlist, .trstash';
+  function keepScroll(fn) {
+    const sh = $('sheet'), top = sh.scrollTop, win = scrollY, lists = [...sh.querySelectorAll(SCROLLERS)].map(el => el.scrollTop);
+    fn();
+    sh.scrollTop = top; if (scrollY !== win) scrollTo(0, win);
+    [...sh.querySelectorAll(SCROLLERS)].forEach((el, i) => { if (lists[i]) el.scrollTop = lists[i]; });
+  }
   function toast(t) { modal(`<p>${esc(t)}</p><div class="row"><button class="btn primary" id="mClose">OK</button></div>`); $('mClose').onclick = closeModal; }
 
   // ---------- deck tab
@@ -1917,6 +1927,9 @@ body.aiming { cursor: grabbing; user-select: none; }
   // G opens (or closes) the guild window from anywhere: town, the map, a fight
   document.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape' && !$('sheet').hidden && $('scrStart').hidden && $('modal').hidden) { closeSheet(); ev.cbHandled = true; return; } // the guild window over the map or a fight
+    if ((ev.key === 'c' || ev.key === 'C') && $('scrStart').hidden && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.target.matches('input, select, textarea') && $('scrTitle').hidden && profile.chars[heroKey] && $('modal').hidden) {
+      ev.preventDefault(); if (!$('sheet').hidden && $('sheet').dataset.kind === 'char') closeSheet(); else openSheet('char'); return;
+    }
     if ((ev.key !== 'g' && ev.key !== 'G') || ev.ctrlKey || ev.metaKey || ev.altKey || ev.target.matches('input, select, textarea')) return;
     if (!$('scrTitle').hidden || !profile.chars[heroKey] || !$('modal').hidden) return;
     ev.preventDefault(); P.held = [];
@@ -2292,7 +2305,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (!id) { el.innerHTML = run.over ? '' : '<span class="muted">No path forward.</span>'; return; }
     const n = run.map.nodes[id], t = NODE[n.type];
     let s = `<b style="color:${t.color}">${t.label}</b> <span class="muted">&middot; row ${n.row > ROWS ? 'boss' : n.row}</span><br>`;
-    if (n.enemies) s += n.enemies.map(k => { const e = DATA.enemies[k]; return `${esc(e.name)} <span class="muted">(${e.tier === 'Elite' || e.tier === 'Boss' ? e.tier : 'Tier ' + e.tier}, ${Math.round(e.hp * Math.pow(1.5, run.level))} HP, ${esc(e.creature)}, weak to ${e.weak})</span> <button class="pilebtn" data-loot="${k}">Loot table</button> <button class="pilebtn" data-deck="${k}">Deck</button><br><span class="muted">${esc(e.desc || '')}</span>`; }).join('<br>');
+    if (n.enemies) s += n.enemies.map(k => { const e = DATA.enemies[k]; return `${esc(e.name)} <span class="muted">(${e.tier === 'Elite' || e.tier === 'Boss' ? e.tier : 'Tier ' + e.tier}, ${e.group ? `group of ${e.group}, ${Math.round(e.hp * Math.pow(1.5, run.level) / e.group)} HP each` : Math.round(e.hp * Math.pow(1.5, run.level)) + ' HP'}, ${esc(e.creature)}, weak to ${e.weak})</span> <button class="pilebtn" data-loot="${k}">Loot table</button> <button class="pilebtn" data-deck="${k}">Deck</button><br><span class="muted">${esc(e.desc || '')}</span>`; }).join('<br>');
     if (n.enraged) s += '<div style="margin:2px 0 4px"><b style="color:#ff5a3a">Enraged!</b> <span class="muted">+50% HP and damage. Drops twice the loot, plus a guaranteed Blue item (25% chance it is Epic).</span></div>';
     if (n.type === 'rest' && n.campfire) s += '<b>Halfway campfire</b> (one is always on row 7). ';
     if (n.type === 'rest') s += `<span class="muted">Heal 30% of your max HP, or extract and keep ${n.campfire ? '75%' : 'half'} of your sack.</span>`;

@@ -33,7 +33,8 @@
       if (!a) return null;
       if (a.isPlayer) { const s = M.heroes && M.heroes[a.cls]; return s ? `<img class="inkfig" src="img/ink/hero_${a.cls.toLowerCase()}.webp" style="--s:${s}" alt="" draggable="false">` : null; }
       let k = a.key; if (M.enemies && !M.enemies[k] && window.CB_DATA) { const d = CB_DATA.enemies[k]; if (d && d.raid && d.map && CB_DATA.maps[d.map]) k = CB_DATA.maps[d.map].boss; } // raid bosses wear their map boss's art
-      const s = M.enemies && M.enemies[k]; return s ? `<img class="inkfig" src="img/ink/${k}.webp" style="--s:${s}" alt="" draggable="false">` : null;
+      let sm = 1; if (M.enemies && !M.enemies[k] && window.CB_DATA && CB_DATA.enemies[k] && CB_DATA.enemies[k].art) { k = CB_DATA.enemies[k].art; sm = 0.8; } // group members wear a smaller copy of a monster's art
+      const s = M.enemies && M.enemies[k] && M.enemies[k] * sm; return s ? `<img class="inkfig" src="img/ink/${k}.webp" style="--s:${s}" alt="" draggable="false">` : null;
     },
   };
 })();
