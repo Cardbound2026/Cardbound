@@ -30,3 +30,9 @@ Stone frames, wooden buttons and inked controls for the whole UI, drawn in code 
 under `body.inkui`. Players can switch it off in Menu > Settings ("Gothic Ink interface"); the choice is saved per browser.
 To remove it: delete `src/inkui.js` (the build skips the missing file). Optional tidy-up: the `/*INKUI*/` line in
 src/template.html, its `.replace` in build.js, and the `setInkUi` checkbox in openMenu (it hides itself when the file is gone).
+
+## The battlefield (src/battlefield.js)
+The fight scene: a painted road and ruined gate (the PAPERFORGE v0.5 "Hollow March" scenery by the design tester, tinted per
+map), heroes on the left diagonal, foes on the right, nameplates outside and intents over heads. Players can turn it off in
+Menu > Settings ("Battlefield view"). To remove it: delete `src/battlefield.js` (the build skips it); optionally remove the
+`/*BATTLEFIELD*/` line in src/template.html, its `.replace` in build.js, the `CB_BF.layout` call in render() and the `setBf` checkbox.

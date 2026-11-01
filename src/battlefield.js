@@ -179,43 +179,107 @@ function draw(canvas,options={}){
 
 // which painting and tint each map uses
 const MAPLOOK = { physical: [0, null], fire: [3, ['#b2502a', .32]], frost: [4, ['#5b86a8', .3]], nature: [1, ['#5f8a3c', .22]], arcane: [2, ['#7a4fb0', .3]], shadow: [2, ['#4a3a5a', .35]] };
-const BF = { on: true, key: '', w: 0, h: 0 };
+const BF = { on: (() => { try { return localStorage.getItem('cb-bf') !== 'off'; } catch (e) { return true; } })(), key: '', w: 0, h: 0 };
 function sceneFor(stage, map) {
   let cv = stage.querySelector('#bfScene'); if (!cv) { cv = document.createElement('canvas'); cv.id = 'bfScene'; cv.setAttribute('aria-hidden', 'true'); stage.prepend(cv); }
   const w = stage.clientWidth, h = stage.clientHeight, key = map + ':' + w + 'x' + h;
   if (key !== BF.key && w > 50 && h > 50) { const L = MAPLOOK[map] || MAPLOOK.physical; draw(cv, { width: w, height: h, chapter: L[0], tint: L[1], dpr: Math.min(window.devicePixelRatio || 1, 1.75) }); BF.key = key; }
   return [w, h];
 }
-// diagonal slots, front (low, big) to back (high, small); the right side mirrors the left
-const XS = [.20, .257, .314, .371], YS = [.80, .665, .53, .40];
-const lerp = (arr, j) => { const a = Math.max(0, Math.min(arr.length - 1, Math.floor(j))), b = Math.min(arr.length - 1, a + 1); return arr[a] + (arr[b] - arr[a]) * (j - a); };
-function slots(n, enemy) {
-  // up to 4 on one diagonal; more go on two parallel diagonals (front line nearer the road)
-  if (n <= 4) { const idx = enemy ? [[1.4], [2.4, .6], [2.9, 1.5, .1], [3, 2, 1, 0]][n - 1] : [0, 1, 2, 3].slice(0, n); return idx.map(j => ({ x: lerp(XS, j), y: lerp(YS, j), d: j, k: 1 })); }
-  const per = Math.ceil(n / 2), out = [];
-  for (let i = 0; i < n; i++) { const row = i % 2, col = Math.floor(i / 2), j = per > 1 ? (enemy ? 3 - col * 3 / (per - 1) : col * 3 / (per - 1)) : 1.5; out.push({ x: lerp(XS, j) + (row ? .075 : -.01), y: lerp(YS, j) + (row ? .05 : 0), d: j - row * .4, k: n > 6 ? .62 : .78 }); }
-  return out;
-}
+// The formation: heroes on the left diagonal, foes mirrored on the right. Each fighter stands at an anchor (its feet);
+// its nameplate sits further out, in a staircase that never overlaps a plate or the figure in front of it.
+// Everyone uses one figure size (the busier side decides), so heroes and monsters are always drawn at the same scale.
 function layout(cb, opts) {
-  const stage = document.querySelector('#scrCombat .stage'); if (!stage || !BF.on) return;
-  const map = (opts && opts.map) || 'physical';
-  document.getElementById('scrCombat').classList.add('bf');
+  const stage = document.querySelector('#scrCombat .stage'); if (!stage) return;
+  const sc = document.getElementById('scrCombat'), map = (opts && opts.map) || 'physical';
+  if (!BF.on) { // classic stage: undo the battlefield
+    sc.classList.remove('bf'); const cv = document.getElementById('bfScene'); if (cv) cv.remove(); BF.key = '';
+    const hint = document.getElementById('hint'), hud = sc.querySelector('.field-panel > .hud'); if (hint && hud && hint.parentElement === hud) hud.after(hint);
+    for (const id of ['playerSlot', 'foes']) document.getElementById(id).classList.remove('compact');
+    return;
+  }
+  sc.classList.add('bf');
   const [W, H] = sceneFor(stage, map); if (!W) return;
-  const base = Math.min(170, Math.max(90, H * .27)), plateW = W < 820 ? 118 : 150;
-  stage.classList.toggle('narrow', W < 820);
-  const place = (sel, enemy) => {
-    const units = [...document.querySelectorAll(sel + ' > .unit')], S = slots(units.length, enemy);
-    // push the diagonal inward when the field is narrow, so the outer nameplates stay on screen
-    const minX = (plateW + base * .36 + 26) / W, shift = Math.max(0, minX - Math.min(...S.map(t => t.x)));
-    units.forEach((el, i) => {
-      const s = S[i], sx = s.x + shift * (1 - (s.x - XS[0]) * 1.2), x = enemy ? 1 - sx : sx, size = Math.round(base * (1 - s.d * .055) * s.k * (el.dataset.boss ? 1.22 : 1));
-      el.style.left = Math.round(x * W) + 'px'; el.style.top = Math.round(s.y * H) + 'px';
-      el.style.setProperty('--fh', size + 'px'); el.style.setProperty('--plate', Math.round(size * .36 + 8) + 'px'); el.style.zIndex = String(20 + Math.round((4 - s.d) * 4));
-    });
+  const order = document.getElementById('order'), hud = sc.querySelector('.field-panel > .hud'), hint = document.getElementById('hint');
+  if (hud && hint && hint.parentElement !== hud) hud.insertBefore(hint, hud.querySelector('.spacer'));
+  if (hint) hint.title = hint.textContent;
+  stage.parentElement.classList.toggle('bfnarrow', W < 700); stage.parentElement.classList.toggle('bfmid', W < 900);
+  const sr = stage.getBoundingClientRect(), T = order ? Math.max(0, order.getBoundingClientRect().bottom - sr.top) + 8 : 90;
+  const hudH = hud ? hud.offsetHeight : 64, B = H - hudH - 10; stage.parentElement.style.setProperty('--hudh', hudH + 'px');
+  const sides = [[...document.querySelectorAll('#playerSlot > .unit')], [...document.querySelectorAll('#foes > .unit')]];
+  const cmp = sides.map(us => us.length > 4), narrow = W < 760;
+  stage.classList.toggle('narrow', narrow);
+  document.getElementById('playerSlot').classList.toggle('compact', cmp[0]); document.getElementById('foes').classList.toggle('compact', cmp[1]);
+  const P = narrow ? 112 : W < 900 ? 124 : 136; stage.style.setProperty('--plw', P + 'px');
+  const hts = sides.map(us => us.map(el => { const pl = el.querySelector('.uplate'); return pl ? pl.offsetHeight : 40; }));
+  const figTop = 1.08;
+  // one side's positions for figure size s; returns null if it doesn't fit
+  const plan = (n, h, s, force, compact) => {
+    if (!n) return [];
+    if (compact) { // 5+ on a side: small plates under the feet, one diagonal (or two staggered ones past 6)
+      const files = n > 6 ? 2 : 1, per = Math.ceil(n / files), dx = s * .74 + 6, ph = 38, out = [], gap = W / 2 - Math.max(16, W * .04);
+      const lift = files > 1 ? s * .62 + ph : 0, x0 = 12 + s * .52, y0 = B - ph - 2;
+      const dy = per > 1 ? Math.min(s * .7, (y0 - lift - T - s * figTop) / (per - 1)) : 0;
+      for (let i = 0; i < n; i++) { const f = files > 1 ? i % 2 : 0, col = files > 1 ? Math.floor(i / 2) : i; out.push({ x: x0 + col * dx + f * dx / 2, y: y0 - col * dy - f * lift, d: col * .7 + f * .6, G: 0 }); }
+      const ok = dy >= ph - 4 && out.every(p => p.x + s * .5 <= gap && p.y - s * figTop >= T - 4);
+      return ok || force ? out : null;
+    }
+    const dx = s * .7 + 8, out = [];
+    let x = 12 + P + s * .34 + 8, y = B;
+    for (let i = 0; i < n; i++) { if (i) { x += dx; y -= Math.max(h[i - 1] + 5, s * .2); } const G = i ? Math.max(s * .34 + 8, dx + s * .32 + 6) : s * .34 + 8; out.push({ x, y, d: i, G }); }
+    const last = out[n - 1], ok = last.x + s * .34 <= W / 2 - Math.max(20, W * .05) && last.y - Math.max(s * figTop, h[n - 1]) >= T;
+    if (ok) return out;
+    if (!force) return null;
+    // still too tall: squeeze the steps evenly (plates may overlap a little; nearer ones draw on top)
+    const top = T + Math.max(s * figTop, h[n - 1]), span = Math.max(0, B - top), need = B - last.y;
+    if (need > span && n > 1) { const k = span / need; for (const p of out) p.y = B - (B - p.y) * k; }
+    return out;
   };
-  place('#playerSlot', false); place('#foes', true);
-  for (const el of stage.querySelectorAll('.unit')) { const pl = el.querySelector('.uplate'); if (pl) el.style.setProperty('--ih', (pl.offsetHeight + 6) + 'px'); }
+  let s = Math.round(Math.min(215, Math.max(96, (B - T) * .66))), P0 = null, P1 = null;
+  for (; s >= 56; s -= 4) { P0 = plan(sides[0].length, hts[0], s, false, cmp[0]); P1 = plan(sides[1].length, hts[1], s, false, cmp[1]); if (P0 && P1) break; }
+  if (!P0 || !P1) { s = Math.max(s, 56); P0 = plan(sides[0].length, hts[0], s, true, cmp[0]); P1 = plan(sides[1].length, hts[1], s, true, cmp[1]); }
+  const put = (els, pts, enemy) => els.forEach((el, i) => {
+    const p = pts[i]; if (!p) return; const big = el.dataset.boss ? 1.22 : 1, size = Math.round(s * (1 - p.d * .035) * big);
+    el.style.left = Math.round(enemy ? W - p.x : p.x) + 'px'; el.style.top = Math.round(p.y) + 'px';
+    el.style.setProperty('--fh', size + 'px'); el.style.setProperty('--plate', Math.round(p.G) + 'px');
+    el.style.zIndex = String(60 - Math.round(p.d * 6));
+    const fg = el.querySelector('.figure'); if (fg) el.style.setProperty('--figh', fg.offsetHeight + 'px');
+  });
+  put(sides[0], P0, false); put(sides[1], P1, true);
+  placeIntents(stage, sides[1], s);
+
   watch(() => layout(cb, opts));
+}
+// enemy intents: try a few spots (over the head, leaning in or out, or on top of the nameplate) and keep the one that
+// covers the least of the other fighters, plates and intents
+function placeIntents(stage, foes, s) {
+  const R = (el) => el.getBoundingClientRect(), area = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+  const obst = [], sr = R(stage), ord = document.getElementById('order'), hud = document.querySelector('#scrCombat .field-panel > .hud');
+  for (const u of stage.querySelectorAll('.unit')) {
+    const pl = u.querySelector('.uplate'); if (pl) obst.push({ u, r: R(pl), w: 3 });
+    const f = u.querySelector('.figure img, .figure svg'); if (f) { const r = R(f), sh = r.width * .2; obst.push({ u, r: { left: r.left + sh, right: r.right - sh, top: r.top + r.height * .1, bottom: r.bottom }, w: 1 }); }
+  }
+  if (ord) for (const t of ord.querySelectorAll('.otile, .round, .btn')) obst.push({ r: R(t), w: 3 });
+  if (hud) obst.push({ r: R(hud), w: 3 });
+  const spots = [
+    { right: 'calc(var(--fh) * -.32)', left: 'auto', bottom: 'calc(var(--figh, var(--fh)) + 2px)', jc: 'flex-end' },
+    { right: 'auto', left: 'calc(var(--fh) * -.5)', bottom: 'calc(var(--figh, var(--fh)) + 2px)', jc: 'center' },
+    { right: 'auto', left: 'var(--plate)', bottom: 'calc(var(--ih, 60px) + 2px)', jc: 'flex-start' },
+    { right: 'calc(var(--fh) * .1)', left: 'auto', bottom: 'calc(var(--figh, var(--fh)) * .55)', jc: 'flex-end' },
+  ];
+  for (const u of foes) {
+    const it = u.querySelector('.uintent'); if (!it || !it.textContent.trim()) continue;
+    const pl = u.querySelector('.uplate'); if (pl) u.style.setProperty('--ih', pl.offsetHeight + 'px');
+    let best = null;
+    spots.forEach((sp, k) => {
+      it.style.left = sp.left; it.style.right = sp.right; it.style.bottom = sp.bottom; it.style.setProperty('--jc', sp.jc);
+      const chips = [...it.querySelectorAll('.intent')].map(R); let cost = k * 2;
+      for (const c of chips) { if (c.top < sr.top || c.left < sr.left || c.right > sr.right) cost += 5000; for (const o of obst) if (o.u !== u) cost += area(c, o.r) * o.w; }
+      if (!best || cost < best.cost) best = { cost, k };
+    });
+    const sp = spots[best.k]; it.style.left = sp.left; it.style.right = sp.right; it.style.bottom = sp.bottom; it.style.setProperty('--jc', sp.jc);
+    for (const c of it.querySelectorAll('.intent')) obst.push({ u: null, r: R(c), w: 3 });
+  }
 }
 let ro = null;
 let again = null;
@@ -229,15 +293,17 @@ css.textContent = `
 #scrCombat.bf .field-panel { grid-template-rows: minmax(300px, 1fr) auto; padding: 0 0 8px; row-gap: 0; }
 #scrCombat.bf .field-panel > .stage { grid-row: 1; grid-column: 1; }
 #scrCombat.bf .field-panel > .hud { grid-row: 1; grid-column: 1; align-self: end; z-index: 45; margin: 0; padding: 8px 14px; background: linear-gradient(180deg, #0c141300, #0c1413d9 40%, #0c1413f2); border-radius: 0 0 8px 8px; }
-#scrCombat.bf .field-panel > .hint { grid-row: 1; grid-column: 1; align-self: end; justify-self: center; z-index: 46; margin: 0 0 72px; padding: 5px 14px; background: #0e1716e6; border: 1px solid #3b4337; border-radius: 4px; color: #cfd6c4; font-size: 12px; min-height: 0; max-width: 70%; text-align: center; }
-#scrCombat.bf .field-panel > .hint:empty { display: none; }
+#scrCombat.bf .field-panel > .hud { grid-template-columns: auto auto minmax(0, 1fr) auto; }
+#scrCombat.bf .hud > .hint { margin: 0; padding: 0 6px; color: #aeb8a6; font-size: 12px; line-height: 1.3; min-height: 0; text-align: center; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-width: 120px; }
+#scrCombat.bf .hud .piles { gap: 4px 6px; } #scrCombat.bf .hud .piles > :not(.pilebtn) { font-size: 11px; color: #92a291; }
+#scrCombat.bf .hud > .hint.alert { color: #f0b36a; }
 #scrCombat.bf .field-panel > .hand { grid-row: 2; margin: -6px 12px 0; padding-top: 10px; }
 #scrCombat.bf .hand .cf { --cw: min(185px, max(130px, calc((100vh - 660px) / 1.4))); }
 #scrCombat.bf { grid-template-columns: minmax(0, 1fr) var(--ledgerW, 290px); }
 #scrCombat.bf.withchat { grid-template-columns: var(--chatW, 220px) minmax(0, 1fr) var(--ledgerW, 290px); }
 @media (max-width: 1180px) { #scrCombat.bf.withchat { grid-template-columns: minmax(0, 1fr) var(--ledgerW, 280px); } }
 #scrCombat.bf .field-panel > .hud .mana .orb { width: 46px; height: 46px; font-size: 20px; }
-#scrCombat.bf .stage.narrow .uplate { width: 118px; } #scrCombat.bf .stage.narrow .uplate .uname b { font-size: 13px; }
+#scrCombat.bf .stage.narrow .uplate .uname b { font-size: 13px; }
 #scrCombat.bf .order .otile .ofig, #scrCombat.bf .order .otile .ofig svg, #scrCombat.bf .order .otile .ofig .inkfig { height: 40px; }
 #scrCombat.bf .order .otile { padding: 3px 3px 4px; } #scrCombat.bf .order .otile .onm { font-size: 11px; }
 #scrCombat.bf .order .lbl { color: #b4bda6; }
@@ -258,36 +324,62 @@ css.textContent = `
 #scrCombat.bf .stage .unit .figure .inkfig { height: calc(var(--fh) * var(--s, 1)); max-width: none; }
 #scrCombat.bf .stage .unit .figure svg { height: var(--fh); width: auto; max-width: none; }
 #scrCombat.bf .stage .unit.targetable .figure, #scrCombat.bf .stage .unit.targetable .uplate { cursor: crosshair; }
-#scrCombat.bf .stage .uplate { position: absolute; bottom: 0; width: 150px; pointer-events: auto; padding: 6px 9px 6px 8px; color: #dce1ce; display: grid; gap: 3px; }
+#scrCombat.bf .stage .uplate { position: absolute; bottom: 0; width: var(--plw, 136px); box-sizing: border-box; pointer-events: auto; padding: 6px 9px 6px 8px; color: #dce1ce; display: grid; gap: 3px; }
 #scrCombat.bf .stage #playerSlot .uplate { right: var(--plate); background: linear-gradient(90deg, #0f1c17e8, #0e1916b5 86%, #0e191600); border-left: 2px solid var(--uc, #b79b6b); border-radius: 3px 0 0 3px; }
 #scrCombat.bf .stage #foes .uplate { left: var(--plate); background: linear-gradient(270deg, #0f1c17ed, #0e1916af 86%, #0e191600); border-right: 2px solid #ad7a5c; border-radius: 0 3px 3px 0; padding-left: 12px; }
 #scrCombat.bf .stage .uplate .uname { display: grid; gap: 1px; }
 #scrCombat.bf .stage .uplate .uname b { font: 15px var(--f-display, Georgia); letter-spacing: .3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#scrCombat.bf .stage .uplate .uname small { font-size: 9px; letter-spacing: 1.1px; text-transform: uppercase; color: #8f9f8e; white-space: normal; line-height: 1.25; }
+#scrCombat.bf .stage .uplate .uname small { font-size: 9px; letter-spacing: .8px; text-transform: uppercase; color: #8f9f8e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
 #scrCombat.bf .stage .uplate .bar { height: 12px; border-radius: 2px; background: #0b100e; border: 1px solid #00000088; box-shadow: none; }
 #scrCombat.bf .stage #playerSlot .uplate .bar i { background: linear-gradient(90deg, #6a8b66, #a0b786); }
 #scrCombat.bf .stage #foes .uplate .bar i { background: linear-gradient(90deg, #874f46, #ba7a59); }
 #scrCombat.bf .stage .uplate .bar span { font-size: 10px; line-height: 10px; }
 #scrCombat.bf .stage .uplate .tags { min-height: 0; gap: 3px; } #scrCombat.bf .stage .uplate .tag { font-size: 10px; padding: 0 4px; line-height: 15px; }
-#scrCombat.bf .stage .uintent { position: absolute; left: var(--plate); bottom: var(--ih, 92px); display: grid; justify-items: start; gap: 3px; pointer-events: auto; }
+#scrCombat.bf .stage .uintent { position: absolute; right: calc(var(--fh) * -.32); bottom: calc(var(--figh, var(--fh)) + 2px); width: max-content; max-width: calc(var(--fh) * 1.3 + 40px); pointer-events: auto; z-index: 5; }
+#scrCombat.bf .stage .uintent .intents { display: flex; flex-wrap: wrap; justify-content: var(--jc, flex-end); gap: 3px; }
 #scrCombat.bf .stage .uintent .intents { min-height: 0; } #scrCombat.bf .stage .uintent .intent { box-shadow: 0 3px 10px #0006; }
 #scrCombat.bf .stage .uplate { grid-template-columns: minmax(0, 1fr) auto; column-gap: 5px; }
-#scrCombat.bf .stage .uplate .uname, #scrCombat.bf .stage .uplate .tags { grid-column: 1 / -1; }
-#scrCombat.bf .stage .uplate .bar { grid-column: 1; align-self: center; }
+#scrCombat.bf .stage .uplate .uname { grid-column: 1 / -1; } #scrCombat.bf .stage .uplate .tags { grid-column: 1 / -1; } #scrCombat.bf .stage #foes .uplate .tags { grid-column: 2; align-self: center; }
+#scrCombat.bf .stage .uplate .bar { grid-column: 1 / -1; align-self: center; }
 #scrCombat.bf .stage #playerSlot .uplate .bar { grid-column: 1 / -1; }
 #scrCombat.bf .stage .uplate .deckbtn .dlong { display: none; } #scrCombat.bf .stage .uplate .deckbtn .dshort { display: inline; }
 #scrCombat.bf .stage.tight .uplate .tags:empty { display: none; }
-#scrCombat.bf .stage .uplate .deckbtn { grid-column: 2; justify-self: start; font-size: 10px; padding: 0 6px; line-height: 16px; opacity: .8; }
+#scrCombat.bf .stage .uplate .deckbtn { grid-column: 1; justify-self: start; font-size: 10px; padding: 0 6px; line-height: 16px; opacity: .8; }
 #scrCombat.bf .stage .unit.dead .uplate, #scrCombat.bf .stage .unit.dead .uintent { opacity: .35; }
 #scrCombat.bf .stage .unit.dead .figure { opacity: .25; filter: grayscale(1); }
 #scrCombat.bf .stage .unit.viewing .uplate { box-shadow: inset 0 0 0 1px #d6a14a88; }
 #scrCombat.bf .stage .unit .pop { top: auto; bottom: calc(var(--fh) * .9); z-index: 80; }
-#scrCombat.bf .stage.tight .uplate { width: 118px; } #scrCombat.bf .stage.tight .uplate .uname b { font-size: 13px; }
+#scrCombat.bf .stage.tight .uplate .uname b { font-size: 13px; }
 #scrCombat.bf .bfcap { position: absolute; bottom: 10px; z-index: 3; font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: #b4bda6aa; pointer-events: none; display: flex; align-items: center; gap: 8px; }
 #scrCombat.bf .bfcap::before, #scrCombat.bf .bfcap::after { content: ''; width: 22px; height: 1px; background: currentColor; opacity: .5; }
 #scrCombat.bf .bfcap.l { left: 16px; } #scrCombat.bf .bfcap.r { right: 16px; color: #c0a38baa; }
-#scrCombat.bf .stage .playedpeek { top: 120px; z-index: 60; }
+#scrCombat.bf .stage .playedpeek { top: 120px; z-index: 90; }
+/* on big screens the fight gets more of the width */
+.wrap:has(> #scrCombat.bf:not([hidden])), .wrap:has(#scrCombat.bf:not([hidden])) { max-width: 1840px; }
+#scrCombat.bf .field-panel.bfnarrow .hud > .hint, #scrCombat.bf .field-panel.bfmid .hud .piles > span { display: none; }
+#scrCombat.bf .hud > .endturn { justify-self: end; grid-column: -2; }
+/* big fights (5+ on a side): small plates under each fighter's feet */
+#scrCombat.bf .stage .compact .uplate { left: calc(var(--fh) * -.5) !important; right: auto !important; bottom: auto; top: 4px; width: calc(var(--fh) + 8px); min-width: 74px; padding: 2px 4px; border: 0 !important; border-radius: 3px; background: #0d1715d9 !important; gap: 1px; }
+#scrCombat.bf .stage .compact .uplate .uname small, #scrCombat.bf .stage .compact .uplate .deckbtn { display: none; }
+#scrCombat.bf .stage .compact .uplate .uname b { font: 600 11px var(--f-ui); }
+#scrCombat.bf .stage .compact .uplate .bar { height: 9px; } #scrCombat.bf .stage .compact .uplate .bar span { font-size: 8px; line-height: 8px; }
+#scrCombat.bf .stage .compact .uplate .tag { font-size: 9px; line-height: 12px; padding: 0 3px; }
+#scrCombat.bf .stage .compact .uintent { right: calc(var(--fh) * -.45); }
+/* the panel under the field: one clean strip in the scene's colours */
+#scrCombat.bf .field-panel { background: #0c1513; }
+#scrCombat.bf .field-panel::before { background: linear-gradient(180deg, #0f1c1a, #0b1311) !important; filter: none !important; }
+#scrCombat.bf .field-panel::after { display: none; }
+#scrCombat.bf .field-panel > .hud .pilebtn { background: #111c1a; border: 1px solid #34413b; color: #cfd6c4; box-shadow: none; font-size: 12px; padding: 4px 10px; border-radius: 3px; }
+#scrCombat.bf .field-panel > .hud .pilebtn:hover { border-color: #b39a62; color: #f1e6c8; }
+#scrCombat.bf .field-panel > .hud .mana b { font: 15px var(--f-display, Georgia); letter-spacing: .5px; color: #e6d9b5; }
+#scrCombat.bf .field-panel > .hud .mana small { color: #92a291; font-size: 11px; }
+#scrCombat.bf .endturn.btn.primary { border: 1px solid #b39a62 !important; border-image: none !important; background: linear-gradient(180deg, #3a3020, #261f16) !important; color: #f1e3c0 !important; font: 18px var(--f-display, Georgia) !important; letter-spacing: .5px; padding: 8px 22px !important; border-radius: 3px !important; box-shadow: 0 0 0 1px #0007, 0 6px 16px #0006 !important; text-shadow: none !important; }
+#scrCombat.bf .endturn.btn.primary:hover:not(:disabled) { background: linear-gradient(180deg, #4a3d27, #2f2619) !important; filter: none; }
+#scrCombat.bf .endturn.btn.primary:disabled { opacity: .5; }
+#scrCombat.bf .order .round { font-size: 20px; color: #e3cf9d; } #scrCombat.bf .order .btn { border-image: none !important; border: 1px solid #3b4a43 !important; background: #111c1ae6 !important; color: #d6dccb !important; font-size: 12px !important; padding: 3px 9px !important; border-radius: 3px !important; text-shadow: none !important; }
+#scrCombat.bf .order .otile { border: 1px solid #34413b !important; box-shadow: 0 3px 8px #0005 !important; }
+#scrCombat.bf .order .otile.now { border-color: #d6a14a !important; }
 `;
 document.head.appendChild(css);
-window.CB_BF = { layout, watch, draw, get on() { return BF.on; } };
+window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.on = !!on; try { localStorage.setItem('cb-bf', on ? 'on' : 'off'); } catch (e) {} } };
 })();
