@@ -591,6 +591,23 @@ body.aiming { cursor: grabbing; user-select: none; }
 .herocard b { font-family: var(--cf-name); font-weight: 400; font-size: 26px; line-height: 1; }
 .herocard small { color: var(--muted); font-size: 13px; }
 .herocard .play { justify-self: start; margin-top: 4px; }
+.hcbadge { font: 700 11px var(--f-ui); letter-spacing: .06em; text-transform: uppercase; color: #ffb0a0; background: #4a1410; border: 1px solid #a8352a; border-radius: 4px; padding: 1px 6px; vertical-align: middle; } .hcbadge.fell { color: #b8b0a6; background: #2a2623; border-color: #5a524a; }
+.hcpick { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid #6a2a22; border-radius: 6px; background: #1c0f0c; cursor: pointer; align-self: end; } .hcpick small { color: var(--muted); } .hcpick input { accent-color: #c9472f; }
+.arbox, .aroffer, .arpost { background: #15110d; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 0 0 10px; display: grid; gap: 6px; }
+.arbox.mine { border-color: #7a3a2a; box-shadow: inset 3px 0 0 #c9472f; } .arpost.on { border-color: var(--accent); }
+.arbox h4, .aroffer h4 { margin: 0; color: var(--accent); font-size: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; } .arbox h4 .muted { font-size: 13px; font-weight: 400; }
+.aroffer { background: #1b1510; margin: 0; }
+.arofhead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } .arofhead .chip { margin-left: auto; }
+.arstake { display: grid; gap: 4px; } .arstake > .muted { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; } .argold { color: #e9c98a; font-size: 15px; }
+.arvs { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: start; } .arvsx { font: 22px var(--cf-name); color: #c9472f; align-self: center; }
+@media (max-width: 760px) { .arvs { grid-template-columns: 1fr; } }
+.arnote { margin: 0; color: #d6cab6; font-style: italic; }
+.arposts { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; }
+.arform { display: grid; gap: 6px; border-top: 1px dashed var(--line); padding-top: 8px; } .arform h4 { margin: 0; color: var(--accent); }
+.arpick { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; max-height: 34vh; overflow: auto; }
+.arpi { display: grid; grid-template-columns: auto 1fr; gap: 6px; align-items: start; cursor: pointer; } .arpi input { margin-top: 12px; accent-color: #c9472f; }
+.arsettle { border-radius: 8px; padding: 8px 12px; margin: 6px 0; background: #1c1610; border: 1px solid #5a4a2a; } .arsettle.won { border-color: #4f8f48; } .arsettle.lost { border-color: #a8352a; } .arsettle p { margin: 4px 0 0; }
+.recgrave li { padding: 3px 0; cursor: pointer; color: #b8b0a6; }
 .herocard.new { border-style: dashed; border-top-style: dashed; place-content: center; text-align: center; color: var(--muted); font-size: 16px; }
 .create h3 { font-family: var(--cf-name); font-weight: 400; font-size: 26px; color: var(--accent); margin-bottom: 8px; }
 .classpick { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
@@ -717,7 +734,7 @@ body.aiming { cursor: grabbing; user-select: none; }
           <div class="classpick deckpick" id="deckPick" role="radiogroup" aria-label="Starting deck"></div>
           <h4 class="createstep">Starting amulet <span class="muted">(6 points split between cards drawn each round and mana regen; you can buy the others later from Jeweler Rook in town)</span></h4>
           <div class="amupick" id="amuPick" role="radiogroup" aria-label="Starting amulet"></div>
-          <div class="namerow"><div class="field"><label for="heroName">Name</label><input id="heroName" maxlength="16" autocomplete="off" placeholder="Name your hero"></div><button class="btn primary" id="btnCreate">Create hero</button><button class="btn" id="btnCancelCreate" hidden>Cancel</button></div>
+          <div class="namerow"><div class="field"><label for="heroName">Name</label><input id="heroName" maxlength="16" autocomplete="off" placeholder="Name your hero"></div><label class="hcpick" title="One life: the first time this hero falls in a fight (not duels or the dummy), it becomes a normal hero. Hardcore heroes have their own leaderboard."><input type="checkbox" id="heroHC"> <b>Hardcore</b> <small>one life, own leaderboard</small></label><button class="btn primary" id="btnCreate">Create hero</button><button class="btn" id="btnCancelCreate" hidden>Cancel</button></div>
         </div>
         <aside class="createright" id="createCards" aria-label="Cards this hero can find"></aside>
       </div>
@@ -784,7 +801,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   <div id="secHeroes"><div class="heroes" id="heroes" role="tablist" aria-label="Characters"></div></div>
   <div class="sheetgrid" id="sheetGrid">
     <aside id="secChar"><div class="panel" id="hubChar"></div></aside>
-    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div><div id="hpFriends"></div><div id="hpCodex"></div><div id="hpTest"></div><div id="hpAmu"></div><div id="hpGuild"></div><div id="hpRaid"></div><div id="hpRec"></div></div>
+    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div><div id="hpFriends"></div><div id="hpCodex"></div><div id="hpTest"></div><div id="hpAmu"></div><div id="hpGuild"></div><div id="hpRaid"></div><div id="hpRec"></div><div id="hpArena"></div></div>
   </div>
 </div></div>
 <div class="modal" id="modal" hidden><div class="box" id="modalBox"></div></div>
@@ -3965,11 +3982,11 @@ function deleteChar(p, key) {
   if (p.last) { if (p.last.cls === key) p.last.cls = Object.keys(p.chars)[0] || ''; if (p.last.party) p.last.party = p.last.party.filter(k => k !== key); }
   return { ok: true };
 }
-function createChar(p, cls, name, deckKey, amuletKey) {
+function createChar(p, cls, name, deckKey, amuletKey, hardcore) {
   if (!CLASSES[cls]) return { ok: false, why: 'Pick a class.' };
   if (Object.keys(p.chars).length >= MAX_HEROES) return { ok: false, why: `You already have ${MAX_HEROES} heroes. Delete one to make room.` };
   const why = nameProblem(name); if (why) return { ok: false, why };
-  const id = uid('h'); p.chars[id] = newChar(cls, name.trim().replace(/\s+/g, ' '), deckKey, amuletKey); p.last.cls = id; return { ok: true, id };
+  const id = uid('h'); p.chars[id] = newChar(cls, name.trim().replace(/\s+/g, ' '), deckKey, amuletKey); if (hardcore) { p.chars[id].hardcore = true; p.chars[id].hcSince = Date.now(); } p.last.cls = id; return { ok: true, id };
 }
 function renameChar(p, cls, name) { const c = p.chars[cls]; if (!c) return { ok: false, why: 'No such hero.' }; const why = nameProblem(name); if (why) return { ok: false, why }; c.name = name.trim().replace(/\s+/g, ' '); return { ok: true }; }
 function char(p, key) { return p.chars[key]; }
@@ -3982,7 +3999,10 @@ function powerLevel(c) { return Math.round((gearScore(c) + deckLevel(c.deck)) / 
 const STARTER_1H = ['Arming Sword', 'Dirk', 'Ashwood Wand', 'Flanged Mace'];
 const isOneHand = (item) => (item.slot === 'Weapon' || item.slot === 'Off-hand') && (/^1H/.test(item.hands || '') || STARTER_1H.includes(item.name));
 function slotOptions(item) { if (item.slot === 'Ring' || /^Ring/.test(item.slot)) return ['Ring 1', 'Ring 2']; if (isOneHand(item)) return ['Weapon', 'Off-hand']; return [item.slot]; }
+// Nov 1: a hero with a wager on the Arena board (posted or offered) has its gear and deck locked until the wager is settled
+function arenaLock(p, cls) { return p.arena && p.arena.hero === cls ? 'Locked: this hero has a wager at the Arena. Settle or withdraw it first.' : null; }
 function equip(p, cls, itemId, slotWanted) {
+  { const lk = arenaLock(p, cls); if (lk) return { ok: false, why: lk }; }
   const c = char(p, cls), i = p.stash.findIndex(x => x.id === itemId); if (i < 0) return { ok: false, why: 'Not in stash' };
   if (p.stash[i].slot === 'Codex' && p.stash[i].cls && p.stash[i].cls !== c.cls) return { ok: false, why: `Only a ${p.stash[i].cls} can use the ${p.stash[i].name}.` };
   const item = p.stash[i], opts = slotOptions(item);
@@ -3999,6 +4019,7 @@ function equip(p, cls, itemId, slotWanted) {
   return { ok: true, removed: off };
 }
 function unequip(p, cls, slot) {
+  if (arenaLock(p, cls)) return false;
   const c = char(p, cls), it = c.gear.find(g => g.slot === slot); if (!it) return false;
   if (p.stash.length >= STASH_MAX) return false;
   c.gear = c.gear.filter(g => g !== it); p.stash.unshift(Object.assign({}, it, { slot: /^Ring/.test(slot) ? 'Ring' : slot }));
@@ -4024,8 +4045,9 @@ function canAdd(c, cardId) {
   if (cap != null && c.deck.filter(x => CARDS[x.key].rarity === r).length >= cap) return { ok: false, why: `Deck already has ${cap} ${r}` };
   return { ok: true };
 }
-function addToDeck(p, cls, cardId) { const c = char(p, cls), k = canAdd(c, cardId); if (!k.ok) return k; const i = c.cards.findIndex(x => x.id === cardId); c.deck.push(c.cards.splice(i, 1)[0]); return { ok: true }; }
+function addToDeck(p, cls, cardId) { { const lk = arenaLock(p, cls); if (lk) return { ok: false, why: lk }; } const c = char(p, cls), k = canAdd(c, cardId); if (!k.ok) return k; const i = c.cards.findIndex(x => x.id === cardId); c.deck.push(c.cards.splice(i, 1)[0]); return { ok: true }; }
 function removeFromDeck(p, cls, cardId) {
+  { const lk = arenaLock(p, cls); if (lk) return { ok: false, why: lk }; }
   const c = char(p, cls); if (c.deck.length <= DECK_MIN) return { ok: false, why: `Deck needs at least ${DECK_MIN} cards` };
   const i = c.deck.findIndex(x => x.id === cardId); if (i < 0) return { ok: false, why: 'Not in deck' };
   c.cards.push(c.deck.splice(i, 1)[0]); return { ok: true };
@@ -4035,6 +4057,7 @@ function feedXp(target, fodder) { return (CARD_XP[CARDS[fodder.key].rarity] || 1
 function rankCost(card) { const n = (card.rank || 0) + 1, b = RANK_BASE[CARDS[card.key].rarity]; return { xp: n * b, gold: n * b * 5 }; }
 // Feed collection cards (never deck cards) into a target. XP banks on the card; each rank-up also costs gold, paid automatically while you can afford it.
 function feed(p, cls, targetId, fodderIds) {
+  { const lk = arenaLock(p, cls); if (lk && char(p, cls).deck.some(x => x.id === targetId)) return { ok: false, why: lk }; }
   const c = char(p, cls), t = findCard(c, targetId); if (!t) return { ok: false, why: 'No such card' };
   if ((t.rank || 0) >= MAX_RANK) return { ok: false, why: `Already +${MAX_RANK}` };
   let gained = 0;
@@ -4085,6 +4108,7 @@ function breakCodex(p, itemId) {
 function rerollItem(p, itemId, idx, data, rng) {
   const f = findItem(p, itemId); if (!f) return { ok: false, why: 'Item not found.' }; const it = f.it;
   if (it.slot === 'Codex') return { ok: false, why: 'Codexes cannot be rerolled.' };
+  if (f.where !== 'stash' && p.arena && p.chars[p.arena.hero] === f.where) return { ok: false, why: arenaLock(p, p.arena.hero) };
   if (!(it.rerolls > 0)) return { ok: false, why: 'This item has no rerolls left.' };
   if (!((p.rerollTokens || 0) > 0)) return { ok: false, why: 'You need a Reroll Token (break down a codex).' };
   const r = CB.rerollAffix(data, rng || CB.makeRng((Date.now() % 2147483646) + 1), it, idx); if (!r) return { ok: false, why: 'That line cannot be rerolled.' };
@@ -4147,7 +4171,7 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk };
 }
 
-const API = { findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -4413,7 +4437,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (b.dataset.gsort) { GT.sort = b.dataset.gsort; return renderGearTab(CBHub.char(profile, heroKey)); }
     if (b.dataset.hero) { heroKey = b.dataset.hero; profile.last.cls = heroKey; save(); return renderHub(); }
     if (b.id === 'btnScribe') return openSheet('deck');
-    if (b.dataset.unequip) { if (!CBHub.unequip(profile, heroKey, b.dataset.unequip)) return toast('Stash is full.'); }
+    if (b.dataset.unequip) { if (!CBHub.unequip(profile, heroKey, b.dataset.unequip)) return toast(CBHub.arenaLock(profile, heroKey) || 'Stash is full.'); }
     else if (b.dataset.equip) { const r = CBHub.equip(profile, heroKey, b.dataset.equip, b.dataset.slot); if (!r.ok) return toast(r.why); }
     else if (b.dataset.salvage) CBHub.salvage(profile, b.dataset.salvage);
     else if (b.dataset.breakcx) { const r = CBHub.breakCodex(profile, b.dataset.breakcx); if (!r.ok) return toast(r.why); save(); renderHub(); return toast(`+${r.tokens} Reroll Tokens (you have ${profile.rerollTokens}). Spend them at Jeweler Rook.`); }
@@ -4520,7 +4544,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     setW(UB, (t.xp || 0) / (need(r0) || 1), false); setW(UG, (t.xp || 0) / (need(r0) || 1), false); label(r0, t.xp || 0, 0);
     $('modalBox').querySelector('.feedlist').addEventListener('change', prev);
     $('mClose').onclick = closeModal;
-    $('mFeed').onclick = () => { const ids = [...$('modalBox').querySelectorAll('input:checked')].map(i => i.value); CBHub.feed(profile, heroKey, t.id, ids); save(); closeModal(); renderHub(); };
+    $('mFeed').onclick = () => { const ids = [...$('modalBox').querySelectorAll('input:checked')].map(i => i.value); const fr = CBHub.feed(profile, heroKey, t.id, ids); if (!fr.ok) return toast(fr.why); save(); closeModal(); renderHub(); };
   }
 
   // ---------- history tab
@@ -4599,9 +4623,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   loadLocal();
   // ---------- the town (overworld): grid movement like Pokemon, NPCs open the camp screens
   // Everything is drawn in code: thick dark outlines, muted colors, torchlight over a dark night layer.
-  const MW = 42, MH = 18; // Oct 31: the town grew east (x 26-41) for the Bazaar
+  const MW = 42, MH = 30; // Oct 31: the town grew east (x 26-41) for the Bazaar; Nov 1: and south (y 18-28) for the Arena
   const BAZ = { x: 34, y: 9.5, r: 6.3 }; // the round market square; inside it you can set up shop
   const inBazaar = (x, y) => Math.hypot(x - BAZ.x, y - BAZ.y) <= BAZ.r;
+  const ARN = { x: 20.5, y: 23.5, r: 4.4 }; // the dueling ring south of the old palisade
+  const inArena = (x, y) => y >= 18;
   const TOWN = { running: false, last: 0, t: 0, TS: 48, dpr: 1, cache: null, dark: null, sprites: {}, embers: [] };
   const P = { x: 12, y: 4, dir: 'down', mv: null, path: [], held: [], talkTo: null, step: 0 };
   const STEP_MS = 165;
@@ -4615,7 +4641,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   for (let y = 11; y <= 15; y++) for (let x = 9; x <= 16; x++) if (Math.hypot(x - 12.5, (y - 13) * 1.15) < 3.6) setG(x, y, 'p'); // fire plaza
   for (let y = 11; y <= 12; y++) { setG(5, y, 'p'); setG(6, y, 'p'); setG(19, y, 'p'); setG(20, y, 'p'); }
   // the Bazaar: a palisade with a gap on the main street, then a round cobbled market
-  for (let y = 0; y < MH; y++) if (y !== 9 && y !== 10) setG(25, y, 'w');
+  for (let y = 0; y < 18; y++) if (y !== 9 && y !== 10) setG(25, y, 'w');
+  // the Arena (Nov 1): the old south palisade (row 17) gets a gap at x 17-18; a path leads down to a round sand ring
+  for (let x = 0; x < MW; x++) if (x !== 17 && x !== 18) setG(x, 17, 'w');
+  for (let y = 16; y <= 19; y++) { setG(17, y, 'p'); setG(18, y, 'p'); }
+  for (let y = 18; y < MH - 1; y++) for (let x = 1; x < MW - 1; x++) if (Math.hypot(x - ARN.x, (y - ARN.y) * 1.1) <= ARN.r) setG(x, y, 'a');
   for (let x = 23; x <= 29; x++) { setG(x, 9, 'p'); setG(x, 10, 'p'); }
   for (let y = 1; y < MH - 1; y++) for (let x = 26; x < MW - 1; x++) if (Math.hypot(x - BAZ.x, y - BAZ.y) <= BAZ.r) setG(x, y, 'b');
   for (let y = 15; y <= 16; y++) for (let x = 21; x <= 23; x++) setG(x, y, '~');
@@ -4632,6 +4662,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     { kind: 'wagon', x: 15, y: 1, w: 3, h: 2 },
     { kind: 'fire', x: 12, y: 13, w: 2, h: 1 },
     { kind: 'board', x: 16, y: 12, w: 1, h: 1 },
+    { kind: 'statue', x: 10, y: 11, w: 1, h: 1 }, // Juss, the first to fall
+    { kind: 'arenaboard', x: 14, y: 20, w: 1, h: 1 },
+    ...[0, 1, 2, 3, 4, 5].map(i => { const a = i / 6 * Math.PI * 2 + Math.PI / 6; return { kind: 'torch', x: Math.round(ARN.x + Math.cos(a) * 5.4), y: Math.round(ARN.y + Math.sin(a) * 4.9), w: 1, h: 1 }; }),
+    ...[[3, 20], [6, 25], [2, 27], [9, 19], [31, 20], [35, 24], [38, 27], [28, 26], [33, 19], [12, 27]].map(([x, y]) => ({ kind: 'tree', x, y, w: 1, h: 1, v: (x * 7 + y * 3) % 3 })),
     { kind: 'chest', x: 4, y: 8, w: 1, h: 1 },
     { kind: 'lectern', x: 21, y: 8, w: 1, h: 1 },
     { kind: 'lectern', x: 11, y: 7, w: 1, h: 1 },
@@ -4660,6 +4694,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       lines: ['A guild is a promise: we ride together, we share what we learn.', 'Found one for fifty gold, or bring me an invitation.'] },
     { id: 'jeweler', name: 'Jeweler Rook', x: 22, y: 11, dir: 'left', open: 'amulets', btn: 'Amulets and rerolls', pal: { skin: '#c9a080', hair: '#d8d0c4', chest: '#2e3a4a', trim: '#8fc3ff', legs: '#1f2630', helm: null, cape: '#3a2a4a', weapon: null },
       lines: ['Six points of focus in every pendant. How you split them between cards and mana is up to you.', 'Big spells want mana. Cheap combos want cards. Choose your pendant accordingly.', 'Bring me a codex you have no use for and I will grind it into Reroll Tokens. A token lets me recut one line on a piece of gear.'] },
+    { id: 'arena', name: 'Arenamaster Kord', x: 23, y: 19, dir: 'down', open: 'arena', btn: 'Wagers and duels', pal: { skin: '#b07a58', hair: '#1e1612', chest: '#5a2620', trim: '#c9472f', legs: '#2a1c16', helm: 'helm', helmC: '#7a6a5a', cape: '#3a1612', weapon: 'swordshield', wpnC: '#b0a090' },
+      lines: ['Two fighters, one ring, and something worth losing. Pin your wager on the board.', 'Put up gear or gold. Others answer with what they will risk. Accept, decline or haggle: once it is settled, you fight.', 'Your gear and deck are locked the moment a wager is on the table. No swapping swords mid-bet.'] },
     { id: 'tinker', name: 'Tinker Pip (test)', x: 16, y: 4, dir: 'down', open: 'test', btn: 'Free test goods', pal: { skin: '#d8b090', hair: '#e0802a', chest: '#3a4a2a', trim: '#e0802a', legs: '#2a2418', helm: 'cap', helmC: '#e0802a', cape: null, weapon: 'hammer' },
       lines: ['Testing, testing! Every card, every codex, free. Don\'t tell the merchants.'] },
     { id: 'dummy', name: 'Training Dummy', x: 18, y: 15, dir: 'down', fixed: true, open: 'dummy', btn: 'Practice on it', pal: { skin: '#cdb47a', hair: '#d9b44a', chest: '#7a5a34', trim: '#d9b44a', legs: '#6a4c2a', helm: 'cap', helmC: '#4a3826', cape: null, weapon: null },
@@ -4714,6 +4750,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       g.fillStyle = '#2c2925'; g.fillRect(x * TS, y * TS, TS, TS);
       for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { const v = R(); rrect(g, x * TS + i * TS / 3 + 1.5 + (j % 2) * 3, y * TS + j * TS / 3 + 1.5, TS / 3 - 3, TS / 3 - 3, 3, v < 0.33 ? '#45403a' : v < 0.66 ? '#3d3833' : '#4a443d'); }
     }
+    // arena sand
+    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'a') { g.fillStyle = (x + y) % 2 ? '#4a3b28' : '#463826'; g.fillRect(x * TS, y * TS, TS, TS); for (let i = 0; i < 5; i++) circ(g, x * TS + R() * TS, y * TS + R() * TS, 1 + R() * 1.5, R() < .5 ? '#5a4932' : '#36291b'); }
     // water
     for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === '~') { rrect(g, x * TS - 3, y * TS - 3, TS + 6, TS + 6, 10, '#101c25'); }
     for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === '~') { g.fillStyle = '#16293a'; g.fillRect(x * TS, y * TS, TS, TS); g.strokeStyle = 'rgba(140,180,210,.18)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x * TS + 8, y * TS + 16); g.lineTo(x * TS + 24, y * TS + 16); g.moveTo(x * TS + 20, y * TS + 32); g.lineTo(x * TS + 38, y * TS + 32); g.stroke(); }
@@ -4806,6 +4844,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       rrect(g, cx - 3 * s, by - 34 * s, 6 * s, 34 * s, 2, '#3b2a1c', 1.6);
       rrect(g, cx - 22 * s, by - 44 * s, 44 * s, 16 * s, 3, '#6a4a2a', 1.8);
       g.fillStyle = '#f0d9a8'; g.font = `700 ${Math.round(10 * s)}px "Barlow Semi Condensed", sans-serif`; g.textAlign = 'center'; g.fillText('BAZAAR \u2192', cx, by - 32.5 * s);
+    } else if (p.kind === 'statue') {
+      const cx = x0 + TS / 2, by = y0 + TS * 0.92;
+      rrect(g, cx - 18 * s, by - 12 * s, 36 * s, 12 * s, 2, '#55524d', 1.6);
+      rrect(g, cx - 7 * s, by - 46 * s, 14 * s, 34 * s, 4, '#6a6660', 1.6); circ(g, cx, by - 52 * s, 7 * s, '#6a6660', 1.6);
+      rrect(g, cx + 6 * s, by - 62 * s, 3 * s, 46 * s, 1, '#7a766f', 1.2);
+    } else if (p.kind === 'arenaboard') {
+      const cx = x0 + TS / 2, by = y0 + TS * 0.9;
+      rrect(g, cx - 3 * s, by - 46 * s, 6 * s, 46 * s, 1, '#3b2a1c', 1.4);
+      rrect(g, cx - 20 * s, by - 46 * s, 40 * s, 24 * s, 2, '#5a2620', 2);
+      g.fillStyle = '#e9c98a'; g.font = `700 ${Math.round(9 * s)}px "Barlow Semi Condensed", sans-serif`; g.textAlign = 'center'; g.fillText('WAGERS', cx, by - 31 * s);
     } else if (p.kind === 'board') {
       const cx = x0 + TS / 2, by = y0 + TS * 0.9;
       rrect(g, cx - 18 * s, by - 18 * s, 4 * s, 18 * s, 1, '#3b2a1c', 1.4); rrect(g, cx + 14 * s, by - 18 * s, 4 * s, 18 * s, 1, '#3b2a1c', 1.4);
@@ -5025,8 +5073,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     } else if (P.held.length) tryStep(P.held[P.held.length - 1]);
     updatePrompt(); updateShopBtn();
   }
-  function facing() { const [dx, dy] = DIRS[P.dir]; return NPCS.find(n => n.x === P.x + dx && n.y === P.y + dy) || PROPS.find(p => p.kind === 'chest' && p.x === P.x + dx && p.y === P.y + dy) || PROPS.find(p => p.kind === 'wagon' && P.x + dx >= p.x && P.x + dx < p.x + p.w && P.y + dy >= p.y && P.y + dy < p.y + p.h) || PROPS.find(p => p.kind === 'board' && p.x === P.x + dx && p.y === P.y + dy); }
-  function interactTarget() { const f = facing(); if (!f) return null; if (f.name) return f; if (f.kind === 'chest') return NPCS[0]; if (f.kind === 'wagon') return NPCS.find(n => n.id === 'wagon'); if (f.kind === 'board') return BOARD; return null; }
+  function facing() { const [dx, dy] = DIRS[P.dir]; return NPCS.find(n => n.x === P.x + dx && n.y === P.y + dy) || PROPS.find(p => p.kind === 'chest' && p.x === P.x + dx && p.y === P.y + dy) || PROPS.find(p => p.kind === 'wagon' && P.x + dx >= p.x && P.x + dx < p.x + p.w && P.y + dy >= p.y && P.y + dy < p.y + p.h) || PROPS.find(p => TALK_PROPS.includes(p.kind) && p.x === P.x + dx && p.y === P.y + dy); }
+  function interactTarget() { const f = facing(); if (!f) return null; if (f.name) return f; if (f.kind === 'chest') return NPCS[0]; if (f.kind === 'wagon') return NPCS.find(n => n.id === 'wagon'); if (TALK_PROPS.includes(f.kind)) return propNpc(f); return null; }
   let lastPrompt = '';
   function updatePrompt() {
     const n = interactTarget(); const txt = n && !townBusy() ? `<kbd>Space</kbd> Talk to ${esc(n.name)}` : '';
@@ -5049,7 +5097,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     // clicking near an NPC (or on its head, which overlaps the tile above) counts
     const op = typeof SOC !== 'undefined' && [...SOC.others.values()].find(o => { const q = otherPos(o); return Math.round(q.x) === tx && (Math.round(q.y) === ty || Math.round(q.y) === ty + 1); });
     if (op) { playerMenu(op.uid); return; }
-    const n = NPCS.find(m => m.x === tx && (m.y === ty || m.y === ty + 1)) || (PROPS.find(p => (p.kind === 'wagon' || p.kind === 'chest' || p.kind === 'board') && tx >= p.x && tx < p.x + p.w && ty >= p.y - 1 && ty < p.y + p.h) && interactFor(PROPS.find(p => (p.kind === 'wagon' || p.kind === 'chest' || p.kind === 'board') && tx >= p.x && tx < p.x + p.w && ty >= p.y - 1 && ty < p.y + p.h)));
+    const pp = PROPS.find(p => (p.kind === 'wagon' || p.kind === 'chest' || TALK_PROPS.includes(p.kind)) && tx >= p.x && tx < p.x + p.w && ty >= p.y - 1 && ty < p.y + p.h);
+    const n = NPCS.find(m => m.x === tx && (m.y === ty || m.y === ty + 1)) || (pp && interactFor(pp));
     if (n) {
       if (Math.abs(n.x - P.x) + Math.abs(n.y - P.y) === 1 && !P.mv) { P.dir = n.x > P.x ? 'right' : n.x < P.x ? 'left' : n.y > P.y ? 'down' : 'up'; talk(n); return; }
       const path = bfs(n.x, n.y, true); if (path) { P.path = path; P.talkTo = n; P.target = path.length ? path[path.length - 1] : null; }
@@ -5059,7 +5108,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const path = bfs(tx, ty, false); if (path) { P.path = path; P.talkTo = null; P.target = { x: tx, y: ty }; }
   });
   const BOARD = { id: 'board', name: 'Hall of Records', fixed: true, x: 16, y: 12, open: 'records', btn: 'Read the records', lines: ['The notice board: who has gone furthest on every road, and which guilds have felled the raid bosses.', 'Names are carved, scratched and painted over each other. Someone has added a crown next to theirs.'] };
-  function interactFor(p) { return p.kind === 'chest' ? NPCS[0] : p.kind === 'wagon' ? NPCS.find(n => n.id === 'wagon') : p.kind === 'board' ? BOARD : NPCS.find(n => n.id === 'chron'); }
+  // Nov 1: the statue of Juss in the fire plaza, and the wager board at the Arena
+  const STATUE = { id: 'statue', name: 'Statue of Juss', fixed: true, x: 10, y: 11, lines: ['Here lies Juss, who was the first into battle and the first to fall.'] };
+  const ARENA_BOARD = { id: 'arenaboard', name: 'Wager Board', fixed: true, x: 14, y: 20, open: 'arena', btn: 'Read the wagers', lines: ['Wagers are pinned here: what each fighter puts up, and what others offer to match it. Both sides\' gear and decks are locked once an offer is on the table.'] };
+  const TALK_PROPS = ['board', 'statue', 'arenaboard'];
+  function propNpc(p) { return p.kind === 'board' ? BOARD : p.kind === 'statue' ? STATUE : p.kind === 'arenaboard' ? ARENA_BOARD : null; }
+  function interactFor(p) { return p.kind === 'chest' ? NPCS[0] : p.kind === 'wagon' ? NPCS.find(n => n.id === 'wagon') : TALK_PROPS.includes(p.kind) ? propNpc(p) : NPCS.find(n => n.id === 'chron'); }
   document.addEventListener('keydown', (ev) => {
     if ($('scrStart').hidden || ev.target.matches('input, select, textarea')) return;
     if (!$('talk').hidden) {
@@ -5104,6 +5158,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     guild: { title: 'Guildmaster Strecks: guilds', show: ['hpGuild'] },
     raid: { title: 'Raid Warden Bagadee: raids', show: ['hpRaid'] },
     records: { title: 'Hall of Records', show: ['hpRec'] },
+    arena: { title: 'The Arena: wagers', show: ['hpArena'] },
   };
   function talk(n) {
     P.held = []; P.path = []; P.target = null;
@@ -5118,7 +5173,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function openSheet(kind) {
     const k = SHEETS[kind]; if (k.gtab) GT.tab = k.gtab; renderHub();
     $('sheetTitle').textContent = k.title;
-    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends', 'hpCodex', 'hpTest', 'hpAmu', 'hpGuild', 'hpRaid', 'hpRec']) $(id).hidden = !k.show.includes(id);
+    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends', 'hpCodex', 'hpTest', 'hpAmu', 'hpGuild', 'hpRaid', 'hpRec', 'hpArena']) $(id).hidden = !k.show.includes(id);
     $('sheetGrid').classList.toggle('solo', !k.show.includes('secChar'));
     $('sheet').hidden = false; $('sheet').dataset.kind = kind; fitCards($('sheet')); $('sheetClose').focus();
     if (kind === 'friends') { renderFriendsTab(); loadFriends(); }
@@ -5128,6 +5183,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (kind === 'guild') { renderGuild(); guildLoad(); }
     if (kind === 'raid') renderRaid();
     if (kind === 'records') { renderRecords(); loadRecords(); }
+    if (kind === 'arena') renderArena();
   }
   // body classes for "a big window is open" (the chat box floats beside it)
   for (const [id, cls] of [['sheet', 'sheetopen'], ['modal', 'modalopen']]) { const el = $(id), sync = () => document.body.classList.toggle(cls, !el.hidden && !$('scrStart').hidden); new MutationObserver(sync).observe(el, { attributes: true, attributeFilter: ['hidden'] }); }
@@ -5142,7 +5198,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function renderTownBar() {
     if (!profile.chars[heroKey]) return;
     const c = CBHub.char(profile, heroKey);
-    $('tbHero').innerHTML = `<b style="color:${CC[c.cls]}">${esc(c.name || c.cls)}</b> <span class="muted">${c.cls}</span>`;
+    $('tbHero').innerHTML = `<b style="color:${CC[c.cls]}">${esc(c.name || c.cls)}</b> <span class="muted">${c.cls}</span>${c.hardcore ? ' <span class="hcbadge">Hardcore</span>' : ''}`;
     $('tbPower').textContent = `Power ${CBHub.powerLevel(c)} · gear ${CBHub.gearScore(c)} · deck ${CB.deckLevel(c.deck)}`;
     $('tbGold').textContent = `Gold ${profile.gold}`;
     renderCodexBar();
@@ -5182,7 +5238,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function myPresence() {
     const c = profile.chars[heroKey];
     const place = !$('scrStart').hidden ? 'town' : run ? 'run' : cb && cb.duel ? 'duel' : 'menu';
-    return { uid: SOC.me, guild: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), shop: typeof BZ !== 'undefined' && BZ.open ? { t: shopTitle(), n: bzState().items.length } : null, x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
+    return { uid: SOC.me, guild: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), shop: typeof BZ !== 'undefined' && BZ.open ? { t: shopTitle(), n: bzState().items.length } : null, arena: typeof arenaPresence === 'function' ? arenaPresence() : null, x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
   }
 
   async function socStart() {
@@ -5197,6 +5253,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       for (const [k, arr] of Object.entries(ch.presenceState())) if (arr && arr.length) SOC.online.set(k, arr[arr.length - 1]);
       for (const f of SOC.friends) { const on = SOC.online.has(f.id); if (on && !was.has(f.id) && was.size) sysChat(`${f.name} came online.`); }
       syncOthers(); renderSocial();
+      if (typeof renderArena === 'function' && !$('sheet').hidden && $('sheet').dataset.kind === 'arena' && !AR.form) renderArena(); // the wager board stays live
     });
     ch.on('broadcast', { event: 'pos' }, ({ payload }) => moveOther(payload));
     ch.on('broadcast', { event: 'chat' }, ({ payload }) => chatIn(payload));
@@ -5682,8 +5739,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793552815649';
-  const CB_BUILD = '2fe02188d9'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793553950217';
+  const CB_BUILD = '7931ba6045'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -5738,7 +5795,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (go.kind === 'duel') {
       run = null;
       cb = new CB.Combat({ duel: true, party: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, uid: s.uid, talents: s.talents })), seed: go.seed, data: DATA });
-      cb.myMi = S.mi; startCombatUI();
+      cb.myMi = S.mi; if (typeof arenaDuelBegan === 'function') arenaDuelBegan(go); startCombatUI();
     } else if (go.kind === 'raid') {
       run = null; const bk = CB.raidBoss(DATA, go.map);
       cb = new CB.Combat({ raid: true, party: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, uid: s.uid, talents: s.talents })), enemies: [bk], level: go.level, seed: go.seed, data: DATA });
@@ -5983,6 +6040,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
         NET.duelIn.push({ from: p.from, name: p.name, cls: p.cls }); sysChat(`${p.name} challenges you to a duel.`); renderSocial(); return;
       }
       case 'plan': { if (!S || p.sid !== S.sid || p.from !== S.host || !run) return; run.plan = { A: Array.isArray(p.A) ? p.A.filter(k => run.map.nodes[k]) : [], B: Array.isArray(p.B) ? p.B.filter(k => run.map.nodes[k]) : [] }; if (!$('scrMap').hidden) renderMap(); return; }
+      case 'ar-offer': case 'ar-withdraw': case 'ar-decline': case 'ar-counter': case 'ar-accept': case 'ar-go': case 'ar-closed': case 'ar-look': case 'ar-hero': arenaIn(p); return;
       case 'insp-req': case 'insp': case 'tr-ask': case 'tr-ans': case 'tr-offer': case 'tr-acc': case 'tr-cancel': gearNetIn(p); return;
       case 'duel-answer': {
         if (p.to !== SOC.me || !NET.duelOut || NET.duelOut !== p.from) return;
@@ -6013,7 +6071,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const S = NET.s, me = cb.players[cb.myMi], won = cb.winner === me;
     const c = profile.chars[heroKey]; if (c && S && !S.counted) { S.counted = true; c.duels = c.duels || { w: 0, l: 0 }; if (won) c.duels.w++; else c.duels.l++; save(); }
     const foe = cb.players.find(p => p !== me);
-    modal(`<h2 class="${won ? '' : 'loss'}">${won ? 'Victory' : cb.winner ? 'Defeat' : 'Draw'}</h2><p>${won ? `You beat ${esc(foe.name)} in ${cb.round} rounds.` : cb.winner ? `${esc(cb.winner.name)} wins in ${cb.round} rounds.` : 'Nobody is left standing.'} Duels are for glory: nobody loses gear, gold or HP.</p>
+    const wager = typeof arenaSettle === 'function' ? arenaSettle(foe, won ? 'won' : cb.winner ? 'lost' : 'draw') : null;
+    modal(`<h2 class="${won ? '' : 'loss'}">${won ? 'Victory' : cb.winner ? 'Defeat' : 'Draw'}</h2><p>${won ? `You beat ${esc(foe.name)} in ${cb.round} rounds.` : cb.winner ? `${esc(cb.winner.name)} wins in ${cb.round} rounds.` : 'Nobody is left standing.'} ${wager ? '' : 'Duels are for glory: nobody loses gear, gold or HP.'}</p>${wager || ''}
       <dl class="kv"><dt>Your duel record</dt><dd>${c && c.duels ? c.duels.w + ' won, ' + c.duels.l + ' lost' : '-'}</dd></dl>
       <div class="row"><button class="btn primary" id="mNew">Back to Emberwatch</button><button class="btn" id="mClose">Look at the fight</button></div>`);
     $('mNew').onclick = backToTown; $('mClose').onclick = closeModal;
@@ -6247,7 +6306,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const gear = c.gear.map(g => { const o = Object.assign({}, g); delete o.id; delete o.lines; return o; });
     return { gear, deck: c.deck.map(k => [k.key, k.rank || 0]), codex: cx ? { key: cx, level: info.level, picks: info.picks.slice(0, info.rows) } : null,
       codexLv: Object.fromEntries(Object.entries(c.codexes || {}).map(([k, st]) => [k, CB.codexLevel(st.xp || 0).level]).filter(x => x[1] > 0)),
-      runs: c.runs || 0, bossKills: c.bossKills || 0, raidKills: c.raidKills || 0, gearScore: CBHub.gearScore(c), deckLevel: CB.deckLevel(c.deck), starter: c.starter };
+      runs: c.runs || 0, bossKills: c.bossKills || 0, raidKills: c.raidKills || 0, gearScore: CBHub.gearScore(c), deckLevel: CB.deckLevel(c.deck), starter: c.starter, hardcore: !!c.hardcore, hcFell: c.hcFell || null };
   }
   // publish one hero (throttled to once a minute unless forced)
   async function publishHero(key, force) {
@@ -6284,13 +6343,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   const bestMapOf = (h) => { let best = null; for (const M of mapsInOrder()) { const b = (h.maps || {})[M.key]; if (b && (!best || b.lvl * 15 + b.row + M.num * .01 > best.score)) best = { M, b, score: b.lvl * 15 + b.row + M.num * .01 }; } return best; };
   function renderRecords() {
     const el = $('hpRec'); if (!el) return;
-    const tabs = [['heroes', 'Heroes'], ['maps', 'Map records'], ['raids', 'Raid records']].map(([k, n]) => `<button role="tab" data-rectab="${k}" aria-selected="${REC.tab === k}">${n}</button>`).join('');
+    const tabs = [['heroes', 'Heroes'], ['hardcore', 'Hardcore'], ['maps', 'Map records'], ['raids', 'Raid records']].map(([k, n]) => `<button role="tab" data-rectab="${k}" aria-selected="${REC.tab === k}">${n}</button>`).join('');
     let body = '';
     if (REC.err === 'offline') body = '<p class="muted">Sign in to see the Hall of Records: it lists every player\'s heroes.</p>';
     else if (REC.err === 'setup') body = '<p class="down">The Hall of Records needs a one-time database update: run supabase/records.sql in the Supabase SQL editor.</p>';
     else if (REC.err) body = `<p class="down">Could not load the records: ${esc(REC.err)}</p>`;
     else if (!REC.heroes) body = '<p class="muted">Reading the records...</p>';
     else if (REC.tab === 'heroes') body = recHeroes();
+    else if (REC.tab === 'hardcore') body = recHardcore();
     else if (REC.tab === 'maps') body = recMaps();
     else body = recRaids();
     el.innerHTML = `<div class="rechead"><div class="tabs" role="tablist">${tabs}</div><span class="muted">${REC.busy ? 'Updating...' : REC.at ? 'Updated ' + new Date(REC.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ''}</span><button class="btn" id="recRefresh">Refresh</button></div>${body}`;
@@ -6304,6 +6364,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const rows = list.slice(0, 100).map((h, i) => { const bm = bestMapOf(h), cx = h.snapshot && h.snapshot.codex, cxn = cx && CB.CODEX_BY_KEY[cx.key] ? CB.CODEX_BY_KEY[cx.key].name : '';
       return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td><b style="color:${CC[h.hero_class] || 'var(--text)'}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num">${h.progress}</td><td class="num">${h.power}</td><td>${bm ? `${esc(bm.M.name)} +${bm.b.lvl}, ${ROWTXT(bm.b.row)}` : '<span class="muted">no runs yet</span>'}</td><td class="muted">${cxn ? `${esc(cxn)} Lv ${cx.level}` : ''}</td></tr>`; }).join('');
     return filt + `<div class="rectable"><table><thead><tr><th>#</th><th>Hero</th><th>Guild</th><th class="num">Progress</th><th class="num">Power</th><th>Furthest</th><th>Codex</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  // Nov 1: hardcore heroes have their own ladder (living ones), plus a graveyard of hardcore heroes who fell (they play on as normal heroes)
+  function recHardcore() {
+    const alive = REC.heroes.filter(h => h.snapshot && h.snapshot.hardcore && (REC.cls === 'All' || h.hero_class === REC.cls)).sort((a, b) => b.progress - a.progress || b.power - a.power);
+    const fell = REC.heroes.filter(h => h.snapshot && !h.snapshot.hardcore && h.snapshot.hcFell).sort((a, b) => (b.snapshot.hcFell.progress || 0) - (a.snapshot.hcFell.progress || 0));
+    const filt = `<div class="recfilt"><span class="muted">Class</span>${['All', ...Object.keys(CLASSES)].map(k => `<button class="chip ${REC.cls === k ? 'on' : ''}" data-reccls="${k}">${k}</button>`).join('')}</div>
+      <p class="savenote" style="margin:0 0 6px">Hardcore heroes have one life: the first time one falls in a fight (duels and the training dummy don't count) it becomes a normal hero and leaves this ladder for the graveyard.</p>`;
+    const rows = alive.slice(0, 100).map((h, i) => { const bm = bestMapOf(h); return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td><b style="color:${CC[h.hero_class] || 'var(--text)'}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num">${h.progress}</td><td class="num">${h.power}</td><td>${bm ? `${esc(bm.M.name)} +${bm.b.lvl}, ${ROWTXT(bm.b.row)}` : '<span class="muted">-</span>'}</td></tr>`; }).join('');
+    const grave = fell.slice(0, 50).map(h => { const f = h.snapshot.hcFell; return `<li data-rechero="${h.user_id}|${esc(h.hero_key)}"><b style="color:${CC[h.hero_class] || 'var(--text)'}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.hero_class)}</span> &middot; fell ${f.where ? 'on ' + esc(f.where) : ''}${f.progress != null ? ` with ${f.progress} progress` : ''}${f.at ? ' &middot; ' + new Date(f.at).toLocaleDateString() : ''}</li>`; }).join('');
+    return filt + (rows ? `<div class="rectable"><table><thead><tr><th>#</th><th>Hero</th><th>Guild</th><th class="num">Progress</th><th class="num">Power</th><th>Furthest</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted">No living hardcore heroes yet. Tick Hardcore when you create a hero.</p>')
+      + `<h4 style="margin:14px 0 4px;color:var(--accent)">The graveyard</h4>${grave ? `<ol class="recgrave">${grave}</ol>` : '<p class="muted">No hardcore hero has fallen yet.</p>'}`;
   }
   function recMaps() {
     return `<p class="savenote" style="margin:0 0 6px">For each road: the highest map level any hero has reached, then the furthest row at that level.</p><div class="recgrid">${mapsInOrder().map(M => {
@@ -6324,8 +6395,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
         <dt>Fastest</dt><dd>${who(fast)} <span class="rv">${fast.rounds} round${fast.rounds === 1 ? '' : 's'}</span> <span class="muted">+${fast.level}</span></dd>
         <dt>Kills</dt><dd>${ks.length} <span class="muted">by ${Object.keys(guilds).length} guild${Object.keys(guilds).length === 1 ? '' : 's'}</span></dd></dl></div>`; }).join('')}</div>`;
   }
-  function recHeroModal(uid, key) {
-    const h = (REC.heroes || []).find(x => x.user_id === uid && x.hero_key === key); if (!h) return;
+  function recHeroModal(uid, key, H) { // H: a record to show instead of one from the list (the Arena shows a wager's locked hero)
+    const h = H || (REC.heroes || []).find(x => x.user_id === uid && x.hero_key === key); if (!h) return;
     const S = h.snapshot || {}, cx = S.codex, cxd = cx && CB.CODEX_BY_KEY[cx.key], tr = cx && CB.TALENTS[cx.key];
     const gear = (S.gear || []).slice().sort((a, b) => (CBHub.SLOTS.indexOf(a.slot) - CBHub.SLOTS.indexOf(b.slot))).map((g, gi) => `<div class="recgear" data-recgear="${gi}" title="Click to see the item" style="--rc:${RC[g.rarity] || 'var(--line)'}"><span class="muted">${esc(g.slot)}</span><b>${esc(g.name)}</b><span class="muted">${esc(g.rarity === 'Purple (Epic)' ? 'Epic' : g.rarity || '')} &middot; ilvl ${g.ilvl || 1}</span><small>${Object.entries(g.stats || {}).map(([k, v]) => `+${v} ${esc(k.replace(/^(Resistance|Elemental\/Holy Damage):(.*)$/, (m, a, b) => b + (a[0] === 'R' ? ' Res' : ' Dmg')))}`).join(', ')}</small></div>`).join('');
     const grp = {}; for (const [k, r] of S.deck || []) { const id = k + '|' + r; grp[id] = (grp[id] || 0) + 1; }
@@ -6507,10 +6578,229 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   $('tbShop').addEventListener('click', () => { closeTalk(); bazaarSheet(); });
   document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-bzview]'); if (b) { if (!$('talk').hidden) closeTalk(); browseShop(b.dataset.bzview); } });
 
+  // ---------- The Arena (Nov 1): south of town, through the gap in the old palisade. Wager duels between players.
+  // A player pins a wager on the board (up to 3 stash items and/or gold, plus a note). Others answer with offers: what they
+  // put up against it. The poster can accept, decline or counter (a note and the gold they want); the offerer can meet the
+  // counter, revise or withdraw. On accept the two heroes duel; the winner takes the other side's stake.
+  // Stakes leave the stash while the wager is open (held in profile.arena) and come back on a decline, a withdraw or a draw.
+  // The hero behind a post or an offer has its gear and deck locked (CBHub.arenaLock), and both sides can see each other's hero.
+  // Everything goes player to player over the realtime channel: posts ride on presence, offers and answers are messages.
+  const AR = { offers: {}, view: null, form: null, heroes: {}, note: '', gone: {} };
+  const AR_ITEMS = 3, AR_GOLD_MAX = 100000;
+  const arSlim = (it) => { const o = JSON.parse(JSON.stringify(it)); for (const k of ['id', 'price', 'sold', 'test', 'autoSalvage']) delete o[k]; return o; };
+  const arId = () => 'w' + Math.random().toString(36).slice(2, 10);
+  const arMe = () => profile.arena || null;
+  const arName = () => { const a = arMe(), c = a && profile.chars[a.hero] || profile.chars[heroKey]; return c ? c.name : 'Someone'; };
+  const arSend = (type, payload) => { if (typeof netSend === 'function') netSend(type, payload); };
+  const stakeTxt = (st) => [st.gold ? `${st.gold.toLocaleString()} gold` : '', ...(st.items || []).map(it => it.name)].filter(Boolean).join(', ') || 'nothing';
+  function heroRecord(c) { return { hero_name: c.name, hero_class: c.cls, guild_name: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, progress: CBHub.progressScore(c), power: CBHub.powerLevel(c), maps: c.mapBest || {}, snapshot: heroSnapshot(c), updated_at: new Date().toISOString() }; }
+
+  // ----- escrow: the stake leaves the stash (and the bank) while the wager is open
+  function takeStake(ids, gold) {
+    gold = Math.max(0, Math.min(AR_GOLD_MAX, Math.floor(+gold || 0)));
+    if (gold > profile.gold) return { why: `You only have ${profile.gold} gold.` };
+    const items = []; for (const id of ids.slice(0, AR_ITEMS)) { const i = profile.stash.findIndex(x => x.id === id); if (i >= 0) items.push(profile.stash.splice(i, 1)[0]); }
+    if (!items.length && !gold) return { why: 'Put up at least one item or some gold.' };
+    profile.gold -= gold; return { stake: { gold, items } };
+  }
+  function giveBack(st) { if (!st) return; profile.gold += st.gold || 0; for (const it of st.items || []) profile.stash.unshift(it); }
+  function clearArena(how) { const a = arMe(); if (!a) return; if (how !== 'forfeit') giveBack(a.stake); profile.arena = null; AR.offers = {}; save(); if (typeof retrack === 'function') retrack(true); renderTownBar(); }
+
+  // what other players see on the board (on presence)
+  function arenaPresence() {
+    const a = arMe(); if (!a || a.role !== 'post' || a.status !== 'open') return null;
+    const c = profile.chars[a.hero]; return { pid: a.pid, hero: c ? c.name : '', cls: c ? c.cls : '', gold: a.stake.gold, items: a.stake.items.map(arSlim), note: a.note || '', n: Object.keys(AR.offers).length };
+  }
+  const boardPosts = () => [...((typeof SOC !== 'undefined' && SOC.online) || new Map()).entries()].filter(([uid, st]) => uid !== SOC.me && st && st.arena && st.arena.pid).map(([uid, st]) => Object.assign({ uid, who: st.name }, st.arena));
+
+  // ----- posting
+  function postWager(ids, gold, note) {
+    if (!socOn()) return toast('Sign in and connect to the online world to use the Arena.');
+    if (arMe()) return toast('You already have a wager open.');
+    const c = profile.chars[heroKey]; if (!c) return; const chk = CBHub.deckCheck(c.deck); if (!chk.ok) return toast(`Fix your deck first (it ${chk.problems.join(', ')}).`);
+    const r = takeStake(ids, gold); if (r.why) return toast(r.why);
+    profile.arena = { role: 'post', pid: arId(), hero: heroKey, stake: r.stake, note: (note || '').slice(0, 120), status: 'open', at: Date.now() };
+    AR.offers = {}; save(); retrack(true); sysChat(`Your wager is on the board: ${stakeTxt(r.stake)}. ${c.name}'s gear and deck are locked until it is settled.`); renderArena();
+  }
+  function takeDown() {
+    const a = arMe(); if (!a || a.role !== 'post' || a.status !== 'open') return;
+    for (const o of Object.values(AR.offers)) arSend('ar-decline', { to: o.from, pid: a.pid, oid: o.oid, why: 'took the wager down' });
+    arSend('ar-closed', { pid: a.pid }); clearArena(); sysChat('Your wager is off the board. Your stake is back in your stash.'); renderArena();
+  }
+  // ----- offering
+  function makeOffer(post, ids, gold, note, reviseOf) {
+    if (!socOn()) return toast('You are not connected.');
+    const a0 = arMe(); if (a0 && !(reviseOf && a0.role === 'offer' && a0.oid === reviseOf)) return toast('You already have a wager open. Withdraw it first.');
+    const c = profile.chars[a0 ? a0.hero : heroKey]; if (!c) return; const chk = CBHub.deckCheck(c.deck); if (!chk.ok) return toast(`Fix your deck first (it ${chk.problems.join(', ')}).`);
+    if (a0) giveBack(a0.stake); // revising: the old stake comes back first
+    const r = takeStake(ids, gold); if (r.why) { if (a0) { a0.stake = takeStake(a0.stake.items.map(x => x.id), a0.stake.gold).stake || { gold: 0, items: [] }; } return toast(r.why); }
+    const oid = reviseOf || arId();
+    profile.arena = { role: 'offer', pid: post.pid, oid, to: post.uid, hero: a0 ? a0.hero : heroKey, stake: r.stake, note: (note || '').slice(0, 120), status: 'pending', at: Date.now(), post: { who: post.who, hero: post.hero, cls: post.cls, gold: post.gold, items: post.items, note: post.note } };
+    save(); retrack(true);
+    arSend('ar-offer', { to: post.uid, pid: post.pid, oid, gold: r.stake.gold, items: r.stake.items.map(arSlim), note: profile.arena.note, name: c.name, cls: c.cls, hero: heroRecord(c) });
+    sysChat(`${reviseOf ? 'Revised offer' : 'Offer'} sent to ${post.who}: ${stakeTxt(r.stake)}.`); renderArena();
+  }
+  function withdraw() {
+    const a = arMe(); if (!a || a.role !== 'offer' || a.status === 'dueling') return;
+    arSend('ar-withdraw', { to: a.to, pid: a.pid, oid: a.oid }); clearArena(); sysChat('Offer withdrawn. Your stake is back in your stash.'); renderArena();
+  }
+  // ----- the poster answers
+  function decline(oid, why) { const a = arMe(), o = AR.offers[oid]; if (!a || !o) return; arSend('ar-decline', { to: o.from, pid: a.pid, oid, why: why || 'declined' }); delete AR.offers[oid]; retrack(true); renderArena(); }
+  function counter(oid, gold, note) { const a = arMe(), o = AR.offers[oid]; if (!a || !o) return; o.counter = { gold: Math.max(0, Math.floor(+gold || 0)), note: (note || '').slice(0, 120) }; arSend('ar-counter', { to: o.from, pid: a.pid, oid, gold: o.counter.gold, note: o.counter.note }); sysChat(`Counter sent to ${o.name}.`); renderArena(); }
+  function accept(oid) {
+    const a = arMe(), o = AR.offers[oid]; if (!a || !o || a.status !== 'open') return;
+    if (run || cb) return toast('Finish what you are doing first.');
+    if (!SOC.online.has(o.from)) return toast(`${o.name} is not online any more.`);
+    for (const x of Object.values(AR.offers)) if (x.oid !== oid) arSend('ar-decline', { to: x.from, pid: a.pid, oid: x.oid, why: 'took another offer' });
+    a.status = 'accepted'; a.deal = { foe: o.from, foeName: o.name, foeStake: { gold: o.gold, items: o.items }, oid, at: Date.now() };
+    AR.offers = { [oid]: o }; save(); retrack(true);
+    const c = profile.chars[a.hero];
+    arSend('ar-accept', { to: o.from, pid: a.pid, oid, gold: a.stake.gold, items: a.stake.items.map(arSlim), name: c.name, cls: c.cls, hero: heroRecord(c) });
+    sysChat(`You accepted ${o.name}'s offer. Waiting for them to step into the ring...`); renderArena();
+    setTimeout(() => { const b = arMe(); if (b && b.status === 'accepted' && b.deal && b.deal.oid === oid) { sysChat(`${o.name} never stepped into the ring. The wager is called off.`); arSend('ar-decline', { to: o.from, pid: b.pid, oid, why: 'timed out' }); clearArena(); renderArena(); } }, 45000);
+  }
+
+  // ----- messages
+  function arenaIn(p) {
+    if (p.to && p.to !== SOC.me) return;
+    const a = arMe();
+    switch (p.type) {
+      case 'ar-offer': {
+        if (!a || a.role !== 'post' || a.pid !== p.pid || a.status !== 'open') { arSend('ar-decline', { to: p.from, pid: p.pid, oid: p.oid, why: 'is no longer on the board' }); return; }
+        const was = AR.offers[p.oid];
+        AR.offers[p.oid] = { oid: p.oid, from: p.from, name: p.name, cls: p.cls, gold: Math.max(0, +p.gold || 0), items: (p.items || []).slice(0, AR_ITEMS), note: p.note || '', hero: p.hero, at: Date.now() };
+        sysChat(`${p.name} ${was ? 'revised their offer' : 'made an offer'} on your wager: ${stakeTxt(AR.offers[p.oid])}. Open the Wager Board to answer.`);
+        retrack(true); if (!$('hpArena').hidden) renderArena(); return;
+      }
+      case 'ar-withdraw': { if (a && a.role === 'post' && a.pid === p.pid && AR.offers[p.oid]) { sysChat(`${AR.offers[p.oid].name} withdrew their offer.`); delete AR.offers[p.oid]; if (a.status === 'accepted' && a.deal && a.deal.oid === p.oid) { a.status = 'open'; a.deal = null; save(); } retrack(true); renderArena(); } return; }
+      case 'ar-decline': case 'ar-closed': {
+        if (!a || a.role !== 'offer' || a.pid !== p.pid || (p.oid && p.oid !== a.oid) || a.status === 'dueling') return;
+        sysChat(`Your offer to ${a.post.who} was ${p.type === 'ar-closed' ? 'closed: they took the wager down' : 'declined' + (p.why && p.why !== 'declined' ? ` (${p.why})` : '')}. Your stake is back in your stash.`);
+        clearArena(); renderArena(); return;
+      }
+      case 'ar-counter': {
+        if (!a || a.role !== 'offer' || a.oid !== p.oid) return;
+        a.status = 'countered'; a.counter = { gold: Math.max(0, +p.gold || 0), note: p.note || '' }; save();
+        sysChat(`${a.post.who} countered your offer${a.counter.gold ? `: they want ${a.counter.gold.toLocaleString()} gold` : ''}${a.counter.note ? ` ("${a.counter.note}")` : ''}. Open the Wager Board to answer.`); renderArena(); return;
+      }
+      case 'ar-accept': {
+        if (!a || a.role !== 'offer' || a.oid !== p.oid) { arSend('ar-decline', { to: p.from, pid: p.pid, oid: p.oid, why: 'the offer is gone' }); return; }
+        if (run || cb) { arSend('ar-withdraw', { to: p.from, pid: p.pid, oid: p.oid }); clearArena(); sysChat('Your offer was accepted, but you were busy, so it was withdrawn.'); return; }
+        a.status = 'accepted'; a.deal = { foe: p.from, foeName: p.name, foeStake: { gold: Math.max(0, +p.gold || 0), items: (p.items || []).slice(0, AR_ITEMS) }, oid: a.oid, at: Date.now(), hero: p.hero }; save();
+        heroKey = a.hero; profile.last.cls = heroKey; renderHub();
+        sysChat(`${p.name} accepted your offer! Into the ring: ${stakeTxt(a.stake)} against ${stakeTxt(a.deal.foeStake)}.`);
+        arSend('ar-go', { to: p.from, oid: a.oid }); renderArena(); return;
+      }
+      case 'ar-go': {
+        if (!a || a.role !== 'post' || a.status !== 'accepted' || !a.deal || a.deal.oid !== p.oid || a.deal.foe !== p.from) return;
+        heroKey = a.hero; profile.last.cls = heroKey; renderHub(); $('sheet').hidden = true;
+        netStart('duel', [SOC.me, p.from], 0); return;
+      }
+      case 'ar-look': { if (a && a.role === 'post' && a.pid === p.pid) { const c = profile.chars[a.hero]; if (c) arSend('ar-hero', { to: p.from, pid: a.pid, hero: heroRecord(c) }); } return; }
+      case 'ar-hero': { AR.heroes[p.pid] = p.hero; if (AR.view === p.pid) recHeroModal(null, null, p.hero); return; }
+    }
+  }
+  // the duel started: the stake is now on the line (leaving the duel loses it)
+  function arenaDuelBegan(go) { const a = arMe(); if (a && a.status === 'accepted' && a.deal && go.uids.includes(a.deal.foe)) { a.status = 'dueling'; a.duelSid = go.sid; save(); } }
+  // the duel ended (net.js duelOver): the winner takes the other stake, the loser's is gone, a draw gives both back
+  function arenaSettle(foe, how) {
+    const a = arMe(); if (!a || a.status !== 'dueling' || !a.deal || !foe || foe.uid !== a.deal.foe) return null;
+    const theirs = a.deal.foeStake, mine = a.stake, foeName = a.deal.foeName;
+    if (how === 'won') { giveBack(mine); profile.gold += theirs.gold || 0; for (const it of theirs.items || []) profile.stash.unshift(Object.assign({ id: 'g' + Math.random().toString(36).slice(2, 10) }, it)); profile.arena = null; }
+    else if (how === 'lost') profile.arena = null;
+    else { giveBack(mine); profile.arena = null; }
+    AR.offers = {}; save(); retrack(true);
+    const c = profile.chars[heroKey]; if (c) { c.wagers = c.wagers || { w: 0, l: 0 }; if (how === 'won') c.wagers.w++; else if (how === 'lost') c.wagers.l++; }
+    sysChat(how === 'won' ? `You won the wager against ${foeName}: ${stakeTxt(theirs)} is yours.` : how === 'lost' ? `You lost the wager to ${foeName}: ${stakeTxt(mine)} is theirs.` : `The wager against ${foeName} is a draw: both stakes go back.`);
+    return `<div class="arsettle ${how}"><b>${how === 'won' ? 'Wager won' : how === 'lost' ? 'Wager lost' : 'Wager drawn'}</b><p>${how === 'won' ? `You take <b>${esc(stakeTxt(theirs))}</b> and keep your own stake. Items went to your stash.` : how === 'lost' ? `${esc(foeName)} takes <b>${esc(stakeTxt(mine))}</b>.` : 'Both stakes go back to their owners.'}</p></div>`;
+  }
+  // keep things tidy: offers whose player left, deals that never started, and old saves
+  setInterval(() => {
+    const a = arMe(); if (!a) return;
+    if (a.status === 'dueling' && !cb) { sysChat('You left a wager duel before it ended: your stake is forfeit.'); clearArena('forfeit'); return; }
+    if (!socOn()) return;
+    if (a.role === 'offer' && a.status !== 'dueling') { const st = SOC.online.get(a.to); if (!st || !st.arena || st.arena.pid !== a.pid) { if (a.status === 'accepted') return; AR.gone[a.pid] = (AR.gone[a.pid] || 0) + 1; if (AR.gone[a.pid] >= 3) { sysChat(`${a.post.who}'s wager is gone from the board. Your stake is back in your stash.`); clearArena(); renderArena(); } } else AR.gone[a.pid] = 0; }
+    if (a.role === 'post') { let ch = false; for (const o of Object.values(AR.offers)) if (!SOC.online.has(o.from)) { delete AR.offers[o.oid]; ch = true; } if (ch) { retrack(true); renderArena(); } }
+  }, 10000);
+  // a wager from a session that ended (closed tab) can't still be open: give the stake back, unless the duel had started
+  setTimeout(() => { const a = arMe(); if (!a) return; if (a.status === 'dueling') { profile.arena = null; save(); sysChat('A wager duel was left unfinished: its stake is forfeit.'); } else if (Date.now() - (a.at || 0) > 5000) { giveBack(a.stake); profile.arena = null; save(); sysChat('Your Arena wager from last time was closed. The stake is back in your stash.'); } }, 1500);
+
+  // ----- the board
+  function stakeHtml(st, label) {
+    return `<div class="arstake"><span class="muted">${label}</span>${st.gold ? `<b class="argold">${st.gold.toLocaleString()} gold</b>` : ''}${(st.items || []).map(it => itemHtml(it)).join('')}${!st.gold && !(st.items || []).length ? '<span class="muted">nothing</span>' : ''}</div>`;
+  }
+  function pickForm(kind, ctx) {
+    const stash = profile.stash.filter(it => it.kind !== 'card');
+    return `<div class="arform" data-arform="${kind}"><h4>${kind === 'post' ? 'Post a wager' : kind === 'revise' ? 'Revise your offer' : `Offer against ${esc(ctx.who)}'s wager`}</h4>
+      <p class="muted" style="margin:0 0 6px;font-size:12px">Pick up to ${AR_ITEMS} items from your stash and/or some gold. They leave your stash until the wager is settled. ${esc((profile.chars[(arMe() && arMe().hero) || heroKey] || {}).name || '')}'s gear and deck lock while it is open.</p>
+      <div class="arpick">${stash.map(it => `<label class="arpi"><input type="checkbox" value="${it.id}">${itemHtml(it)}</label>`).join('') || '<span class="muted">Your stash is empty: wager gold.</span>'}</div>
+      <div class="namerow"><div class="field"><label>Gold (you have ${profile.gold.toLocaleString()})</label><input type="number" min="0" max="${Math.min(AR_GOLD_MAX, profile.gold)}" value="${ctx && ctx.gold || 0}" class="argoldin"></div>
+        <div class="field" style="flex:2"><label>Note (optional)</label><input maxlength="120" class="arnotein" placeholder="${kind === 'post' ? 'Best of one, no hard feelings' : 'Make it worth my while'}"></div>
+        <button class="btn primary" data-arsubmit="${kind}" ${ctx && ctx.pid ? `data-pid="${ctx.pid}"` : ''}>${kind === 'post' ? 'Pin it to the board' : kind === 'revise' ? 'Send the revised offer' : 'Send the offer'}</button><button class="btn" data-arcancel="1">Cancel</button></div></div>`;
+  }
+  function renderArena() {
+    const el = $('hpArena'); if (!el) return;
+    const a = arMe(), posts = boardPosts(), c = profile.chars[heroKey];
+    let mine = '';
+    if (!socOn()) mine = '<p class="down">Sign in to use the Arena: wagers go between online players.</p>';
+    else if (!a) mine = AR.form && AR.form.kind === 'post' ? pickForm('post') : `<div class="arbox"><p style="margin:0">No wager open. ${c ? `Your hero: <b style="color:${CC[c.cls]}">${esc(c.name)}</b>.` : ''}</p><button class="btn primary" data-arnew="1">Post a wager</button></div>`;
+    else if (a.role === 'post') {
+      const offers = Object.values(AR.offers);
+      mine = `<div class="arbox mine"><h4>Your wager <span class="muted">${a.status === 'open' ? 'on the board' : a.status === 'accepted' ? 'accepted: waiting for the duel' : 'in the ring'}</span></h4>${stakeHtml(a.stake, `${esc(arName())} puts up`)}${a.note ? `<p class="arnote">"${esc(a.note)}"</p>` : ''}
+        ${a.status === 'open' ? '<div class="acts"><button class="btn" data-ardown="1">Take it down</button></div>' : ''}
+        <h4 style="margin-top:10px">Offers (${offers.length})</h4>${offers.length ? offers.map(o => `<div class="aroffer"><div class="arofhead"><b style="color:${CC[o.cls] || 'var(--text)'}">${esc(o.name)}</b> <span class="muted">${esc(o.cls || '')}</span><button class="pilebtn" data-arhero="${o.oid}">See their hero (locked)</button></div>
+          ${stakeHtml(o, 'puts up')}${o.note ? `<p class="arnote">"${esc(o.note)}"</p>` : ''}${o.counter ? `<p class="muted">You countered${o.counter.gold ? `: ${o.counter.gold.toLocaleString()} gold` : ''}${o.counter.note ? ` "${esc(o.counter.note)}"` : ''}. Waiting for their answer.</p>` : ''}
+          ${a.status === 'open' ? `<div class="acts"><button class="btn primary" data-araccept="${o.oid}">Accept and fight</button><button class="btn" data-arcounter="${o.oid}">Counter</button><button class="btn" data-ardecline="${o.oid}">Decline</button></div>
+          ${AR.form && AR.form.kind === 'counter' && AR.form.oid === o.oid ? `<div class="namerow arform"><div class="field"><label>Gold you want from them</label><input type="number" min="0" value="${o.gold}" class="argoldin"></div><div class="field" style="flex:2"><label>Your counter</label><input maxlength="120" class="arnotein" placeholder="Add your Blue cloak and you have a deal"></div><button class="btn primary" data-arsendcounter="${o.oid}">Send counter</button><button class="btn" data-arcancel="1">Cancel</button></div>` : ''}` : ''}</div>`).join('') : '<p class="muted">No offers yet. Players in town see your wager on this board.</p>'}</div>`;
+    } else {
+      const P0 = a.post;
+      mine = `<div class="arbox mine"><h4>Your offer to <b>${esc(P0.who)}</b> <span class="muted">${a.status === 'pending' ? 'waiting for an answer' : a.status === 'countered' ? 'they countered' : a.status === 'accepted' ? 'accepted: into the ring' : 'in the ring'}</span><button class="pilebtn" data-arlook="${a.pid}" data-arto="${a.to}">See their hero (locked)</button></h4>
+        <div class="arvs">${stakeHtml(P0, `${esc(P0.hero)} puts up`)}<span class="arvsx">vs</span>${stakeHtml(a.stake, `${esc(arName())} puts up`)}</div>
+        ${a.counter && a.status === 'countered' ? `<p class="arnote">Counter: ${a.counter.gold ? `they want <b>${a.counter.gold.toLocaleString()} gold</b>` : ''}${a.counter.note ? ` "${esc(a.counter.note)}"` : ''}</p>` : ''}
+        ${a.status === 'pending' || a.status === 'countered' ? `<div class="acts">${a.status === 'countered' && a.counter.gold ? `<button class="btn primary" data-armeet="1">Meet it (${a.counter.gold.toLocaleString()} gold)</button>` : ''}<button class="btn" data-arrevise="1">Revise my offer</button><button class="btn" data-arwithdraw="1">Withdraw</button></div>` : ''}
+        ${AR.form && AR.form.kind === 'revise' ? pickForm('revise', { gold: a.stake.gold }) : ''}</div>`;
+    }
+    const others = posts.map(pp => `<div class="arpost ${a && a.role === 'offer' && a.pid === pp.pid ? 'on' : ''}"><div class="arofhead"><b style="color:${CC[pp.cls] || 'var(--text)'}">${esc(pp.hero || pp.who)}</b> <span class="muted">${esc(pp.cls || '')} &middot; ${esc(pp.who)}</span><span class="chip">${pp.n || 0} offer${pp.n === 1 ? '' : 's'}</span></div>
+      ${stakeHtml(pp, 'puts up')}${pp.note ? `<p class="arnote">"${esc(pp.note)}"</p>` : ''}
+      <div class="acts"><button class="pilebtn" data-arlook="${pp.pid}" data-arto="${pp.uid}">See their hero</button>${!a ? `<button class="btn primary" data-aroffer="${pp.pid}">Make an offer</button>` : ''}</div>
+      ${AR.form && AR.form.kind === 'offer' && AR.form.pid === pp.pid ? pickForm('offer', pp) : ''}</div>`).join('');
+    el.innerHTML = `<p class="savenote" style="margin:0 0 8px">Put up gear or gold and fight for it. Offers answer a wager with a stake of their own; the poster accepts, declines or counters. Once a wager or offer is open, that hero's <b>gear and deck are locked</b> and both sides can see each other's hero. Win the duel and you take the other stake; lose and yours is gone; a draw gives both back. Leaving the duel early forfeits.</p>
+      ${mine}<h3 class="rrhead">On the board</h3><div class="arposts">${others || '<p class="muted">No other wagers right now. Only players who are online show up.</p>'}</div>`;
+    fitCards(el);
+  }
+  $('hpArena').addEventListener('click', (ev) => {
+    const b = ev.target.closest('button'); if (!b || b.disabled) return; const D = b.dataset, a = arMe();
+    const form = b.closest('.arform') || b.closest('.aroffer') || b.closest('.arpost') || el0();
+    const vals = () => ({ ids: [...form.querySelectorAll('.arpick input:checked')].map(i => i.value), gold: (form.querySelector('.argoldin') || {}).value, note: (form.querySelector('.arnotein') || {}).value });
+    if (D.arnew) AR.form = { kind: 'post' };
+    else if (D.arcancel) AR.form = null;
+    else if (D.aroffer) AR.form = { kind: 'offer', pid: D.aroffer };
+    else if (D.arrevise) AR.form = { kind: 'revise' };
+    else if (D.arcounter) AR.form = { kind: 'counter', oid: D.arcounter };
+    else if (D.arsubmit) { const v = vals(); if (v.ids.length > AR_ITEMS) return toast(`At most ${AR_ITEMS} items.`); AR.form = null;
+      if (D.arsubmit === 'post') return postWager(v.ids, v.gold, v.note);
+      if (D.arsubmit === 'offer') { const pp = boardPosts().find(x => x.pid === D.pid); if (!pp) return toast('That wager is gone.'); return makeOffer(pp, v.ids, v.gold, v.note); }
+      if (D.arsubmit === 'revise' && a) { const pp = boardPosts().find(x => x.pid === a.pid) || Object.assign({ uid: a.to, pid: a.pid }, a.post); return makeOffer(pp, v.ids, v.gold, v.note, a.oid); } }
+    else if (D.armeet && a && a.counter) { const pp = boardPosts().find(x => x.pid === a.pid) || Object.assign({ uid: a.to, pid: a.pid }, a.post); const ids = a.stake.items.map(x => x.id); return makeOffer(pp, ids, Math.max(a.counter.gold, a.stake.gold), a.note, a.oid); }
+    else if (D.arwithdraw) return withdraw();
+    else if (D.ardown) return takeDown();
+    else if (D.araccept) return accept(D.araccept);
+    else if (D.ardecline) return decline(D.ardecline);
+    else if (D.arsendcounter) { const v = vals(); AR.form = null; return counter(D.arsendcounter, v.gold, v.note); }
+    else if (D.arhero) { const o = AR.offers[D.arhero]; if (o && o.hero) return recHeroModal(null, null, o.hero); return; }
+    else if (D.arlook) { AR.view = D.arlook; if (AR.heroes[D.arlook]) recHeroModal(null, null, AR.heroes[D.arlook]); else if (a && a.role === 'offer' && a.pid === D.arlook && a.deal && a.deal.hero) recHeroModal(null, null, a.deal.hero); else { arSend('ar-look', { to: D.arto, pid: D.arlook }); toast('Asking for their hero...'); } return; }
+    else return;
+    renderArena();
+  });
+  const el0 = () => $('hpArena');
+
   // ---------- What's new: the changelog (button bottom-right) and the new-version warning
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Feature', 'Hardcore heroes: tick Hardcore when you create a hero. They get one life: the first time a hardcore hero falls in a fight (duels and the training dummy don\'t count) it becomes a normal hero. The Hall of Records has a Hardcore tab: a ladder of living hardcore heroes and a graveyard of the fallen.'],
+      ['Feature', 'The Arena: the old south palisade has a gap now, leading to a sand ring with Arenamaster Kord and the Wager Board. Pin a wager (up to 3 stash items and/or gold), other players answer with offers of their own, and you accept, decline or counter. While a wager or offer is open that hero\'s gear and deck are locked and both sides can see each other\'s hero. Accept and you duel: the winner takes the other stake, a draw gives both back, leaving early forfeits.'],
+      ['Art', 'A statue of Juss stands in the fire plaza. Read the plaque.'],
       ['Feature', 'Creating a hero now happens around a campfire: every class sits at the fire (click one to see its starting decks, with a few Gold and Blue cards you can look forward to on the right). A Shaman sits there too: coming in a future expansion. Your heroes are listed below the fire.'],
       ['Feature', 'Rerolls: every item now has a reroll potential (White 0-1, Green 1-2, Blue 2-3, Purple 3-4; gear you already own got its potential too). At Jeweler Rook, a Reroll Token and one point of potential reroll one affix line of your choice. Get tokens by breaking down codexes you don\'t need (at Rook or in your stash): 3 tokens, plus 1 for every 2 map levels the codex dropped on.'],
       ['Balance', 'Blood Reckoning now heals you for 2x your stored Blood Debt (and spends it) instead of the damage it dealt.'],
@@ -7043,6 +7333,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { const q = TS / 3, X = x * TS + i * q + (j % 2) * q * .3, Y = y * TS + j * q, v = R(), jt = () => (R() - .5) * q * .18;
         S(g, [[X + 1.5 + jt(), Y + 1.5 + jt()], [X + q - 1.5 + jt(), Y + 1.5 + jt()], [X + q - 1.5 + jt(), Y + q - 1.5 + jt()], [X + 1.5 + jt(), Y + q - 1.5 + jt()]], [v < .5 ? '#47423b' : '#3d3933', '#24211d', '#6a6358'], 1.2 * s, { mass: .4 }); }
     }
+    // arena sand (Nov 1): packed dun sand with scuffs, inked where it meets grass
+    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (at(x, y) === 'a') {
+      const X = x * TS, Y = y * TS; g.fillStyle = (x + y) % 2 ? '#4b3c28' : '#463825'; g.fillRect(X, Y, TS, TS);
+      for (let i = 0; i < 4; i++) { const px = X + R() * TS, py = Y + R() * TS, r = (1.4 + R() * 2) * s; P(g, [[px - r, py], [px, py - r * .7], [px + r, py], [px, py + r * .6]], R() < .5 ? '#5d4b33' : '#33271a', .8 * s); }
+      if (R() < .25) L(g, [[X + R() * TS, Y + R() * TS], [X + R() * TS, Y + R() * TS]], '#2a2016', 1.2 * s);
+      const edge = (x2, y2) => at(x2, y2) !== 'a' && at(x2, y2) !== 'p';
+      if (edge(x, y - 1)) L(g, [[X, Y], [X + TS, Y]], INK, 2.2 * s); if (edge(x, y + 1)) L(g, [[X, Y + TS], [X + TS, Y + TS]], INK, 2.2 * s);
+      if (edge(x - 1, y)) L(g, [[X, Y], [X, Y + TS]], INK, 2.2 * s); if (edge(x + 1, y)) L(g, [[X + TS, Y], [X + TS, Y + TS]], INK, 2.2 * s);
+    }
     // water: slate pool, inked ripples and pale slivers
     for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (at(x, y) === '~') { g.fillStyle = '#0e1820'; g.fillRect(x * TS - 2, y * TS - 2, TS + 4, TS + 4); }
     for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (at(x, y) === '~') { const X = x * TS, Y = y * TS; for (let i = 0; i < 3; i++) { const px = X + R() * TS * .7, py = Y + R() * TS; L(g, [[px, py], [px + 6 * s, py - 2 * s], [px + 12 * s, py]], INK, 1.6 * s); L(g, [[px + 2 * s, py - 3 * s], [px + 8 * s, py - 4 * s]], 'rgba(150,185,205,.35)', 1.2 * s); } }
@@ -7142,6 +7441,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       P(g, [[cx - 17 * s, by - 42 * s], [cx - 4 * s, by - 43 * s], [cx - 4 * s, by - 26 * s], [cx - 17 * s, by - 27 * s]], '#d4c6aa', 1 * s);
       P(g, [[cx - 1 * s, by - 40 * s], [cx + 14 * s, by - 40 * s], [cx + 13 * s, by - 29 * s], [cx - 1 * s, by - 30 * s]], '#c2b394', 1 * s);
       P(g, [[cx + 2 * s, by - 27 * s], [cx + 13 * s, by - 26 * s], [cx + 13 * s, by - 19 * s], [cx + 2 * s, by - 19 * s]], '#ddd0b4', 1 * s);
+    } else if (p.kind === 'statue') { // Nov 1: Juss, the first to fall: a stone warrior kneeling on his sword, on a plinth
+      const cx = x0 + TS / 2, by = y0 + TS * .92;
+      const s = TS / 48 * 1.45; // bigger than a person
+      shadow(g, cx, by, 22 * s, 6 * s, .45);
+      S(g, [[cx - 19 * s, by], [cx - 17 * s, by - 12 * s], [cx + 17 * s, by - 12 * s], [cx + 19 * s, by]], STONE, 2 * s, { mass: .45, cuts: 2 });
+      S(g, [[cx - 12 * s, by - 12 * s], [cx - 13 * s, by - 26 * s], [cx - 4 * s, by - 30 * s], [cx + 9 * s, by - 26 * s], [cx + 11 * s, by - 12 * s]], STONE, 1.8 * s, { mass: .5 });
+      S(g, [[cx - 9 * s, by - 28 * s], [cx - 10 * s, by - 46 * s], [cx - 2 * s, by - 52 * s], [cx + 7 * s, by - 46 * s], [cx + 6 * s, by - 28 * s]], STONE, 1.8 * s, { mass: .5, cuts: 2 });
+      S(g, [[cx - 6 * s, by - 52 * s], [cx - 7 * s, by - 61 * s], [cx, by - 66 * s], [cx + 6 * s, by - 61 * s], [cx + 5 * s, by - 52 * s]], STONE, 1.8 * s, { mass: .5 });
+      S(g, [[cx + 10 * s, by - 12 * s], [cx + 10 * s, by - 50 * s], [cx + 13 * s, by - 50 * s], [cx + 13 * s, by - 12 * s]], STONE, 1.4 * s, { mass: .35 });
+      L(g, [[cx + 5 * s, by - 50 * s], [cx + 18 * s, by - 50 * s]], INK, 2.4 * s);
+      L(g, [[cx - 12 * s, by - 6 * s], [cx + 12 * s, by - 6 * s]], '#2a2622', 1.2 * s);
     } else if (p.kind === 'chest') {
       const cx = x0 + TS / 2, by = y0 + TS * .88;
       shadow(g, cx, by, 19 * s, 5 * s, .4);
@@ -7886,7 +8196,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       <h3 style="font-size:18px;color:var(--accent);margin-top:10px">From your stash (${fits.length})</h3><div class="list" style="max-height:340px">${choose || '<span class="muted">Nothing in the stash fits this slot.</span>'}</div>
       <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     $('mClose').onclick = closeModal;
-    if ($('mUneq')) $('mUneq').onclick = () => { if (!CBHub.unequip(profile, heroKey, sl)) return toast('Stash is full.'); save(); closeModal(); renderHub(); };
+    if ($('mUneq')) $('mUneq').onclick = () => { if (!CBHub.unequip(profile, heroKey, sl)) return toast(CBHub.arenaLock(profile, heroKey) || 'Stash is full.'); save(); closeModal(); renderHub(); };
     for (const b of $('modalBox').querySelectorAll('[data-eq]')) b.onclick = () => { const r = CBHub.equip(profile, heroKey, b.dataset.eq, sl); if (!r.ok) return toast(r.why); save(); closeModal(); renderHub(); };
     for (const b of $('modalBox').querySelectorAll('[data-salv]')) b.onclick = () => { const sc = $('modalBox').querySelector('.list') ? $('modalBox').querySelector('.list').scrollTop : 0; const g = CBHub.salvage(profile, b.dataset.salv); if (!g) return; save(); renderHub(); slotPicker(sl); const l = $('modalBox').querySelector('.list'); if (l) l.scrollTop = sc; sysChat(`Salvaged for ${g} gold.`); };
   }
@@ -8235,7 +8545,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   let createCls = null;
   function renderTitle() {
     const keys = heroKeys(), chars = keys.map(k => profile.chars[k]);
-    $('heroList').innerHTML = keys.map(k => { const c = profile.chars[k]; return `<div class="herocard" style="--cc:${CC[c.cls]}"><b>${esc(c.name)}</b><small>${c.cls} &middot; Power ${CBHub.powerLevel(c)} &middot; ${c.runs} run${c.runs === 1 ? '' : 's'}${c.bossKills ? ` &middot; ${c.bossKills} boss kill${c.bossKills === 1 ? '' : 's'}` : ''}</small><div class="row" style="display:flex;gap:6px;align-items:center"><button class="btn primary play" data-play="${k}">Enter Emberwatch</button><button class="pilebtn" data-delhero="${k}" title="Delete this hero">Delete</button></div></div>`; }).join('')
+    $('heroList').innerHTML = keys.map(k => { const c = profile.chars[k]; return `<div class="herocard" style="--cc:${CC[c.cls]}"><b>${esc(c.name)}${c.hardcore ? ' <span class="hcbadge">Hardcore</span>' : c.hcFell ? ' <span class="hcbadge fell" title="Fell as a hardcore hero">Fallen</span>' : ''}</b><small>${c.cls} &middot; Power ${CBHub.powerLevel(c)} &middot; ${c.runs} run${c.runs === 1 ? '' : 's'}${c.bossKills ? ` &middot; ${c.bossKills} boss kill${c.bossKills === 1 ? '' : 's'}` : ''}</small><div class="row" style="display:flex;gap:6px;align-items:center"><button class="btn primary play" data-play="${k}">Enter Emberwatch</button><button class="pilebtn" data-delhero="${k}" title="Delete this hero">Delete</button></div></div>`; }).join('')
       ;
     $('heroHead').hidden = !chars.length;
     openCreate(true);
@@ -8335,9 +8645,9 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     zoom.innerHTML = `<div class="zoomin">${cardBox(c, 300)}<p>${esc(c.rarity)} ${esc(c.cls)} card &middot; click anywhere to close</p></div>`; zoom.hidden = false; fitCards(zoom); requestAnimationFrame(() => fitCards(zoom)); });
   const doCreate = () => {
     if (!createCls) { $('createMsg').textContent = 'Pick a class.'; return; }
-    const r = CBHub.createChar(profile, createCls, $('heroName').value, createDeck, createAmu);
+    const r = CBHub.createChar(profile, createCls, $('heroName').value, createDeck, createAmu, $('heroHC').checked);
     if (!r.ok) { $('createMsg').textContent = r.why; return; }
-    heroKey = r.id; $('heroName').value = ''; createCls = null; save(); renderHub(); show('start'); saveCard();
+    heroKey = r.id; $('heroName').value = ''; $('heroHC').checked = false; createCls = null; save(); renderHub(); show('start'); saveCard();
   };
   $('btnCreate').onclick = doCreate; $('heroName').addEventListener('keydown', (e) => { if (e.key === 'Enter') doCreate(); });
   $('btnCancelCreate').onclick = () => { createCls = null; renderCamp(); renderCreateChoices(); };
@@ -9085,12 +9395,26 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   function toResults() { closeModal(); show('map'); renderMap(true); }
   function deathScreen() {
     render();
-    modal(`<h2 class="loss">${run.solo ? 'You fall' : 'The party falls'}</h2><p>${run.solo ? 'You died' : 'Everyone died'} in round ${cb.round}. The loot sack is lost; your equipped gear and deck are safe.</p><p class="muted">Close this to read the combat log and the damage meter. The Results button above the fight takes you on.</p>
+    modal(`<h2 class="loss">${run.solo ? 'You fall' : 'The party falls'}</h2><p>${run.solo ? 'You died' : 'Everyone died'} in round ${cb.round}. The loot sack is lost; your equipped gear and deck are safe.</p>${run.members.some(m => { const c = profile.chars[m.key]; return c && c.hcNotice; }) ? `<p class="loss"><b>Hardcore:</b> ${run.members.map(m => profile.chars[m.key]).filter(c => c && c.hcNotice).map(c => esc(c.name)).join(', ')} fell, so the hardcore life is over: they play on as normal heroes.</p>` : ''}<p class="muted">Close this to read the combat log and the damage meter. The Results button above the fight takes you on.</p>
       <div class="row"><button class="btn primary" id="mRes">See the results</button><button class="btn" id="mClose">Look at the fight</button></div>`);
     $('mRes').onclick = toResults; $('mClose').onclick = closeModal;
   }
+  // Nov 1: hardcore heroes have one life. Falling in any fight except a duel or the dummy turns them into normal heroes
+  function hardcoreCheck() {
+    if (!cb || cb.duel || cb.practice || cb._hcDone) return; cb._hcDone = true;
+    for (const c of Object.values(profile.chars)) delete c.hcNotice;
+    let pairs;
+    if (run && run.members) pairs = run.members.map((m, i) => [profile.chars[m.key], cb.players[i], i]).filter(([c, p, i]) => !run.online || i === run.myMi);
+    else pairs = [[profile.chars[heroKey], cb.players[cb.myMi != null ? cb.myMi : 0]]];
+    for (const [c, p] of pairs) if (c && c.hardcore && p && (p.dead || p.hp <= 0)) {
+      c.hardcore = false; c.hcFell = { at: Date.now(), where: run ? `${run.mapName} +${run.level}` : cb.raid ? `${CB.RAID_NAMES[cb.raidMap] || 'a raid'} +${cb.level}` : '', progress: CBHub.progressScore(c) };
+      if (typeof sysChat === 'function') sysChat(`${c.name} has fallen. Their hardcore life is over: they live on as a normal hero.`);
+      c.hcNotice = true;
+    }
+    if (pairs.some(([c]) => c && c.hcFell && c.hcNotice)) { save(); if (typeof publishAllHeroes === 'function') publishAllHeroes(true).catch(() => {}); }
+  }
   function combatOver() {
-    hidePeeks();
+    hidePeeks(); hardcoreCheck();
     if (cb && cb.duel) { if (!cb._shown) { cb._shown = true; duelOver(); } return; }
     if (cb && cb.raid) { if (!cb._shown) { cb._shown = true; raidOver(); } return; }
     if (cb && cb.practice) { if (!cb._shown) { cb._shown = true; const p = cb.players[0], dmg = cb.enemies.reduce((t, e) => t + (e.maxHp - Math.max(0, e.hp)), 0);

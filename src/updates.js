@@ -2,6 +2,9 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Feature', 'Hardcore heroes: tick Hardcore when you create a hero. They get one life: the first time a hardcore hero falls in a fight (duels and the training dummy don\'t count) it becomes a normal hero. The Hall of Records has a Hardcore tab: a ladder of living hardcore heroes and a graveyard of the fallen.'],
+      ['Feature', 'The Arena: the old south palisade has a gap now, leading to a sand ring with Arenamaster Kord and the Wager Board. Pin a wager (up to 3 stash items and/or gold), other players answer with offers of their own, and you accept, decline or counter. While a wager or offer is open that hero\'s gear and deck are locked and both sides can see each other\'s hero. Accept and you duel: the winner takes the other stake, a draw gives both back, leaving early forfeits.'],
+      ['Art', 'A statue of Juss stands in the fire plaza. Read the plaque.'],
       ['Feature', 'Creating a hero now happens around a campfire: every class sits at the fire (click one to see its starting decks, with a few Gold and Blue cards you can look forward to on the right). A Shaman sits there too: coming in a future expansion. Your heroes are listed below the fire.'],
       ['Feature', 'Rerolls: every item now has a reroll potential (White 0-1, Green 1-2, Blue 2-3, Purple 3-4; gear you already own got its potential too). At Jeweler Rook, a Reroll Token and one point of potential reroll one affix line of your choice. Get tokens by breaking down codexes you don\'t need (at Rook or in your stash): 3 tokens, plus 1 for every 2 map levels the codex dropped on.'],
       ['Balance', 'Blood Reckoning now heals you for 2x your stored Blood Debt (and spends it) instead of the damage it dealt.'],

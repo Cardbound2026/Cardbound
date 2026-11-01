@@ -154,7 +154,7 @@
       <h3 style="font-size:18px;color:var(--accent);margin-top:10px">From your stash (${fits.length})</h3><div class="list" style="max-height:340px">${choose || '<span class="muted">Nothing in the stash fits this slot.</span>'}</div>
       <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     $('mClose').onclick = closeModal;
-    if ($('mUneq')) $('mUneq').onclick = () => { if (!CBHub.unequip(profile, heroKey, sl)) return toast('Stash is full.'); save(); closeModal(); renderHub(); };
+    if ($('mUneq')) $('mUneq').onclick = () => { if (!CBHub.unequip(profile, heroKey, sl)) return toast(CBHub.arenaLock(profile, heroKey) || 'Stash is full.'); save(); closeModal(); renderHub(); };
     for (const b of $('modalBox').querySelectorAll('[data-eq]')) b.onclick = () => { const r = CBHub.equip(profile, heroKey, b.dataset.eq, sl); if (!r.ok) return toast(r.why); save(); closeModal(); renderHub(); };
     for (const b of $('modalBox').querySelectorAll('[data-salv]')) b.onclick = () => { const sc = $('modalBox').querySelector('.list') ? $('modalBox').querySelector('.list').scrollTop : 0; const g = CBHub.salvage(profile, b.dataset.salv); if (!g) return; save(); renderHub(); slotPicker(sl); const l = $('modalBox').querySelector('.list'); if (l) l.scrollTop = sc; sysChat(`Salvaged for ${g} gold.`); };
   }

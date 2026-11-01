@@ -51,11 +51,11 @@ function deleteChar(p, key) {
   if (p.last) { if (p.last.cls === key) p.last.cls = Object.keys(p.chars)[0] || ''; if (p.last.party) p.last.party = p.last.party.filter(k => k !== key); }
   return { ok: true };
 }
-function createChar(p, cls, name, deckKey, amuletKey) {
+function createChar(p, cls, name, deckKey, amuletKey, hardcore) {
   if (!CLASSES[cls]) return { ok: false, why: 'Pick a class.' };
   if (Object.keys(p.chars).length >= MAX_HEROES) return { ok: false, why: `You already have ${MAX_HEROES} heroes. Delete one to make room.` };
   const why = nameProblem(name); if (why) return { ok: false, why };
-  const id = uid('h'); p.chars[id] = newChar(cls, name.trim().replace(/\s+/g, ' '), deckKey, amuletKey); p.last.cls = id; return { ok: true, id };
+  const id = uid('h'); p.chars[id] = newChar(cls, name.trim().replace(/\s+/g, ' '), deckKey, amuletKey); if (hardcore) { p.chars[id].hardcore = true; p.chars[id].hcSince = Date.now(); } p.last.cls = id; return { ok: true, id };
 }
 function renameChar(p, cls, name) { const c = p.chars[cls]; if (!c) return { ok: false, why: 'No such hero.' }; const why = nameProblem(name); if (why) return { ok: false, why }; c.name = name.trim().replace(/\s+/g, ' '); return { ok: true }; }
 function char(p, key) { return p.chars[key]; }
@@ -68,7 +68,10 @@ function powerLevel(c) { return Math.round((gearScore(c) + deckLevel(c.deck)) / 
 const STARTER_1H = ['Arming Sword', 'Dirk', 'Ashwood Wand', 'Flanged Mace'];
 const isOneHand = (item) => (item.slot === 'Weapon' || item.slot === 'Off-hand') && (/^1H/.test(item.hands || '') || STARTER_1H.includes(item.name));
 function slotOptions(item) { if (item.slot === 'Ring' || /^Ring/.test(item.slot)) return ['Ring 1', 'Ring 2']; if (isOneHand(item)) return ['Weapon', 'Off-hand']; return [item.slot]; }
+// Nov 1: a hero with a wager on the Arena board (posted or offered) has its gear and deck locked until the wager is settled
+function arenaLock(p, cls) { return p.arena && p.arena.hero === cls ? 'Locked: this hero has a wager at the Arena. Settle or withdraw it first.' : null; }
 function equip(p, cls, itemId, slotWanted) {
+  { const lk = arenaLock(p, cls); if (lk) return { ok: false, why: lk }; }
   const c = char(p, cls), i = p.stash.findIndex(x => x.id === itemId); if (i < 0) return { ok: false, why: 'Not in stash' };
   if (p.stash[i].slot === 'Codex' && p.stash[i].cls && p.stash[i].cls !== c.cls) return { ok: false, why: `Only a ${p.stash[i].cls} can use the ${p.stash[i].name}.` };
   const item = p.stash[i], opts = slotOptions(item);
@@ -85,6 +88,7 @@ function equip(p, cls, itemId, slotWanted) {
   return { ok: true, removed: off };
 }
 function unequip(p, cls, slot) {
+  if (arenaLock(p, cls)) return false;
   const c = char(p, cls), it = c.gear.find(g => g.slot === slot); if (!it) return false;
   if (p.stash.length >= STASH_MAX) return false;
   c.gear = c.gear.filter(g => g !== it); p.stash.unshift(Object.assign({}, it, { slot: /^Ring/.test(slot) ? 'Ring' : slot }));
@@ -110,8 +114,9 @@ function canAdd(c, cardId) {
   if (cap != null && c.deck.filter(x => CARDS[x.key].rarity === r).length >= cap) return { ok: false, why: `Deck already has ${cap} ${r}` };
   return { ok: true };
 }
-function addToDeck(p, cls, cardId) { const c = char(p, cls), k = canAdd(c, cardId); if (!k.ok) return k; const i = c.cards.findIndex(x => x.id === cardId); c.deck.push(c.cards.splice(i, 1)[0]); return { ok: true }; }
+function addToDeck(p, cls, cardId) { { const lk = arenaLock(p, cls); if (lk) return { ok: false, why: lk }; } const c = char(p, cls), k = canAdd(c, cardId); if (!k.ok) return k; const i = c.cards.findIndex(x => x.id === cardId); c.deck.push(c.cards.splice(i, 1)[0]); return { ok: true }; }
 function removeFromDeck(p, cls, cardId) {
+  { const lk = arenaLock(p, cls); if (lk) return { ok: false, why: lk }; }
   const c = char(p, cls); if (c.deck.length <= DECK_MIN) return { ok: false, why: `Deck needs at least ${DECK_MIN} cards` };
   const i = c.deck.findIndex(x => x.id === cardId); if (i < 0) return { ok: false, why: 'Not in deck' };
   c.cards.push(c.deck.splice(i, 1)[0]); return { ok: true };
@@ -121,6 +126,7 @@ function feedXp(target, fodder) { return (CARD_XP[CARDS[fodder.key].rarity] || 1
 function rankCost(card) { const n = (card.rank || 0) + 1, b = RANK_BASE[CARDS[card.key].rarity]; return { xp: n * b, gold: n * b * 5 }; }
 // Feed collection cards (never deck cards) into a target. XP banks on the card; each rank-up also costs gold, paid automatically while you can afford it.
 function feed(p, cls, targetId, fodderIds) {
+  { const lk = arenaLock(p, cls); if (lk && char(p, cls).deck.some(x => x.id === targetId)) return { ok: false, why: lk }; }
   const c = char(p, cls), t = findCard(c, targetId); if (!t) return { ok: false, why: 'No such card' };
   if ((t.rank || 0) >= MAX_RANK) return { ok: false, why: `Already +${MAX_RANK}` };
   let gained = 0;
@@ -171,6 +177,7 @@ function breakCodex(p, itemId) {
 function rerollItem(p, itemId, idx, data, rng) {
   const f = findItem(p, itemId); if (!f) return { ok: false, why: 'Item not found.' }; const it = f.it;
   if (it.slot === 'Codex') return { ok: false, why: 'Codexes cannot be rerolled.' };
+  if (f.where !== 'stash' && p.arena && p.chars[p.arena.hero] === f.where) return { ok: false, why: arenaLock(p, p.arena.hero) };
   if (!(it.rerolls > 0)) return { ok: false, why: 'This item has no rerolls left.' };
   if (!((p.rerollTokens || 0) > 0)) return { ok: false, why: 'You need a Reroll Token (break down a codex).' };
   const r = CB.rerollAffix(data, rng || CB.makeRng((Date.now() % 2147483646) + 1), it, idx); if (!r) return { ok: false, why: 'That line cannot be rerolled.' };
@@ -233,6 +240,6 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk };
 }
 
-const API = { findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);

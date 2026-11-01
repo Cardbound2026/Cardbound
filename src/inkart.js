@@ -98,6 +98,15 @@
       for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { const q = TS / 3, X = x * TS + i * q + (j % 2) * q * .3, Y = y * TS + j * q, v = R(), jt = () => (R() - .5) * q * .18;
         S(g, [[X + 1.5 + jt(), Y + 1.5 + jt()], [X + q - 1.5 + jt(), Y + 1.5 + jt()], [X + q - 1.5 + jt(), Y + q - 1.5 + jt()], [X + 1.5 + jt(), Y + q - 1.5 + jt()]], [v < .5 ? '#47423b' : '#3d3933', '#24211d', '#6a6358'], 1.2 * s, { mass: .4 }); }
     }
+    // arena sand (Nov 1): packed dun sand with scuffs, inked where it meets grass
+    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (at(x, y) === 'a') {
+      const X = x * TS, Y = y * TS; g.fillStyle = (x + y) % 2 ? '#4b3c28' : '#463825'; g.fillRect(X, Y, TS, TS);
+      for (let i = 0; i < 4; i++) { const px = X + R() * TS, py = Y + R() * TS, r = (1.4 + R() * 2) * s; P(g, [[px - r, py], [px, py - r * .7], [px + r, py], [px, py + r * .6]], R() < .5 ? '#5d4b33' : '#33271a', .8 * s); }
+      if (R() < .25) L(g, [[X + R() * TS, Y + R() * TS], [X + R() * TS, Y + R() * TS]], '#2a2016', 1.2 * s);
+      const edge = (x2, y2) => at(x2, y2) !== 'a' && at(x2, y2) !== 'p';
+      if (edge(x, y - 1)) L(g, [[X, Y], [X + TS, Y]], INK, 2.2 * s); if (edge(x, y + 1)) L(g, [[X, Y + TS], [X + TS, Y + TS]], INK, 2.2 * s);
+      if (edge(x - 1, y)) L(g, [[X, Y], [X, Y + TS]], INK, 2.2 * s); if (edge(x + 1, y)) L(g, [[X + TS, Y], [X + TS, Y + TS]], INK, 2.2 * s);
+    }
     // water: slate pool, inked ripples and pale slivers
     for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (at(x, y) === '~') { g.fillStyle = '#0e1820'; g.fillRect(x * TS - 2, y * TS - 2, TS + 4, TS + 4); }
     for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (at(x, y) === '~') { const X = x * TS, Y = y * TS; for (let i = 0; i < 3; i++) { const px = X + R() * TS * .7, py = Y + R() * TS; L(g, [[px, py], [px + 6 * s, py - 2 * s], [px + 12 * s, py]], INK, 1.6 * s); L(g, [[px + 2 * s, py - 3 * s], [px + 8 * s, py - 4 * s]], 'rgba(150,185,205,.35)', 1.2 * s); } }
@@ -197,6 +206,17 @@
       P(g, [[cx - 17 * s, by - 42 * s], [cx - 4 * s, by - 43 * s], [cx - 4 * s, by - 26 * s], [cx - 17 * s, by - 27 * s]], '#d4c6aa', 1 * s);
       P(g, [[cx - 1 * s, by - 40 * s], [cx + 14 * s, by - 40 * s], [cx + 13 * s, by - 29 * s], [cx - 1 * s, by - 30 * s]], '#c2b394', 1 * s);
       P(g, [[cx + 2 * s, by - 27 * s], [cx + 13 * s, by - 26 * s], [cx + 13 * s, by - 19 * s], [cx + 2 * s, by - 19 * s]], '#ddd0b4', 1 * s);
+    } else if (p.kind === 'statue') { // Nov 1: Juss, the first to fall: a stone warrior kneeling on his sword, on a plinth
+      const cx = x0 + TS / 2, by = y0 + TS * .92;
+      const s = TS / 48 * 1.45; // bigger than a person
+      shadow(g, cx, by, 22 * s, 6 * s, .45);
+      S(g, [[cx - 19 * s, by], [cx - 17 * s, by - 12 * s], [cx + 17 * s, by - 12 * s], [cx + 19 * s, by]], STONE, 2 * s, { mass: .45, cuts: 2 });
+      S(g, [[cx - 12 * s, by - 12 * s], [cx - 13 * s, by - 26 * s], [cx - 4 * s, by - 30 * s], [cx + 9 * s, by - 26 * s], [cx + 11 * s, by - 12 * s]], STONE, 1.8 * s, { mass: .5 });
+      S(g, [[cx - 9 * s, by - 28 * s], [cx - 10 * s, by - 46 * s], [cx - 2 * s, by - 52 * s], [cx + 7 * s, by - 46 * s], [cx + 6 * s, by - 28 * s]], STONE, 1.8 * s, { mass: .5, cuts: 2 });
+      S(g, [[cx - 6 * s, by - 52 * s], [cx - 7 * s, by - 61 * s], [cx, by - 66 * s], [cx + 6 * s, by - 61 * s], [cx + 5 * s, by - 52 * s]], STONE, 1.8 * s, { mass: .5 });
+      S(g, [[cx + 10 * s, by - 12 * s], [cx + 10 * s, by - 50 * s], [cx + 13 * s, by - 50 * s], [cx + 13 * s, by - 12 * s]], STONE, 1.4 * s, { mass: .35 });
+      L(g, [[cx + 5 * s, by - 50 * s], [cx + 18 * s, by - 50 * s]], INK, 2.4 * s);
+      L(g, [[cx - 12 * s, by - 6 * s], [cx + 12 * s, by - 6 * s]], '#2a2622', 1.2 * s);
     } else if (p.kind === 'chest') {
       const cx = x0 + TS / 2, by = y0 + TS * .88;
       shadow(g, cx, by, 19 * s, 5 * s, .4);

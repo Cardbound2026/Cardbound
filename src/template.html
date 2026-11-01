@@ -587,6 +587,23 @@ body.aiming { cursor: grabbing; user-select: none; }
 .herocard b { font-family: var(--cf-name); font-weight: 400; font-size: 26px; line-height: 1; }
 .herocard small { color: var(--muted); font-size: 13px; }
 .herocard .play { justify-self: start; margin-top: 4px; }
+.hcbadge { font: 700 11px var(--f-ui); letter-spacing: .06em; text-transform: uppercase; color: #ffb0a0; background: #4a1410; border: 1px solid #a8352a; border-radius: 4px; padding: 1px 6px; vertical-align: middle; } .hcbadge.fell { color: #b8b0a6; background: #2a2623; border-color: #5a524a; }
+.hcpick { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid #6a2a22; border-radius: 6px; background: #1c0f0c; cursor: pointer; align-self: end; } .hcpick small { color: var(--muted); } .hcpick input { accent-color: #c9472f; }
+.arbox, .aroffer, .arpost { background: #15110d; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 0 0 10px; display: grid; gap: 6px; }
+.arbox.mine { border-color: #7a3a2a; box-shadow: inset 3px 0 0 #c9472f; } .arpost.on { border-color: var(--accent); }
+.arbox h4, .aroffer h4 { margin: 0; color: var(--accent); font-size: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; } .arbox h4 .muted { font-size: 13px; font-weight: 400; }
+.aroffer { background: #1b1510; margin: 0; }
+.arofhead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; } .arofhead .chip { margin-left: auto; }
+.arstake { display: grid; gap: 4px; } .arstake > .muted { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; } .argold { color: #e9c98a; font-size: 15px; }
+.arvs { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: start; } .arvsx { font: 22px var(--cf-name); color: #c9472f; align-self: center; }
+@media (max-width: 760px) { .arvs { grid-template-columns: 1fr; } }
+.arnote { margin: 0; color: #d6cab6; font-style: italic; }
+.arposts { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; }
+.arform { display: grid; gap: 6px; border-top: 1px dashed var(--line); padding-top: 8px; } .arform h4 { margin: 0; color: var(--accent); }
+.arpick { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; max-height: 34vh; overflow: auto; }
+.arpi { display: grid; grid-template-columns: auto 1fr; gap: 6px; align-items: start; cursor: pointer; } .arpi input { margin-top: 12px; accent-color: #c9472f; }
+.arsettle { border-radius: 8px; padding: 8px 12px; margin: 6px 0; background: #1c1610; border: 1px solid #5a4a2a; } .arsettle.won { border-color: #4f8f48; } .arsettle.lost { border-color: #a8352a; } .arsettle p { margin: 4px 0 0; }
+.recgrave li { padding: 3px 0; cursor: pointer; color: #b8b0a6; }
 .herocard.new { border-style: dashed; border-top-style: dashed; place-content: center; text-align: center; color: var(--muted); font-size: 16px; }
 .create h3 { font-family: var(--cf-name); font-weight: 400; font-size: 26px; color: var(--accent); margin-bottom: 8px; }
 .classpick { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
@@ -710,7 +727,7 @@ body.aiming { cursor: grabbing; user-select: none; }
           <div class="classpick deckpick" id="deckPick" role="radiogroup" aria-label="Starting deck"></div>
           <h4 class="createstep">Starting amulet <span class="muted">(6 points split between cards drawn each round and mana regen; you can buy the others later from Jeweler Rook in town)</span></h4>
           <div class="amupick" id="amuPick" role="radiogroup" aria-label="Starting amulet"></div>
-          <div class="namerow"><div class="field"><label for="heroName">Name</label><input id="heroName" maxlength="16" autocomplete="off" placeholder="Name your hero"></div><button class="btn primary" id="btnCreate">Create hero</button><button class="btn" id="btnCancelCreate" hidden>Cancel</button></div>
+          <div class="namerow"><div class="field"><label for="heroName">Name</label><input id="heroName" maxlength="16" autocomplete="off" placeholder="Name your hero"></div><label class="hcpick" title="One life: the first time this hero falls in a fight (not duels or the dummy), it becomes a normal hero. Hardcore heroes have their own leaderboard."><input type="checkbox" id="heroHC"> <b>Hardcore</b> <small>one life, own leaderboard</small></label><button class="btn primary" id="btnCreate">Create hero</button><button class="btn" id="btnCancelCreate" hidden>Cancel</button></div>
         </div>
         <aside class="createright" id="createCards" aria-label="Cards this hero can find"></aside>
       </div>
@@ -777,7 +794,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   <div id="secHeroes"><div class="heroes" id="heroes" role="tablist" aria-label="Characters"></div></div>
   <div class="sheetgrid" id="sheetGrid">
     <aside id="secChar"><div class="panel" id="hubChar"></div></aside>
-    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div><div id="hpFriends"></div><div id="hpCodex"></div><div id="hpTest"></div><div id="hpAmu"></div><div id="hpGuild"></div><div id="hpRaid"></div><div id="hpRec"></div></div>
+    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div><div id="hpFriends"></div><div id="hpCodex"></div><div id="hpTest"></div><div id="hpAmu"></div><div id="hpGuild"></div><div id="hpRaid"></div><div id="hpRec"></div><div id="hpArena"></div></div>
   </div>
 </div></div>
 <div class="modal" id="modal" hidden><div class="box" id="modalBox"></div></div>
@@ -1071,7 +1088,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (b.dataset.gsort) { GT.sort = b.dataset.gsort; return renderGearTab(CBHub.char(profile, heroKey)); }
     if (b.dataset.hero) { heroKey = b.dataset.hero; profile.last.cls = heroKey; save(); return renderHub(); }
     if (b.id === 'btnScribe') return openSheet('deck');
-    if (b.dataset.unequip) { if (!CBHub.unequip(profile, heroKey, b.dataset.unequip)) return toast('Stash is full.'); }
+    if (b.dataset.unequip) { if (!CBHub.unequip(profile, heroKey, b.dataset.unequip)) return toast(CBHub.arenaLock(profile, heroKey) || 'Stash is full.'); }
     else if (b.dataset.equip) { const r = CBHub.equip(profile, heroKey, b.dataset.equip, b.dataset.slot); if (!r.ok) return toast(r.why); }
     else if (b.dataset.salvage) CBHub.salvage(profile, b.dataset.salvage);
     else if (b.dataset.breakcx) { const r = CBHub.breakCodex(profile, b.dataset.breakcx); if (!r.ok) return toast(r.why); save(); renderHub(); return toast(`+${r.tokens} Reroll Tokens (you have ${profile.rerollTokens}). Spend them at Jeweler Rook.`); }
@@ -1178,7 +1195,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     setW(UB, (t.xp || 0) / (need(r0) || 1), false); setW(UG, (t.xp || 0) / (need(r0) || 1), false); label(r0, t.xp || 0, 0);
     $('modalBox').querySelector('.feedlist').addEventListener('change', prev);
     $('mClose').onclick = closeModal;
-    $('mFeed').onclick = () => { const ids = [...$('modalBox').querySelectorAll('input:checked')].map(i => i.value); CBHub.feed(profile, heroKey, t.id, ids); save(); closeModal(); renderHub(); };
+    $('mFeed').onclick = () => { const ids = [...$('modalBox').querySelectorAll('input:checked')].map(i => i.value); const fr = CBHub.feed(profile, heroKey, t.id, ids); if (!fr.ok) return toast(fr.why); save(); closeModal(); renderHub(); };
   }
 
   // ---------- history tab
@@ -1257,9 +1274,11 @@ body.aiming { cursor: grabbing; user-select: none; }
   loadLocal();
   // ---------- the town (overworld): grid movement like Pokemon, NPCs open the camp screens
   // Everything is drawn in code: thick dark outlines, muted colors, torchlight over a dark night layer.
-  const MW = 42, MH = 18; // Oct 31: the town grew east (x 26-41) for the Bazaar
+  const MW = 42, MH = 30; // Oct 31: the town grew east (x 26-41) for the Bazaar; Nov 1: and south (y 18-28) for the Arena
   const BAZ = { x: 34, y: 9.5, r: 6.3 }; // the round market square; inside it you can set up shop
   const inBazaar = (x, y) => Math.hypot(x - BAZ.x, y - BAZ.y) <= BAZ.r;
+  const ARN = { x: 20.5, y: 23.5, r: 4.4 }; // the dueling ring south of the old palisade
+  const inArena = (x, y) => y >= 18;
   const TOWN = { running: false, last: 0, t: 0, TS: 48, dpr: 1, cache: null, dark: null, sprites: {}, embers: [] };
   const P = { x: 12, y: 4, dir: 'down', mv: null, path: [], held: [], talkTo: null, step: 0 };
   const STEP_MS = 165;
@@ -1273,7 +1292,11 @@ body.aiming { cursor: grabbing; user-select: none; }
   for (let y = 11; y <= 15; y++) for (let x = 9; x <= 16; x++) if (Math.hypot(x - 12.5, (y - 13) * 1.15) < 3.6) setG(x, y, 'p'); // fire plaza
   for (let y = 11; y <= 12; y++) { setG(5, y, 'p'); setG(6, y, 'p'); setG(19, y, 'p'); setG(20, y, 'p'); }
   // the Bazaar: a palisade with a gap on the main street, then a round cobbled market
-  for (let y = 0; y < MH; y++) if (y !== 9 && y !== 10) setG(25, y, 'w');
+  for (let y = 0; y < 18; y++) if (y !== 9 && y !== 10) setG(25, y, 'w');
+  // the Arena (Nov 1): the old south palisade (row 17) gets a gap at x 17-18; a path leads down to a round sand ring
+  for (let x = 0; x < MW; x++) if (x !== 17 && x !== 18) setG(x, 17, 'w');
+  for (let y = 16; y <= 19; y++) { setG(17, y, 'p'); setG(18, y, 'p'); }
+  for (let y = 18; y < MH - 1; y++) for (let x = 1; x < MW - 1; x++) if (Math.hypot(x - ARN.x, (y - ARN.y) * 1.1) <= ARN.r) setG(x, y, 'a');
   for (let x = 23; x <= 29; x++) { setG(x, 9, 'p'); setG(x, 10, 'p'); }
   for (let y = 1; y < MH - 1; y++) for (let x = 26; x < MW - 1; x++) if (Math.hypot(x - BAZ.x, y - BAZ.y) <= BAZ.r) setG(x, y, 'b');
   for (let y = 15; y <= 16; y++) for (let x = 21; x <= 23; x++) setG(x, y, '~');
@@ -1290,6 +1313,10 @@ body.aiming { cursor: grabbing; user-select: none; }
     { kind: 'wagon', x: 15, y: 1, w: 3, h: 2 },
     { kind: 'fire', x: 12, y: 13, w: 2, h: 1 },
     { kind: 'board', x: 16, y: 12, w: 1, h: 1 },
+    { kind: 'statue', x: 10, y: 11, w: 1, h: 1 }, // Juss, the first to fall
+    { kind: 'arenaboard', x: 14, y: 20, w: 1, h: 1 },
+    ...[0, 1, 2, 3, 4, 5].map(i => { const a = i / 6 * Math.PI * 2 + Math.PI / 6; return { kind: 'torch', x: Math.round(ARN.x + Math.cos(a) * 5.4), y: Math.round(ARN.y + Math.sin(a) * 4.9), w: 1, h: 1 }; }),
+    ...[[3, 20], [6, 25], [2, 27], [9, 19], [31, 20], [35, 24], [38, 27], [28, 26], [33, 19], [12, 27]].map(([x, y]) => ({ kind: 'tree', x, y, w: 1, h: 1, v: (x * 7 + y * 3) % 3 })),
     { kind: 'chest', x: 4, y: 8, w: 1, h: 1 },
     { kind: 'lectern', x: 21, y: 8, w: 1, h: 1 },
     { kind: 'lectern', x: 11, y: 7, w: 1, h: 1 },
@@ -1318,6 +1345,8 @@ body.aiming { cursor: grabbing; user-select: none; }
       lines: ['A guild is a promise: we ride together, we share what we learn.', 'Found one for fifty gold, or bring me an invitation.'] },
     { id: 'jeweler', name: 'Jeweler Rook', x: 22, y: 11, dir: 'left', open: 'amulets', btn: 'Amulets and rerolls', pal: { skin: '#c9a080', hair: '#d8d0c4', chest: '#2e3a4a', trim: '#8fc3ff', legs: '#1f2630', helm: null, cape: '#3a2a4a', weapon: null },
       lines: ['Six points of focus in every pendant. How you split them between cards and mana is up to you.', 'Big spells want mana. Cheap combos want cards. Choose your pendant accordingly.', 'Bring me a codex you have no use for and I will grind it into Reroll Tokens. A token lets me recut one line on a piece of gear.'] },
+    { id: 'arena', name: 'Arenamaster Kord', x: 23, y: 19, dir: 'down', open: 'arena', btn: 'Wagers and duels', pal: { skin: '#b07a58', hair: '#1e1612', chest: '#5a2620', trim: '#c9472f', legs: '#2a1c16', helm: 'helm', helmC: '#7a6a5a', cape: '#3a1612', weapon: 'swordshield', wpnC: '#b0a090' },
+      lines: ['Two fighters, one ring, and something worth losing. Pin your wager on the board.', 'Put up gear or gold. Others answer with what they will risk. Accept, decline or haggle: once it is settled, you fight.', 'Your gear and deck are locked the moment a wager is on the table. No swapping swords mid-bet.'] },
     { id: 'tinker', name: 'Tinker Pip (test)', x: 16, y: 4, dir: 'down', open: 'test', btn: 'Free test goods', pal: { skin: '#d8b090', hair: '#e0802a', chest: '#3a4a2a', trim: '#e0802a', legs: '#2a2418', helm: 'cap', helmC: '#e0802a', cape: null, weapon: 'hammer' },
       lines: ['Testing, testing! Every card, every codex, free. Don\'t tell the merchants.'] },
     { id: 'dummy', name: 'Training Dummy', x: 18, y: 15, dir: 'down', fixed: true, open: 'dummy', btn: 'Practice on it', pal: { skin: '#cdb47a', hair: '#d9b44a', chest: '#7a5a34', trim: '#d9b44a', legs: '#6a4c2a', helm: 'cap', helmC: '#4a3826', cape: null, weapon: null },
@@ -1372,6 +1401,8 @@ body.aiming { cursor: grabbing; user-select: none; }
       g.fillStyle = '#2c2925'; g.fillRect(x * TS, y * TS, TS, TS);
       for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { const v = R(); rrect(g, x * TS + i * TS / 3 + 1.5 + (j % 2) * 3, y * TS + j * TS / 3 + 1.5, TS / 3 - 3, TS / 3 - 3, 3, v < 0.33 ? '#45403a' : v < 0.66 ? '#3d3833' : '#4a443d'); }
     }
+    // arena sand
+    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'a') { g.fillStyle = (x + y) % 2 ? '#4a3b28' : '#463826'; g.fillRect(x * TS, y * TS, TS, TS); for (let i = 0; i < 5; i++) circ(g, x * TS + R() * TS, y * TS + R() * TS, 1 + R() * 1.5, R() < .5 ? '#5a4932' : '#36291b'); }
     // water
     for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === '~') { rrect(g, x * TS - 3, y * TS - 3, TS + 6, TS + 6, 10, '#101c25'); }
     for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === '~') { g.fillStyle = '#16293a'; g.fillRect(x * TS, y * TS, TS, TS); g.strokeStyle = 'rgba(140,180,210,.18)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x * TS + 8, y * TS + 16); g.lineTo(x * TS + 24, y * TS + 16); g.moveTo(x * TS + 20, y * TS + 32); g.lineTo(x * TS + 38, y * TS + 32); g.stroke(); }
@@ -1464,6 +1495,16 @@ body.aiming { cursor: grabbing; user-select: none; }
       rrect(g, cx - 3 * s, by - 34 * s, 6 * s, 34 * s, 2, '#3b2a1c', 1.6);
       rrect(g, cx - 22 * s, by - 44 * s, 44 * s, 16 * s, 3, '#6a4a2a', 1.8);
       g.fillStyle = '#f0d9a8'; g.font = `700 ${Math.round(10 * s)}px "Barlow Semi Condensed", sans-serif`; g.textAlign = 'center'; g.fillText('BAZAAR \u2192', cx, by - 32.5 * s);
+    } else if (p.kind === 'statue') {
+      const cx = x0 + TS / 2, by = y0 + TS * 0.92;
+      rrect(g, cx - 18 * s, by - 12 * s, 36 * s, 12 * s, 2, '#55524d', 1.6);
+      rrect(g, cx - 7 * s, by - 46 * s, 14 * s, 34 * s, 4, '#6a6660', 1.6); circ(g, cx, by - 52 * s, 7 * s, '#6a6660', 1.6);
+      rrect(g, cx + 6 * s, by - 62 * s, 3 * s, 46 * s, 1, '#7a766f', 1.2);
+    } else if (p.kind === 'arenaboard') {
+      const cx = x0 + TS / 2, by = y0 + TS * 0.9;
+      rrect(g, cx - 3 * s, by - 46 * s, 6 * s, 46 * s, 1, '#3b2a1c', 1.4);
+      rrect(g, cx - 20 * s, by - 46 * s, 40 * s, 24 * s, 2, '#5a2620', 2);
+      g.fillStyle = '#e9c98a'; g.font = `700 ${Math.round(9 * s)}px "Barlow Semi Condensed", sans-serif`; g.textAlign = 'center'; g.fillText('WAGERS', cx, by - 31 * s);
     } else if (p.kind === 'board') {
       const cx = x0 + TS / 2, by = y0 + TS * 0.9;
       rrect(g, cx - 18 * s, by - 18 * s, 4 * s, 18 * s, 1, '#3b2a1c', 1.4); rrect(g, cx + 14 * s, by - 18 * s, 4 * s, 18 * s, 1, '#3b2a1c', 1.4);
@@ -1683,8 +1724,8 @@ body.aiming { cursor: grabbing; user-select: none; }
     } else if (P.held.length) tryStep(P.held[P.held.length - 1]);
     updatePrompt(); updateShopBtn();
   }
-  function facing() { const [dx, dy] = DIRS[P.dir]; return NPCS.find(n => n.x === P.x + dx && n.y === P.y + dy) || PROPS.find(p => p.kind === 'chest' && p.x === P.x + dx && p.y === P.y + dy) || PROPS.find(p => p.kind === 'wagon' && P.x + dx >= p.x && P.x + dx < p.x + p.w && P.y + dy >= p.y && P.y + dy < p.y + p.h) || PROPS.find(p => p.kind === 'board' && p.x === P.x + dx && p.y === P.y + dy); }
-  function interactTarget() { const f = facing(); if (!f) return null; if (f.name) return f; if (f.kind === 'chest') return NPCS[0]; if (f.kind === 'wagon') return NPCS.find(n => n.id === 'wagon'); if (f.kind === 'board') return BOARD; return null; }
+  function facing() { const [dx, dy] = DIRS[P.dir]; return NPCS.find(n => n.x === P.x + dx && n.y === P.y + dy) || PROPS.find(p => p.kind === 'chest' && p.x === P.x + dx && p.y === P.y + dy) || PROPS.find(p => p.kind === 'wagon' && P.x + dx >= p.x && P.x + dx < p.x + p.w && P.y + dy >= p.y && P.y + dy < p.y + p.h) || PROPS.find(p => TALK_PROPS.includes(p.kind) && p.x === P.x + dx && p.y === P.y + dy); }
+  function interactTarget() { const f = facing(); if (!f) return null; if (f.name) return f; if (f.kind === 'chest') return NPCS[0]; if (f.kind === 'wagon') return NPCS.find(n => n.id === 'wagon'); if (TALK_PROPS.includes(f.kind)) return propNpc(f); return null; }
   let lastPrompt = '';
   function updatePrompt() {
     const n = interactTarget(); const txt = n && !townBusy() ? `<kbd>Space</kbd> Talk to ${esc(n.name)}` : '';
@@ -1707,7 +1748,8 @@ body.aiming { cursor: grabbing; user-select: none; }
     // clicking near an NPC (or on its head, which overlaps the tile above) counts
     const op = typeof SOC !== 'undefined' && [...SOC.others.values()].find(o => { const q = otherPos(o); return Math.round(q.x) === tx && (Math.round(q.y) === ty || Math.round(q.y) === ty + 1); });
     if (op) { playerMenu(op.uid); return; }
-    const n = NPCS.find(m => m.x === tx && (m.y === ty || m.y === ty + 1)) || (PROPS.find(p => (p.kind === 'wagon' || p.kind === 'chest' || p.kind === 'board') && tx >= p.x && tx < p.x + p.w && ty >= p.y - 1 && ty < p.y + p.h) && interactFor(PROPS.find(p => (p.kind === 'wagon' || p.kind === 'chest' || p.kind === 'board') && tx >= p.x && tx < p.x + p.w && ty >= p.y - 1 && ty < p.y + p.h)));
+    const pp = PROPS.find(p => (p.kind === 'wagon' || p.kind === 'chest' || TALK_PROPS.includes(p.kind)) && tx >= p.x && tx < p.x + p.w && ty >= p.y - 1 && ty < p.y + p.h);
+    const n = NPCS.find(m => m.x === tx && (m.y === ty || m.y === ty + 1)) || (pp && interactFor(pp));
     if (n) {
       if (Math.abs(n.x - P.x) + Math.abs(n.y - P.y) === 1 && !P.mv) { P.dir = n.x > P.x ? 'right' : n.x < P.x ? 'left' : n.y > P.y ? 'down' : 'up'; talk(n); return; }
       const path = bfs(n.x, n.y, true); if (path) { P.path = path; P.talkTo = n; P.target = path.length ? path[path.length - 1] : null; }
@@ -1717,7 +1759,12 @@ body.aiming { cursor: grabbing; user-select: none; }
     const path = bfs(tx, ty, false); if (path) { P.path = path; P.talkTo = null; P.target = { x: tx, y: ty }; }
   });
   const BOARD = { id: 'board', name: 'Hall of Records', fixed: true, x: 16, y: 12, open: 'records', btn: 'Read the records', lines: ['The notice board: who has gone furthest on every road, and which guilds have felled the raid bosses.', 'Names are carved, scratched and painted over each other. Someone has added a crown next to theirs.'] };
-  function interactFor(p) { return p.kind === 'chest' ? NPCS[0] : p.kind === 'wagon' ? NPCS.find(n => n.id === 'wagon') : p.kind === 'board' ? BOARD : NPCS.find(n => n.id === 'chron'); }
+  // Nov 1: the statue of Juss in the fire plaza, and the wager board at the Arena
+  const STATUE = { id: 'statue', name: 'Statue of Juss', fixed: true, x: 10, y: 11, lines: ['Here lies Juss, who was the first into battle and the first to fall.'] };
+  const ARENA_BOARD = { id: 'arenaboard', name: 'Wager Board', fixed: true, x: 14, y: 20, open: 'arena', btn: 'Read the wagers', lines: ['Wagers are pinned here: what each fighter puts up, and what others offer to match it. Both sides\' gear and decks are locked once an offer is on the table.'] };
+  const TALK_PROPS = ['board', 'statue', 'arenaboard'];
+  function propNpc(p) { return p.kind === 'board' ? BOARD : p.kind === 'statue' ? STATUE : p.kind === 'arenaboard' ? ARENA_BOARD : null; }
+  function interactFor(p) { return p.kind === 'chest' ? NPCS[0] : p.kind === 'wagon' ? NPCS.find(n => n.id === 'wagon') : TALK_PROPS.includes(p.kind) ? propNpc(p) : NPCS.find(n => n.id === 'chron'); }
   document.addEventListener('keydown', (ev) => {
     if ($('scrStart').hidden || ev.target.matches('input, select, textarea')) return;
     if (!$('talk').hidden) {
@@ -1762,6 +1809,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     guild: { title: 'Guildmaster Strecks: guilds', show: ['hpGuild'] },
     raid: { title: 'Raid Warden Bagadee: raids', show: ['hpRaid'] },
     records: { title: 'Hall of Records', show: ['hpRec'] },
+    arena: { title: 'The Arena: wagers', show: ['hpArena'] },
   };
   function talk(n) {
     P.held = []; P.path = []; P.target = null;
@@ -1776,7 +1824,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   function openSheet(kind) {
     const k = SHEETS[kind]; if (k.gtab) GT.tab = k.gtab; renderHub();
     $('sheetTitle').textContent = k.title;
-    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends', 'hpCodex', 'hpTest', 'hpAmu', 'hpGuild', 'hpRaid', 'hpRec']) $(id).hidden = !k.show.includes(id);
+    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends', 'hpCodex', 'hpTest', 'hpAmu', 'hpGuild', 'hpRaid', 'hpRec', 'hpArena']) $(id).hidden = !k.show.includes(id);
     $('sheetGrid').classList.toggle('solo', !k.show.includes('secChar'));
     $('sheet').hidden = false; $('sheet').dataset.kind = kind; fitCards($('sheet')); $('sheetClose').focus();
     if (kind === 'friends') { renderFriendsTab(); loadFriends(); }
@@ -1786,6 +1834,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (kind === 'guild') { renderGuild(); guildLoad(); }
     if (kind === 'raid') renderRaid();
     if (kind === 'records') { renderRecords(); loadRecords(); }
+    if (kind === 'arena') renderArena();
   }
   // body classes for "a big window is open" (the chat box floats beside it)
   for (const [id, cls] of [['sheet', 'sheetopen'], ['modal', 'modalopen']]) { const el = $(id), sync = () => document.body.classList.toggle(cls, !el.hidden && !$('scrStart').hidden); new MutationObserver(sync).observe(el, { attributes: true, attributeFilter: ['hidden'] }); }
@@ -1800,7 +1849,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   function renderTownBar() {
     if (!profile.chars[heroKey]) return;
     const c = CBHub.char(profile, heroKey);
-    $('tbHero').innerHTML = `<b style="color:${CC[c.cls]}">${esc(c.name || c.cls)}</b> <span class="muted">${c.cls}</span>`;
+    $('tbHero').innerHTML = `<b style="color:${CC[c.cls]}">${esc(c.name || c.cls)}</b> <span class="muted">${c.cls}</span>${c.hardcore ? ' <span class="hcbadge">Hardcore</span>' : ''}`;
     $('tbPower').textContent = `Power ${CBHub.powerLevel(c)} · gear ${CBHub.gearScore(c)} · deck ${CB.deckLevel(c.deck)}`;
     $('tbGold').textContent = `Gold ${profile.gold}`;
     renderCodexBar();
@@ -1823,6 +1872,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 /*RAID*/
 /*RECORDS*/
 /*BAZAAR*/
+/*ARENA*/
 /*UPDATES*/
 /*CODEX*/
 /*TALENTSUI*/
@@ -1865,7 +1915,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   let createCls = null;
   function renderTitle() {
     const keys = heroKeys(), chars = keys.map(k => profile.chars[k]);
-    $('heroList').innerHTML = keys.map(k => { const c = profile.chars[k]; return `<div class="herocard" style="--cc:${CC[c.cls]}"><b>${esc(c.name)}</b><small>${c.cls} &middot; Power ${CBHub.powerLevel(c)} &middot; ${c.runs} run${c.runs === 1 ? '' : 's'}${c.bossKills ? ` &middot; ${c.bossKills} boss kill${c.bossKills === 1 ? '' : 's'}` : ''}</small><div class="row" style="display:flex;gap:6px;align-items:center"><button class="btn primary play" data-play="${k}">Enter Emberwatch</button><button class="pilebtn" data-delhero="${k}" title="Delete this hero">Delete</button></div></div>`; }).join('')
+    $('heroList').innerHTML = keys.map(k => { const c = profile.chars[k]; return `<div class="herocard" style="--cc:${CC[c.cls]}"><b>${esc(c.name)}${c.hardcore ? ' <span class="hcbadge">Hardcore</span>' : c.hcFell ? ' <span class="hcbadge fell" title="Fell as a hardcore hero">Fallen</span>' : ''}</b><small>${c.cls} &middot; Power ${CBHub.powerLevel(c)} &middot; ${c.runs} run${c.runs === 1 ? '' : 's'}${c.bossKills ? ` &middot; ${c.bossKills} boss kill${c.bossKills === 1 ? '' : 's'}` : ''}</small><div class="row" style="display:flex;gap:6px;align-items:center"><button class="btn primary play" data-play="${k}">Enter Emberwatch</button><button class="pilebtn" data-delhero="${k}" title="Delete this hero">Delete</button></div></div>`; }).join('')
       ;
     $('heroHead').hidden = !chars.length;
     openCreate(true);
@@ -1965,9 +2015,9 @@ body.aiming { cursor: grabbing; user-select: none; }
     zoom.innerHTML = `<div class="zoomin">${cardBox(c, 300)}<p>${esc(c.rarity)} ${esc(c.cls)} card &middot; click anywhere to close</p></div>`; zoom.hidden = false; fitCards(zoom); requestAnimationFrame(() => fitCards(zoom)); });
   const doCreate = () => {
     if (!createCls) { $('createMsg').textContent = 'Pick a class.'; return; }
-    const r = CBHub.createChar(profile, createCls, $('heroName').value, createDeck, createAmu);
+    const r = CBHub.createChar(profile, createCls, $('heroName').value, createDeck, createAmu, $('heroHC').checked);
     if (!r.ok) { $('createMsg').textContent = r.why; return; }
-    heroKey = r.id; $('heroName').value = ''; createCls = null; save(); renderHub(); show('start'); saveCard();
+    heroKey = r.id; $('heroName').value = ''; $('heroHC').checked = false; createCls = null; save(); renderHub(); show('start'); saveCard();
   };
   $('btnCreate').onclick = doCreate; $('heroName').addEventListener('keydown', (e) => { if (e.key === 'Enter') doCreate(); });
   $('btnCancelCreate').onclick = () => { createCls = null; renderCamp(); renderCreateChoices(); };
@@ -2715,12 +2765,26 @@ body.aiming { cursor: grabbing; user-select: none; }
   function toResults() { closeModal(); show('map'); renderMap(true); }
   function deathScreen() {
     render();
-    modal(`<h2 class="loss">${run.solo ? 'You fall' : 'The party falls'}</h2><p>${run.solo ? 'You died' : 'Everyone died'} in round ${cb.round}. The loot sack is lost; your equipped gear and deck are safe.</p><p class="muted">Close this to read the combat log and the damage meter. The Results button above the fight takes you on.</p>
+    modal(`<h2 class="loss">${run.solo ? 'You fall' : 'The party falls'}</h2><p>${run.solo ? 'You died' : 'Everyone died'} in round ${cb.round}. The loot sack is lost; your equipped gear and deck are safe.</p>${run.members.some(m => { const c = profile.chars[m.key]; return c && c.hcNotice; }) ? `<p class="loss"><b>Hardcore:</b> ${run.members.map(m => profile.chars[m.key]).filter(c => c && c.hcNotice).map(c => esc(c.name)).join(', ')} fell, so the hardcore life is over: they play on as normal heroes.</p>` : ''}<p class="muted">Close this to read the combat log and the damage meter. The Results button above the fight takes you on.</p>
       <div class="row"><button class="btn primary" id="mRes">See the results</button><button class="btn" id="mClose">Look at the fight</button></div>`);
     $('mRes').onclick = toResults; $('mClose').onclick = closeModal;
   }
+  // Nov 1: hardcore heroes have one life. Falling in any fight except a duel or the dummy turns them into normal heroes
+  function hardcoreCheck() {
+    if (!cb || cb.duel || cb.practice || cb._hcDone) return; cb._hcDone = true;
+    for (const c of Object.values(profile.chars)) delete c.hcNotice;
+    let pairs;
+    if (run && run.members) pairs = run.members.map((m, i) => [profile.chars[m.key], cb.players[i], i]).filter(([c, p, i]) => !run.online || i === run.myMi);
+    else pairs = [[profile.chars[heroKey], cb.players[cb.myMi != null ? cb.myMi : 0]]];
+    for (const [c, p] of pairs) if (c && c.hardcore && p && (p.dead || p.hp <= 0)) {
+      c.hardcore = false; c.hcFell = { at: Date.now(), where: run ? `${run.mapName} +${run.level}` : cb.raid ? `${CB.RAID_NAMES[cb.raidMap] || 'a raid'} +${cb.level}` : '', progress: CBHub.progressScore(c) };
+      if (typeof sysChat === 'function') sysChat(`${c.name} has fallen. Their hardcore life is over: they live on as a normal hero.`);
+      c.hcNotice = true;
+    }
+    if (pairs.some(([c]) => c && c.hcFell && c.hcNotice)) { save(); if (typeof publishAllHeroes === 'function') publishAllHeroes(true).catch(() => {}); }
+  }
   function combatOver() {
-    hidePeeks();
+    hidePeeks(); hardcoreCheck();
     if (cb && cb.duel) { if (!cb._shown) { cb._shown = true; duelOver(); } return; }
     if (cb && cb.raid) { if (!cb._shown) { cb._shown = true; raidOver(); } return; }
     if (cb && cb.practice) { if (!cb._shown) { cb._shown = true; const p = cb.players[0], dmg = cb.enemies.reduce((t, e) => t + (e.maxHp - Math.max(0, e.hp)), 0);

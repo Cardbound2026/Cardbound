@@ -59,7 +59,7 @@
     if (go.kind === 'duel') {
       run = null;
       cb = new CB.Combat({ duel: true, party: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, uid: s.uid, talents: s.talents })), seed: go.seed, data: DATA });
-      cb.myMi = S.mi; startCombatUI();
+      cb.myMi = S.mi; if (typeof arenaDuelBegan === 'function') arenaDuelBegan(go); startCombatUI();
     } else if (go.kind === 'raid') {
       run = null; const bk = CB.raidBoss(DATA, go.map);
       cb = new CB.Combat({ raid: true, party: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, uid: s.uid, talents: s.talents })), enemies: [bk], level: go.level, seed: go.seed, data: DATA });
@@ -304,6 +304,7 @@
         NET.duelIn.push({ from: p.from, name: p.name, cls: p.cls }); sysChat(`${p.name} challenges you to a duel.`); renderSocial(); return;
       }
       case 'plan': { if (!S || p.sid !== S.sid || p.from !== S.host || !run) return; run.plan = { A: Array.isArray(p.A) ? p.A.filter(k => run.map.nodes[k]) : [], B: Array.isArray(p.B) ? p.B.filter(k => run.map.nodes[k]) : [] }; if (!$('scrMap').hidden) renderMap(); return; }
+      case 'ar-offer': case 'ar-withdraw': case 'ar-decline': case 'ar-counter': case 'ar-accept': case 'ar-go': case 'ar-closed': case 'ar-look': case 'ar-hero': arenaIn(p); return;
       case 'insp-req': case 'insp': case 'tr-ask': case 'tr-ans': case 'tr-offer': case 'tr-acc': case 'tr-cancel': gearNetIn(p); return;
       case 'duel-answer': {
         if (p.to !== SOC.me || !NET.duelOut || NET.duelOut !== p.from) return;
@@ -334,7 +335,8 @@
     const S = NET.s, me = cb.players[cb.myMi], won = cb.winner === me;
     const c = profile.chars[heroKey]; if (c && S && !S.counted) { S.counted = true; c.duels = c.duels || { w: 0, l: 0 }; if (won) c.duels.w++; else c.duels.l++; save(); }
     const foe = cb.players.find(p => p !== me);
-    modal(`<h2 class="${won ? '' : 'loss'}">${won ? 'Victory' : cb.winner ? 'Defeat' : 'Draw'}</h2><p>${won ? `You beat ${esc(foe.name)} in ${cb.round} rounds.` : cb.winner ? `${esc(cb.winner.name)} wins in ${cb.round} rounds.` : 'Nobody is left standing.'} Duels are for glory: nobody loses gear, gold or HP.</p>
+    const wager = typeof arenaSettle === 'function' ? arenaSettle(foe, won ? 'won' : cb.winner ? 'lost' : 'draw') : null;
+    modal(`<h2 class="${won ? '' : 'loss'}">${won ? 'Victory' : cb.winner ? 'Defeat' : 'Draw'}</h2><p>${won ? `You beat ${esc(foe.name)} in ${cb.round} rounds.` : cb.winner ? `${esc(cb.winner.name)} wins in ${cb.round} rounds.` : 'Nobody is left standing.'} ${wager ? '' : 'Duels are for glory: nobody loses gear, gold or HP.'}</p>${wager || ''}
       <dl class="kv"><dt>Your duel record</dt><dd>${c && c.duels ? c.duels.w + ' won, ' + c.duels.l + ' lost' : '-'}</dd></dl>
       <div class="row"><button class="btn primary" id="mNew">Back to Emberwatch</button><button class="btn" id="mClose">Look at the fight</button></div>`);
     $('mNew').onclick = backToTown; $('mClose').onclick = closeModal;
