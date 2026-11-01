@@ -1293,7 +1293,7 @@ function install(K) {
   W('shadow_embrace', 'Shadow Embrace', 'Blue', 'Skill', 20, 'self', 'Shadow', 'Heal every hero 12 HP. You gain 8 Absorb.', (cb) => { healAll(cb, 12, 'Shadow Embrace'); cb.gainDef(8); }, { heal: 12, def: 8 });
 
   // ================= Gold =================
-  W('soul_beacon', 'Soul Beacon', 'Gold', 'Skill', 10, 'enemy', 'Shadow', 'Deal 6 Shadow damage and place your Soul Beacon on the target: until it dies, damage any hero deals to it heals every hero for 10% of that damage.', (cb, t, p) => { const e = tgtOf(cb, t); beacon(cb, p, e, 10); if (e) cb.hit(e, 6, 'Soul Beacon'); }, { dmg: 6, beacon: 1 });
+  W('soul_beacon', 'Soul Beacon', 'Gold', 'Skill', 10, 'enemy', 'Shadow', 'Deal 6 Shadow damage and place your Soul Beacon on the target: until it dies, damage any hero deals to it heals every hero for 10% of that damage. Exhaust.', (cb, t, p) => { const e = tgtOf(cb, t); beacon(cb, p, e, 10); if (e) cb.hit(e, 6, 'Soul Beacon'); }, { dmg: 6, beacon: 1 }, { exhaust: true });
   W('summon_ruin_fiend', 'Summon Ruin Fiend', 'Gold', 'Skill', 30, 'self', 'Shadow', 'Summon a Ruin Fiend for 2 turns: at the end of each of your turns it deals 16 Shadow damage to the enemy with the most HP.', sum('ruin'), { summon: 1 });
   W('chaos_bolt', 'Chaos Bolt', 'Gold', 'Skill', 30, 'enemy', 'Shadow', 'Deal 38 Shadow damage with +50% crit chance.', (cb, t, p) => { p.turn.critPlus = (p.turn.critPlus || 0) + 50; D_(cb, t, 38, 'Chaos Bolt'); p.turn.critPlus -= 50; }, { dmg: 38 });
   W('doom', 'Doom', 'Gold', 'Skill', 20, 'enemy', 'Shadow', 'Curse: in 2 rounds, the target takes 55 Shadow damage (Intelligence counts when you cast it). Exhaust.', (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const n = Math.round(55 * cb.rkm('dmg') * (1 + (p.intelligence + (p.intTurn || 0)) / 100)); cb.later.push({ round: cb.round + 2, src: p.id, e: e.id, n, label: 'Doom' }); say(cb, `Doom gathers over ${e.name}: ${n} Shadow damage in 2 rounds.`); }, { curse: 1, dmg: 55 }, { exhaust: true });
@@ -5868,8 +5868,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793559415981';
-  const CB_BUILD = 'cba0b0b214'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793561274310';
+  const CB_BUILD = 'ce9f753d5d'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -6928,6 +6928,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Balance', 'Soul Beacon now Exhausts.'],
+      ['Fix', 'A card being dragged could get stuck in the middle of the screen if you right-clicked (or switched windows) mid-drag. Right-click, Esc or leaving the window now cancels the drag and puts the card back in your hand.'],
       ['Fix', 'Warlock demons now show up in fights: each one stands beside its Warlock with its own HP bar and turns left, and they appear in the turn order right after their Warlock (that is when they act).'],
       ['Fix', 'Enemy nameplates: the Deck counter sits beside the HP bar and statuses get their own row, so a status like Feared no longer covers the Deck button.'],
       ['Fix', 'Saves no longer get overwritten between browsers. Before, a browser with old progress could look "newest" just by being opened, overwrite your account, and then wipe the good progress in your other browser when it signed in. Now every save knows which account version it came from: a browser only uploads if the account hasn\'t moved on, picks up the account\'s progress when it has nothing new of its own, and if both have new progress it asks you which to keep.'],
@@ -9629,13 +9631,27 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   }
   function liveD(c, tgt) { const p = hero(), d0 = cb.card(c), ec = d0.cost != null ? cb.costOf(p, d0, c) : null; return Object.assign(Object.create(d0), { cost: ec != null ? ec : d0.cost, text: cb.liveText(p, d0, tgt || null) }); }
   let drag = null, eatClick = false;
+  // a drag can be cut short (right-click menu, alt-tab, touch cancel, Esc): drop it without playing and clear every ghost card
+  function cancelDrag() {
+    const D = drag; drag = null;
+    for (const g of document.querySelectorAll('.dragghost')) g.remove();
+    for (const x of document.querySelectorAll('.hand .dragging')) x.classList.remove('dragging');
+    document.body.classList.remove('aiming');
+    for (const x of document.querySelectorAll('.droptgt')) x.classList.remove('droptgt', 'dropover', 'allytgt');
+    if (D && D.moved && cb) render();
+  }
+  for (const evn of ['pointercancel', 'contextmenu']) document.addEventListener(evn, (ev) => { if (drag) { if (evn === 'contextmenu') ev.preventDefault(); cancelDrag(); } });
+  window.addEventListener('blur', () => { if (drag) cancelDrag(); });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && drag) { cancelDrag(); ev.cbHandled = true; } }, true);
   $('hand').addEventListener('pointerdown', (ev) => {
+    if (drag || document.querySelector('.dragghost')) cancelDrag(); // a drag that never finished
     if (ev.button !== 0 || !cb) return; const b = ev.target.closest('.card, .cf'); if (!b || b.disabled || busy) return;
     const c = hero().hand.find(x => x.uid === b.dataset.uid); if (!c) return;
     drag = { c, b, x0: ev.clientX, y0: ev.clientY, moved: false, tgt: null, armed: false };
   });
   document.addEventListener('pointermove', (ev) => {
-    if (!drag) return; const D = drag, d = cb.card(D.c);
+    if (!drag) return; if (!cb) { cancelDrag(); return; }
+    const D = drag, d = cb.card(D.c);
     if (!D.moved) { if (Math.hypot(ev.clientX - D.x0, ev.clientY - D.y0) < 10) return; D.moved = true; selected = null;
       const g = D.ghost = document.createElement('div'); g.className = 'dragghost'; g.innerHTML = cardBox(liveD(D.c), 190) || ''; document.body.appendChild(g); fitCards(g);
       D.b.classList.add('dragging'); document.body.classList.add('aiming');
@@ -9648,8 +9664,8 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if (d.target !== 'enemy' && !(d.target === 'ally' && D.tgt)) { const armed = ev.clientY < $('hand').getBoundingClientRect().top - 10; if (armed !== D.armed) { D.armed = armed; D.ghost.classList.toggle('armed', armed); } }
     else D.ghost.classList.toggle('armed', !!D.tgt);
   });
-  document.addEventListener('pointerup', () => {
-    if (!drag) return; const D = drag; drag = null; if (!D.moved) return;
+  document.addEventListener('pointerup', (ev) => {
+    if (!drag) return; if (ev.button !== 0) { cancelDrag(); return; } const D = drag; drag = null; if (!D.moved) return;
     eatClick = true; setTimeout(() => { eatClick = false; }, 0);
     if (D.ghost) D.ghost.remove(); D.b.classList.remove('dragging'); document.body.classList.remove('aiming');
     for (const x of document.querySelectorAll('.droptgt')) x.classList.remove('droptgt', 'dropover', 'allytgt');

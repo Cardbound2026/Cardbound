@@ -2984,13 +2984,27 @@ body.aiming { cursor: grabbing; user-select: none; }
   }
   function liveD(c, tgt) { const p = hero(), d0 = cb.card(c), ec = d0.cost != null ? cb.costOf(p, d0, c) : null; return Object.assign(Object.create(d0), { cost: ec != null ? ec : d0.cost, text: cb.liveText(p, d0, tgt || null) }); }
   let drag = null, eatClick = false;
+  // a drag can be cut short (right-click menu, alt-tab, touch cancel, Esc): drop it without playing and clear every ghost card
+  function cancelDrag() {
+    const D = drag; drag = null;
+    for (const g of document.querySelectorAll('.dragghost')) g.remove();
+    for (const x of document.querySelectorAll('.hand .dragging')) x.classList.remove('dragging');
+    document.body.classList.remove('aiming');
+    for (const x of document.querySelectorAll('.droptgt')) x.classList.remove('droptgt', 'dropover', 'allytgt');
+    if (D && D.moved && cb) render();
+  }
+  for (const evn of ['pointercancel', 'contextmenu']) document.addEventListener(evn, (ev) => { if (drag) { if (evn === 'contextmenu') ev.preventDefault(); cancelDrag(); } });
+  window.addEventListener('blur', () => { if (drag) cancelDrag(); });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && drag) { cancelDrag(); ev.cbHandled = true; } }, true);
   $('hand').addEventListener('pointerdown', (ev) => {
+    if (drag || document.querySelector('.dragghost')) cancelDrag(); // a drag that never finished
     if (ev.button !== 0 || !cb) return; const b = ev.target.closest('.card, .cf'); if (!b || b.disabled || busy) return;
     const c = hero().hand.find(x => x.uid === b.dataset.uid); if (!c) return;
     drag = { c, b, x0: ev.clientX, y0: ev.clientY, moved: false, tgt: null, armed: false };
   });
   document.addEventListener('pointermove', (ev) => {
-    if (!drag) return; const D = drag, d = cb.card(D.c);
+    if (!drag) return; if (!cb) { cancelDrag(); return; }
+    const D = drag, d = cb.card(D.c);
     if (!D.moved) { if (Math.hypot(ev.clientX - D.x0, ev.clientY - D.y0) < 10) return; D.moved = true; selected = null;
       const g = D.ghost = document.createElement('div'); g.className = 'dragghost'; g.innerHTML = cardBox(liveD(D.c), 190) || ''; document.body.appendChild(g); fitCards(g);
       D.b.classList.add('dragging'); document.body.classList.add('aiming');
@@ -3003,8 +3017,8 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (d.target !== 'enemy' && !(d.target === 'ally' && D.tgt)) { const armed = ev.clientY < $('hand').getBoundingClientRect().top - 10; if (armed !== D.armed) { D.armed = armed; D.ghost.classList.toggle('armed', armed); } }
     else D.ghost.classList.toggle('armed', !!D.tgt);
   });
-  document.addEventListener('pointerup', () => {
-    if (!drag) return; const D = drag; drag = null; if (!D.moved) return;
+  document.addEventListener('pointerup', (ev) => {
+    if (!drag) return; if (ev.button !== 0) { cancelDrag(); return; } const D = drag; drag = null; if (!D.moved) return;
     eatClick = true; setTimeout(() => { eatClick = false; }, 0);
     if (D.ghost) D.ghost.remove(); D.b.classList.remove('dragging'); document.body.classList.remove('aiming');
     for (const x of document.querySelectorAll('.droptgt')) x.classList.remove('droptgt', 'dropover', 'allytgt');
