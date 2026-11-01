@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Feature', 'Auto-salvage: in the Loot sack during a run, each item has an Auto-salvage button (and one to mark all White gear). Marked items you bring home are salvaged straight away instead of filling the stash: gear for gold, cards for Ink. Town chat tells you what you got.'],
       ['Balance', 'Strength now increases the Bleed you apply, like Poison: with 50 Strength, a card that applies 10 Bleed applies 15. Bleed cards show the boosted number.'],
       ['Feature', 'Damage over time can crit: the Lv 16 Offense talent of Bloodletter (Hemorrhagic Crits) and Hemorrhage (Arterial Crits) lets your Bleed crit, Venomancer (Virulent Crits) your Poison, and Conflagration (Searing Crits) your Burn. Each tick rolls your crit chance and crit damage. Holy Burn (Sacred Flame) can\'t crit.'],
       ['Balance', 'Codex talents are half as strong: every number on rows Lv 2-8 and Lv 12-18 is halved (rounded, at least 1), including all % damage and flat damage. The Lv 10 mini capstones and the Lv 20 capstone Powers are unchanged.'],

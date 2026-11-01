@@ -105,6 +105,8 @@ body.sheetopen #btnUpdates, body.modalopen #btnUpdates { display: none; }
 .srate { display: grid !important; grid-template-columns: auto 1fr; gap: 0 8px; margin: 6px 0 4px; font-size: 12px; } .srate em { font-style: normal; color: var(--muted); } .srate i { font-style: normal; color: #e4b64a; letter-spacing: 1px; } .srate u { text-decoration: none; color: #4a4036; }
 .sgrow { display: block; margin-top: 4px; color: var(--muted); } .classpick .sgrow b { font: 600 12.5px var(--f-ui); color: var(--text); } .sgrow span { color: var(--muted); }
 .reczoomitem { width: min(420px, 90vw); } .reccardn, .recgear { cursor: zoom-in; }
+.asbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; margin: 0 0 4px; } .asbar .btn { padding: 2px 8px; font-size: 12px; }
+.assack { display: grid; gap: 3px; } .assack .asbtn { justify-self: end; padding: 2px 9px; font-size: 12px; margin-top: -2px; } .assack.on > .item { opacity: .45; } .assack.on .asbtn { color: #f0b36a; }
 .camph { font-size: 17px; margin: 10px 0 4px; color: var(--accent); } .camph .muted { font-size: 13px; font-family: var(--f-ui); } .campsack { max-height: 320px; }
 .stashgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 6px; align-content: start; } .stashgrid > .muted { grid-column: 1 / -1; }
 .item .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
@@ -1915,6 +1917,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     backToTown();
   }
   function backToTown() { closeModal(); cb = null; run = null; if (netOn()) netEnd(); townReturn = true; show('start'); renderHub();
+    if (lastResult && lastResult.salvaged && typeof sysChat === 'function') sysChat(`Auto-salvaged ${lastResult.salvaged} item${lastResult.salvaged === 1 ? '' : 's'}: +${lastResult.salvGold} gold${lastResult.salvInk ? `, +${lastResult.salvInk} Ink` : ''}.`);
     const xg = lastResult && lastResult.xpGain; if (xg && typeof sysChat === 'function') for (const [k, g] of Object.entries(xg)) if (g.xp > 0) { sysChat(`${CB.CODEX_BY_KEY[k].name} codex: +${g.xp} XP${g.to > g.from ? `. Level ${g.to}!${Math.floor(g.to / 2) > Math.floor(g.from / 2) ? ' A new talent row is open: press N.' : ''}` : '.'}`); } if (xg) lastResult.xpGain = null; }
   function leaveRun() {
     if (!run) return closeModal();
@@ -2169,6 +2172,20 @@ body.aiming { cursor: grabbing; user-select: none; }
   const groupEnemyCards = (list) => { const m = new Map(); for (const c of list) { const g = m.get(c.name) || { c, n: 0 }; g.n++; m.set(c.name, g); } return [...m.values()].sort((a, b) => a.c.name.localeCompare(b.c.name)); };
   function cardBox(d, w) { const f = cardFace(d); return f ? `<div class="${cardCls(d)}" style="${cardVars(d)}${w ? ';--cw:' + w + 'px' : ''}" role="img" aria-label="${esc(d.name + ': ' + d.text)}">${f}</div>` : ''; }
 
+  // the loot sack during a run: each item can be marked to be salvaged automatically when the run ends (gear for gold, cards for Ink)
+  function sackRows(m, mi) {
+    if (!m.sack.length) return '<span class="muted">Empty.</span>';
+    const n = m.sack.filter(x => x.autoSalvage).length, whites = m.sack.filter(x => x.kind !== 'card' && x.rarity === 'White');
+    const bar = `<div class="asbar"><span class="muted">${n ? `${n} marked to salvage when you get home` : 'Mark items to salvage them automatically when you get home'}</span>${whites.length ? `<button class="btn" data-asall="${mi}">${whites.every(x => x.autoSalvage) ? 'Unmark' : 'Mark'} all White gear</button>` : ''}</div>`;
+    return bar + m.sack.map((it, i) => [it, i]).reverse().map(([it, i]) => { const v = it.kind === 'card' ? `+${CBHub.inkValue(it)} Ink` : `+${CBHub.salvageValue(it)} gold`;
+      return `<div class="assack ${it.autoSalvage ? 'on' : ''}">${itemHtml(it)}<button class="btn asbtn" data-as="${mi}:${i}" title="${it.autoSalvage ? 'Keep this item' : 'Salvage this automatically when the run ends'}">${it.autoSalvage ? `Salvaging (${v})` : `Auto-salvage (${v})`}</button></div>`; }).join('');
+  }
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-as],[data-asall]'); if (!b || !run) return;
+    if (b.dataset.asall != null) { const m = run.members[+b.dataset.asall]; const w = m.sack.filter(x => x.kind !== 'card' && x.rarity === 'White'), on = !w.every(x => x.autoSalvage); for (const x of w) x.autoSalvage = on; }
+    else { const [mi, i] = b.dataset.as.split(':').map(Number), it = run.members[mi] && run.members[mi].sack[i]; if (it) it.autoSalvage = !it.autoSalvage; }
+    renderMap();
+  });
   function itemHtml(it, extra) {
     if (it.kind === 'card') { const d = CARDS[it.key]; return `<div class="item" data-ilink="${linkKey(it)}" style="--rc:${RC[d.rarity]};grid-template-columns:auto 1fr;align-items:center;column-gap:10px">${cardBox(d, 96)}<div><div class="ih"><b>${esc(d.name)}</b></div><div class="il">${d.rarity} card &middot; ${d.cost} mana</div>${extra || ''}</div></div>`; }
     const nice = (k) => k.replace('Elemental/Holy Damage:', '').replace('Resistance:', '') + (k.startsWith('Elemental') ? ' Damage' : k.startsWith('Resistance:') ? ' Resistance' : '');
@@ -2185,7 +2202,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       <dl class="kv" style="margin-top:6px"><dt>Fights won</dt><dd>${run.fightsWon}</dd><dt>Falls</dt><dd>${run.members.reduce((t, m) => t + m.deaths, 0)}</dd></dl>
       ${run.over ? '<div style="margin-top:8px"><button class="btn primary" id="btnCamp">Return to camp</button></div>' : ''}
       ${run.buffs.length ? '<div class="tags" style="margin-top:6px">' + run.buffs.map(x => `<span class="tag good">${esc(x.name.replace('Shrine of ', ''))}: ${x.fights} fight${x.fights > 1 ? 's' : ''}</span>`).join('') + '</div>' : ''}`;
-    $('pSack').innerHTML = run.members.map(m => `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}'s sack &middot; ${m.gold} gold</div>${m.sack.slice().reverse().map(it => itemHtml(it)).join('') || '<span class="muted">Empty.</span>'}`).join('');
+    $('pSack').innerHTML = run.members.map((m, mi) => `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}'s sack &middot; ${m.gold} gold</div>${run.online && mi !== run.myMi ? m.sack.slice().reverse().map(it => itemHtml(it)).join('') : sackRows(m, mi)}` || '<span class="muted">Empty.</span>').join('');
     $('pGear').innerHTML = run.members.map(m => `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}</div>` + SLOTS.map(sl => { const it = m.gear.find(g => g.slot === sl); return it ? itemHtml(it, `<div class="il">${sl}</div>`) : ''; }).join('')).join('');
     $('pLog').innerHTML = run.log.slice().reverse().map(t => `<div>${esc(t)}</div>`).join('');
   }
@@ -2204,7 +2221,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       <dt>Fights won</dt><dd>${run.fightsWon}</dd></dl>
       ${run.over ? '<div style="margin-top:8px"><button class="btn primary" id="btnCamp">Return to camp</button></div>' : ''}
       ${run.buffs.length ? '<div class="tags" style="margin-top:6px">' + run.buffs.map(x => `<span class="tag good">${esc(x.name.replace('Shrine of ', ''))}: ${x.fights} fight${x.fights > 1 ? 's' : ''}</span>`).join('') + '</div>' : ''}`;
-    $('pSack').innerHTML = run.sack.length ? run.sack.slice().reverse().map(it => itemHtml(it)).join('') : '<span class="muted">Empty. Kills drop gear, cards and gold here. Hover an item to see each roll inside its range.</span>';
+    $('pSack').innerHTML = run.sack.length ? sackRows(run.m0, 0) : '<span class="muted">Empty. Kills drop gear, cards and gold here. Hover an item to see each roll inside its range.</span>';
     $('pGear').innerHTML = SLOTS.map(sl => { const it = run.gear.find(g => g.slot === sl); return it ? itemHtml(it, `<div class="il">${sl}</div>`) : `<div class="item" style="--rc:var(--line)"><span class="muted">${sl}: empty</span></div>`; }).join('');
     $('pLog').innerHTML = run.log.slice().reverse().map(t => `<div>${esc(t)}</div>`).join('');
   }
