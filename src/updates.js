@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Fix', 'Warlock demons now show up in fights: each one stands beside its Warlock with its own HP bar and turns left, and they appear in the turn order right after their Warlock (that is when they act).'],
+      ['Fix', 'Enemy nameplates: the Deck counter sits beside the HP bar and statuses get their own row, so a status like Feared no longer covers the Deck button.'],
       ['Fix', 'Saves no longer get overwritten between browsers. Before, a browser with old progress could look "newest" just by being opened, overwrite your account, and then wipe the good progress in your other browser when it signed in. Now every save knows which account version it came from: a browser only uploads if the account hasn\'t moved on, picks up the account\'s progress when it has nothing new of its own, and if both have new progress it asks you which to keep.'],
       ['Feature', 'Save backups (Menu > Save backups): the version you don\'t pick in a save conflict is kept, plus one backup a day in your account (the newest 30) and the last few versions this browser replaced. Restore any of them with one click.'],
       ['Feature', 'Hardcore heroes: tick Hardcore when you create a hero. They get one life: the first time a hardcore hero falls in a fight (duels and the training dummy don\'t count) it becomes a normal hero. The Hall of Records has a Hardcore tab: a ladder of living hardcore heroes and a graveyard of the fallen.'],

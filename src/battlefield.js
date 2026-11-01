@@ -348,6 +348,9 @@ css.textContent = `
 #scrCombat.bf .stage .unit .figure { position: absolute; left: 0; bottom: calc(var(--fh) * -.02); transform: translateX(-50%); height: auto; min-height: 0; overflow: visible; pointer-events: auto; }
 #scrCombat.bf .stage .unit .figure .inkfig { height: calc(var(--fh) * var(--s, 1)); max-width: none; }
 #scrCombat.bf .stage .unit .figure svg { height: var(--fh); width: auto; max-width: none; }
+#scrCombat.bf .stage .unit .demons { position: absolute; left: calc(var(--fh) * .34); bottom: calc(var(--fh) * -.06); margin: 0; flex-direction: row; z-index: 3; }
+#scrCombat.bf .stage .unit .demon .dfig .dimg { height: calc(var(--fh) * var(--ds)); }
+#scrCombat.bf .stage .unit .demon small { font-size: 9px; }
 #scrCombat.bf .stage .unit.targetable .figure, #scrCombat.bf .stage .unit.targetable .uplate { cursor: crosshair; }
 #scrCombat.bf .stage .uplate { position: absolute; bottom: 0; width: var(--plw, 136px); box-sizing: border-box; pointer-events: auto; padding: 6px 9px 6px 8px; color: #dce1ce; display: grid; gap: 3px; }
 #scrCombat.bf .stage #playerSlot .uplate { right: var(--plate); background: linear-gradient(90deg, #0f1c17e8, #0e1916b5 86%, #0e191600); border-left: 2px solid var(--uc, #b79b6b); border-radius: 3px 0 0 3px; }
@@ -365,10 +368,12 @@ css.textContent = `
 #scrCombat.bf .stage .uintent .intents { min-height: 0; } #scrCombat.bf .stage .uintent .intent { box-shadow: 0 3px 10px #0006; }
 #scrCombat.bf .stage .uplate { grid-template-columns: minmax(0, 1fr) auto; column-gap: 5px; }
 #scrCombat.bf .stage .uplate .uname { grid-column: 1 / -1; } #scrCombat.bf .stage .uplate .tags { grid-column: 1 / -1; } #scrCombat.bf .stage #foes .uplate .tags { grid-column: 2; align-self: center; }
-/* many statuses: the Deck button moves up beside the name and the statuses get the whole bottom row */
-#scrCombat.bf .stage #foes .uplate:has(.tags .tag:nth-child(3)) .uname { grid-column: 1; grid-row: 1; }
-#scrCombat.bf .stage #foes .uplate:has(.tags .tag:nth-child(3)) .deckbtn { grid-column: 2; grid-row: 1; align-self: start; white-space: nowrap; }
-#scrCombat.bf .stage #foes .uplate:has(.tags .tag:nth-child(3)) .tags { grid-column: 1 / -1; justify-content: flex-end; }
+/* foes: the Deck chip sits beside the HP bar and statuses get the whole bottom row, so they never squeeze each other */
+#scrCombat.bf .stage #foes .uplate .uname { grid-column: 1 / -1; grid-row: 1; }
+#scrCombat.bf .stage #foes .uplate .bar { grid-column: 1; grid-row: 2; }
+#scrCombat.bf .stage #foes .uplate .deckbtn { grid-column: 2; grid-row: 2; align-self: center; padding: 0 4px; } #scrCombat.bf .stage #foes .uplate .deckbtn .dword { display: none; }
+#scrCombat.bf .stage #foes .uplate { grid-template-columns: minmax(64px, 1fr) auto; }
+#scrCombat.bf .stage #foes .uplate .tags { grid-column: 1 / -1; grid-row: 3; justify-content: flex-end; } #scrCombat.bf .stage #foes .uplate .tags:empty { display: none; }
 #scrCombat.bf .stage .uplate .bar { grid-column: 1 / -1; align-self: center; }
 #scrCombat.bf .stage #playerSlot .uplate .bar { grid-column: 1 / -1; }
 #scrCombat.bf .stage .uplate .deckbtn .dlong { display: none; } #scrCombat.bf .stage .uplate .deckbtn .dshort { display: inline; }

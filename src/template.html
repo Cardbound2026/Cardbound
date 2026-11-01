@@ -180,6 +180,14 @@ body.sheetopen #btnUpdates, body.modalopen #btnUpdates { display: none; }
 .order .otile.now { transform: translateY(-3px) scale(1.08); border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 18px rgba(214,161,74,.45); opacity: 1; }
 .order .otile.now::after { content: 'NOW'; position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%); background: var(--accent); color: #1a1208; font-size: 9px; font-weight: 800; letter-spacing: .1em; padding: 1px 6px; border-radius: 999px; }
 .order .osep { color: #5a4a3b; font-size: 16px; }
+#scrCombat .order .otile.demon, .order .otile.demon { flex: 0 1 58px; width: 58px; min-width: 30px; padding: 2px 2px 3px; border-color: #6a3a72; background: linear-gradient(#211623, #150f17); margin-left: -2px; }
+.order .otile.demon .ofig { height: 38px; } .order .otile.demon .ofig .dimg { height: 38px; width: auto; } .order .otile.demon .onm { font-size: 11px; color: #f0b6ea; }
+.dimg { transform: scaleX(-1); filter: hue-rotate(250deg) saturate(1.4) brightness(.95) drop-shadow(0 0 4px #b05ad0aa); }
+svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
+.demons { display: flex; align-items: flex-end; justify-content: center; gap: 4px; margin-top: -4px; pointer-events: auto; }
+.demon { display: grid; justify-items: center; gap: 1px; } .demon .dfig .dimg { height: calc(80px * var(--ds)); width: auto; display: block; }
+.demon .dbar { width: 34px; height: 4px; background: #0b0a0c; border: 1px solid #00000088; border-radius: 2px; overflow: hidden; } .demon .dbar i { display: block; height: 100%; background: linear-gradient(90deg, #8a3f8f, #d07ad8); }
+.demon small { font-size: 9px; color: #f0b6ea; background: rgba(12,8,14,.8); padding: 0 4px; border-radius: 3px; white-space: nowrap; }
 .intent .itgt { font-weight: 600; font-size: 11px; margin-left: 2px; opacity: .95; }
 .order .lbl { color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-size: 11px; margin-right: 4px; }
 .order .chip.now { border-color: var(--accent); color: var(--text); background: #3a2c17; }
@@ -2710,8 +2718,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       if (a.drawLess) t.push(`<span class="tag bad">Draws -${a.drawLess}</span>`); if (a.weakNext) t.push(`<span class="tag bad">Next hit -30%</span>`);
       if (a.noHealRound >= cb.round) t.push(`<span class="tag bad">No healing</span>`); if (a.grievous) t.push(`<span class="tag bad">Grievous</span>`); if (a.deathmark) t.push(`<span class="tag bad">Deathmark</span>`);
     }
-    if (a.isPlayer && a.demons && a.demons.length && cb.partySize > 2) t.push(`<span class="tag demon" title="${a.demons.map(dm => `${esc(dm.name)}: ${dm.hp}/${dm.maxHp} HP, ${dm.turns} turns left`).join('; ')}. Single-target attacks can't hit demons; area attacks can.">&#9763;${a.demons.length} demon${a.demons.length > 1 ? 's' : ''}</span>`);
-    else if (a.isPlayer && a.demons && a.demons.length) for (const dm of a.demons) t.push(`<span class="tag demon" title="${esc(dm.name)}: ${dm.hp}/${dm.maxHp} HP, ${dm.turns} turn${dm.turns > 1 ? 's' : ''} left. ${esc((CB.DEMONS[dm.key] || {}).text || '')} Single-target attacks can't hit it; area attacks can.">&#9763;${esc((CB.DEMONS[dm.key] || {}).short || dm.name)} ${dm.hp}&middot;${dm.turns}t</span>`);
+    if (a.isPlayer && a.demons && a.demons.length) t.push(`<span class="tag demon" title="${a.demons.map(dm => `${esc(dm.name)}: ${dm.hp}/${dm.maxHp} HP, ${dm.turns} turns left`).join('; ')}. Single-target attacks can't hit demons; area attacks can.">&#9763;${a.demons.length} demon${a.demons.length > 1 ? 's' : ''}</span>`);
     if (a.isPlayer && a.hot && a.hot.length) t.push(`<span class="tag good">Regrowth ${a.hot.reduce((s, x) => s + x.n, 0)}/turn</span>`);
     for (const [k, l] of [['weak', 'Weak'], ['vulnerable', 'Vuln'], ['bleed', 'Bleed'], ['poison', 'Poison'], ['burn', 'Burn'], ['dread', 'Dread'], ['rot', 'Rot'], ['chill', 'Chill'], ['slow', 'Slow']]) if (a[k]) t.push(`<span class="tag bad">${l} ${a[k]}${k === 'weak' || k === 'vulnerable' ? '%' : ''}</span>`);
     if (a.frozen) t.push(`<span class="tag bad">Frozen</span>`);
@@ -2750,6 +2757,19 @@ body.aiming { cursor: grabbing; user-select: none; }
     for (const [uid, o] of (SOC.online || new Map())) if (uid !== SOC.me && (a.uid ? uid === a.uid : o.name === a.name)) return o.guild || null; // everyone online (town or not)
     return null;
   }
+  // Warlock demons (Nov 1): drawn beside their owner (in front, toward the enemy) and listed in the turn order after them
+  const DEMON_ART = { imp: 'ash_imp', bulwark: 'obsidian_brute', ruin: 'brimstone_warden', temptress: 'shade', hound: 'hellhound_alpha' };
+  const DEMON_SZ = { imp: .55, bulwark: .78, ruin: .72, temptress: .62, hound: .6 };
+  function demonFig(dm) {
+    const k = DEMON_ART[dm.key];
+    if (window.CB_INK && k) return `<img class="dimg" src="img/ink/${k}.webp" alt="" draggable="false">`;
+    return `<svg class="dimg" viewBox="0 0 60 70"><ellipse cx="30" cy="66" rx="18" ry="3" fill="#000" opacity=".4"/><path d="M14 64l4-30c2-12 22-12 24 0l4 30z" fill="#4a2a5e"/><circle cx="30" cy="22" r="11" fill="#5e3a74"/><path d="M20 14l-4-10 8 6M40 14l4-10-8 6" fill="#3a1f4a"/><circle cx="26" cy="22" r="2" fill="#f0b6ea"/><circle cx="34" cy="22" r="2" fill="#f0b6ea"/></svg>`;
+  }
+  function demonsHtml(a) {
+    if (!a.isPlayer || !a.demons || !a.demons.length || a.hp <= 0) return '';
+    return `<div class="demons">${a.demons.map(dm => { const D = CB.DEMONS[dm.key] || {}; return `<div class="demon" style="--ds:${DEMON_SZ[dm.key] || .6}" title="${esc(dm.name)}: ${dm.hp}/${dm.maxHp} HP, ${dm.turns} turn${dm.turns > 1 ? 's' : ''} left. ${esc(D.text || '')}${D.taunt ? '' : ' Single-target attacks can\'t hit it; area attacks can.'}">
+      <div class="dfig">${demonFig(dm)}</div><div class="dbar"><i style="width:${Math.max(0, 100 * dm.hp / dm.maxHp)}%"></i></div><small>${esc(D.short || dm.name)} &middot; ${dm.turns}t</small></div>`; }).join('')}</div>`;
+  }
   function unitHtml(a) {
     const isNow = (cb.raid && a.isPlayer ? cb.canAct(a) : cb.current === a) && !cb.over, targetable = a.hp > 0 && !!selected && ((CARDS[selected.key].target === 'enemy' && (cb.duel ? a.isPlayer && a !== hero() : !a.isPlayer)) || (CARDS[selected.key].target === 'ally' && a.isPlayer && !cb.duel));
     const pct = Math.max(0, 100 * a.hp / a.maxHp), ini = cb.initiative(a);
@@ -2757,10 +2777,10 @@ body.aiming { cursor: grabbing; user-select: none; }
     return `<div class="unit ${isNow ? 'active' : ''} ${a.isPlayer && cb.partySize > 1 && a === viewHero && !isNow ? 'viewing' : ''} ${a.hp <= 0 ? 'dead' : ''} ${targetable ? 'targetable' : ''}" data-id="${a.id}" ${a.tier === 'Boss' ? 'data-boss="1"' : ''} style="--uc:${a.isPlayer ? CC[a.cls] : '#ad7a5c'}" ${targetable ? 'role="button" tabindex="0"' : ''}>
       ${a.isPlayer ? '' : `<div class="uintent"><div class="intents">${intentHtml(a)}</div></div>`}
       <div class="uhead"><b style="color:${a.isPlayer ? CC[a.cls] : '#ead9c4'}">${esc(a.name)}</b>${unitGuild(a) ? `<small>&lt;${esc(unitGuild(a))}&gt;</small>` : ''}</div>
-      <div class="figure">${figure(a)}</div>
+      <div class="figure">${figure(a)}</div>${demonsHtml(a)}
       <div class="uplate"><div class="uname"><b ${a.isPlayer ? `style="color:${CC[a.cls]}"` : ''}>${esc(a.name)}</b><small>${cb.raid && a.isPlayer && a.hp > 0 && !cb.over ? (cb.raidDone && cb.raidDone.has(a.id) ? '<span class="rdone" title="Ended their turn">&#10003; Done</span>' : cb.phase === 'player' ? '<span class="rwait">playing...</span>' : '') : sub}</small></div>
       <div class="bar"><i style="width:${pct}%"></i><span>${a.hp} / ${a.maxHp}</span></div>
-      ${a.isPlayer ? '' : `<button class="pilebtn deckbtn" data-enemy="${a.id}" title="Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}"><span class="dlong">Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}</span><span class="dshort">Deck ${a.hand.length}/${a.drawPile.length}/${a.discard.length}</span></button>`}
+      ${a.isPlayer ? '' : `<button class="pilebtn deckbtn" data-enemy="${a.id}" title="Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}"><span class="dlong">Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}</span><span class="dshort"><span class="dword">Deck </span>${a.hand.length}/${a.drawPile.length}/${a.discard.length}</span></button>`}
       <div class="tags">${(a.isPlayer ? cb.partySize > 2 : cb.foes().length > 2) && !cb.duel ? shortTags(tags(a)) : tags(a)}${cb.duel && a !== hero() ? `<span class="tag">Hand ${a.hand.length} &middot; Mana ${a.mana}</span>` : ''}</div></div></div>`;
   }
   function popups() {
@@ -2794,7 +2814,8 @@ body.aiming { cursor: grabbing; user-select: none; }
     const p = hero(), party = cb.partySize > 1, wh = watchedHero(p);
     $('order').classList.toggle('raid', !!cb.raid && cb.partySize > 4); $('order').classList.toggle('many', cb.order.length > 5 && !(cb.raid && cb.partySize > 4));
     $('order').innerHTML = `<span class="lbl">Turn<br>order</span>` + cb.order.map((id, i) => { const a = cb.actorById(id); const st = a.hp <= 0 ? 'dead' : cb.raid && a.isPlayer ? (cb.raidDone && cb.raidDone.has(a.id) ? 'done' : cb.phase === 'player' && !cb.over ? 'now' : '') : i === cb.turnIndex && !cb.over ? 'now' : i < cb.turnIndex ? 'done' : '';
-      return `${i ? '<span class="osep" aria-hidden="true">&rsaquo;</span>' : ''}<div class="otile ${a.isPlayer ? 'hero' : 'foe'} ${st}" style="--oc:${a.isPlayer ? CC[a.cls] : '#e0b8a8'}" title="${esc(a.name)}: Initiative ${cb.initiative(a)}, HP ${a.hp}/${a.maxHp}"><span class="oini">${cb.initiative(a)}</span>${cb.raid && a.isPlayer && a.hp > 0 && cb.raidDone && cb.raidDone.has(a.id) ? '<span class="ock" title="Ended their turn">&#10003;</span>' : ''}<div class="ofig">${figure(a)}</div><div class="onm">${a.isPlayer && !party ? 'You' : a === p && cb.myMi != null ? 'You' : esc(a.name)}</div><div class="obar"><i style="width:${Math.max(0, 100 * a.hp / a.maxHp)}%"></i></div></div>`; }).join('') + `<span class="round">Round ${cb.round}</span>${run && run.over && cb.over ? '<button class="btn primary" id="btnCResults" style="padding:4px 12px">Results</button>' : run ? '<button class="pilebtn" id="btnCMap" title="Look at the map (M)">Map</button>' : ''}${cb.practice ? '<button class="pilebtn" id="btnCReset" title="Start a fresh fight">Reset</button><button class="pilebtn" id="btnCLeave">Leave</button>' : ''}`;
+      const dt = a.isPlayer && a.hp > 0 && a.demons && a.demons.length ? a.demons.map(dm => `<div class="otile demon ${st === 'done' ? 'done' : ''}" title="${esc(dm.name)} (${esc(a.name)}'s demon): acts at the end of ${esc(a.name)}'s turn. HP ${dm.hp}/${dm.maxHp}, ${dm.turns} turn${dm.turns > 1 ? 's' : ''} left."><div class="ofig">${demonFig(dm)}</div><div class="onm">${esc((CB.DEMONS[dm.key] || {}).short || dm.name)}</div><span class="oini">${dm.turns}t</span></div>`).join('') : '';
+      return `${i ? '<span class="osep" aria-hidden="true">&rsaquo;</span>' : ''}<div class="otile ${a.isPlayer ? 'hero' : 'foe'} ${st}" style="--oc:${a.isPlayer ? CC[a.cls] : '#e0b8a8'}" title="${esc(a.name)}: Initiative ${cb.initiative(a)}, HP ${a.hp}/${a.maxHp}"><span class="oini">${cb.initiative(a)}</span>${cb.raid && a.isPlayer && a.hp > 0 && cb.raidDone && cb.raidDone.has(a.id) ? '<span class="ock" title="Ended their turn">&#10003;</span>' : ''}<div class="ofig">${figure(a)}</div><div class="onm">${a.isPlayer && !party ? 'You' : a === p && cb.myMi != null ? 'You' : esc(a.name)}</div><div class="obar"><i style="width:${Math.max(0, 100 * a.hp / a.maxHp)}%"></i></div></div>${dt}`; }).join('') + `<span class="round">Round ${cb.round}</span>${run && run.over && cb.over ? '<button class="btn primary" id="btnCResults" style="padding:4px 12px">Results</button>' : run ? '<button class="pilebtn" id="btnCMap" title="Look at the map (M)">Map</button>' : ''}${cb.practice ? '<button class="pilebtn" id="btnCReset" title="Start a fresh fight">Reset</button><button class="pilebtn" id="btnCLeave">Leave</button>' : ''}`;
     const mine = cb.duel ? [p] : cb.players, foes = cb.duel ? cb.players.filter(x => x !== p) : cb.enemies;
     { // one shared figure size for heroes and foes, picked from the busier side, so nobody is drawn at a different scale or jumps around mid-fight
       const hc = mine.length, fc = foes.length, hCols = hc <= 5 ? hc : Math.ceil(hc / 2), fCols = fc <= 4 ? fc : Math.ceil(fc / 2), rows = hc > 5 || fc > 4, n = Math.max(hCols, fCols);
