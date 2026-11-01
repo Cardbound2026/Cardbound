@@ -1153,6 +1153,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     { id: 'archivist', name: 'Archivist Casey Jones', x: 10, y: 7, dir: 'down', open: 'codex', btn: 'Open the Compendium', pal: { skin: '#cfa889', hair: '#9c9488', chest: '#3a2a3e', trim: '#b48cd8', legs: '#22182a', helm: 'hood', helmC: '#3a2a3e', cape: null, weapon: 'book' },
       lines: ['Every card, every beast on every road, every scrap of iron worth wearing. It is all written here.', 'Ask before you ride. The Compendium knows what drops where.', 'Looking for a codex for your Codex slot? I keep a page on every one of them.'] },
   ];
+  for (const n of NPCS) n.pal.ink = 'npc_' + n.id; // town art pack key (src/inkart.js)
   for (const n of NPCS) { n.home = n.dir; solid.add(K(n.x, n.y)); }
 
   const LIGHTS = () => {
@@ -1323,7 +1324,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       Rogue: { chest: '#21331e', skin: '#b98d6c', hair: '#141210', legs: '#1b1f19', weapon: 'daggers', cape: '#18231a', helm: 'hood' },
       Mage: { chest: '#202d4c', skin: '#d2ad8c', hair: '#c9c2b2', legs: '#191e2e', weapon: 'staff', cape: '#2a1f44', helm: 'hood' },
       Paladin: { chest: '#5f5a4a', skin: '#caa07e', hair: '#8a6a3a', legs: '#2e2c26', weapon: 'maceshield', cape: '#6a5420' } }[heroKey_];
-    return Object.assign({}, base, { trim: rc('chest') || '#9c968a', helm: R.helm ? (base.helm || 'helm') : base.helm || null, helmC: rc('helm') || '#5a5f66', wpnC: rc('weapon') || '#9c968a', capeTrim: rc('cloak'), bootC: rc('boots'), hero: true });
+    return Object.assign({}, base, { ink: 'hero_' + heroKey_.toLowerCase(), trim: rc('chest') || '#9c968a', helm: R.helm ? (base.helm || 'helm') : base.helm || null, helmC: rc('helm') || '#5a5f66', wpnC: rc('weapon') || '#9c968a', capeTrim: rc('cloak'), bootC: rc('boots'), hero: true });
   }
   // the training dummy: a straw scarecrow on a post, swaying a little
   function drawScarecrow(g, cx, by, s, t) {
@@ -1342,6 +1343,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     poly(g, [[cx - 13 * s + sway, by - 44 * s], [cx + 13 * s + sway, by - 44 * s], [cx + 5 * s + sway, by - 47 * s], [cx + 2 * s + sway, by - 55 * s], [cx - 5 * s + sway, by - 47 * s]], '#4a3826', 1.6); // floppy hat
   }
   function drawChar(g, cx, by, dir, step, pal, s, t) {
+    if (window.CB_INK && pal.ink && CB_INK.town(g, pal.ink, cx, by, dir, step, s, t)) return; // Gothic Ink art pack; the drawn walker below otherwise
     const bob = step ? -1.5 * s : 0, sw = step === 1 ? 1 : step === 2 ? -1 : 0;
     g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, 13 * s, 5 * s, 0, 0, Math.PI * 2); g.fill();
     const side = dir === 'left' ? -1 : dir === 'right' ? 1 : 0;

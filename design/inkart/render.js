@@ -4,7 +4,7 @@
 const { chromium } = require('playwright'); const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..', '..'), OUT = path.join(ROOT, 'public', 'img', 'ink');
 const src = fs.readFileSync(path.join(ROOT, 'src', 'data.js'), 'utf8'); const DATA = JSON.parse(src.slice(src.indexOf('{'), src.lastIndexOf('}') + 1));
-const { HEROES, spec } = require('./looks.js');
+const { HEROES, NPCS, spec } = require('./looks.js');
 const BASE = 220; // image height in px for a normal fighter (shown at half size, so it stays sharp)
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
@@ -36,6 +36,23 @@ const BASE = 220; // image height in px for a normal fighter (shown at half size
         B.draw(c, ${JSON.stringify(s.el)}, ${JSON.stringify(s.o)}); return __fit(cv, ${BASE * size}); })()`);
     }
     save(key, url); manifest.enemies[key] = Math.round(size * 100) / 100; n++;
+  }
+  // town walkers: 4 idle + 6 walk frames per character in one strip, all cropped to one shared box so the feet stay put
+  manifest.town = {};
+  const townLooks = Object.assign({}, ...Object.entries(HEROES).map(([c, l]) => ({ ['hero_' + c.toLowerCase()]: l })), ...Object.entries(NPCS).map(([k, l]) => ({ ['npc_' + k]: l })));
+  for (const [key, look] of Object.entries(townLooks)) {
+    const r = await pg.evaluate(`(() => { const L = ${JSON.stringify(look)}; const next = makeState(); next.art = clone(state.art); next.body = clone(state.body); next.ink = state.ink; next.darkness = state.darkness; next.wear = state.wear;
+      next.faceType = L.face; next.hair = L.hair; next.beard = L.beard; next.mark = L.mark; next.skin = L.face === 'orc' ? SKINS[8] : SKINS[1]; next.hairColor = '#4a4037';
+      for (let i = 0; i < SLOTS.length; i++) next.gear[SLOTS[i]].id = L.items[i]; applyPalette(next, L.scheme, false); state = next; invalidate();
+      const frames = []; for (let i = 0; i < 4; i++) frames.push(motionCompose(state, 360, 'idle', i / 4)); for (let i = 0; i < 6; i++) frames.push(motionCompose(state, 360, 'walk', i / 6));
+      let x0 = 1e9, y0 = 1e9, x1 = 0, y1 = 0; const W = frames[0].width, H = frames[0].height;
+      for (const f of frames) { const d = f.getContext('2d').getImageData(0, 0, W, H).data; for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (d[(y * W + x) * 4 + 3] > 8) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } }
+      // the feet: centre of the lowest drawn rows of the first idle frame
+      const d0 = frames[0].getContext('2d').getImageData(0, 0, W, H).data; let fx = 0, fn = 0; for (let y = y1 - 6; y <= y1; y++) for (let x = 0; x < W; x++) if (d0[(y * W + x) * 4 + 3] > 8) { fx += x; fn++; }
+      const k = 130 / (y1 - y0 + 1), cw = Math.round((x1 - x0 + 1) * k), ch = 130, o = document.createElement('canvas'); o.width = cw * frames.length; o.height = ch; const oc = o.getContext('2d'); oc.imageSmoothingQuality = 'high';
+      frames.forEach((f, i) => oc.drawImage(f, x0, y0, x1 - x0 + 1, y1 - y0 + 1, i * cw, 0, cw, ch));
+      return { url: o.toDataURL('image/webp', 0.88), w: cw, h: ch, ax: Math.round(((fn ? fx / fn : (x0 + x1) / 2) - x0) * k) }; })()`);
+    save('town_' + key, r.url); manifest.town[key] = { w: r.w, h: r.h, ax: r.ax, n: 10 };
   }
   await b.close();
   if (errs.length) { console.log('render errors', errs); process.exit(1); }

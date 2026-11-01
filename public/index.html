@@ -4040,6 +4040,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     { id: 'archivist', name: 'Archivist Casey Jones', x: 10, y: 7, dir: 'down', open: 'codex', btn: 'Open the Compendium', pal: { skin: '#cfa889', hair: '#9c9488', chest: '#3a2a3e', trim: '#b48cd8', legs: '#22182a', helm: 'hood', helmC: '#3a2a3e', cape: null, weapon: 'book' },
       lines: ['Every card, every beast on every road, every scrap of iron worth wearing. It is all written here.', 'Ask before you ride. The Compendium knows what drops where.', 'Looking for a codex for your Codex slot? I keep a page on every one of them.'] },
   ];
+  for (const n of NPCS) n.pal.ink = 'npc_' + n.id; // town art pack key (src/inkart.js)
   for (const n of NPCS) { n.home = n.dir; solid.add(K(n.x, n.y)); }
 
   const LIGHTS = () => {
@@ -4210,7 +4211,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       Rogue: { chest: '#21331e', skin: '#b98d6c', hair: '#141210', legs: '#1b1f19', weapon: 'daggers', cape: '#18231a', helm: 'hood' },
       Mage: { chest: '#202d4c', skin: '#d2ad8c', hair: '#c9c2b2', legs: '#191e2e', weapon: 'staff', cape: '#2a1f44', helm: 'hood' },
       Paladin: { chest: '#5f5a4a', skin: '#caa07e', hair: '#8a6a3a', legs: '#2e2c26', weapon: 'maceshield', cape: '#6a5420' } }[heroKey_];
-    return Object.assign({}, base, { trim: rc('chest') || '#9c968a', helm: R.helm ? (base.helm || 'helm') : base.helm || null, helmC: rc('helm') || '#5a5f66', wpnC: rc('weapon') || '#9c968a', capeTrim: rc('cloak'), bootC: rc('boots'), hero: true });
+    return Object.assign({}, base, { ink: 'hero_' + heroKey_.toLowerCase(), trim: rc('chest') || '#9c968a', helm: R.helm ? (base.helm || 'helm') : base.helm || null, helmC: rc('helm') || '#5a5f66', wpnC: rc('weapon') || '#9c968a', capeTrim: rc('cloak'), bootC: rc('boots'), hero: true });
   }
   // the training dummy: a straw scarecrow on a post, swaying a little
   function drawScarecrow(g, cx, by, s, t) {
@@ -4229,6 +4230,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     poly(g, [[cx - 13 * s + sway, by - 44 * s], [cx + 13 * s + sway, by - 44 * s], [cx + 5 * s + sway, by - 47 * s], [cx + 2 * s + sway, by - 55 * s], [cx - 5 * s + sway, by - 47 * s]], '#4a3826', 1.6); // floppy hat
   }
   function drawChar(g, cx, by, dir, step, pal, s, t) {
+    if (window.CB_INK && pal.ink && CB_INK.town(g, pal.ink, cx, by, dir, step, s, t)) return; // Gothic Ink art pack; the drawn walker below otherwise
     const bob = step ? -1.5 * s : 0, sw = step === 1 ? 1 : step === 2 ? -1 : 0;
     g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, 13 * s, 5 * s, 0, 0, Math.PI * 2); g.fill();
     const side = dir === 'left' ? -1 : dir === 'right' ? 1 : 0;
@@ -5040,8 +5042,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793498896564';
-  const CB_BUILD = 'b8e00adb0a'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793499139517';
+  const CB_BUILD = '13c37a4bfe'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -5740,6 +5742,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Art', 'The town is in the same Gothic Ink style: your hero, other players and every townsperson now walk around as inked figures with real walk and idle animations. Your hero on the character screen uses it too.'],
       ['Art', 'New look for the fight screen: every hero class and every monster is now drawn in a dark "Gothic Ink" style (heavy black ink, deep shadows, muted colours). Humans, undead, giants and demons wear real gear; beasts, constructs, elementals, plants and fliers are new hand-drawn bodies tinted by their element. Elites and bosses are drawn bigger. The turn-order tiles use the same portraits.'],
       ['Codexes', 'Talent trees: the everyday Defense and Support rows are now mixed and matched across codexes, each effect in four strengths (levels 2-4 weakest, 6-8, 12-14, 16-18 strongest), so no two trees share the same set. New Support effects: Initiative, Luck, crit chance, a chance to shrug off debuffs, party Recovery (heal each turn), party Health Regen (heal after each fight), a chance to reflect an enemy attack back, Spirit, a chance on hit to Slow, a chance to toss a drawn status card and draw again, more of your sack surviving extraction, and, as party leader, better odds of an Enraged elite, an extra shrine or an extra merchant on the map. New Defense effects: resistance to one element (each codex has its own), a chance on hit to taunt, more healing received and Thorns.'],
       ['Codexes', 'Talent trees: the level-10 Support pick (mini capstone) is now a buff for you and every ally, different for each codex: +10% damage, crit chance, crit damage, Strength, Intelligence, Dexterity, Spirit, max HP, max mana, mana regeneration, Initiative, Multi-hit, Multicast, Multiplay, every resistance, healing, Luck (better loot for the whole party), 5% lifesteal, Bleed chance, Thorns or Recovery. The extra-card-draw pick that used to sit there moved to level 14.'],
@@ -6138,7 +6141,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
 // TO REMOVE IT: delete this file, the /*INKART*/ line in src/template.html and the INKART entry in build.js,
 // and public/img/ink/. figure() then falls back to the original drawn figures by itself.
 (function () {
-  const M = /*INK-MANIFEST*/{"heroes":{"Warrior":1.12,"Rogue":1.12,"Mage":1.12,"Paladin":1.12},"enemies":{"deserter":1.12,"scrap_hound":0.82,"shield_recruit":1.12,"bristleback_boar":0.92,"camp_thief":1.12,"bandit_cutthroat":1.12,"iron_sentry":1,"mercenary_sergeant":1.12,"dire_wolf":0.82,"cave_bear":0.92,"siegebreaker_ogre":1.48,"warforged_bulwark":1.06,"pit_duelist":1.19,"werewolf_marauder":0.87,"fallen_knight":1.19,"gravel_king":1.32,"sergeant_ironjaw":1.32,"clockwork_juggernaut":1.18,"the_twin_blades":1.32,"pit_champion":1.32,"the_quartermaster":1.32,"warlord_gorrath_the_iron_tide":1.48,"ash_imp":0.95,"cinder_hound":0.82,"lava_slug":0.85,"firebrand_zealot":1.12,"ember_thief":1.12,"salamander":0.82,"magma_golem":1.05,"flamecaller_acolyte":1.12,"blaze_drake":0.82,"kiln_guardian":1,"obsidian_brute":1.48,"pyre_sentinel":1.06,"flame_duelist":1.19,"hellhound_alpha":0.87,"ash_priestess":1.19,"cinder_matron":1.45,"brimstone_warden":1.18,"volcanic_colossus":1.24,"the_twin_pyres":1.24,"lord_of_embers":1.45,"the_ash_collector":1.32,"pyrelord_vashkar_the_kindled_crown":1.63,"snow_sprite":0.6,"ice_wolf":0.82,"glacier_shell":0.85,"frostbitten_scout":1.12,"yeti_cub":0.92,"frost_troll":1.4,"ice_sentinel":1,"rime_shaman":1.12,"snow_leopard":0.82,"mammoth":0.92,"frost_giant":1.48,"glacier_golem":1.06,"winter_knight":1.19,"wendigo":0.87,"ember_witch":1.19,"the_yeti_king":1.08,"captain_of_the_rime":1.32,"the_frozen_engine":1.18,"the_shard_sisters":1.32,"the_pale_champion":1.32,"the_hoarfrost_hermit":1.32,"queen_sylvaine_of_the_long_winter":1.48,"spitting_toad":0.92,"briar_wolf":0.82,"sapling_guardian":1,"giant_wasp":0.6,"mossback_poacher":1.12,"bog_lurker":0.92,"ironbark_treant":1,"grove_druid":1.12,"jungle_stalker":0.82,"spore_shambler":1,"thornback_behemoth":0.97,"elder_bramble":1.06,"vinewarden":1.19,"broodmother_spider":0.87,"hexbloom_witch":1.19,"the_swamp_hag":1.32,"the_root_warden":1.18,"the_colossal_treant":1.18,"the_hive_queen":0.97,"the_thornblade":1.32,"the_fungal_hoarder":1.18,"the_elder_thornheart":1.32,"mana_wisp":0.6,"arcane_construct":1,"spell_eater_rat":0.62,"failed_apprentice":1.12,"scroll_thief":1.12,"ley_hound":0.82,"warded_golem":1,"spire_magister":1.12,"blink_panther":0.82,"living_tome":1,"rune_titan":1.06,"prism_sentinel":1.06,"spellblade":1.19,"mana_wraith":1.19,"iron_arbiter":1.06,"the_hollow_archivist":1.32,"the_warden_of_wards":1.32,"the_clockwork_oracle":1.18,"the_mirror_twins":1.32,"the_duelist_magus":1.32,"the_bursar":1.32,"archmagus_ilvar_the_unbound":1.48,"crypt_rat":0.62,"restless_skeleton":1.12,"tomb_shield":1.12,"gloom_bat":0.6,"grave_robber":1.12,"ghoul":1.12,"bone_golem":1.25,"cult_deacon":1.12,"shade":1.12,"crypt_hound":0.82,"abomination":1.33,"ossuary_guardian":1.33,"death_knight":1.19,"vampire_spawn":1.19,"bone_colossus":1.33,"the_gravedigger":1.32,"the_bone_sergeant":1.32,"the_bell_of_mourning":1.18,"the_weeping_sisters":1.32,"the_crimson_count":1.32,"the_reliquary_keeper":1.32,"the_hollow_king":1.48}}/*END*/;
+  const M = /*INK-MANIFEST*/{"heroes":{"Warrior":1.12,"Rogue":1.12,"Mage":1.12,"Paladin":1.12},"enemies":{"deserter":1.12,"scrap_hound":0.82,"shield_recruit":1.12,"bristleback_boar":0.92,"camp_thief":1.12,"bandit_cutthroat":1.12,"iron_sentry":1,"mercenary_sergeant":1.12,"dire_wolf":0.82,"cave_bear":0.92,"siegebreaker_ogre":1.48,"warforged_bulwark":1.06,"pit_duelist":1.19,"werewolf_marauder":0.87,"fallen_knight":1.19,"gravel_king":1.32,"sergeant_ironjaw":1.32,"clockwork_juggernaut":1.18,"the_twin_blades":1.32,"pit_champion":1.32,"the_quartermaster":1.32,"warlord_gorrath_the_iron_tide":1.48,"ash_imp":0.95,"cinder_hound":0.82,"lava_slug":0.85,"firebrand_zealot":1.12,"ember_thief":1.12,"salamander":0.82,"magma_golem":1.05,"flamecaller_acolyte":1.12,"blaze_drake":0.82,"kiln_guardian":1,"obsidian_brute":1.48,"pyre_sentinel":1.06,"flame_duelist":1.19,"hellhound_alpha":0.87,"ash_priestess":1.19,"cinder_matron":1.45,"brimstone_warden":1.18,"volcanic_colossus":1.24,"the_twin_pyres":1.24,"lord_of_embers":1.45,"the_ash_collector":1.32,"pyrelord_vashkar_the_kindled_crown":1.63,"snow_sprite":0.6,"ice_wolf":0.82,"glacier_shell":0.85,"frostbitten_scout":1.12,"yeti_cub":0.92,"frost_troll":1.4,"ice_sentinel":1,"rime_shaman":1.12,"snow_leopard":0.82,"mammoth":0.92,"frost_giant":1.48,"glacier_golem":1.06,"winter_knight":1.19,"wendigo":0.87,"ember_witch":1.19,"the_yeti_king":1.08,"captain_of_the_rime":1.32,"the_frozen_engine":1.18,"the_shard_sisters":1.32,"the_pale_champion":1.32,"the_hoarfrost_hermit":1.32,"queen_sylvaine_of_the_long_winter":1.48,"spitting_toad":0.92,"briar_wolf":0.82,"sapling_guardian":1,"giant_wasp":0.6,"mossback_poacher":1.12,"bog_lurker":0.92,"ironbark_treant":1,"grove_druid":1.12,"jungle_stalker":0.82,"spore_shambler":1,"thornback_behemoth":0.97,"elder_bramble":1.06,"vinewarden":1.19,"broodmother_spider":0.87,"hexbloom_witch":1.19,"the_swamp_hag":1.32,"the_root_warden":1.18,"the_colossal_treant":1.18,"the_hive_queen":0.97,"the_thornblade":1.32,"the_fungal_hoarder":1.18,"the_elder_thornheart":1.32,"mana_wisp":0.6,"arcane_construct":1,"spell_eater_rat":0.62,"failed_apprentice":1.12,"scroll_thief":1.12,"ley_hound":0.82,"warded_golem":1,"spire_magister":1.12,"blink_panther":0.82,"living_tome":1,"rune_titan":1.06,"prism_sentinel":1.06,"spellblade":1.19,"mana_wraith":1.19,"iron_arbiter":1.06,"the_hollow_archivist":1.32,"the_warden_of_wards":1.32,"the_clockwork_oracle":1.18,"the_mirror_twins":1.32,"the_duelist_magus":1.32,"the_bursar":1.32,"archmagus_ilvar_the_unbound":1.48,"crypt_rat":0.62,"restless_skeleton":1.12,"tomb_shield":1.12,"gloom_bat":0.6,"grave_robber":1.12,"ghoul":1.12,"bone_golem":1.25,"cult_deacon":1.12,"shade":1.12,"crypt_hound":0.82,"abomination":1.33,"ossuary_guardian":1.33,"death_knight":1.19,"vampire_spawn":1.19,"bone_colossus":1.33,"the_gravedigger":1.32,"the_bone_sergeant":1.32,"the_bell_of_mourning":1.18,"the_weeping_sisters":1.32,"the_crimson_count":1.32,"the_reliquary_keeper":1.32,"the_hollow_king":1.48},"town":{"hero_warrior":{"w":97,"h":130,"ax":54,"n":10},"hero_rogue":{"w":85,"h":130,"ax":47,"n":10},"hero_mage":{"w":90,"h":130,"ax":55,"n":10},"hero_paladin":{"w":100,"h":130,"ax":55,"n":10},"npc_qm":{"w":98,"h":130,"ax":58,"n":10},"npc_scribe":{"w":93,"h":130,"ax":49,"n":10},"npc_chron":{"w":80,"h":130,"ax":41,"n":10},"npc_wagon":{"w":98,"h":130,"ax":59,"n":10},"npc_captain":{"w":99,"h":130,"ax":54,"n":10},"npc_merchant":{"w":85,"h":130,"ax":46,"n":10},"npc_guildmaster":{"w":98,"h":130,"ax":50,"n":10},"npc_jeweler":{"w":92,"h":130,"ax":49,"n":10},"npc_tinker":{"w":91,"h":130,"ax":54,"n":10},"npc_raidwarden":{"w":103,"h":130,"ax":57,"n":10},"npc_archivist":{"w":92,"h":130,"ax":56,"n":10}}}/*END*/;
   const css = document.createElement('style');
   css.textContent = `.figure:has(> .inkfig) { height: auto; overflow: visible; min-height: 80px; }
     .inkfig { display: block; width: auto; height: calc(var(--fh, 118px) * var(--s, 1)); max-width: 100%; object-fit: contain; filter: drop-shadow(0 3px 0 rgba(0,0,0,.35)); pointer-events: none; user-select: none; }
@@ -6146,8 +6149,23 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     .order .otile .ofig .inkfig { height: 58px; width: 100%; filter: none; } .order.raid .otile .ofig .inkfig { height: 30px; }
     .unit.dead .inkfig { filter: grayscale(1) brightness(.55); opacity: .7; }`;
   document.head.appendChild(css);
+  const imgs = {}, face = {};
   window.CB_INK = {
     manifest: M,
+    // town walker (and the character screen doll): draws and returns true, or false to use the original drawing
+    // strip = 4 idle frames then 6 walk frames, facing right; left (and up, after facing left) is mirrored
+    town(g, key, cx, by, dir, step, s, t) {
+      const m = M.town && M.town[key]; if (!m) return false;
+      const img = imgs[key] || (imgs[key] = Object.assign(new Image(), { src: 'img/ink/town_' + key + '.webp' }));
+      if (!img.complete || !img.naturalWidth) return false;
+      if (dir === 'left' || dir === 'right') face[key] = dir; // remember which way this walker last faced
+      const left = dir === 'left' || ((dir === 'up' || dir === 'down') && face[key] === 'left');
+      const f = step ? 4 + Math.floor(t / 120) % 6 : Math.floor(t / 520) % 4, H = Math.min(72 * s, by - 8), k = H / m.h; // by - 8: fits the character-screen doll
+      g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, 15 * s, 5 * s, 0, 0, Math.PI * 2); g.fill();
+      g.translate(cx, by); if (left) g.scale(-1, 1);
+      g.drawImage(img, f * m.w, 0, m.w, m.h, -m.ax * k, -H, m.w * k, H); g.restore();
+      return true;
+    },
     // HTML for an actor's figure, or null to use the original art
     figure(a) {
       if (!a) return null;

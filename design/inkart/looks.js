@@ -87,4 +87,18 @@ function spec(key, e) {
   if (c === 'Plant') return body('plant', { fungal: /spore|fungal/.test(key) }, 1);
   return pf('caster');
 }
-if (typeof module !== 'undefined') module.exports = { HEROES, spec };
+// town folk (keyed by NPC id in src/template.html); heroes in town reuse HEROES
+const NPCS = {
+  qm: { scheme: 'brass', face: 'elder', hair: 'bald', beard: 'braided', mark: 'scar', items: ['none_0', 'exotic_2', 'none_0', 'gloveleather_0', 'supply_1', 'pants_0', 'boot_0', 'none_0', 'hammer_0', 'none_0'] },
+  scribe: { scheme: 'frost', face: 'aristocrat', hair: 'long', beard: 'none', mark: 'none', items: ['hood_0', 'cloth_2', 'mantle_3', 'glovewrap_1', 'supply_2', 'skirt_0', 'footwrap_1', 'pack_2', 'wand_3', 'book_1'] },
+  chron: { scheme: 'brass', face: 'elder', hair: 'swept', beard: 'pointed', mark: 'none', items: ['hat_3', 'coat_3', 'mantle_1', 'gloveleather_2', 'supply_2', 'pants_3', 'boot_2', 'cape_3', 'none_0', 'book_2'] },
+  wagon: { scheme: 'rust', face: 'huntress', hair: 'braid', beard: 'none', mark: 'freckles', items: ['hat_2', 'coat_1', 'mantle_2', 'gloveleather_1', 'belt_1', 'pants_1', 'boot_1', 'pack_1', 'whip_0', 'light_0'] },
+  captain: { scheme: 'pilgrim', face: 'huntress', hair: 'pony', beard: 'none', mark: 'scar', items: ['none_0', 'plate_0', 'pauldron_1', 'glovemetal_0', 'belt_3', 'greaves_1', 'sabatons_0', 'cape_3', 'sword_0', 'shield_1'] },
+  merchant: { scheme: 'brass', face: 'rogue', hair: 'curls', beard: 'moustache', mark: 'none', items: ['hat_1', 'coat_2', 'mantle_2', 'gloveleather_2', 'supply_1', 'pants_3', 'boot_1', 'pack_1', 'none_0', 'relic_2'] },
+  guildmaster: { scheme: 'moss', face: 'veteran', hair: 'crop', beard: 'short', mark: 'scar', items: ['none_0', 'mail_1', 'pauldron_0', 'glovemetal_1', 'belt_1', 'greaves_0', 'sabatons_1', 'banner_1', 'polearm_0', 'none_0'] },
+  jeweler: { scheme: 'frost', face: 'elder', hair: 'long', beard: 'pointed', mark: 'none', items: ['crown_1', 'coat_3', 'mantle_3', 'glovewrap_2', 'ritualbelt_2', 'pants_3', 'boot_2', 'cape_3', 'wand_0', 'arcane_2'] },
+  tinker: { scheme: 'moss', face: 'wanderer', hair: 'mohawk', beard: 'none', mark: 'freckles', items: ['wrap_0', 'exotic_2', 'none_0', 'gloveleather_1', 'supply_0', 'pants_0', 'boot_0', 'pack_1', 'hammer_0', 'relic_2'] },
+  raidwarden: { scheme: 'pilgrim', face: 'orc', hair: 'mohawk', beard: 'mutton', mark: 'paint', items: ['helm_3', 'plate_2', 'pauldron_2', 'glovemetal_2', 'belt_3', 'greaves_3', 'sabatons_0', 'banner_0', 'greataxe_1', 'none_0'] },
+  archivist: { scheme: 'funeral', face: 'mystic', hair: 'swept', beard: 'stubble', mark: 'runes', items: ['hat_3', 'cloth_3', 'mantle_3', 'glovewrap_2', 'supply_2', 'skirt_3', 'footwrap_1', 'pack_2', 'staff_2', 'book_0'] },
+};
+if (typeof module !== 'undefined') module.exports = { HEROES, NPCS, spec };
