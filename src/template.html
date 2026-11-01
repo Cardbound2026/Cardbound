@@ -1636,6 +1636,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 /*UPDATES*/
 /*CODEX*/
 /*TALENTSUI*/
+/*INKART*/
 /*GEARUI*/
 /*GLOSSARY*/
 /*TESTVENDOR*/
@@ -2223,6 +2224,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   }
   function snapshot() { for (const a of [...cb.players, ...cb.enemies]) { lastHp[a.id] = a.hp; lastBlock[a.id] = a.block; } }
   function figure(a) {
+    if (window.CB_INK) { const ink = CB_INK.figure(a); if (ink) return ink; } // Gothic Ink art pack (src/inkart.js); without it, the drawn figures below
     if (a.isPlayer) { const col = CC[a.cls]; return `<svg viewBox="0 0 80 100"><ellipse cx="40" cy="96" rx="26" ry="4" fill="#000" opacity=".4"/><path d="M28 40h24l4 34-6 22H30l-6-22z" fill="#5d5a55"/><circle cx="40" cy="26" r="13" fill="#8a847a"/><path d="M27 24h26v6H27z" fill="${col}"/><path d="M14 44l14-4 3 30-12 8-7-14z" fill="#3b3128" stroke="${col}" stroke-width="2"/><path d="M58 30l4-2 2 46-4 2z" fill="#c9c3b8"/></svg>`; }
     const c = a.creature, big = a.tier === 'Elite' || a.tier === 'Boss';
     const crown = a.tier === 'Boss' ? '<path d="M28 6l4 6 8-8 8 8 4-6v10H28z" fill="#e4a93a"/>' : '';
