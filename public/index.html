@@ -106,6 +106,10 @@ body.sheetopen #btnUpdates, body.modalopen #btnUpdates { display: none; }
 .recgear { display: grid; border-left: 3px solid var(--rc); background: var(--panel2); border-radius: 3px; padding: 4px 8px; font-size: 12.5px; line-height: 1.3; } .recgear > span:first-child { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; } .recgear b { color: var(--rc); } .recgear small { color: #c9bfae; }
 .rectal { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; font-size: 13px; } .rectal .muted { display: inline-block; width: 42px; } .recmaps { font-size: 13px; border-collapse: collapse; width: 100%; } .recmaps td { padding: 2px 4px; border-bottom: 1px solid rgba(255,255,255,.05); }
 .recdeck { display: flex; flex-wrap: wrap; gap: 4px; } .reccardn { font-size: 12.5px; padding: 2px 8px; border-left: 3px solid var(--rc); background: var(--panel2); border-radius: 3px; cursor: help; } .reccardn b { color: var(--accent); }
+.srate { display: grid !important; grid-template-columns: auto 1fr; gap: 0 8px; margin: 6px 0 4px; font-size: 12px; } .srate em { font-style: normal; color: var(--muted); } .srate i { font-style: normal; color: #e4b64a; letter-spacing: 1px; } .srate u { text-decoration: none; color: #4a4036; }
+.sgrow { display: block; margin-top: 4px; color: var(--muted); } .classpick .sgrow b { font: 600 12.5px var(--f-ui); color: var(--text); } .sgrow span { color: var(--muted); }
+.reczoomitem { width: min(420px, 90vw); } .reccardn, .recgear { cursor: zoom-in; }
+.camph { font-size: 17px; margin: 10px 0 4px; color: var(--accent); } .camph .muted { font-size: 13px; font-family: var(--f-ui); } .campsack { max-height: 320px; }
 .stashgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 6px; align-content: start; } .stashgrid > .muted { grid-column: 1 / -1; }
 .item .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .item .acts .btn { padding: 3px 9px; font-size: 13px; }
@@ -275,11 +279,13 @@ body.sheetopen #btnUpdates, body.modalopen #btnUpdates { display: none; }
 .cf .ftext.long { font-size: calc(7.2cqw * var(--cf-text-s, 1)); }
 .cf .ftext.vlong { font-size: calc(6.3cqw * var(--cf-text-s, 1)); }
 .cf .ftext b { color: #8a1f12; } .cf.dark .ftext b { color: #ffcf7a; }
-.hand .cf { --cw: min(218px, max(150px, calc((100vh - 610px) / 1.5))); margin-left: calc(var(--cw) * -1 * var(--ov, .3)); transform-origin: 50% 120%; transform: translateY(calc(var(--off, 0) * 1px)) rotate(calc(var(--rot, 0) * 1deg)); transition: transform .14s ease-out, filter .14s, margin .14s; position: relative; z-index: var(--z, 1); }
+.hand { --hcw: min(218px, max(150px, calc((100vh - 610px) / 1.5))); height: calc(var(--hcw) * 1.5 + 30px); box-sizing: border-box; } /* the tray keeps one height, empty or full */
+.hand > .hint { align-self: center; }
+.hand .cf { --cw: var(--hcw); margin-left: calc(var(--cw) * -1 * var(--ov, .3)); transform-origin: 50% 120%; transform: translateY(calc(var(--off, 0) * 1px)) rotate(calc(var(--rot, 0) * 1deg)); transition: transform .14s ease-out, filter .14s, margin .14s; position: relative; z-index: var(--z, 1); }
 .hand .cf:first-child { margin-left: 0; }
 .hand .cf:hover:not(:disabled), .hand .cf:focus-visible { transform: translateY(-64px) rotate(0deg) scale(1.2); z-index: 50; filter: drop-shadow(0 16px 24px rgba(0,0,0,.7)); }
 .hand .cf.selected { transform: translateY(-48px) rotate(0deg) scale(1.18); z-index: 49; filter: drop-shadow(0 0 12px rgba(214,161,74,.85)); }
-@media (max-width: 700px) { .hand .cf { --cw: 156px; margin-left: calc(var(--cw) * -0.45); } .hand .cf:hover:not(:disabled) { transform: translateY(-36px) scale(1.15); } }
+@media (max-width: 700px) { .hand { --hcw: 156px; } .hand .cf { --cw: 156px; margin-left: calc(var(--cw) * -0.45); } .hand .cf:hover:not(:disabled) { transform: translateY(-36px) scale(1.15); } }
 @media (prefers-reduced-motion: reduce) { .hand .cf { transition: none; } }
 .cxdetail { display: grid; grid-template-columns: 280px 1fr; gap: 18px; align-items: start; }
 @media (max-width: 760px) { .cxdetail { grid-template-columns: 1fr; } }
@@ -398,6 +404,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 .foes.many .unit { width: auto; min-width: 0; padding: 5px; gap: 3px; } .foes.many .uname b { font-size: 13px; } .foes.many .uname small { font-size: 10px; white-space: normal; } .foes.many .intent { font-size: 11px; padding: 1px 5px; } .foes.many .deckbtn { font-size: 11px; padding: 1px 6px; }
 .rdone { color: #7fd36a; font-weight: 800; } .rwait { color: var(--muted); font-size: 10px; }
 .order .otile .ock { position: absolute; top: 2px; left: 4px; color: #7fd36a; font-weight: 900; font-size: 13px; text-shadow: 0 0 4px #000; }
+.unit > .uhead { display: none; }
 .unit.viewing .uname b { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
 .memrow { display: grid; grid-template-columns: 70px 1fr auto; gap: 8px; align-items: center; font-size: 13px; margin: 4px 0; }
 .memrow b { color: var(--mc); }
@@ -4355,6 +4362,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     g.moveTo(cx + sway - 3 * s, by - 35 * s); g.lineTo(cx + sway + 3 * s, by - 35 * s); g.stroke();
     poly(g, [[cx - 13 * s + sway, by - 44 * s], [cx + 13 * s + sway, by - 44 * s], [cx + 5 * s + sway, by - 47 * s], [cx + 2 * s + sway, by - 55 * s], [cx - 5 * s + sway, by - 47 * s]], '#4a3826', 1.6); // floppy hat
   }
+  // a name tag (and an optional <Guild> line under it) sitting just above a town figure's head; returns the top of the tag
+  function townTag(g, tx, footY, name, col, guild, s, figH) {
+    const head = footY - (figH != null ? figH * s : 72 * s) - 3 * s; let y = head;
+    g.textAlign = 'center';
+    if (guild) { g.font = `italic 500 ${Math.round(10.5 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const t = '<' + guild + '>', w = g.measureText(t).width + 10, h = Math.round(14 * Math.max(0.9, s));
+      g.fillStyle = 'rgba(10,8,6,.72)'; g.fillRect(tx - w / 2, y - h, w, h); g.fillStyle = '#b9c8a6'; g.fillText(t, tx, y - h * .26); y -= h; }
+    g.font = `600 ${Math.round(12 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const w = g.measureText(name).width + 10, h = Math.round(17 * Math.max(0.9, s));
+    g.fillStyle = 'rgba(10,8,6,.8)'; g.fillRect(tx - w / 2, y - h, w, h); g.fillStyle = col; g.fillText(name, tx, y - h * .26);
+    return y - h;
+  }
   function drawChar(g, cx, by, dir, step, pal, s, t) {
     if (window.CB_INK && pal.ink && CB_INK.town(g, pal.ink, cx, by, dir, step, s, t)) return; // Gothic Ink art pack; the drawn walker below otherwise
     const bob = step ? -1.5 * s : 0, sw = step === 1 ? 1 : step === 2 ? -1 : 0;
@@ -4457,13 +4474,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (BZ.open) drawShopSign(gx, hp.x * TS + TS / 2, hp.y * TS - TS * 0.12, shopTitle(), s);
     // embers over the fire
     for (const e of TOWN.embers) { gx.fillStyle = `rgba(255,${150 + (e.life * 80 | 0)},70,${e.life})`; gx.fillRect(e.x * TS, e.y * TS, 2.5 * s, 2.5 * s); }
-    // name tags for nearby NPCs
-    gx.font = `600 ${Math.round(12 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; gx.textAlign = 'center';
-    for (const n of NPCS) {
-      if (Math.abs(n.x - hp.x) + Math.abs(n.y - hp.y) > 3.2) continue;
-      const tx = n.x * TS + TS / 2, ty = n.y * TS - TS * 0.12; const w = gx.measureText(n.name).width + 10;
-      gx.fillStyle = 'rgba(10,8,6,.78)'; gx.fillRect(tx - w / 2, ty - 13, w, 17); gx.fillStyle = n.open ? '#d6a14a' : '#a6978a'; gx.fillText(n.name, tx, ty);
-    }
+    // name tags over every head: townspeople always, and your own hero with your guild under the name
+    for (const n of NPCS) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.id === 'dummy' ? 52 : null);
+    { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s); }
     // night: darken everything, then cut light pools around fires and the hero
     const dk = TOWN.dark, dg = dk.getContext('2d');
     dg.setTransform(1, 0, 0, 1, 0, 0); dg.globalCompositeOperation = 'source-over'; dg.clearRect(0, 0, dk.width, dk.height);
@@ -4669,7 +4682,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function myPresence() {
     const c = profile.chars[heroKey];
     const place = !$('scrStart').hidden ? 'town' : run ? 'run' : cb && cb.duel ? 'duel' : 'menu';
-    return { uid: SOC.me, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), shop: typeof BZ !== 'undefined' && BZ.open ? { t: shopTitle(), n: bzState().items.length } : null, x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
+    return { uid: SOC.me, guild: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), shop: typeof BZ !== 'undefined' && BZ.open ? { t: shopTitle(), n: bzState().items.length } : null, x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
   }
 
   async function socStart() {
@@ -4759,10 +4772,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       const pal = palFor(o.cls, o.rc || {});
       out.push({ y: p.y + 0.5, f: () => {
         drawChar(gx, p.x * TS + TS / 2, p.y * TS + TS * 0.92, o.dir, moving ? ((o.step + (o.t > 0.5 ? 1 : 0)) % 2 ? 1 : 2) : 0, pal, s, t);
-        gx.font = `600 ${Math.round(12 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; gx.textAlign = 'center';
-        const w = gx.measureText(o.name).width + 10, tx = p.x * TS + TS / 2, ty = p.y * TS - TS * 0.12;
-        gx.fillStyle = 'rgba(10,8,6,.78)'; gx.fillRect(tx - w / 2, ty - 13, w, 17);
-        gx.fillStyle = SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0'; gx.fillText(o.name, tx, ty);
+        const tx = p.x * TS + TS / 2, ty = townTag(gx, tx, p.y * TS + TS * 0.92, o.name, SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0', o.guild, s);
         if (o.shop && o.shop.t) drawShopSign(gx, tx, ty - 4, o.shop.t, s);
       } });
     }
@@ -5081,6 +5091,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       GUILD.loadedAt = Date.now();
     } catch (e) { GUILD.err = String(e && e.message || e); }
     renderGuild(); if (typeof renderSocial === 'function') renderSocial();
+    if (typeof retrack === 'function' && typeof socOn === 'function' && socOn()) retrack(); // others see the guild under your name
   }
   const RANK_ORDER = { leader: 0, officer: 1, member: 2 };
   const agoText = (t) => { if (!t) return 'never'; const s = (Date.now() - new Date(t).getTime()) / 1000; return s < 120 ? 'just now' : s < 3600 ? Math.round(s / 60) + ' min ago' : s < 86400 ? Math.round(s / 3600) + ' h ago' : Math.round(s / 86400) + ' days ago'; };
@@ -5171,8 +5182,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793542273596';
-  const CB_BUILD = 'a076abc311'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793544871535';
+  const CB_BUILD = '40bf9df64a'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -5816,10 +5827,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function recHeroModal(uid, key) {
     const h = (REC.heroes || []).find(x => x.user_id === uid && x.hero_key === key); if (!h) return;
     const S = h.snapshot || {}, cx = S.codex, cxd = cx && CB.CODEX_BY_KEY[cx.key], tr = cx && CB.TALENTS[cx.key];
-    const gear = (S.gear || []).slice().sort((a, b) => (CBHub.SLOTS.indexOf(a.slot) - CBHub.SLOTS.indexOf(b.slot))).map(g => `<div class="recgear" style="--rc:${RC[g.rarity] || 'var(--line)'}"><span class="muted">${esc(g.slot)}</span><b>${esc(g.name)}</b><span class="muted">${esc(g.rarity === 'Purple (Epic)' ? 'Epic' : g.rarity || '')} &middot; ilvl ${g.ilvl || 1}</span><small>${Object.entries(g.stats || {}).map(([k, v]) => `+${v} ${esc(k.replace(/^(Resistance|Elemental\/Holy Damage):(.*)$/, (m, a, b) => b + (a[0] === 'R' ? ' Res' : ' Dmg')))}`).join(', ')}</small></div>`).join('');
+    const gear = (S.gear || []).slice().sort((a, b) => (CBHub.SLOTS.indexOf(a.slot) - CBHub.SLOTS.indexOf(b.slot))).map((g, gi) => `<div class="recgear" data-recgear="${gi}" title="Click to see the item" style="--rc:${RC[g.rarity] || 'var(--line)'}"><span class="muted">${esc(g.slot)}</span><b>${esc(g.name)}</b><span class="muted">${esc(g.rarity === 'Purple (Epic)' ? 'Epic' : g.rarity || '')} &middot; ilvl ${g.ilvl || 1}</span><small>${Object.entries(g.stats || {}).map(([k, v]) => `+${v} ${esc(k.replace(/^(Resistance|Elemental\/Holy Damage):(.*)$/, (m, a, b) => b + (a[0] === 'R' ? ' Res' : ' Dmg')))}`).join(', ')}</small></div>`).join('');
     const grp = {}; for (const [k, r] of S.deck || []) { const id = k + '|' + r; grp[id] = (grp[id] || 0) + 1; }
     const deck = Object.entries(grp).map(([id, n]) => { const [k, r] = id.split('|'), d = CARDS[k]; return d ? { d, r: +r, n } : null; }).filter(Boolean).sort((a, b) => (['Gold', 'Blue', 'Green', 'White'].indexOf(a.d.rarity) - ['Gold', 'Blue', 'Green', 'White'].indexOf(b.d.rarity)) || a.d.name.localeCompare(b.d.name))
-      .map(x => `<span class="reccardn" style="--rc:${RC[x.d.rarity]}" title="${esc(x.d.text || '')}">${x.n > 1 ? x.n + 'x ' : ''}${esc(x.d.name)}${x.r ? ` <b>+${x.r}</b>` : ''}</span>`).join('');
+      .map(x => `<span class="reccardn" style="--rc:${RC[x.d.rarity]}" data-reccard="${x.d.key || ''}|${x.r}" title="Click to see the card">${x.n > 1 ? x.n + 'x ' : ''}${esc(x.d.name)}${x.r ? ` <b>+${x.r}</b>` : ''}</span>`).join('');
     const tal = cx && tr ? (cx.picks || []).map((j, i) => { if (j == null) return ''; let nm; if (i === 9) { const d = CARDS[tr.cap[j]]; nm = d ? d.name : tr.cap[j]; } else nm = (tr.rows[i][j] || {}).n; return `<li><span class="muted">Lv ${(i + 1) * 2}</span> ${esc(nm || '?')}</li>`; }).join('') : '';
     const maps = mapsInOrder().map(M => { const b = (h.maps || {})[M.key]; return `<tr><td>${M.num}. ${esc(M.name)}</td><td>${b ? `+${b.lvl}, ${ROWTXT(b.row)}` : '<span class="muted">-</span>'}</td></tr>`; }).join('');
     modal(`<h2 style="color:${CC[h.hero_class]}">${esc(h.hero_name)} <span class="muted" style="font-size:17px">${esc(h.hero_class)}${h.guild_name ? ' &middot; ' + esc(h.guild_name) : ''}</span></h2>
@@ -5831,7 +5842,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       <p class="muted" style="font-size:12px;margin:6px 0 0">Snapshot from ${new Date(h.updated_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}.</p>
       <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal;
+    REC.view = { gear: (S.gear || []).slice().sort((a, b) => (CBHub.SLOTS.indexOf(a.slot) - CBHub.SLOTS.indexOf(b.slot))) };
   }
+  // click a card or an item on a hero's record to see it big (the same viewer as dropped cards)
+  document.addEventListener('click', (ev) => {
+    const c = ev.target.closest('#modalBox [data-reccard], #modalBox [data-recgear]'); if (!c) return;
+    const zoom = $('cardZoom'); if (!zoom) return;
+    if (c.dataset.reccard) { const [k, r] = c.dataset.reccard.split('|'); if (!CARDS[k]) return;
+      zoom.innerHTML = `<div class="zoomin">${cardBox(CB.rankedCard(k, +r || 0), 300)}<p>${esc(CARDS[k].rarity)} ${esc(CARDS[k].cls || '')} card${+r ? ' at +' + r : ''} &middot; click anywhere to close</p></div>`; }
+    else { const g = REC.view && REC.view.gear[+c.dataset.recgear]; if (!g) return; zoom.innerHTML = `<div class="zoomin"><div class="reczoomitem">${itemHtml(g)}</div><p>click anywhere to close</p></div>`; }
+    zoom.hidden = false; fitCards(zoom); requestAnimationFrame(() => fitCards(zoom));
+  });
   $('hpRec').addEventListener('click', (ev) => {
     const t = ev.target.closest('[data-rectab]'); if (t) { REC.tab = t.dataset.rectab; return renderRecords(); }
     const so = ev.target.closest('[data-recsort]'); if (so) { REC.sort = so.dataset.recsort; return renderRecords(); }
@@ -5990,6 +6011,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Feature', 'Starting decks are rated 0 to 5 stars for Offense, Defense, Utility and Support, and list the end-game codex decks each one can grow into.'],
+      ['Feature', 'Names over heads: in fights every hero and monster has a small name tag just above its head (heroes show their <Guild> under the name), with intents above that. In town, every townsperson and your own hero are always named, with the guild under player names.'],
+      ['Feature', 'The campfire shows everything in your sack (each hero\'s sack in a party) before you rest, rummage or extract.'],
+      ['Feature', 'Hall of Records: click a card or an item on a hero\'s record to see it full size.'],
+      ['Fix', 'The card tray in a fight keeps one height whether your hand is full, empty or it is the enemy\'s turn, so the screen no longer jumps.'],
+      ['Test', 'Tinker Pip: a Clear all gold button.'],
       ['Feature', 'Hall of Records: read the notice board in town (or Menu > Hall of Records). Heroes ranks every hero by progress or power (click one to see their gear, deck, codex talents and map records); Map records shows who has reached the highest level and furthest row on each road; Raid records shows, for every raid boss, the first guild to kill it, the guild that killed it at the highest level, and the fastest kill in rounds. Heroes are posted when you sign in and whenever you come home.'],
       ['Fix', 'Shuriken Mastery, Sharpened Stars and the Ninja codex now show on the Shuriken card itself (the damage always applied, but the card still said 4).'],
       ['Art', 'Fights are now a battlefield scene: a painted road runs back to a ruined gate (tinted for each map), your heroes stand on the left diagonal and the enemies on the right, each with a clean nameplate on the outside and their intents over their heads. Everyone is drawn at one scale, the layout keeps plates, intents and fighters from covering each other, and big fights (5+ on a side) switch to small plates under the feet. Raids show the heroes as a block of small fighters in rows, and raid bosses now use their map boss\'s inked art. Fights also use more of a wide screen. Thanks to our design tester for the battlefield painting and layout. Menu > "Battlefield view" switches back to the old side-by-side stage.'],
@@ -6970,7 +6997,7 @@ function layout(cb, opts) {
   if (hud && hint && hint.parentElement !== hud) hud.insertBefore(hint, hud.querySelector('.spacer'));
   if (hint) hint.title = hint.textContent;
   stage.parentElement.classList.toggle('bfnarrow', W < 700); stage.parentElement.classList.toggle('bfmid', W < 900);
-  const sr = stage.getBoundingClientRect(), T = order ? Math.max(0, order.getBoundingClientRect().bottom - sr.top) + 8 : 90;
+  const sr = stage.getBoundingClientRect(), T = (order ? Math.max(0, order.getBoundingClientRect().bottom - sr.top) + 8 : 90) + 22; // + the name tag over the back fighters' heads
   const hudH = hud ? hud.offsetHeight : 64, B = H - hudH - 10; stage.parentElement.style.setProperty('--hudh', hudH + 'px');
   const sides = [[...document.querySelectorAll('#playerSlot > .unit')], [...document.querySelectorAll('#foes > .unit')]];
   const cmp = sides.map(us => us.length > 4), narrow = W < 760;
@@ -6981,7 +7008,7 @@ function layout(cb, opts) {
   // each figure's visible half-width and height, as a share of the figure size (from the image's shape; re-run when images load)
   const shp = sides.map(us => us.map(el => { const im = el.querySelector('.figure img'); let a = .8, k = 1;
     if (im) { if (im.naturalWidth) a = im.naturalWidth / im.naturalHeight; else if (!im.dataset.bfw) { im.dataset.bfw = 1; im.addEventListener('load', () => again && again(), { once: true }); } k = parseFloat(im.style.getPropertyValue('--s')) || 1; }
-    return { hw: a * k * .5 * .8, ht: k * (el.dataset.boss ? 1.22 : 1) }; }));
+    const hd = el.querySelector(':scope > .uhead'); return { hw: a * k * .5 * .8, ht: k * (el.dataset.boss ? 1.22 : 1), tw: hd && hd.offsetWidth ? hd.offsetWidth : 0, th: hd && hd.offsetHeight ? hd.offsetHeight : 0 }; }));
   const figTop = 1.08;
   // one side's positions for figure size s; returns null if it doesn't fit
   const plan = (n, h, s, force, compact, sh) => {
@@ -7010,8 +7037,10 @@ function layout(cb, opts) {
       if (i) {
         const pv = out[i - 1], dx = Math.max(s * .5, (sh[i - 1].hw + sh[i].hw) * s * .8) + 8; x += dx;
         const pl = x - sh[i].hw * s - 8 - P, pr = x - sh[i].hw * s - 8, fl = pv.x - sh[i - 1].hw * s, fr = pv.x + sh[i - 1].hw * s;
-        const over = pr > fl + 4 && pl < fr - 4;
-        y -= Math.max(h[i - 1] + 5, over ? s * sh[i - 1].ht * .92 : 0, s * .2);
+        const over = pr > fl + 4 && pl < fr - 4, tl = pv.x - sh[i - 1].tw / 2, tr = pv.x + sh[i - 1].tw / 2, overTag = sh[i - 1].tw && pr > tl - 2 && pl < tr + 2;
+        // the plate must clear the front fighter's head, and its name tag if it reaches over it
+        const clear = overTag ? s * sh[i - 1].ht * 1.0 + sh[i - 1].th + 6 : over ? s * sh[i - 1].ht * .92 : 0;
+        y -= Math.max(h[i - 1] + 5, clear, s * .2);
       }
       out.push({ x, y, d: i, G: sh[i].hw * s + 8 });
     }
@@ -7032,7 +7061,7 @@ function layout(cb, opts) {
     el.style.left = Math.round(enemy ? W - p.x : p.x) + 'px'; el.style.top = Math.round(p.y) + 'px';
     el.style.setProperty('--fh', size + 'px'); el.style.setProperty('--plate', Math.round(p.G) + 'px'); if (p.pw) el.style.setProperty('--pw', Math.round(p.pw) + 'px'); else el.style.removeProperty('--pw');
     el.style.zIndex = String(60 - Math.round(p.d * 6));
-    const fg = el.querySelector('.figure'); if (fg) el.style.setProperty('--figh', fg.offsetHeight + 'px');
+    const fg = el.querySelector('.figure'); if (fg) el.style.setProperty('--figh', fg.offsetHeight + 'px'); const hd = el.querySelector(':scope > .uhead'); el.style.setProperty('--hh', (hd && hd.offsetHeight ? hd.offsetHeight : 0) + 'px');
   });
   put(sides[0], P0, false); put(sides[1], P1, true);
   placeIntents(stage, sides[1], s);
@@ -7051,8 +7080,8 @@ function placeIntents(stage, foes, s) {
   if (ord) for (const t of ord.querySelectorAll('.otile, .round, .btn')) obst.push({ r: R(t), w: 3 });
   if (hud) obst.push({ r: R(hud), w: 3 });
   const spots = [
-    { right: 'calc(var(--fh) * -.32)', left: 'auto', bottom: 'calc(var(--figh, var(--fh)) + 2px)', jc: 'flex-end' },
-    { right: 'auto', left: 'calc(var(--fh) * -.5)', bottom: 'calc(var(--figh, var(--fh)) + 2px)', jc: 'center' },
+    { right: 'calc(var(--fh) * -.32)', left: 'auto', bottom: 'calc(var(--figh, var(--fh)) + var(--hh, 0px) + 4px)', jc: 'flex-end' },
+    { right: 'auto', left: 'calc(var(--fh) * -.5)', bottom: 'calc(var(--figh, var(--fh)) + var(--hh, 0px) + 4px)', jc: 'center' },
     { right: 'auto', left: 'var(--plate)', bottom: 'calc(var(--ih, 60px) + 2px)', jc: 'flex-start' },
     { right: 'calc(var(--fh) * .1)', left: 'auto', bottom: 'calc(var(--figh, var(--fh)) * .55)', jc: 'flex-end' },
   ];
@@ -7087,7 +7116,7 @@ css.textContent = `
 #scrCombat.bf .hud .piles { gap: 4px 6px; } #scrCombat.bf .hud .piles > :not(.pilebtn) { font-size: 11px; color: #92a291; }
 #scrCombat.bf .hud > .hint.alert { color: #f0b36a; }
 #scrCombat.bf .field-panel > .hand { grid-row: 2; margin: -6px 12px 0; padding-top: 10px; }
-#scrCombat.bf .hand .cf { --cw: min(185px, max(130px, calc((100vh - 660px) / 1.4))); }
+#scrCombat.bf .hand { --hcw: min(185px, max(130px, calc((100vh - 660px) / 1.4))); }
 #scrCombat.bf { grid-template-columns: minmax(0, 1fr) var(--ledgerW, 290px); }
 #scrCombat.bf.withchat { grid-template-columns: var(--chatW, 220px) minmax(0, 1fr) var(--ledgerW, 290px); }
 @media (max-width: 1180px) { #scrCombat.bf.withchat { grid-template-columns: minmax(0, 1fr) var(--ledgerW, 280px); } }
@@ -7124,7 +7153,7 @@ css.textContent = `
 #scrCombat.bf .stage #foes .uplate .bar i { background: linear-gradient(90deg, #874f46, #ba7a59); }
 #scrCombat.bf .stage .uplate .bar span { font-size: 10px; line-height: 10px; }
 #scrCombat.bf .stage .uplate .tags { min-height: 0; gap: 3px; } #scrCombat.bf .stage .uplate .tag { font-size: 10px; padding: 0 4px; line-height: 15px; }
-#scrCombat.bf .stage .uintent { position: absolute; right: calc(var(--fh) * -.32); bottom: calc(var(--figh, var(--fh)) + 2px); width: max-content; max-width: calc(var(--fh) * 1.3 + 40px); pointer-events: auto; z-index: 5; }
+#scrCombat.bf .stage .uintent { position: absolute; right: calc(var(--fh) * -.32); bottom: calc(var(--figh, var(--fh)) + var(--hh, 0px) + 4px); width: max-content; max-width: calc(var(--fh) * 1.3 + 40px); pointer-events: auto; z-index: 5; }
 #scrCombat.bf .stage .uintent .intents { display: flex; flex-wrap: wrap; justify-content: var(--jc, flex-end); gap: 3px; }
 #scrCombat.bf .stage .uintent .intents { min-height: 0; } #scrCombat.bf .stage .uintent .intent { box-shadow: 0 3px 10px #0006; }
 #scrCombat.bf .stage .uplate { grid-template-columns: minmax(0, 1fr) auto; column-gap: 5px; }
@@ -7150,6 +7179,11 @@ css.textContent = `
 #scrCombat.bf .hud .piles { flex-wrap: nowrap; }
 #scrCombat.bf .field-panel.bfmid > .hud { gap: 8px 10px; padding: 8px 10px; } #scrCombat.bf .field-panel.bfmid .hud .pilebtn { padding: 3px 7px; font-size: 11.5px; } #scrCombat.bf .field-panel.bfmid .hud .mana small { display: none; }
 #scrCombat.bf .field-panel.bfmid .endturn.btn.primary { padding: 7px 14px !important; font-size: 16px !important; }
+/* names over heads: a small tag just above the figure (guild under a hero's name); intents sit above it */
+#scrCombat.bf .stage .unit > .uhead { display: grid; justify-items: center; position: absolute; left: 0; bottom: calc(var(--figh, var(--fh)) + 2px); transform: translateX(-50%); white-space: nowrap; pointer-events: none; z-index: 4; background: #0b1311c9; border-radius: 3px; padding: 1px 7px 2px; line-height: 1.15; box-shadow: 0 2px 6px #0006; }
+#scrCombat.bf .stage .unit > .uhead b { font: 600 12.5px var(--f-ui); letter-spacing: .2px; } #scrCombat.bf .stage .unit > .uhead small { font: italic 500 10.5px var(--f-ui); color: #b9c8a6; }
+#scrCombat.bf .stage .compact .unit > .uhead { display: none; }
+#scrCombat.bf .stage .unit.dead > .uhead { opacity: .4; }
 /* big fights (5+ on a side): small plates under each fighter's feet */
 #scrCombat.bf .stage .compact .uplate { left: calc(var(--pw, 80px) * -.5) !important; right: auto !important; bottom: auto; top: 3px; width: var(--pw, 80px); padding: 2px 4px; border: 0 !important; border-radius: 3px; background: #0d1715d9 !important; gap: 1px; }
 #scrCombat.bf .stage .compact .uplate .uname small, #scrCombat.bf .stage .compact .uplate .deckbtn { display: none; }
@@ -7603,7 +7637,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
         <div class="pilegrid cxgrid nozoom">${cards.length ? '' : '<span class="muted">No cards match.</span>'}${cards.map(([k, d]) => `<div class="pilecard" style="display:grid;gap:4px;justify-items:center">${cardBox(d, 140)}${own[k] ? `<span class="pilecount">x${own[k]}</span>` : ''}<button class="pilebtn" data-tvcard="${k}">Take</button></div>`).join('')}</div>`
       : TV.tab === 'codex' ? `<p class="muted">Stash space: ${room}. Codexes roll random stats at map level +${profile.last.level || 0} (the Wagon's level). Only that class can equip one.</p>
         ${Object.entries(CB.CODEXES).map(([cls, list]) => `<h3 style="color:${CC[cls]};margin:10px 0 4px">${cls}</h3><div class="list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px">${list.map(([key, name, text]) => `<div class="item" style="--rc:#e0802a"><div class="ih"><b>${esc(name)} Codex</b><span>${cls}</span></div><div class="st" style="color:#f0b070">${esc(text)}</div><div class="acts"><button class="btn" data-tvcx="${key}" ${room > 0 ? '' : 'disabled'}>Take</button></div></div>`).join('')}</div>`).join('')}`
-      : `<div class="row"><button class="btn primary" data-tvgold="1000">+1,000 gold</button><button class="btn" data-tvgold="10000">+10,000 gold</button></div><p class="muted">Bank: ${profile.gold} gold.</p>`}`;
+      : `<div class="row"><button class="btn primary" data-tvgold="1000">+1,000 gold</button><button class="btn" data-tvgold="10000">+10,000 gold</button><button class="btn" data-tvgold="clear" title="Sets your bank to 0 gold">Clear all gold</button></div><p class="muted">Bank: ${profile.gold} gold.</p>`}`;
     fitCards(el);
   }
   $('hpTest').addEventListener('click', (ev) => {
@@ -7630,7 +7664,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     else if (b.dataset.tvshop) { CBHub.refreshShop(profile, DATA, profile.last.level || 0); save(); toast(`Merchant Dace has new stock (map level +${profile.last.level || 0}, ${DATA.maps[curMap()].name} gear).`); }
     else if (b.dataset.tvall) { const q = TV.q.toLowerCase(); let n = 0; for (const [k, d] of Object.entries(CARDS)) if (d.cls === hcls() && !d.designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(d.rarity) && (TV.rar === 'All' || d.rarity === TV.rar) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + d.rarity).toLowerCase().includes(q)) && ++n) c.cards.push({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), key: k, rank: 0 }); save(); toast(`Added ${n} ${hcls()} card${n === 1 ? '' : 's'} to ${c.name}'s collection.`); }
     else if (b.dataset.tvcx) { if (profile.stash.length >= CBHub.STASH_MAX) return toast('Stash is full.'); const it = CB.makeCodex(DATA, CB.makeRng(Date.now() % 2147483646), b.dataset.tvcx, profile.last.level || 0); profile.stash.unshift(Object.assign({ id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, it)); save(); }
-    else if (b.dataset.tvgold) { profile.gold += +b.dataset.tvgold; save(); renderTownBar(); }
+    else if (b.dataset.tvgold) { if (b.dataset.tvgold === 'clear') { profile.gold = 0; toast('Bank emptied: 0 gold.'); } else profile.gold += +b.dataset.tvgold; save(); renderTownBar(); }
     renderTestVendor();
   });
 
@@ -7709,11 +7743,26 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   $('heroList').addEventListener('click', (ev) => { const d = ev.target.closest('[data-delhero]'); if (d) return deleteHeroFlow(d.dataset.delhero); });
   $('heroList').addEventListener('click', (ev) => { const b = ev.target.closest('[data-play]'); if (!b) return; heroKey = b.dataset.play; profile.last.cls = heroKey; save(); renderHub(); show('start'); saveCard(); });
   let createDeck = 'balanced', createAmu = 'soldier';
+  // starter deck ratings, 0-5 stars: offense, defense, utility (draw, mana, control), support (healing and helping the party)
+  const STARTER_RATE = { 'Warrior:balanced': [3, 3, 2, 1], 'Warrior:berserker': [5, 1, 2, 0], 'Warrior:bleeder': [4, 2, 2, 0], 'Warrior:shieldbearer': [2, 5, 1, 1],
+    'Rogue:balanced': [3, 3, 2, 1], 'Rogue:assassin': [5, 2, 2, 0], 'Rogue:poisoner': [4, 2, 2, 0], 'Rogue:starthrower': [4, 2, 3, 0],
+    'Mage:balanced': [3, 3, 2, 1], 'Mage:pyromancer': [5, 2, 1, 0], 'Mage:cryomancer': [3, 3, 4, 1], 'Mage:arcanist': [3, 2, 5, 0],
+    'Paladin:balanced': [3, 3, 2, 2], 'Paladin:templar': [4, 2, 2, 1], 'Paladin:guardian': [2, 5, 2, 2], 'Paladin:lightbringer': [2, 3, 2, 5] };
+  // the end-game codex decks (the test decks) this starter shares the most cards with, one per codex
+  function growsInto(deck) {
+    const have = {}; for (const [k, n] of deck) have[k] = (have[k] || 0) + n;
+    const sc = (window.CB_TESTDECKS || []).filter(t => t.cls === createCls).map(t => ({ t, s: t.cards.reduce((a, [k, n]) => a + Math.min(n, have[k] || 0) * ({ Gold: 4, Blue: 3, Green: 2 }[(CARDS[k] || {}).rarity] || 1), 0) })).sort((a, b) => b.s - a.s);
+    const out = [], seen = new Set(); for (const x of sc) { if (seen.has(x.t.codex) || !x.s) continue; seen.add(x.t.codex); out.push({ cx: (CB.CODEX_BY_KEY[x.t.codex] || {}).name || x.t.codex, name: x.t.name }); if (out.length === 3) break; }
+    return out;
+  }
   function renderCreateChoices() {
     const list = createCls ? CB.STARTER_DECKS[createCls] || [] : [];
     if (!list.find(x => x[0] === createDeck)) createDeck = 'balanced';
     $('deckPick').innerHTML = list.map(([k, nm, blurb, deck]) => { const d = deck || CLASSES[createCls].deck, top = d.filter(([key]) => ['Gold', 'Blue'].includes(CARDS[key].rarity)).map(([key]) => `<i style="color:${RC[CARDS[key].rarity]}">${esc(CARDS[key].name)}</i>`).join(', ');
-      return `<button role="radio" style="--cc:${CC[createCls]}" data-deck="${k}" aria-checked="${k === createDeck}" title="${esc(d.map(([key, n]) => n + 'x ' + CARDS[key].name).join(', '))}"><b>${esc(nm)}</b><span>${esc(blurb)}</span><small>Key cards: ${top}</small></button>`; }).join('');
+      const R = STARTER_RATE[createCls + ':' + k] || [3, 3, 2, 1], grow = growsInto(d);
+      return `<button role="radio" style="--cc:${CC[createCls]}" data-deck="${k}" aria-checked="${k === createDeck}" title="${esc(d.map(([key, n]) => n + 'x ' + CARDS[key].name).join(', '))}"><b>${esc(nm)}</b><span>${esc(blurb)}</span>
+        <span class="srate">${['Offense', 'Defense', 'Utility', 'Support'].map((t, i) => `<em>${t}</em><i>${'&#9733;'.repeat(R[i])}<u>${'&#9733;'.repeat(5 - R[i])}</u></i>`).join('')}</span>
+        <small>Key cards: ${top}</small>${grow.length ? `<small class="sgrow">Grows into: ${grow.map(g => `<b>${esc(g.cx)}</b> <span>(${esc(g.name)})</span>`).join(', ')}</small>` : ''}</button>`; }).join('');
     $('amuPick').innerHTML = CB.STARTER_AMULETS.map(([k, nm, dr, rg, blurb]) => `<button role="radio" data-amu="${k}" aria-checked="${k === createAmu}" title="${esc(blurb)}"><b>${dr} draw</b><span>+${rg} mana regen</span><small>${esc(nm)}</small></button>`).join('');
   }
   $('deckPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-deck]'); if (!b) return; createDeck = b.dataset.deck; renderCreateChoices(); });
@@ -8128,6 +8177,9 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   }
   function pendingModal() {
     const p = run.pending; redrawShop = null;
+    // what you would be carrying out: the sack, newest first
+    const campSack = (sack, gold, m) => `<h3 class="camph">${m ? `<span style="color:${CC[m.cls]}">${esc(m.name)}'s</span> sack` : 'Your sack'} <span class="muted">${sack.length} item${sack.length === 1 ? '' : 's'} &middot; ${gold} gold</span></h3>
+      <div class="list stashgrid campsack">${sack.slice().reverse().map(it => itemHtml(it)).join('') || '<span class="muted">Empty so far.</span>'}</div>`;
     const CAMP = { rest: 'rest (heal 30%)', rummage: 'rummage for loot', mend: 'mend the party (+10% each)', extract: 'extract' };
     if (run.online && p.type === 'rest') {
       const S = NET.s, me = run.members[run.myMi];
@@ -8136,7 +8188,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       modal(`<h2>Rest site</h2><p>Everyone picks what they do at the fire. <b>Extract</b> is a vote: if most of the party votes for it, everyone leaves together and keeps ${p.keep > 0.5 ? '75%' : 'half'} of their own sack (a tie is a coin flip). Otherwise each hero does what they picked.</p>
         <p class="muted">Your sack: ${me.sack.length} item${me.sack.length === 1 ? '' : 's'} and ${me.gold} gold. HP ${me.hp}/${me.stats.maxHp}.</p>
         <div class="row campbtns">${btn('rest', `Rest: heal ${p.heals[run.myMi]}`)}${btn('rummage', 'Rummage: one monster\'s loot')}${btn('mend', 'Mend: everyone +10%')}${btn('extract', 'Vote extract')}</div>
-        <p style="margin-top:8px">${votes}</p>`);
+        <p style="margin-top:8px">${votes}</p>${campSack(me.sack, me.gold)}`); $('modalBox').classList.add('wide');
       for (const k of ['rest', 'rummage', 'mend', 'extract']) $('mC_' + k).onclick = () => netAct({ t: 'camp', choice: k });
       return;
     }
@@ -8147,7 +8199,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
           <button class="btn" id="mRummage" title="Roll the loot of one normal monster from this part of the map">Rummage: ${party ? 'each hero finds' : 'find'} one monster's loot</button>
           ${party ? '<button class="btn" id="mMend">Mend: everyone heals 10%</button>' : ''}
           <button class="btn" id="mExtract">Extract: keep ${p.keep > 0.5 ? '75%' : 'half'} of ${sackN} item${sackN === 1 ? '' : 's'} and ${run.gold} gold</button></div>
-        <p class="muted">${p.keep > 0.5 ? 'This is the halfway campfire: extracting here keeps 75% of your sack. Later campfires keep only half.' : 'Extracting here keeps a random half of your sack.'} Beating ${esc(bossName())} keeps everything.</p>`);
+        <p class="muted">${p.keep > 0.5 ? 'This is the halfway campfire: extracting here keeps 75% of your sack. Later campfires keep only half.' : 'Extracting here keeps a random half of your sack.'} Beating ${esc(bossName())} keeps everything.</p>${run.members.map(m => campSack(m.sack, m.gold, run.members.length > 1 ? m : null)).join('')}`); $('modalBox').classList.add('wide');
       const doCamp = (k) => { const ch = run.members.map(() => k); const out = run.camp(ch); closeModal(); renderMap(); campResultModal(out, ch); };
       $('mRest').onclick = () => doCamp('rest');
       $('mRummage').onclick = () => doCamp('rummage');
@@ -8312,12 +8364,20 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       return t === txt ? m : `<span class="tag${c}"${/title=/.test(attrs) ? attrs : attrs + ` title="${txt}"`}>${t}</span>`;
     });
   }
+  // the guild shown under a hero's name in a fight: yours, or another player's from the online list
+  function unitGuild(a) {
+    if (!a.isPlayer || typeof SOC === 'undefined') return null;
+    if (a === hero() || (cb.myMi == null && !cb.duel)) return typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null;
+    for (const o of (SOC.others ? SOC.others.values() : [])) if (o.name === a.name && (o.uid === a.uid || !a.uid)) return o.guild || null;
+    return null;
+  }
   function unitHtml(a) {
     const isNow = (cb.raid && a.isPlayer ? cb.canAct(a) : cb.current === a) && !cb.over, targetable = a.hp > 0 && !!selected && ((CARDS[selected.key].target === 'enemy' && (cb.duel ? a.isPlayer && a !== hero() : !a.isPlayer)) || (CARDS[selected.key].target === 'ally' && a.isPlayer && !cb.duel));
     const pct = Math.max(0, 100 * a.hp / a.maxHp), ini = cb.initiative(a);
     const sub = a.isPlayer ? (cb.raid ? "" : `Init ${ini}`) : `${a.tier === 'Elite' || a.tier === 'Boss' ? a.tier + ' &middot; ' : ''}${a.type} &middot; weak ${a.weakTo} &middot; Init ${ini}`;
     return `<div class="unit ${isNow ? 'active' : ''} ${a.isPlayer && cb.partySize > 1 && a === viewHero && !isNow ? 'viewing' : ''} ${a.hp <= 0 ? 'dead' : ''} ${targetable ? 'targetable' : ''}" data-id="${a.id}" ${a.tier === 'Boss' ? 'data-boss="1"' : ''} style="--uc:${a.isPlayer ? CC[a.cls] : '#ad7a5c'}" ${targetable ? 'role="button" tabindex="0"' : ''}>
       ${a.isPlayer ? '' : `<div class="uintent"><div class="intents">${intentHtml(a)}</div></div>`}
+      <div class="uhead"><b style="color:${a.isPlayer ? CC[a.cls] : '#ead9c4'}">${esc(a.name)}</b>${unitGuild(a) ? `<small>&lt;${esc(unitGuild(a))}&gt;</small>` : ''}</div>
       <div class="figure">${figure(a)}</div>
       <div class="uplate"><div class="uname"><b ${a.isPlayer ? `style="color:${CC[a.cls]}"` : ''}>${esc(a.name)}</b><small>${cb.raid && a.isPlayer && a.hp > 0 && !cb.over ? (cb.raidDone && cb.raidDone.has(a.id) ? '<span class="rdone" title="Ended their turn">&#10003; Done</span>' : cb.phase === 'player' ? '<span class="rwait">playing...</span>' : '') : sub}</small></div>
       <div class="bar"><i style="width:${pct}%"></i><span>${a.hp} / ${a.maxHp}</span></div>

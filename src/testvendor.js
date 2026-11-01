@@ -55,7 +55,7 @@
         <div class="pilegrid cxgrid nozoom">${cards.length ? '' : '<span class="muted">No cards match.</span>'}${cards.map(([k, d]) => `<div class="pilecard" style="display:grid;gap:4px;justify-items:center">${cardBox(d, 140)}${own[k] ? `<span class="pilecount">x${own[k]}</span>` : ''}<button class="pilebtn" data-tvcard="${k}">Take</button></div>`).join('')}</div>`
       : TV.tab === 'codex' ? `<p class="muted">Stash space: ${room}. Codexes roll random stats at map level +${profile.last.level || 0} (the Wagon's level). Only that class can equip one.</p>
         ${Object.entries(CB.CODEXES).map(([cls, list]) => `<h3 style="color:${CC[cls]};margin:10px 0 4px">${cls}</h3><div class="list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px">${list.map(([key, name, text]) => `<div class="item" style="--rc:#e0802a"><div class="ih"><b>${esc(name)} Codex</b><span>${cls}</span></div><div class="st" style="color:#f0b070">${esc(text)}</div><div class="acts"><button class="btn" data-tvcx="${key}" ${room > 0 ? '' : 'disabled'}>Take</button></div></div>`).join('')}</div>`).join('')}`
-      : `<div class="row"><button class="btn primary" data-tvgold="1000">+1,000 gold</button><button class="btn" data-tvgold="10000">+10,000 gold</button></div><p class="muted">Bank: ${profile.gold} gold.</p>`}`;
+      : `<div class="row"><button class="btn primary" data-tvgold="1000">+1,000 gold</button><button class="btn" data-tvgold="10000">+10,000 gold</button><button class="btn" data-tvgold="clear" title="Sets your bank to 0 gold">Clear all gold</button></div><p class="muted">Bank: ${profile.gold} gold.</p>`}`;
     fitCards(el);
   }
   $('hpTest').addEventListener('click', (ev) => {
@@ -82,7 +82,7 @@
     else if (b.dataset.tvshop) { CBHub.refreshShop(profile, DATA, profile.last.level || 0); save(); toast(`Merchant Dace has new stock (map level +${profile.last.level || 0}, ${DATA.maps[curMap()].name} gear).`); }
     else if (b.dataset.tvall) { const q = TV.q.toLowerCase(); let n = 0; for (const [k, d] of Object.entries(CARDS)) if (d.cls === hcls() && !d.designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(d.rarity) && (TV.rar === 'All' || d.rarity === TV.rar) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + d.rarity).toLowerCase().includes(q)) && ++n) c.cards.push({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), key: k, rank: 0 }); save(); toast(`Added ${n} ${hcls()} card${n === 1 ? '' : 's'} to ${c.name}'s collection.`); }
     else if (b.dataset.tvcx) { if (profile.stash.length >= CBHub.STASH_MAX) return toast('Stash is full.'); const it = CB.makeCodex(DATA, CB.makeRng(Date.now() % 2147483646), b.dataset.tvcx, profile.last.level || 0); profile.stash.unshift(Object.assign({ id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, it)); save(); }
-    else if (b.dataset.tvgold) { profile.gold += +b.dataset.tvgold; save(); renderTownBar(); }
+    else if (b.dataset.tvgold) { if (b.dataset.tvgold === 'clear') { profile.gold = 0; toast('Bank emptied: 0 gold.'); } else profile.gold += +b.dataset.tvgold; save(); renderTownBar(); }
     renderTestVendor();
   });
 

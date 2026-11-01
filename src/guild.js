@@ -43,6 +43,7 @@
       GUILD.loadedAt = Date.now();
     } catch (e) { GUILD.err = String(e && e.message || e); }
     renderGuild(); if (typeof renderSocial === 'function') renderSocial();
+    if (typeof retrack === 'function' && typeof socOn === 'function' && socOn()) retrack(); // others see the guild under your name
   }
   const RANK_ORDER = { leader: 0, officer: 1, member: 2 };
   const agoText = (t) => { if (!t) return 'never'; const s = (Date.now() - new Date(t).getTime()) / 1000; return s < 120 ? 'just now' : s < 3600 ? Math.round(s / 60) + ' min ago' : s < 86400 ? Math.round(s / 3600) + ' h ago' : Math.round(s / 86400) + ' days ago'; };

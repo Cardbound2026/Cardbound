@@ -102,6 +102,10 @@ body.sheetopen #btnUpdates, body.modalopen #btnUpdates { display: none; }
 .recgear { display: grid; border-left: 3px solid var(--rc); background: var(--panel2); border-radius: 3px; padding: 4px 8px; font-size: 12.5px; line-height: 1.3; } .recgear > span:first-child { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; } .recgear b { color: var(--rc); } .recgear small { color: #c9bfae; }
 .rectal { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; font-size: 13px; } .rectal .muted { display: inline-block; width: 42px; } .recmaps { font-size: 13px; border-collapse: collapse; width: 100%; } .recmaps td { padding: 2px 4px; border-bottom: 1px solid rgba(255,255,255,.05); }
 .recdeck { display: flex; flex-wrap: wrap; gap: 4px; } .reccardn { font-size: 12.5px; padding: 2px 8px; border-left: 3px solid var(--rc); background: var(--panel2); border-radius: 3px; cursor: help; } .reccardn b { color: var(--accent); }
+.srate { display: grid !important; grid-template-columns: auto 1fr; gap: 0 8px; margin: 6px 0 4px; font-size: 12px; } .srate em { font-style: normal; color: var(--muted); } .srate i { font-style: normal; color: #e4b64a; letter-spacing: 1px; } .srate u { text-decoration: none; color: #4a4036; }
+.sgrow { display: block; margin-top: 4px; color: var(--muted); } .classpick .sgrow b { font: 600 12.5px var(--f-ui); color: var(--text); } .sgrow span { color: var(--muted); }
+.reczoomitem { width: min(420px, 90vw); } .reccardn, .recgear { cursor: zoom-in; }
+.camph { font-size: 17px; margin: 10px 0 4px; color: var(--accent); } .camph .muted { font-size: 13px; font-family: var(--f-ui); } .campsack { max-height: 320px; }
 .stashgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 6px; align-content: start; } .stashgrid > .muted { grid-column: 1 / -1; }
 .item .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .item .acts .btn { padding: 3px 9px; font-size: 13px; }
@@ -271,11 +275,13 @@ body.sheetopen #btnUpdates, body.modalopen #btnUpdates { display: none; }
 .cf .ftext.long { font-size: calc(7.2cqw * var(--cf-text-s, 1)); }
 .cf .ftext.vlong { font-size: calc(6.3cqw * var(--cf-text-s, 1)); }
 .cf .ftext b { color: #8a1f12; } .cf.dark .ftext b { color: #ffcf7a; }
-.hand .cf { --cw: min(218px, max(150px, calc((100vh - 610px) / 1.5))); margin-left: calc(var(--cw) * -1 * var(--ov, .3)); transform-origin: 50% 120%; transform: translateY(calc(var(--off, 0) * 1px)) rotate(calc(var(--rot, 0) * 1deg)); transition: transform .14s ease-out, filter .14s, margin .14s; position: relative; z-index: var(--z, 1); }
+.hand { --hcw: min(218px, max(150px, calc((100vh - 610px) / 1.5))); height: calc(var(--hcw) * 1.5 + 30px); box-sizing: border-box; } /* the tray keeps one height, empty or full */
+.hand > .hint { align-self: center; }
+.hand .cf { --cw: var(--hcw); margin-left: calc(var(--cw) * -1 * var(--ov, .3)); transform-origin: 50% 120%; transform: translateY(calc(var(--off, 0) * 1px)) rotate(calc(var(--rot, 0) * 1deg)); transition: transform .14s ease-out, filter .14s, margin .14s; position: relative; z-index: var(--z, 1); }
 .hand .cf:first-child { margin-left: 0; }
 .hand .cf:hover:not(:disabled), .hand .cf:focus-visible { transform: translateY(-64px) rotate(0deg) scale(1.2); z-index: 50; filter: drop-shadow(0 16px 24px rgba(0,0,0,.7)); }
 .hand .cf.selected { transform: translateY(-48px) rotate(0deg) scale(1.18); z-index: 49; filter: drop-shadow(0 0 12px rgba(214,161,74,.85)); }
-@media (max-width: 700px) { .hand .cf { --cw: 156px; margin-left: calc(var(--cw) * -0.45); } .hand .cf:hover:not(:disabled) { transform: translateY(-36px) scale(1.15); } }
+@media (max-width: 700px) { .hand { --hcw: 156px; } .hand .cf { --cw: 156px; margin-left: calc(var(--cw) * -0.45); } .hand .cf:hover:not(:disabled) { transform: translateY(-36px) scale(1.15); } }
 @media (prefers-reduced-motion: reduce) { .hand .cf { transition: none; } }
 .cxdetail { display: grid; grid-template-columns: 280px 1fr; gap: 18px; align-items: start; }
 @media (max-width: 760px) { .cxdetail { grid-template-columns: 1fr; } }
@@ -394,6 +400,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 .foes.many .unit { width: auto; min-width: 0; padding: 5px; gap: 3px; } .foes.many .uname b { font-size: 13px; } .foes.many .uname small { font-size: 10px; white-space: normal; } .foes.many .intent { font-size: 11px; padding: 1px 5px; } .foes.many .deckbtn { font-size: 11px; padding: 1px 6px; }
 .rdone { color: #7fd36a; font-weight: 800; } .rwait { color: var(--muted); font-size: 10px; }
 .order .otile .ock { position: absolute; top: 2px; left: 4px; color: #7fd36a; font-weight: 900; font-size: 13px; text-shadow: 0 0 4px #000; }
+.unit > .uhead { display: none; }
 .unit.viewing .uname b { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
 .memrow { display: grid; grid-template-columns: 70px 1fr auto; gap: 8px; align-items: center; font-size: 13px; margin: 4px 0; }
 .memrow b { color: var(--mc); }
@@ -1431,6 +1438,16 @@ body.aiming { cursor: grabbing; user-select: none; }
     g.moveTo(cx + sway - 3 * s, by - 35 * s); g.lineTo(cx + sway + 3 * s, by - 35 * s); g.stroke();
     poly(g, [[cx - 13 * s + sway, by - 44 * s], [cx + 13 * s + sway, by - 44 * s], [cx + 5 * s + sway, by - 47 * s], [cx + 2 * s + sway, by - 55 * s], [cx - 5 * s + sway, by - 47 * s]], '#4a3826', 1.6); // floppy hat
   }
+  // a name tag (and an optional <Guild> line under it) sitting just above a town figure's head; returns the top of the tag
+  function townTag(g, tx, footY, name, col, guild, s, figH) {
+    const head = footY - (figH != null ? figH * s : 72 * s) - 3 * s; let y = head;
+    g.textAlign = 'center';
+    if (guild) { g.font = `italic 500 ${Math.round(10.5 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const t = '<' + guild + '>', w = g.measureText(t).width + 10, h = Math.round(14 * Math.max(0.9, s));
+      g.fillStyle = 'rgba(10,8,6,.72)'; g.fillRect(tx - w / 2, y - h, w, h); g.fillStyle = '#b9c8a6'; g.fillText(t, tx, y - h * .26); y -= h; }
+    g.font = `600 ${Math.round(12 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const w = g.measureText(name).width + 10, h = Math.round(17 * Math.max(0.9, s));
+    g.fillStyle = 'rgba(10,8,6,.8)'; g.fillRect(tx - w / 2, y - h, w, h); g.fillStyle = col; g.fillText(name, tx, y - h * .26);
+    return y - h;
+  }
   function drawChar(g, cx, by, dir, step, pal, s, t) {
     if (window.CB_INK && pal.ink && CB_INK.town(g, pal.ink, cx, by, dir, step, s, t)) return; // Gothic Ink art pack; the drawn walker below otherwise
     const bob = step ? -1.5 * s : 0, sw = step === 1 ? 1 : step === 2 ? -1 : 0;
@@ -1533,13 +1550,9 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (BZ.open) drawShopSign(gx, hp.x * TS + TS / 2, hp.y * TS - TS * 0.12, shopTitle(), s);
     // embers over the fire
     for (const e of TOWN.embers) { gx.fillStyle = `rgba(255,${150 + (e.life * 80 | 0)},70,${e.life})`; gx.fillRect(e.x * TS, e.y * TS, 2.5 * s, 2.5 * s); }
-    // name tags for nearby NPCs
-    gx.font = `600 ${Math.round(12 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; gx.textAlign = 'center';
-    for (const n of NPCS) {
-      if (Math.abs(n.x - hp.x) + Math.abs(n.y - hp.y) > 3.2) continue;
-      const tx = n.x * TS + TS / 2, ty = n.y * TS - TS * 0.12; const w = gx.measureText(n.name).width + 10;
-      gx.fillStyle = 'rgba(10,8,6,.78)'; gx.fillRect(tx - w / 2, ty - 13, w, 17); gx.fillStyle = n.open ? '#d6a14a' : '#a6978a'; gx.fillText(n.name, tx, ty);
-    }
+    // name tags over every head: townspeople always, and your own hero with your guild under the name
+    for (const n of NPCS) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.id === 'dummy' ? 52 : null);
+    { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s); }
     // night: darken everything, then cut light pools around fires and the hero
     const dk = TOWN.dark, dg = dk.getContext('2d');
     dg.setTransform(1, 0, 0, 1, 0, 0); dg.globalCompositeOperation = 'source-over'; dg.clearRect(0, 0, dk.width, dk.height);
@@ -1810,11 +1823,26 @@ body.aiming { cursor: grabbing; user-select: none; }
   $('heroList').addEventListener('click', (ev) => { const d = ev.target.closest('[data-delhero]'); if (d) return deleteHeroFlow(d.dataset.delhero); });
   $('heroList').addEventListener('click', (ev) => { const b = ev.target.closest('[data-play]'); if (!b) return; heroKey = b.dataset.play; profile.last.cls = heroKey; save(); renderHub(); show('start'); saveCard(); });
   let createDeck = 'balanced', createAmu = 'soldier';
+  // starter deck ratings, 0-5 stars: offense, defense, utility (draw, mana, control), support (healing and helping the party)
+  const STARTER_RATE = { 'Warrior:balanced': [3, 3, 2, 1], 'Warrior:berserker': [5, 1, 2, 0], 'Warrior:bleeder': [4, 2, 2, 0], 'Warrior:shieldbearer': [2, 5, 1, 1],
+    'Rogue:balanced': [3, 3, 2, 1], 'Rogue:assassin': [5, 2, 2, 0], 'Rogue:poisoner': [4, 2, 2, 0], 'Rogue:starthrower': [4, 2, 3, 0],
+    'Mage:balanced': [3, 3, 2, 1], 'Mage:pyromancer': [5, 2, 1, 0], 'Mage:cryomancer': [3, 3, 4, 1], 'Mage:arcanist': [3, 2, 5, 0],
+    'Paladin:balanced': [3, 3, 2, 2], 'Paladin:templar': [4, 2, 2, 1], 'Paladin:guardian': [2, 5, 2, 2], 'Paladin:lightbringer': [2, 3, 2, 5] };
+  // the end-game codex decks (the test decks) this starter shares the most cards with, one per codex
+  function growsInto(deck) {
+    const have = {}; for (const [k, n] of deck) have[k] = (have[k] || 0) + n;
+    const sc = (window.CB_TESTDECKS || []).filter(t => t.cls === createCls).map(t => ({ t, s: t.cards.reduce((a, [k, n]) => a + Math.min(n, have[k] || 0) * ({ Gold: 4, Blue: 3, Green: 2 }[(CARDS[k] || {}).rarity] || 1), 0) })).sort((a, b) => b.s - a.s);
+    const out = [], seen = new Set(); for (const x of sc) { if (seen.has(x.t.codex) || !x.s) continue; seen.add(x.t.codex); out.push({ cx: (CB.CODEX_BY_KEY[x.t.codex] || {}).name || x.t.codex, name: x.t.name }); if (out.length === 3) break; }
+    return out;
+  }
   function renderCreateChoices() {
     const list = createCls ? CB.STARTER_DECKS[createCls] || [] : [];
     if (!list.find(x => x[0] === createDeck)) createDeck = 'balanced';
     $('deckPick').innerHTML = list.map(([k, nm, blurb, deck]) => { const d = deck || CLASSES[createCls].deck, top = d.filter(([key]) => ['Gold', 'Blue'].includes(CARDS[key].rarity)).map(([key]) => `<i style="color:${RC[CARDS[key].rarity]}">${esc(CARDS[key].name)}</i>`).join(', ');
-      return `<button role="radio" style="--cc:${CC[createCls]}" data-deck="${k}" aria-checked="${k === createDeck}" title="${esc(d.map(([key, n]) => n + 'x ' + CARDS[key].name).join(', '))}"><b>${esc(nm)}</b><span>${esc(blurb)}</span><small>Key cards: ${top}</small></button>`; }).join('');
+      const R = STARTER_RATE[createCls + ':' + k] || [3, 3, 2, 1], grow = growsInto(d);
+      return `<button role="radio" style="--cc:${CC[createCls]}" data-deck="${k}" aria-checked="${k === createDeck}" title="${esc(d.map(([key, n]) => n + 'x ' + CARDS[key].name).join(', '))}"><b>${esc(nm)}</b><span>${esc(blurb)}</span>
+        <span class="srate">${['Offense', 'Defense', 'Utility', 'Support'].map((t, i) => `<em>${t}</em><i>${'&#9733;'.repeat(R[i])}<u>${'&#9733;'.repeat(5 - R[i])}</u></i>`).join('')}</span>
+        <small>Key cards: ${top}</small>${grow.length ? `<small class="sgrow">Grows into: ${grow.map(g => `<b>${esc(g.cx)}</b> <span>(${esc(g.name)})</span>`).join(', ')}</small>` : ''}</button>`; }).join('');
     $('amuPick').innerHTML = CB.STARTER_AMULETS.map(([k, nm, dr, rg, blurb]) => `<button role="radio" data-amu="${k}" aria-checked="${k === createAmu}" title="${esc(blurb)}"><b>${dr} draw</b><span>+${rg} mana regen</span><small>${esc(nm)}</small></button>`).join('');
   }
   $('deckPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-deck]'); if (!b) return; createDeck = b.dataset.deck; renderCreateChoices(); });
@@ -2229,6 +2257,9 @@ body.aiming { cursor: grabbing; user-select: none; }
   }
   function pendingModal() {
     const p = run.pending; redrawShop = null;
+    // what you would be carrying out: the sack, newest first
+    const campSack = (sack, gold, m) => `<h3 class="camph">${m ? `<span style="color:${CC[m.cls]}">${esc(m.name)}'s</span> sack` : 'Your sack'} <span class="muted">${sack.length} item${sack.length === 1 ? '' : 's'} &middot; ${gold} gold</span></h3>
+      <div class="list stashgrid campsack">${sack.slice().reverse().map(it => itemHtml(it)).join('') || '<span class="muted">Empty so far.</span>'}</div>`;
     const CAMP = { rest: 'rest (heal 30%)', rummage: 'rummage for loot', mend: 'mend the party (+10% each)', extract: 'extract' };
     if (run.online && p.type === 'rest') {
       const S = NET.s, me = run.members[run.myMi];
@@ -2237,7 +2268,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       modal(`<h2>Rest site</h2><p>Everyone picks what they do at the fire. <b>Extract</b> is a vote: if most of the party votes for it, everyone leaves together and keeps ${p.keep > 0.5 ? '75%' : 'half'} of their own sack (a tie is a coin flip). Otherwise each hero does what they picked.</p>
         <p class="muted">Your sack: ${me.sack.length} item${me.sack.length === 1 ? '' : 's'} and ${me.gold} gold. HP ${me.hp}/${me.stats.maxHp}.</p>
         <div class="row campbtns">${btn('rest', `Rest: heal ${p.heals[run.myMi]}`)}${btn('rummage', 'Rummage: one monster\'s loot')}${btn('mend', 'Mend: everyone +10%')}${btn('extract', 'Vote extract')}</div>
-        <p style="margin-top:8px">${votes}</p>`);
+        <p style="margin-top:8px">${votes}</p>${campSack(me.sack, me.gold)}`); $('modalBox').classList.add('wide');
       for (const k of ['rest', 'rummage', 'mend', 'extract']) $('mC_' + k).onclick = () => netAct({ t: 'camp', choice: k });
       return;
     }
@@ -2248,7 +2279,7 @@ body.aiming { cursor: grabbing; user-select: none; }
           <button class="btn" id="mRummage" title="Roll the loot of one normal monster from this part of the map">Rummage: ${party ? 'each hero finds' : 'find'} one monster's loot</button>
           ${party ? '<button class="btn" id="mMend">Mend: everyone heals 10%</button>' : ''}
           <button class="btn" id="mExtract">Extract: keep ${p.keep > 0.5 ? '75%' : 'half'} of ${sackN} item${sackN === 1 ? '' : 's'} and ${run.gold} gold</button></div>
-        <p class="muted">${p.keep > 0.5 ? 'This is the halfway campfire: extracting here keeps 75% of your sack. Later campfires keep only half.' : 'Extracting here keeps a random half of your sack.'} Beating ${esc(bossName())} keeps everything.</p>`);
+        <p class="muted">${p.keep > 0.5 ? 'This is the halfway campfire: extracting here keeps 75% of your sack. Later campfires keep only half.' : 'Extracting here keeps a random half of your sack.'} Beating ${esc(bossName())} keeps everything.</p>${run.members.map(m => campSack(m.sack, m.gold, run.members.length > 1 ? m : null)).join('')}`); $('modalBox').classList.add('wide');
       const doCamp = (k) => { const ch = run.members.map(() => k); const out = run.camp(ch); closeModal(); renderMap(); campResultModal(out, ch); };
       $('mRest').onclick = () => doCamp('rest');
       $('mRummage').onclick = () => doCamp('rummage');
@@ -2413,12 +2444,20 @@ body.aiming { cursor: grabbing; user-select: none; }
       return t === txt ? m : `<span class="tag${c}"${/title=/.test(attrs) ? attrs : attrs + ` title="${txt}"`}>${t}</span>`;
     });
   }
+  // the guild shown under a hero's name in a fight: yours, or another player's from the online list
+  function unitGuild(a) {
+    if (!a.isPlayer || typeof SOC === 'undefined') return null;
+    if (a === hero() || (cb.myMi == null && !cb.duel)) return typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null;
+    for (const o of (SOC.others ? SOC.others.values() : [])) if (o.name === a.name && (o.uid === a.uid || !a.uid)) return o.guild || null;
+    return null;
+  }
   function unitHtml(a) {
     const isNow = (cb.raid && a.isPlayer ? cb.canAct(a) : cb.current === a) && !cb.over, targetable = a.hp > 0 && !!selected && ((CARDS[selected.key].target === 'enemy' && (cb.duel ? a.isPlayer && a !== hero() : !a.isPlayer)) || (CARDS[selected.key].target === 'ally' && a.isPlayer && !cb.duel));
     const pct = Math.max(0, 100 * a.hp / a.maxHp), ini = cb.initiative(a);
     const sub = a.isPlayer ? (cb.raid ? "" : `Init ${ini}`) : `${a.tier === 'Elite' || a.tier === 'Boss' ? a.tier + ' &middot; ' : ''}${a.type} &middot; weak ${a.weakTo} &middot; Init ${ini}`;
     return `<div class="unit ${isNow ? 'active' : ''} ${a.isPlayer && cb.partySize > 1 && a === viewHero && !isNow ? 'viewing' : ''} ${a.hp <= 0 ? 'dead' : ''} ${targetable ? 'targetable' : ''}" data-id="${a.id}" ${a.tier === 'Boss' ? 'data-boss="1"' : ''} style="--uc:${a.isPlayer ? CC[a.cls] : '#ad7a5c'}" ${targetable ? 'role="button" tabindex="0"' : ''}>
       ${a.isPlayer ? '' : `<div class="uintent"><div class="intents">${intentHtml(a)}</div></div>`}
+      <div class="uhead"><b style="color:${a.isPlayer ? CC[a.cls] : '#ead9c4'}">${esc(a.name)}</b>${unitGuild(a) ? `<small>&lt;${esc(unitGuild(a))}&gt;</small>` : ''}</div>
       <div class="figure">${figure(a)}</div>
       <div class="uplate"><div class="uname"><b ${a.isPlayer ? `style="color:${CC[a.cls]}"` : ''}>${esc(a.name)}</b><small>${cb.raid && a.isPlayer && a.hp > 0 && !cb.over ? (cb.raidDone && cb.raidDone.has(a.id) ? '<span class="rdone" title="Ended their turn">&#10003; Done</span>' : cb.phase === 'player' ? '<span class="rwait">playing...</span>' : '') : sub}</small></div>
       <div class="bar"><i style="width:${pct}%"></i><span>${a.hp} / ${a.maxHp}</span></div>

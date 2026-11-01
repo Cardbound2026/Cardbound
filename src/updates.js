@@ -2,6 +2,12 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Feature', 'Starting decks are rated 0 to 5 stars for Offense, Defense, Utility and Support, and list the end-game codex decks each one can grow into.'],
+      ['Feature', 'Names over heads: in fights every hero and monster has a small name tag just above its head (heroes show their <Guild> under the name), with intents above that. In town, every townsperson and your own hero are always named, with the guild under player names.'],
+      ['Feature', 'The campfire shows everything in your sack (each hero\'s sack in a party) before you rest, rummage or extract.'],
+      ['Feature', 'Hall of Records: click a card or an item on a hero\'s record to see it full size.'],
+      ['Fix', 'The card tray in a fight keeps one height whether your hand is full, empty or it is the enemy\'s turn, so the screen no longer jumps.'],
+      ['Test', 'Tinker Pip: a Clear all gold button.'],
       ['Feature', 'Hall of Records: read the notice board in town (or Menu > Hall of Records). Heroes ranks every hero by progress or power (click one to see their gear, deck, codex talents and map records); Map records shows who has reached the highest level and furthest row on each road; Raid records shows, for every raid boss, the first guild to kill it, the guild that killed it at the highest level, and the fastest kill in rounds. Heroes are posted when you sign in and whenever you come home.'],
       ['Fix', 'Shuriken Mastery, Sharpened Stars and the Ninja codex now show on the Shuriken card itself (the damage always applied, but the card still said 4).'],
       ['Art', 'Fights are now a battlefield scene: a painted road runs back to a ruined gate (tinted for each map), your heroes stand on the left diagonal and the enemies on the right, each with a clean nameplate on the outside and their intents over their heads. Everyone is drawn at one scale, the layout keeps plates, intents and fighters from covering each other, and big fights (5+ on a side) switch to small plates under the feet. Raids show the heroes as a block of small fighters in rows, and raid bosses now use their map boss\'s inked art. Fights also use more of a wide screen. Thanks to our design tester for the battlefield painting and layout. Menu > "Battlefield view" switches back to the old side-by-side stage.'],

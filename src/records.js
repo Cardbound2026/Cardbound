@@ -89,10 +89,10 @@
   function recHeroModal(uid, key) {
     const h = (REC.heroes || []).find(x => x.user_id === uid && x.hero_key === key); if (!h) return;
     const S = h.snapshot || {}, cx = S.codex, cxd = cx && CB.CODEX_BY_KEY[cx.key], tr = cx && CB.TALENTS[cx.key];
-    const gear = (S.gear || []).slice().sort((a, b) => (CBHub.SLOTS.indexOf(a.slot) - CBHub.SLOTS.indexOf(b.slot))).map(g => `<div class="recgear" style="--rc:${RC[g.rarity] || 'var(--line)'}"><span class="muted">${esc(g.slot)}</span><b>${esc(g.name)}</b><span class="muted">${esc(g.rarity === 'Purple (Epic)' ? 'Epic' : g.rarity || '')} &middot; ilvl ${g.ilvl || 1}</span><small>${Object.entries(g.stats || {}).map(([k, v]) => `+${v} ${esc(k.replace(/^(Resistance|Elemental\/Holy Damage):(.*)$/, (m, a, b) => b + (a[0] === 'R' ? ' Res' : ' Dmg')))}`).join(', ')}</small></div>`).join('');
+    const gear = (S.gear || []).slice().sort((a, b) => (CBHub.SLOTS.indexOf(a.slot) - CBHub.SLOTS.indexOf(b.slot))).map((g, gi) => `<div class="recgear" data-recgear="${gi}" title="Click to see the item" style="--rc:${RC[g.rarity] || 'var(--line)'}"><span class="muted">${esc(g.slot)}</span><b>${esc(g.name)}</b><span class="muted">${esc(g.rarity === 'Purple (Epic)' ? 'Epic' : g.rarity || '')} &middot; ilvl ${g.ilvl || 1}</span><small>${Object.entries(g.stats || {}).map(([k, v]) => `+${v} ${esc(k.replace(/^(Resistance|Elemental\/Holy Damage):(.*)$/, (m, a, b) => b + (a[0] === 'R' ? ' Res' : ' Dmg')))}`).join(', ')}</small></div>`).join('');
     const grp = {}; for (const [k, r] of S.deck || []) { const id = k + '|' + r; grp[id] = (grp[id] || 0) + 1; }
     const deck = Object.entries(grp).map(([id, n]) => { const [k, r] = id.split('|'), d = CARDS[k]; return d ? { d, r: +r, n } : null; }).filter(Boolean).sort((a, b) => (['Gold', 'Blue', 'Green', 'White'].indexOf(a.d.rarity) - ['Gold', 'Blue', 'Green', 'White'].indexOf(b.d.rarity)) || a.d.name.localeCompare(b.d.name))
-      .map(x => `<span class="reccardn" style="--rc:${RC[x.d.rarity]}" title="${esc(x.d.text || '')}">${x.n > 1 ? x.n + 'x ' : ''}${esc(x.d.name)}${x.r ? ` <b>+${x.r}</b>` : ''}</span>`).join('');
+      .map(x => `<span class="reccardn" style="--rc:${RC[x.d.rarity]}" data-reccard="${x.d.key || ''}|${x.r}" title="Click to see the card">${x.n > 1 ? x.n + 'x ' : ''}${esc(x.d.name)}${x.r ? ` <b>+${x.r}</b>` : ''}</span>`).join('');
     const tal = cx && tr ? (cx.picks || []).map((j, i) => { if (j == null) return ''; let nm; if (i === 9) { const d = CARDS[tr.cap[j]]; nm = d ? d.name : tr.cap[j]; } else nm = (tr.rows[i][j] || {}).n; return `<li><span class="muted">Lv ${(i + 1) * 2}</span> ${esc(nm || '?')}</li>`; }).join('') : '';
     const maps = mapsInOrder().map(M => { const b = (h.maps || {})[M.key]; return `<tr><td>${M.num}. ${esc(M.name)}</td><td>${b ? `+${b.lvl}, ${ROWTXT(b.row)}` : '<span class="muted">-</span>'}</td></tr>`; }).join('');
     modal(`<h2 style="color:${CC[h.hero_class]}">${esc(h.hero_name)} <span class="muted" style="font-size:17px">${esc(h.hero_class)}${h.guild_name ? ' &middot; ' + esc(h.guild_name) : ''}</span></h2>
@@ -104,7 +104,17 @@
       <p class="muted" style="font-size:12px;margin:6px 0 0">Snapshot from ${new Date(h.updated_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}.</p>
       <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal;
+    REC.view = { gear: (S.gear || []).slice().sort((a, b) => (CBHub.SLOTS.indexOf(a.slot) - CBHub.SLOTS.indexOf(b.slot))) };
   }
+  // click a card or an item on a hero's record to see it big (the same viewer as dropped cards)
+  document.addEventListener('click', (ev) => {
+    const c = ev.target.closest('#modalBox [data-reccard], #modalBox [data-recgear]'); if (!c) return;
+    const zoom = $('cardZoom'); if (!zoom) return;
+    if (c.dataset.reccard) { const [k, r] = c.dataset.reccard.split('|'); if (!CARDS[k]) return;
+      zoom.innerHTML = `<div class="zoomin">${cardBox(CB.rankedCard(k, +r || 0), 300)}<p>${esc(CARDS[k].rarity)} ${esc(CARDS[k].cls || '')} card${+r ? ' at +' + r : ''} &middot; click anywhere to close</p></div>`; }
+    else { const g = REC.view && REC.view.gear[+c.dataset.recgear]; if (!g) return; zoom.innerHTML = `<div class="zoomin"><div class="reczoomitem">${itemHtml(g)}</div><p>click anywhere to close</p></div>`; }
+    zoom.hidden = false; fitCards(zoom); requestAnimationFrame(() => fitCards(zoom));
+  });
   $('hpRec').addEventListener('click', (ev) => {
     const t = ev.target.closest('[data-rectab]'); if (t) { REC.tab = t.dataset.rectab; return renderRecords(); }
     const so = ev.target.closest('[data-recsort]'); if (so) { REC.sort = so.dataset.recsort; return renderRecords(); }
