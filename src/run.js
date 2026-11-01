@@ -15,7 +15,7 @@ const SHRINES = [
   { key: 'draw', name: 'Shrine of Insight', text: 'Draw 1 extra card each round for the next 2 fights.', buff: { draw: 1 } },
   { key: 'luck', name: 'Shrine of Fortune', text: '+50 Luck (better drops) for the next 2 fights.', buff: { luck: 50 } },
 ];
-const SLOTS = ['Weapon', 'Off-hand', 'Helm', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves', 'Belt', 'Pants', 'Boots', 'Ring 1', 'Ring 2'];
+const SLOTS = ['Weapon', 'Off-hand', 'Helm', 'Shoulders', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves', 'Belt', 'Pants', 'Boots', 'Ring 1', 'Ring 2'];
 
 // map rules (Oct 31): every row has 3 to 5 nodes, at most 3 rows have only 3, at least 5 rows have exactly 4;
 // 5 or 6 shrines; never more than 4 fights (incl. elites) in a row along any path; 10% of maps hide one Enraged elite
@@ -198,6 +198,7 @@ class Run {
   // opts: level, seed, data, and either members: [{cls, gear, deck, bank, stashFree, name}] (a party of 1 to 4)
   // or the solo fields cls, gear/gearPreset, deck, bank, stashFree. sharedBank: true when every member spends one bank (hot-seat party).
   constructor(opts) {
+    if (opts && opts.data && CB.gearData) CB.gearData(opts.data);
     this.opts = Object.assign({ cls: 'Warrior', level: 0, gearPreset: 'White', seed: (Date.now() % 2147483646) + 1 }, opts || {});
     this.data = this.opts.data || root.CB_DATA;
     this.rng = makeRng(this.opts.seed);

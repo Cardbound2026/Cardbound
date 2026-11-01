@@ -253,5 +253,17 @@
       i === 4 ? c.party : i === 8 ? (c.s && c.s[9]) || SUP[c.cls][8] : sup[i]]);
     D[key] = { cls: c.cls, rows, cap: c.cap };
   }
+  // Nov 1 balance: every talent's numbers are halved (rounded, at least 1), except the Lv 10 row (mini capstone) and the capstone Powers.
+  // Counts stay put where halving makes no sense: the "every Nth card" and "for every N stacks" steps.
+  const HALF = (v) => Math.max(1, Math.round(v / 2));
+  const halveFx = (f, map) => f.map((v, i) => { if (i === 0 || typeof v !== 'number') return f[0] === 'aura' && Array.isArray(v) ? v.map(x => halveFx(x, map)) : v;
+    if ((f[0] === 'every' && i === 1) || (f[0] === 'dmgPer' && i === 2) || (f[0] === 'kill' && f[1] === 'spread')) return v;
+    const h = HALF(v); map.push([v, h]); return h; });
+  const halve = (t) => { if (!t || t.halved) return t; const map = [], fx = t.fx.map(f => halveFx(f, map));
+    let txt = t.t.replace(/below 30% HP/g, '\u0001').replace(/at 1 HP/g, '\u0002'), pos = 0;
+    for (const [a, b] of map) { const re = new RegExp('(^|[^0-9])' + a + '(?![0-9a-z])', 'g'); re.lastIndex = pos; const m = re.exec(txt); if (!m) continue; const at = m.index + m[1].length; txt = txt.slice(0, at) + b + txt.slice(at + String(a).length); pos = at + String(b).length; }
+    txt = txt.replace(/Thorns \(enemies that hit you take (\d+) damage\)/, (m, k) => { const f = fx.find(x => x[1] === 'thorns'); return f ? `Thorns (enemies that hit you take ${f[2]} damage)` : m; });
+    return { n: t.n, t: txt.replace(/\u0001/g, 'below 30% HP').replace(/\u0002/g, 'at 1 HP'), fx, halved: true }; };
+  for (const c of Object.values(D)) c.rows = c.rows.map((row, i) => i === 4 ? row : row.map(halve));
   if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.CB_TALENTS = D;
 })(typeof window !== 'undefined' ? window : globalThis);

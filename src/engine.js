@@ -677,19 +677,19 @@ const CLASSES = {
 };
 const it = (slot, base, stats, imp2) => ({ slot, name: base, rarity: 'White', ilvl: 1, stats: Object.assign({ 'Resistance:Fire': 3 }, stats), imp2: imp2 || {} });
 const STARTER_GEAR = {
-  Warrior: [it('Weapon', 'Arming Sword', { Strength: 3 }, { 'Multi-hit Chance': 3 }), it('Off-hand', 'Kite Shield', { Dexterity: 3 }, { Thorns: 2 }), it('Helm', 'Warband Helm', { Stamina: 6 }),
+  Warrior: [it('Weapon', 'Arming Sword', { Strength: 3 }, { 'Multi-hit Chance': 3 }), it('Off-hand', 'Kite Shield', { Dexterity: 3 }, { Thorns: 2 }), it('Helm', 'Warband Helm', { Stamina: 6 }), it('Shoulders', 'Warband Pauldrons', { Stamina: 4 }),
     it('Amulet', "Soldier's Pendant", { Strength: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Brigandine', { 'Crit Chance': 3 }),
     it('Bracers', 'Iron Bracers', { 'Crit Damage': 12 }), it('Gloves', 'Leather Gauntlets', { 'Crit Chance': 3 }), it('Belt', 'War Belt', { Stamina: 6 }), it('Pants', 'Legguards', { Stamina: 6 }),
     it('Boots', 'March Boots', { Dexterity: 3 }, { Initiative: 3 }), it('Ring 1', 'Ember-Warded Ring', { Stamina: 6 }), it('Ring 2', "Soldier's Signet", { Luck: 3 })],
-  Rogue: [it('Weapon', 'Dirk', { Strength: 3 }, { 'Crit Damage': 12 }), it('Off-hand', 'Dirk', { 'Crit Chance': 3 }, { 'Crit Damage': 12 }), it('Helm', "Scout's Cap", { Strength: 3 }),
+  Rogue: [it('Weapon', 'Dirk', { Strength: 3 }, { 'Crit Damage': 12 }), it('Off-hand', 'Dirk', { 'Crit Chance': 3 }, { 'Crit Damage': 12 }), it('Helm', "Scout's Cap", { Strength: 3 }), it('Shoulders', "Scout's Spaulders", { Dexterity: 2 }),
     it('Amulet', "Soldier's Pendant", { Strength: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Brigandine', { 'Crit Chance': 3 }),
     it('Bracers', "Archer's Bracers", { 'Crit Damage': 12 }), it('Gloves', 'Leather Gauntlets', { 'Crit Chance': 3 }), it('Belt', 'War Belt', { Stamina: 6 }), it('Pants', 'Riding Breeches', { Dexterity: 3 }),
     it('Boots', 'March Boots', { Stamina: 6 }, { Initiative: 3 }), it('Ring 1', 'Ember-Warded Ring', { Stamina: 6 }), it('Ring 2', "Soldier's Signet", { Luck: 3 })],
-  Mage: [it('Weapon', 'Ashwood Wand', { Intelligence: 3 }, { 'Elemental/Holy Damage:Fire': 6 }), it('Off-hand', 'Battle Focus', { Dexterity: 3 }, { 'Elemental/Holy Damage:Frost': 6 }), it('Helm', 'Hedge-Mage Hood', { Intelligence: 3 }),
+  Mage: [it('Weapon', 'Ashwood Wand', { Intelligence: 3 }, { 'Elemental/Holy Damage:Fire': 6 }), it('Off-hand', 'Battle Focus', { Dexterity: 3 }, { 'Elemental/Holy Damage:Frost': 6 }), it('Helm', 'Hedge-Mage Hood', { Intelligence: 3 }), it('Shoulders', 'Hedge-Mage Mantle', { Spirit: 2 }),
     it('Amulet', "Soldier's Pendant", { Intelligence: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Camp Robe', { Spirit: 3 }),
     it('Bracers', 'Linen Wraps', { Intelligence: 3 }), it('Gloves', "Scribe's Handwraps", { 'Crit Chance': 3 }), it('Belt', "Officer's Sash", { Stamina: 6 }), it('Pants', 'Quilted Leggings', { Stamina: 6 }),
     it('Boots', 'Pilgrim Slippers', { Dexterity: 3 }, { Initiative: 3 }), it('Ring 1', 'Ember-Warded Ring', { Stamina: 6 }), it('Ring 2', "Soldier's Signet", { 'Max Mana': 15 })],
-  Paladin: [it('Weapon', 'Flanged Mace', { Strength: 3 }, { 'Elemental/Holy Damage:Holy': 6 }), it('Off-hand', 'Pavise', { Dexterity: 3 }, { 'Defense Gain': 6 }), it('Helm', 'Warband Helm', { Stamina: 6 }),
+  Paladin: [it('Weapon', 'Flanged Mace', { Strength: 3 }, { 'Elemental/Holy Damage:Holy': 6 }), it('Off-hand', 'Pavise', { Dexterity: 3 }, { 'Defense Gain': 6 }), it('Helm', 'Warband Helm', { Stamina: 6 }), it('Shoulders', 'Warband Pauldrons', { Stamina: 4 }),
     it('Amulet', "Soldier's Pendant", { Strength: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Iron Cuirass', { Stamina: 6 }),
     it('Bracers', 'Iron Bracers', { Strength: 3 }), it('Gloves', 'Iron Gauntlets', { 'Crit Chance': 3 }), it('Belt', 'War Girdle', { Stamina: 6 }), it('Pants', 'Legguards', { Dexterity: 3 }),
     it('Boots', 'Iron Sabatons', { Stamina: 6 }, { Initiative: 3 }), it('Ring 1', 'Ember-Warded Ring', { Intelligence: 3 }), it('Ring 2', "Soldier's Signet", { Spirit: 3 })],
@@ -1704,9 +1704,28 @@ class Combat {
 // gear rules (Oct 31): Max Mana only rolls on chest armor, and gear can add at most +60 max mana in total
 const MANA_GEAR_CAP = 60;
 function gearRules(G) { if (!G || G._rules) return; G._rules = true; for (const A of Object.values(G.arche || {})) if (A.weights && A.slot !== 'Chest' && A.weights['Max Mana']) delete A.weights['Max Mana']; }
-if (DATA && DATA.gear) gearRules(DATA.gear);
+// Nov 1: a Shoulders slot. Three armor kinds (plate, leather, cloth) and one piece of each per map, dropped by that map's monsters
+const SHOULDER_ARCHE = {
+  Pauldrons: { slot: 'Shoulders', type: 'Plate', hands: '', imp2: null, weights: { Stamina: 12, Strength: 4, Intelligence: 1, Dexterity: 10, Spirit: 1, 'Crit Damage': 2, 'Health Regen': 3, Thorns: 6, Luck: 2 } },
+  Spaulders: { slot: 'Shoulders', type: 'Leather', hands: '', imp2: null, weights: { Stamina: 6, Strength: 8, Intelligence: 2, Dexterity: 5, Spirit: 2, 'Crit Chance': 8, 'Crit Damage': 8, Initiative: 4, Luck: 2 } },
+  Mantle: { slot: 'Shoulders', type: 'Cloth', hands: '', imp2: null, weights: { Stamina: 3, Strength: 1, Intelligence: 10, Dexterity: 2, Spirit: 10, 'Crit Chance': 3, 'Mana Regen': 3, 'Elemental/Holy Damage': 4, Luck: 2 } },
+};
+const SHOULDER_BASES = { physical: ['Warband Pauldrons', "Scout's Spaulders", 'Hedge-Mage Mantle'], fire: ['Cinder Pauldrons', 'Charred Spaulders', 'Ember Mantle'], frost: ['Rimeforged Pauldrons', 'Frostbitten Spaulders', 'Hoarfrost Mantle'],
+  nature: ['Thornwoven Pauldrons', 'Mossy Spaulders', 'Barkskin Mantle'], arcane: ['Runeforged Pauldrons', 'Spellbound Spaulders', 'Astral Mantle'], shadow: ['Gravesteel Pauldrons', 'Duskhide Spaulders', 'Shroud Mantle'] };
+function gearData(data) {
+  if (!data || !data.gear || data._shoulders) return; data._shoulders = true; const G = data.gear;
+  Object.assign(G.arche, SHOULDER_ARCHE);
+  for (const [mk, names] of Object.entries(SHOULDER_BASES)) names.forEach((name, i) => { if (!G.bases.some(b => b.name === name)) G.bases.push({ name, arch: ['Pauldrons', 'Spaulders', 'Mantle'][i], label: ['Plate', 'Leather', 'Cloth'][i] + ' Shoulders', map: mk }); });
+  // every monster that drops gear can drop its map's shoulders
+  // each monster adds the one shoulder piece that matches the armor it already drops most (plate, leather or cloth), so shoulders drop about as often as any other slot
+  for (const e of Object.values(data.enemies || {})) { if (!e.pool || !e.pool.length) continue; const add = SHOULDER_BASES[e.map || 'physical']; if (!add || e.pool.some(n => add.includes(n))) continue;
+    const t = { Plate: 0, Leather: 0, Cloth: 0 }; for (const n of e.pool) { const b = G.bases.find(x => x.name === n), A = b && G.arche[b.arch]; if (A && t[A.type] != null) t[A.type]++; }
+    const pick = Object.entries(t).sort((a, b) => b[1] - a[1] || ['Plate', 'Leather', 'Cloth'].indexOf(a[0]) - ['Plate', 'Leather', 'Cloth'].indexOf(b[0]))[0][0];
+    e.pool.push(add[['Plate', 'Leather', 'Cloth'].indexOf(pick)]); }
+}
+if (DATA && DATA.gear) { gearData(DATA); gearRules(DATA.gear); }
 function rollItem(data, rng, baseName, rarity, level) {
-  gearRules(data.gear);
+  gearData(data); gearRules(data.gear);
   const G = data.gear, b = G.bases.find(x => x.name === baseName); if (!b) return null;
   const A = G.arche[b.arch]; const R = G.rarity.find(r => r.name === rarity);
   const lv = Math.pow(G.levelGrowth, level), mult = R.mult * lv, twoH = A.hands && A.hands.startsWith('2H') ? G.twoHand : 1;
@@ -1987,6 +2006,7 @@ function rollNamedCards(data, rng, enemyKey, cls, luck) {
   return out;
 }
 function rollDrops(data, rng, enemyKey, level, luck, cls) {
+  gearData(data);
   const d = data.enemies[enemyKey], G = data.gear;
   const table = G.drops[d.tier]; const out = [];
   if (!table || !d.pool.length) return out;
@@ -2013,6 +2033,9 @@ function rollDrops(data, rng, enemyKey, level, luck, cls) {
 for (const k of ['envenom', 'plague_bloom', 'toxic_cloud', 'venom_vial', 'fester', 'crippling_poison', 'mind_numbing_poison', 'deadly_toxin', 'wound_poison', 'corrosive_toxin', 'draining_venom', 'poison_nova']) if (C[k]) { C[k].type = 'Attack'; if (C[k].dtype == null) C[k].dtype = k === 'poison_nova' ? 'Nature' : 'Physical'; }
 if (C.seismic_slam) { C.seismic_slam.cost = 0; C.seismic_slam.text = 'Deal damage to all enemies equal to 50% of your current mana. Your mana is not spent.'; }
 if (C.mana_gem) C.mana_gem.cost = 0;
+// Nov 1: anything that lasts for the rest of combat exhausts (so it can't be stacked by replaying it)
+for (const k of Object.keys(C)) { const d = C[k]; if (d.designOnly || d.type === 'Status' || d.type === 'Power' || d.exhaust) continue;
+  if (/for the rest of (the )?(combat|fight)/i.test(d.text || '')) { d.exhaust = true; if (!/Exhaust\.?\s*$/.test(d.text)) d.text = d.text.replace(/\s*$/, '') + ' Exhaust.'; } }
 // Oct 31: Battle Trance is retired: it no longer drops or plays; owned copies become Marching Orders (hub fix)
 const REMOVED_CARDS = { battle_trance: 'marching_orders' };
 for (const k of Object.keys(REMOVED_CARDS)) if (C[k]) { C[k].designOnly = true; C[k].removed = true; }
@@ -2021,6 +2044,6 @@ if (DATA) dropRemovedLoot(DATA);
 // Oct 31: Lay on Hands and Mend Wounds can be aimed at any hero in the party (yourself if you play them solo)
 if (C.mend_wounds) Object.assign(C.mend_wounds, { target: 'ally', text: 'Heal an ally (or yourself) for 8 HP.', play: (cb, t) => cb.heal(t && t.isPlayer && t.hp > 0 ? t : cb.player, 8, 'Mend Wounds') });
 if (C.lay_on_hands) Object.assign(C.lay_on_hands, { target: 'ally', text: 'Heal an ally (or yourself) for 30% of their total HP. Exhaust.', play: (cb, t) => { const a = t && t.isPlayer && t.hp > 0 ? t : cb.player; cb.heal(a, Math.round(a.maxHp * 0.3), 'Lay on Hands'); } }); // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
-const API = { CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -905,7 +905,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       <dt>Strength / Intelligence</dt><dd>+${s.strength}% / +${s.intelligence}%</dd><dt>Dexterity (${CLASSES[c.cls].defense})</dt><dd>+${s.dexterity + s.defGain}%</dd>
       <dt>Crit</dt><dd>${s.crit}% x${s.critMult.toFixed(2)}</dd><dt>Initiative</dt><dd>${s.init}</dd>${s.weaponDmg ? `<dt>Weapon damage</dt><dd>+${s.weaponDmg} per Attack hit</dd>` : ''}
       <dt>Runs / best row / boss kills</dt><dd>${c.runs} / ${c.best > ROWS ? 'Boss' : c.best} / ${c.bossKills}</dd></dl>
-      <p class="savenote" style="margin:8px 0 0">Gear score is the average item level of your 13 slots. Deck level is your best 20 cards against a perfect +10 deck. Power is the average of the two (0 to 100).</p>`;
+      <p class="savenote" style="margin:8px 0 0">Gear score is the average item level of your 14 slots. Deck level is your best 20 cards against a perfect +10 deck. Power is the average of the two (0 to 100).</p>`;
     const chk = CBHub.deckCheck(c.deck), lvl = profile.last.level || 0, mk = curMap(), M = DATA.maps[mk], amLead = !onlineParty() || SOC.party.leader === SOC.me;
     $('hubWagon').innerHTML = `<h3 style="font-size:24px;color:var(--accent)">The Wagon</h3>
       <div class="mappick">${Object.values(DATA.maps).map(m => `<button class="mapchip${m.key === mk ? ' on' : ''}" data-map="${m.key}" style="--ec:${ELC[m.element]}" ${amLead ? '' : 'disabled'}><b>${m.num}. ${esc(m.name)}</b><small>${m.element} &middot; boss ${esc(DATA.enemies[m.boss].name)}</small></button>`).join('')}</div>

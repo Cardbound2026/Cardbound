@@ -1,7 +1,7 @@
   // ---------- character sheet (paperdoll), item tooltips and upgrade checks, inspecting other players, trading
-  const DOLL_L = ['Helm', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves'], DOLL_R = ['Belt', 'Pants', 'Boots', 'Ring 1', 'Ring 2', 'Codex'], DOLL_B = ['Weapon', 'Off-hand'];
+  const DOLL_L = ['Helm', 'Shoulders', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves'], DOLL_R = ['Belt', 'Pants', 'Boots', 'Ring 1', 'Ring 2', 'Codex'], DOLL_B = ['Weapon', 'Off-hand'];
   const SLOT_PATH = {
-    Helm: 'M5 15a7 7 0 0 1 14 0v4H5z M9 19v-4h6v4', Amulet: 'M6 3c0 6 3 9 6 9s6-3 6-9 M12 12v2 M9.5 17a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0',
+    Helm: 'M5 15a7 7 0 0 1 14 0v4H5z M9 19v-4h6v4', Shoulders: 'M3 15c0-5 3-8 7-8h4c4 0 7 3 7 8l-4 1-2-4H9l-2 4z M9 7V5h6v2', Amulet: 'M6 3c0 6 3 9 6 9s6-3 6-9 M12 12v2 M9.5 17a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0',
     Cloak: 'M8 3h8l3 18H5z M12 3v18', Chest: 'M7 4l5 2 5-2 3 4-3 2v10H7V10L4 8z', Bracers: 'M6 5h12v6H6z M6 13h12v6H6z',
     Gloves: 'M7 21v-8L5 9l2-1 2 2V4h2v6V3h2v7V4h2v7l2-3 2 1-3 6v6z', Belt: 'M3 10h18v5H3z M10 9h4v7h-4z', Pants: 'M6 3h12l1 18h-5l-2-11-2 11H5z',
     Boots: 'M8 3h5v11l6 3v4H6v-4l2-2z', Ring: 'M7 14a5 5 0 1 0 10 0a5 5 0 1 0-10 0 M10 4h4l-2 4z',
@@ -110,7 +110,7 @@
   document.addEventListener('focusin', (ev) => { const el = ev.target.closest && ev.target.closest('[data-tip]'); if (el) showTip(el); });
   document.addEventListener('scroll', () => { gtip.hidden = true; }, true);
 
-  // paperdoll: portrait in the middle, the 13 slots around it, stats underneath
+  // paperdoll: portrait in the middle, the 14 slots around it, stats underneath
   function paperdoll(ch, cls, o) {
     o = o || {};
     const slot = (sl) => {

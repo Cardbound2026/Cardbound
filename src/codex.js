@@ -47,7 +47,7 @@
   function codexGear() {
     const G = DATA.gear, q = CX.q.toLowerCase();
     const slotOf = (A) => /Shield|Focus|Codex/.test(A.slot) ? 'Off-hand' : /Axe|Sword|Dagger|Mace|Wand|Maul|Warhammer|Staff/.test(A.slot) ? 'Weapon' : A.slot;
-    const SLOTN = ['Weapon', 'Off-hand', 'Helm', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves', 'Belt', 'Pants', 'Boots', 'Ring'];
+    const SLOTN = ['Weapon', 'Off-hand', 'Helm', 'Shoulders', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves', 'Belt', 'Pants', 'Boots', 'Ring'];
     const droppers = {}; for (const e of Object.values(DATA.enemies)) for (const b of e.pool || []) (droppers[b] = droppers[b] || []).push(e.name);
     const mk = cxMapKey(), M = mk && DATA.maps[mk];
     const bases = G.bases.map(b => ({ b, A: G.arche[b.arch] })).filter(x => x.A).filter(({ b }) => !mk || (b.map || 'physical') === mk).filter(({ b, A }) => (CX.slot === 'All' || slotOf(A) === CX.slot) && (!q || (b.name + ' ' + b.label + ' ' + b.arch + ' ' + (A.imp2 || '') + ' ' + Object.keys(A.weights).join(' ')).toLowerCase().includes(q)))

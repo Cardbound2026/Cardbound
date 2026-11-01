@@ -2,6 +2,9 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Balance', 'Codex talents are half as strong: every number on rows Lv 2-8 and Lv 12-18 is halved (rounded, at least 1), including all % damage and flat damage. The Lv 10 mini capstones and the Lv 20 capstone Powers are unchanged.'],
+      ['Balance', 'Cards that give you something for the rest of combat now Exhaust: Battle Fever, Ruthless Conversion, Time Theft and Offering Plate (Powers already stay in play once).'],
+      ['Feature', 'New gear slot: Shoulders. Plate Pauldrons, Leather Spaulders and Cloth Mantles, one of each per map (18 new items), drop from every monster that drops gear and from merchants. Every hero starts with (or is given) a White pair. Gear score now averages 14 slots.'],
       ['Feature', 'Starting decks are rated 0 to 5 stars for Offense, Defense, Utility and Support, and list the end-game codex decks each one can grow into.'],
       ['Feature', 'Names over heads: in fights every hero and monster has a small name tag just above its head (heroes show their <Guild> under the name), with intents above that. In town, every townsperson and your own hero are always named, with the guild under player names.'],
       ['Feature', 'The campfire shows everything in your sack (each hero\'s sack in a party) before you rest, rummage or extract.'],
