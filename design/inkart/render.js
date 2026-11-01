@@ -18,17 +18,19 @@ const BASE = 220; // image height in px for a normal fighter (shown at half size
     for (let y = 0; y < cv.height; y++) for (let x = 0; x < cv.width; x++) if (d[(y * cv.width + x) * 4 + 3] > 8) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
     const w = x1 - x0 + 1, h = y1 - y0 + 1, k = targetH / h, o = document.createElement('canvas'); o.width = Math.round(w * k); o.height = Math.round(targetH);
     const oc = o.getContext('2d'); oc.imageSmoothingQuality = 'high'; oc.drawImage(cv, x0, y0, w, h, 0, 0, o.width, o.height); return o.toDataURL('image/webp', 0.86); };`);
-  const manifest = { heroes: {}, enemies: {} };
+  // ONLY=hero_warlock (comma list of image names) renders just those and keeps the rest of the manifest
+  const ONLY = process.env.ONLY ? process.env.ONLY.split(',') : null, want = (n) => !ONLY || ONLY.includes(n);
+  const manifest = ONLY ? JSON.parse(fs.readFileSync(path.join(ROOT, 'src', 'inkart.js'), 'utf8').match(/\/\*INK-MANIFEST\*\/([\s\S]*?)\/\*END\*\//)[1]) : { heroes: {}, enemies: {} };
   const save = (name, url) => fs.writeFileSync(path.join(OUT, name + '.webp'), Buffer.from(url.split(',')[1], 'base64'));
   const pfShot = (look, mirror, h) => pg.evaluate(`(() => { const L = ${JSON.stringify(look)}; const next = makeState(); next.art = clone(state.art); next.body = clone(state.body); next.ink = state.ink; next.darkness = state.darkness; next.wear = state.wear;
       next.faceType = L.face; next.hair = L.hair; next.beard = L.beard; next.mark = L.mark; next.skin = L.skin || (L.face === 'orc' ? SKINS[8] : L.face === 'skull' ? SKINS[6] : L.face === 'revenant' ? SKINS[9] : SKINS[1]); next.hairColor = '#4a4037';
       for (let i = 0; i < SLOTS.length; i++) next.gear[SLOTS[i]].id = L.items[i]; applyPalette(next, L.scheme, false); state = next; invalidate();
       return __fit(compose(state, 540, 0, ${mirror ? 'true' : 'false'}), ${h}); })()`);
   // PAPERFORGE heads/weapons stick out above the body: a hero's image is a bit taller than BASE for the same body size
-  for (const [cls, look] of Object.entries(HEROES)) { save('hero_' + cls.toLowerCase(), await pfShot(look, false, BASE * 1.12)); manifest.heroes[cls] = 1.12; }
+  for (const [cls, look] of Object.entries(HEROES)) { if (!want('hero_' + cls.toLowerCase())) continue; save('hero_' + cls.toLowerCase(), await pfShot(look, false, BASE * 1.12)); manifest.heroes[cls] = 1.12; }
   let n = 0;
   for (const [key, e] of Object.entries(DATA.enemies)) {
-    const s = spec(key, e); let url, size;
+    if (!want(key)) continue; const s = spec(key, e); let url, size;
     if (s.kind === 'pf') { const look = Object.assign({}, s.look); if (s.faceOverride) look.face = s.faceOverride; if (s.skin) look.skin = s.skin; size = s.size * 1.12; url = await pfShot(look, true, BASE * size); }
     else {
       size = s.size * (s.body === 'beast' ? .82 : s.body === 'flier' ? .7 : 1);
@@ -38,11 +40,12 @@ const BASE = 220; // image height in px for a normal fighter (shown at half size
     save(key, url); manifest.enemies[key] = Math.round(size * 100) / 100; n++;
   }
   // town walkers: 4 idle + 6 walk frames per character in one strip, all cropped to one shared box so the feet stay put
-  manifest.town = {};
+  manifest.town = ONLY ? manifest.town || {} : {};
   const townLooks = Object.assign({}, ...Object.entries(HEROES).map(([c, l]) => ({ ['hero_' + c.toLowerCase()]: l })), ...Object.entries(NPCS).map(([k, l]) => ({ ['npc_' + k]: l })));
   for (const [key, look] of Object.entries(townLooks)) {
+    if (!want('town_' + key)) continue;
     const r = await pg.evaluate(`(() => { const L = ${JSON.stringify(look)}; const next = makeState(); next.art = clone(state.art); next.body = clone(state.body); next.ink = state.ink; next.darkness = state.darkness; next.wear = state.wear;
-      next.faceType = L.face; next.hair = L.hair; next.beard = L.beard; next.mark = L.mark; next.skin = L.face === 'orc' ? SKINS[8] : SKINS[1]; next.hairColor = '#4a4037';
+      next.faceType = L.face; next.hair = L.hair; next.beard = L.beard; next.mark = L.mark; next.skin = L.skin || (L.face === 'orc' ? SKINS[8] : L.face === 'skull' ? SKINS[6] : L.face === 'revenant' ? SKINS[9] : SKINS[1]); next.hairColor = '#4a4037';
       for (let i = 0; i < SLOTS.length; i++) next.gear[SLOTS[i]].id = L.items[i]; applyPalette(next, L.scheme, false); state = next; invalidate();
       const frames = []; for (let i = 0; i < 4; i++) frames.push(motionCompose(state, 360, 'idle', i / 4)); for (let i = 0; i < 6; i++) frames.push(motionCompose(state, 360, 'walk', i / 6));
       let x0 = 1e9, y0 = 1e9, x1 = 0, y1 = 0; const W = frames[0].width, H = frames[0].height;

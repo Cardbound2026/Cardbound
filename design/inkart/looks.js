@@ -6,6 +6,7 @@ const HEROES = {
   Warrior: { scheme: 'pilgrim', face: 'veteran', hair: 'swept', beard: 'stubble', mark: 'scar', items: ['helm_2', 'mail_0', 'pauldron_0', 'glovemetal_1', 'belt_1', 'greaves_0', 'sabatons_1', 'cape_0', 'sword_0', 'shield_0'] },
   Rogue: { scheme: 'moss', face: 'rogue', hair: 'crop', beard: 'none', mark: 'cheek', items: ['hood_1', 'leather_1', 'mantle_0', 'gloveleather_1', 'supply_1', 'pants_1', 'boot_1', 'cape_1', 'dagger_0', 'secondary_0'] },
   Mage: { scheme: 'funeral', face: 'mystic', hair: 'long', beard: 'pointed', mark: 'runes', items: ['hat_3', 'cloth_3', 'mantle_3', 'glovewrap_2', 'supply_2', 'skirt_3', 'footwrap_1', 'cape_3', 'staff_4', 'arcane_0'] },
+  Warlock: { scheme: 'funeral', face: 'skull', hair: 'bald', beard: 'none', mark: 'none', items: ['hood_2', 'cloth_3', 'mantle_2', 'glovewrap_2', 'ritualbelt_2', 'skirt_3', 'footwrap_1', 'cape_1', 'wand_0', 'book_2'] },
   Paladin: { scheme: 'brass', face: 'pilgrim', hair: 'curls', beard: 'short', mark: 'none', items: ['none_0', 'plate_1', 'pauldron_3', 'glovemetal_0', 'supply_3', 'greaves_1', 'sabatons_3', 'cape_3', 'mace_2', 'shield_1'] },
 };
 // humanoid archetypes

@@ -13,8 +13,8 @@
 
   // item power: every stat weighted the way item generation values it (the same point costs), with stats your class barely uses counted at a quarter
   // elemental damage only helps cards of that element: Warriors are all Physical, Rogues have one Nature card, Paladins hit Holy, Mages Fire/Frost/Arcane
-  const ELEM_USE = { Warrior: [], Rogue: ['Nature'], Paladin: ['Holy'], Mage: ['Fire', 'Frost', 'Arcane'] };
-  const OFF_STAT = { Warrior: ['Intelligence', 'Multicast Chance'], Mage: ['Strength', 'Multi-hit Chance', 'Multiplay Chance', 'Bleed Chance'], Rogue: ['Multicast Chance'], Paladin: [] };
+  const ELEM_USE = { Warrior: [], Rogue: ['Nature'], Paladin: ['Holy'], Mage: ['Fire', 'Frost', 'Arcane'], Warlock: ['Shadow'] };
+  const OFF_STAT = { Warrior: ['Intelligence', 'Multicast Chance'], Mage: ['Strength', 'Multi-hit Chance', 'Multiplay Chance', 'Bleed Chance'], Rogue: ['Multicast Chance'], Paladin: [], Warlock: ['Bleed Chance', 'Multiplay Chance'] };
   const isOff = (k, cls) => { const base = k.replace(/:.*$/, ''); if (base === 'Elemental/Holy Damage') return !(ELEM_USE[cls] || []).includes(k.split(':')[1]); return (OFF_STAT[cls] || []).includes(base); };
   function statPts(k) {
     const G = DATA.gear.stats, base = k.replace(/:.*$/, '');

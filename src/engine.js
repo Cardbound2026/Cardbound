@@ -549,6 +549,9 @@ const CODEXES = {
   Paladin: [['bastion_of_faith', 'Bastion of Faith', 'With a one-handed weapon and a shield: your damage becomes Holy, and every damaging card also gives 4 Block.'], ['purifier', 'Purifier', 'Removing debuffs (from yourself or an enemy) deals 2 Holy damage per stack removed to an enemy.'],
     ['righteous_crusader', 'Righteous Crusader', 'An Attack makes your next Block card 30% stronger; a Block card makes your next Attack 30% stronger.'], ['sacred_flame', 'Sacred Flame', 'Holy damage also applies Burn equal to 20% of the damage dealt.'],
     ['divine_wrath', 'Divine Wrath', 'Prayer cards give 1 more Devotion. Your Attacks also spend Devotion, for 3 bonus damage per stack.'], ['equilibrium', 'Equilibrium', 'You cannot gain Block. Your healing is 30% stronger, and healing you do also deals that much Holy damage to an enemy.']],
+  Warlock: [['soulbinder', 'Soulbinder', 'Your Shadow damage is 10% higher. 5% of the damage you deal heals every hero in the party, and your Soul Beacon heals 50% more.'], ['blightcaller', 'Blightcaller', 'Dread you apply is increased by 50%.'],
+    ['shadow_knight', 'Shadow Knight', 'Your Physical damage becomes Shadow. Your Shadow Attacks heal you for 5% of the damage they deal.'], ['demonologist', 'Demonologist', 'Your demons stay 1 turn longer.'],
+    ['bloodmancer', 'Bloodmancer', 'Your cards cost HP instead of mana (1 HP per 2 mana, up to 15 HP a turn). At the start of your turn your mana turns into healing (1 HP per 3 mana).'], ['umbral_ruin', 'Umbral Ruin', '+10% crit chance. 30% of the damage your crits deal is applied again as Rot over 3 turns.']],
 };
 const CODEX_BY_KEY = {}; for (const [cls, list] of Object.entries(CODEXES)) for (const [key, name, text] of list) CODEX_BY_KEY[key] = { key, name, text, cls };
 function makeCodex(data, rng, key, level) {
@@ -587,6 +590,12 @@ Object.assign(POWERS, {
     cardPlayed: (cb, p, d, pw) => { if (d.type === 'Attack') pw.defUp = true; else if (d.tags && d.tags.def) pw.atkUp = true; }, defMultFn: (cb, p, pw) => { if (pw.defUp && cb._playing && !cb._playing.isPower && cb._playing.type !== 'Attack') { pw.defUp = false; return 1.3; } return 1; } },
   codex_sacred_flame: { dealt: (cb, p, h) => { if (h.dtype === 'Holy' && h.lost > 0 && h.e.hp > 0) { const n = Math.max(1, Math.round(h.lost * 0.2)); h.e.burn += n; h.e.burnBy = p.id; } } },
   codex_divine_wrath: { devotionPlus: 1 },
+  codex_soulbinder: { beaconX: 1.5, hitMult: (cb, p, e, c) => c.dtype === 'Shadow' ? 1.1 : 1, dealt: (cb, p, h, pw) => { if (!(h.lost > 0)) return; pw.acc = (pw.acc || 0) + h.lost * 0.05; const n = Math.floor(pw.acc); if (n > 0) { pw.acc -= n; for (const a of cb.allies()) cb.heal(a, n, 'Soulbinder', true); } } },
+  codex_blightcaller: { dotMult: { dread: 1.5 } },
+  codex_shadow_knight: { dtype: { Physical: 'Shadow' }, dealt: (cb, p, h) => { if (h.kind === 'Attack' && h.dtype === 'Shadow' && h.lost > 0) { const n = Math.round(h.lost * 0.05); if (n > 0) cb.heal(p, n, 'Lifesteal', true); } } },
+  codex_demonologist: { demonTurns: 1 },
+  codex_bloodmancer: { bloodPay: true },
+  codex_umbral_ruin: { crit: () => 10, dealt: (cb, p, h) => { if (h.crit && h.e.hp > 0 && h.lost + h.absorbed > 0) { const n = Math.max(1, Math.round((h.lost + h.absorbed) * 0.3)); cb.addRot(h.e, n, 3, p); cb.say('crit', `Umbral Ruin: ${h.e.name} gains ${n} Rot over 3 turns.`); } } },
   codex_equilibrium: { defMult: 0, healMult: 1.3, onHeal: (cb, p, a, h) => { const e = cb.foes()[0] || cb.alive()[0]; if (e && h > 0 && !cb._eqHit) { cb._eqHit = true; cb.powerHit(p, e, h, 'Equilibrium', 'Holy', 'Skill'); cb._eqHit = false; } } },
 });
 
@@ -630,6 +639,11 @@ for (const g of GEN) {
     play: playable ? (cb, t) => runOps(cb, t, g.ops, g.name) : null, tags: playable ? genTags(g.ops) : {} });
   if (playable) GEN_OPS[key] = g.ops;
 }
+// ---------------- Warlock (Nov 1): the fifth class. Cards and Powers live in src/warlock.js
+const WARLOCK = (typeof module !== 'undefined' && module.exports) ? require('./warlock.js') : root.CB_WARLOCK;
+const BLOOD_CAP = 15; // Bloodmancer: HP you can pay for cards in one turn
+const DEMONS = {}; // filled by src/warlock.js: key -> { name, hp (% of the owner's max HP), act(cb, owner, demon, target, scale), taunt?, pick?, depart? }
+if (WARLOCK) WARLOCK.install({ card, C, POWERS, DEMONS, tgtOf, D_, DA, say, PN });
 // run a generated card's effects; t = the chosen enemy (or null)
 function runOps(cb, t, ops, label) {
   const p = cb.player;
@@ -674,6 +688,7 @@ const CLASSES = {
   Rogue: { defense: 'Dodge', blurb: 'Quick hits, Dodge, Bleed and Poison. Hide skips an enemy\'s single-target attacks.', deck: [['assassinate', 1], ['coup_de_grace', 1], ['evasion', 1], ['blur', 1], ['garrote', 1], ['hide', 1], ['envenom', 1], ['evade', 5], ['slip_away', 1], ['stab', 5], ['throwing_stars', 1], ['twin_daggers', 1]] },
   Mage: { defense: 'Barrier', blurb: 'Fire, Frost and Arcane spells with Barrier. Exploits enemy weaknesses (Arcane vs humans, Fire vs beasts).', deck: [['amplify', 1], ['prismatic_barrier', 1], ['pyroblast', 1], ['arcane_barrage', 1], ['blizzard', 1], ['ice_barrier', 1], ['arcane_missiles', 2], ['fireball', 3], ['frostbolt', 2], ['ice_bolt', 1], ['mana_spring', 1], ['ward', 5]] },
   Paladin: { defense: 'Block', blurb: 'Holy warrior: Block, Holy damage that ignores resistance, and heals.', deck: [['lay_on_hands', 1], ['ardent_defense', 1], ['holy_nova', 1], ['divine_shield', 1], ['divine_storm', 1], ['healing_light', 1], ['crusader_strike', 6], ['raise_shield', 2], ['righteous_blow', 2], ['sacred_ward', 1], ['smite', 3]] },
+  Warlock: { defense: 'Absorb', blurb: 'Shadow caster: Dread and Rot, curses, demons and Absorb (overhealing a Warlock becomes Absorb).', deck: [['soul_beacon', 1], ['shadow_armor', 1], ['soul_shroud', 1], ['shadow_volley', 1], ['curse_of_frailty', 1], ['drain_life', 1], ['summon_gloom_imp', 1], ['shadow_bolt', 5], ['dark_ward', 4], ['dread_touch', 2], ['rotting_grasp', 1], ['siphon_soul', 1]] },
 };
 const it = (slot, base, stats, imp2) => ({ slot, name: base, rarity: 'White', ilvl: 1, stats: Object.assign({ 'Resistance:Fire': 3 }, stats), imp2: imp2 || {} });
 const STARTER_GEAR = {
@@ -693,6 +708,10 @@ const STARTER_GEAR = {
     it('Amulet', "Soldier's Pendant", { Strength: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Iron Cuirass', { Stamina: 6 }),
     it('Bracers', 'Iron Bracers', { Strength: 3 }), it('Gloves', 'Iron Gauntlets', { 'Crit Chance': 3 }), it('Belt', 'War Girdle', { Stamina: 6 }), it('Pants', 'Legguards', { Dexterity: 3 }),
     it('Boots', 'Iron Sabatons', { Stamina: 6 }, { Initiative: 3 }), it('Ring 1', 'Ember-Warded Ring', { Intelligence: 3 }), it('Ring 2', "Soldier's Signet", { Spirit: 3 })],
+  Warlock: [it('Weapon', 'Ashwood Wand', { Intelligence: 3 }, { 'Elemental/Holy Damage:Shadow': 6 }), it('Off-hand', 'Battle Focus', { Spirit: 3 }, { 'Elemental/Holy Damage:Shadow': 6 }), it('Helm', 'Hedge-Mage Hood', { Intelligence: 3 }), it('Shoulders', 'Hedge-Mage Mantle', { Spirit: 2 }),
+    it('Amulet', "Soldier's Pendant", { Intelligence: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Camp Robe', { Stamina: 6 }),
+    it('Bracers', 'Linen Wraps', { Intelligence: 3 }), it('Gloves', "Scribe's Handwraps", { 'Crit Chance': 3 }), it('Belt', "Officer's Sash", { Stamina: 6 }), it('Pants', 'Quilted Leggings', { Stamina: 6 }),
+    it('Boots', 'Pilgrim Slippers', { Dexterity: 3 }, { Initiative: 3 }), it('Ring 1', 'Ember-Warded Ring', { Stamina: 6 }), it('Ring 2', "Soldier's Signet", { Spirit: 3 })],
 };
 
 // Gear presets for testing progression: the starter set's stats scaled to the average Green or Blue item (more affixes, higher rolls).
@@ -729,6 +748,12 @@ const STARTER_DECKS = {
     ['guardian', 'Guardian', 'Big Block, shield bashes and Stuns.', [['unbreakable_faith', 1], ['ardent_defense', 1], ['hammer_of_justice', 1], ['shield_of_righteousness', 1], ['divine_shield', 1], ['tempered_zeal', 1], ['raise_shield', 4], ['righteous_blow', 4], ['sword_and_board', 3], ['guarded_advance', 2], ['steadfast', 1]]],
     ['lightbringer', 'Lightbringer', 'Heal yourself and your party while you fight.', [['lay_on_hands', 1], ['holy_nova', 1], ['prayer_of_healing', 1], ['healing_light', 1], ['overflowing_light', 1], ['mending_prayer', 1], ['smite', 3], ['mend_wounds', 3], ['soothing_light', 2], ['crusader_strike', 3], ['sacred_ward', 3]]],
   ],
+  Warlock: [
+    ['balanced', 'Balanced', 'Shadow Bolts, Dread, a demon, a curse and Absorb.', null],
+    ['soulbinder', 'Soulbinder', 'Mark a foe with Soul Beacon and heal the whole party by hurting it.', [['soul_beacon', 1], ['beacon_of_ruin', 1], ['soul_harvest', 1], ['soul_link', 1], ['shadow_volley', 1], ['drain_life', 1], ['shadow_bolt', 5], ['siphon_soul', 3], ['dark_ward', 4], ['blood_offering', 1], ['shadow_mend', 1]]],
+    ['demonologist', 'Demonologist', 'Summon demons that fight for you at the end of each turn.', [['summon_ruin_fiend', 1], ['summon_bulwark_fiend', 1], ['demonic_empowerment', 1], ['summon_imp_swarm', 1], ['summon_hollow_hound', 1], ['fel_command', 1], ['summon_gloom_imp', 2], ['shadow_bolt', 4], ['dark_ward', 4], ['demon_whip', 2], ['dark_pact', 2]]],
+    ['shadowknight', 'Shadow Knight', 'Two-handed Strength strikes wreathed in shadow that drain life.', [['dread_lord', 1], ['soul_cleave', 1], ['blood_armor', 1], ['shadow_strike', 1], ['dark_cleave', 1], ['harvest_life', 1], ['dread_blade', 4], ['grim_swing', 4], ['dark_ward', 4], ['life_tap_strike', 2]]],
+  ],
 };
 // the amulet's 6 points split between card draw and mana regen (each point not on draw is +10 regen)
 const STARTER_AMULETS = [
@@ -738,7 +763,7 @@ const STARTER_AMULETS = [
   ['soldier', "Soldier's Pendant", 4, 20, 'The classic: a full hand, modest mana.'],
   ['quickhand', 'Quickhand Pendant', 5, 10, 'Lots of cards, little mana: for cheap decks.'],
 ];
-const AMULET_STAT = { Warrior: 'Strength', Rogue: 'Strength', Mage: 'Intelligence', Paladin: 'Strength' };
+const AMULET_STAT = { Warrior: 'Strength', Rogue: 'Strength', Mage: 'Intelligence', Paladin: 'Strength', Warlock: 'Intelligence' };
 function starterAmulet(cls, key) { const a = STARTER_AMULETS.find(x => x[0] === key) || STARTER_AMULETS[3]; return { slot: 'Amulet', name: a[1], rarity: 'White', ilvl: 1, stats: { [AMULET_STAT[cls] || 'Strength']: 3 }, imp2: { Draw: a[2], Regen: a[3] }, label: 'Starter amulet', amuletKey: a[0] }; }
 const PRESSURE_START = 5, PRESSURE_STEP = 0.02;
 const ELEMENTS = ['Physical', 'Fire', 'Frost', 'Nature', 'Arcane', 'Shadow'];
@@ -890,7 +915,7 @@ class Combat {
       strTurn: 0, strCombat: 0, weak: 0, vulnerable: 0, bleed: 0, slow: 0, initNext: 0, defNext: 0, manaNext: 0, drawLess: 0,
       stealth: false, locked: false, disarmed: false, disarmNext: false, negateDebuff: false, nextAttackMult: 1, nextSkillMult: 1,
       attackedThisRound: false, drawPile: [], hand: [], discard: [], exhaust: [], reshuffles: 0, firstTurn: true, dead: false,
-      poison: 0, burn: 0, chill: 0, frozen: false, regenDown: [], uid: spec.uid || null,
+      poison: 0, burn: 0, chill: 0, frozen: false, regenDown: [], uid: spec.uid || null, dread: 0, rot: 0, rotQ: [], demons: [], demonDmg: 0,
       unwarded: 0, exposure: 0, weaponDmg: g.weaponDmg || 0,
       turn: {}, until: {}, timed: [], devotion: 0, bloodDebt: 0, dmgRound: 0, rampage: 0, costX: 1,
       powers: [], turnAttacks: 0, turnSkills: 0, turnElems: [], spellCount: 0, prevType: null, nextAttackFlat: 0, nextHolyMult: 1, dexTurn: 0, hot: [],
@@ -947,7 +972,7 @@ class Combat {
     return {
       id: 'e' + i, key, name: d.name, tier: d.tier, creature: d.creature, type: d.type, weakTo: d.weak, maxHp: hp, hp, block: 0, parryBack: 0, thorns: 0, thornsTurns: 0,
       mana: 0, maxMana: Math.round(d.maxMana * this.partyScale), regen: Math.round(d.regen * this.partyScale), draw: d.draw + (this.partyScale > 1 ? this.partySize - 1 : 0), baseInit: d.tier === 'Boss' ? 12 : d.tier === 'Elite' ? 11 : 8 + ri(this.rng, 0, 7),
-      strength: 0, strTurn: 0, weak: 0, vulnerable: 0, bleed: 0, poison: 0, burn: 0, chill: 0, frozen: false, slow: 0, initNext: 0, regenDown: [], nextBonus: 0,
+      strength: 0, strTurn: 0, weak: 0, vulnerable: 0, bleed: 0, poison: 0, burn: 0, chill: 0, frozen: false, slow: 0, initNext: 0, regenDown: [], nextBonus: 0, dread: 0, rot: 0, rotQ: [],
       drawPile: shuffle(deck, this.rng), phase2Cards: phase2, phase: 1, d, hand: [], discard: [], plan: [], firstTurn: true, dmgTune: (tune.dmg || 1) * (own.dmg || d.dmgScale || 1) * ((this.data.maps && d.map && this.data.maps[d.map] && this.data.maps[d.map].dmgScale) || 1),
       condemn: 0, unwarded: 0, exposure: 0, costUp: 0, counter: 0, drawLess: 0, weakNext: 0, noHealRound: 0, grievous: 0, exhaustedTotal: 0, lostRound: 0,
     };
@@ -957,6 +982,49 @@ class Combat {
   timed(p, key, turns, o) { const t = Object.assign({ key, turns }, o || {}); p.timed.push(t); if (this._rkCard && !this._inPw && this._playing === this._rkCard) { if (this._rk) t.rk = this._rk; if (this._rkTimed) this._rkTimed.push(t); } if (t.begin) t.begin(this, p, t); return t; }
   tickTimed(p) { for (const t of p.timed) { if (t.each) this.rkRun(t.rk, () => t.each(this, p, t)); t.turns--; if (t.turns <= 0 && t.end) this.rkRun(t.rk, () => t.end(this, p, t)); } p.timed = p.timed.filter(t => t.turns > 0); }
   hasTimed(p, key) { return p.timed && p.timed.some(t => t.key === key); }
+  // ----- Warlock systems (Nov 1)
+  // Rot: each application deals its amount over 4 turns (12 Rot ticks 3/3/3/3); every application keeps its own timer. Ignores Block.
+  addRot(e, n, turns, src) { if (!e || e.hp <= 0 || !(n > 0)) return; (e.rotQ = e.rotQ || []).push({ left: n, turns: turns || 4 }); e.rot = e.rotQ.reduce((s, r) => s + r.left, 0); if (src) e.rotBy = src.id; }
+  // Fear: the enemy skips its attacks on its next turn. Stun: it skips its whole next turn (a boss shrugs off the Stun part and is only Feared).
+  // After either lands, that enemy can't be Feared or Stunned for 2 rounds (3 for bosses).
+  control(e, kind) {
+    if (!e || e.hp <= 0) return false;
+    if (e.isPlayer) { if (kind === 'stun') { e.frozen = true; this.say('crit', `${e.name} is Stunned and will lose the next turn.`); } else { e.disarmNext = true; this.say('player', `${e.name} is Feared: no Attacks next turn.`); } return true; }
+    if ((e.ccUntil || 0) > this.round) { this.say('player', `${e.name} resists the ${kind === 'stun' ? 'Stun' : 'Fear'} (controlled too recently).`); return false; }
+    const boss = e.tier === 'Boss'; e.ccUntil = this.round + (boss ? 3 : 2);
+    e.disarmed = 1; if (kind === 'stun' && !boss) { e.silenced = 1; e.stunned = 1; } else e.feared = 1;
+    this.planEnemy(e, true);
+    this.say('crit', kind === 'stun' && !boss ? `${e.name} is Stunned: it loses its next turn.` : `${e.name} is Feared: it skips its attacks on its next turn.`);
+    return true;
+  }
+  fear(e) { return this.control(e, 'fear'); }
+  stun(e) { return this.control(e, 'stun'); }
+  // Armors: one at a time; a new Armor replaces the old one
+  armor(p, key, turns, o) { const old = p.timed.filter(t => t.armor); for (const t of old) if (t.end) t.end(this, p, t); p.timed = p.timed.filter(t => !t.armor); const t = this.timed(p, key, turns, Object.assign({ armor: true }, o || {})); return t; }
+  // Demons: summoned by a Warlock, up to 3 at once. Single-target enemy cards can't hit them (the Bulwark Fiend taunts instead); area attacks do.
+  // They act at the end of their owner's turn, then count down; each lasts 2 turns (more with the Demonologist codex or cards).
+  summon(p, key, opts) {
+    const D = DEMONS[key]; if (!D || !p || p.hp <= 0) return null; opts = opts || {};
+    const hp = Math.max(1, Math.round(D.hp * p.maxHp / 100 * (1 + (opts.hpPct || 0) / 100)));
+    const ms = this._rkCard && !this._inPw && this._playing === this._rkCard ? this._rkCard.ms || {} : {}; // card upgrades: more damage, and +1 turn at +5 and +10
+    const turns = 2 + (p.powers.length ? this.pwSum(p, 'demonTurns') : 0) + (opts.turns || 0) + (p.demonTurns || 0) + (ms.turns || 0);
+    const dm = { uid: 'd' + (this._uid++), key, name: D.name, hp, maxHp: hp, turns, acts: 0, mult: this.rkm('dmg') };
+    p.demons = p.demons || []; if (p.demons.length >= 3) { const o = p.demons.shift(); this.say('player', `${o.name} is banished to make room.`); }
+    p.demons.push(dm); this.say('player', `${this.who(p)} summon${this.partySize > 1 ? 's' : ''} a ${D.name} (${hp} HP, ${turns} turns).`);
+    if (p.powers.length) this.fire(p, 'onSummon', dm);
+    return dm;
+  }
+  demonMult(p) { return 1 + ((p.demonDmg || 0) + (p.powers.length ? this.pwSum(p, 'demonDmg') : 0)) / 100; }
+  demonAct(p, dm) { const D = DEMONS[dm.key]; if (!D || this.over || dm.hp <= 0) return; const pool = this.duel ? this.players.filter(q => q !== p && q.hp > 0) : this.foes(); if (!pool.length) return; const e = (D.pick && !this.duel ? D.pick(this) : null) || pool[Math.floor(this.rng() * pool.length)]; if (!e) return; D.act(this, p, dm, e, (n) => Math.round(n * this.demonMult(p) * (dm.mult || 1))); dm.acts++; if (p.powers.length) this.fire(p, 'demonActed', dm, e); }
+  demonsAct(p) {
+    if (!p || !p.demons || !p.demons.length || this.over) return;
+    for (const dm of p.demons.slice()) { if (this.over) break; this.demonAct(p, dm); dm.turns--; if (dm.turns <= 0) { this.say('player', `${dm.name} returns to the void.`); if (DEMONS[dm.key].depart) DEMONS[dm.key].depart(this, p, dm); } }
+    p.demons = p.demons.filter(d => d.turns > 0 && d.hp > 0);
+  }
+  hurtDemon(p, dm, n, by) { if (!dm || n <= 0) return; dm.hp = Math.max(0, dm.hp - n); this.say('enemy', `${by ? by + ' hits ' : ''}${dm.name} for ${n}. ${dm.hp > 0 ? `HP ${dm.hp}/${dm.maxHp}.` : 'It is destroyed.'}`); if (dm.hp <= 0) { p.demons = p.demons.filter(d => d !== dm); if (p.powers.length) this.fire(p, 'demonDied', dm); } }
+  demonTaunt() { for (const q of this.alivePlayers()) for (const dm of (q.demons || [])) if (dm.hp > 0 && DEMONS[dm.key].taunt) return [q, dm]; return null; }
+  bloodCap(p) { return BLOOD_CAP + (p.bloodCapPlus || 0) + (p.powers.length ? this.pwSum(p, 'bloodCap') : 0); } // HP a hero can pay for cards in one turn
+  bloodPay(p) { return !!(p && p.isPlayer && ((p.turn && p.turn.bloodPay) || (p.powers.length && this.pws(p).some(([, d]) => d.bloodPay)))); }
   costOf(p, d, c) {
     if (d.cost == null) return null;
     if ((c && c.free) || (p.turn && (p.turn.freeAll || p.turn.nextFree))) return 0;
@@ -1008,8 +1076,8 @@ class Combat {
   eBuffKeys(e) { return ['strength', 'strTurn', 'thorns', 'parryBack', 'nextBonus'].filter(k => (e[k] || 0) > 0); }
   removeBuffs(e, n) { const ks = this.eBuffKeys(e).sort((a, b) => e[b] - e[a]).slice(0, n); for (const k of ks) e[k] = 0; if (ks.length) this.say('player', `${e.name} loses ${ks.length} buff${ks.length > 1 ? 's' : ''}.`); return ks.length; }
   stealBuff(p, e) { const k = this.eBuffKeys(e).sort((a, b) => e[b] - e[a])[0]; if (!k) { this.say('player', `${e.name} has no buffs to take.`); return 0; } const v = e[k]; e[k] = 0; if (k === 'strength' || k === 'strTurn') p.strCombat += v; else if (k === 'thorns') p.thorns += v; else this.gainDef(v); this.say('player', `${this.who(p)} steal${this.partySize > 1 ? 's' : ''} ${e.name}'s ${k === 'strTurn' ? 'Strength' : k} (${v}).`); return 1; }
-  debuffKeys(a, withBleed) { return ['weak', 'vulnerable', 'slow', 'poison', 'burn', 'chill', 'condemn', 'unwarded', 'exposure'].concat(withBleed ? ['bleed'] : []).filter(k => (a[k] || 0) > 0); }
-  cleanseAll(a, withBleed) { let n = 0; for (const k of this.debuffKeys(a, withBleed)) { n += a[k]; a[k] = 0; } a.disarmNext = false; if (n) this.say('player', `${a.name}: debuffs removed.`); if (this.player && this.player.isPlayer) this.fire(this.player, 'onCleanse', n); return n; }
+  debuffKeys(a, withBleed) { return ['weak', 'vulnerable', 'slow', 'poison', 'burn', 'chill', 'condemn', 'unwarded', 'exposure', 'dread', 'rot'].concat(withBleed ? ['bleed'] : []).filter(k => (a[k] || 0) > 0); }
+  cleanseAll(a, withBleed) { let n = 0; for (const k of this.debuffKeys(a, withBleed)) { n += a[k]; a[k] = 0; } a.rotQ = []; a.disarmNext = false; if (n) this.say('player', `${a.name}: debuffs removed.`); if (this.player && this.player.isPlayer) this.fire(this.player, 'onCleanse', n); return n; }
   // talents that let damage over time crit: the hero who applied it rolls their crit chance for every tick
   dotCritRoll(src, key, n) {
     if (!src || !src.isPlayer || !src.powers || !src.powers.length || !this.pws(src).some(([, d]) => d && d.dotCrit && d.dotCrit[key])) return { n, crit: false };
@@ -1033,7 +1101,7 @@ class Combat {
   }
   // paying HP can kill you (Oct 31): the card still finishes, then you fall. Divine Intervention-style 'cannot fall' still holds at 1
   loseHp(p, n, label) { const b0 = p.hp; p.hp = (p.until && p.until.noDie) || this.hasTimed(p, 'noDie') ? Math.max(1, p.hp - n) : Math.max(0, p.hp - n); if (p.debtUser) p.bloodDebt += Math.round((b0 - p.hp) * (this.has(p, 'pay_in_blood') ? 1 + this.upN(p, 'pay_in_blood', 0, 50) / 100 : 1)); p.dmgRound += b0 - p.hp; this.say('player', `${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${n} HP (${label}). HP ${p.hp}/${p.maxHp}.`); this.fire(p, 'loseHp'); if (p.hp <= 0) { if (this._playing) this._pendingDeath = p; else this.onDeath(p); } }
-  cleanse(p, n) { let left = n, removed = 0; for (const k of ['vulnerable', 'weak', 'bleed', 'poison', 'burn', 'slow', 'chill']) if (left > 0 && p[k]) { removed += p[k]; p[k] = 0; left--; } if (left > 0) p.disarmNext = false; this.say('player', removed ? `${this.who(p)}: debuffs removed.` : 'No debuffs to remove.'); this.fire(p, 'onCleanse', removed); }
+  cleanse(p, n) { let left = n, removed = 0; for (const k of ['vulnerable', 'weak', 'bleed', 'poison', 'burn', 'dread', 'rot', 'slow', 'chill']) if (left > 0 && p[k]) { removed += p[k]; p[k] = 0; if (k === 'rot') p.rotQ = []; left--; } if (left > 0) p.disarmNext = false; this.say('player', removed ? `${this.who(p)}: debuffs removed.` : 'No debuffs to remove.'); this.fire(p, 'onCleanse', removed); }
   powerHit(p, e, n, label, dtype, kind) {
     const keep = [this._playing, this.player, this._rankMult, this._attackMult, this._skillMult, this._cmult];
     this._playing = { type: kind, dtype, tags: {}, name: label, isPower: true }; this.player = p; this._rankMult = this._rk; this._rk = this._pwRk || null; this._attackMult = 1; this._skillMult = 1; this._cmult = 1;
@@ -1105,13 +1173,13 @@ class Combat {
     t = t.replace(/\b([Dd]eal) (\d+) (instead|more)/g, (m, w, n, x) => `${w} ${mark(+n, Math.max(0, Math.round((+n + flat) * dmgMult(d.dtype || 'Physical'))))} ${x}`);
     let defM = 1 + (p.dexterity || 0) / 100; if (T.defX || this.hasTimed(p, 'defX')) defM *= 2;
     if (pow) { try { defM *= this.pwProd(p, 'defMult') * this.pwProd(p, 'defMultFn'); } catch (x) {} }
-    for (const [st, W] of [['poison', 'Poison'], ['bleed', 'Bleed']]) if (new RegExp(W).test(t)) {
-      let pm = (1 + (p.strength + p.strTurn + p.strCombat) / 100) * (1 + (p.spirit || 0) / 100), pp = 0;
+    for (const [st, W] of [['poison', 'Poison'], ['bleed', 'Bleed'], ['dread', 'Dread'], ['rot', 'Rot']]) if (new RegExp(W).test(t)) {
+      let pm = (1 + (st === 'dread' || st === 'rot' ? p.intelligence + (p.intTurn || 0) : p.strength + p.strTurn + p.strCombat) / 100) * (1 + (p.spirit || 0) / 100), pp = 0;
       if (pow) { try { pm *= this.pwKey(p, 'dotMult', st); pp = this.pwKey(p, 'dotPlus', st, 'sum') || 0; } catch (x) {} }
       if (st === 'bleed' && p.bleedX) pm *= p.bleedX;
       t = t.replace(new RegExp('\\b(\\d+) ' + W + '\\b', 'g'), (m, n) => `${mark(+n, Math.round(+n * pm) + pp)} ${W}`);
     }
-    t = t.replace(/\b([Gg]ains?) (\d+) (Block|Barrier|Dodge|Parry)/g, (m, w, n, k) => `${w} ${mark(+n, Math.round(+n * defM))} ${k}`);
+    t = t.replace(/\b([Gg]ains?) (\d+) (Block|Barrier|Dodge|Parry|Absorb)/g, (m, w, n, k) => `${w} ${mark(+n, Math.round(+n * defM))} ${k}`);
     return t;
   }
   addToHand(key) { const p = this.player; const c = { uid: 'c' + (this._uid++), key }; if (this._rkAdded && !this._inPw && this._playing === this._rkCard) this._rkAdded.push(key); if (p.hand.length >= 10) { p.discard.push(c); this.say('sys', `Hand full: ${C[key].name} went to the discard pile.`); this.fire(p, 'handFull'); } else p.hand.push(c); }
@@ -1137,7 +1205,7 @@ class Combat {
   startRound() {
     this.round++;
     for (const q of this.players) q.dmgRound = 0; for (const e of this.enemies) e.lostRound = 0; this.allyLost = new Set();
-    if (this.later.length) this.later = this.later.filter(x => { if (x.round > this.round) return true; const e = this.actorById(x.e), s = this.actorById(x.src); if (e && e.hp > 0 && !this.over) { this.applyHit(s, e, x.n, { label: 'Delayed Judgment' }); this.say('player', `Delayed Judgment strikes ${e.name} for ${x.n}. HP ${e.hp}/${e.maxHp}.`); } return false; });
+    if (this.later.length) this.later = this.later.filter(x => { if (x.round > this.round) return true; const e = this.actorById(x.e), s = this.actorById(x.src); if (e && e.hp > 0 && !this.over) { this.applyHit(s, e, x.n, { label: x.label || 'Delayed Judgment' }); this.say('player', `${x.label || 'Delayed Judgment'} strikes ${e.name} for ${x.n}. HP ${e.hp}/${e.maxHp}.`); } return false; });
     if (this.over) return;
     this.say('round', `Round ${this.round}` + (this.pressure() ? ` (Pressure: ${this.duel ? 'every hit deals' : 'enemies deal'} +${Math.round(this.pressure() * 100)}%)` : ''));
     for (const p of this.alivePlayers()) {
@@ -1264,6 +1332,7 @@ class Combat {
     if (a.isPlayer) {
       this.say('player', `${this.partySize > 1 ? a.name + "'s" : 'Your'} turn. Mana ${before} + ${gain}${extra ? ' (incl. Mana Spring)' : ''} = ${a.mana} / ${a.maxMana}.`);
       a.manaNext = 0; a.stealth = false; a.locked = false; a.negateDebuff = false;
+      if (this.has(a, 'codex_bloodmancer') && a.mana > 0) { const m = a.mana; a.mana = 0; this.say('player', `Bloodmancer: ${m} mana turns into healing.`); this.heal(a, Math.floor(m / 3), 'Blood Magic'); }
       a.disarmed = a.disarmNext; a.disarmNext = false;
       if (a.disarmed) this.say('enemy', 'You are Disarmed: you cannot play Attacks this turn.');
       if (a.defNext) { this.gainDef(a.defNext, 'delayed'); a.defNext = 0; }
@@ -1280,11 +1349,17 @@ class Combat {
       for (const r of a.regenDown) r.turns--; a.regenDown = a.regenDown.filter(r => r.turns > 0);
       if (a.thornsTurns > 0 && --a.thornsTurns === 0) a.thorns = 0;
     }
-    for (const [key, label, ignoresBlock] of [['bleed', 'Bleed', false], ['poison', 'Poison', true], ['burn', 'Burn', false]]) {
+    for (const [key, label, ignoresBlock] of [['bleed', 'Bleed', false], ['poison', 'Poison', true], ['burn', 'Burn', false], ['dread', 'Dread', true]]) {
       const src = this.actorById(a[key + 'By']), ticks = src && src.isPlayer ? this.pwKey(src, 'dotTicks', key) : 1;
-      const immune = a.isPlayer && ((key === 'bleed' && this.hasTimed(a, 'noBleed')) || (a.until.immuneTypes && a.until.immuneTypes.includes(key === 'burn' ? 'Fire' : key === 'poison' ? 'Poison' : 'Bleed')) || a.until.immune);
+      const immune = a.isPlayer && ((key === 'bleed' && this.hasTimed(a, 'noBleed')) || (a.until.immuneTypes && a.until.immuneTypes.includes(key === 'burn' ? 'Fire' : key === 'poison' ? 'Poison' : key === 'dread' ? 'Shadow' : 'Bleed')) || a.until.immune);
       const blockable = key === 'poison' && a.isPlayer && this.hasTimed(a, 'poisonBlock');
       for (let k = 0; k < ticks; k++) if (a[key] > 0 && a.hp > 0 && !this.over) { if (immune) this.say('player', `${a.name} ignores the ${label}.`); else { const dc = this.dotCritRoll(src, key, a[key]); this.applyHit(src || (a.isPlayer ? null : this.player), a, dc.n, { isDot: true, label: label + (k ? ' (again)' : '') + (dc.crit ? ' (crit!)' : ''), ignoreBlock: ignoresBlock && !blockable }); } a[key] = Math.max(0, a[key] - 1); }
+    }
+    if (a.rotQ && a.rotQ.length && a.hp > 0 && !this.over) { // Rot: every application deals its share this turn
+      let n = 0; for (const r of a.rotQ) { const t = Math.round(r.left / r.turns); n += t; r.left -= t; r.turns--; }
+      a.rotQ = a.rotQ.filter(r => r.turns > 0 && r.left > 0); a.rot = a.rotQ.reduce((s, r) => s + r.left, 0);
+      const src = this.actorById(a.rotBy), dc = this.dotCritRoll(src, 'rot', n);
+      if (n > 0) this.applyHit(src || (a.isPlayer ? null : this.player), a, dc.n, { isDot: true, label: 'Rot' + (dc.crit ? ' (crit!)' : ''), ignoreBlock: true });
     }
     if (a.initNext) a.initNext = 0;
   }
@@ -1311,7 +1386,8 @@ class Combat {
     if (caster.isPlayer && caster.powers && caster.powers.length) n = Math.round(n * this.pwProd(caster, 'healMult'));
     if (caster.isPlayer && caster.turn && caster.turn.healX && !this._hot) { n *= caster.turn.healX; caster.turn.healX = 0; }
     const want = Math.round(n * mult), h = Math.min(a.maxHp - a.hp, want);
-    if (want > h && caster.turn && caster.turn.overflow) { const extra = want - h; caster.turn.overflow = false; this.defFor(a, extra); }
+    let flowed = false; if (want > h && caster.turn && caster.turn.overflow) { const extra = want - h; caster.turn.overflow = false; this.defFor(a, extra); flowed = true; }
+    if (want > h && !flowed && a.isPlayer && a.cls === 'Warlock' && a.hp > 0) { const x = want - h; a.block += x; this.say('heal', `${this.partySize > 1 ? a.name + "'s" : 'Your'} overhealing becomes ${x} Absorb (${a.block}).`); }
     a.hp += h; if (a.isPlayer) this.stats.healed += h;
     if (h > 0 && caster.isPlayer) this.fire(caster, 'onHeal', a, h);
     if (h > 0) { const m = this.mtr(caster).healed, k = (label || 'Heal') + (caster !== a ? ' on ' + a.name : ''); m[k] = (m[k] || 0) + h; }
@@ -1320,9 +1396,10 @@ class Combat {
   }
   applyDot(e, key, n) {
     if (!e || e.hp <= 0) return;
-    const q = this.player, strMult = (key === 'poison' || key === 'bleed') && q.isPlayer ? 1 + (q.strength + q.strTurn + q.strCombat) / 100 : 1; // Nov 1: Poison and Bleed scale with Strength (50 Strength: 10 Bleed becomes 15)
+    const q = this.player, strMult = (key === 'poison' || key === 'bleed') && q.isPlayer ? 1 + (q.strength + q.strTurn + q.strCombat) / 100 : (key === 'dread' || key === 'rot') && q.isPlayer ? 1 + (q.intelligence + (q.intTurn || 0)) / 100 : 1; // Nov 1: Poison and Bleed scale with Strength (50 Strength: 10 Bleed becomes 15); the Warlock's Dread and Rot with Intelligence
     const v = Math.round(n * strMult * (1 + this.player.spirit / 100) * this.pwKey(this.player, 'dotMult', key) * (key === 'bleed' && this.player.bleedX ? this.player.bleedX : 1)) + this.pwKey(this.player, 'dotPlus', key, 'sum');
-    const before = e[key]; e[key] += v; e[key + 'By'] = this.player.id;
+    if (key === 'rot') { const before = e.rot || 0, w = Math.round(v * this.rkm('rot')); this.addRot(e, w, 4, this.player); if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, w, before); this.say('player', `${e.name} gains ${w} Rot over 4 turns (Rot ${e.rot}).`); return; }
+    const before = e[key] || 0; e[key] = before + v; e[key + 'By'] = this.player.id;
     if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, v, before);
     this.say('player', `${e.name} gains ${v} ${key[0].toUpperCase() + key.slice(1)} (now ${e[key]}).`);
   }
@@ -1357,7 +1434,7 @@ class Combat {
     if (a.isPlayer) {
       if (a.dead) return;
       { const tp = a.powers.find(x => x.def && x.def.cheat && !x.cheatUsed); if (tp) { tp.cheatUsed = true; const [n, mode] = tp.def.cheat; a.hp = 1; const was = this.player; this.player = a; if (mode === 'heal') this.heal(a, Math.round(a.maxHp * n / 100), tp.def.label); else this.gainDef(n); this.player = was; this.say('crit', `${tp.def.label}: ${a.name} refuses to fall!`); return; } }
-      a.dead = true; a.block = 0; a.bleed = 0; a.discard.push(...a.hand.splice(0));
+      a.dead = true; a.block = 0; a.bleed = 0; if (a.demons && a.demons.length) { this.say('player', `${a.name}'s demons vanish.`); a.demons = []; } a.discard.push(...a.hand.splice(0));
       if (this.duel) { this.winner = this.alivePlayers()[0] || null; this.say('win', `${a.name} falls. ${this.winner ? this.winner.name + ' wins the duel' : 'The duel is a draw'} in ${this.round} round${this.round > 1 ? 's' : ''}.`); this.over = 'duel'; this.phase = 'over'; return; }
       if (!this.alivePlayers().length) { this.say('loss', this.partySize > 1 ? 'The whole party falls.' : 'You fall.'); this.over = 'loss'; this.phase = 'over'; return; }
       this.say('loss', `${a.name} falls! The rest of the party fights on.`);
@@ -1368,7 +1445,7 @@ class Combat {
     if (a._dead) return; a._dead = true;
     { const q = this.current; if (q && q.isPlayer && q.turn && q.turn.killMana) { q.mana += q.turn.killMana; this.say('player', `${a.name} died: ${q.name} gains ${q.turn.killMana} mana.`); q.turn.killMana = 0; } }
     { const q = this.current; if (q && q.isPlayer && !q.dead && q.powers.length) this.fire(q, 'onKill', a); }
-    a.bleed = a.poison = a.burn = 0; a.block = 0;
+    a.bleed = a.poison = a.burn = a.dread = a.rot = 0; a.rotQ = []; a.block = 0;
     this.say('kill', `${a.name} dies.`);
     if (this.foes().length === 0) { this.say('win', `Victory in ${this.round} round${this.round > 1 ? 's' : ''}.`); this.over = 'win'; this.phase = 'over'; }
   }
@@ -1428,6 +1505,7 @@ class Combat {
     const ign = (kind === 'Skill' && p.turn && p.turn.pierce) ? e.block : kind === 'Attack' && pow ? Math.floor(e.block * Math.min(1, Math.max(0, ...this.pws(p).map(([pw, d]) => d.ignoreBlock ? (pw.upN ? pw.upN[0] / 100 : d.ignoreBlock) : 0)))) : 0; e.block -= ign;
     const r = this.applyHit(p, e, dmg, { defer: true, label }); e.block += ign;
     if (pow) this.fire(p, 'dealt', { e, lost: r.lost, absorbed: r.absorbed, kind, dtype, d: cd, crit });
+    if (e.beacon && r.lost > 0 && !e.isPlayer) { const by = this.actorById(e.beacon.by), n = Math.round(r.lost * e.beacon.pct / 100 * (by && by.powers.length ? this.pwProd(by, 'beaconX') : 1)); if (n > 0) for (const a of this.allies()) this.heal(a, n, 'Soul Beacon', true); }
     this._lastLost = r.lost;
     if (p.isPlayer && p.turn && r.lost > 0) {
       const T = p.turn;
@@ -1472,15 +1550,22 @@ class Combat {
     if (press) parts.push(`x ${(1 + press).toFixed(2)} Pressure`);
     if (res) parts.push(`x ${(1 - res).toFixed(2)} ${dtype} resist`);
     if (p.vulnerable) parts.push(`x ${(1 + p.vulnerable / 100).toFixed(2)} Vulnerable`);
+    if (!this._aoeHit && !this.taunting()) { const tk = this.demonTaunt(); if (tk) { this.hurtDemon(tk[0], tk[1], dmg, `${e.name}'s ${label}`); return 0; } } // the Bulwark Fiend takes single-target hits
+    if (this._aoeHit && p.demons && p.demons.length) for (const dm of p.demons.slice()) this.hurtDemon(p, dm, dmg, `${e.name}'s ${label}`); // area attacks also hit demons
     p.attackedThisRound = true;
     let dmgIn = dmg;
     if (p.reflect && dmgIn > 0 && e.hp > 0 && this.rng() * 100 < p.reflect) { this.say('crit', `${p.name} reflects ${e.name}'s ${label}: ${e.name} takes ${dmgIn}.`); this.applyHit(p, e, dmgIn, { defer: true, label: 'Reflect' }); if (e.hp <= 0) this.onDeath(e); return 0; }
     if (p.powers.length) dmgIn = Math.round(dmgIn * this.pwProd(p, 'incoming'));
+    if (dmgIn > 0 && p.timed.length) {
+      const sa = p.timed.find(t => t.key === 'shadowArmor'); if (sa) dmgIn = Math.round(dmgIn * (1 - (sa.pct || 25) / 100));
+      const da = p.timed.find(t => t.key === 'demonArmor'); if (da && p.demons && p.demons.length) { const dm = p.demons.slice().sort((x, y) => y.hp - x.hp)[0], part = Math.min(dm.hp, Math.round(dmgIn * (da.pct || 30) / 100)); if (part > 0) { dmgIn -= part; this.say('player', `Demon Armor: ${dm.name} takes ${part} of the hit.`); this.hurtDemon(p, dm, part); } }
+    }
     const g = this.alivePlayers().find(q => q !== p && this.has(q, 'guardian_s_oath'));
     if (g && dmgIn > 0) { const part = Math.round(dmgIn * this.upN(g, 'guardian_s_oath', 0, 50) / 100); dmgIn -= part; this.applyHit(e, g, part, { defer: true, label }); this.say('player', `Guardian's Oath: ${g.name} takes ${part} of the hit for ${p.name}. HP ${g.hp}/${g.maxHp}.`); if (g.hp <= 0) this.onDeath(g); }
     const r = this.applyHit(e, p, dmgIn, { defer: true, label });
     this.say('enemy', `${e.name}'s ${label} hits ${this.partySize > 1 ? p.name : 'you'}${dtype !== 'Physical' ? ' (' + dtype + ')' : ''}: ${parts.join(' ')} = ${dmg}` + (r.absorbed ? `, ${r.absorbed} absorbed` : '') + `. HP ${p.hp}/${p.maxHp}.`);
     if (p.hp <= 0) { this.onDeath(p); return r.lost; }
+    if (dmgIn > 0) { const na = p.timed.find(t => t.key === 'netherArmor'); if (na) { const n = na.n || 6; p.block += n; this.say('player', `Nether Armor: ${p.name} gains ${n} Absorb.`); } }
     if (r.absorbed > 0) { p.lastParried = this.round; if (p.until.backDmg && e.hp > 0) { this.applyHit(p, e, p.until.backDmg, { label: 'Counter' }); this.say('player', `${p.name} strikes back: ${e.name} takes ${p.until.backDmg}.`); if (e.hp <= 0) this.onDeath(e); } }
     if (r.absorbed > 0 && (r.lost === 0 || this.has(p, 'partial_guard'))) { for (const f of (p.until.onFull || [])) if (!this.over) f(this, p, e); }
     if (p.powers.length && !this.over) { if (r.absorbed > 0 && (r.lost === 0 || this.has(p, 'partial_guard'))) this.fire(p, 'fullBlock', e); this.fire(p, 'hitBy', e, r); }
@@ -1513,7 +1598,10 @@ class Combat {
     const cost = this.costOf(p, d, c);
     if (p.locked && cost > 0) return { ok: false, why: 'In Stealth: 0-cost only' };
     if (p.disarmed && d.type === 'Attack') return { ok: false, why: 'Disarmed' };
-    if (cost > p.mana) return { ok: false, why: `Needs ${cost} mana` };
+    if (cost > p.mana) { const hpc = Math.ceil((cost - Math.max(0, p.mana)) / 2), cap = this.bloodCap(p);
+      if (!this.bloodPay(p)) return { ok: false, why: `Needs ${cost} mana` };
+      if (hpc >= p.hp) return { ok: false, why: `Needs ${hpc} HP` };
+      if ((p.turn.bloodPaid || 0) + hpc > cap) return { ok: false, why: `Blood limit: ${cap - (p.turn.bloodPaid || 0)} HP left this turn` }; }
     if (this.duel && d.target === 'enemy' && !this.alive().some(x => !x.stealth)) return { ok: false, why: 'Target is in Stealth' };
     return { ok: true };
   }
@@ -1527,7 +1615,7 @@ class Combat {
     let tgt = null;
     if (d.target === 'enemy') { const pool = this.alive().filter(x => !x.stealth); tgt = pool.find(e => e.id === targetId) || pool[0]; if (!tgt) return false; }
     else if (d.target === 'ally') tgt = this.allies().find(a => a.id === targetId) || p; // heals aimed at a party member
-    const paid = this.costOf(p, d, c); p.mana -= paid; p.hand.splice(idx, 1); this.stats.cardsPlayed++; this._lastTarget = d.target === 'ally' ? null : tgt; this._forced = 0; this._paid = paid; this._spentAll = null;
+    const paid = this.costOf(p, d, c); p.mana -= paid; if (p.mana < 0 && this.bloodPay(p)) { const hpc = Math.ceil(-p.mana / 2); p.mana = 0; p.turn.bloodPaid = (p.turn.bloodPaid || 0) + hpc; this.loseHp(p, hpc, 'Blood Magic: ' + d.name); } p.hand.splice(idx, 1); this.stats.cardsPlayed++; this._lastTarget = d.target === 'ally' ? null : tgt; this._forced = 0; this._paid = paid; this._spentAll = null;
     const T = p.turn; let twice = T.twice && (T.twice.type === 'any' || T.twice.type === d.type) ? T.twice : null; if (twice) T.twice = null;
     if (T.nextFree) T.nextFree = false; if (T.nextCost) T.nextCost = 0;
     const echoArc = T.echoArcane && d.type === 'Skill' && d.dtype === 'Arcane'; if (echoArc) T.echoArcane = false;
@@ -1581,6 +1669,7 @@ class Combat {
   endPlayerTurn() {
     if (this.phase !== 'player') return;
     this.fire(this.player, 'turnEnd');
+    if (this.player.demons && this.player.demons.length) { const q = this.player; this.demonsAct(q); this.player = q; if (this.over) return; }
     { const q = this.player; for (const c of q.hand) { const cd = this.card(c); if (cd.endInHand) this.rkRun(cd.rk, () => cd.endInHand(this, q, c)); } if (q.turn.endStealth && q.turnAttacks + q.turnSkills <= 1) { q.stealth = true; this.say('player', `${this.who(q)} slip${this.partySize > 1 ? 's' : ''} into Stealth.`); } if (q.turn.lurk && q.turnAttacks + q.turnSkills <= 1) q.drawNext = (q.drawNext || 0) + (q.turn.lurk === true ? 1 : q.turn.lurk); q.lastTurnAttacks = q.turnAttacks; }
     const p = this.player; const keep = p.hand.filter(c => this.card(c).retain), kept = p.hand.length - keep.length;
     p.discard.push(...p.hand.filter(c => !keep.includes(c))); p.hand = keep;
@@ -1620,6 +1709,7 @@ class Combat {
       e.lastMark = mark.id; c.mark = null;
       if (this.partySize > 1) this.say('enemy', `${e.name} targets ${mark.name}.`);
     }
+    this._aoeHit = aoe;
     for (const op of c.ops) {
       if (this.over || e.hp <= 0) break;
       const hitList = PLAYER_OPS.includes(op.op) ? (aoe ? this.alivePlayers() : [mark || standing[0]]) : [mark || standing[0]];
@@ -1663,7 +1753,7 @@ class Combat {
         }
         case 'drawLess': p.drawLess += op.n; this.say('enemy', 'You will draw 1 fewer card next round.'); break;
         case 'disarm': if (p.negateDebuff) { p.negateDebuff = false; this.say('player', 'Divine Shield blocks the Disarm.'); } else { p.disarmNext = true; this.say('enemy', 'You are Disarmed: no Attacks on your next turn.'); } break;
-        case 'cleanse': e.weak = e.vulnerable = e.bleed = e.poison = e.burn = e.chill = e.slow = 0; e.regenDown = []; this.say('enemy', `${e.name} shakes off every debuff.`); break;
+        case 'cleanse': e.weak = e.vulnerable = e.bleed = e.poison = e.burn = e.chill = e.slow = e.dread = e.rot = 0; e.rotQ = []; e.regenDown = []; this.say('enemy', `${e.name} shakes off every debuff.`); break;
         case 'purge': { const had = p.strTurn || p.strCombat || p.nextAttackMult !== 1 || p.nextSkillMult !== 1 || p.negateDebuff; p.strTurn = 0; if (op.all) p.strCombat = 0; p.nextAttackMult = 1; p.nextSkillMult = 1; p.negateDebuff = false; this.say('enemy', had ? 'Your buffs are stripped.' : 'You have no buffs to take.'); break; }
         case 'nextBonus': e.nextBonus += op.n; break;
         case 'shred': if (p.until.keepBlock || this.hasTimed(p, 'keepBlock')) { this.say('player', `${p.name}'s Block holds.`); break; } { const s = Math.min(op.n, p.block); p.block -= s; this.say('enemy', `${e.name} removes ${s} of your ${p.defName}.`); break; }
@@ -1674,6 +1764,7 @@ class Combat {
       if (!PLAYER_OPS.includes(op.op)) break; // non-hero effects (block, mana, strength) happen once
       }
     }
+    this._aoeHit = false;
     e.weakNextUsed = e.weakNextUsed || (e.weakNext && c.ops.some(o => o.op === 'damage' || o.op === 'execute')); if (e.weakNextUsed) { e.weakNext = 0; e.weakNextUsed = false; }
     if (!this.over && e.d.tier === 'Boss' && e.phase === 1 && e.hp > 0 && e.hp <= e.maxHp / 2) this.phaseTwo(e);
     return !this.over;
@@ -1689,7 +1780,7 @@ class Combat {
 
   endEnemyTurn(e) {
     if (e.hand.length) e.discard.push(...e.hand.splice(0).filter(c => !c.exhaust));
-    e.silenced = 0; e.disarmed = 0;
+    e.silenced = 0; e.disarmed = 0; e.feared = 0; e.stunned = 0;
     const less = e.drawLess || 0; e.drawLess = 0; if (e.drawLessTurns > 0) { e.drawLessTurns--; if (e.drawLessTurns > 0) e.drawLess = 1; }
     if (e.hp > 0) { this.drawCards(e, Math.max(0, (e.d.tier === 'Boss' && e.phase === 1 && e.hp <= e.maxHp / 2 && e.d.draw2 ? e.d.draw2 + (e.drawPlus || 0) : e.draw) - less)); if (less) this.say('player', `${e.name} draws ${less} fewer.`); this.planEnemy(e); }
     e.weak = Math.floor(e.weak / 2); e.vulnerable = Math.floor(e.vulnerable / 2); if (e.chill) e.chill = Math.max(0, e.chill - 1);
@@ -1723,6 +1814,9 @@ function gearData(data) {
   if (!data || !data.gear || data._shoulders) return; data._shoulders = true; const G = data.gear;
   Object.assign(G.arche, SHOULDER_ARCHE);
   for (const [mk, names] of Object.entries(SHOULDER_BASES)) names.forEach((name, i) => { if (!G.bases.some(b => b.name === name)) G.bases.push({ name, arch: ['Pauldrons', 'Spaulders', 'Mantle'][i], label: ['Plate', 'Leather', 'Cloth'][i] + ' Shoulders', map: mk }); });
+  // Nov 1: each map boss also carries one Warlock codex
+  const WLC = { physical: 'Shadow Knight', fire: 'Demonologist', frost: 'Soulbinder', nature: 'Blightcaller', arcane: 'Bloodmancer', shadow: 'Umbral Ruin' };
+  for (const e of Object.values(data.enemies || {})) if (e.tier === 'Boss' && !e.raid && WLC[e.map] && e.loot && !e.loot.some(x => x.type === 'Codex' && x.cls === 'Warlock')) e.loot.push({ item: WLC[e.map] + ' Codex', type: 'Codex', cls: 'Warlock', rarity: 'Codex', pct: 3, note: 'Fixed codex passive plus random affixes; cannot be upgraded.' });
   // every monster that drops gear can drop its map's shoulders
   // each monster adds the one shoulder piece that matches the armor it already drops most (plate, leather or cloth), so shoulders drop about as often as any other slot
   for (const e of Object.values(data.enemies || {})) { if (!e.pool || !e.pool.length) continue; const add = SHOULDER_BASES[e.map || 'physical']; if (!add || e.pool.some(n => add.includes(n))) continue;
@@ -1788,7 +1882,7 @@ const tcond = (cb, p, c) => {
   if (k === 'any') return cb.foes().some(e => (e[v] || 0) > 0); if (k === 'prevSkill') return p.prevType === 'Skill'; if (k === 'prevAttack') return p.prevType === 'Attack';
   if (k === 'elems') return (p.turnElems || []).length >= +v; if (k === 'lowhp') return p.hp < p.maxHp / 2; return true;
 };
-const tvs = (e, vs) => { if (!vs) return true; if (!e) return false; const [k, v] = vs.split(':'); return (e[k] || 0) >= (+v || 1); };
+const tvs = (e, vs) => { if (!vs) return true; if (!e) return false; const [k, v] = vs.split(':'), x = e[k]; return (x && typeof x === 'object' ? 1 : (x || 0)) >= (+v || 1); };
 const tcard = (d, f) => !!d && (!f.type || d.type === f.type) && (!f.dtype || (d.dtype || (d.type === 'Attack' ? 'Physical' : null)) === f.dtype) && (!f.key || d.key === f.key) && (!f.minCost || (d.cost || 0) >= f.minCost);
 // mini-capstone party buffs (row 5 Support): applied to every hero once, at the start of the fight
 function partyStat(a, st, n) {
@@ -1836,6 +1930,7 @@ function talentDef(list, cap, label) {
       case 'dazed': for (const e of cb.foes()) cb.eStatus(e, 'dazed', n); break;
       case 'drain': for (const e of cb.foes()) cb.drainMana(e, n); break;
       case 'cleanse': cb.cleanse(p, n); break;
+      case 'summon': for (let i = 0; i < n; i++) cb.summon(p, key); break;
     }
   };
   const NM = 'Talent';
@@ -1861,7 +1956,7 @@ function talentDef(list, cap, label) {
     for (const [w, n, key, c] of D.turn) if (tcond(cb, p, c)) act(cb, p, w, n, key, label);
   };
   if (D.kill.length) P.onKill = (cb, p, dead) => { for (const [w, n, key] of D.kill) {
-    if (w === 'spread') { const v = dead[key] || 0; if (v > 0) { for (const e of cb.foes()) if (e !== dead) { if (['burn', 'bleed', 'poison'].includes(key)) cb.applyDot(e, key, v); else e[key] = (e[key] || 0) + v; } cb.say('player', `${label}: ${dead.name}'s ${key} spreads.`); } }
+    if (w === 'spread') { const v = dead[key] || 0; if (v > 0) { for (const e of cb.foes()) if (e !== dead) { if (['burn', 'bleed', 'poison', 'dread', 'rot'].includes(key)) cb.applyDot(e, key, v); else e[key] = (e[key] || 0) + v; } cb.say('player', `${label}: ${dead.name}'s ${key} spreads.`); } }
     else if (w === 'mana') p.mana += n; else act(cb, p, w, n, key, label); } };
   if (D.hit.length || D.low) P.hitBy = (cb, p, e, r) => {
     for (const [w, n, key] of D.hit) {
@@ -1886,7 +1981,7 @@ function talentDef(list, cap, label) {
 // src/card_upgrades.js by design/scripts/card_upgrades.py. Each number token in the text says how it grows:
 // [start, end, base, kind, step, every]: base + step per `every` levels. Kinds ms_* are milestones: +1 at +5 and +2 at +10.
 const UPG = (typeof module !== 'undefined' && module.exports) ? require('./card_upgrades.js') : (root.CB_UPGRADES || {});
-const RK_FIELDS = { dmg: ['nextAttackFlat', 'turn.skillFlat', 'nextSkillMult', 'nextAttackMult'], bleed: ['bleed'], poison: ['poison'], burn: ['burn'], vulnerable: ['vulnerable'], weak: ['weak'], slow: ['slow'], chill: ['chill'], unwarded: ['unwarded'], exposure: ['exposure'], condemnation: ['condemn'],
+const RK_FIELDS = { dmg: ['nextAttackFlat', 'turn.skillFlat', 'nextSkillMult', 'nextAttackMult'], bleed: ['bleed'], poison: ['poison'], burn: ['burn'], dread: ['dread'], vulnerable: ['vulnerable'], weak: ['weak'], slow: ['slow'], chill: ['chill'], unwarded: ['unwarded'], exposure: ['exposure'], condemnation: ['condemn'],
   str: ['strTurn', 'strCombat'], int: ['intTurn'], dex: ['dexTurn', 'dexterity'], mana: ['mana', 'manaNext', 'turn.killMana'], regen: ['regen'], maxMana: ['maxMana'], init: ['initNext'], thorns: ['thorns'], devotion: ['devotion'], back: ['parryBack', 'until.backDmg'] };
 const RK_FLOAT = { nextSkillMult: 1, nextAttackMult: 1 };
 const rkGet = (a, f) => { const i = f.indexOf('.'); if (i < 0) return a[f]; const o = a[f.slice(0, i)]; return o ? o[f.slice(i + 1)] : undefined; };
@@ -2052,6 +2147,6 @@ if (DATA) dropRemovedLoot(DATA);
 // Oct 31: Lay on Hands and Mend Wounds can be aimed at any hero in the party (yourself if you play them solo)
 if (C.mend_wounds) Object.assign(C.mend_wounds, { target: 'ally', text: 'Heal an ally (or yourself) for 8 HP.', play: (cb, t) => cb.heal(t && t.isPlayer && t.hp > 0 ? t : cb.player, 8, 'Mend Wounds') });
 if (C.lay_on_hands) Object.assign(C.lay_on_hands, { target: 'ally', text: 'Heal an ally (or yourself) for 30% of their total HP. Exhaust.', play: (cb, t) => { const a = t && t.isPlayer && t.hp > 0 ? t : cb.player; cb.heal(a, Math.round(a.maxHp * 0.3), 'Lay on Hands'); } }); // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
-const API = { gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);

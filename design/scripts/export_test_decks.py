@@ -9,12 +9,12 @@ from test_decks import DECKS
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 C = json.load(open(sys.argv[1])); X = json.load(open(sys.argv[2]))
-CLS_ABBR = {'Warrior': 'WAR', 'Rogue': 'ROG', 'Mage': 'MAG', 'Paladin': 'PAL'}
-CLS_ORDER = ['Warrior', 'Rogue', 'Mage', 'Paladin']
+CLS_ABBR = {'Warrior': 'WAR', 'Rogue': 'ROG', 'Mage': 'MAG', 'Paladin': 'PAL', 'Warlock': 'WLK'}
+CLS_ORDER = ['Warrior', 'Rogue', 'Mage', 'Paladin', 'Warlock']
 RAR_ORDER = ['Gold', 'Blue', 'Green', 'White']
 RFILL = {'Gold': 'FFF1D6', 'Blue': 'DCEAFB', 'Green': 'DFF2DC', 'White': 'FFFFFF'}
 RFONT = {'Gold': 'A86A00', 'Blue': '1F5FAF', 'Green': '2E7D32', 'White': '444444'}
-CLSC = {'Warrior': 'B5462F', 'Rogue': '2E7D32', 'Mage': '1F5FAF', 'Paladin': 'A86A00'}
+CLSC = {'Warrior': 'B5462F', 'Rogue': '2E7D32', 'Mage': '1F5FAF', 'Paladin': 'A86A00', 'Warlock': '7B4FB8'}
 F = 'Arial'
 thin = Side(style='thin', color='D0D0D0'); box = Border(left=thin, right=thin, top=thin, bottom=thin)
 INPUT = PatternFill('solid', fgColor='FFF59D')
@@ -24,8 +24,8 @@ def role(text, typ):
     if typ == 'Power': return 'Engine (Power)'
     if re.search(r'\bdeal|damage equal|as damage', t): return 'Damage'
     if t.startswith('heal'): return 'Healing'
-    if re.search(r'poison|bleed|burn|chill|vulnerable|weak|condemn|unwarded|exposure|slow|stun|dazed', t) and not t.startswith('gain'): return 'Debuff / setup'
-    if re.search(r'block|barrier|dodge|parry', t): return 'Defense'
+    if re.search(r'poison|bleed|burn|chill|vulnerable|weak|condemn|unwarded|exposure|slow|stun|dazed|dread|rot|fear', t) and not t.startswith('gain'): return 'Debuff / setup'
+    if re.search(r'block|barrier|dodge|parry|absorb', t): return 'Defense'
     if re.search(r'mana|regenerat', t): return 'Mana'
     if re.search(r'draw', t): return 'Card draw'
     return 'Utility'

@@ -18,17 +18,17 @@ def classify(t, m):
         if re.match(r' chance', after): return ('pct', max(2, round(n / 10)), 1)
         return ('pct', max(2, round(n / 10)), 1)
     if re.search(r'([Ll]ose|[Pp]ay|costs?|[Tt]ake|takes)\s*$', before) and re.match(r' (HP|health|more mana|mana)', after): return None
-    if re.search(r'(below|above|under|over|least|than|first|every|per|each|up to|max|maximum of|than|to)\s*$', before) and not re.match(r' ' + DT + r'damage|( \w+)? (Block|Barrier|Dodge|Parry)', after): return None
+    if re.search(r'(below|above|under|over|least|than|first|every|per|each|up to|max|maximum of|than|to)\s*$', before) and not re.match(r' ' + DT + r'damage|( \w+)? (Block|Barrier|Dodge|Parry|Absorb)', after): return None
     if re.match(r' ' + DT + r'damage back', after) or re.match(r' damage back', after): return ('back', per(n, 8), 1)
     if re.match(r' (more |extra |bonus )' + DT + r'damage', after) or re.search(r'(deal|deals) $', before) and re.match(r' more', after): return ('dmg', per(n, 7), 1)
     if re.search(r'([Dd]eals?|for) $', before) and re.match(r' instead', after): return ('dmg', per(n, 7), 1)
     if re.match(r' ' + DT + r'damage', after):
         return ('dmg', 1, 2) if n <= 2 else ('dmg', per(n, 7), 1)
-    mm = re.match(r' (Block|Barrier|Dodge|Parry)\b', after)
+    mm = re.match(r' (Block|Barrier|Dodge|Parry|Absorb)\b', after)
     if mm:
         if re.search(r'[Rr]emoves?\s*$|[Rr]emoving\s*$|[Ss]trips?\s*$', before): return ('shred', per(n, 7), 1)
         return ('def', per(n, 7), 1)
-    mm = re.match(r' (Bleed|Poison|Burn)\b', after)
+    mm = re.match(r' (Bleed|Poison|Burn|Dread|Rot)\b', after)
     if mm: return (mm.group(1).lower(), 1, 2) if n <= 3 else (mm.group(1).lower(), per(n, 6), 1)
     mm = re.match(r' (Vulnerable|Weak|Slow|Chill|Unwarded|Condemnation|Exposure|Frostbite)\b', after)
     if mm: return (mm.group(1).lower(), 1, 2) if n <= 3 else (mm.group(1).lower(), per(n, 10), 1)
@@ -102,7 +102,7 @@ def finalize(c, s):
             to = None
             if re.match(r'%? (less|reduced|chance|Critical|crit)', tail) or 'reduced by' in t[max(0, x['i'] - 30):x['i']]: to = None
             elif re.search(r'damage', t) and 'dmg' not in kinds and re.match(r'%? (more )?(damage|of (your|all damage|the damage))', tail) and re.search(r'[Dd]eal|damage equal|dealing', t): to = 'dmg'
-            elif re.search(r'(Block|Barrier|Dodge|Parry) equal', t) and 'def' not in kinds and re.match(r'%? of your', tail): to = 'def'
+            elif re.search(r'(Block|Barrier|Dodge|Parry|Absorb) equal', t) and 'def' not in kinds and re.match(r'%? of your', tail): to = 'def'
             elif re.search(r'[Hh]eal (you|yourself|for|all)', t) and 'heal' not in kinds and re.match(r'%? of', tail): to = 'heal'
             if not to: continue
             x = dict(x, k=to); kinds.add(to)

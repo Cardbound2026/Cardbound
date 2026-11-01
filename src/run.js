@@ -69,7 +69,7 @@ function repairRows(rng, nodes) {
   }
 }
 // Nov 1: a boss always gives each hero a Green weapon and a Green chest piece of their class's kind, from this map's gear
-const GIFT_ARCH = { Warrior: [['1H Sword', '1H Axe'], ['Cuirass']], Rogue: [['Dagger'], ['Jerkin']], Mage: [['Wand'], ['Robe']], Paladin: [['1H Mace'], ['Cuirass']] };
+const GIFT_ARCH = { Warrior: [['1H Sword', '1H Axe'], ['Cuirass']], Rogue: [['Dagger'], ['Jerkin']], Mage: [['Wand'], ['Robe']], Paladin: [['1H Mace'], ['Cuirass']], Warlock: [['Wand', 'Shadow Staff'], ['Robe']] };
 function bossGift(data, rng, mapKey, cls, level) {
   const A = GIFT_ARCH[cls]; if (!A) return [];
   const out = [];

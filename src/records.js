@@ -60,7 +60,7 @@
   function recHeroes() {
     let list = REC.heroes.filter(h => REC.cls === 'All' || h.hero_class === REC.cls);
     list = list.slice().sort((a, b) => REC.sort === 'power' ? b.power - a.power || b.progress - a.progress : b.progress - a.progress || b.power - a.power);
-    const filt = `<div class="recfilt"><span class="muted">Sort</span>${[['progress', 'Progress'], ['power', 'Power']].map(([k, n]) => `<button class="chip ${REC.sort === k ? 'on' : ''}" data-recsort="${k}">${n}</button>`).join('')}<span class="muted" style="margin-left:10px">Class</span>${['All', 'Warrior', 'Rogue', 'Mage', 'Paladin'].map(k => `<button class="chip ${REC.cls === k ? 'on' : ''}" data-reccls="${k}">${k}</button>`).join('')}</div>
+    const filt = `<div class="recfilt"><span class="muted">Sort</span>${[['progress', 'Progress'], ['power', 'Power']].map(([k, n]) => `<button class="chip ${REC.sort === k ? 'on' : ''}" data-recsort="${k}">${n}</button>`).join('')}<span class="muted" style="margin-left:10px">Class</span>${['All', 'Warrior', 'Rogue', 'Mage', 'Paladin', 'Warlock'].map(k => `<button class="chip ${REC.cls === k ? 'on' : ''}" data-reccls="${k}">${k}</button>`).join('')}</div>
       <p class="savenote" style="margin:0 0 6px">Progress adds up every map: 15 points per map level reached plus the furthest row at that level (the boss counts as row 15). Click a hero to see their gear, deck and talents.</p>`;
     if (!list.length) return filt + '<p class="muted">No heroes yet.</p>';
     const rows = list.slice(0, 100).map((h, i) => { const bm = bestMapOf(h), cx = h.snapshot && h.snapshot.codex, cxn = cx && CB.CODEX_BY_KEY[cx.key] ? CB.CODEX_BY_KEY[cx.key].name : '';

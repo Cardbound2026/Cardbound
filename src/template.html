@@ -483,6 +483,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 .pilecard.design .cf { filter: grayscale(.55) brightness(.75); }
 .pilecard .dstamp { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%) rotate(-12deg); z-index: 32; background: rgba(20,14,10,.88); border: 1px solid #8a6a3a; color: #e9c98a; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; white-space: nowrap; pointer-events: none; }
 .tag.power { background: #2a1f33; border-color: #6a4f8a; color: #d9c2f5; }
+.tag.demon { background: #2b1830; border-color: #8a3f8f; color: #f0b6ea; }
 .glq { width: 100%; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; font: inherit; margin-bottom: 6px; }
 .glbody { max-height: 62vh; overflow: auto; padding-right: 4px; }
 .glh { font-size: 18px; color: var(--accent); margin: 10px 0 4px; }
@@ -547,6 +548,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 .herocard.new { border-style: dashed; border-top-style: dashed; place-content: center; text-align: center; color: var(--muted); font-size: 16px; }
 .create h3 { font-family: var(--cf-name); font-weight: 400; font-size: 26px; color: var(--accent); margin-bottom: 8px; }
 .classpick { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+#classPick { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); } #classPick b { font-size: 20px; }
 .classpick button { text-align: left; background: var(--panel2); border: 1px solid var(--line); border-top: 4px solid var(--cc); border-radius: 8px; padding: 10px 12px; display: grid; gap: 4px; }
 .classpick button[aria-checked="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; background: #2b2115; }
 .classpick button:disabled { opacity: .45; }
@@ -750,6 +752,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 /*CARDSGEN*/
 /*UPGRADES*/
 /*TALENTS*/
+/*WARLOCK*/
 /*ENGINE*/
 </script>
 <script>
@@ -765,7 +768,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
   const RC = { Codex: '#e0802a', White: 'var(--r-white)', Green: 'var(--r-green)', Blue: 'var(--r-blue)', Gold: 'var(--r-gold)', 'Purple (Epic)': 'var(--r-purple)', Status: 'var(--r-status)', Token: 'var(--muted)' };
-  const CC = { Warrior: '#c9472f', Rogue: '#64b25b', Mage: '#4f93e6', Paladin: '#e4a93a' };
+  const CC = { Warrior: '#c9472f', Rogue: '#64b25b', Mage: '#4f93e6', Paladin: '#e4a93a', Warlock: '#a77be0' };
   const ICON = {
     attack: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 14l1.2-3.6L11 2.6 13.4 5 5.6 12.8z"/><path d="M10 1.5h4.5V6z"/></svg>',
     defend: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l6 2.2v4.3c0 3.6-2.6 6.3-6 7.5C4.6 13.8 2 11.1 2 7.5V3.2z"/></svg>',
@@ -1151,7 +1154,7 @@ body.aiming { cursor: grabbing; user-select: none; }
         return `<div class="item amucard ${same ? 'on' : ''}"><div class="ih"><b>${esc(nm)}</b><span>${AMU_PRICE} gold</span></div><div class="amunums"><b>${dr}</b> draw &middot; <b style="color:#8fc3ff">+${rg}</b> regen</div><div class="il">${esc(blurb)}</div>
           <div class="acts"><button class="btn ${same ? '' : 'primary'}" data-buyamu="${k}" ${profile.gold < AMU_PRICE || same ? 'disabled' : ''}>${same ? 'Wearing one' : profile.gold < AMU_PRICE ? 'Not enough gold' : 'Buy and wear'}</button></div></div>`; }).join('')}</div>`;
   }
-  const AMULET_STAT_UI = { Warrior: 'Strength', Rogue: 'Strength', Mage: 'Intelligence', Paladin: 'Strength' };
+  const AMULET_STAT_UI = { Warrior: 'Strength', Rogue: 'Strength', Mage: 'Intelligence', Paladin: 'Strength', Warlock: 'Intelligence' };
   $('hpAmu').addEventListener('click', (ev) => {
     const b = ev.target.closest('[data-buyamu]'); if (!b || b.disabled) return;
     if (profile.gold < AMU_PRICE) return toast('Not enough gold.');
@@ -1420,7 +1423,8 @@ body.aiming { cursor: grabbing; user-select: none; }
     const base = { Warrior: { chest: '#5a2620', skin: '#c99a76', hair: '#2a1d14', legs: '#2a2420', weapon: 'swordshield', cape: '#3a1612' },
       Rogue: { chest: '#21331e', skin: '#b98d6c', hair: '#141210', legs: '#1b1f19', weapon: 'daggers', cape: '#18231a', helm: 'hood' },
       Mage: { chest: '#202d4c', skin: '#d2ad8c', hair: '#c9c2b2', legs: '#191e2e', weapon: 'staff', cape: '#2a1f44', helm: 'hood' },
-      Paladin: { chest: '#5f5a4a', skin: '#caa07e', hair: '#8a6a3a', legs: '#2e2c26', weapon: 'maceshield', cape: '#6a5420' } }[heroKey_];
+      Paladin: { chest: '#5f5a4a', skin: '#caa07e', hair: '#8a6a3a', legs: '#2e2c26', weapon: 'maceshield', cape: '#6a5420' },
+      Warlock: { chest: '#3a2a4a', skin: '#c6baa1', hair: '#1a1420', legs: '#1e1826', weapon: 'staff', cape: '#2a1a36', helm: 'hood' } }[heroKey_];
     return Object.assign({}, base, { ink: 'hero_' + heroKey_.toLowerCase(), trim: rc('chest') || '#9c968a', helm: R.helm ? (base.helm || 'helm') : base.helm || null, helmC: rc('helm') || '#5a5f66', wpnC: rc('weapon') || '#9c968a', capeTrim: rc('cloak'), bootC: rc('boots'), hero: true });
   }
   // the training dummy: a straw scarecrow on a post, swaying a little
@@ -1829,7 +1833,8 @@ body.aiming { cursor: grabbing; user-select: none; }
   const STARTER_RATE = { 'Warrior:balanced': [3, 3, 2, 1], 'Warrior:berserker': [5, 1, 2, 0], 'Warrior:bleeder': [4, 2, 2, 0], 'Warrior:shieldbearer': [2, 5, 1, 1],
     'Rogue:balanced': [3, 3, 2, 1], 'Rogue:assassin': [5, 2, 2, 0], 'Rogue:poisoner': [4, 2, 2, 0], 'Rogue:starthrower': [4, 2, 3, 0],
     'Mage:balanced': [3, 3, 2, 1], 'Mage:pyromancer': [5, 2, 1, 0], 'Mage:cryomancer': [3, 3, 4, 1], 'Mage:arcanist': [3, 2, 5, 0],
-    'Paladin:balanced': [3, 3, 2, 2], 'Paladin:templar': [4, 2, 2, 1], 'Paladin:guardian': [2, 5, 2, 2], 'Paladin:lightbringer': [2, 3, 2, 5] };
+    'Paladin:balanced': [3, 3, 2, 2], 'Paladin:templar': [4, 2, 2, 1], 'Paladin:guardian': [2, 5, 2, 2], 'Paladin:lightbringer': [2, 3, 2, 5],
+    'Warlock:balanced': [3, 3, 2, 2], 'Warlock:soulbinder': [2, 2, 2, 5], 'Warlock:demonologist': [4, 3, 3, 1], 'Warlock:shadowknight': [4, 3, 1, 1] };
   // the end-game codex decks (the test decks) this starter shares the most cards with, one per codex
   function growsInto(deck) {
     const have = {}; for (const [k, n] of deck) have[k] = (have[k] || 0) + n;
@@ -2422,16 +2427,20 @@ body.aiming { cursor: grabbing; user-select: none; }
       if (U.convert || U.convertNext) t.push(`<span class="tag">Hits become ${U.convert || U.convertNext}</span>`);
       if (U.immuneTypes && U.immuneTypes.length) t.push(`<span class="tag good">No ${U.immuneTypes.join('/')} damage</span>`);
       if (U.backDmg) t.push(`<span class="tag good">Counter ${U.backDmg}</span>`);
-      for (const x of a.timed || []) { const L = { keepBlock: 'Block locked', critBuff: 'Crit up', mirror: 'Mirror Image', noBleed: 'Bleed immune', poisonBlock: 'Poison blockable', fortify: 'Fortify', relentless: 'Relentless', endless: 'Endless Blades', defX: 'Defense x2', warEngine: 'Regen x3', bleedX: 'Bleed x2', adrenaline: 'Adrenaline' }[x.key]; if (L) t.push(`<span class="tag good">${L} ${x.turns}</span>`); }
+      for (const x of a.timed || []) { const L = { keepBlock: 'Block locked', critBuff: 'Crit up', mirror: 'Mirror Image', noBleed: 'Bleed immune', poisonBlock: 'Poison blockable', fortify: 'Fortify', relentless: 'Relentless', endless: 'Endless Blades', defX: 'Defense x2', warEngine: 'Regen x3', bleedX: 'Bleed x2', adrenaline: 'Adrenaline', shadowArmor: 'Shadow Armor', bloodArmor: 'Blood Armor', soulArmor: 'Soul Armor', netherArmor: 'Nether Armor', demonArmor: 'Demon Armor' }[x.key]; if (L) t.push(`<span class="tag good">${L} ${x.turns}</span>`); }
       if (a.turn && (cb.raid ? cb.phase === 'player' : cb.current === a)) { const T = a.turn; if (T.twice) t.push(`<span class="tag good">Next ${T.twice.type === 'any' ? 'card' : T.twice.type} twice</span>`); if (T.nextFree || T.freeAll) t.push(`<span class="tag good">Free</span>`); if (T.noDraw) t.push(`<span class="tag bad">No draws</span>`); if (T.killMana) t.push(`<span class="tag good">Kill: +${T.killMana} mana</span>`); }
     } else {
       for (const [k, l, tip] of [['condemn', 'Condemn', 'Takes more Holy damage (%)'], ['unwarded', 'Unwarded', 'Takes more Skill damage (%)'], ['exposure', 'Exposure', 'Its cards cost 5% more per stack']]) if (a[k]) t.push(`<span class="tag bad" title="${tip}">${l} ${a[k]}</span>`);
-      if (a.counter) t.push(`<span class="tag bad">Countered</span>`); if (a.silenced) t.push(`<span class="tag bad">Silenced</span>`); if (a.disarmed) t.push(`<span class="tag bad">Disarmed</span>`);
+      if (a.stunned) t.push(`<span class="tag bad" title="Loses its next turn">Stunned</span>`); else if (a.feared) t.push(`<span class="tag bad" title="Skips its attacks on its next turn">Feared</span>`);
+      if (a.beacon) { const bw = cb.actorById(a.beacon.by); t.push(`<span class="tag good" title="Damage to it heals every hero for ${a.beacon.pct}% of it">Soul Beacon${bw && cb.partySize > 1 ? ' (' + esc(bw.name) + ')' : ''}</span>`); }
+      if (a.counter) t.push(`<span class="tag bad">Countered</span>`); if (a.silenced && !a.stunned) t.push(`<span class="tag bad">Silenced</span>`); if (a.disarmed && !a.feared && !a.stunned) t.push(`<span class="tag bad">Disarmed</span>`);
       if (a.drawLess) t.push(`<span class="tag bad">Draws -${a.drawLess}</span>`); if (a.weakNext) t.push(`<span class="tag bad">Next hit -30%</span>`);
       if (a.noHealRound >= cb.round) t.push(`<span class="tag bad">No healing</span>`); if (a.grievous) t.push(`<span class="tag bad">Grievous</span>`); if (a.deathmark) t.push(`<span class="tag bad">Deathmark</span>`);
     }
+    if (a.isPlayer && a.demons && a.demons.length && cb.partySize > 2) t.push(`<span class="tag demon" title="${a.demons.map(dm => `${esc(dm.name)}: ${dm.hp}/${dm.maxHp} HP, ${dm.turns} turns left`).join('; ')}. Single-target attacks can't hit demons; area attacks can.">&#9763;${a.demons.length} demon${a.demons.length > 1 ? 's' : ''}</span>`);
+    else if (a.isPlayer && a.demons && a.demons.length) for (const dm of a.demons) t.push(`<span class="tag demon" title="${esc(dm.name)}: ${dm.hp}/${dm.maxHp} HP, ${dm.turns} turn${dm.turns > 1 ? 's' : ''} left. ${esc((CB.DEMONS[dm.key] || {}).text || '')} Single-target attacks can't hit it; area attacks can.">&#9763;${esc((CB.DEMONS[dm.key] || {}).short || dm.name)} ${dm.hp}&middot;${dm.turns}t</span>`);
     if (a.isPlayer && a.hot && a.hot.length) t.push(`<span class="tag good">Regrowth ${a.hot.reduce((s, x) => s + x.n, 0)}/turn</span>`);
-    for (const [k, l] of [['weak', 'Weak'], ['vulnerable', 'Vuln'], ['bleed', 'Bleed'], ['poison', 'Poison'], ['burn', 'Burn'], ['chill', 'Chill'], ['slow', 'Slow']]) if (a[k]) t.push(`<span class="tag bad">${l} ${a[k]}${k === 'weak' || k === 'vulnerable' ? '%' : ''}</span>`);
+    for (const [k, l] of [['weak', 'Weak'], ['vulnerable', 'Vuln'], ['bleed', 'Bleed'], ['poison', 'Poison'], ['burn', 'Burn'], ['dread', 'Dread'], ['rot', 'Rot'], ['chill', 'Chill'], ['slow', 'Slow']]) if (a[k]) t.push(`<span class="tag bad">${l} ${a[k]}${k === 'weak' || k === 'vulnerable' ? '%' : ''}</span>`);
     if (a.frozen) t.push(`<span class="tag bad">Frozen</span>`);
     if (!a.isPlayer && a.parryBack) t.push(`<span class="tag bad" title="Attacks into its Parry take damage back">Riposte</span>`);
     if (!a.isPlayer && a.thorns) t.push(`<span class="tag bad">Spikes ${a.thorns}</span>`);
@@ -2454,7 +2463,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     }).join('') || '<span class="tag">no cards</span>';
   }
   // party fights: shorter status tags (full text on hover)
-  const SHORT = [[/^Block /, 'Blk '], [/^Barrier /, 'Bar '], [/^Dodge /, 'Ddg '], [/^Parry /, 'Pry '], [/^Weak /, 'Wk '], [/^Vulnerable |^Vuln /, 'Vul '], [/^Bleed /, 'Bld '], [/^Poison /, 'Psn '], [/^Burn /, 'Brn '], [/^Chill /, 'Chl '], [/^Slow /, 'Slw '], [/^Stealth$/, 'Stlth'], [/^Divine Shield$/, 'Shield'], [/^Disarmed$/, 'Disarm'], [/^Blood Debt /, 'Debt '], [/^Devotion /, 'Dev '], [/^Taunting$/, 'Taunt']];
+  const SHORT = [[/^Block /, 'Blk '], [/^Barrier /, 'Bar '], [/^Dodge /, 'Ddg '], [/^Parry /, 'Pry '], [/^Absorb /, 'Abs '], [/^Dread /, 'Drd '], [/^Rot /, 'Rot '], [/^Soul Beacon.*$/, 'Beacon'], [/^Shadow Armor /, 'ShArm '], [/^Blood Armor /, 'BlArm '], [/^Soul Armor /, 'SoArm '], [/^Nether Armor /, 'NeArm '], [/^Demon Armor /, 'DmArm '], [/^Weak /, 'Wk '], [/^Vulnerable |^Vuln /, 'Vul '], [/^Bleed /, 'Bld '], [/^Poison /, 'Psn '], [/^Burn /, 'Brn '], [/^Chill /, 'Chl '], [/^Slow /, 'Slw '], [/^Stealth$/, 'Stlth'], [/^Divine Shield$/, 'Shield'], [/^Disarmed$/, 'Disarm'], [/^Blood Debt /, 'Debt '], [/^Devotion /, 'Dev '], [/^Taunting$/, 'Taunt'], [/^Feared$/, 'Fear'], [/^Stunned$/, 'Stun'], [/^Silenced$/, 'Silence'], [/^Disarmed$/, 'Disarm']];
   function shortTags(html) {
     return html.replace(/<span class="tag([^"]*)"([^>]*)>([^<]*)<\/span>/g, (m, c, attrs, txt) => {
       let t = txt; for (const [re, r] of SHORT) if (re.test(t)) { t = t.replace(re, r); break; }
@@ -2479,7 +2488,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       <div class="uplate"><div class="uname"><b ${a.isPlayer ? `style="color:${CC[a.cls]}"` : ''}>${esc(a.name)}</b><small>${cb.raid && a.isPlayer && a.hp > 0 && !cb.over ? (cb.raidDone && cb.raidDone.has(a.id) ? '<span class="rdone" title="Ended their turn">&#10003; Done</span>' : cb.phase === 'player' ? '<span class="rwait">playing...</span>' : '') : sub}</small></div>
       <div class="bar"><i style="width:${pct}%"></i><span>${a.hp} / ${a.maxHp}</span></div>
       ${a.isPlayer ? '' : `<button class="pilebtn deckbtn" data-enemy="${a.id}" title="Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}"><span class="dlong">Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}</span><span class="dshort">Deck ${a.hand.length}/${a.drawPile.length}/${a.discard.length}</span></button>`}
-      <div class="tags">${a.isPlayer && cb.partySize > 2 && !cb.duel ? shortTags(tags(a)) : tags(a)}${cb.duel && a !== hero() ? `<span class="tag">Hand ${a.hand.length} &middot; Mana ${a.mana}</span>` : ''}</div></div></div>`;
+      <div class="tags">${(a.isPlayer ? cb.partySize > 2 : cb.foes().length > 2) && !cb.duel ? shortTags(tags(a)) : tags(a)}${cb.duel && a !== hero() ? `<span class="tag">Hand ${a.hand.length} &middot; Mana ${a.mana}</span>` : ''}</div></div></div>`;
   }
   function popups() {
     for (const a of [...cb.players, ...cb.enemies]) {

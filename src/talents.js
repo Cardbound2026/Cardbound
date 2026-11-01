@@ -4,8 +4,8 @@
 // fx are read by the engine (talentDef in engine.js). {D} in text becomes the class's defense (Block, Dodge, Barrier).
 (function (r) {
   const T = (n, t, ...fx) => ({ n, t, fx });
-  const NAME = { burn: 'Burning', bleed: 'Bleeding', poison: 'Poisoned', vulnerable: 'Vulnerable', weak: 'Weak', chill: 'Chilled', exposure: 'Exposed', block: 'with Block' };
-  const ADJ = { burn: 'Burn', bleed: 'Bleed', poison: 'Poison', vulnerable: 'Vulnerable', weak: 'Weak', chill: 'Chill', exposure: 'Exposure' };
+  const NAME = { dread: 'Dreading', rot: 'Rotting', beacon: 'Beaconed', burn: 'Burning', bleed: 'Bleeding', poison: 'Poisoned', vulnerable: 'Vulnerable', weak: 'Weak', chill: 'Chilled', exposure: 'Exposed', block: 'with Block' };
+  const ADJ = { dread: 'Dread', rot: 'Rot', burn: 'Burn', bleed: 'Bleed', poison: 'Poison', vulnerable: 'Vulnerable', weak: 'Weak', chill: 'Chill', exposure: 'Exposure' };
   // ---- text helpers (keep the words and the numbers together)
   const kindTxt = (f) => (f && f.dtype ? f.dtype + ' ' : '') + (f && f.key === 'shuriken' ? 'Shuriken ' : f && f.type ? f.type + ' ' : '') + 'damage';
   const vsTxt = (f) => !f || !f.vs ? '' : f.vs.includes(':') ? ` to targets with ${f.vs.split(':')[1]}+ ${ADJ[f.vs.split(':')[0]]}` : f.vs === 'block' ? ' to targets that have Block' : ` to ${NAME[f.vs]} targets`;
@@ -20,9 +20,9 @@
   const per = (n, st, step, pct, max, f) => T(n, `+${pct}% ${kindTxt(f)} for every ${step} ${ADJ[st]} on the target (max +${max}%).`, ['dmgPer', st, step, pct, max, f || {}]);
   const dotPlus = (n, st, k) => T(n, `${ADJ[st]} you apply is increased by ${k}.`, ['dotPlus', st, k]);
   const dotX = (n, st, pct) => T(n, `${ADJ[st]} you apply is increased by ${pct}%.`, ['dotX', st, pct]);
-  const startDot = (n, st, k) => T(n, `At the start of each fight, apply ${k} ${ADJ[st]} to all enemies.`, ['start', st === 'chill' || !['burn', 'bleed', 'poison'].includes(st) ? 'debuff' : 'dot', k, st]);
-  const turnDot = (n, st, k) => T(n, `At the start of each of your turns, apply ${k} ${ADJ[st]} to all enemies.`, ['turn', st === 'chill' || !['burn', 'bleed', 'poison'].includes(st) ? 'debuff' : 'dot', k, st]);
-  const every = (n, N, f, st, k) => T(n, `Every ${N === 3 ? '3rd' : N + 'th'} ${f.dtype ? f.dtype + ' ' : ''}${f.type || 'card'} you play in a turn applies ${k} ${ADJ[st]} to all enemies.`, ['every', N, f, ['burn', 'bleed', 'poison'].includes(st) ? 'dot' : 'debuff', k, st]);
+  const startDot = (n, st, k) => T(n, `At the start of each fight, apply ${k} ${ADJ[st]} to all enemies.`, ['start', st === 'chill' || !['burn', 'bleed', 'poison', 'dread', 'rot'].includes(st) ? 'debuff' : 'dot', k, st]);
+  const turnDot = (n, st, k) => T(n, `At the start of each of your turns, apply ${k} ${ADJ[st]} to all enemies.`, ['turn', st === 'chill' || !['burn', 'bleed', 'poison', 'dread', 'rot'].includes(st) ? 'debuff' : 'dot', k, st]);
+  const every = (n, N, f, st, k) => T(n, `Every ${N === 3 ? '3rd' : N + 'th'} ${f.dtype ? f.dtype + ' ' : ''}${f.type || 'card'} you play in a turn applies ${k} ${ADJ[st]} to all enemies.`, ['every', N, f, ['burn', 'bleed', 'poison', 'dread', 'rot'].includes(st) ? 'dot' : 'debuff', k, st]);
   const spread = (n, st) => T(n, `When an enemy dies, its ${ADJ[st]} spreads to every other enemy.`, ['kill', 'spread', 0, st]);
   const def = (n, pct, c) => T(n, `{D} you gain is increased by ${pct}%${selfTxt(c)}.`, ['def', pct, c]);
   const inc = (n, pct, c) => T(n, `Take ${pct}% less damage${selfTxt(c)}.`, ['incoming', pct, c]);
@@ -30,7 +30,7 @@
   const turnDef = (n, k) => T(n, `Gain ${k} {D} at the start of each of your turns.`, ['turn', 'block', k]);
   const lowhp = (n, pct, mode) => T(n, mode === 'heal' ? `Once per fight, when you drop below 30% HP, heal ${pct}% of your max HP.` : `Once per fight, when you drop below 30% HP, gain {D} equal to ${pct}% of your max HP${mode === 'stealth' ? ' and enter Stealth' : ''}.`, ['lowhp', pct, mode]);
   const cheat = (n, k, mode) => T(n, mode === 'heal' ? `Once per fight, a killing blow leaves you at 1 HP instead, then you heal ${k}% of your max HP.` : `Once per fight, a killing blow leaves you at 1 HP instead, with ${k} {D}.`, ['cheat', k, mode]);
-  const hitDot = (n, st, k) => T(n, `Enemies that hit you gain ${k} ${ADJ[st]}.`, ['hitBy', ['burn', 'bleed', 'poison'].includes(st) ? 'dot' : 'debuff', k, st]);
+  const hitDot = (n, st, k) => T(n, `Enemies that hit you gain ${k} ${ADJ[st]}.`, ['hitBy', ['burn', 'bleed', 'poison', 'dread', 'rot'].includes(st) ? 'dot' : 'debuff', k, st]);
   const back = (n, k) => T(n, `When an enemy attack hits your {D}, it takes ${k} damage back.`, ['hitBy', 'back', k]);
   const healTurn = (n, pct, c) => T(n, `Heal ${pct}% of your max HP at the start of each of your turns${selfTxt(c)}.`, ['turn', 'heal', pct, null, c]);
   const startMana = (n, k) => T(n, `Start each fight with +${k} mana.`, ['start', 'mana', k]);
@@ -58,12 +58,14 @@
     Warrior: [startDef('Braced', 8), def('Reinforced', 8), inc('Thick Skin', 5), turnDef('Hold Fast', 4), lowhp('Last Wall', 25), def('Bulwark Training', 15), inc('Iron Hide', 10), turnDef('Fortress', 8), cheat('Unbroken', 40)],
     Rogue: [startDef('Light Feet', 8), def('Evasion Drills', 8), inc('Slippery', 5), turnDef('Shadowstep', 4), lowhp('Vanish', 25, 'stealth'), def('Untouchable', 15), inc('Smoke and Shade', 10), turnDef('Phantom Step', 8), cheat('Cheat Death', 40)],
     Mage: [startDef('Warded', 8), def('Ward Weaving', 8), inc('Mana Skin', 5), turnDef('Glyph', 4), lowhp('Emergency Ward', 25), def('Ward Mastery', 15), inc('Arcane Skin', 10), turnDef('Living Glyph', 8), cheat('Phoenix', 40)],
+    Warlock: [startDef('Dark Shroud', 8), def('Shadow Weave', 8), inc('Fel Skin', 5), turnDef('Nether Glyph', 4), lowhp('Soulstone', 25), def('Void Mastery', 15), inc('Demon Hide', 10), turnDef('Living Shadow', 8), cheat('Soul Bargain', 40)],
     Paladin: [startDef('Shield of Faith', 8), def('Devout Guard', 8), inc('Blessed', 5), turnDef('Vigilance', 4), lowhp('Divine Shield', 25), def('Holy Bulwark', 15), inc('Armor of Light', 10), turnDef('Sanctuary Wall', 8), cheat('Divine Intervention', 40)],
   };
   const SUP = {
     Warrior: [startMana('Second Breath', 10), regen('Steady Breathing', 5), killDraw('Spoils of Battle', 1), maxMana('Deep Lungs', 15), draw1('War Drums'), turnMana('Field Rations', 5), rally('Rally Cry', 10), regen('Endless Reserve', 10), shelter('War Banner', 10)],
     Rogue: [startMana('Quick Start', 10), regen('Even Breath', 5), killDraw('Loot the Body', 1), maxMana('Deep Pockets', 15), draw1('Sleight of Hand'), turnMana('Hidden Stash', 5), rally('Mark the Target', 10), regen('Second Wind', 10), shelter('Shadow Pact', 10)],
     Mage: [startMana('Spark', 10), regen('Ley Flow', 5), killDraw('Soul Harvest', 1), maxMana('Mana Well', 15), draw1('Foresight'), turnMana('Channel', 5), rally('Empower', 10), regen('Wellspring', 10), shelter('Arcane Shelter', 10)],
+    Warlock: [startMana('Dark Spark', 10), regen('Fel Flow', 5), killDraw('Soul Shard', 1), maxMana('Void Well', 15), draw1('Dark Foresight'), turnMana('Siphon', 5), rally('Dark Empowerment', 10), regen('Abyssal Spring', 10), shelter('Shadow Shelter', 10)],
     Paladin: [startMana('Morning Prayer', 10), regen('Blessed Breath', 5), killDraw('Last Rites', 1), maxMana('Deep Faith', 15), draw1('Revelation'), turnMana('Tithe', 5), rally('Inspire', 10), regen('Grace', 10), shelter('Aura of Protection', 10)],
   };
   // ---- the 24 codexes: off = 9 offense talents; d / s = rows (1-9) replaced in the Defense / Support templates; cap = [offense, defense, support] capstone Powers
@@ -177,6 +179,33 @@
         T('Perfect Balance', 'Heal 8% of your max HP at the start of each of your turns, and your healing is 20% stronger.', ['turn', 'heal', 8], ['heal', 20])],
       // Equilibrium cannot gain Block: its Defense column is damage reduction and healing instead
       d: { 5: lowhp('Second Chance', 20, 'heal'), 9: cheat('Rebirth', 30, 'heal') }, s: {}, noBlock: true },
+    // Warlock (Nov 1)
+    soulbinder: { party: party('Soul Bond', 'heal'), cls: 'Warlock', cap: ['soul_siphon', 'spirit_ward', 'circle_of_souls'],
+      off: [dmg('Soul Sight', 5, { vs: 'beacon' }), healTurn('Shared Pain', 2), dmg('Shadow Focus', 10, { dtype: 'Shadow' }), T('Bound Spirits', 'Your healing is 10% stronger.', ['heal', 10]),
+        dmg('Soul Rend', 20, { vs: 'beacon' }), dmg('Umbral Focus', 15, { dtype: 'Shadow' }), T('Spirit Link', 'Your healing is 20% stronger.', ['heal', 20]), dmg('Beacon Burn', 30, { vs: 'beacon' }),
+        T('Soul Shepherd', 'Your healing is 20% stronger and you deal +15% Shadow damage.', ['heal', 20], ['dmg', 15, { dtype: 'Shadow' }])],
+      d: {}, s: { 9: shelter('Spirit Shelter', 15) } },
+    blightcaller: { party: party('Blessing of Spirit', 'spirit'), cls: 'Warlock', cap: ['creeping_doom', 'blighted_skin', 'plague_of_dread'],
+      off: [dotPlus('Dark Whispers', 'dread', 1), dmg('Dread Sense', 8, { vs: 'dread' }), startDot('Haunting', 'dread', 6), dotX('Deeper Dread', 'dread', 20),
+        spread('Contagion', 'dread'), dmg('Terror', 15, { vs: 'dread' }), every('Nightmare', 3, { type: 'Skill' }, 'dread', 5), per('Paralysing Fear', 'dread', 10, 5, 25), dotX('Abyssal Dread', 'dread', 50)],
+      d: { 3: hitDot('Haunted Skin', 'dread', 3) }, s: { 9: rally('Dread Choir', 15, 'dread') } },
+    shadow_knight: { party: party('War Cry', 'strength'), cls: 'Warlock', cap: ['unholy_might', 'bone_armor', 'death_pact'],
+      off: [dmg('Dark Edge', 5, { type: 'Attack' }), T('Grave Strength', 'Start each fight with +10 Strength.', ['start', 'str', 10]), dmg('Umbral Blade', 10, { type: 'Attack', dtype: 'Shadow' }), crit('Reaper', 5, { type: 'Attack' }),
+        dmg('Executioner\'s Shadow', 25, { type: 'Attack', minCost: 20 }), dmg('Death Knight', 15, { type: 'Attack' }), dmg('Dread Edge', 20, { type: 'Attack', vs: 'dread' }), T('Lord of Ruin', 'Start each fight with +30 Strength.', ['start', 'str', 30]), dmg('Ebon Blade', 35, { type: 'Attack', dtype: 'Shadow' })],
+      d: {}, s: {} },
+    demonologist: { party: party('Fel Haste', 'initPct'), cls: 'Warlock', cap: ['demonic_pact', 'grim_bulwark', 'infernal_bond'],
+      off: [T('Fel Training', 'Your demons deal 10% more damage.', ['stat', 'demonDmg', 10]), T('Summoner\'s Start', 'Summon a Gloom Imp at the start of each fight.', ['start', 'summon', 1, 'imp']), T('Fel Fury', 'Your demons deal 20% more damage.', ['stat', 'demonDmg', 20]), firstCost('Quick Summons', 5, { type: 'Skill' }),
+        T('Bound Legion', 'Your demons stay 1 turn longer.', ['stat', 'demonTurns', 1]), T('Fel Mastery', 'Your demons deal 30% more damage.', ['stat', 'demonDmg', 30]), T('Hound Master', 'Summon a Hollow Hound at the start of each fight.', ['start', 'summon', 1, 'hound']),
+        dmg('Master\'s Lash', 20, { dtype: 'Shadow' }), T('Lord of the Pit', 'Your demons deal 60% more damage.', ['stat', 'demonDmg', 60])],
+      d: { 3: T('Fel Guardian', 'Summon a Bulwark Fiend at the start of each fight.', ['start', 'summon', 1, 'bulwark']) }, s: {} },
+    bloodmancer: { party: party('Blood Bond', 'lifesteal'), cls: 'Warlock', cap: ['sanguine_frenzy', 'crimson_aegis', 'blood_bank'],
+      off: [dmg('Thin Blood', 5, { dtype: 'Physical', type: 'Skill' }), T('Blood Reserves', 'You can pay 4 more HP for cards each turn.', ['stat', 'bloodCapPlus', 4]), dmg('Hemomancy', 10, { dtype: 'Physical', type: 'Skill' }), dmg('Desperation', 12, { self: 'lowhp' }),
+        dmg('Crimson Tide', 20, { dtype: 'Physical', type: 'Skill' }), T('Deep Veins', 'You can pay 8 more HP for cards each turn.', ['stat', 'bloodCapPlus', 8]), dmg('Bloodlust', 25, { self: 'lowhp' }), crit('Red Mist', 10, { type: 'Skill' }), dmg('Blood God', 35, { dtype: 'Physical', type: 'Skill' })],
+      d: { 7: healTurn('Transfusion', 3) }, s: {} },
+    umbral_ruin: { party: party('Keen Eyes', 'crit'), cls: 'Warlock', cap: ['shadow_mastery', 'void_shell', 'dark_insight'],
+      off: [crit('Dark Focus', 3), dmg('Void Touched', 8, { dtype: 'Shadow', minCost: 20 }), crit('Umbral Precision', 5, { type: 'Skill' }), critX('Ruinous', 20),
+        dmg('Cataclysm', 20, { dtype: 'Shadow', minCost: 30 }), dmg('Rotten Core', 15, { vs: 'rot' }), critX('Annihilation', 40), dotX('Gnawing Ruin', 'rot', 30), T('Herald of Ruin', '+15% crit chance and crits deal +25% damage.', ['crit', 15, {}], ['critX', 25])],
+      d: {}, s: { 3: T('Soul Shards', 'Gain 10 mana when you kill an enemy.', ['kill', 'mana', 10]) } },
   };
 
   // ---- Nov 1: the plain Defense and Support rows are drawn from a shared pool, each effect in 4 strengths
@@ -184,7 +213,8 @@
   const TIER = [0, 0, 1, 1, null, 2, 2, 3, 3];
   const EL = { conflagration: 'Fire', sacred_flame: 'Fire', heart_of_winter: 'Frost', venomancer: 'Nature', entropy: 'Shadow', spellstorm: 'Arcane', archmage: 'Arcane', barrier_savant: 'Arcane', nightstalker: 'Shadow',
     phantom: 'Shadow', saboteur: 'Nature', ninja: 'Physical', bloodletter: 'Physical', bulwark: 'Physical', riposte: 'Physical', bloodbound: 'Shadow', colossus: 'Physical', sunderer: 'Physical', hemorrhage: 'Physical',
-    bastion_of_faith: 'Shadow', purifier: 'Nature', righteous_crusader: 'Physical', divine_wrath: 'Shadow', equilibrium: 'Arcane' };
+    bastion_of_faith: 'Shadow', purifier: 'Nature', righteous_crusader: 'Physical', divine_wrath: 'Shadow', equilibrium: 'Arcane',
+    soulbinder: 'Frost', blightcaller: 'Nature', shadow_knight: 'Physical', demonologist: 'Fire', bloodmancer: 'Arcane', umbral_ruin: 'Shadow' };
   const F = (names, v, mk, opt) => Object.assign({ names, v, mk }, opt || {});
   const SPOOL = {
     startMana: F(['Quick Start', 'Ready Mind', 'Charged Start', 'Overflowing Start'], [8, 12, 18, 25], (n, v) => startMana(n, v), { mana: 1 }),
@@ -254,7 +284,7 @@
     D[key] = { cls: c.cls, rows, cap: c.cap };
   }
   // Nov 1: damage over time that can crit, on the Lv 16 offense talent of the bleed, poison and fire codexes
-  const DOTCRIT = { bloodletter: ['Hemorrhagic Crits', 'bleed', 'Bleed'], hemorrhage: ['Arterial Crits', 'bleed', 'Bleed'], bloodbound: ['Sanguine Crits', 'bleed', 'Bleed'], venomancer: ['Virulent Crits', 'poison', 'Poison'], conflagration: ['Searing Crits', 'burn', 'Burn'] };
+  const DOTCRIT = { blightcaller: ['Dread Crits', 'dread', 'Dread'], umbral_ruin: ['Rot Crits', 'rot', 'Rot'], bloodletter: ['Hemorrhagic Crits', 'bleed', 'Bleed'], hemorrhage: ['Arterial Crits', 'bleed', 'Bleed'], bloodbound: ['Sanguine Crits', 'bleed', 'Bleed'], venomancer: ['Virulent Crits', 'poison', 'Poison'], conflagration: ['Searing Crits', 'burn', 'Burn'] };
   for (const [k, [n, st, nm]] of Object.entries(DOTCRIT)) if (D[k]) D[k].rows[7][0] = T(n, `Your ${nm} can critically strike: every time it deals damage, it rolls your crit chance and crit damage.`, ['dotCrit', st]);
   // Nov 1 balance: every talent's numbers are halved (rounded, at least 1), except the Lv 10 row (mini capstone) and the capstone Powers.
   // Counts stay put where halving makes no sense: the "every Nth card" and "for every N stacks" steps.

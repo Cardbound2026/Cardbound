@@ -365,11 +365,15 @@ css.textContent = `
 #scrCombat.bf .stage .uintent .intents { min-height: 0; } #scrCombat.bf .stage .uintent .intent { box-shadow: 0 3px 10px #0006; }
 #scrCombat.bf .stage .uplate { grid-template-columns: minmax(0, 1fr) auto; column-gap: 5px; }
 #scrCombat.bf .stage .uplate .uname { grid-column: 1 / -1; } #scrCombat.bf .stage .uplate .tags { grid-column: 1 / -1; } #scrCombat.bf .stage #foes .uplate .tags { grid-column: 2; align-self: center; }
+/* many statuses: the Deck button moves up beside the name and the statuses get the whole bottom row */
+#scrCombat.bf .stage #foes .uplate:has(.tags .tag:nth-child(3)) .uname { grid-column: 1; grid-row: 1; }
+#scrCombat.bf .stage #foes .uplate:has(.tags .tag:nth-child(3)) .deckbtn { grid-column: 2; grid-row: 1; align-self: start; white-space: nowrap; }
+#scrCombat.bf .stage #foes .uplate:has(.tags .tag:nth-child(3)) .tags { grid-column: 1 / -1; justify-content: flex-end; }
 #scrCombat.bf .stage .uplate .bar { grid-column: 1 / -1; align-self: center; }
 #scrCombat.bf .stage #playerSlot .uplate .bar { grid-column: 1 / -1; }
 #scrCombat.bf .stage .uplate .deckbtn .dlong { display: none; } #scrCombat.bf .stage .uplate .deckbtn .dshort { display: inline; }
 #scrCombat.bf .stage.tight .uplate .tags:empty { display: none; }
-#scrCombat.bf .stage .uplate .deckbtn { grid-column: 1; justify-self: start; font-size: 10px; padding: 0 6px; line-height: 16px; opacity: .8; }
+#scrCombat.bf .stage .uplate .deckbtn { grid-column: 1; justify-self: start; font-size: 10px; padding: 0 6px; line-height: 16px; opacity: .8; white-space: nowrap; }
 #scrCombat.bf .stage .unit.dead .uplate, #scrCombat.bf .stage .unit.dead .uintent { opacity: .35; }
 #scrCombat.bf .stage .unit.dead .figure { opacity: .25; filter: grayscale(1); }
 #scrCombat.bf .stage .unit.viewing .uplate { box-shadow: inset 0 0 0 1px #d6a14a88; }
