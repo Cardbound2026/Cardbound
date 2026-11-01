@@ -103,6 +103,8 @@
   body.inkui .item { border-left: 5px solid var(--rc); }
   body.inkui .tlcell { border-left: 4px solid var(--tc); } body.inkui .tlcell.on { background: linear-gradient(180deg, #3a3024, #241d16); box-shadow: 0 0 0 2px var(--tc) inset, 2px 3px 0 rgba(0,0,0,.45); }
   body.inkui .cxcod { border-left: 4px solid var(--rc); }
+  body.inkui .mapchip.on { background: linear-gradient(180deg, color-mix(in srgb, var(--ec) 32%, #2a2627), #1c1a1b); border: 2px solid var(--ec); border-left: 7px solid var(--ec); box-shadow: 0 0 0 2px var(--ink), 0 0 16px color-mix(in srgb, var(--ec) 55%, transparent); }
+  body.inkui .mapchip.on::after { border: 2px solid var(--ink); }
   /* bars as inked troughs */
   body.inkui .bar, body.inkui .xpbar { background: #0a0909; border: 2px solid var(--ink); box-shadow: inset 0 2px 3px rgba(0,0,0,.8), 0 1px 0 rgba(255,240,210,.06); border-radius: 2px; }
   body.inkui .bar i { background: linear-gradient(180deg, #d0553b, #8f2c1e); box-shadow: inset 0 1px 0 rgba(255,200,170,.35); }

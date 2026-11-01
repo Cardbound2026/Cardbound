@@ -329,11 +329,15 @@ body.aiming { cursor: grabbing; user-select: none; }
 .groster { width: 100%; border-collapse: collapse; font-size: 14px; }
 .groster th { text-align: left; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--line); padding: 4px 6px; }
 .groster td { padding: 5px 6px; border-bottom: 1px solid #2a231b; } .groster tr:not(.on) td { color: #bcae98; }
-.mappick { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; margin: 8px 0 0; }
+.mappick { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px 6px; margin: 14px 0 0; }
 .mapchip { text-align: left; background: #1a1612; border: 1px solid var(--line); border-left: 4px solid var(--ec); border-radius: 6px; padding: 6px 9px; color: var(--text); cursor: pointer; font: inherit; }
 .mapchip b { display: block; font-size: 14px; }
 .mapchip small { color: var(--muted); font-size: 12px; }
-.mapchip.on { background: #2a2219; border-color: var(--ec); box-shadow: 0 0 0 1px var(--ec) inset; }
+.mapchip { position: relative; }
+.mapchip.on { background: linear-gradient(180deg, color-mix(in srgb, var(--ec) 30%, #2a2219), #221b14); border: 2px solid var(--ec); border-left: 6px solid var(--ec); box-shadow: 0 0 0 1px #000 inset, 0 0 14px color-mix(in srgb, var(--ec) 55%, transparent); }
+.mapchip.on b { color: #fff3da; }
+.mapchip.on::after { content: '\2713  Selected'; position: absolute; top: -9px; right: 8px; z-index: 1; font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: #120f0b; background: var(--ec); padding: 1px 6px; border-radius: 3px; }
+.mapchip:not(.on):not(:disabled):hover { border-color: var(--ec); filter: brightness(1.15); }
 .mapchip:disabled { cursor: default; opacity: .75; }
 .partypick { border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px 8px; margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; }
 .partypick legend { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 0 4px; }
@@ -1543,7 +1547,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       if (ev.key === 'Escape') { closeTalk(); ev.cbHandled = true; }
       return;
     }
-    if (!$('sheet').hidden) { if (ev.key === 'Escape' && $('modal').hidden) { closeSheet(); ev.cbHandled = true; } return; }
+    if (!$('sheet').hidden) { if ((ev.key === 'Escape' || ((ev.key === 'c' || ev.key === 'C') && !ev.ctrlKey && !ev.metaKey && $('sheet').dataset.kind === 'char')) && $('modal').hidden) { ev.preventDefault(); closeSheet(); ev.cbHandled = true; } return; }
     if (!$('modal').hidden) return;
     const d = KEYDIR[ev.key];
     if (d) { ev.preventDefault(); P.path = []; P.target = null; P.talkTo = null; if (!P.held.includes(d)) P.held.push(d); if (!P.mv && P.dir !== d && !free(P.x + DIRS[d][0], P.y + DIRS[d][1])) P.dir = d; return; }
@@ -2550,6 +2554,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       if (ev.target.matches('input, select, textarea')) return;
       openMenu(); return;
     }
+    if ((ev.key === 'm' || ev.key === 'M') && $('mapPeekScroll') && !$('modal').hidden && !ev.target.matches('select, input, textarea')) { closeModal(); return; }
     if ((ev.key === 'm' || ev.key === 'M') && !$('scrCombat').hidden && $('modal').hidden && $('sheet').hidden && !ev.target.matches('select, input, textarea') && run) { mapPeek(); return; }
     if ((ev.key === 'e' || ev.key === 'E') && !$('scrCombat').hidden && $('modal').hidden && $('sheet').hidden && !ev.target.matches('select, input') && !$('btnEnd').disabled) $('btnEnd').click();
   });
