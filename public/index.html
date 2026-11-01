@@ -93,6 +93,7 @@ body.sheetopen #btnUpdates, body.modalopen #btnUpdates { display: none; }
 .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; align-items: start; }
 .two h3 { font-family: var(--f-ui); font-weight: 700; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 2px 0 6px; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 .list.tall { max-height: 560px; }
+.stashgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 6px; align-content: start; } .stashgrid > .muted { grid-column: 1 / -1; }
 .item .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .item .acts .btn { padding: 3px 9px; font-size: 13px; }
 .up { color: var(--good); } .down { color: #f0a08c; }
@@ -3903,7 +3904,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const heroRow = multi ? `<div class="cxchips" role="tablist" aria-label="Hero" style="margin:0 0 8px">${heroKeys().map(k => `<button class="cxchip ${k === heroKey ? 'on' : ''}" data-hero="${k}"><b style="color:${CC[profile.chars[k].cls]}">${esc(profile.chars[k].name)}</b> <span class="muted">${profile.chars[k].cls}</span></button>`).join('')}</div>` : '';
     $('hpGear').innerHTML = `${heroRow}<div class="gearwrap"><div>${paperdoll(c, c.cls, { own: true })}<p class="muted" style="font-size:12px;margin:6px 0 0">Hover a slot for the item, click it to swap or unequip.</p></div>
       <div class="gearside"><div class="tabs gtabs" role="tablist"><button role="tab" data-gtab="deck" aria-selected="${GT.tab === 'deck'}">Deck ${c.deck.length}</button><button role="tab" data-gtab="stash" aria-selected="${GT.tab === 'stash'}">Stash ${profile.stash.length} / ${CBHub.STASH_MAX}</button></div>
-      ${GT.tab === 'deck' ? deckPanel(c) : `<p class="muted" style="font-size:12px;margin:0 0 6px">Shared by all heroes.</p><div class="list tall">${st || '<span class="muted">Empty. Gear you bring home from a run lands here. Unequipped gear goes here too.</span>'}</div>`}</div></div>`;
+      ${GT.tab === 'deck' ? deckPanel(c) : `<p class="muted" style="font-size:12px;margin:0 0 6px">Shared by all heroes.</p><div class="list tall stashgrid">${st || '<span class="muted">Empty. Gear you bring home from a run lands here. Unequipped gear goes here too.</span>'}</div>`}</div></div>`;
     fitCards($('hpGear'));
     paintPortraits($('hpGear'));
   }
@@ -5148,8 +5149,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793509308319';
-  const CB_BUILD = '30f25d848d'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793509367516';
+  const CB_BUILD = '2d6201b66f'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -5849,6 +5850,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   const CHANGELOG = [
     { date: '2026-11-01', items: [
       ['Art', 'Fights are now a battlefield scene: a painted road runs back to a ruined gate (tinted for each map), your heroes stand on the left diagonal and the enemies on the right, each with a clean nameplate on the outside and their intents over their heads. Everyone is drawn at one scale, the layout keeps plates, intents and fighters from covering each other, and big fights (5+ on a side) switch to small plates under the feet. Raids show the heroes as a block of small fighters in rows, and raid bosses now use their map boss\'s inked art. Fights also use more of a wide screen. Thanks to our design tester for the battlefield painting and layout. Menu > "Battlefield view" switches back to the old side-by-side stage.'],
+      ['Fix', 'Interface tidy-up: the Quartermaster stash shows items in two columns, windows are a bit wider and stay centred (chat no longer pushes them sideways), the Scribe puts the Ink bar above deck and collection, the Barracks lists heroes beside the stats, Menu checkboxes line up with their labels, and the What\'s new button hides while a window is open.'],
       ['Feature', 'Ink: at the Scribe, break spare cards down for Ink (White 1, Green 4, Blue 10, Gold 25; ranked cards give more), then buy any card of your class with "Buy cards with Ink". Cards you have owned before cost 10 / 40 / 100 / 300; ones you have never found cost 3x. Ink is shared by all your heroes.'],
       ['Balance', 'Every boss kill now also drops a Green weapon and a Green chest piece for your class.'],
       ['Balance', 'A map\'s boss has 15% less HP until you beat it for the first time (in a party: until everyone has).'],

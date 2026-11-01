@@ -89,6 +89,7 @@ body.sheetopen #btnUpdates, body.modalopen #btnUpdates { display: none; }
 .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; align-items: start; }
 .two h3 { font-family: var(--f-ui); font-weight: 700; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 2px 0 6px; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 .list.tall { max-height: 560px; }
+.stashgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 6px; align-content: start; } .stashgrid > .muted { grid-column: 1 / -1; }
 .item .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .item .acts .btn { padding: 3px 9px; font-size: 13px; }
 .up { color: var(--good); } .down { color: #f0a08c; }
@@ -985,7 +986,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     const heroRow = multi ? `<div class="cxchips" role="tablist" aria-label="Hero" style="margin:0 0 8px">${heroKeys().map(k => `<button class="cxchip ${k === heroKey ? 'on' : ''}" data-hero="${k}"><b style="color:${CC[profile.chars[k].cls]}">${esc(profile.chars[k].name)}</b> <span class="muted">${profile.chars[k].cls}</span></button>`).join('')}</div>` : '';
     $('hpGear').innerHTML = `${heroRow}<div class="gearwrap"><div>${paperdoll(c, c.cls, { own: true })}<p class="muted" style="font-size:12px;margin:6px 0 0">Hover a slot for the item, click it to swap or unequip.</p></div>
       <div class="gearside"><div class="tabs gtabs" role="tablist"><button role="tab" data-gtab="deck" aria-selected="${GT.tab === 'deck'}">Deck ${c.deck.length}</button><button role="tab" data-gtab="stash" aria-selected="${GT.tab === 'stash'}">Stash ${profile.stash.length} / ${CBHub.STASH_MAX}</button></div>
-      ${GT.tab === 'deck' ? deckPanel(c) : `<p class="muted" style="font-size:12px;margin:0 0 6px">Shared by all heroes.</p><div class="list tall">${st || '<span class="muted">Empty. Gear you bring home from a run lands here. Unequipped gear goes here too.</span>'}</div>`}</div></div>`;
+      ${GT.tab === 'deck' ? deckPanel(c) : `<p class="muted" style="font-size:12px;margin:0 0 6px">Shared by all heroes.</p><div class="list tall stashgrid">${st || '<span class="muted">Empty. Gear you bring home from a run lands here. Unequipped gear goes here too.</span>'}</div>`}</div></div>`;
     fitCards($('hpGear'));
     paintPortraits($('hpGear'));
   }
