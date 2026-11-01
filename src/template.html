@@ -1495,11 +1495,15 @@ body.aiming { cursor: grabbing; user-select: none; }
       rrect(g, cx - 3 * s, by - 34 * s, 6 * s, 34 * s, 2, '#3b2a1c', 1.6);
       rrect(g, cx - 22 * s, by - 44 * s, 44 * s, 16 * s, 3, '#6a4a2a', 1.8);
       g.fillStyle = '#f0d9a8'; g.font = `700 ${Math.round(10 * s)}px "Barlow Semi Condensed", sans-serif`; g.textAlign = 'center'; g.fillText('BAZAAR \u2192', cx, by - 32.5 * s);
-    } else if (p.kind === 'statue') {
+    } else if (p.kind === 'statue') { // Juss: slumped dead across a plinth, a sword through his back
       const cx = x0 + TS / 2, by = y0 + TS * 0.92;
-      rrect(g, cx - 18 * s, by - 12 * s, 36 * s, 12 * s, 2, '#55524d', 1.6);
-      rrect(g, cx - 7 * s, by - 46 * s, 14 * s, 34 * s, 4, '#6a6660', 1.6); circ(g, cx, by - 52 * s, 7 * s, '#6a6660', 1.6);
-      rrect(g, cx + 6 * s, by - 62 * s, 3 * s, 46 * s, 1, '#7a766f', 1.2);
+      rrect(g, cx - 26 * s, by - 10 * s, 52 * s, 10 * s, 2, '#55524d', 1.6);
+      poly(g, [[cx + 2 * s, by - 10 * s], [cx + 4 * s, by - 17 * s], [cx + 22 * s, by - 15 * s], [cx + 24 * s, by - 10 * s]], '#6a6660', 1.4);
+      poly(g, [[cx - 13 * s, by - 10 * s], [cx - 12 * s, by - 19 * s], [cx - 3 * s, by - 25 * s], [cx + 7 * s, by - 21 * s], [cx + 6 * s, by - 10 * s]], '#6a6660', 1.6);
+      poly(g, [[cx - 12 * s, by - 13 * s], [cx - 9 * s, by - 13 * s], [cx - 12 * s, by + 3 * s], [cx - 15 * s, by + 3 * s]], '#6a6660', 1.2);
+      poly(g, [[cx - 23 * s, by - 13 * s], [cx - 17 * s, by - 18 * s], [cx - 11 * s, by - 14 * s], [cx - 13 * s, by - 6 * s], [cx - 21 * s, by - 5 * s]], '#6a6660', 1.4);
+      poly(g, [[cx - 3 * s, by - 23 * s], [cx, by - 24 * s], [cx + 10 * s, by - 52 * s], [cx + 8 * s, by - 53 * s]], '#8a8680', 1.2);
+      rrect(g, cx + 3 * s, by - 48 * s, 12 * s, 3 * s, 1, '#7a766f', 1.2);
     } else if (p.kind === 'arenaboard') {
       const cx = x0 + TS / 2, by = y0 + TS * 0.9;
       rrect(g, cx - 3 * s, by - 46 * s, 6 * s, 46 * s, 1, '#3b2a1c', 1.4);

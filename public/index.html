@@ -4844,11 +4844,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       rrect(g, cx - 3 * s, by - 34 * s, 6 * s, 34 * s, 2, '#3b2a1c', 1.6);
       rrect(g, cx - 22 * s, by - 44 * s, 44 * s, 16 * s, 3, '#6a4a2a', 1.8);
       g.fillStyle = '#f0d9a8'; g.font = `700 ${Math.round(10 * s)}px "Barlow Semi Condensed", sans-serif`; g.textAlign = 'center'; g.fillText('BAZAAR \u2192', cx, by - 32.5 * s);
-    } else if (p.kind === 'statue') {
+    } else if (p.kind === 'statue') { // Juss: slumped dead across a plinth, a sword through his back
       const cx = x0 + TS / 2, by = y0 + TS * 0.92;
-      rrect(g, cx - 18 * s, by - 12 * s, 36 * s, 12 * s, 2, '#55524d', 1.6);
-      rrect(g, cx - 7 * s, by - 46 * s, 14 * s, 34 * s, 4, '#6a6660', 1.6); circ(g, cx, by - 52 * s, 7 * s, '#6a6660', 1.6);
-      rrect(g, cx + 6 * s, by - 62 * s, 3 * s, 46 * s, 1, '#7a766f', 1.2);
+      rrect(g, cx - 26 * s, by - 10 * s, 52 * s, 10 * s, 2, '#55524d', 1.6);
+      poly(g, [[cx + 2 * s, by - 10 * s], [cx + 4 * s, by - 17 * s], [cx + 22 * s, by - 15 * s], [cx + 24 * s, by - 10 * s]], '#6a6660', 1.4);
+      poly(g, [[cx - 13 * s, by - 10 * s], [cx - 12 * s, by - 19 * s], [cx - 3 * s, by - 25 * s], [cx + 7 * s, by - 21 * s], [cx + 6 * s, by - 10 * s]], '#6a6660', 1.6);
+      poly(g, [[cx - 12 * s, by - 13 * s], [cx - 9 * s, by - 13 * s], [cx - 12 * s, by + 3 * s], [cx - 15 * s, by + 3 * s]], '#6a6660', 1.2);
+      poly(g, [[cx - 23 * s, by - 13 * s], [cx - 17 * s, by - 18 * s], [cx - 11 * s, by - 14 * s], [cx - 13 * s, by - 6 * s], [cx - 21 * s, by - 5 * s]], '#6a6660', 1.4);
+      poly(g, [[cx - 3 * s, by - 23 * s], [cx, by - 24 * s], [cx + 10 * s, by - 52 * s], [cx + 8 * s, by - 53 * s]], '#8a8680', 1.2);
+      rrect(g, cx + 3 * s, by - 48 * s, 12 * s, 3 * s, 1, '#7a766f', 1.2);
     } else if (p.kind === 'arenaboard') {
       const cx = x0 + TS / 2, by = y0 + TS * 0.9;
       rrect(g, cx - 3 * s, by - 46 * s, 6 * s, 46 * s, 1, '#3b2a1c', 1.4);
@@ -5739,8 +5743,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793553950217';
-  const CB_BUILD = '7931ba6045'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793554280998';
+  const CB_BUILD = '48d907d0df'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -6800,7 +6804,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     { date: '2026-11-01', items: [
       ['Feature', 'Hardcore heroes: tick Hardcore when you create a hero. They get one life: the first time a hardcore hero falls in a fight (duels and the training dummy don\'t count) it becomes a normal hero. The Hall of Records has a Hardcore tab: a ladder of living hardcore heroes and a graveyard of the fallen.'],
       ['Feature', 'The Arena: the old south palisade has a gap now, leading to a sand ring with Arenamaster Kord and the Wager Board. Pin a wager (up to 3 stash items and/or gold), other players answer with offers of their own, and you accept, decline or counter. While a wager or offer is open that hero\'s gear and deck are locked and both sides can see each other\'s hero. Accept and you duel: the winner takes the other stake, a draw gives both back, leaving early forfeits.'],
-      ['Art', 'A statue of Juss stands in the fire plaza. Read the plaque.'],
+      ['Art', 'A statue of Juss lies in the fire plaza: a fallen warrior slumped face down across a plinth, a sword through his back. Read the plaque.'],
       ['Feature', 'Creating a hero now happens around a campfire: every class sits at the fire (click one to see its starting decks, with a few Gold and Blue cards you can look forward to on the right). A Shaman sits there too: coming in a future expansion. Your heroes are listed below the fire.'],
       ['Feature', 'Rerolls: every item now has a reroll potential (White 0-1, Green 1-2, Blue 2-3, Purple 3-4; gear you already own got its potential too). At Jeweler Rook, a Reroll Token and one point of potential reroll one affix line of your choice. Get tokens by breaking down codexes you don\'t need (at Rook or in your stash): 3 tokens, plus 1 for every 2 map levels the codex dropped on.'],
       ['Balance', 'Blood Reckoning now heals you for 2x your stored Blood Debt (and spends it) instead of the damage it dealt.'],
@@ -7293,6 +7297,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (o.cuts) { const r = rng((x * 31 + y * 17) | 0); for (let i = 0; i < o.cuts; i++) { const px = x + w * (.15 + r() * .7), py = y + h * (.2 + r() * .65); L(g, [[px, py], [px + 3 + r() * 4, py - 1.5 - r() * 2]], INK, 1.1); } }
     g.restore(); path(g, pts); if (lw) ink(g, lw);
   }
+  const circ0 = (g, x, y, r) => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fillStyle = '#5a5650'; g.fill(); g.lineWidth = 1.4; g.strokeStyle = INK; g.stroke(); };
   const shadow = (g, cx, cy, rx, ry, a) => { g.fillStyle = `rgba(0,0,0,${a || .45})`; g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.fill(); };
   // jagged ink flame (cut paper): outer ember, inner gold
   function flame(g, x, y, r, t, seed) {
@@ -7441,17 +7446,21 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       P(g, [[cx - 17 * s, by - 42 * s], [cx - 4 * s, by - 43 * s], [cx - 4 * s, by - 26 * s], [cx - 17 * s, by - 27 * s]], '#d4c6aa', 1 * s);
       P(g, [[cx - 1 * s, by - 40 * s], [cx + 14 * s, by - 40 * s], [cx + 13 * s, by - 29 * s], [cx - 1 * s, by - 30 * s]], '#c2b394', 1 * s);
       P(g, [[cx + 2 * s, by - 27 * s], [cx + 13 * s, by - 26 * s], [cx + 13 * s, by - 19 * s], [cx + 2 * s, by - 19 * s]], '#ddd0b4', 1 * s);
-    } else if (p.kind === 'statue') { // Nov 1: Juss, the first to fall: a stone warrior kneeling on his sword, on a plinth
-      const cx = x0 + TS / 2, by = y0 + TS * .92;
-      const s = TS / 48 * 1.45; // bigger than a person
-      shadow(g, cx, by, 22 * s, 6 * s, .45);
-      S(g, [[cx - 19 * s, by], [cx - 17 * s, by - 12 * s], [cx + 17 * s, by - 12 * s], [cx + 19 * s, by]], STONE, 2 * s, { mass: .45, cuts: 2 });
-      S(g, [[cx - 12 * s, by - 12 * s], [cx - 13 * s, by - 26 * s], [cx - 4 * s, by - 30 * s], [cx + 9 * s, by - 26 * s], [cx + 11 * s, by - 12 * s]], STONE, 1.8 * s, { mass: .5 });
-      S(g, [[cx - 9 * s, by - 28 * s], [cx - 10 * s, by - 46 * s], [cx - 2 * s, by - 52 * s], [cx + 7 * s, by - 46 * s], [cx + 6 * s, by - 28 * s]], STONE, 1.8 * s, { mass: .5, cuts: 2 });
-      S(g, [[cx - 6 * s, by - 52 * s], [cx - 7 * s, by - 61 * s], [cx, by - 66 * s], [cx + 6 * s, by - 61 * s], [cx + 5 * s, by - 52 * s]], STONE, 1.8 * s, { mass: .5 });
-      S(g, [[cx + 10 * s, by - 12 * s], [cx + 10 * s, by - 50 * s], [cx + 13 * s, by - 50 * s], [cx + 13 * s, by - 12 * s]], STONE, 1.4 * s, { mass: .35 });
-      L(g, [[cx + 5 * s, by - 50 * s], [cx + 18 * s, by - 50 * s]], INK, 2.4 * s);
-      L(g, [[cx - 12 * s, by - 6 * s], [cx + 12 * s, by - 6 * s]], '#2a2622', 1.2 * s);
+    } else if (p.kind === 'statue') { // Nov 1: Juss, the first to fall: a stone warrior lying dead across a plinth, face down, a sword through his back
+      const cx = x0 + TS / 2, by = y0 + TS * .92, s = TS / 48 * 1.35, CAPE = ['#3a3733', '#171513', '#5c5850'];
+      shadow(g, cx, by, 34 * s, 6 * s, .45);
+      S(g, [[cx - 30 * s, by], [cx - 28 * s, by - 9 * s], [cx + 28 * s, by - 9 * s], [cx + 30 * s, by]], STONE, 2 * s, { mass: .45, cuts: 3 });                         // plinth
+      S(g, [[cx + 2 * s, by - 9 * s], [cx + 3 * s, by - 16 * s], [cx + 24 * s, by - 14 * s], [cx + 25 * s, by - 9 * s]], STONE, 1.6 * s, { mass: .5 });                     // legs, stretched out
+      S(g, [[cx + 22 * s, by - 9 * s], [cx + 23 * s, by - 16 * s], [cx + 29 * s, by - 12 * s], [cx + 29 * s, by - 7 * s]], STONE, 1.4 * s, { mass: .5 });                     // boots, toes down
+      S(g, [[cx - 15 * s, by - 9 * s], [cx - 15 * s, by - 20 * s], [cx - 8 * s, by - 27 * s], [cx + 1 * s, by - 28 * s], [cx + 7 * s, by - 22 * s], [cx + 7 * s, by - 9 * s]], STONE, 1.8 * s, { mass: .5 }); // back, armored
+      S(g, [[cx - 6 * s, by - 27 * s], [cx + 7 * s, by - 22 * s], [cx + 12 * s, by - 14 * s], [cx + 14 * s, by - 9 * s], [cx + 2 * s, by - 9 * s], [cx - 2 * s, by - 16 * s]], CAPE, 1.6 * s, { mass: .5 }); // cloak draped over the back
+      S(g, [[cx - 13 * s, by - 13 * s], [cx - 9 * s, by - 13 * s], [cx - 12 * s, by + 4 * s], [cx - 16 * s, by + 4 * s]], STONE, 1.4 * s, { mass: .45 });                  // arm hanging limp over the edge
+      S(g, [[cx - 27 * s, by - 11 * s], [cx - 25 * s, by - 18 * s], [cx - 19 * s, by - 21 * s], [cx - 13 * s, by - 18 * s], [cx - 11 * s, by - 11 * s], [cx - 14 * s, by - 5 * s], [cx - 20 * s, by - 3 * s], [cx - 25 * s, by - 5 * s]], STONE, 1.7 * s, { mass: .5, cuts: 1 }); // helmeted head, face to the stone
+      L(g, [[cx - 26 * s, by - 12 * s], [cx - 12 * s, by - 13 * s]], INK, 1.8 * s); L(g, [[cx - 20 * s, by - 21 * s], [cx - 19 * s, by - 12 * s]], INK, 1.4 * s);                                                                                          // helm rim
+      S(g, [[cx - 6 * s, by - 26 * s], [cx - 3 * s, by - 27 * s], [cx + 9 * s, by - 56 * s], [cx + 7 * s, by - 57 * s]], IRON, 1.3 * s, { mass: .3 });                  // the blade, driven through his back
+      L(g, [[cx + 1 * s, by - 50 * s], [cx + 15 * s, by - 55 * s]], INK, 3.4 * s); L(g, [[cx + 1 * s, by - 50 * s], [cx + 15 * s, by - 55 * s]], '#8a857a', 1.5 * s); // crossguard
+      L(g, [[cx + 9 * s, by - 56 * s], [cx + 12 * s, by - 65 * s]], INK, 3.6 * s); circ0(g, cx + 12.6 * s, by - 66.5 * s, 2.5 * s);                                     // grip and pommel
+      L(g, [[cx - 24 * s, by - 3 * s], [cx + 24 * s, by - 3 * s]], '#2a2622', 1.2 * s);
     } else if (p.kind === 'chest') {
       const cx = x0 + TS / 2, by = y0 + TS * .88;
       shadow(g, cx, by, 19 * s, 5 * s, .4);

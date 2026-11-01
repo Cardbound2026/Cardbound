@@ -58,6 +58,7 @@
     if (o.cuts) { const r = rng((x * 31 + y * 17) | 0); for (let i = 0; i < o.cuts; i++) { const px = x + w * (.15 + r() * .7), py = y + h * (.2 + r() * .65); L(g, [[px, py], [px + 3 + r() * 4, py - 1.5 - r() * 2]], INK, 1.1); } }
     g.restore(); path(g, pts); if (lw) ink(g, lw);
   }
+  const circ0 = (g, x, y, r) => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fillStyle = '#5a5650'; g.fill(); g.lineWidth = 1.4; g.strokeStyle = INK; g.stroke(); };
   const shadow = (g, cx, cy, rx, ry, a) => { g.fillStyle = `rgba(0,0,0,${a || .45})`; g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.fill(); };
   // jagged ink flame (cut paper): outer ember, inner gold
   function flame(g, x, y, r, t, seed) {
@@ -206,17 +207,21 @@
       P(g, [[cx - 17 * s, by - 42 * s], [cx - 4 * s, by - 43 * s], [cx - 4 * s, by - 26 * s], [cx - 17 * s, by - 27 * s]], '#d4c6aa', 1 * s);
       P(g, [[cx - 1 * s, by - 40 * s], [cx + 14 * s, by - 40 * s], [cx + 13 * s, by - 29 * s], [cx - 1 * s, by - 30 * s]], '#c2b394', 1 * s);
       P(g, [[cx + 2 * s, by - 27 * s], [cx + 13 * s, by - 26 * s], [cx + 13 * s, by - 19 * s], [cx + 2 * s, by - 19 * s]], '#ddd0b4', 1 * s);
-    } else if (p.kind === 'statue') { // Nov 1: Juss, the first to fall: a stone warrior kneeling on his sword, on a plinth
-      const cx = x0 + TS / 2, by = y0 + TS * .92;
-      const s = TS / 48 * 1.45; // bigger than a person
-      shadow(g, cx, by, 22 * s, 6 * s, .45);
-      S(g, [[cx - 19 * s, by], [cx - 17 * s, by - 12 * s], [cx + 17 * s, by - 12 * s], [cx + 19 * s, by]], STONE, 2 * s, { mass: .45, cuts: 2 });
-      S(g, [[cx - 12 * s, by - 12 * s], [cx - 13 * s, by - 26 * s], [cx - 4 * s, by - 30 * s], [cx + 9 * s, by - 26 * s], [cx + 11 * s, by - 12 * s]], STONE, 1.8 * s, { mass: .5 });
-      S(g, [[cx - 9 * s, by - 28 * s], [cx - 10 * s, by - 46 * s], [cx - 2 * s, by - 52 * s], [cx + 7 * s, by - 46 * s], [cx + 6 * s, by - 28 * s]], STONE, 1.8 * s, { mass: .5, cuts: 2 });
-      S(g, [[cx - 6 * s, by - 52 * s], [cx - 7 * s, by - 61 * s], [cx, by - 66 * s], [cx + 6 * s, by - 61 * s], [cx + 5 * s, by - 52 * s]], STONE, 1.8 * s, { mass: .5 });
-      S(g, [[cx + 10 * s, by - 12 * s], [cx + 10 * s, by - 50 * s], [cx + 13 * s, by - 50 * s], [cx + 13 * s, by - 12 * s]], STONE, 1.4 * s, { mass: .35 });
-      L(g, [[cx + 5 * s, by - 50 * s], [cx + 18 * s, by - 50 * s]], INK, 2.4 * s);
-      L(g, [[cx - 12 * s, by - 6 * s], [cx + 12 * s, by - 6 * s]], '#2a2622', 1.2 * s);
+    } else if (p.kind === 'statue') { // Nov 1: Juss, the first to fall: a stone warrior lying dead across a plinth, face down, a sword through his back
+      const cx = x0 + TS / 2, by = y0 + TS * .92, s = TS / 48 * 1.35, CAPE = ['#3a3733', '#171513', '#5c5850'];
+      shadow(g, cx, by, 34 * s, 6 * s, .45);
+      S(g, [[cx - 30 * s, by], [cx - 28 * s, by - 9 * s], [cx + 28 * s, by - 9 * s], [cx + 30 * s, by]], STONE, 2 * s, { mass: .45, cuts: 3 });                         // plinth
+      S(g, [[cx + 2 * s, by - 9 * s], [cx + 3 * s, by - 16 * s], [cx + 24 * s, by - 14 * s], [cx + 25 * s, by - 9 * s]], STONE, 1.6 * s, { mass: .5 });                     // legs, stretched out
+      S(g, [[cx + 22 * s, by - 9 * s], [cx + 23 * s, by - 16 * s], [cx + 29 * s, by - 12 * s], [cx + 29 * s, by - 7 * s]], STONE, 1.4 * s, { mass: .5 });                     // boots, toes down
+      S(g, [[cx - 15 * s, by - 9 * s], [cx - 15 * s, by - 20 * s], [cx - 8 * s, by - 27 * s], [cx + 1 * s, by - 28 * s], [cx + 7 * s, by - 22 * s], [cx + 7 * s, by - 9 * s]], STONE, 1.8 * s, { mass: .5 }); // back, armored
+      S(g, [[cx - 6 * s, by - 27 * s], [cx + 7 * s, by - 22 * s], [cx + 12 * s, by - 14 * s], [cx + 14 * s, by - 9 * s], [cx + 2 * s, by - 9 * s], [cx - 2 * s, by - 16 * s]], CAPE, 1.6 * s, { mass: .5 }); // cloak draped over the back
+      S(g, [[cx - 13 * s, by - 13 * s], [cx - 9 * s, by - 13 * s], [cx - 12 * s, by + 4 * s], [cx - 16 * s, by + 4 * s]], STONE, 1.4 * s, { mass: .45 });                  // arm hanging limp over the edge
+      S(g, [[cx - 27 * s, by - 11 * s], [cx - 25 * s, by - 18 * s], [cx - 19 * s, by - 21 * s], [cx - 13 * s, by - 18 * s], [cx - 11 * s, by - 11 * s], [cx - 14 * s, by - 5 * s], [cx - 20 * s, by - 3 * s], [cx - 25 * s, by - 5 * s]], STONE, 1.7 * s, { mass: .5, cuts: 1 }); // helmeted head, face to the stone
+      L(g, [[cx - 26 * s, by - 12 * s], [cx - 12 * s, by - 13 * s]], INK, 1.8 * s); L(g, [[cx - 20 * s, by - 21 * s], [cx - 19 * s, by - 12 * s]], INK, 1.4 * s);                                                                                          // helm rim
+      S(g, [[cx - 6 * s, by - 26 * s], [cx - 3 * s, by - 27 * s], [cx + 9 * s, by - 56 * s], [cx + 7 * s, by - 57 * s]], IRON, 1.3 * s, { mass: .3 });                  // the blade, driven through his back
+      L(g, [[cx + 1 * s, by - 50 * s], [cx + 15 * s, by - 55 * s]], INK, 3.4 * s); L(g, [[cx + 1 * s, by - 50 * s], [cx + 15 * s, by - 55 * s]], '#8a857a', 1.5 * s); // crossguard
+      L(g, [[cx + 9 * s, by - 56 * s], [cx + 12 * s, by - 65 * s]], INK, 3.6 * s); circ0(g, cx + 12.6 * s, by - 66.5 * s, 2.5 * s);                                     // grip and pommel
+      L(g, [[cx - 24 * s, by - 3 * s], [cx + 24 * s, by - 3 * s]], '#2a2622', 1.2 * s);
     } else if (p.kind === 'chest') {
       const cx = x0 + TS / 2, by = y0 + TS * .88;
       shadow(g, cx, by, 19 * s, 5 * s, .4);
