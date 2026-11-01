@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-10-31', items: [
+      ['Cards', 'Card upgrades are reworked: every card now grows its own way as it ranks up, following the upgrade sheet (your Warrior list, the answered questions and the accepted suggestions). Most numbers add a small flat amount per level (+10 roughly doubles the main number); draws, hits, turns and card counts step up at +5 and +10; cards with nothing to grow get cheaper. Card text always shows the numbers at its rank. Every card is listed below, with its numbers at +0 → +5 → +10.', 'cardlist'],
       ['Combat', 'When you die you stay on the fight screen: read the combat log and damage meter, then press Results to move on.'],
       ['Cards', 'Battle Trance is retired. Every copy in your decks and collections has become Marching Orders (same rank and XP); it no longer drops, and the test decks use Marching Orders.'],
       ['Gear', 'Hold Shift while pointing at any item (rewards, stash, shops, the map merchant, the Bazaar, items linked in chat) to compare it with what you wear: both items side by side and every stat with its + / - difference. Rings and one-handers compare against both slots.'],
@@ -76,12 +77,30 @@
   const UPD = { seenKey: 'cb-seen-changes', newBuild: null, countdown: null };
   const changeStamp = () => CHANGELOG[0].date + ':' + CHANGELOG[0].items.length;
   const seenChanges = () => { try { return localStorage.getItem(UPD.seenKey) === changeStamp(); } catch (e) { return true; } };
+  // every card's upgrade, worked out from the live card data so it always matches the game: numbers at +0 -> +5 -> +10
+  function cardUpgradeLine(key) {
+    const d = CARDS[key], v5 = CB.rankedCard(key, 5), v10 = CB.rankedCard(key, 10), U = (typeof CB_UPGRADES !== 'undefined' && CB_UPGRADES[key]) || {};
+    const sp = (t) => t.split(/(\d+)/), a = sp(d.text), b = sp(v5.text), c = sp(v10.text);
+    let body;
+    const same = (x, y) => x.replace(/s\b/g, '') === y.replace(/s\b/g, ''); // "1 card" vs "3 cards"
+    if (a.length === c.length && a.length === b.length && a.every((x, i) => i % 2 || (same(x, b[i]) && same(x, c[i])))) {
+      body = c.map((x, i) => i % 2 === 0 ? esc(x) : (x === a[i] ? esc(x) : `<b>${a[i]} → ${b[i]} → ${x}</b>`)).join('');
+    } else if (v10.text.startsWith(d.text) && v5.text.startsWith(d.text)) body = `${esc(d.text)} <span class="muted">Adds</span>${v5.text !== d.text ? ` <span class="muted">+5:</span> ${esc(v5.text.slice(d.text.length).trim())}` : ''} <span class="muted">+10:</span> <b>${esc(v10.text.slice(d.text.length).trim())}</b>`;
+    else body = `${esc(d.text)} <span class="muted">+5:</span> ${esc(v5.text)} <span class="muted">+10:</span> <b>${esc(v10.text)}</b>`;
+    const cost = d.cost != null && (v5.cost !== d.cost || v10.cost !== d.cost) ? ` <span class="clcost">Cost <b>${d.cost} → ${v5.cost} → ${v10.cost}</b>.</span>` : '';
+    return `<li><span><b style="color:${RC[d.rarity]}">${esc(d.name)}</b> <span class="muted">${esc(d.rarity)} ${esc(d.type)}</span>: ${body}${cost}${U.n ? ` <i class="muted">(${esc(U.n)})</i>` : ''}</span></li>`;
+  }
+  function cardUpgradeList() {
+    const by = {}; for (const k of Object.keys(CARDS)) { const d = CARDS[k]; if (!d.cls || d.designOnly || !['White', 'Green', 'Blue', 'Gold'].includes(d.rarity)) continue; (by[d.cls] = by[d.cls] || []).push(k); }
+    const RO = { White: 0, Green: 1, Blue: 2, Gold: 3 };
+    return Object.keys(by).map(cls => `<details class="clcards"><summary>${esc(cls)} (${by[cls].length} cards)</summary><ul>${by[cls].sort((x, y) => RO[CARDS[x].rarity] - RO[CARDS[y].rarity] || CARDS[x].name.localeCompare(CARDS[y].name)).map(cardUpgradeLine).join('')}</ul></details>`).join('');
+  }
   function openChangelog() {
     try { localStorage.setItem(UPD.seenKey, changeStamp()); } catch (e) {}
     updBtn();
     const day = (d) => new Date(d + 'T12:00:00').toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
     modal(`<h2>What's new</h2><p class="muted" style="margin:0">Every update, newest first. You are on build ${esc(CB_BUILD)}.</p>
-      <div class="changelog">${CHANGELOG.map(g => `<h3>${day(g.date)}</h3><ul>${g.items.map(([a, t]) => `<li><span class="clarea">${esc(a)}</span><span>${esc(t)}</span></li>`).join('')}</ul>`).join('')}</div>
+      <div class="changelog">${CHANGELOG.map(g => `<h3>${day(g.date)}</h3><ul>${g.items.map(([a, t, x]) => `<li><span class="clarea">${esc(a)}</span><span>${esc(t)}${x === 'cardlist' ? cardUpgradeList() : ''}</span></li>`).join('')}</ul>`).join('')}</div>
       <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal;
   }

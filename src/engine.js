@@ -89,7 +89,7 @@ card('stun', { name: 'Stun', rarity: 'Status', type: 'Status', cost: null, targe
 const P_ = (fn) => fn; const shurikenDmg = 4;
 const POWERS = {
   // --- Warrior
-  thorned_bulwark: { hitBy: (cb, p, e, r) => { const back = Math.round(r.absorbed * 0.25); if (back > 0 && e.hp > 0) { cb.applyHit(p, e, back, { label: 'Thorned Bulwark' }); cb.say('player', `Thorned Bulwark: ${e.name} takes ${back}.`); if (e.hp <= 0) cb.onDeath(e); } } },
+  thorned_bulwark: { hitBy: (cb, p, e, r, ...a) => { const back = Math.round(r.absorbed * PN(a, 0, 25) / 100); if (back > 0 && e.hp > 0) { cb.applyHit(p, e, back, { label: 'Thorned Bulwark' }); cb.say('player', `Thorned Bulwark: ${e.name} takes ${back}.`); if (e.hp <= 0) cb.onDeath(e); } } },
   guardian_s_oath: { guard: 0.5 },
   expose_opening: { fullBlock: (cb, p, e) => { if (e.hp > 0) { e.vulnerable += 10; cb.say('player', `Expose Opening: ${e.name} gains 10 Vulnerable.`); } } },
   blood_clock: { dotTicks: { bleed: 2 } },
@@ -98,13 +98,13 @@ const POWERS = {
   follow_through: { cardMult: (cb, p, d) => d.type === 'Attack' && p.turnAttacks === 1 ? 1.3 : 1 },
   mortal_precision: { critMultX: 1.3 },
   grit: { turnStart: (cb) => cb.gainDef(3) },
-  blood_pact: { loseHp: (cb, p) => { p.strCombat += 10; cb.say('player', 'Blood Pact: +10 Strength for the fight.'); } },
-  iron_will: { drawStatus: (cb, p) => { cb.gainDef(10); p.mana += 5; cb.say('player', 'Iron Will: +5 mana.'); } },
+  blood_pact: { loseHp: (cb, p, ...a) => { const n = PN(a, 0, 10); p.strCombat += n; cb.say('player', `Blood Pact: +${n} Strength for the fight.`); } },
+  iron_will: { drawStatus: (cb, p, ...a) => { cb.gainDef(PN(a, 0, 10)); p.mana += PN(a, 1, 5); cb.say('player', `Iron Will: +${PN(a, 1, 5)} mana.`); } },
   unstoppable_force: { ignoreBlock: 0.5 },
   conditioning: { onPlay: (cb, p) => { p.maxMana += 10; p.regen += 5; } },
   marathon: { turnStart: (cb, p) => { p.regen += 5; cb.say('player', `Marathon: regeneration rises to ${p.regen}.`); } },
-  momentum: { cardPlayed: (cb, p, d) => { if (d.type === 'Attack' && p.turnAttacks === 3) { cb.say('player', 'Momentum: draw 1.'); cb.drawCards(p, 1); } } },
-  blood_ritual: { turnStart: (cb, p) => { cb.drawCards(p, 1); cb.loseHp(p, 5, 'Blood Ritual'); } },
+  momentum: { cardPlayed: (cb, p, d, ...a) => { if (d.type === 'Attack' && p.turnAttacks === 3) { const n = PN(a, 0, 1); cb.say('player', `Momentum: draw ${n}.`); cb.drawCards(p, n); } } },
+  blood_ritual: { turnStart: (cb, p, ...a) => { cb.drawCards(p, PN(a, 0, 1)); cb.loseHp(p, 5, 'Blood Ritual'); } },
   reckless_fury: { onPlay: (cb, p) => { p.strCombat += 50; }, turnStart: (cb, p, pw) => { pw.n = (pw.n || 0) + 1; cb.loseHp(p, pw.n, 'Reckless Fury'); } },
   partial_guard: { partialBlock: true },
   // --- Rogue
@@ -118,26 +118,26 @@ const POWERS = {
   fleetfooted: { dealt: (cb, p, h) => { if (h.kind === 'Attack' && h.lost > 0 && !h.absorbed) cb.gainDef(2); } },
   first_move: { initPlus: () => 100 },
   nimble: { turnStart: (cb) => cb.gainDef(3) },
-  hidden_pockets: { turnStart: (cb) => cb.addToHand('shuriken') },
+  hidden_pockets: { turnStart: (cb, p, ...a) => { for (let k = PN(a, 0, 1); k > 0; k--) cb.addToHand('shuriken'); } },
   virulence: { dotPlus: { poison: 1 } },
   shuriken_mastery: { shurikenPlus: 3 },
-  afterimage: { fullBlock: (cb, p) => { cb.say('player', 'Afterimage: draw 1.'); cb.drawCards(p, 1); } },
+  afterimage: { fullBlock: (cb, p, ...a) => { const n = PN(a, 0, 1); cb.say('player', `Afterimage: draw ${n}.`); cb.drawCards(p, n); } },
   quartermaster: { handFull: (cb, p) => { p.mana += 5; cb.say('player', 'Quartermaster: +5 mana.'); } },
   deep_pockets: { onPlay: (cb, p) => { p.maxMana += 10; p.regen += 5; } },
   the_long_game: { turnStart: (cb, p) => { p.regen += 5; cb.say('player', `The Long Game: regeneration rises to ${p.regen}.`); } },
-  shadow_reflexes: { turnStart: (cb, p) => { const n = Math.round(p.block * 0.25); if (n) { p.nextAttackFlat = (p.nextAttackFlat || 0) + n; cb.say('player', `Shadow Reflexes: next Attack +${n} damage.`); } } },
+  shadow_reflexes: { turnStart: (cb, p, ...a) => { const n = Math.round(p.block * PN(a, 0, 25) / 100); if (n) { p.nextAttackFlat = (p.nextAttackFlat || 0) + n; cb.say('player', `Shadow Reflexes: next Attack +${n} damage.`); } } },
   // --- Mage
-  quick_study: { turnStart: (cb, p) => { if (cb.order[0] === p.id && cb.turnIndex === 0) { cb.say('player', 'Quick Study: first to act, draw 2.'); cb.drawCards(p, 2); } } },
+  quick_study: { turnStart: (cb, p, ...a) => { if (cb.order[0] === p.id && cb.turnIndex === 0) { const n = PN(a, 0, 2); cb.say('player', `Quick Study: first to act, draw ${n}.`); cb.drawCards(p, n); } } },
   flashpoint: { dotTicks: { burn: 2 } },
   combustion_threshold: { dealt: (cb, p, h) => { if (h.d && h.d.cost > 30 && h.kind === 'Skill' && h.e.burn > 0 && h.e.hp > 0 && !h.combusted) { h.combusted = true; cb.applyHit(p, h.e, h.e.burn, { isDot: true, label: 'Combustion' }); } } },
-  temporal_siphon: { initPlus: (cb) => Math.round(0.2 * cb.foes().reduce((s, e) => s + cb.initiative(e), 0)) },
-  arcane_ascension: { onPlay: (cb, p) => { p.draw += 2; p.regen = Math.round(p.regen * 1.3); } },
+  temporal_siphon: { initPlus: (cb, p, ...a) => Math.round(PN(a, 0, 20) / 100 * cb.foes().reduce((s, e) => s + cb.initiative(e), 0)) },
+  arcane_ascension: { onPlay: (cb, p, ...a) => { p.draw += 2; p.regen = Math.round(p.regen * (1 + PN(a, 0, 30) / 100)); } },
   potency: { hitMult: (cb, p, e, c) => c.kind === 'Skill' ? 1.15 : 1 },
   rule_of_three: { cardMult: (cb, p, d) => d.type === 'Skill' && d.tags.dmg && (p.spellCount + 1) % 3 === 0 ? 2 : 1 },
   glyph_of_warding: { turnStart: (cb) => cb.gainDef(3) },
-  torrent: { cardPlayed: (cb, p, d) => { if (d.type === 'Skill' && p.turnSkills === 3) { cb.say('player', 'Torrent: draw 1.'); cb.drawCards(p, 1); } } },
+  torrent: { cardPlayed: (cb, p, d, ...a) => { if (d.type === 'Skill' && p.turnSkills === 3) { const n = PN(a, 0, 1); cb.say('player', `Torrent: draw ${n}.`); cb.drawCards(p, n); } } },
   ley_attunement: { onPlay: (cb, p) => { p.maxMana += 10; p.regen += 5; } },
-  barrier_battery: { turnEnd: (cb, p) => { const n = Math.round(p.block * 0.2); if (n) { p.manaNext += n; cb.say('player', `Barrier Battery: +${n} mana next turn.`); } } },
+  barrier_battery: { turnEnd: (cb, p, ...a) => { const n = Math.round(p.block * PN(a, 0, 20) / 100); if (n) { p.manaNext += n; cb.say('player', `Barrier Battery: +${n} mana next turn.`); } } },
   spellweaving: { flat: (cb, p, d) => d.type === 'Skill' ? 4 * p.turnElems.length : 0 },
   malediction_mirror: { turnStart: (cb, p) => { const t = cb.foes()[0] || cb.alive()[0]; if (!t) return; let moved = 0; for (const k of ['weak', 'vulnerable', 'slow', 'bleed', 'poison', 'burn']) if (p[k] > 0) { t[k] = (t[k] || 0) + p[k]; moved += p[k]; p[k] = 0; } if (moved) cb.say('player', `Malediction Mirror: debuffs move to ${t.name}.`); } },
   // --- Paladin
@@ -146,16 +146,16 @@ const POWERS = {
   crusader_s_zeal: { hitMult: (cb, p, e, c) => c.kind === 'Attack' ? 1.3 : 1 },
   cleansing_light: { turnStart: (cb, p) => cb.cleanse(p, 1) },
   purifying_grace: { onCleanse: (cb, p, n) => { if (n) cb.heal(p, 2 * n, 'Purifying Grace'); } },
-  delayed_judgment: { dealt: (cb, p, h) => { if (h.dtype === 'Holy' && h.lost > 0) cb.later.push({ round: cb.round + 2, src: p.id, e: h.e.id, n: Math.round(h.lost * 0.3) }); } },
+  delayed_judgment: { dealt: (cb, p, h, ...a) => { if (h.dtype === 'Holy' && h.lost > 0) cb.later.push({ round: cb.round + 2, src: p.id, e: h.e.id, n: Math.round(h.lost * PN(a, 0, 30) / 100) }); } },
   shield_of_the_crusade: { dealt: (cb, p, h) => { if (h.dtype === 'Physical' && h.lost > 0) cb.gainDef(Math.max(1, Math.round(h.lost * 0.2))); } },
-  sacred_momentum: { dealt: (cb, p, h) => { if (h.dtype === 'Physical' && h.lost > 0) p.nextHolyMult = 1.25; } },
+  sacred_momentum: { dealt: (cb, p, h, ...a) => { if (h.dtype === 'Physical' && h.lost > 0) p.nextHolyMult = 1 + PN(a, 0, 25) / 100; } },
   aegis_of_light: { dealt: (cb, p, h) => { if (h.dtype === 'Holy' && h.lost > 0) cb.gainDef(Math.max(1, Math.round(h.lost * 0.2))); } },
   brand_the_wicked: { hitMult: (cb, p, e, c) => c.dtype === 'Physical' && e.burn > 0 ? 1.3 : 1 },
   zeal_of_the_pyre: { initPlus: (cb) => Math.floor(Math.max(0, ...cb.foes().map(e => e.burn || 0)) / 5) },
   burning_wisdom: { statPlus: (cb, p, e, c) => c.kind === 'Skill' ? 10 * Math.floor((e.burn || 0) / 3) : 0 },
-  patient_wrath: { turnEnd: (cb, p, pw) => { if (!p.turnAttacks) { pw.n = (pw.n || 0) + 10; cb.say('player', `Patient Wrath: next Attack +${pw.n}%.`); } }, cardMult: (cb, p, d, pw) => { if (d.type === 'Attack' && pw.n) { const m = 1 + pw.n / 100; pw.n = 0; return m; } return 1; } },
-  divine_echo: { echo: 10, turnStart: (cb, p, pw) => { pw.chance = Math.min(10, (pw.chance == null ? 10 : pw.chance) + 5); } },
-  grace_eternal: { onHeal: (cb, p, a, h) => { const per = Math.round(h * 0.3 / 3); if (per > 0 && !cb._hot) (a.hot = a.hot || []).push({ n: per, turns: 3 }); } },
+  patient_wrath: { turnEnd: (cb, p, pw) => { if (!p.turnAttacks) { pw.n = (pw.n || 0) + (pw.upN ? pw.upN[0] : 10); cb.say('player', `Patient Wrath: next Attack +${pw.n}%.`); } }, cardMult: (cb, p, d, pw) => { if (d.type === 'Attack' && pw.n) { const m = 1 + pw.n / 100; pw.n = 0; return m; } return 1; } },
+  divine_echo: { echo: 10, turnStart: (cb, p, pw) => { const cap = pw.upN ? pw.upN[0] : 10; pw.chance = Math.min(cap, (pw.chance == null ? cap : pw.chance) + 5); } },
+  grace_eternal: { onHeal: (cb, p, a, h, pw) => { const per = Math.round(h * (pw && pw.upN ? pw.upN[0] : 30) / 100 / 3); if (per > 0 && !cb._hot) (a.hot = a.hot || []).push({ n: per, turns: 3 }); } },
   sanctuary: { incoming: 0.7 },
   steadfast: { turnStart: (cb) => cb.gainDef(3) },
   tempered_zeal: { cardPlayed: (cb, p, d) => { if (p.prevType && p.prevType !== d.type && ['Attack', 'Skill'].includes(d.type) && ['Attack', 'Skill'].includes(p.prevType)) cb.gainDef(3); } },
@@ -167,6 +167,7 @@ const POWERS = {
 
 // ---------------- Hand-built cards (the ones a simple rules-text reading can't express) ----------------
 // key = card name as a slug. play(cb, t, p): t = chosen enemy, p = the hero playing it.
+const PN = (a, i, d) => { const pw = a[a.length - 1]; return pw && pw.upN ? pw.upN[i] : d; }; // an upgraded Power's own numbers
 const tgtOf = (cb, t) => (t && t.hp > 0 ? t : cb.alive().find(x => !x.stealth) || cb.alive()[0]);
 const D_ = (cb, t, n, l) => { const e = tgtOf(cb, t); if (e && !cb.over) cb.hit(e, Math.max(0, Math.round(n)), l); return e; };
 const DA = (cb, n, l) => { for (const e of cb.alive()) if (!cb.over) cb.hit(e, Math.max(0, Math.round(n)), l); };
@@ -521,14 +522,14 @@ function condemn(cb, e, n) { e.condemn += n; cb.say('player', `${e.name} gains $
 Object.assign(POWERS, {
   pay_in_blood: {},
   smoke_and_mirrors: {},
-  cut_the_thread: { dealt: (cb, p, h) => { if (h.kind === 'Attack' && h.lost > 0 && !h.absorbed && h.e.hp > 0 && !h.e.isPlayer) { cb.eExhaust(h.e, 1); cb.exhaustStatus(p, 1); } } },
+  cut_the_thread: { dealt: (cb, p, h, ...a) => { if (h.kind === 'Attack' && h.lost > 0 && !h.absorbed && h.e.hp > 0 && !h.e.isPlayer) { cb.eExhaust(h.e, PN(a, 0, 1)); cb.exhaustStatus(p, PN(a, 1, 1)); } } },
   shared_fatigue: { cardPlayed: (cb, p, d) => { if (d.type !== 'Skill') return; p.discard.push({ uid: 'c' + (cb._uid++), key: 'dazed' }); const e = cb._lastTarget && !cb._lastTarget.isPlayer ? cb._lastTarget : cb.foes()[0]; if (e) cb.eStatus(e, 'dazed', 1, 'discard'); } },
   silent_judgment: { turnEnd: (cb, p) => { if (!p.turnAttacks) { const e = cb.foes()[0]; if (e) cb.eStatus(e, 'dazed', 1, 'discard'); } } },
   vigil: { turnStart: (cb, p) => { if (p.lastTurnAttacks === 0) devote(cb, p, 3); } },
   balanced_guard: {},
   elemental_memory: {},
   mana_shell: {},
-  entropic_field: { onPlay: (cb, p) => { p.costX = 1.5; const e = cb.foes()[0]; if (e) { e.costX = 1.5; cb.planEnemy(e, true); } } },
+  entropic_field: { onPlay: (cb, p, ...a) => { const x = 1 + PN(a, 0, 50) / 100; p.costX = x; const e = cb.foes()[0]; if (e) { e.costX = x; cb.planEnemy(e, true); } } },
 });
 
 
@@ -941,8 +942,8 @@ class Combat {
   }
 
   // ----- card systems: turn flags (p.turn, cleared when your turn ends), until-your-next-turn flags (p.until), timed effects (p.timed)
-  timed(p, key, turns, o) { const t = Object.assign({ key, turns }, o || {}); p.timed.push(t); if (t.begin) t.begin(this, p, t); return t; }
-  tickTimed(p) { for (const t of p.timed) { if (t.each) t.each(this, p, t); t.turns--; if (t.turns <= 0 && t.end) t.end(this, p, t); } p.timed = p.timed.filter(t => t.turns > 0); }
+  timed(p, key, turns, o) { const t = Object.assign({ key, turns }, o || {}); p.timed.push(t); if (this._rkCard && !this._inPw && this._playing === this._rkCard) { if (this._rk) t.rk = this._rk; if (this._rkTimed) this._rkTimed.push(t); } if (t.begin) t.begin(this, p, t); return t; }
+  tickTimed(p) { for (const t of p.timed) { if (t.each) this.rkRun(t.rk, () => t.each(this, p, t)); t.turns--; if (t.turns <= 0 && t.end) this.rkRun(t.rk, () => t.end(this, p, t)); } p.timed = p.timed.filter(t => t.turns > 0); }
   hasTimed(p, key) { return p.timed && p.timed.some(t => t.key === key); }
   costOf(p, d, c) {
     if (d.cost == null) return null;
@@ -970,6 +971,7 @@ class Combat {
   drawUntil(p, type) { let g = 0; while (g++ < 12 && (p.drawPile.length || p.discard.length) && p.hand.length < 10) { const before = p.hand.length; this.drawCards(p, 1); if (p.hand.length === before) break; const c = p.hand[p.hand.length - 1]; if (C[c.key].type === type) return; p.hand.pop(); p.discard.push(c); } }
   // enemy hand and deck
   eStatus(e, key, n, pile) {
+    n += this.rkCount();
     if (e && e.isPlayer) { const k = ['dazed', 'stun', 'fatigue'].includes(key) ? key : 'dazed'; for (let i = 0; i < n; i++) e.drawPile.splice(Math.floor(this.rng() * (e.drawPile.length + 1)), 0, { uid: 'c' + (this._uid++), key: k }); this.say('player', `${n} ${C[k].name} added to ${e.name}'s draw pile.`); return; }
     const S = { dazed: ['Dazed', 'A wasted draw.'], stun: ['Stun', 'A wasted draw. Stays in the deck.'], venom: ['Venom', 'When drawn: gain 3 Poison.'], frostbite: ['Frostbite', 'When drawn: gain 3 Chill.'], hex: ['Hex', 'When drawn: gain 10 Vulnerable.'], bomb: ['Living Bomb', 'When drawn: explodes for 15 Fire damage.'], fatigue: ['Fatigue', 'A wasted draw.'] }[key];
     if (!e || e.isPlayer || !S) return;
@@ -983,8 +985,10 @@ class Combat {
     else this.say('enemy', `${e.name} draws ${c.name}.`);
   }
   eDiscard(e, n, how) {
+    n += this.rkCount();
     if (e.isPlayer) { let k = 0; for (; k < n && e.hand.length; k++) { const [c] = e.hand.splice(Math.floor(this.rng() * e.hand.length), 1); e.discard.push(c); this.say('player', `${e.name} discards ${C[c.key].name}.`); } e.lostRound = (e.lostRound || 0) + k; this._forced = (this._forced || 0) + k; return k; } let k = 0; for (; k < n && e.hand.length; k++) { const i = how === 'highest' ? e.hand.reduce((bi, c, j) => (c.cost < 999 && c.cost > (e.hand[bi].cost < 999 ? e.hand[bi].cost : -1)) ? j : bi, 0) : Math.floor(this.rng() * e.hand.length); const [c] = e.hand.splice(i, 1); e.discard.push(c); this.say('player', `${e.name} discards ${c.name}.`); } e.lostRound = (e.lostRound || 0) + k; this._forced = (this._forced || 0) + k; if (k) { this.saboteur(e); this.planEnemy(e, true); } return k; }
   eExhaust(e, n) {
+    n += this.rkCount();
     if (e.isPlayer) { let k = 0; for (; k < n && e.hand.length; k++) { const [c] = e.hand.splice(Math.floor(this.rng() * e.hand.length), 1); e.exhaust.push(c); this.say('player', `${e.name}'s ${C[c.key].name} is exhausted.`); } e.lostRound = (e.lostRound || 0) + k; e.exhaustedTotal = (e.exhaustedTotal || 0) + k; return k; } let k = 0; for (; k < n && e.hand.length; k++) { const [c] = e.hand.splice(Math.floor(this.rng() * e.hand.length), 1); this.say('player', `${e.name}'s ${c.name} is exhausted.`); } e.lostRound = (e.lostRound || 0) + k; e.exhaustedTotal = (e.exhaustedTotal || 0) + k; if (k) { this.saboteur(e); this.planEnemy(e, true); } return k; }
   saboteur(e) { const q = this.player; if (!q || !q.isPlayer || e.isPlayer || !this.has(q, 'codex_saboteur') || q.sabRound === this.round) return; q.sabRound = this.round; this.eStatus(e, 'dazed', 1, 'discard'); }
   eCost(e, c) { if (c.cost >= 999) return 999; return Math.round(c.cost * (1 + (e.exposure || 0) * 0.05) * (e.costX || 1)) + (e.costUp || 0); }
@@ -997,24 +1001,53 @@ class Combat {
   // ----- powers
   pws(p) { return (p && p.powers || []).map(pw => [pw, POWERS[pw.key]]).filter(x => x[1]); }
   has(p, key) { return !!(p && p.powers && p.powers.some(pw => pw.key === key)); }
-  fire(p, hook, ...args) { if (!p || !p.isPlayer || !p.powers.length) return; for (const [pw, def] of this.pws(p)) if (def[hook] && !this.over) { const was = this.player; this.player = p; def[hook](this, p, ...args, pw); this.player = was; } }
-  pwProd(p, field, ...args) { let m = 1; for (const [pw, def] of this.pws(p)) { const v = def[field]; if (v == null) continue; m *= typeof v === 'function' ? v(this, p, ...args, pw) : v; } return m; }
-  pwSum(p, field, ...args) { let m = 0; for (const [pw, def] of this.pws(p)) { const v = def[field]; if (v == null) continue; m += typeof v === 'function' ? v(this, p, ...args, pw) : v; } return m; }
+  fire(p, hook, ...args) { if (!p || !p.isPlayer || !p.powers.length) return; for (const [pw, def] of this.pws(p)) if (def[hook] && !this.over) { const was = this.player; this.player = p; this.rkPw(pw, () => def[hook](this, p, ...args, pw)); this.player = was; } }
+  pwProd(p, field, ...args) { let m = 1; for (const [pw, def] of this.pws(p)) { const v = def[field]; if (v == null) continue; let x = typeof v === 'function' ? this.rkPw(pw, () => v(this, p, ...args, pw)) : v; if (pw.rkMain && typeof x === 'number' && x !== 1) x = Math.max(0, 1 + (x - 1) * pw.rkMain); m *= x; } return m; }
+  pwSum(p, field, ...args) { let m = 0; for (const [pw, def] of this.pws(p)) { const v = def[field]; if (v == null) continue; let x = typeof v === 'function' ? this.rkPw(pw, () => v(this, p, ...args, pw)) : v; if (pw.rkMain && typeof x === 'number' && x) x = Number.isInteger(x) ? Math.round(x * pw.rkMain) : x * pw.rkMain; m += x; } return m; }
   pwKey(p, field, key, agg) { let m = agg === 'sum' ? 0 : 1; for (const [, def] of this.pws(p)) { const v = def[field] && def[field][key]; if (v != null) m = agg === 'sum' ? m + v : Math.max(m, v); } return m; }
   addPower(p, key, name, text, fromAura) {
     const pw = { key, name, text }; p.powers.push(pw);
+    const pd = this._rkCard; if (pd && pd.pwN) pw.upN = pd.pwN; else if (pd && pd.rk && pd.rank && pd.type === 'Power') { pw.rk = pd.rk; pw.rkMain = pd.rkMain || 1; }
     this.say('player', `${fromAura ? name + ' spreads to ' + p.name : this.who(p) + (this.partySize > 1 ? ' activates ' : ' activate ') + name}. (Power: lasts the whole fight.)`);
-    const def = POWERS[key]; if (def && def.onPlay) { const was = this.player; this.player = p; def.onPlay(this, p, pw); this.player = was; }
+    const def = POWERS[key]; if (def && def.onPlay) { const was = this.player; this.player = p; this.rkPw(pw, () => def.onPlay(this, p, pw)); this.player = was; }
     if (!fromAura && key !== 'aura_mastery' && this.has(p, 'aura_mastery')) for (const a of this.allies()) if (a !== p) this.addPower(a, key, name, text, true);
   }
   // paying HP can kill you (Oct 31): the card still finishes, then you fall. Divine Intervention-style 'cannot fall' still holds at 1
-  loseHp(p, n, label) { const b0 = p.hp; p.hp = (p.until && p.until.noDie) || this.hasTimed(p, 'noDie') ? Math.max(1, p.hp - n) : Math.max(0, p.hp - n); if (p.debtUser) p.bloodDebt += Math.round((b0 - p.hp) * (this.has(p, 'pay_in_blood') ? 1.5 : 1)); p.dmgRound += b0 - p.hp; this.say('player', `${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${n} HP (${label}). HP ${p.hp}/${p.maxHp}.`); this.fire(p, 'loseHp'); if (p.hp <= 0) { if (this._playing) this._pendingDeath = p; else this.onDeath(p); } }
+  loseHp(p, n, label) { const b0 = p.hp; p.hp = (p.until && p.until.noDie) || this.hasTimed(p, 'noDie') ? Math.max(1, p.hp - n) : Math.max(0, p.hp - n); if (p.debtUser) p.bloodDebt += Math.round((b0 - p.hp) * (this.has(p, 'pay_in_blood') ? 1 + this.upN(p, 'pay_in_blood', 0, 50) / 100 : 1)); p.dmgRound += b0 - p.hp; this.say('player', `${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${n} HP (${label}). HP ${p.hp}/${p.maxHp}.`); this.fire(p, 'loseHp'); if (p.hp <= 0) { if (this._playing) this._pendingDeath = p; else this.onDeath(p); } }
   cleanse(p, n) { let left = n, removed = 0; for (const k of ['vulnerable', 'weak', 'bleed', 'poison', 'burn', 'slow', 'chill']) if (left > 0 && p[k]) { removed += p[k]; p[k] = 0; left--; } if (left > 0) p.disarmNext = false; this.say('player', removed ? `${this.who(p)}: debuffs removed.` : 'No debuffs to remove.'); this.fire(p, 'onCleanse', removed); }
   powerHit(p, e, n, label, dtype, kind) {
     const keep = [this._playing, this.player, this._rankMult, this._attackMult, this._skillMult, this._cmult];
-    this._playing = { type: kind, dtype, tags: {}, name: label, isPower: true }; this.player = p; this._rankMult = 1; this._attackMult = 1; this._skillMult = 1; this._cmult = 1;
+    this._playing = { type: kind, dtype, tags: {}, name: label, isPower: true }; this.player = p; this._rankMult = this._rk; this._rk = this._pwRk || null; this._attackMult = 1; this._skillMult = 1; this._cmult = 1;
     this.hit(e, n, label);
-    [this._playing, this.player, this._rankMult, this._attackMult, this._skillMult, this._cmult] = keep;
+    this._rk = this._rankMult; [this._playing, this.player, this._rankMult, this._attackMult, this._skillMult, this._cmult] = keep;
+  }
+  // ---- per-level card upgrades (Oct 31). rankedCard sets d.rk (multiplier per kind of number) and d.ms (milestone extras).
+  // Damage, Block and healing scale where they are dealt; statuses, Strength, mana and the like scale on what the card added.
+  rkm(k) { const r = this._rk; return r ? (r[k] || 1) * (r.all || 1) : 1; }
+  rkBegin(rk) { const v = new Map(); for (const a of [...this.players, ...this.enemies]) { const o = {}; for (const f of RK_ALL) { const x = rkGet(a, f); o[f] = typeof x === 'number' ? x : 0; } v.set(a, o); } (this._rkSt || (this._rkSt = [])).push({ rk, v }); }
+  rkEnd() {
+    const st = this._rkSt || [], s = st.pop(); if (!s) return; const par = st[st.length - 1];
+    for (const [a, o] of s.v) for (const f of RK_ALL) {
+      const cur = rkGet(a, f); if (typeof cur !== 'number') continue; let dl = cur - o[f];
+      if (dl > 0 && s.rk) { const m = (s.rk[RK_KIND[f]] || 1) * (s.rk.all || 1); if (m !== 1) { const x = RK_FLOAT[f] ? dl * m - dl : Math.round(dl * m) - dl; rkSet(a, f, cur + x); dl += x; } }
+      if (par && par.v.has(a)) par.v.get(a)[f] += dl;
+    }
+  }
+  upN(p, key, i, d) { const pw = p && p.powers && p.powers.find(x => x.key === key); return pw && pw.upN ? pw.upN[i] : d; } // an upgraded Power's numbers
+  rkCount() { const d = this._rkCard; return d && !this._inPw && this._playing === d && d.ms && d.ms.count ? d.ms.count : 0; }
+  rkRun(rk, fn) { if (!rk) return fn(); const keep = this._rk; this._rk = rk; this._inPw = (this._inPw || 0) + 1; this.rkBegin(rk); try { return fn(); } finally { this.rkEnd(); this._inPw--; this._rk = keep; } }
+  rkPw(pw, fn) {
+    if (!pw.rk && !(this._rkSt && this._rkSt.length)) return fn();
+    const keep = [this._rk, this._pwRk]; this._rk = this._pwRk = pw.rk || null; this._inPw = (this._inPw || 0) + 1; this.rkBegin(this._rk);
+    try { return fn(); } finally { this.rkEnd(); this._inPw--; [this._rk, this._pwRk] = keep; }
+  }
+  rkMilestones(p, d, dn0, tgt) {
+    const ms = d.ms || {};
+    if (ms.hits && this._rkHits && this._rkHits.length) { const first = new Map(); for (const [e, b, l] of this._rkHits) if (!first.has(e)) first.set(e, [b, l]); for (let k = 0; k < ms.hits; k++) for (const [e, [b, l]] of first) if (e.hp > 0 && !this.over) this.hit(e, b, l); }
+    if (ms.turns && this._rkTimed) for (const t of this._rkTimed) t.turns += ms.turns;
+    if (ms.count && this._rkAdded && this._rkAdded.length) for (let k = 0; k < ms.count; k++) this.addToHand(this._rkAdded[this._rkAdded.length - 1]);
+    if (ms.draw) { if ((p.drawNext || 0) > dn0) { p.drawNext += ms.draw; this.say('player', `Upgrade: draw ${ms.draw} more next round.`); } else if (this._rkDraw || d.msFree) this.drawCards(p, ms.draw); }
+    if (d.rkAfter) d.rkAfter(this, p, tgt);
   }
   mtr(a) { return this.meter[a.id] || (this.meter[a.id] = { id: a.id, name: a.name, isPlayer: !!a.isPlayer, cls: a.cls || null, dealt: {}, healed: {}, taken: {}, absorbed: 0 }); }
   say(kind, text) { this.log.push({ round: this.round, kind, text }); }
@@ -1023,7 +1056,7 @@ class Combat {
   alive() { return this.duel ? this.players.filter(p => p !== this.player && p.hp > 0) : this.foes(); }
   initiative(a) { return a.baseInit + (a.initNext || 0) - (a.slow || 0) - (a.chill || 0) + (a.isPlayer && a.powers.length ? this.pwSum(a, 'initPlus') : 0); }
   pressure() { if (this.opts.practice) return 0; return this.round >= PRESSURE_START ? (this.round - PRESSURE_START + 1) * PRESSURE_STEP * (this.duel ? 5 : 1) : 0; } // duels ramp 5x faster so they end
-  card(c) { return c.rank ? (c._v || (c._v = rankedCard(c.key, c.rank))) : C[c.key]; }
+  card(c) { if (!c.rank) return C[c.key]; if (!c._v || c._v.rank !== c.rank) Object.defineProperty(c, '_v', { value: rankedCard(c.key, c.rank), enumerable: false, writable: true, configurable: true }); return c._v; } // cached off the JSON
   // card text with live numbers: damage and defense as they would land right now from this hero's stats, gear and active buffs
   // (before the target's own resistance, weakness, Vulnerable or Block). Changed numbers are wrapped \u0001n\u0002 (up) or \u0003n\u0004 (down).
   liveText(p, d, e) {
@@ -1043,7 +1076,7 @@ class Combat {
       return m;
     };
     let flat = 0;
-    if (kind === 'Attack') flat += (p.nextAttackFlat || 0) + (p.weaponDmg || 0) + (p.windUp ? Math.floor((d.cost || 0) / 5) : 0);
+    if (kind === 'Attack') flat += (p.nextAttackFlat || 0) + (p.weaponDmg || 0) + (p.windUp ? Math.floor((d.cost || 0) / 5) * (+p.windUp) : 0);
     if (kind === 'Skill' && d.tags && d.tags.dmg) flat += T.skillFlat || 0;
     if (pow) { try { flat += this.pwSum(p, 'flat', d); } catch (x) {} }
     const mark = (n0, n1) => n1 > n0 ? '\u0001' + n1 + '\u0002' : n1 < n0 ? '\u0003' + n1 + '\u0004' : String(n1);
@@ -1060,10 +1093,11 @@ class Combat {
     t = t.replace(/\b([Gg]ains?) (\d+) (Block|Barrier|Dodge|Parry)/g, (m, w, n, k) => `${w} ${mark(+n, Math.round(+n * defM))} ${k}`);
     return t;
   }
-  addToHand(key) { const p = this.player; const c = { uid: 'c' + (this._uid++), key }; if (p.hand.length >= 10) { p.discard.push(c); this.say('sys', `Hand full: ${C[key].name} went to the discard pile.`); this.fire(p, 'handFull'); } else p.hand.push(c); }
+  addToHand(key) { const p = this.player; const c = { uid: 'c' + (this._uid++), key }; if (this._rkAdded && !this._inPw && this._playing === this._rkCard) this._rkAdded.push(key); if (p.hand.length >= 10) { p.discard.push(c); this.say('sys', `Hand full: ${C[key].name} went to the discard pile.`); this.fire(p, 'handFull'); } else p.hand.push(c); }
   statusCount() { const p = this.player; return [...p.drawPile, ...p.hand, ...p.discard].filter(c => C[c.key].type === 'Status').length; }
 
   drawCards(a, n) {
+    if (this._rkCard && !this._inPw && this._playing === this._rkCard && a === this.player) this._rkDraw += n;
     if (a.isPlayer && a.turn && a.turn.noDraw && this.phase === 'player' && this.current === a) { if (n > 0) this.say('sys', 'No more draws this turn.'); return; }
     for (let i = 0; i < n; i++) {
       if (a.drawPile.length === 0) {
@@ -1073,7 +1107,7 @@ class Combat {
       }
       const c = a.drawPile.pop();
       if (a.hand.length >= 10) { a.discard.push(c); if (a.isPlayer) { this.say('sys', `Hand full: ${C[c.key].name} went to the discard pile.`); this.fire(a, 'handFull'); } }
-      else { a.hand.push(c); if (!a.isPlayer && c.status) this.eDrawn(a, c); if (a.isPlayer && C[c.key].type === 'Status') this.fire(a, 'drawStatus'); if (a.isPlayer && C[c.key].onDraw) { const was = this.player; this.player = a; this.say('player', `${C[c.key].name} is drawn.`); runOps(this, null, C[c.key].onDraw, C[c.key].name); this.player = was; } }
+      else { a.hand.push(c); if (!a.isPlayer && c.status) this.eDrawn(a, c); if (a.isPlayer && C[c.key].type === 'Status') this.fire(a, 'drawStatus'); if (a.isPlayer && C[c.key].onDraw) { const was = this.player, od = this.card(c); this.player = a; this.say('player', `${od.name} is drawn.`); this.rkRun(od.rk, () => { runOps(this, null, C[c.key].onDraw, C[c.key].name); if (od.ms && od.ms.draw) this.drawCards(a, od.ms.draw); }); this.player = was; } }
     }
   }
 
@@ -1233,10 +1267,10 @@ class Combat {
   }
 
   gainDef(n, label) {
-    const p = this.player; if (this._playing && this._rankMult && this._rankMult !== 1) n = Math.round(n * this._rankMult);
+    const p = this.player; { const m = this.rkm('def'); if (m !== 1) n = Math.round(n * m); }
     if (p.isPlayer && (p.turn.defX || this.hasTimed(p, 'defX'))) n *= 2;
     if (p.isPlayer && p.powers.length) { n = Math.round(n * this.pwProd(p, 'defMult') * this.pwProd(p, 'defMultFn')); if (n === 0 && this.has(p, 'codex_equilibrium')) { this.say('player', 'Equilibrium: no Block.'); return 0; } }
-    if (p.isPlayer && this.has(p, 'balanced_guard')) { if (p.balNext) { n = Math.round(n * 1.5); p.balNext = false; this.say('player', 'Balanced Guard: +50%.'); } else p.balNext = true; }
+    if (p.isPlayer && this.has(p, 'balanced_guard')) { if (p.balNext) { const bg = this.upN(p, 'balanced_guard', 0, 50); n = Math.round(n * (1 + bg / 100)); p.balNext = false; this.say('player', `Balanced Guard: +${bg}%.`); } else p.balNext = true; }
     if (p.isPlayer && this.has(p, 'mana_shell')) { const v = Math.round(n * (1 + p.dexterity / 100)); p.mana += v; this.say('player', `Mana Shell: +${v} mana instead of ${p.defName}.`); return v; }
     const mult = 1 + p.dexterity / 100; const v = Math.round(n * mult);
     p.block += v;
@@ -1245,7 +1279,7 @@ class Combat {
   }
   heal(a, n, label, quiet) {
     if (n <= 0) return 0;
-    if (a.isPlayer && this._playing && this._rankMult && this._rankMult !== 1 && !['Bloodthirst', 'Lifesteal'].includes(label)) n = Math.round(n * this._rankMult);
+    if (a.isPlayer && !['Bloodthirst', 'Lifesteal'].includes(label)) { const m = this.rkm('heal'); if (m !== 1) n = Math.round(n * m); }
     const caster = a.isPlayer && this._playing && this.player && this.player.isPlayer ? this.player : a;
     const mult = a.isPlayer && !['Bloodthirst', 'Lifesteal'].includes(label) ? 1 + caster.spirit / 100 : 1;
     if (!a.isPlayer && a.noHealRound >= this.round) { this.say('player', `${a.name} cannot heal.`); return 0; }
@@ -1284,7 +1318,7 @@ class Combat {
     const before = tgt.hp;
     tgt.hp = Math.max(0, tgt.hp - dmg);
     if (tgt.isPlayer && tgt.hp <= 0 && (tgt.until.noDie || this.hasTimed(tgt, 'noDie'))) { tgt.hp = 1; this.say('heal', `${tgt.name} refuses to fall (Divine Intervention).`); }
-    if (tgt.isPlayer && before > tgt.hp) { const lostHp = before - tgt.hp; tgt.dmgRound += lostHp; this.allyLost && this.allyLost.add(tgt.id); if (tgt.debtUser) tgt.bloodDebt += Math.round(lostHp * (this.has(tgt, 'pay_in_blood') ? 1.5 : 1)); if (tgt.until.storing) tgt.until.stored = (tgt.until.stored || 0) + lostHp; if (tgt.until.grudge && src && !src.isPlayer) tgt.until.grudge[src.id] = (tgt.until.grudge[src.id] || 0) + lostHp; }
+    if (tgt.isPlayer && before > tgt.hp) { const lostHp = before - tgt.hp; tgt.dmgRound += lostHp; this.allyLost && this.allyLost.add(tgt.id); if (tgt.debtUser) tgt.bloodDebt += Math.round(lostHp * (this.has(tgt, 'pay_in_blood') ? 1 + this.upN(tgt, 'pay_in_blood', 0, 50) / 100 : 1)); if (tgt.until.storing) tgt.until.stored = (tgt.until.stored || 0) + lostHp; if (tgt.until.grudge && src && !src.isPlayer) tgt.until.grudge[src.id] = (tgt.until.grudge[src.id] || 0) + lostHp; }
     const real = before - tgt.hp, label = o.label || 'Attack';
     if (src) { const m = this.mtr(src).dealt; m[label] = (m[label] || 0) + real; }
     { const t = this.mtr(tgt); const k = src ? src.name : label; t.taken[k] = (t.taken[k] || 0) + real; t.absorbed += absorbed; }
@@ -1324,7 +1358,8 @@ class Combat {
   hit(e, base, label) {
     const p = this.player, cd = this._playing;
     if (!e || e.hp <= 0) return 0;
-    if (this._rankMult && this._rankMult !== 1) base = Math.round(base * this._rankMult);
+    if (this._rkHits && !this._inPw && cd === this._rkCard) this._rkHits.push([e, base, label]);
+    { const m = this.rkm('dmg'); if (m !== 1) base = Math.round(base * m); }
     const kind = cd ? cd.type : 'Attack'; let dtype = (cd && cd.dtype) || 'Physical';
     const pow = p.isPlayer && p.powers.length > 0, ctx = { kind, dtype, d: cd };
     if (pow) {
@@ -1336,7 +1371,7 @@ class Combat {
     if (kind === 'Attack' && cd && !cd.isPower && p.isPlayer && p.weaponDmg) base += p.weaponDmg;
     if (p.isPlayer && p.turn) {
       if (kind === 'Attack' && p.turn.attackDtype && cd && !cd.isPower) dtype = ctx.dtype = p.turn.attackDtype;
-      if (kind === 'Attack' && p.windUp && cd && !cd.isPower) base += Math.floor((cd.cost || 0) / 5);
+      if (kind === 'Attack' && p.windUp && cd && !cd.isPower) base += Math.floor((cd.cost || 0) / 5) * (+p.windUp);
       if (kind === 'Skill' && cd && !cd.isPower && cd.tags && cd.tags.dmg && p.turn.skillFlat) base += p.turn.skillFlat;
       const dw = this.has(p, 'codex_divine_wrath');
       if ((dtype === 'Holy' || (dw && kind === 'Attack')) && p.devotion > 0 && cd && !cd.isPower) { const per = cd.devotionPer || (dw ? 3 : 2); base += p.devotion * per; this.say('player', `${p.devotion} Devotion: +${p.devotion * per} Holy damage.`); p.devotion = 0; }
@@ -1348,8 +1383,8 @@ class Combat {
     const weakMod = 1 - Math.min(p.weak, 90) / 100, vulnMod = 1 + e.vulnerable / 100 * (pow ? Math.max(1, ...this.pws(p).map(([, d]) => d.vulnX || 1)) : 1);
     const holyUp = dtype === 'Holy' && p.nextHolyMult > 1 ? p.nextHolyMult : 1; if (holyUp > 1) p.nextHolyMult = 1;
     const curse = (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? 1 + (e.unwarded || 0) / 100 : 1);
-    const pm = (pow ? this.pwProd(p, 'hitMult', e, ctx) : 1) * (this._cmult || 1) * holyUp * curse * (crit && p.turn && p.turn.killingBlow ? 2 : 1), cmx = pow ? this.pwProd(p, 'critMultX') : 1;
-    if (crit && p.turn && p.turn.killingBlow) { p.turn.killingBlow = false; this.say('crit', 'Killing Blow: the crit deals double.'); }
+    const pm = (pow ? this.pwProd(p, 'hitMult', e, ctx) : 1) * (this._cmult || 1) * holyUp * curse * (crit && p.turn && p.turn.killingBlow ? (p.turn.killingBlow === true ? 2 : p.turn.killingBlow) : 1), cmx = pow ? this.pwProd(p, 'critMultX') : 1;
+    if (crit && p.turn && p.turn.killingBlow) { p.turn.killingBlow = false; this.say('crit', 'Killing Blow: the crit hits harder.'); }
     const pvp = e.isPlayer ? (1 - Math.min(75, e.resist[dtype] || 0) / 100) * (1 + this.pressure()) : 1;
     const setup = kind === 'Attack' ? (this._attackMult || 1) : (this._skillMult || 1);
     const dmg = Math.max(0, Math.round(base * (1 + stat / 100) * (1 + elem / 100) * weakMod * (crit ? p.critMult * cmx : 1) * tm * vulnMod * setup * pvp * pm));
@@ -1363,21 +1398,21 @@ class Combat {
     if (e.vulnerable) parts.push(`x ${vulnMod.toFixed(2)} Vulnerable`);
     if (pvp !== 1) parts.push(`x ${pvp.toFixed(2)} resist/Pressure`);
     if (pm !== 1) parts.push(`x ${pm.toFixed(2)} Powers`);
-    const ign = (kind === 'Skill' && p.turn && p.turn.pierce) ? e.block : kind === 'Attack' && pow ? Math.floor(e.block * Math.max(0, ...this.pws(p).map(([, d]) => d.ignoreBlock || 0))) : 0; e.block -= ign;
+    const ign = (kind === 'Skill' && p.turn && p.turn.pierce) ? e.block : kind === 'Attack' && pow ? Math.floor(e.block * Math.min(1, Math.max(0, ...this.pws(p).map(([pw, d]) => d.ignoreBlock ? (pw.upN ? pw.upN[0] / 100 : d.ignoreBlock) : 0)))) : 0; e.block -= ign;
     const r = this.applyHit(p, e, dmg, { defer: true, label }); e.block += ign;
     if (pow) this.fire(p, 'dealt', { e, lost: r.lost, absorbed: r.absorbed, kind, dtype, d: cd, crit });
     this._lastLost = r.lost;
     if (p.isPlayer && p.turn && r.lost > 0) {
       const T = p.turn;
       if (kind === 'Attack' && T.lifesteal) this.heal(p, Math.round(r.lost * T.lifesteal), 'Seal of Light', true);
-      if (T.siphon) this.drainMana(e, r.lost);
+      if (T.siphon) this.drainMana(e, Math.round(r.lost * (T.siphon === true ? 1 : T.siphon)));
       if (kind === 'Attack' && T.perfectGuard) this.gainDef(r.lost);
       if (dtype === 'Holy' && T.kindled) { T.kindled = false; e.burn += Math.round(r.lost * 0.5); e.burnBy = p.id; this.say('player', `Kindled Faith: ${e.name} gains ${Math.round(r.lost * 0.5)} Burn.`); }
-      if (kind === 'Attack' && T.coated) { T.coated = false; const q = Math.max(1, Math.round(r.lost * 0.25)); e.bleed += q; e.poison += q; e.bleedBy = e.poisonBy = p.id; this.say('player', `Coated Blade: ${q} Bleed and ${q} Poison.`); }
-      if (kind === 'Attack' && !r.absorbed && this.hasTimed(p, 'relentless')) e.vulnerable += 1;
+      if (kind === 'Attack' && T.coated) { T.coated = false; const q = Math.max(1, Math.round(r.lost * (T.coated === true ? 0.25 : T.coated))); e.bleed += q; e.poison += q; e.bleedBy = e.poisonBy = p.id; this.say('player', `Coated Blade: ${q} Bleed and ${q} Poison.`); }
+      if (kind === 'Attack' && !r.absorbed && p.timed) { const rl = p.timed.find(x => x.key === 'relentless'); if (rl) e.vulnerable += rl.n || 1; }
       if (e.deathmark && e.deathmark.by === p.id) e.deathmark.dmg += r.lost;
     }
-    if (p.isPlayer && kind === 'Attack' && cd && !cd.isPower && e.markDraw === this.round && !(p.markDrawn || {})[e.id + ':' + this.round]) { (p.markDrawn = p.markDrawn || {})[e.id + ':' + this.round] = true; this.drawCards(p, 1); }
+    if (p.isPlayer && kind === 'Attack' && cd && !cd.isPower && e.markDraw === this.round && !(p.markDrawn || {})[e.id + ':' + this.round]) { (p.markDrawn = p.markDrawn || {})[e.id + ':' + this.round] = true; this.drawCards(p, e.markDrawN || 1); }
     this.say(crit ? 'crit' : 'player', `${label} hits ${e.name}: ${parts.join(' ')} = ${dmg}` + (r.absorbed ? `, ${r.absorbed} blocked` : '') + `. HP ${e.hp}/${e.maxHp}.`);
     if (kind === 'Attack' && e.parryBack && r.absorbed && e.hp > 0) { const back = this.applyHit(e, p, Math.round(e.parryBack * this.dmgMult), { defer: true, label: 'Riposte' }); this.say('enemy', `${e.name} parries and strikes back: ${back.lost} HP lost.`); e.parryBack = 0; }
     if (kind === 'Attack' && e.thorns && e.hp > 0) { const t = this.applyHit(e, p, e.thorns, { defer: true, label: e.isPlayer ? 'Thorns' : 'Spikes' }); this.say('enemy', `${e.name}'s ${e.isPlayer ? 'Thorns' : 'spikes'}: ${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${t.lost} HP.`); }
@@ -1400,7 +1435,7 @@ class Combat {
     const str = e.strength + e.strTurn, press = this.pressure();
     const res = Math.min(75, p.resist[dtype] || 0) / 100;
     const bonus = extra || 0;
-    const dmg = Math.max(0, Math.round((base + bonus) * this.dmgMult * e.dmgTune * (1 + str / 100) * (1 - Math.min(e.weak, 90) / 100) * (1 + press) * (1 - res) * (1 + p.vulnerable / 100) * (e.weakNext ? 0.7 : 1) * (p.until.lessDmg ? 1 - p.until.lessDmg : 1) * (dtype !== 'Physical' ? 1 + (p.unwarded || 0) / 100 : 1)));
+    const dmg = Math.max(0, Math.round((base + bonus) * this.dmgMult * e.dmgTune * (1 + str / 100) * (1 - Math.min(e.weak, 90) / 100) * (1 + press) * (1 - res) * (1 + p.vulnerable / 100) * (e.weakNext ? 1 - (e.weakNext === 1 || e.weakNext === true ? 0.3 : e.weakNext) : 1) * (p.until.lessDmg ? 1 - p.until.lessDmg : 1) * (dtype !== 'Physical' ? 1 + (p.unwarded || 0) / 100 : 1)));
     const parts = [`${base}${bonus ? ' + ' + bonus : ''}`];
     if (this.dmgMult !== 1) parts.push(`x ${this.dmgMult.toFixed(2)} map level`);
     if (str) parts.push(`x ${(1 + str / 100).toFixed(2)} Strength`);
@@ -1412,7 +1447,7 @@ class Combat {
     let dmgIn = dmg;
     if (p.powers.length) dmgIn = Math.round(dmgIn * this.pwProd(p, 'incoming'));
     const g = this.alivePlayers().find(q => q !== p && this.has(q, 'guardian_s_oath'));
-    if (g && dmgIn > 0) { const part = Math.round(dmgIn * 0.5); dmgIn -= part; this.applyHit(e, g, part, { defer: true, label }); this.say('player', `Guardian's Oath: ${g.name} takes ${part} of the hit for ${p.name}. HP ${g.hp}/${g.maxHp}.`); if (g.hp <= 0) this.onDeath(g); }
+    if (g && dmgIn > 0) { const part = Math.round(dmgIn * this.upN(g, 'guardian_s_oath', 0, 50) / 100); dmgIn -= part; this.applyHit(e, g, part, { defer: true, label }); this.say('player', `Guardian's Oath: ${g.name} takes ${part} of the hit for ${p.name}. HP ${g.hp}/${g.maxHp}.`); if (g.hp <= 0) this.onDeath(g); }
     const r = this.applyHit(e, p, dmgIn, { defer: true, label });
     this.say('enemy', `${e.name}'s ${label} hits ${this.partySize > 1 ? p.name : 'you'}${dtype !== 'Physical' ? ' (' + dtype + ')' : ''}: ${parts.join(' ')} = ${dmg}` + (r.absorbed ? `, ${r.absorbed} absorbed` : '') + `. HP ${p.hp}/${p.maxHp}.`);
     if (p.hp <= 0) { this.onDeath(p); return r.lost; }
@@ -1468,17 +1503,18 @@ class Combat {
     this.say('card', `${this.partySize > 1 ? p.name + ' plays' : 'You play'} ${d.name}${paid ? ' (' + paid + ' mana)' : ''}` + (tgt ? ` on ${tgt.name}` : '') + `. Mana ${p.mana}.`);
     if (d.target === 'all' && p.stealth) p.stealth = false;
     if (this.duel && d.target === 'all') for (const x of this.alive()) if (x.stealth) { x.stealth = false; this.say('player', `${x.name}'s Stealth is broken.`); }
-    this._playing = d; this._rankMult = d.mult || 1;
+    this._playing = d; this._rankMult = 1; this._rk = d.rk || null; this._rkCard = d; const ms = d.ms || {};
+    this._rkHits = ms.hits ? [] : null; this._rkTimed = ms.turns ? [] : null; this._rkAdded = ms.count ? [] : null; this._rkDraw = 0; const dn0 = p.drawNext || 0; this.rkBegin(this._rk);
     this._attackMult = d.type === 'Attack' ? p.nextAttackMult : 1;
     this._skillMult = (d.type === 'Skill' && d.tags.dmg) ? p.nextSkillMult : 1;
-    this._cmult = (p.powers.length ? this.pwProd(p, 'cardMult', d) : 1) * (T.nextMult && d.type !== 'Power' ? T.nextMult : 1); if (T.nextMult && d.type !== 'Power') T.nextMult = 0;
+    this._cmult = (p.powers.length ? this.pwProd(p, 'cardMult', d) : 1) * (T.nextMult && d.type !== 'Power' ? T.nextMult : 1) * (twice && twice.mult ? twice.mult : 1); if (T.nextMult && d.type !== 'Power') T.nextMult = 0;
     if (T.reflux && d.type === 'Skill' && paid) { const per = Math.round(paid / 3); this.timed(p, 'reflux', 3, { each: (cb, q) => { q.manaNext += per; } }); T.reflux = false; this.say('player', `Mana Reflux: ${paid} mana comes back over 3 turns.`); }
     let times = 1;
     if (twice || echoArc) { times++; this.say('crit', `${d.name} is played twice.`); }
     if (d.type === 'Attack' && this.rng() * 100 < p.multiHit) { times = 2; this.say('crit', `Multi-hit! ${d.name} strikes again.`); }
     if (d.tags.dmg && this.rng() * 100 < (d.type === 'Attack' ? p.multiplay : p.multicast)) { times++; this.say('crit', `${d.type === 'Attack' ? 'Multiplay' : 'Multicast'}! ${d.name} is played again for free.`); }
     const echo = d.type === 'Attack' && p.powers.find(x => x.key === 'divine_echo');
-    if (echo) { if (echo.chance == null) echo.chance = 10; if (this.rng() * 100 < echo.chance) { times++; echo.chance = 0; this.say('crit', `Divine Echo! ${d.name} repeats.`); } }
+    if (echo) { if (echo.chance == null) echo.chance = echo.upN ? echo.upN[0] : 10; if (this.rng() * 100 < echo.chance) { times++; echo.chance = 0; this.say('crit', `Divine Echo! ${d.name} repeats.`); } }
     const storm = d.key === 'shuriken' && this.has(p, 'shuriken_storm');
     const endless = d.key === 'shuriken' && this.hasTimed(p, 'endless') ? 2 : 1; times *= endless;
     const twin = T.twin && d.type === 'Attack' && (d.dtype || 'Physical') === 'Physical'; if (twin) { T.twin = false; times++; }
@@ -1486,13 +1522,15 @@ class Combat {
       if (storm) { for (const e of this.alive()) if (!this.over) d.play(this, e); continue; }
       if (tgt && tgt.hp <= 0 && d.target !== 'ally') tgt = this.alive()[0]; if (d.target === 'enemy' && !tgt) break;
       if (twin && i === times - 1) { const was = this._playing; this._playing = Object.assign(Object.create(d), { dtype: 'Holy' }); d.play(this, tgt); this._playing = was; } else d.play(this, tgt);
-      if (T.sweep > 0 && d.type === 'Attack' && d.target === 'enemy' && i === 0) { const o2 = this.alive().find(x => x !== tgt); if (o2) { T.sweep--; this.say('player', `Sweeping Strikes: ${d.name} also hits ${o2.name}.`); d.play(this, o2); } }
+      if (T.sweep > 0 && d.type === 'Attack' && d.target === 'enemy' && i === 0) { const os = this.alive().filter(x => x !== tgt).slice(0, T.sweepN || 1); if (os.length) { T.sweep--; for (const o2 of os) if (!this.over && o2.hp > 0) { this.say('player', `Sweeping Strikes: ${d.name} also hits ${o2.name}.`); d.play(this, o2); } } }
     }
     if (T.cascade && !this.over) this.drawCards(p, 1);
     (T.played = T.played || []).push(c);
     if (this.has(p, 'smoke_and_mirrors') && this._forced >= 2) { p.stealth = true; this.say('player', 'Smoke and Mirrors: you slip into Stealth.'); }
     if (d.type === 'Attack') { p.turnAttacks++; p.nextAttackFlat = 0; p.windUp = false; } else if (d.type === 'Skill') { p.turnSkills++; if (d.tags.dmg) { p.spellCount++; if (d.dtype && !p.turnElems.includes(d.dtype)) p.turnElems.push(d.dtype); } }
     this._cmult = 1;
+    if (d.rank && !this.over) this.rkMilestones(p, d, dn0, tgt);
+    this.rkEnd(); this._rk = null; this._rkCard = null; this._rkHits = this._rkTimed = this._rkAdded = null;
     if (p.powers.length && !this.over) this.fire(p, 'cardPlayed', d);
     if (d.type === 'Skill' && d.tags.dmg && this.has(p, 'elemental_memory')) {
       const SEC = { fireball: [['dot', 'burn', 3]], pyroblast: [['dot', 'burn', 6]], ice_bolt: [['chill', 4]], blizzard: [['chill', 4]], frostbolt: [['regen', 5]] };
@@ -1512,7 +1550,7 @@ class Combat {
   endPlayerTurn() {
     if (this.phase !== 'player') return;
     this.fire(this.player, 'turnEnd');
-    { const q = this.player; for (const c of q.hand) { const cd = C[c.key]; if (cd.endInHand) cd.endInHand(this, q, c); } if (q.turn.endStealth && q.turnAttacks + q.turnSkills <= 1) { q.stealth = true; this.say('player', `${this.who(q)} slip${this.partySize > 1 ? 's' : ''} into Stealth.`); } if (q.turn.lurk && q.turnAttacks + q.turnSkills <= 1) q.drawNext = (q.drawNext || 0) + 1; q.lastTurnAttacks = q.turnAttacks; }
+    { const q = this.player; for (const c of q.hand) { const cd = this.card(c); if (cd.endInHand) this.rkRun(cd.rk, () => cd.endInHand(this, q, c)); } if (q.turn.endStealth && q.turnAttacks + q.turnSkills <= 1) { q.stealth = true; this.say('player', `${this.who(q)} slip${this.partySize > 1 ? 's' : ''} into Stealth.`); } if (q.turn.lurk && q.turnAttacks + q.turnSkills <= 1) q.drawNext = (q.drawNext || 0) + (q.turn.lurk === true ? 1 : q.turn.lurk); q.lastTurnAttacks = q.turnAttacks; }
     const p = this.player; const keep = p.hand.filter(c => this.card(c).retain), kept = p.hand.length - keep.length;
     p.discard.push(...p.hand.filter(c => !keep.includes(c))); p.hand = keep;
     if (kept) this.say('player', `End turn: ${kept} card${kept > 1 ? 's' : ''} discarded${keep.length ? `, ${keep.length} retained` : ''}.`);
@@ -1684,19 +1722,98 @@ const RANK_BASE = { White: 2, Green: 4, Blue: 8, Gold: 16 };    // reaching rank
 const DECK_POINTS = { White: 15, Green: 28, Blue: 42, Gold: 59 }, DECK_RANK_STEP = 1.9 / 3;
 const DECK_CAPS = { Gold: 2, Blue: 4, Green: 6 }, DECK_MIN = 20, DECK_MAX = 30, MAX_RANK = 10;
 function bigNumber(d) { const t = d.tags || {}; return (t.dmg || 0) >= 8 || (t.def || 0) >= 8 || (t.heal || 0) >= 8; }
+// Per-level upgrades (Oct 31): every card has its own upgrade, set in design/Cardbound_Card_Upgrades.xlsx and built into
+// src/card_upgrades.js by design/scripts/card_upgrades.py. Each number token in the text says how it grows:
+// [start, end, base, kind, step, every]: base + step per `every` levels. Kinds ms_* are milestones: +1 at +5 and +2 at +10.
+const UPG = (typeof module !== 'undefined' && module.exports) ? require('./card_upgrades.js') : (root.CB_UPGRADES || {});
+const RK_FIELDS = { dmg: ['nextAttackFlat', 'turn.skillFlat', 'nextSkillMult', 'nextAttackMult'], bleed: ['bleed'], poison: ['poison'], burn: ['burn'], vulnerable: ['vulnerable'], weak: ['weak'], slow: ['slow'], chill: ['chill'], unwarded: ['unwarded'], exposure: ['exposure'], condemnation: ['condemn'],
+  str: ['strTurn', 'strCombat'], int: ['intTurn'], dex: ['dexTurn', 'dexterity'], mana: ['mana', 'manaNext', 'turn.killMana'], regen: ['regen'], maxMana: ['maxMana'], init: ['initNext'], thorns: ['thorns'], devotion: ['devotion'], back: ['parryBack', 'until.backDmg'] };
+const RK_FLOAT = { nextSkillMult: 1, nextAttackMult: 1 };
+const rkGet = (a, f) => { const i = f.indexOf('.'); if (i < 0) return a[f]; const o = a[f.slice(0, i)]; return o ? o[f.slice(i + 1)] : undefined; };
+const rkSet = (a, f, x) => { const i = f.indexOf('.'); if (i < 0) a[f] = x; else a[f.slice(0, i)][f.slice(i + 1)] = x; };
+const RK_KIND = {}; for (const k in RK_FIELDS) for (const f of RK_FIELDS[k]) RK_KIND[f] = k;
+const RK_ALL = Object.keys(RK_KIND);
+const MILESTONE = (r) => (r >= 5 ? 1 : 0) + (r >= 10 ? 1 : 0);
+const UPG_SPECIAL = { // key -> (N = token values in text order, rank, v, base card) => { play, text }
+  guarded_stance: (N) => ({ play: (cb, t, p) => { cb.gainDef(N[0]); (p.until.onFull = p.until.onFull || []).push((c, q) => { c.say('player', `Guarded Stance: draw ${N[1]}.`); c.drawCards(q, N[1]); }); } }),
+  jarring_parry: (N) => ({ play: (cb, t, p) => { cb.gainDef(N[0]); (p.until.onFull = p.until.onFull || []).push((c, q, e) => c.eStatus(e, 'dazed', N[1])); } }),
+  riposte: (N) => ({ play: (cb, t, p) => { cb.gainDef(N[0]); (p.until.onFull = p.until.onFull || []).push((c, q, e) => { if (e.hp > 0 && !q.until.riposted) { q.until.riposted = true; c.applyHit(q, e, N[1], { label: 'Riposte' }); c.say('player', `Riposte: ${e.name} takes ${N[1]}.`); if (e.hp <= 0) c.onDeath(e); } }); } }),
+  shield_up: (N) => ({ play: (cb, t, p) => { cb.gainDef(N[0]); p.defNext += N[1]; } }),
+  mark_for_death: (N) => ({ play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; e.vulnerable += N[0]; e.markDraw = cb.round; e.markDrawN = N[1]; say(cb, `${e.name} gains ${N[0]} Vulnerable; each ally's first Attack on it this round draws ${N[1]}.`); } }),
+  sundering_blow: (N) => ({ play: (cb, t, p) => { const e = tgtOf(cb, t); for (let i = 0; i < N[1] && e && e.hp > 0 && !cb.over; i++) { e.block = Math.max(0, e.block - N[2]); cb.hit(e, N[0], 'Sundering Blow'); } } }),
+  survey_the_field: (N) => ({ play: (cb, t, p) => cb.topPick(p, N[0]) }),
+  underdog: (N) => ({ play: (cb, t, p) => { const e = tgtOf(cb, t); D_(cb, e, N[0] + (e && p.hp < e.hp ? N[1] : 0), 'Underdog'); } }),
+  desperate_strike: (N) => ({ play: (cb, t, p) => D_(cb, t, N[0] + Math.floor((1 - p.hp / p.maxHp) * 20) * N[1], 'Desperate Strike') }),
+  hamstring: (N) => ({ play: (cb, t, p) => { const e = D_(cb, t, N[0], 'Hamstring'); if (e) e.weakNext = N[1] / 100; } }),
+  bloodthirst: (N) => ({ play: (cb, t) => { const lost = cb.hit(t, 10, 'Bloodthirst'); cb.heal(cb.player, Math.round(lost * N[0] / 100), 'Bloodthirst', true); } }),
+  adrenaline_surge: (N) => ({ play: (cb, t, p) => { p = cb.player; p.strCombat += N[0]; cb.timed(p, 'adrenaline', Math.ceil(N[0] / N[1]), { each: (c, q) => { q.strCombat -= Math.min(N[1], q.strCombat); } }); say(cb, `+${N[0]} Strength, fading by ${N[1]} each turn.`); } }),
+  cauterize: (N, r, v) => ({ text: v.text.replace('per stack removed.', `per stack removed, plus ${2 * r}.`), play: (cb, t, p) => { p = cb.player; const n = p.bleed + p.burn; p.bleed = 0; p.burn = 0; cb.heal(p, n + 2 * r, 'Cauterize'); } }),
+  reclaim_ground: (N, r, v) => ({ text: v.text.replace('Vulnerable consumed.', `Vulnerable consumed, plus ${r}.`), play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const n = e.vulnerable; e.vulnerable = 0; cb.gainDef(n + r); } }),
+  clear_head: (N) => ({ play: (cb, t, p) => { const n = cb.exhaustStatus(cb.player, 10); cb.drawCards(cb.player, n * N[0]); } }),
+  fall_back: (N, r, v, d) => ({ text: v.text + ` Heal ${2 * r} HP.`, play: (cb, t, p) => { d.play(cb, t, cb.player); cb.heal(cb.player, 2 * r, 'Fall Back'); } }),
+  sanguine_guard: (N, r, v, d) => ({ text: v.text + ` Heal ${2 * r} HP.`, play: (cb, t, p) => { d.play(cb, t, cb.player); cb.heal(cb.player, 2 * r, 'Sanguine Guard'); } }),
+  shatter_morale: (N, r, v) => ({ text: v.text.replace('You lose all your Block.', `You lose ${100 - 5 * r}% of your Block.`), play: (cb, t, p) => { p = cb.player; const e = tgtOf(cb, t); if (e) cb.removeBuffs(e, 9); p.block = Math.round(p.block * 5 * r / 100); } }),
+  wind_up: (N) => ({ play: (cb, t, p) => { cb.player.windUp = N[0]; say(cb, `Your next Attack deals +${N[0]} damage per 5 mana it costs.`); } }),
+  rattling_roar: (N) => ({ play: (cb, t, p) => { const e = D_(cb, t, N[0], 'Rattling Roar'); if (e) e.drawLess = (e.drawLess || 0) + N[1]; } }),
+  mind_fog: (N) => ({ play: (cb, t) => { const e = tgtOf(cb, t); if (e) e.drawLess = (e.drawLess || 0) + N[0]; } }),
+  throw_weapon: (N, r, v) => { const k = 2 + MILESTONE(r); return { text: v.text.replace(/You and the target each discard 2 cards from your hands\./, `You discard 2 cards and the target discards ${k}.`), play: (cb, t, p) => { p = cb.player; const e = D_(cb, t, N[0], 'Throw Weapon'); for (let i = 0; i < 2 && p.hand.length; i++) { const c = p.hand.slice().sort((a, b) => (C[a.key].type === 'Status' ? -1 : C[a.key].cost) - (C[b.key].type === 'Status' ? -1 : C[b.key].cost))[0]; p.hand.splice(p.hand.indexOf(c), 1); p.discard.push(c); } if (e && e.hp > 0) cb.eDiscard(e, k); } }; },
+  double_strike: (N, r, v) => ({ text: v.text + ` It deals ${2 * r}% more damage.`, play: (cb, t, p) => { cb.player.turn.twice = { type: 'Attack', extra: 10, mult: 1 + 0.02 * r }; say(cb, `Your next Attack is played twice (+10 mana, +${2 * r}% damage).`); } }),
+  shadow_echo: (N, r, v) => ({ text: v.text + ` It deals ${5 * r}% more damage.`, play: (cb, t, p) => { cb.player.turn.twice = { type: 'Attack', extra: 10, mult: 1 + 0.05 * r }; say(cb, `Your next Attack is played twice (+10 mana, +${5 * r}% damage).`); } }),
+  elemental_ward: (N, r, v, d) => ({ text: v.text + ` You also gain ${5 * r}% resistance to it.`, play: (cb, t, p) => { p = cb.player; d.play(cb, t, p); const el = p.until.convert; if (!el) return; p.resist[el] = (p.resist[el] || 0) + 5 * r; cb.timed(p, 'eward', 1, { end: (c, q) => { q.resist[el] -= 5 * r; } }); } }),
+  reckless_abandon: (N, r, v) => ({ text: v.text + ` Gain ${1 + r} Strength this turn per card drawn.`, play: (cb, t, p) => { p = cb.player; const n = p.hand.length; p.discard.push(...p.hand.splice(0)); cb.drawCards(p, n + 1); p.strTurn += (n + 1) * (1 + r); say(cb, `+${(n + 1) * (1 + r)} Strength this turn.`); } }),
+  all_in: (N, r, v, d) => ({ text: v.text + ` Gain ${2 * r} Dodge.`, play: (cb, t, p) => { d.play(cb, t, cb.player); cb.gainDef(2 * r); } }),
+  sweeping_strikes: (N, r, v) => { const n = 1 + (r >= 3 ? 1 : 0) + (r >= 4 ? 1 : 0), w = ['a second enemy', 'a second and third enemy', 'three more enemies'][n - 1]; return { text: v.text.replace('a second enemy', w), play: (cb, t, p) => { cb.player.turn.sweep = 2; cb.player.turn.sweepN = n; say(cb, `Your next 2 single-target Attacks also hit ${w}.`); } }; },
+  killing_blow: (N, r, v) => ({ text: v.text.replace('deals double damage', `deals ${100 + 10 * r}% more damage`), play: (cb, t, p) => { cb.player.turn.killingBlow = 2 + 0.1 * r; say(cb, `Your next crit this turn deals ${100 + 10 * r}% more damage.`); } }),
+  manaquake: (N, r, v) => ({ text: v.text.replace('equal to the amount consumed', `equal to ${100 + 5 * r}% of the amount consumed`), play: (cb, t, p) => { p = cb.player; const m = Math.floor(p.mana / 2); p.mana -= m; DA(cb, m * (1 + 0.05 * r), 'Manaquake'); } }),
+  thousand_cuts: (N, r, v) => { const per = 1 + (r >= 3 ? 1 : 0) + (r >= 4 ? 1 : 0); return { text: v.text.replace('Attack once', ['Attack once', 'Attack twice', 'Attack three times'][per - 1]), play: (cb, t, p) => { const hits = Math.floor(cb.spendAll(cb.player) / 5) * per; for (let i = 0; i < hits && !cb.over; i++) D_(cb, t, 1, 'Thousand Cuts'); } }; },
+  assassinate: (N, r, v) => ({ text: v.text.replace('deals double damage', `deals ${100 + 10 * r}% more damage`), play: (cb) => { cb.player.nextAttackMult = 2 + 0.1 * r; cb.say('player', `Your next Attack deals ${100 + 10 * r}% more damage.`); } }),
+  ashen_drain: (N, r, v, d) => ({ text: v.text + ` You gain mana equal to ${5 * r}% of the Burn.`, play: (cb, t, p) => { p = cb.player; const e = tgtOf(cb, t); const b = e ? e.burn : 0; d.play(cb, t, p); const g = Math.round(b * 0.05 * r); if (g) { p.mana += g; say(cb, `+${g} mana.`); } } }),
+  bait: (N) => ({ play: (cb, t, p) => { p = cb.player; cb.gainDef(N[0]); (p.until.nextAttacker = p.until.nextAttacker || []).push((c, q, e) => { e.vulnerable += N[1]; c.eDiscard(e, N[2]); c.say('player', `${e.name} takes the bait: ${N[1]} Vulnerable.`); }); } }),
+  defiant_roar: (N) => ({ play: (cb, t, p) => { p = cb.player; cb.setTaunt(p); p.until.lessDmg = N[0] / 100; } }),
+  relentless_assault: (N) => ({ play: (cb, t, p) => { cb.timed(cb.player, 'relentless', N[0], { n: N[1] }); say(cb, `For ${N[0]} turns, unblocked hits apply ${N[1]} Vulnerable.`); } }),
+  plunder_armor: (N) => ({ play: (cb, t, p) => { p = cb.player; const e = tgtOf(cb, t); if (!e) return; const n = Math.min(N[0], e.block); e.block -= n; p.block += n; say(cb, `Took ${n} Block from ${e.name}.`); } }),
+  coated_blade: (N) => ({ play: (cb, t, p) => { cb.player.turn.coated = N[0] / 100; say(cb, `Your next Attack also applies ${N[0]}% of its damage as Bleed and Poison.`); } }),
+  lurk: (N) => ({ play: (cb, t, p) => { cb.gainDef(N[0]); cb.player.turn.lurk = N[1]; } }),
+  grievous_shiv: (N) => ({ play: (cb, t) => { const e = D_(cb, t, N[0], 'Grievous Shiv'); if (e) e.grievous = N[1]; } }),
+  withering_flame: (N) => ({ play: (cb, t) => { const e = tgtOf(cb, t); if (!e) return; cb.applyDot(e, 'burn', N[0]); e.grievous = N[1]; } }),
+  blinding_speed: (N) => ({ play: (cb, t, p) => { p = cb.player; cb.timed(p, 'speed', N[1], { begin: (c, q) => { q.baseInit += N[0]; }, end: (c, q) => { q.baseInit -= N[0]; } }); cb.drawCards(p, N[2]); } }),
+  time_theft: (N) => ({ play: (cb, t, p) => { p = cb.player; const e = tgtOf(cb, t); if (!e) return; e.baseInit -= N[0]; p.baseInit += N[0]; say(cb, `Stole ${N[0]} Initiative from ${e.name} for the fight.`); } }),
+  frost_armor: (N) => ({ play: (cb, t, p) => { p = cb.player; cb.gainDef(N[0]); (p.until.nextAttacker = p.until.nextAttacker || []).push((c, q, e) => c.applyChill(e, N[1])); } }),
+  frostbite_curse: (N) => ({ play: (cb, t) => cb.eStatus(tgtOf(cb, t), 'frostbite', N[0]) }),
+  seal_of_light: (N) => ({ play: (cb, t, p) => { cb.player.turn.lifesteal = N[0] / 100; say(cb, `Your Attacks heal you for ${N[0]}% of their damage this turn.`); } }),
+  siphoning_strikes: (N, r, v) => ({ play: (cb, t, p) => { cb.player.turn.siphon = v.rkAll; say(cb, 'Damage you deal this turn also burns mana.'); } }),
+  shake_it_off: (N) => ({ play: (cb, t, p) => { cb.cleanse(cb.player, N[0]); cb.drawCards(cb.player, N[1]); } }),
+  scent_of_blood: (N) => ({ play: (cb, t, p) => cb.drawCards(p, cb.alive().filter(e => e.bleed > 0).length * N[0]) }),
+};
+function upgPlural(t) { return t.replace(/\b(\d+) ((?:extra |more |random |bonus |fewer )?)(card|turn|round|time|Shuriken|stack|debuff|enemy)\b(?!s)/g, (m, n, a, w) => +n === 1 ? m : `${n} ${a}${w}s`); }
 function rankedCard(key, rank) {
   const d = C[key]; if (!rank) return d;
-  const v = Object.create(d); v.rank = rank; v.name = d.name + ' +' + rank;
-  if (bigNumber(d)) {
-    v.mult = 1 + (d.rarity === 'Blue' || d.rarity === 'Gold' ? 0.08 : 0.10) * rank;
-    v.text = d.text.replace(/\b(\d+)(?!%)\b/g, (m, n) => +n >= 8 ? String(Math.round(n * v.mult)) : m);
-  } else { v.mult = 1; if (d.cost != null) v.cost = Math.max(Math.ceil(d.cost * 0.6), d.cost - rank); }
-  // cards whose ranks add Strength instead (Oct 31): Bloodlust +5 Strength per rank
-  const sp = RANK_STR[key], g = sp && GEN_OPS[key];
-  if (g) { const ops = g.map(o => o.op === 'str' ? Object.assign({}, o, { n: o.n + sp * rank }) : o); v.text = d.text.replace(/Gain (\d+) Strength/, (m, n) => `Gain ${+n + sp * rank} Strength`); v.play = (cb, t) => runOps(cb, t, ops, d.name); }
+  const v = Object.create(d); v.rank = rank; v.name = d.name + ' +' + rank; v.mult = 1;
+  const u = UPG[key] || {}, toks = u.t || [], rk = {}, ms = {}, pow = d.type === 'Power'; let main = 0;
+  const tval = ([, , n, k, s, e]) => k.startsWith('ms_') ? n + (s ? s * Math.floor(rank / (e || 1)) : MILESTONE(rank)) : n + s * Math.floor(rank / (e || 1));
+  for (const [, , n, k, s, e] of toks) {
+    if (k.startsWith('ms_')) { ms[k.slice(3)] = (s ? s * Math.floor(rank / (e || 1)) : MILESTONE(rank)); continue; }
+    const val = n + s * Math.floor(rank / (e || 1));
+    if (!main) main = val / n; if (rk[k] == null) rk[k] = val / n;
+  }
+  if (pow && main) for (const k in rk) rk[k] = main; // a Power's numbers all grow together
+  let txt = d.text;
+  for (const t of toks.slice().sort((x, y) => y[0] - x[0])) {
+    const [i, j, n, k] = t, val = u.x || k.startsWith('ms_') ? tval(t) : Math.round(n * (pow ? main : rk[k]));
+    txt = txt.slice(0, i) + val + txt.slice(j);
+  }
+  if (u.dw && MILESTONE(rank)) { ms.draw = MILESTONE(rank); txt = txt.replace(/([Dd])raw a card/, (m, D) => `${D}raw ${1 + ms.draw} cards`); }
+  if (u.tw && MILESTONE(rank)) { ms.hits = MILESTONE(rank); txt = txt.replace(/\btwice\b/, `${2 + ms.hits} times`); }
+  if (u.fr && MILESTONE(rank)) { ms.draw = MILESTONE(rank); v.msFree = true; txt += ` Draw ${ms.draw} card.`; }
+  if (u.r) { rk.all = 1 + u.r * rank / 100; txt += ` (Upgrade: +${u.r * rank}% to its amount.)`; }
+  if (u.c && d.cost != null) v.cost = Math.max(0, d.cost - Math.floor(rank / u.c));
+  v.rk = rk; v.ms = ms; v.rkMain = main || rk.all || 1; v.text = upgPlural(txt);
+  if (u.x) { // hand-made: the play is rebuilt from the token values, so nothing else scales it
+    const N = toks.slice().sort((x, y) => x[0] - y[0]).map(tval); v.rkAll = rk.all || 1; v.rk = {}; v.ms = {};
+    if (pow) v.pwN = N; const sp = UPG_SPECIAL[key]; if (sp) { const r = sp(N, rank, v, d); if (r && r.play) v.play = (cb, t) => r.play(cb, t, cb.player); if (r && r.text) v.text = upgPlural(r.text); }
+  }
   return v;
 }
-const RANK_STR = { bloodlust: 5 };
 function cardPool(cls) { return Object.keys(C).filter(k => C[k].cls === cls && !C[k].designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(C[k].rarity)); }
 // Card drops: normal kills sometimes drop a card; elites always drop a Green or better; the boss drops two Blue or Gold.
 const CARD_DROPS = {
@@ -1771,6 +1888,6 @@ if (DATA) dropRemovedLoot(DATA);
 // Oct 31: Lay on Hands and Mend Wounds can be aimed at any hero in the party (yourself if you play them solo)
 if (C.mend_wounds) Object.assign(C.mend_wounds, { target: 'ally', text: 'Heal an ally (or yourself) for 8 HP.', play: (cb, t) => cb.heal(t && t.isPlayer && t.hp > 0 ? t : cb.player, 8, 'Mend Wounds') });
 if (C.lay_on_hands) Object.assign(C.lay_on_hands, { target: 'ally', text: 'Heal an ally (or yourself) for 30% of their total HP. Exhaust.', play: (cb, t) => { const a = t && t.isPlayer && t.hp > 0 ? t : cb.player; cb.heal(a, Math.round(a.maxHp * 0.3), 'Lay on Hands'); } }); // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
-const API = { CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);
