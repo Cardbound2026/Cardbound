@@ -572,7 +572,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   .tlcell b { display: block; font-size: 13.5px; } .tlcell span { display: block; font-size: 12px; color: #bcae98; line-height: 1.35; }
   .tlcell.mini, .tlcell.cap { border-color: #6b5634; border-left-color: var(--tc); } .tlcell.cap { background: #221b13; }
   .tlcell.on { background: #2c2418; border-color: var(--tc); box-shadow: 0 0 0 1px var(--tc) inset; } .tlcell.on b { color: var(--tc); }
-  .tlcell.locked { opacity: .45; } .tlcell.noclick { cursor: default; } .tlbox .tlcell:not(.noclick):hover { background: #251f17; }
+  .tlcell.other { opacity: .5; filter: grayscale(.7); } .tlcell.other:hover { opacity: .8; filter: none; } .tlcell.locked { opacity: .45; } .tlcell.noclick { cursor: default; } .tlbox .tlcell:not(.noclick):hover { background: #251f17; }
   .cxcod { cursor: pointer; } .cxcod:hover { background: rgba(255,255,255,.06); }
   .bzacts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; } .bzacts input { width: 90px; } #tbShop.primary { border-color: var(--accent); color: var(--accent); }
   .maploot { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; max-height: 64vh; overflow: auto; } .maploot h4 { color: var(--accent); margin: 6px 0 4px; } .mlslot { font-size: 13.5px; margin: 3px 0; } [data-cxcard].cardrow { cursor: pointer; }

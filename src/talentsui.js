@@ -22,8 +22,8 @@
         let name, text;
         if (cap) { const d = CARDS[tr.cap[j]]; name = d ? d.name : tr.cap[j]; text = (d ? d.text : '') + ' Already in play at the start of every fight.'; }
         else { const t = tr.rows[i][j]; name = t.n; text = talentText(t.t, cx.cls); }
-        const on = picks[i] === j && (info ? i < info.rows : false);
-        return `<button class="tlcell ${on ? 'on' : ''} ${dim ? 'locked' : ''} ${open ? '' : 'noclick'} ${cap ? 'cap' : mini ? 'mini' : ''}" style="--tc:${TCOL[j][1]}" data-tlr="${i}" data-tlc="${j}" ${edit && open ? '' : 'tabindex="-1"'} aria-pressed="${on}"><b>${esc(name)}</b><span>${esc(text)}</span></button>`;
+        const on = picks[i] === j && (info ? i < info.rows : false); const other = !on && open && picks[i] != null && picks[i] !== j; // another talent on this row is picked
+        return `<button class="tlcell ${on ? 'on' : ''} ${other ? 'other' : ''} ${dim ? 'locked' : ''} ${open ? '' : 'noclick'} ${cap ? 'cap' : mini ? 'mini' : ''}" style="--tc:${TCOL[j][1]}" data-tlr="${i}" data-tlc="${j}" ${edit && open ? '' : 'tabindex="-1"'} aria-pressed="${on}"><b>${esc(name)}</b><span>${esc(text)}</span></button>`;
       }).join('');
       rows.push(`<div class="tllv ${dim ? 'locked' : ''}">Lv ${lv}${cap ? '<small>Capstone</small>' : mini ? '<small>Mini capstone</small>' : ''}</div>${cells}`);
     }
