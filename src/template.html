@@ -1711,6 +1711,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 /*TALENTSUI*/
 /*INKART*/
 /*INKUI*/
+/*BATTLEFIELD*/
 /*GEARUI*/
 /*GLOSSARY*/
 /*TESTVENDOR*/
@@ -2390,13 +2391,13 @@ body.aiming { cursor: grabbing; user-select: none; }
     const isNow = (cb.raid && a.isPlayer ? cb.canAct(a) : cb.current === a) && !cb.over, targetable = a.hp > 0 && !!selected && ((CARDS[selected.key].target === 'enemy' && (cb.duel ? a.isPlayer && a !== hero() : !a.isPlayer)) || (CARDS[selected.key].target === 'ally' && a.isPlayer && !cb.duel));
     const pct = Math.max(0, 100 * a.hp / a.maxHp), ini = cb.initiative(a);
     const sub = a.isPlayer ? (cb.raid ? "" : `Init ${ini}`) : `${a.tier === 'Elite' || a.tier === 'Boss' ? a.tier + ' &middot; ' : ''}${a.type} &middot; weak ${a.weakTo} &middot; Init ${ini}`;
-    return `<div class="unit ${isNow ? 'active' : ''} ${a.isPlayer && cb.partySize > 1 && a === viewHero && !isNow ? 'viewing' : ''} ${a.hp <= 0 ? 'dead' : ''} ${targetable ? 'targetable' : ''}" data-id="${a.id}" ${targetable ? 'role="button" tabindex="0"' : ''}>
-      ${a.isPlayer ? '' : `<div class="intents">${intentHtml(a)}</div>`}
-      ${a.isPlayer ? '' : `<button class="pilebtn deckbtn" data-enemy="${a.id}" title="Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}"><span class="dlong">Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}</span><span class="dshort">Deck ${a.hand.length}/${a.drawPile.length}/${a.discard.length}</span></button>`}
+    return `<div class="unit ${isNow ? 'active' : ''} ${a.isPlayer && cb.partySize > 1 && a === viewHero && !isNow ? 'viewing' : ''} ${a.hp <= 0 ? 'dead' : ''} ${targetable ? 'targetable' : ''}" data-id="${a.id}" ${a.tier === 'Boss' ? 'data-boss="1"' : ''} style="--uc:${a.isPlayer ? CC[a.cls] : '#ad7a5c'}" ${targetable ? 'role="button" tabindex="0"' : ''}>
+      ${a.isPlayer ? '' : `<div class="uintent"><div class="intents">${intentHtml(a)}</div></div>`}
       <div class="figure">${figure(a)}</div>
-      <div class="uname"><b ${a.isPlayer ? `style="color:${CC[a.cls]}"` : ''}>${esc(a.name)}</b><small>${cb.raid && a.isPlayer && a.hp > 0 && !cb.over ? (cb.raidDone && cb.raidDone.has(a.id) ? '<span class="rdone" title="Ended their turn">&#10003; Done</span>' : cb.phase === 'player' ? '<span class="rwait">playing...</span>' : '') : sub}</small></div>
+      <div class="uplate"><div class="uname"><b ${a.isPlayer ? `style="color:${CC[a.cls]}"` : ''}>${esc(a.name)}</b><small>${cb.raid && a.isPlayer && a.hp > 0 && !cb.over ? (cb.raidDone && cb.raidDone.has(a.id) ? '<span class="rdone" title="Ended their turn">&#10003; Done</span>' : cb.phase === 'player' ? '<span class="rwait">playing...</span>' : '') : sub}</small></div>
       <div class="bar"><i style="width:${pct}%"></i><span>${a.hp} / ${a.maxHp}</span></div>
-      <div class="tags">${a.isPlayer && cb.partySize > 2 && !cb.duel ? shortTags(tags(a)) : tags(a)}${cb.duel && a !== hero() ? `<span class="tag">Hand ${a.hand.length} &middot; Mana ${a.mana}</span>` : ''}</div></div>`;
+      ${a.isPlayer ? '' : `<button class="pilebtn deckbtn" data-enemy="${a.id}" title="Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}"><span class="dlong">Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}</span><span class="dshort">Deck ${a.hand.length}/${a.drawPile.length}/${a.discard.length}</span></button>`}
+      <div class="tags">${a.isPlayer && cb.partySize > 2 && !cb.duel ? shortTags(tags(a)) : tags(a)}${cb.duel && a !== hero() ? `<span class="tag">Hand ${a.hand.length} &middot; Mana ${a.mana}</span>` : ''}</div></div></div>`;
   }
   function popups() {
     for (const a of [...cb.players, ...cb.enemies]) {
@@ -2442,6 +2443,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       const fp = st.parentElement, top = Math.round(fp.getBoundingClientRect().top + window.scrollY); if (top > 0 && top < 400) fp.style.setProperty('--fpTop', top + 'px');
     } $('playerSlot').innerHTML = mine.map(unitHtml).join('');
     $('foes').innerHTML = foes.map(unitHtml).join('');
+    if (window.CB_BF) CB_BF.layout(cb, { map: $('scrCombat').dataset.map, left: cb.duel ? 'You' : cb.raid ? 'The raid' : cb.partySize > 1 ? 'Your party' : esc(hero().name), right: cb.duel ? 'Your rival' : (DATA.maps[$('scrCombat').dataset.map] || {}).name || 'The enemy' });
     if (withPops) popups(); else snapshot();
     $('orb').textContent = p.mana;
     $('manaSub').textContent = `max ${p.maxMana} · +${p.regen} per turn`;

@@ -2,6 +2,9 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Feature', 'Ink: at the Scribe, break spare cards down for Ink (White 1, Green 4, Blue 10, Gold 25; ranked cards give more), then buy any card of your class with "Buy cards with Ink". Cards you have owned before cost 10 / 40 / 100 / 300; ones you have never found cost 3x. Ink is shared by all your heroes.'],
+      ['Balance', 'Every boss kill now also drops a Green weapon and a Green chest piece for your class.'],
+      ['Balance', 'A map\'s boss has 15% less HP until you beat it for the first time (in a party: until everyone has).'],
       ['Feature', 'Ink: break spare cards down at the Scribe (White 1, Green 4, Blue 10, Gold 25 Ink, more for ranked cards) and buy any card of your class with it. Cards you have owned before cost 10 / 40 / 100 / 300 Ink; ones you have never found cost 3x.'],
       ['Balance', 'Every boss kill now also drops a Green weapon and a Green chest piece for your class, from that map.'],
       ['Balance', "A map's boss has 15% less HP until you beat it for the first time (in a party, if anyone hasn't beaten it yet)."],
