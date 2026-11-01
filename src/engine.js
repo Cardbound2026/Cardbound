@@ -720,7 +720,7 @@ function presetGear(cls, rarity) {
   return STARTER_GEAR[cls].map(x => ({ slot: x.slot, name: x.name, rarity, ilvl: 1, r2: 1, r3: 1, stats: Object.fromEntries(Object.entries(x.stats).map(([k, v]) => [k, Math.round(v * scale)])),
     imp2: Object.fromEntries(Object.entries(x.imp2).map(([k, v]) => [k, k === 'Draw' ? 4 : k === 'Regen' ? { White: 20, Green: 30, Blue: 40 }[rarity] : Math.round(v * imp)])) }));
 }
-const FEAR_RESIST = 0.25, FEAR_RESIST_BOSS = 0.5, FEAR_BREAK = 0.75;
+const FEAR_RESIST = 0.25, FEAR_RESIST_BOSS = 0.5, FEAR_BREAK = 0.75, FEAR_BREAK_DOT = 0.1;
 const BASE = { hp: 100, maxMana: 20, regen: 15, draw: 1, init: 10, critMult: 1.5 };
 // ---------- starting choices (Oct 31): pick a playstyle deck and a draw/regen amulet when you create a hero
 // every starter: 1 Gold, 2 Blue, 3 Green, 14 White (20 cards), like the original Balanced decks
@@ -990,7 +990,7 @@ class Combat {
   addRot(e, n, turns, src) { if (!e || e.hp <= 0 || !(n > 0)) return; (e.rotQ = e.rotQ || []).push({ left: n, turns: turns || 4 }); e.rot = e.rotQ.reduce((s, r) => s + r.left, 0); if (src) e.rotBy = src.id; }
   // Fear: the enemy skips its attacks on its next turn. Stun: it skips its whole next turn (a boss shrugs off the Stun part and is only Feared).
   // After either lands, that enemy can't be Feared or Stunned for 2 rounds (3 for bosses).
-  // Nov 1: any damage that lands on a Feared monster (hits, damage over time, even into Block) has a 75% chance to snap it out of the Fear
+  // Nov 1: damage that lands on a Feared monster can snap it out of the Fear: 75% for direct damage (even into Block), 10% for a damage-over-time tick
   breakFear(e) { if (!e || e.isPlayer || !e.feared || e.hp <= 0) return; e.feared = 0; if (e.fearDisarm) e.disarmed = 0; e.fearDisarm = false; this.planEnemy(e, true); this.say('enemy', `${e.name} is hit and shakes off the Fear.`); }
   control(e, kind) {
     if (!e || e.hp <= 0) return false;
@@ -1426,7 +1426,7 @@ class Combat {
     if (tgt.isPlayer && dmg > 0 && tgt.mana > 0 && tgt.powers && tgt.powers.some(x => x.key === 'mana_shell')) { const m = Math.min(tgt.mana, dmg); tgt.mana -= m; dmg -= m; absorbed += m; }
     const before = tgt.hp;
     tgt.hp = Math.max(0, tgt.hp - dmg);
-    if (!tgt.isPlayer && tgt.feared && amount > 0 && tgt.hp > 0 && this.rng() < FEAR_BREAK) this.breakFear(tgt);
+    if (!tgt.isPlayer && tgt.feared && amount > 0 && tgt.hp > 0 && this.rng() < (o.isDot ? FEAR_BREAK_DOT : FEAR_BREAK)) this.breakFear(tgt);
     if (tgt.isPlayer && tgt.hp <= 0 && (tgt.until.noDie || this.hasTimed(tgt, 'noDie'))) { tgt.hp = 1; this.say('heal', `${tgt.name} refuses to fall (Divine Intervention).`); }
     if (tgt.isPlayer && before > tgt.hp) { const lostHp = before - tgt.hp; tgt.dmgRound += lostHp; this.allyLost && this.allyLost.add(tgt.id); if (tgt.debtUser) tgt.bloodDebt += Math.round(lostHp * (this.has(tgt, 'pay_in_blood') ? 1 + this.upN(tgt, 'pay_in_blood', 0, 50) / 100 : 1)); if (tgt.until.storing) tgt.until.stored = (tgt.until.stored || 0) + lostHp; if (tgt.until.grudge && src && !src.isPlayer) tgt.until.grudge[src.id] = (tgt.until.grudge[src.id] || 0) + lostHp; }
     const real = before - tgt.hp, label = o.label || 'Attack';

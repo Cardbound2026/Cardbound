@@ -2,7 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
-      ['Balance', 'Fear: monsters now resist it 25% of the time (bosses 50%), and any damage that lands on a Feared monster (hits, damage over time, even into its Block) has a 75% chance to break the Fear.'],
+      ['Feature', 'Build guide: "What kind of Warrior do you want to play?" Pick a playstyle (tank, big hits, many small hits, Bleed...), then a codex, then one of its builds, and get a checklist: which of its 22 cards you have, which you\'re missing and exactly which monsters drop them, where the codex drops, the gear stats to look for, the cards to rank up first, and which maps to farm (easiest first). Track a build to see your progress on the character sheet. New heroes get it right after creation; it\'s also in the Menu and on the character sheet (C).'],
+      ['Balance', 'Fear: monsters now resist it 25% of the time (bosses 50%), and damage that lands on a Feared monster can break the Fear: 75% for direct damage (even into its Block), 10% for each damage-over-time tick.'],
       ['Balance', 'Crit Chance on gear is cut by 75% and Crit Damage on gear by 50%, on new drops and on gear you already own (each stat line stays at least 1).'],
       ['Balance', 'Lingering Dread applies 8 Dread (was 6).'],
       ['Fix', 'Every Warlock card, and the newer Warrior Blood Debt cards, are now on enemy loot lists (the compendium shows where each one drops). Warlock cards drop from the same monsters, at the same odds, as Rogue cards.'],

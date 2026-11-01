@@ -618,6 +618,25 @@ body.aiming { cursor: grabbing; user-select: none; }
 .ftext .kw { text-underline-offset: 1px; }
 #kwTip { position: fixed; z-index: 200; max-width: 320px; background: #16110c; border: 1px solid #8a6a3a; border-radius: 6px; padding: 7px 10px; box-shadow: 0 8px 24px rgba(0,0,0,.6); pointer-events: none; font: 13px/1.4 var(--f-ui); color: #e8dcc6; display: grid; gap: 3px; }
 #kwTip[hidden] { display: none; } #kwTip b { color: var(--accent); font-size: 14px; }
+.guidebox h3 { font-size: 17px; color: var(--accent); margin: 10px 0 4px; }
+.gdcrumbs { font-size: 13px; margin: -4px 0 10px; color: var(--muted); } .gdcrumbs .linkbtn { font-size: 13px; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-decoration: underline; font: inherit; }
+.gdgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.gdtile { display: grid; gap: 4px; text-align: left; align-content: start; background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; color: inherit; font: 13px/1.4 var(--f-ui); cursor: pointer; }
+.gdtile:hover, .gdtile:focus-visible { border-color: var(--accent); background: rgba(255,200,120,.06); }
+.gdtile b { font-size: 16px; font-family: var(--f-head, inherit); } .gdtile i { color: var(--muted); font-size: 12.5px; } .gdtile em { font-style: normal; color: var(--accent); font-size: 12.5px; }
+.gdcx { margin: 0 0 10px; font-size: 13.5px; }
+.gdtop { display: grid; grid-template-columns: 1fr 280px; gap: 14px; } .gdtips { margin: 0; padding-left: 18px; font-size: 13px; color: var(--muted); }
+.gdprog { background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.gdbar { height: 8px; background: rgba(255,255,255,.08); border-radius: 4px; overflow: hidden; margin-bottom: 4px; } .gdbar i { display: block; height: 100%; background: var(--accent); }
+.gdcols { display: grid; grid-template-columns: 1.35fr 1fr; gap: 16px; }
+.gdlist { width: 100%; border-collapse: collapse; font-size: 13px; } .gdlist td { padding: 4px 6px; border-top: 1px solid rgba(255,255,255,.06); vertical-align: top; }
+.gdlist td:last-child { width: 42%; font-size: 12.5px; } .gdck { width: 18px; font-weight: bold; text-align: center; }
+.gd-done .gdck, .gd-owned .gdck { color: #7fd36a; } .gd-part .gdck { color: #e4a93a; } .gd-miss .gdck { color: #e06a5a; } .gd-done { opacity: .7; }
+.gdcard { font-weight: bold; cursor: help; } .gdwhy { color: var(--muted); font-size: 12px; } .gdsrc { color: inherit; }
+.gdkeys { margin: 0; padding-left: 18px; font-size: 13px; } .gdkeys li { margin-bottom: 4px; } .gdfarm { margin: 0; padding-left: 18px; font-size: 13px; } .gdfarm li { margin-bottom: 6px; }
+.gdline { margin: 0 0 8px; font-size: 13.5px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; } .gdline .btn { padding: 4px 10px; font-size: 13px; }
+@media (max-width: 760px) { .gdtop, .gdcols { grid-template-columns: 1fr; } }
 .recgrave li { padding: 3px 0; cursor: pointer; color: #b8b0a6; }
 .herocard.new { border-style: dashed; border-top-style: dashed; place-content: center; text-align: center; color: var(--muted); font-size: 16px; }
 .create h3 { font-family: var(--cf-name); font-weight: 400; font-size: 26px; color: var(--accent); margin-bottom: 8px; }
@@ -1178,7 +1197,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     const B = [['0', x => x === 0], ['10', x => x > 0 && x <= 10], ['20', x => x > 10 && x <= 20], ['30', x => x > 20 && x <= 30], ['40+', x => x > 30]];
     const curve = B.map(([l, f]) => [l, c.deck.filter(k => f(costOf(k))).length]), top = Math.max(1, ...curve.map(x => x[1]));
     const ranked = c.deck.filter(k => k.rank).length;
-    return `<div class="deckhead">
+    return guideLine(c) + `<div class="deckhead">
         <div class="dstats">
           <div><b>${c.deck.length}</b><span>cards (${CB.DECK_MIN}-${CB.DECK_MAX})</span></div>
           <div><b>${avg.toFixed(1)}</b><span>avg mana</span></div>
@@ -1219,6 +1238,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (b.dataset.gsort) { GT.sort = b.dataset.gsort; return renderGearTab(CBHub.char(profile, heroKey)); }
     if (b.dataset.hero) { heroKey = b.dataset.hero; profile.last.cls = heroKey; save(); return renderHub(); }
     if (b.id === 'btnScribe') return openSheet('deck');
+    if (b.dataset.guide) return openGuide(b.dataset.guide === '1' ? {} : { deck: b.dataset.guide });
     if (b.dataset.unequip) { if (!CBHub.unequip(profile, heroKey, b.dataset.unequip)) return toast(CBHub.arenaLock(profile, heroKey) || 'Stash is full.'); }
     else if (b.dataset.equip) { const r = CBHub.equip(profile, heroKey, b.dataset.equip, b.dataset.slot); if (!r.ok) return toast(r.why); }
     else if (b.dataset.salvage) CBHub.salvage(profile, b.dataset.salvage);
@@ -2028,6 +2048,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 /*GEARUI*/
 /*GLOSSARY*/
 /*TESTVENDOR*/
+/*GUIDE*/
   let townReturn = false;
 
   // ---------- settings (this browser)
@@ -2163,7 +2184,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (!createCls) { $('createMsg').textContent = 'Pick a class.'; return; }
     const r = CBHub.createChar(profile, createCls, $('heroName').value, createDeck, createAmu, $('heroHC').checked);
     if (!r.ok) { $('createMsg').textContent = r.why; return; }
-    heroKey = r.id; $('heroName').value = ''; $('heroHC').checked = false; createCls = null; save(); renderHub(); show('start'); saveCard();
+    heroKey = r.id; $('heroName').value = ''; $('heroHC').checked = false; createCls = null; save(); renderHub(); show('start'); saveCard(); openGuide({ fresh: true }); // new players: what kind of hero do you want to play?
   };
   $('btnCreate').onclick = doCreate; $('heroName').addEventListener('keydown', (e) => { if (e.key === 'Enter') doCreate(); });
   $('btnCancelCreate').onclick = () => { createCls = null; renderCamp(); renderCreateChoices(); };
@@ -2174,6 +2195,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     modal(`<h2>Menu</h2><div class="menu">
       <button class="btn primary" id="mClose">Resume</button>
       <button class="btn" id="mnGloss">Glossary: stats and effects</button>
+      ${profile && profile.chars[heroKey] && !onTitle ? `<button class="btn" id="mnGuide">Build guide: playstyles, decks, where to farm</button>` : ''}
       ${inRun ? `<button class="btn" id="mnLeave">Leave run and return to town</button>` : ''}
       ${cb && cb.duel && !cb.over ? `<button class="btn" id="mnForfeit">Forfeit the duel</button>` : ''}
       ${cb && cb.duel && cb.over ? `<button class="btn" id="mnTown">Return to town</button>` : ''}
@@ -2193,6 +2215,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     </div>`);
     $('mClose').onclick = closeModal;
     $('mnGloss').onclick = () => openGlossary();
+    if ($('mnGuide')) $('mnGuide').onclick = () => openGuide();
     $('setFast').onchange = (e) => { settings.fast = e.target.checked; saveSettings(); };
     if ($('setInkUi')) $('setInkUi').onchange = (e) => CB_UI.set(e.target.checked);
     if ($('setBf')) $('setBf').onchange = (e) => { CB_BF.set(e.target.checked); if (cb) render(); };
