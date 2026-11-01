@@ -100,6 +100,9 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .uptrack i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; transition: width .5s ease-out; }
 .uptrack .ug { background: linear-gradient(180deg, #9be884, #4f9a3c); } .uptrack .ub { background: linear-gradient(180deg, #e9bf6a, #a8792c); }
 .uptrack.flash { animation: upflash .45s ease-out; } @keyframes upflash { 0% { box-shadow: 0 0 0 2px #9be884, 0 0 16px #9be884; } 100% { box-shadow: inset 0 2px 3px rgba(0,0,0,.8); } }
+.inkbar { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 0 0 8px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: rgba(20,16,12,.5); font-size: 13px; } .inkbar b { font-size: 16px; color: #b9a6ff; } .inkbar .muted { flex: 1; min-width: 200px; }
+.inkscroll { max-height: 58vh; overflow: auto; padding-right: 4px; } .inklist { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 4px; }
+.inkrow { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; padding: 3px 4px 3px 8px; border-left: 3px solid var(--rc); background: var(--panel2); border-radius: 4px; font-size: 13px; } .inkrow .nm { cursor: help; } .inkrow.unseen .nm { color: var(--muted); font-style: italic; } .inkrow .btn { padding: 2px 10px; font-size: 13px; }
 .feedlist { display: grid; gap: 4px; max-height: 300px; overflow: auto; }
 .feedlist label { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; padding: 4px 8px; background: var(--panel2); border-left: 3px solid var(--rc); border-radius: 4px; font-size: 13px; }
 .savenote { font-size: 12px; color: var(--muted); }
@@ -1939,6 +1942,7 @@ class Combat {
 
   makeEnemy(key, i) {
     const en = this.makeEnemy0(key, i);
+    if (this.opts.firstBoss && en.tier === 'Boss') { en.maxHp = en.hp = Math.round(en.hp * 0.85); en.firstBoss = true; } // Nov 1: a map's boss has 15% less HP until you first beat it
     if (this.opts.enraged && en.tier === 'Elite') { en.maxHp = en.hp = Math.round(en.hp * 1.5); en.dmgTune *= 1.5; en.name = 'Enraged ' + en.name; en.enraged = true; } // 10% of maps: +50% HP and damage, double loot
     if (this.raid) {
       const n = this.partySize, k = 1 + RAID.manaStep * (n - 1), d = en.d;
@@ -3109,6 +3113,17 @@ function repairRows(rng, nodes) {
     if (!rows.some(r => tryRemove(r, c))) break;
   }
 }
+// Nov 1: a boss always gives each hero a Green weapon and a Green chest piece of their class's kind, from this map's gear
+const GIFT_ARCH = { Warrior: [['1H Sword', '1H Axe'], ['Cuirass']], Rogue: [['Dagger'], ['Jerkin']], Mage: [['Wand'], ['Robe']], Paladin: [['1H Mace'], ['Cuirass']] };
+function bossGift(data, rng, mapKey, cls, level) {
+  const A = GIFT_ARCH[cls]; if (!A) return [];
+  const out = [];
+  for (const arches of A) {
+    let bases = data.gear.bases.filter(b => (b.map || 'physical') === mapKey && arches.includes(b.arch)); if (!bases.length) bases = data.gear.bases.filter(b => arches.includes(b.arch)); if (!bases.length) continue;
+    const it = rollItem(data, rng, bases[Math.floor(rng() * bases.length)].name, 'Green', level); if (it) { it.bossGift = true; out.push(it); }
+  }
+  return out;
+}
 function generateMap(rng, data, partySize, mapKey, bonus) {
   let last = null;
   for (let t = 0; t < 30; t++) { const nodes = mapTopology(rng); repairRows(rng, nodes); last = nodes; if (topologyOk(nodes)) break; }
@@ -3284,7 +3299,7 @@ class Run {
     if (['fight', 'elite', 'boss'].includes(n.type)) {
       const buffs = this.activeBuffs();
       const party = this.members.map(m => ({ cls: m.cls, name: m.name, gear: m.gear, deck: m.deck || undefined, hp: m.hp, mana: m.mana, buffs, talents: m.talents || undefined }));
-      this.combat = new Combat({ party, enemies: n.enemies, enraged: !!n.enraged, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : this.opts.partyStep, mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * (this.members.length - 1) : 1 });
+      this.combat = new Combat({ party, enemies: n.enemies, enraged: !!n.enraged, firstBoss: n.type === 'boss' && !!this.opts.firstBoss, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : this.opts.partyStep, mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * (this.members.length - 1) : 1 });
       this.note(`Row ${n.row}: ${n.type === 'boss' ? 'the boss' : n.type === 'elite' ? 'an elite' : 'a fight'} against ${n.enemies.map(k => this.data.enemies[k].name).join(', ')}.`);
     } else if (n.type === 'rest') { this.pending = { type: 'rest', heals: this.members.map(m => Math.min(m.stats.maxHp - m.hp, Math.round(m.stats.maxHp * 0.3))), keep: n.campfire ? 0.75 : 0.5 }; this.pending.heal = this.pending.heals[0]; }
     else if (n.type === 'shrine') { const s = SHRINES.find(x => x.key === n.shrine); this.buffs.push({ key: s.key, name: s.name, buff: s.buff, fights: 2 }); this.pending = { type: 'shrine', shrine: s }; this.note(`Row ${n.row}: ${s.name}. ${s.text}`); }
@@ -3340,6 +3355,7 @@ class Run {
       const nCards = drops.filter(d => d.kind === 'card').length, nGear = drops.length - nCards;
       this.note(`${this.solo ? 'Won' : m.name + ': won'} in ${cb.round} rounds with ${m.hp}/${m.stats.maxHp} HP. Loot: ${nGear} item${nGear === 1 ? '' : 's'}, ${nCards} card${nCards === 1 ? '' : 's'}, ${gold} gold.`);
     });
+    if (n.type === 'boss') this.members.forEach((m, i) => { const gift = bossGift(this.data, this.rng, this.mapKey, m.cls, this.level); m.sack.push(...gift); per[i].drops.push(...gift); }); // Nov 1: every boss kill also drops a Green weapon and chest for your class
     if (n.type === 'boss') { for (const m of this.members) m.kept = { items: m.sack.slice(), gold: m.gold }; this.over = 'victory'; this.note(`${this.bossName || 'The boss'} falls. Everyone keeps their whole sack.`); }
     return { result: 'win', drops: per[0].drops, gold: per[0].gold, per, rounds: cb.round };
   }
@@ -3441,9 +3457,10 @@ function newChar(cls, name, deckKey, amuletKey) {
   for (const [key, n] of list) for (let i = 0; i < n; i++) deck.push({ id: uid('k'), key, rank: 0 });
   const gear = STARTER_GEAR[cls].map(g => Object.assign({ id: uid('g') }, g));
   if (amuletKey) { const i = gear.findIndex(g => g.slot === 'Amulet'); if (i >= 0) gear[i] = Object.assign({ id: uid('g') }, CB.starterAmulet(cls, amuletKey)); }
-  return { cls, name: name || cls, created: Date.now(), gear, deck, cards: [], runs: 0, best: 0, bossKills: 0, gotOffense1: true, starter: (sd && sd[0]) || 'balanced' };
+  const seen = {}; for (const k of deck) seen[k.key] = 1;
+  return { cls, name: name || cls, created: Date.now(), gear, deck, cards: [], seen, runs: 0, best: 0, bossKills: 0, gotOffense1: true, starter: (sd && sd[0]) || 'balanced' };
 }
-function newProfile() { return { v: VERSION, gold: 0, stash: [], chars: {}, last: { cls: 'Warrior', level: 0 }, history: [] }; }
+function newProfile() { return { v: VERSION, gold: 0, ink: 0, stash: [], chars: {}, last: { cls: 'Warrior', level: 0 }, history: [] }; }
 function fix(p) { // tolerate older or partial saves
   p = Object.assign(newProfile(), p || {});
   for (const [k, c] of Object.entries(p.chars)) { if (!c.cls && CLASSES[k]) c.cls = k; c.cards = c.cards || []; c.deck = c.deck || []; c.gear = c.gear || []; c.name = c.name || c.cls; }
@@ -3568,6 +3585,23 @@ function buyShop(p, i) {
   return { ok: true };
 }
 
+// ---------- Ink (Nov 1): break spare cards down at the Scribe and buy any card of your class: full price for cards you have owned before, 3x for ones you haven't found yet
+const INK_GET = { White: 1, Green: 4, Blue: 10, Gold: 25 }, INK_COST = { White: 10, Green: 40, Blue: 100, Gold: 300 };
+function inkValue(card) { return Math.round((INK_GET[CARDS[card.key].rarity] || 1) * (1 + (card.rank || 0) * 0.5)); } // ranked cards give back half their base per rank
+const INK_UNSEEN = 3; // a card you have never owned costs 3x
+function inkCost(key, c) { return (INK_COST[CARDS[key].rarity] || 10) * (c && !(c.seen || {})[key] ? INK_UNSEEN : 1); }
+function breakCard(p, key, cardId) {
+  const c = char(p, key); const i = c ? c.cards.findIndex(x => x.id === cardId) : -1; if (i < 0) return { ok: false, why: 'Only cards in your collection can be broken down (take it out of the deck first).' };
+  const g = inkValue(c.cards[i]); c.cards.splice(i, 1); p.ink = (p.ink || 0) + g; return { ok: true, ink: g };
+}
+function craftCard(p, key, cardKey) {
+  const c = char(p, key), d = CARDS[cardKey]; if (!c || !d) return { ok: false, why: 'No such card' };
+  if (d.cls !== c.cls) return { ok: false, why: `Only a ${d.cls} can use that card.` };
+  const cost = inkCost(cardKey, c); if ((p.ink || 0) < cost) return { ok: false, why: `Needs ${cost} Ink (you have ${p.ink || 0}).` };
+  p.ink -= cost; c.cards.push({ id: uid('k'), key: cardKey, rank: 0 }); (c.seen = c.seen || {})[cardKey] = 1; return { ok: true, cost };
+}
+function beatMap(c, mk) { return !!(c && c.mapKills && c.mapKills[mk] != null); }
+
 // ---------- runs
 // ---------- codex talents (Nov 1): XP and picks per hero per codex; only the worn codex's talents are active
 function wornCodex(c) { const it = (c.gear || []).find(g => g && g.slot === 'Codex'); return it && it.codex && CB.CODEX_BY_KEY[it.codex] ? it.codex : null; }
@@ -3594,7 +3628,7 @@ function absorbRun(p, run, mi) {
   p.gold = Math.max(0, p.gold - (mem.spent || 0));
   for (const o of mem.orders || []) { if (p.stash.length < STASH_MAX) { p.stash.unshift(Object.assign({ id: uid('g') }, o, { slot: /^Ring/.test(o.slot) ? 'Ring' : o.slot })); ordered++; } }
   for (const it of kept.items) {
-    if (it.kind === 'card') { c.cards.push({ id: uid('k'), key: it.key, rank: 0 }); cards++; }
+    if (it.kind === 'card') { c.cards.push({ id: uid('k'), key: it.key, rank: 0 }); (c.seen = c.seen || {})[it.key] = 1; cards++; }
     else if (p.stash.length < STASH_MAX) { p.stash.unshift(Object.assign({ id: uid('g') }, it, { slot: /^Ring/.test(it.slot) ? 'Ring' : it.slot })); items++; }
     else lost++;
   }
@@ -3610,7 +3644,7 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain };
 }
 
-const API = { wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -3817,7 +3851,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     for (const k of extra) { const d = CBHub.deckCheck(CBHub.char(profile, k).deck); if (!d.ok) return toast(`${k}'s deck ${d.problems.join(', ')}. Fix it at the Scribe first.`); }
     profile.last = { cls: heroKey, level: lvl, party: extra, map: mk }; save(); $('sheet').hidden = true;
     const base = party.length > 1 ? CBHub.partyOpts(profile, party) : CBHub.runOpts(profile, heroKey);
-    run = new Run(Object.assign(base, { level: lvl, map: mk, seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA }));
+    run = new Run(Object.assign(base, { level: lvl, map: mk, seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA, firstBoss: party.some(k => !CBHub.beatMap(CBHub.char(profile, k), mk)) }));
     show('map'); renderMap(true);
   }
 
@@ -3896,14 +3930,35 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function renderDeckTab(c) {
     const chk = CBHub.deckCheck(c.deck), n = chk.counts;
     const deck = c.deck.slice().sort(sortCards).map(k => cardHtml(k, `<button class="btn" data-up="${k.id}">Upgrade</button><button class="btn" data-remove="${k.id}" ${c.deck.length <= CB.DECK_MIN ? 'disabled' : ''}>Remove</button>`)).join('');
-    const coll = c.cards.slice().sort(sortCards).map(k => { const a = CBHub.canAdd(c, k.id); return cardHtml(k, `<button class="btn" data-add="${k.id}" ${a.ok ? '' : `disabled title="${esc(a.why)}"`}>Add to deck</button><button class="btn" data-up="${k.id}">Upgrade</button>`); }).join('');
+    const coll = c.cards.slice().sort(sortCards).map(k => { const a = CBHub.canAdd(c, k.id); return cardHtml(k, `<button class="btn" data-add="${k.id}" ${a.ok ? '' : `disabled title="${esc(a.why)}"`}>Add to deck</button><button class="btn" data-up="${k.id}">Upgrade</button><button class="btn" data-ink="${k.id}" title="Break this card down for Ink">Ink +${CBHub.inkValue(k)}</button>`); }).join('');
     const spare = c.cards.filter(k => c.deck.some(d => d.key === k.key && (d.rank || 0) < CB.MAX_RANK)).length;
     $('hpDeck').innerHTML = `<p class="savenote" style="margin:0 0 8px">Deck rules: ${CB.DECK_MIN} to ${CB.DECK_MAX} cards, at most 2 Gold, 4 Blue and 6 Green. Feed spare cards into a card to rank it up (to +${CB.MAX_RANK}). Each card gives White 1, Green 3, Blue 9, Gold 27 XP, doubled when it's a copy of the same card. Reaching rank N costs N x 2/4/8/16 XP (by rarity) plus 5x that in gold.</p>
       <div class="two"><div><h3><span>Deck ${c.deck.length}</span><span>${n.Gold}/2 Gold &middot; ${n.Blue}/4 Blue &middot; ${n.Green}/6 Green &middot; ${n.White} White</span></h3>
         ${chk.ok ? '' : `<p class="down" style="margin:0 0 6px;font-size:13px">Deck ${chk.problems.join(', ')}.</p>`}<div class="list tall cardgrid">${deck}</div></div>
+      <div class="inkbar"><b>Ink ${profile.ink || 0}</b><span class="muted">Break spare cards down for Ink (White ${CBHub.INK_GET.White}, Green ${CBHub.INK_GET.Green}, Blue ${CBHub.INK_GET.Blue}, Gold ${CBHub.INK_GET.Gold}; more for ranked cards), then buy cards: normal price for ones you have owned before, ${CBHub.INK_UNSEEN}x for ones you haven't found yet.</span><button class="btn primary" id="btnInkShop">Buy cards with Ink</button></div>
       <div><h3><span>Collection ${c.cards.length}</span>${spare ? `<button class="btn" id="btnFeedAll" style="padding:3px 9px;font-size:13px">Feed ${spare} spare cop${spare === 1 ? 'y' : 'ies'} into your deck</button>` : ''}</h3>
         <div class="list tall cardgrid">${coll || '<span class="muted">Empty. Cards dropped on a run land here when you make it home.</span>'}</div></div></div>`;
     if ($('btnFeedAll')) $('btnFeedAll').onclick = feedAll;
+    $('btnInkShop').onclick = () => inkShop();
+  }
+  // Ink shop (Nov 1): every card this hero has discovered, by rarity, with its Ink price
+  function inkShop(q, msg) {
+    const c = CBHub.char(profile, heroKey); if (!c) return; q = q || '';
+    const own = {}; for (const k of c.deck.concat(c.cards)) own[k.key] = (own[k.key] || 0) + 1;
+    const all = Object.keys(CARDS).filter(k => CARDS[k].cls === c.cls && !CARDS[k].designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(CARDS[k].rarity)), ql = q.toLowerCase();
+    const unseen = all.filter(k => !(c.seen || {})[k]).length;
+    const rows = ['Gold', 'Blue', 'Green', 'White'].map(r => { const ks = all.filter(k => CARDS[k].rarity === r && (!ql || CARDS[k].name.toLowerCase().includes(ql) || (CARDS[k].text || '').toLowerCase().includes(ql))).sort((a, b) => (+!(c.seen || {})[a]) - (+!(c.seen || {})[b]) || CARDS[a].name.localeCompare(CARDS[b].name)); if (!ks.length) return '';
+      return `<h3 style="font-size:18px;margin:10px 0 4px;color:${RC[r]}">${r} &middot; ${CBHub.INK_COST[r]} Ink (${CBHub.INK_COST[r] * CBHub.INK_UNSEEN} if not found yet)</h3><div class="inklist">${ks.map(k => { const seen = (c.seen || {})[k], cost = CBHub.inkCost(k, c); return `<div class="inkrow${seen ? '' : ' unseen'}" style="--rc:${RC[r]}"><span class="nm" title="${esc(CARDS[k].text || '')}">${esc(CARDS[k].name)}</span><span class="muted">${seen ? `owned ${own[k] || 0}` : 'not found yet'}</span><button class="btn" data-buy="${k}" ${(profile.ink || 0) >= cost ? '' : 'disabled'}>${cost}</button></div>`; }).join('')}</div>`; }).join('');
+    modal(`<h2>Buy cards with Ink <span class="muted" style="font-size:18px">you have ${profile.ink || 0} Ink</span></h2>
+      <p class="muted" style="margin:0 0 6px">Any ${c.cls} card. Cards you have owned before cost the normal price; the ${unseen} you haven't found yet cost ${CBHub.INK_UNSEEN}x. Hover a name for its text.</p>
+      ${msg ? `<p class="up" style="margin:0 0 6px">${esc(msg)}</p>` : ''}<input id="inkQ" placeholder="Search by name or text" value="${esc(q)}" style="width:100%;box-sizing:border-box;margin-bottom:4px">
+      <div class="inkscroll">${rows || '<p class="muted">No matches.</p>'}</div>
+      <div class="row"><button class="btn" id="mClose">Close</button></div>`); $('modalBox').classList.add('wide');
+    $('mClose').onclick = () => { closeModal(); renderHub(); };
+    const qi = $('inkQ'); qi.oninput = () => { const v = qi.value, pos = qi.selectionStart; inkShop(v, msg); const n = $('inkQ'); n.focus(); n.setSelectionRange(pos, pos); };
+    $('modalBox').querySelector('.inkscroll').onclick = (ev) => {
+      const b = ev.target.closest('[data-buy]'); if (b && !b.disabled) { const r = CBHub.craftCard(profile, heroKey, b.dataset.buy); if (!r.ok) return toast(r.why); save(); renderHub(); return inkShop($('inkQ').value, `Bought ${CARDS[b.dataset.buy].name} for ${r.cost} Ink. It is in your collection.`); }
+    };
   }
   $('hpDeck').addEventListener('click', (ev) => {
     const b = ev.target.closest('button');
@@ -3912,6 +3967,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (b.dataset.add) { const r = CBHub.addToDeck(profile, heroKey, b.dataset.add); if (!r.ok) return toast(r.why); }
     else if (b.dataset.remove) { const r = CBHub.removeFromDeck(profile, heroKey, b.dataset.remove); if (!r.ok) return toast(r.why); }
     else if (b.dataset.up) return upgradeModal(b.dataset.up);
+    else if (b.dataset.ink) { const k = CBHub.char(profile, heroKey).cards.find(x => x.id === b.dataset.ink), nm = k && CARDS[k.key].name; const r = CBHub.breakCard(profile, heroKey, b.dataset.ink); if (!r.ok) return toast(r.why); void nm; }
     else return;
     save(); renderHub();
   });
@@ -5088,8 +5144,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793502867797';
-  const CB_BUILD = 'd59f7c0ead'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793506597396';
+  const CB_BUILD = '50d7c1881f'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -5109,7 +5165,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (req && req.kind === 'raid') { const why = raidBlock(c, req.map, req.level); if (why) return { err: why }; }
     const chk = CBHub.deckCheck(c.deck); if (!chk.ok) return { err: `needs to fix their deck (it ${chk.problems.join(', ')})` };
     const o = CBHub.runOpts(profile, heroKey); delete o.members;
-    return Object.assign(o, { uid: SOC.me });
+    return Object.assign(o, { uid: SOC.me, firstBoss: !!(req && req.map) && !CBHub.beatMap(c, req.map) });
   }
 
   // ---------- starting a session: the host asks everyone for their hero, then sends the seed
@@ -5150,7 +5206,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       cb = new CB.Combat({ raid: true, party: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, uid: s.uid, talents: s.talents })), enemies: [bk], level: go.level, seed: go.seed, data: DATA });
       cb.myMi = S.mi; cb.raidMap = go.map; startCombatUI();
     } else {
-      run = new Run({ members: go.specs.map(s => ({ key: s.key, cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, bank: s.bank, stashFree: s.stashFree, talents: s.talents })), level: go.level, map: go.map || 'physical', seed: go.seed, data: DATA });
+      run = new Run({ members: go.specs.map(s => ({ key: s.key, cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, bank: s.bank, stashFree: s.stashFree, talents: s.talents })), level: go.level, map: go.map || 'physical', seed: go.seed, data: DATA, firstBoss: go.specs.some(s => s.firstBoss) });
       run.online = true; run.myMi = S.mi; run.uids = go.uids.slice();
       show('map'); renderMap(true);
       if (go.host !== SOC.me) { modal(`<h2>Your party sets out</h2><p>${esc(nameOfUid(go.host))} is leading ${go.specs.map(x => esc(x.name)).join(', ')} onto <b>${esc(run.mapName)}</b> (+${go.level}).</p><p class="muted">Click a node on the map to vote where to go. The party moves when everyone has voted (ties are a coin flip; after 45 seconds the votes in count).</p><div class="row"><button class="btn primary" id="mClose">Let's go</button></div>`); $('mClose').onclick = closeModal; }
@@ -5788,6 +5844,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Feature', 'Ink: break spare cards down at the Scribe (White 1, Green 4, Blue 10, Gold 25 Ink, more for ranked cards) and buy any card of your class with it. Cards you have owned before cost 10 / 40 / 100 / 300 Ink; ones you have never found cost 3x.'],
+      ['Balance', 'Every boss kill now also drops a Green weapon and a Green chest piece for your class, from that map.'],
+      ['Balance', "A map's boss has 15% less HP until you beat it for the first time (in a party, if anyone hasn't beaten it yet)."],
       ['Balance', 'New Rogue starting deck, Star Thrower, replacing Bladedancer: all-in on Shurikens. Shuriken Storm (Gold), Storm of Steel and Shuriken Mastery (Blue), Hidden Pockets and 2 Shuriken Volley (Green), then 8 Throwing Stars, 4 Evade and 2 Twin Daggers. Heroes already made with Bladedancer keep their deck.'],
       ['Fix', 'Fights hold still: heroes and monsters now share one figure size picked from the busier side (a duo no longer gets shrunk to raid size), each side keeps fixed columns so nobody jumps when a mob dies, and the battlefield keeps the same height whatever is in your hand. Big hands overlap more instead of stretching the screen, and long turn orders shrink instead of wrapping.'],
       ['Fix', 'The gold box around the hero whose turn it is is gone: the turn order already shows it, and the active figure gets a soft gold glow instead.'],

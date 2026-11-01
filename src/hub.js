@@ -15,9 +15,10 @@ function newChar(cls, name, deckKey, amuletKey) {
   for (const [key, n] of list) for (let i = 0; i < n; i++) deck.push({ id: uid('k'), key, rank: 0 });
   const gear = STARTER_GEAR[cls].map(g => Object.assign({ id: uid('g') }, g));
   if (amuletKey) { const i = gear.findIndex(g => g.slot === 'Amulet'); if (i >= 0) gear[i] = Object.assign({ id: uid('g') }, CB.starterAmulet(cls, amuletKey)); }
-  return { cls, name: name || cls, created: Date.now(), gear, deck, cards: [], runs: 0, best: 0, bossKills: 0, gotOffense1: true, starter: (sd && sd[0]) || 'balanced' };
+  const seen = {}; for (const k of deck) seen[k.key] = 1;
+  return { cls, name: name || cls, created: Date.now(), gear, deck, cards: [], seen, runs: 0, best: 0, bossKills: 0, gotOffense1: true, starter: (sd && sd[0]) || 'balanced' };
 }
-function newProfile() { return { v: VERSION, gold: 0, stash: [], chars: {}, last: { cls: 'Warrior', level: 0 }, history: [] }; }
+function newProfile() { return { v: VERSION, gold: 0, ink: 0, stash: [], chars: {}, last: { cls: 'Warrior', level: 0 }, history: [] }; }
 function fix(p) { // tolerate older or partial saves
   p = Object.assign(newProfile(), p || {});
   for (const [k, c] of Object.entries(p.chars)) { if (!c.cls && CLASSES[k]) c.cls = k; c.cards = c.cards || []; c.deck = c.deck || []; c.gear = c.gear || []; c.name = c.name || c.cls; }
@@ -142,6 +143,23 @@ function buyShop(p, i) {
   return { ok: true };
 }
 
+// ---------- Ink (Nov 1): break spare cards down at the Scribe and buy any card of your class: full price for cards you have owned before, 3x for ones you haven't found yet
+const INK_GET = { White: 1, Green: 4, Blue: 10, Gold: 25 }, INK_COST = { White: 10, Green: 40, Blue: 100, Gold: 300 };
+function inkValue(card) { return Math.round((INK_GET[CARDS[card.key].rarity] || 1) * (1 + (card.rank || 0) * 0.5)); } // ranked cards give back half their base per rank
+const INK_UNSEEN = 3; // a card you have never owned costs 3x
+function inkCost(key, c) { return (INK_COST[CARDS[key].rarity] || 10) * (c && !(c.seen || {})[key] ? INK_UNSEEN : 1); }
+function breakCard(p, key, cardId) {
+  const c = char(p, key); const i = c ? c.cards.findIndex(x => x.id === cardId) : -1; if (i < 0) return { ok: false, why: 'Only cards in your collection can be broken down (take it out of the deck first).' };
+  const g = inkValue(c.cards[i]); c.cards.splice(i, 1); p.ink = (p.ink || 0) + g; return { ok: true, ink: g };
+}
+function craftCard(p, key, cardKey) {
+  const c = char(p, key), d = CARDS[cardKey]; if (!c || !d) return { ok: false, why: 'No such card' };
+  if (d.cls !== c.cls) return { ok: false, why: `Only a ${d.cls} can use that card.` };
+  const cost = inkCost(cardKey, c); if ((p.ink || 0) < cost) return { ok: false, why: `Needs ${cost} Ink (you have ${p.ink || 0}).` };
+  p.ink -= cost; c.cards.push({ id: uid('k'), key: cardKey, rank: 0 }); (c.seen = c.seen || {})[cardKey] = 1; return { ok: true, cost };
+}
+function beatMap(c, mk) { return !!(c && c.mapKills && c.mapKills[mk] != null); }
+
 // ---------- runs
 // ---------- codex talents (Nov 1): XP and picks per hero per codex; only the worn codex's talents are active
 function wornCodex(c) { const it = (c.gear || []).find(g => g && g.slot === 'Codex'); return it && it.codex && CB.CODEX_BY_KEY[it.codex] ? it.codex : null; }
@@ -168,7 +186,7 @@ function absorbRun(p, run, mi) {
   p.gold = Math.max(0, p.gold - (mem.spent || 0));
   for (const o of mem.orders || []) { if (p.stash.length < STASH_MAX) { p.stash.unshift(Object.assign({ id: uid('g') }, o, { slot: /^Ring/.test(o.slot) ? 'Ring' : o.slot })); ordered++; } }
   for (const it of kept.items) {
-    if (it.kind === 'card') { c.cards.push({ id: uid('k'), key: it.key, rank: 0 }); cards++; }
+    if (it.kind === 'card') { c.cards.push({ id: uid('k'), key: it.key, rank: 0 }); (c.seen = c.seen || {})[it.key] = 1; cards++; }
     else if (p.stash.length < STASH_MAX) { p.stash.unshift(Object.assign({ id: uid('g') }, it, { slot: /^Ring/.test(it.slot) ? 'Ring' : it.slot })); items++; }
     else lost++;
   }
@@ -184,6 +202,6 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain };
 }
 
-const API = { wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);

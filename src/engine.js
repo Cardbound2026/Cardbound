@@ -925,6 +925,7 @@ class Combat {
 
   makeEnemy(key, i) {
     const en = this.makeEnemy0(key, i);
+    if (this.opts.firstBoss && en.tier === 'Boss') { en.maxHp = en.hp = Math.round(en.hp * 0.85); en.firstBoss = true; } // Nov 1: a map's boss has 15% less HP until you first beat it
     if (this.opts.enraged && en.tier === 'Elite') { en.maxHp = en.hp = Math.round(en.hp * 1.5); en.dmgTune *= 1.5; en.name = 'Enraged ' + en.name; en.enraged = true; } // 10% of maps: +50% HP and damage, double loot
     if (this.raid) {
       const n = this.partySize, k = 1 + RAID.manaStep * (n - 1), d = en.d;

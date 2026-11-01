@@ -96,6 +96,9 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .uptrack i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; transition: width .5s ease-out; }
 .uptrack .ug { background: linear-gradient(180deg, #9be884, #4f9a3c); } .uptrack .ub { background: linear-gradient(180deg, #e9bf6a, #a8792c); }
 .uptrack.flash { animation: upflash .45s ease-out; } @keyframes upflash { 0% { box-shadow: 0 0 0 2px #9be884, 0 0 16px #9be884; } 100% { box-shadow: inset 0 2px 3px rgba(0,0,0,.8); } }
+.inkbar { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 0 0 8px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: rgba(20,16,12,.5); font-size: 13px; } .inkbar b { font-size: 16px; color: #b9a6ff; } .inkbar .muted { flex: 1; min-width: 200px; }
+.inkscroll { max-height: 58vh; overflow: auto; padding-right: 4px; } .inklist { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 4px; }
+.inkrow { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; padding: 3px 4px 3px 8px; border-left: 3px solid var(--rc); background: var(--panel2); border-radius: 4px; font-size: 13px; } .inkrow .nm { cursor: help; } .inkrow.unseen .nm { color: var(--muted); font-style: italic; } .inkrow .btn { padding: 2px 10px; font-size: 13px; }
 .feedlist { display: grid; gap: 4px; max-height: 300px; overflow: auto; }
 .feedlist label { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; padding: 4px 8px; background: var(--panel2); border-left: 3px solid var(--rc); border-radius: 4px; font-size: 13px; }
 .savenote { font-size: 12px; color: var(--muted); }
@@ -930,7 +933,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     for (const k of extra) { const d = CBHub.deckCheck(CBHub.char(profile, k).deck); if (!d.ok) return toast(`${k}'s deck ${d.problems.join(', ')}. Fix it at the Scribe first.`); }
     profile.last = { cls: heroKey, level: lvl, party: extra, map: mk }; save(); $('sheet').hidden = true;
     const base = party.length > 1 ? CBHub.partyOpts(profile, party) : CBHub.runOpts(profile, heroKey);
-    run = new Run(Object.assign(base, { level: lvl, map: mk, seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA }));
+    run = new Run(Object.assign(base, { level: lvl, map: mk, seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA, firstBoss: party.some(k => !CBHub.beatMap(CBHub.char(profile, k), mk)) }));
     show('map'); renderMap(true);
   }
 
@@ -1009,14 +1012,35 @@ body.aiming { cursor: grabbing; user-select: none; }
   function renderDeckTab(c) {
     const chk = CBHub.deckCheck(c.deck), n = chk.counts;
     const deck = c.deck.slice().sort(sortCards).map(k => cardHtml(k, `<button class="btn" data-up="${k.id}">Upgrade</button><button class="btn" data-remove="${k.id}" ${c.deck.length <= CB.DECK_MIN ? 'disabled' : ''}>Remove</button>`)).join('');
-    const coll = c.cards.slice().sort(sortCards).map(k => { const a = CBHub.canAdd(c, k.id); return cardHtml(k, `<button class="btn" data-add="${k.id}" ${a.ok ? '' : `disabled title="${esc(a.why)}"`}>Add to deck</button><button class="btn" data-up="${k.id}">Upgrade</button>`); }).join('');
+    const coll = c.cards.slice().sort(sortCards).map(k => { const a = CBHub.canAdd(c, k.id); return cardHtml(k, `<button class="btn" data-add="${k.id}" ${a.ok ? '' : `disabled title="${esc(a.why)}"`}>Add to deck</button><button class="btn" data-up="${k.id}">Upgrade</button><button class="btn" data-ink="${k.id}" title="Break this card down for Ink">Ink +${CBHub.inkValue(k)}</button>`); }).join('');
     const spare = c.cards.filter(k => c.deck.some(d => d.key === k.key && (d.rank || 0) < CB.MAX_RANK)).length;
     $('hpDeck').innerHTML = `<p class="savenote" style="margin:0 0 8px">Deck rules: ${CB.DECK_MIN} to ${CB.DECK_MAX} cards, at most 2 Gold, 4 Blue and 6 Green. Feed spare cards into a card to rank it up (to +${CB.MAX_RANK}). Each card gives White 1, Green 3, Blue 9, Gold 27 XP, doubled when it's a copy of the same card. Reaching rank N costs N x 2/4/8/16 XP (by rarity) plus 5x that in gold.</p>
       <div class="two"><div><h3><span>Deck ${c.deck.length}</span><span>${n.Gold}/2 Gold &middot; ${n.Blue}/4 Blue &middot; ${n.Green}/6 Green &middot; ${n.White} White</span></h3>
         ${chk.ok ? '' : `<p class="down" style="margin:0 0 6px;font-size:13px">Deck ${chk.problems.join(', ')}.</p>`}<div class="list tall cardgrid">${deck}</div></div>
+      <div class="inkbar"><b>Ink ${profile.ink || 0}</b><span class="muted">Break spare cards down for Ink (White ${CBHub.INK_GET.White}, Green ${CBHub.INK_GET.Green}, Blue ${CBHub.INK_GET.Blue}, Gold ${CBHub.INK_GET.Gold}; more for ranked cards), then buy cards: normal price for ones you have owned before, ${CBHub.INK_UNSEEN}x for ones you haven't found yet.</span><button class="btn primary" id="btnInkShop">Buy cards with Ink</button></div>
       <div><h3><span>Collection ${c.cards.length}</span>${spare ? `<button class="btn" id="btnFeedAll" style="padding:3px 9px;font-size:13px">Feed ${spare} spare cop${spare === 1 ? 'y' : 'ies'} into your deck</button>` : ''}</h3>
         <div class="list tall cardgrid">${coll || '<span class="muted">Empty. Cards dropped on a run land here when you make it home.</span>'}</div></div></div>`;
     if ($('btnFeedAll')) $('btnFeedAll').onclick = feedAll;
+    $('btnInkShop').onclick = () => inkShop();
+  }
+  // Ink shop (Nov 1): every card this hero has discovered, by rarity, with its Ink price
+  function inkShop(q, msg) {
+    const c = CBHub.char(profile, heroKey); if (!c) return; q = q || '';
+    const own = {}; for (const k of c.deck.concat(c.cards)) own[k.key] = (own[k.key] || 0) + 1;
+    const all = Object.keys(CARDS).filter(k => CARDS[k].cls === c.cls && !CARDS[k].designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(CARDS[k].rarity)), ql = q.toLowerCase();
+    const unseen = all.filter(k => !(c.seen || {})[k]).length;
+    const rows = ['Gold', 'Blue', 'Green', 'White'].map(r => { const ks = all.filter(k => CARDS[k].rarity === r && (!ql || CARDS[k].name.toLowerCase().includes(ql) || (CARDS[k].text || '').toLowerCase().includes(ql))).sort((a, b) => (+!(c.seen || {})[a]) - (+!(c.seen || {})[b]) || CARDS[a].name.localeCompare(CARDS[b].name)); if (!ks.length) return '';
+      return `<h3 style="font-size:18px;margin:10px 0 4px;color:${RC[r]}">${r} &middot; ${CBHub.INK_COST[r]} Ink (${CBHub.INK_COST[r] * CBHub.INK_UNSEEN} if not found yet)</h3><div class="inklist">${ks.map(k => { const seen = (c.seen || {})[k], cost = CBHub.inkCost(k, c); return `<div class="inkrow${seen ? '' : ' unseen'}" style="--rc:${RC[r]}"><span class="nm" title="${esc(CARDS[k].text || '')}">${esc(CARDS[k].name)}</span><span class="muted">${seen ? `owned ${own[k] || 0}` : 'not found yet'}</span><button class="btn" data-buy="${k}" ${(profile.ink || 0) >= cost ? '' : 'disabled'}>${cost}</button></div>`; }).join('')}</div>`; }).join('');
+    modal(`<h2>Buy cards with Ink <span class="muted" style="font-size:18px">you have ${profile.ink || 0} Ink</span></h2>
+      <p class="muted" style="margin:0 0 6px">Any ${c.cls} card. Cards you have owned before cost the normal price; the ${unseen} you haven't found yet cost ${CBHub.INK_UNSEEN}x. Hover a name for its text.</p>
+      ${msg ? `<p class="up" style="margin:0 0 6px">${esc(msg)}</p>` : ''}<input id="inkQ" placeholder="Search by name or text" value="${esc(q)}" style="width:100%;box-sizing:border-box;margin-bottom:4px">
+      <div class="inkscroll">${rows || '<p class="muted">No matches.</p>'}</div>
+      <div class="row"><button class="btn" id="mClose">Close</button></div>`); $('modalBox').classList.add('wide');
+    $('mClose').onclick = () => { closeModal(); renderHub(); };
+    const qi = $('inkQ'); qi.oninput = () => { const v = qi.value, pos = qi.selectionStart; inkShop(v, msg); const n = $('inkQ'); n.focus(); n.setSelectionRange(pos, pos); };
+    $('modalBox').querySelector('.inkscroll').onclick = (ev) => {
+      const b = ev.target.closest('[data-buy]'); if (b && !b.disabled) { const r = CBHub.craftCard(profile, heroKey, b.dataset.buy); if (!r.ok) return toast(r.why); save(); renderHub(); return inkShop($('inkQ').value, `Bought ${CARDS[b.dataset.buy].name} for ${r.cost} Ink. It is in your collection.`); }
+    };
   }
   $('hpDeck').addEventListener('click', (ev) => {
     const b = ev.target.closest('button');
@@ -1025,6 +1049,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (b.dataset.add) { const r = CBHub.addToDeck(profile, heroKey, b.dataset.add); if (!r.ok) return toast(r.why); }
     else if (b.dataset.remove) { const r = CBHub.removeFromDeck(profile, heroKey, b.dataset.remove); if (!r.ok) return toast(r.why); }
     else if (b.dataset.up) return upgradeModal(b.dataset.up);
+    else if (b.dataset.ink) { const k = CBHub.char(profile, heroKey).cards.find(x => x.id === b.dataset.ink), nm = k && CARDS[k.key].name; const r = CBHub.breakCard(profile, heroKey, b.dataset.ink); if (!r.ok) return toast(r.why); void nm; }
     else return;
     save(); renderHub();
   });

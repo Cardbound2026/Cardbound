@@ -24,7 +24,7 @@
     if (req && req.kind === 'raid') { const why = raidBlock(c, req.map, req.level); if (why) return { err: why }; }
     const chk = CBHub.deckCheck(c.deck); if (!chk.ok) return { err: `needs to fix their deck (it ${chk.problems.join(', ')})` };
     const o = CBHub.runOpts(profile, heroKey); delete o.members;
-    return Object.assign(o, { uid: SOC.me });
+    return Object.assign(o, { uid: SOC.me, firstBoss: !!(req && req.map) && !CBHub.beatMap(c, req.map) });
   }
 
   // ---------- starting a session: the host asks everyone for their hero, then sends the seed
@@ -65,7 +65,7 @@
       cb = new CB.Combat({ raid: true, party: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, uid: s.uid, talents: s.talents })), enemies: [bk], level: go.level, seed: go.seed, data: DATA });
       cb.myMi = S.mi; cb.raidMap = go.map; startCombatUI();
     } else {
-      run = new Run({ members: go.specs.map(s => ({ key: s.key, cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, bank: s.bank, stashFree: s.stashFree, talents: s.talents })), level: go.level, map: go.map || 'physical', seed: go.seed, data: DATA });
+      run = new Run({ members: go.specs.map(s => ({ key: s.key, cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, bank: s.bank, stashFree: s.stashFree, talents: s.talents })), level: go.level, map: go.map || 'physical', seed: go.seed, data: DATA, firstBoss: go.specs.some(s => s.firstBoss) });
       run.online = true; run.myMi = S.mi; run.uids = go.uids.slice();
       show('map'); renderMap(true);
       if (go.host !== SOC.me) { modal(`<h2>Your party sets out</h2><p>${esc(nameOfUid(go.host))} is leading ${go.specs.map(x => esc(x.name)).join(', ')} onto <b>${esc(run.mapName)}</b> (+${go.level}).</p><p class="muted">Click a node on the map to vote where to go. The party moves when everyone has voted (ties are a coin flip; after 45 seconds the votes in count).</p><div class="row"><button class="btn primary" id="mClose">Let's go</button></div>`); $('mClose').onclick = closeModal; }

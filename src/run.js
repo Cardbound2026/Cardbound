@@ -68,6 +68,17 @@ function repairRows(rng, nodes) {
     if (!rows.some(r => tryRemove(r, c))) break;
   }
 }
+// Nov 1: a boss always gives each hero a Green weapon and a Green chest piece of their class's kind, from this map's gear
+const GIFT_ARCH = { Warrior: [['1H Sword', '1H Axe'], ['Cuirass']], Rogue: [['Dagger'], ['Jerkin']], Mage: [['Wand'], ['Robe']], Paladin: [['1H Mace'], ['Cuirass']] };
+function bossGift(data, rng, mapKey, cls, level) {
+  const A = GIFT_ARCH[cls]; if (!A) return [];
+  const out = [];
+  for (const arches of A) {
+    let bases = data.gear.bases.filter(b => (b.map || 'physical') === mapKey && arches.includes(b.arch)); if (!bases.length) bases = data.gear.bases.filter(b => arches.includes(b.arch)); if (!bases.length) continue;
+    const it = rollItem(data, rng, bases[Math.floor(rng() * bases.length)].name, 'Green', level); if (it) { it.bossGift = true; out.push(it); }
+  }
+  return out;
+}
 function generateMap(rng, data, partySize, mapKey, bonus) {
   let last = null;
   for (let t = 0; t < 30; t++) { const nodes = mapTopology(rng); repairRows(rng, nodes); last = nodes; if (topologyOk(nodes)) break; }
@@ -243,7 +254,7 @@ class Run {
     if (['fight', 'elite', 'boss'].includes(n.type)) {
       const buffs = this.activeBuffs();
       const party = this.members.map(m => ({ cls: m.cls, name: m.name, gear: m.gear, deck: m.deck || undefined, hp: m.hp, mana: m.mana, buffs, talents: m.talents || undefined }));
-      this.combat = new Combat({ party, enemies: n.enemies, enraged: !!n.enraged, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : this.opts.partyStep, mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * (this.members.length - 1) : 1 });
+      this.combat = new Combat({ party, enemies: n.enemies, enraged: !!n.enraged, firstBoss: n.type === 'boss' && !!this.opts.firstBoss, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : this.opts.partyStep, mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * (this.members.length - 1) : 1 });
       this.note(`Row ${n.row}: ${n.type === 'boss' ? 'the boss' : n.type === 'elite' ? 'an elite' : 'a fight'} against ${n.enemies.map(k => this.data.enemies[k].name).join(', ')}.`);
     } else if (n.type === 'rest') { this.pending = { type: 'rest', heals: this.members.map(m => Math.min(m.stats.maxHp - m.hp, Math.round(m.stats.maxHp * 0.3))), keep: n.campfire ? 0.75 : 0.5 }; this.pending.heal = this.pending.heals[0]; }
     else if (n.type === 'shrine') { const s = SHRINES.find(x => x.key === n.shrine); this.buffs.push({ key: s.key, name: s.name, buff: s.buff, fights: 2 }); this.pending = { type: 'shrine', shrine: s }; this.note(`Row ${n.row}: ${s.name}. ${s.text}`); }
@@ -299,6 +310,7 @@ class Run {
       const nCards = drops.filter(d => d.kind === 'card').length, nGear = drops.length - nCards;
       this.note(`${this.solo ? 'Won' : m.name + ': won'} in ${cb.round} rounds with ${m.hp}/${m.stats.maxHp} HP. Loot: ${nGear} item${nGear === 1 ? '' : 's'}, ${nCards} card${nCards === 1 ? '' : 's'}, ${gold} gold.`);
     });
+    if (n.type === 'boss') this.members.forEach((m, i) => { const gift = bossGift(this.data, this.rng, this.mapKey, m.cls, this.level); m.sack.push(...gift); per[i].drops.push(...gift); }); // Nov 1: every boss kill also drops a Green weapon and chest for your class
     if (n.type === 'boss') { for (const m of this.members) m.kept = { items: m.sack.slice(), gold: m.gold }; this.over = 'victory'; this.note(`${this.bossName || 'The boss'} falls. Everyone keeps their whole sack.`); }
     return { result: 'win', drops: per[0].drops, gold: per[0].gold, per, rounds: cb.round };
   }
