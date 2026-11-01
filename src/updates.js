@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Art', 'The interface is in Gothic Ink too: windows and panels are framed in inked stone, buttons are wooden planks (the main action is banded oak), and tabs, chips, bars and inputs have heavy black outlines on dark slate. Cards are unchanged. To go back to the old look, open Menu and untick "Gothic Ink interface".'],
       ['Art', 'The whole town is redrawn in Gothic Ink: inked grass and cut-paper dirt paths, cobbles, the pond and the palisade, plus every tent, tree, rock, torch, the campfire, wagon, longhouse, stall, fountain, signs and the training dummy.'],
       ['Art', 'The town is in the same Gothic Ink style: your hero, other players and every townsperson now walk around as inked figures with real walk and idle animations. Your hero on the character screen uses it too.'],
       ['Art', 'New look for the fight screen: every hero class and every monster is now drawn in a dark "Gothic Ink" style (heavy black ink, deep shadows, muted colours). Humans, undead, giants and demons wear real gear; beasts, constructs, elementals, plants and fliers are new hand-drawn bodies tinted by their element. Elites and bosses are drawn bigger. The turn-order tiles use the same portraits.'],

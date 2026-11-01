@@ -24,3 +24,9 @@ New monster in data.js? Re-run render.js; until then it shows the old drawn figu
    `n.pal.ink` line after `NPCS` (all in `src/template.html`).
 
 The game falls back to the original drawn figures by itself.
+
+## The interface theme (src/inkui.js)
+Stone frames, wooden buttons and inked controls for the whole UI, drawn in code at load (no image files) and scoped
+under `body.inkui`. Players can switch it off in Menu > Settings ("Gothic Ink interface"); the choice is saved per browser.
+To remove it: delete `src/inkui.js` (the build skips the missing file). Optional tidy-up: the `/*INKUI*/` line in
+src/template.html, its `.replace` in build.js, and the `setInkUi` checkbox in openMenu (it hides itself when the file is gone).

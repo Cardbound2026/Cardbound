@@ -1642,6 +1642,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 /*CODEX*/
 /*TALENTSUI*/
 /*INKART*/
+/*INKUI*/
 /*GEARUI*/
 /*GLOSSARY*/
 /*TESTVENDOR*/
@@ -1752,10 +1753,12 @@ body.aiming { cursor: grabbing; user-select: none; }
       ${typeof socOn === 'function' && socOn() ? `<button class="btn" id="mnNet">Connection details (co-op)</button>` : ''}
       <h3 style="font-size:20px;margin-top:6px">Settings</h3>
       <label class="toggle"><input type="checkbox" id="setFast" ${settings.fast ? 'checked' : ''}> Fast enemy turns</label>
+      ${window.CB_UI ? `<label class="toggle"><input type="checkbox" id="setInkUi" ${CB_UI.on() ? 'checked' : ''}> Gothic Ink interface (off = classic look)</label>` : ''}
     </div>`);
     $('mClose').onclick = closeModal;
     $('mnGloss').onclick = () => openGlossary();
     $('setFast').onchange = (e) => { settings.fast = e.target.checked; saveSettings(); };
+    if ($('setInkUi')) $('setInkUi').onchange = (e) => CB_UI.set(e.target.checked);
     if ($('mnLeave')) $('mnLeave').onclick = () => {
       modal(`<h2 class="loss">Leave this run?</h2><p>You go back to Emberwatch now. Everything in your loot sack (items, cards and gold found this run) is lost. Gear you are wearing, your deck and any merchant orders are kept.</p><div class="row"><button class="btn" id="mnConfirm">Leave and lose the sack</button><button class="btn primary" id="mClose">Keep playing</button></div>`);
       $('mClose').onclick = closeModal; $('mnConfirm').onclick = leaveRun;
