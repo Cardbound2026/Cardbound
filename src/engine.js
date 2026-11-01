@@ -1010,6 +1010,12 @@ class Combat {
   stealBuff(p, e) { const k = this.eBuffKeys(e).sort((a, b) => e[b] - e[a])[0]; if (!k) { this.say('player', `${e.name} has no buffs to take.`); return 0; } const v = e[k]; e[k] = 0; if (k === 'strength' || k === 'strTurn') p.strCombat += v; else if (k === 'thorns') p.thorns += v; else this.gainDef(v); this.say('player', `${this.who(p)} steal${this.partySize > 1 ? 's' : ''} ${e.name}'s ${k === 'strTurn' ? 'Strength' : k} (${v}).`); return 1; }
   debuffKeys(a, withBleed) { return ['weak', 'vulnerable', 'slow', 'poison', 'burn', 'chill', 'condemn', 'unwarded', 'exposure'].concat(withBleed ? ['bleed'] : []).filter(k => (a[k] || 0) > 0); }
   cleanseAll(a, withBleed) { let n = 0; for (const k of this.debuffKeys(a, withBleed)) { n += a[k]; a[k] = 0; } a.disarmNext = false; if (n) this.say('player', `${a.name}: debuffs removed.`); if (this.player && this.player.isPlayer) this.fire(this.player, 'onCleanse', n); return n; }
+  // talents that let damage over time crit: the hero who applied it rolls their crit chance for every tick
+  dotCritRoll(src, key, n) {
+    if (!src || !src.isPlayer || !src.powers || !src.powers.length || !this.pws(src).some(([, d]) => d && d.dotCrit && d.dotCrit[key])) return { n, crit: false };
+    if (this.rng() * 100 >= (src.crit || 0)) return { n, crit: false };
+    return { n: Math.round(n * (src.critMult || 1.5) * this.pwProd(src, 'critMultX')), crit: true };
+  }
   extraTick(e, key) { const src = this.actorById(e[key + 'By']) || this.player; if (e[key] > 0 && e.hp > 0) { this.applyHit(src, e, e[key], { isDot: true, label: key[0].toUpperCase() + key.slice(1) + ' (extra tick)', ignoreBlock: key === 'poison' }); } }
   // ----- powers
   pws(p) { return (p && p.powers || []).map(pw => [pw, pw.def || POWERS[pw.key]]).filter(x => x[1]); }
@@ -1099,10 +1105,11 @@ class Combat {
     t = t.replace(/\b([Dd]eal) (\d+) (instead|more)/g, (m, w, n, x) => `${w} ${mark(+n, Math.max(0, Math.round((+n + flat) * dmgMult(d.dtype || 'Physical'))))} ${x}`);
     let defM = 1 + (p.dexterity || 0) / 100; if (T.defX || this.hasTimed(p, 'defX')) defM *= 2;
     if (pow) { try { defM *= this.pwProd(p, 'defMult') * this.pwProd(p, 'defMultFn'); } catch (x) {} }
-    if (/Poison/.test(t)) {
+    for (const [st, W] of [['poison', 'Poison'], ['bleed', 'Bleed']]) if (new RegExp(W).test(t)) {
       let pm = (1 + (p.strength + p.strTurn + p.strCombat) / 100) * (1 + (p.spirit || 0) / 100), pp = 0;
-      if (pow) { try { pm *= this.pwKey(p, 'dotMult', 'poison'); pp = this.pwKey(p, 'dotPlus', 'poison', 'sum') || 0; } catch (x) {} }
-      t = t.replace(/\b(\d+) Poison\b/g, (m, n) => `${mark(+n, Math.round(+n * pm) + pp)} Poison`);
+      if (pow) { try { pm *= this.pwKey(p, 'dotMult', st); pp = this.pwKey(p, 'dotPlus', st, 'sum') || 0; } catch (x) {} }
+      if (st === 'bleed' && p.bleedX) pm *= p.bleedX;
+      t = t.replace(new RegExp('\\b(\\d+) ' + W + '\\b', 'g'), (m, n) => `${mark(+n, Math.round(+n * pm) + pp)} ${W}`);
     }
     t = t.replace(/\b([Gg]ains?) (\d+) (Block|Barrier|Dodge|Parry)/g, (m, w, n, k) => `${w} ${mark(+n, Math.round(+n * defM))} ${k}`);
     return t;
@@ -1277,7 +1284,7 @@ class Combat {
       const src = this.actorById(a[key + 'By']), ticks = src && src.isPlayer ? this.pwKey(src, 'dotTicks', key) : 1;
       const immune = a.isPlayer && ((key === 'bleed' && this.hasTimed(a, 'noBleed')) || (a.until.immuneTypes && a.until.immuneTypes.includes(key === 'burn' ? 'Fire' : key === 'poison' ? 'Poison' : 'Bleed')) || a.until.immune);
       const blockable = key === 'poison' && a.isPlayer && this.hasTimed(a, 'poisonBlock');
-      for (let k = 0; k < ticks; k++) if (a[key] > 0 && a.hp > 0 && !this.over) { if (immune) this.say('player', `${a.name} ignores the ${label}.`); else this.applyHit(src || (a.isPlayer ? null : this.player), a, a[key], { isDot: true, label: label + (k ? ' (again)' : ''), ignoreBlock: ignoresBlock && !blockable }); a[key] = Math.max(0, a[key] - 1); }
+      for (let k = 0; k < ticks; k++) if (a[key] > 0 && a.hp > 0 && !this.over) { if (immune) this.say('player', `${a.name} ignores the ${label}.`); else { const dc = this.dotCritRoll(src, key, a[key]); this.applyHit(src || (a.isPlayer ? null : this.player), a, dc.n, { isDot: true, label: label + (k ? ' (again)' : '') + (dc.crit ? ' (crit!)' : ''), ignoreBlock: ignoresBlock && !blockable }); } a[key] = Math.max(0, a[key] - 1); }
     }
     if (a.initNext) a.initNext = 0;
   }
@@ -1313,7 +1320,7 @@ class Combat {
   }
   applyDot(e, key, n) {
     if (!e || e.hp <= 0) return;
-    const q = this.player, strMult = key === 'poison' && q.isPlayer ? 1 + (q.strength + q.strTurn + q.strCombat) / 100 : 1; // poison scales with Strength
+    const q = this.player, strMult = (key === 'poison' || key === 'bleed') && q.isPlayer ? 1 + (q.strength + q.strTurn + q.strCombat) / 100 : 1; // Nov 1: Poison and Bleed scale with Strength (50 Strength: 10 Bleed becomes 15)
     const v = Math.round(n * strMult * (1 + this.player.spirit / 100) * this.pwKey(this.player, 'dotMult', key) * (key === 'bleed' && this.player.bleedX ? this.player.bleedX : 1)) + this.pwKey(this.player, 'dotPlus', key, 'sum');
     const before = e[key]; e[key] += v; e[key + 'By'] = this.player.id;
     if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, v, before);
@@ -1804,7 +1811,7 @@ function talentDef(list, cap, label) {
     if (k === 'dmg') D.hm.push([a, b || {}]); else if (k === 'crit') D.cr.push([a, b || {}]); else if (k === 'critX') D.cx += a; else if (k === 'flat') D.fl.push([b, c || {}]);
     else if (k === 'dmgPer') D.hm.push([0, d2 ? Object.assign({}, e2 || {}, { per: [a, b, c, d2] }) : {}]);
     else if (k === 'def') D.dm.push([a, b]); else if (k === 'heal') D.hl += a; else if (k === 'incoming') D.inc.push([a, b]);
-    else if (k === 'dotPlus') D.dp[a] = (D.dp[a] || 0) + b; else if (k === 'dotX') D.dx[a] = (D.dx[a] || 0) + b; else if (k === 'devPlus') D.dev += a; else if (k === 'shurPlus') D.sh += a;
+    else if (k === 'dotPlus') D.dp[a] = (D.dp[a] || 0) + b; else if (k === 'dotX') D.dx[a] = (D.dx[a] || 0) + b; else if (k === 'devPlus') D.dev += a; else if (k === 'shurPlus') D.sh += a; else if (k === 'dotCrit') (D.dc = D.dc || {})[a] = true;
     else if (k === 'start') D.start.push([a, b, c]); else if (k === 'turn') D.turn.push([a, b, c, d2]); else if (k === 'kill') D.kill.push([a, b, c]);
     else if (k === 'hitBy') D.hit.push([a, b, c]); else if (k === 'full') D.full.push([a, b, c]); else if (k === 'lowhp') D.low = [a, b]; else if (k === 'cheat') D.cheat = [a, b];
     else if (k === 'party') (D.party = D.party || []).push([a, b]);
@@ -1835,6 +1842,7 @@ function talentDef(list, cap, label) {
   if (D.hm.length) P.hitMult = (cb, p, e, ctx) => { let m = 1; for (const [pct, f] of D.hm) { if (!tcard(ctx.d || { type: ctx.kind, dtype: ctx.dtype }, f) && !(f.dtype && !f.type && ctx.dtype === f.dtype)) continue; if (f.self && !tcond(cb, p, f.self)) continue; if (f.per) { const [st, step, pp, max] = f.per; m *= 1 + Math.min(max, Math.floor(((e && e[st]) || 0) / step) * pp) / 100; continue; } if (!tvs(e, f.vs)) continue; m *= 1 + pct / 100; } return m; };
   if (D.cr.length) P.crit = (cb, p, d) => D.cr.reduce((s, [n, f]) => s + ((!f.type && !f.key || tcard(d, f)) && (!f.self || tcond(cb, p, f.self)) ? n : 0), 0);
   if (D.cx) P.critMultX = 1 + D.cx / 100;
+  if (D.dc) P.dotCrit = D.dc;
   if (D.fl.length) P.flat = (cb, p, d) => D.fl.reduce((s, [pct, f]) => s + (tcard(d, f) ? Math.round(p.block * pct / 100) : 0), 0);
   if (D.dm.length) P.defMultFn = (cb, p) => D.dm.reduce((m, [pct, c]) => m * (tcond(cb, p, c) ? 1 + pct / 100 : 1), 1);
   if (D.hl) P.healMult = 1 + D.hl / 100;

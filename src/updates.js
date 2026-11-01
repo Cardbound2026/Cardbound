@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Balance', 'Strength now increases the Bleed you apply, like Poison: with 50 Strength, a card that applies 10 Bleed applies 15. Bleed cards show the boosted number.'],
+      ['Feature', 'Damage over time can crit: the Lv 16 Offense talent of Bloodletter (Hemorrhagic Crits) and Hemorrhage (Arterial Crits) lets your Bleed crit, Venomancer (Virulent Crits) your Poison, and Conflagration (Searing Crits) your Burn. Each tick rolls your crit chance and crit damage. Holy Burn (Sacred Flame) can\'t crit.'],
       ['Balance', 'Codex talents are half as strong: every number on rows Lv 2-8 and Lv 12-18 is halved (rounded, at least 1), including all % damage and flat damage. The Lv 10 mini capstones and the Lv 20 capstone Powers are unchanged.'],
       ['Balance', 'Cards that give you something for the rest of combat now Exhaust: Battle Fever, Ruthless Conversion, Time Theft and Offering Plate (Powers already stay in play once).'],
       ['Feature', 'New gear slot: Shoulders. Plate Pauldrons, Leather Spaulders and Cloth Mantles, one of each per map (18 new items), drop from every monster that drops gear and from merchants. Every hero starts with (or is given) a White pair. Gear score now averages 14 slots.'],
