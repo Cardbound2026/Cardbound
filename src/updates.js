@@ -1,6 +1,11 @@
   // ---------- What's new: the changelog (button bottom-right) and the new-version warning
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
+    { date: '2026-11-01', items: [
+      ['Codexes', 'Codex talent trees: every codex now levels up (max 20) while you wear it, from kills: normal 1 XP, elite 3, boss 10. A party splits the kills but gets +10% XP per extra hero, and every codex you have maxed gives +10% on the others. It takes about 70 full solo runs to max one, each level 15% slower than the last.'],
+      ['Codexes', 'Every 2 levels opens a talent row (10 rows): pick an Offense, Defense or Support talent on each. Level 10 is a mini capstone; level 20 is the capstone, a Power that is already in play at the start of every fight. Mix freely; changing picks is free in town. Talents only work while that codex is worn, and you never lose points by swapping.'],
+      ['Codexes', 'Press N (town, character screen, map or fight) for your talent trees, one tab per codex of your class. The town shows your worn codex level and XP at the top, and the Compendium Codexes tab opens any codex\'s tree when you click it. Tinker Pip can add codex levels for testing.'],
+    ] },
     { date: '2026-10-31', items: [
       ['Cards', 'Card upgrades are reworked: every card now grows its own way as it ranks up, following the upgrade sheet (your Warrior list, the answered questions and the accepted suggestions). Most numbers add a small flat amount per level (+10 roughly doubles the main number); draws, hits, turns and card counts step up at +5 and +10; cards with nothing to grow get cheaper. Card text always shows the numbers at its rank. Every card is listed below, with its numbers at +0 → +5 → +10.', 'cardlist'],
       ['Combat', 'When you die you stay on the fight screen: read the combat log and damage meter, then press Results to move on.'],

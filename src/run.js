@@ -2,7 +2,7 @@
 (function (root) {
 'use strict';
 const CB = (typeof module !== 'undefined' && module.exports) ? require('./engine.js') : root.CB;
-const { makeRng, shuffle, ri, rollItem, rollDrops, sumGear, STARTER_GEAR, presetGear, Combat, rollCards, rollNamedCards } = CB;
+const { makeRng, shuffle, ri, rollItem, rollDrops, sumGear, STARTER_GEAR, presetGear, Combat, rollCards, rollNamedCards, KILL_XP } = CB;
 
 const ROWS = 14, COLS = 5;
 const MOB_HP_STEP = 0.3; // a party fights one monster per hero, each with +30% HP per extra hero (sims: about solo difficulty)
@@ -188,14 +188,14 @@ class Run {
     this.data = this.opts.data || root.CB_DATA;
     this.rng = makeRng(this.opts.seed);
     this.level = this.opts.level;
-    const specs = this.opts.members || [{ key: this.opts.key, cls: this.opts.cls, name: this.opts.name, gear: this.opts.gear, deck: this.opts.deck, bank: this.opts.bank, stashFree: this.opts.stashFree }];
+    const specs = this.opts.members || [{ key: this.opts.key, cls: this.opts.cls, name: this.opts.name, gear: this.opts.gear, deck: this.opts.deck, bank: this.opts.bank, stashFree: this.opts.stashFree, talents: this.opts.talents }];
     this.sharedBank = !!this.opts.sharedBank;
     this.bankPool = this.sharedBank ? (specs[0].bank || 0) : 0;
     this.members = specs.map((sp, i) => {
       const gear = (sp.gear || (this.opts.gearPreset === 'White' ? STARTER_GEAR[sp.cls] : presetGear(sp.cls, this.opts.gearPreset))).map(x => Object.assign({}, x));
       const stats = sumGear(gear);
       return { idx: i, key: sp.key, cls: sp.cls, name: sp.name || sp.cls, gear, stats, deck: sp.deck || null, hp: stats.maxHp, mana: 0, gold: 0, sack: [],
-        bank: this.sharedBank ? 0 : (sp.bank || 0), spent: 0, orders: [], stashFree: sp.stashFree != null ? sp.stashFree : 99, kept: null, deaths: 0 };
+        bank: this.sharedBank ? 0 : (sp.bank || 0), spent: 0, orders: [], stashFree: sp.stashFree != null ? sp.stashFree : 99, kept: null, deaths: 0, talents: sp.talents || null, cxp: {} };
     });
     this.buffs = []; this.log = []; this.meter = {};
     this.mapKey = this.opts.map && this.data.maps && this.data.maps[this.opts.map] ? this.opts.map : 'physical';
@@ -238,7 +238,7 @@ class Run {
     this.at = nodeId; this.visited.push(nodeId);
     if (['fight', 'elite', 'boss'].includes(n.type)) {
       const buffs = this.activeBuffs();
-      const party = this.members.map(m => ({ cls: m.cls, name: m.name, gear: m.gear, deck: m.deck || undefined, hp: m.hp, mana: m.mana, buffs }));
+      const party = this.members.map(m => ({ cls: m.cls, name: m.name, gear: m.gear, deck: m.deck || undefined, hp: m.hp, mana: m.mana, buffs, talents: m.talents || undefined }));
       this.combat = new Combat({ party, enemies: n.enemies, enraged: !!n.enraged, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : this.opts.partyStep, mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * (this.members.length - 1) : 1 });
       this.note(`Row ${n.row}: ${n.type === 'boss' ? 'the boss' : n.type === 'elite' ? 'an elite' : 'a fight'} against ${n.enemies.map(k => this.data.enemies[k].name).join(', ')}.`);
     } else if (n.type === 'rest') { this.pending = { type: 'rest', heals: this.members.map(m => Math.min(m.stats.maxHp - m.hp, Math.round(m.stats.maxHp * 0.3))), keep: n.campfire ? 0.75 : 0.5 }; this.pending.heal = this.pending.heals[0]; }
@@ -258,6 +258,9 @@ class Run {
       for (const f of ['dealt', 'healed', 'taken']) for (const [a, v] of Object.entries(m[f])) R[f][a] = (R[f][a] || 0) + v;
       R.absorbed += m.absorbed;
     }
+    // codex XP (Nov 1): every kill counts for the codex each hero is wearing; a party splits the kills but gets +10% per extra hero
+    { const xp = cb.enemies.filter(e => e.hp <= 0).reduce((s, e) => s + KILL_XP((this.data.enemies[e.key] || {}).tier), 0), N = this.members.length;
+      if (xp > 0) for (const m of this.members) { const cx = (m.gear.find(g => g && g.slot === 'Codex') || {}).codex; if (cx) m.cxp[cx] = (m.cxp[cx] || 0) + xp / N * (1 + 0.1 * (N - 1)); } }
     for (const b of this.buffs) b.fights--;
     this.buffs = this.buffs.filter(b => b.fights > 0);
     if (cb.over === 'loss') {

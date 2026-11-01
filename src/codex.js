@@ -111,7 +111,7 @@
       if (CX.own !== 'All' && (CX.own === 'Owned') !== have.has(key)) continue;
       if (q && !(name + ' ' + text + ' ' + cls).toLowerCase().includes(q)) continue;
       const from = src[name + ' Codex'] || [];
-      rows.push(`<div class="cxcod" data-cxcodex="${key}" role="button" tabindex="0" title="Click for drop sources and example rolls" style="--rc:${CC[cls]}"><div class="cxch"><b>${esc(name)} Codex</b><span style="color:${CC[cls]}">${cls}</span>${have.has(key) ? '<span class="tag good">Owned</span>' : ''}</div><div>${esc(text)}</div><small class="muted">${from.length ? from.map(f => `${esc(f.boss.split(',')[0])} on ${esc(f.map)} drops it on ${Math.round(CB.BOSS_CODEX_CHANCE * 100)}% of kills for a ${cls} (more with Luck). The raid ${esc(CB.RAID_NAMES[f.mk] || '')} always drops one of its codexes.`).join(' ') : 'Not on any loot table yet.'}</small></div>`);
+      rows.push(`<div class="cxcod" data-cxcodex="${key}" role="button" tabindex="0" title="Click for its talent tree (and drop sources)" style="--rc:${CC[cls]}"><div class="cxch"><b>${esc(name)} Codex</b><span style="color:${CC[cls]}">${cls}</span>${have.has(key) ? '<span class="tag good">Owned</span>' : ''}</div><div>${esc(text)}</div><small class="muted">${from.length ? from.map(f => `${esc(f.boss.split(',')[0])} on ${esc(f.map)} drops it on ${Math.round(CB.BOSS_CODEX_CHANCE * 100)}% of kills for a ${cls} (more with Luck). The raid ${esc(CB.RAID_NAMES[f.mk] || '')} always drops one of its codexes.`).join(' ') : 'Not on any loot table yet.'}</small></div>`);
     }
     return `<p class="muted" style="margin:0 0 6px">A codex is an item for the Codex slot (Quartermaster): a fixed class passive that shapes a playstyle, plus random stats. Tinker Pip has three test decks for each.</p>
       ${cxChips('cls', ['All', ...Object.keys(CLASSES)], 'Class')}${cxChips('own', ['All', 'Owned', 'Not owned'], 'Owned')}
@@ -134,8 +134,8 @@
       ${mine.length ? `<div class="list">${mine.map(m => itemHtml(m.it, `<div class="il">${esc(m.where)}</div>`)).join('')}</div>` : '<p class="muted">None yet.</p>'}
       <h4 style="margin:10px 0 4px;color:var(--accent)">Example rolls</h4><div class="list">${ex.map(it => itemHtml(it)).join('')}</div>
       ${decks ? `<p class="muted" style="font-size:13px">Tinker Pip has ${decks} test decks built around it.</p>` : ''}
-      <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
-    $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal;
+      <div class="row"><button class="btn" id="cxTal">Talent tree</button><button class="btn primary" id="mClose">Close</button></div>`);
+    $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal; if ($('cxTal')) $('cxTal').onclick = () => openTalents(key, { compendium: true });
   }
   // the Wagon's "Map loot" button: everything a map can drop, in one place
   function mapLootModal(mk, lvl) {
@@ -175,7 +175,7 @@
   }
   $('hpCodex').addEventListener('click', (ev) => {
     const cc = ev.target.closest('[data-cxcard]'); if (cc) return cardDetail(cc.dataset.cxcard);
-    const cx = ev.target.closest('[data-cxcodex]'); if (cx && !ev.shiftKey) return codexDetail(cx.dataset.cxcodex);
+    const cx = ev.target.closest('[data-cxcodex]'); if (cx && !ev.shiftKey) return openTalents(cx.dataset.cxcodex, { compendium: true });
     const t = ev.target.closest('[data-cxtab],[data-cx],[data-cxbase]'); if (!t) return;
     if (t.dataset.cxtab) { CX.tab = t.dataset.cxtab; CX.q = ''; }
     else if (t.dataset.cx) CX[t.dataset.cx] = t.dataset.v;

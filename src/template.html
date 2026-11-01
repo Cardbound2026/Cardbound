@@ -561,6 +561,18 @@ body.aiming { cursor: grabbing; user-select: none; }
   .plancols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 6px; } .plancol { border-left: 3px solid var(--pc); padding-left: 8px; font-size: 14px; } .planmobs { margin-top: 4px; font-size: 13px; } .planmobs span:first-child { display: inline-block; min-width: 26px; color: var(--accent); }
   .node .enraged { animation: pulse 1.2s ease-in-out infinite; }
   [data-cardinfo] .card, [data-cardinfo].item { cursor: pointer; }
+  .cxbarrow { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); z-index: 3; display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 8px; background: rgba(14,11,8,.82); border: 1px solid var(--line); font-size: 13.5px; white-space: nowrap; max-width: calc(100% - 20px); flex-wrap: wrap; justify-content: center; }
+  .cxbarrow .cxxp { width: 180px; height: 8px; margin: 0; } .cxbarrow .pilebtn { padding: 2px 8px; font-size: 12.5px; }
+  .tltabs { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0 8px; } .tltab { background: #1a1612; border: 1px solid var(--line); border-radius: 6px; color: var(--text); padding: 4px 9px; cursor: pointer; font: inherit; font-size: 13px; } .tltab.on { border-color: var(--accent); background: #2a2219; } .tltab small { color: var(--muted); }
+  .tlprog { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 8px; font-size: 13.5px; } .tlprog .tlxp { width: 220px; height: 9px; margin: 0; }
+  .tltree { display: grid; grid-template-columns: 74px repeat(3, minmax(0, 1fr)); gap: 5px; max-height: 58vh; overflow: auto; padding-right: 4px; }
+  .tlhead { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; padding: 2px 4px; position: sticky; top: 0; background: var(--panel, #15110d); z-index: 1; }
+  .tllv { font-size: 12.5px; color: var(--muted); display: flex; flex-direction: column; justify-content: center; } .tllv small { font-size: 10.5px; color: var(--accent); } .tllv.locked { opacity: .6; }
+  .tlcell { text-align: left; background: #1a1612; border: 1px solid var(--line); border-left: 3px solid var(--tc); border-radius: 6px; padding: 5px 8px; color: var(--text); font: inherit; cursor: pointer; }
+  .tlcell b { display: block; font-size: 13.5px; } .tlcell span { display: block; font-size: 12px; color: #bcae98; line-height: 1.35; }
+  .tlcell.mini, .tlcell.cap { border-color: #6b5634; border-left-color: var(--tc); } .tlcell.cap { background: #221b13; }
+  .tlcell.on { background: #2c2418; border-color: var(--tc); box-shadow: 0 0 0 1px var(--tc) inset; } .tlcell.on b { color: var(--tc); }
+  .tlcell.locked { opacity: .45; } .tlcell.noclick { cursor: default; } .tlbox .tlcell:not(.noclick):hover { background: #251f17; }
   .cxcod { cursor: pointer; } .cxcod:hover { background: rgba(255,255,255,.06); }
   .bzacts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; } .bzacts input { width: 90px; } #tbShop.primary { border-color: var(--accent); color: var(--accent); }
   .maploot { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; max-height: 64vh; overflow: auto; } .maploot h4 { color: var(--accent); margin: 6px 0 4px; } .mlslot { font-size: 13.5px; margin: 3px 0; } [data-cxcard].cardrow { cursor: pointer; }
@@ -603,6 +615,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   <section id="scrStart" class="camp" aria-label="Town">
     <div class="townbar"><span id="tbHero"></span><span class="chip" id="tbPower"></span><span class="chip" id="tbGold"></span><button class="pilebtn" id="tbShop" hidden title="Set up your Bazaar shop">Set up shop</button><button class="pilebtn" id="tbChar" title="Your hero's gear and stats (C)">Character <span class="muted">C</span></button><button class="pilebtn" id="tbFriends" hidden>Friends</button><span id="acct"></span><span class="muted tbhelp">Walk: arrow keys or WASD, or click/tap where to go. Talk: Space, or click someone.</span></div>
     <div class="townwrap" id="townWrap">
+      <div class="cxbarrow" id="tbCodex"></div>
       <canvas id="town" tabindex="0" aria-label="The town of Emberwatch. Walk to the quartermaster, scribe, chronicler, wagoneer or captain and talk to them."></canvas>
       <div class="prompt" id="prompt" hidden></div>
       <div class="talk" id="talk" hidden role="dialog" aria-live="polite"></div>
@@ -678,6 +691,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 <script>
 /*CARDSGEN*/
 /*UPGRADES*/
+/*TALENTS*/
 /*ENGINE*/
 </script>
 <script>
@@ -1600,6 +1614,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     $('tbHero').innerHTML = `<b style="color:${CC[c.cls]}">${esc(c.name || c.cls)}</b> <span class="muted">${c.cls}</span>`;
     $('tbPower').textContent = `Power ${CBHub.powerLevel(c)} · gear ${CBHub.gearScore(c)} · deck ${CB.deckLevel(c.deck)}`;
     $('tbGold').textContent = `Gold ${profile.gold}`;
+    renderCodexBar();
   }
   $('tbChar').addEventListener('click', () => { closeTalk(); openSheet('char'); });
   function townStart(fromRun) {
@@ -1620,6 +1635,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 /*BAZAAR*/
 /*UPDATES*/
 /*CODEX*/
+/*TALENTSUI*/
 /*GEARUI*/
 /*GLOSSARY*/
 /*TESTVENDOR*/
@@ -1755,7 +1771,8 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (run && run.over && !run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run, run.myMi); save(); }
     backToTown();
   }
-  function backToTown() { closeModal(); cb = null; run = null; if (netOn()) netEnd(); townReturn = true; show('start'); renderHub(); }
+  function backToTown() { closeModal(); cb = null; run = null; if (netOn()) netEnd(); townReturn = true; show('start'); renderHub();
+    const xg = lastResult && lastResult.xpGain; if (xg && typeof sysChat === 'function') for (const [k, g] of Object.entries(xg)) if (g.xp > 0) { sysChat(`${CB.CODEX_BY_KEY[k].name} codex: +${g.xp} XP${g.to > g.from ? `. Level ${g.to}!${Math.floor(g.to / 2) > Math.floor(g.from / 2) ? ' A new talent row is open: press N.' : ''}` : '.'}`); } if (xg) lastResult.xpGain = null; }
   function leaveRun() {
     if (!run) return closeModal();
     if (netOn()) netLeave();
@@ -2084,7 +2101,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 
   // ---------- modals
   function modal(html) { hidePeeks(); modal2(html); }
-  function modal2(html) { $('modalBox').classList.remove('wide'); $('modalBox').innerHTML = html; $('modal').hidden = false; fitCards($('modalBox')); const f = $('modalBox').querySelector('button'); if (f) f.focus(); }
+  function modal2(html) { $('modalBox').classList.remove('wide', 'tlbox'); $('modalBox').innerHTML = html; $('modal').hidden = false; fitCards($('modalBox')); const f = $('modalBox').querySelector('button'); if (f) f.focus(); }
   function closeModal() { $('modal').hidden = true; }
   let redrawShop = null;
   // what the campfire gave: rummage finds and heals (yours, or the whole hot-seat party's)
@@ -2190,7 +2207,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   function startDummy() {
     if (!profile.chars[heroKey] || run || cb) return;
     const o = CBHub.runOpts(profile, heroKey);
-    cb = new CB.Combat({ party: [{ cls: o.cls, name: o.name, gear: o.gear, deck: o.deck }], enemies: ['training_dummy'], practice: true, seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA });
+    cb = new CB.Combat({ party: [{ cls: o.cls, name: o.name, gear: o.gear, deck: o.deck, talents: o.talents }], enemies: ['training_dummy'], practice: true, seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA });
     cb.practice = true; $('sheet').hidden = true; startCombatUI();
   }
   function leaveDummy() { closeModal(); cb = null; townReturn = true; show('start'); renderHub(); }

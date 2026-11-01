@@ -565,6 +565,18 @@ body.aiming { cursor: grabbing; user-select: none; }
   .plancols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 6px; } .plancol { border-left: 3px solid var(--pc); padding-left: 8px; font-size: 14px; } .planmobs { margin-top: 4px; font-size: 13px; } .planmobs span:first-child { display: inline-block; min-width: 26px; color: var(--accent); }
   .node .enraged { animation: pulse 1.2s ease-in-out infinite; }
   [data-cardinfo] .card, [data-cardinfo].item { cursor: pointer; }
+  .cxbarrow { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); z-index: 3; display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 8px; background: rgba(14,11,8,.82); border: 1px solid var(--line); font-size: 13.5px; white-space: nowrap; max-width: calc(100% - 20px); flex-wrap: wrap; justify-content: center; }
+  .cxbarrow .cxxp { width: 180px; height: 8px; margin: 0; } .cxbarrow .pilebtn { padding: 2px 8px; font-size: 12.5px; }
+  .tltabs { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0 8px; } .tltab { background: #1a1612; border: 1px solid var(--line); border-radius: 6px; color: var(--text); padding: 4px 9px; cursor: pointer; font: inherit; font-size: 13px; } .tltab.on { border-color: var(--accent); background: #2a2219; } .tltab small { color: var(--muted); }
+  .tlprog { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 8px; font-size: 13.5px; } .tlprog .tlxp { width: 220px; height: 9px; margin: 0; }
+  .tltree { display: grid; grid-template-columns: 74px repeat(3, minmax(0, 1fr)); gap: 5px; max-height: 58vh; overflow: auto; padding-right: 4px; }
+  .tlhead { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; padding: 2px 4px; position: sticky; top: 0; background: var(--panel, #15110d); z-index: 1; }
+  .tllv { font-size: 12.5px; color: var(--muted); display: flex; flex-direction: column; justify-content: center; } .tllv small { font-size: 10.5px; color: var(--accent); } .tllv.locked { opacity: .6; }
+  .tlcell { text-align: left; background: #1a1612; border: 1px solid var(--line); border-left: 3px solid var(--tc); border-radius: 6px; padding: 5px 8px; color: var(--text); font: inherit; cursor: pointer; }
+  .tlcell b { display: block; font-size: 13.5px; } .tlcell span { display: block; font-size: 12px; color: #bcae98; line-height: 1.35; }
+  .tlcell.mini, .tlcell.cap { border-color: #6b5634; border-left-color: var(--tc); } .tlcell.cap { background: #221b13; }
+  .tlcell.on { background: #2c2418; border-color: var(--tc); box-shadow: 0 0 0 1px var(--tc) inset; } .tlcell.on b { color: var(--tc); }
+  .tlcell.locked { opacity: .45; } .tlcell.noclick { cursor: default; } .tlbox .tlcell:not(.noclick):hover { background: #251f17; }
   .cxcod { cursor: pointer; } .cxcod:hover { background: rgba(255,255,255,.06); }
   .bzacts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; } .bzacts input { width: 90px; } #tbShop.primary { border-color: var(--accent); color: var(--accent); }
   .maploot { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; max-height: 64vh; overflow: auto; } .maploot h4 { color: var(--accent); margin: 6px 0 4px; } .mlslot { font-size: 13.5px; margin: 3px 0; } [data-cxcard].cardrow { cursor: pointer; }
@@ -610,6 +622,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   <section id="scrStart" class="camp" aria-label="Town">
     <div class="townbar"><span id="tbHero"></span><span class="chip" id="tbPower"></span><span class="chip" id="tbGold"></span><button class="pilebtn" id="tbShop" hidden title="Set up your Bazaar shop">Set up shop</button><button class="pilebtn" id="tbChar" title="Your hero's gear and stats (C)">Character <span class="muted">C</span></button><button class="pilebtn" id="tbFriends" hidden>Friends</button><span id="acct"></span><span class="muted tbhelp">Walk: arrow keys or WASD, or click/tap where to go. Talk: Space, or click someone.</span></div>
     <div class="townwrap" id="townWrap">
+      <div class="cxbarrow" id="tbCodex"></div>
       <canvas id="town" tabindex="0" aria-label="The town of Emberwatch. Walk to the quartermaster, scribe, chronicler, wagoneer or captain and talk to them."></canvas>
       <div class="prompt" id="prompt" hidden></div>
       <div class="talk" id="talk" hidden role="dialog" aria-live="polite"></div>
@@ -712,6 +725,188 @@ if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.
 // dw = "draw a card" grows at +5/+10; tw = "twice" grows at +5/+10; fr = free card draws 1 at +5, 2 at +10.
 (function (r) { const D = {"strike":{"t":[[5,7,10,"dmg",1,1]]},"defend":{"t":[[5,7,10,"def",1,1]]},"shield_bash":{"t":[[5,6,6,"dmg",1,1],[23,24,7,"def",1,1]]},"pommel_strike":{"t":[[5,6,7,"dmg",1,1],[20,21,1,"ms_draw",0,0]]},"battle_shout":{"t":[[5,7,20,"str",2,1]]},"whirlwind":{"t":[[5,7,14,"dmg",2,1]]},"shield_up":{"t":[[5,7,10,"def",1,1],[31,32,5,"def",1,1]],"x":1},"bloodthirst":{"t":[[25,27,50,"pct",5,1]],"x":1},"shield_wall":{"t":[[5,7,40,"def",6,1]]},"execute":{"t":[[5,7,10,"dmg",1,1],[52,54,30,"dmg",4,1]]},"battle_fever":{"t":[[46,48,20,"str",2,1],[62,64,20,"sta",2,1]]},"stab":{"t":[[5,7,10,"dmg",1,1]]},"evade":{"t":[[5,7,10,"def",1,1]]},"slip_away":{"t":[[5,6,5,"dmg",1,1],[23,24,6,"def",1,1]]},"twin_daggers":{"t":[[5,6,5,"dmg",1,1]],"tw":1},"envenom":{"t":[[6,7,5,"poison",1,1]]},"throwing_stars":{"t":[[4,5,2,"ms_count",0,0]],"c":2},"garrote":{"t":[[5,6,6,"dmg",1,1],[24,25,8,"bleed",1,1]]},"blur":{"t":[[5,7,10,"def",1,1],[31,32,5,"def",1,1]]},"hide":{"c":2},"evasion":{"t":[[5,7,40,"def",6,1]]},"coup_de_grace":{"t":[[5,7,10,"dmg",1,1],[52,54,30,"dmg",4,1]]},"assassinate":{"x":1,"n":"the bonus grows by 10% per level (+110% at +1)"},"fireball":{"t":[[5,6,7,"dmg",1,1],[29,30,3,"burn",1,2]]},"frostbolt":{"t":[[5,6,5,"dmg",1,1],[68,69,2,"ms_turns",0,0]]},"arcane_missiles":{"t":[[5,6,5,"dmg",1,1]]},"ice_bolt":{"t":[[5,6,5,"dmg",1,1],[30,31,4,"chill",1,1]]},"mana_spring":{"t":[[37,39,20,"mana",2,1]]},"ward":{"t":[[5,7,10,"def",1,1]]},"arcane_barrage":{"t":[[5,6,4,"dmg",1,1],[21,22,3,"ms_hits",0,0]]},"blizzard":{"t":[[5,6,8,"dmg",1,1],[30,31,4,"chill",1,1]]},"ice_barrier":{"t":[[5,7,10,"def",1,1],[33,34,5,"def",1,1]]},"pyroblast":{"t":[[5,7,36,"dmg",5,1],[30,31,6,"burn",1,1]]},"prismatic_barrier":{"t":[[5,7,40,"def",6,1]]},"amplify":{"t":[[31,33,50,"dmg",5,1]]},"crusader_strike":{"t":[[5,7,12,"dmg",2,1]]},"raise_shield":{"t":[[5,7,10,"def",1,1]]},"righteous_blow":{"t":[[5,6,8,"dmg",1,1],[23,24,8,"def",1,1]]},"smite":{"t":[[5,7,14,"dmg",2,1]]},"mend_wounds":{"t":[[31,32,8,"heal",1,1]]},"sacred_ward":{"t":[[5,7,10,"def",1,1]]},"divine_storm":{"t":[[5,7,12,"dmg",2,1]]},"healing_light":{"t":[[18,20,15,"heal",2,1]]},"divine_shield":{"t":[[5,6,8,"def",1,1]]},"ardent_defense":{"t":[[5,7,40,"def",6,1]]},"holy_nova":{"t":[[5,7,10,"dmg",1,1],[65,66,8,"heal",1,1]]},"lay_on_hands":{"c":1},"armor_nova":{"t":[[12,14,20,"dmg",2,1]]},"crushing_bastion":{"r":5},"thorned_bulwark":{"t":[[39,41,25,"pct",2,1]],"x":1},"guardian_s_oath":{"t":[[33,35,50,"pct",5,1]],"x":1},"unyielding_bastion":{"c":1},"perfect_guard":{"c":1},"parry_reversal":{"r":5},"expose_opening":{"t":[[38,40,10,"vulnerable",1,1]]},"steel_tempo":{"c":2},"decisive_reprisal":{"t":[[60,62,45,"dmg",6,1]]},"blood_clock":{"c":1},"crimson_covenant":{"c":1},"coagulate":{"t":[[44,45,2,"ms_turns",0,0]],"c":2},"blood_reckoning":{"r":5},"colossal_reserve":{"c":1},"war_engine":{"t":[[44,45,3,"ms_turns",0,0]],"c":1},"deferred_power":{"c":2},"manaquake":{"x":1,"n":"+5% damage per level"},"limit_break":{"r":5},"ruthless_conversion":{"t":[[43,45,10,"str",1,1]]},"thousand_cuts":{"x":1,"n":"hits twice per 5 mana at +3, three times at +4"},"open_wounds":{"c":1},"shatterplate":{"r":5},"pain_echo":{"r":5},"follow_through":{"t":[[41,43,30,"pct",3,1]]},"deepen_the_wound":{"t":[[44,45,1,"vulnerable",1,2]]},"hemorrhagic_strike":{"t":[[6,8,10,"dmg",1,1]]},"mortal_precision":{"t":[[21,23,30,"pct",3,1]]},"killing_blow":{"x":1,"n":"the crit bonus grows by 10% per level (+110% at +1)"},"cleave":{"t":[[5,6,8,"dmg",1,1]]},"heavy_swing":{"t":[[5,7,22,"dmg",3,1]]},"brace":{"t":[[5,6,8,"def",1,1]]},"second_wind":{"t":[[5,6,6,"heal",1,1]]},"rend":{"t":[[5,6,4,"dmg",1,1],[24,25,5,"bleed",1,1]]},"sunder_armor":{"t":[[5,6,5,"dmg",1,1],[24,26,10,"vulnerable",1,1]]},"intimidating_shout":{"t":[[6,8,15,"weak",2,1]]},"mana_sever":{"t":[[35,37,10,"mana",1,1]]},"taunt":{"t":[[5,6,6,"def",1,1]]},"guarded_stance":{"t":[[5,6,8,"def",2,1],[71,72,1,"ms_draw",0,0]],"x":1},"reckless_swing":{"t":[[5,7,14,"dmg",2,1]]},"charge":{"t":[[5,6,6,"dmg",1,1],[20,21,4,"init",1,1]]},"flurry_of_blows":{"t":[[5,6,3,"dmg",1,1],[14,15,3,"ms_hits",1,2]]},"shake_it_off":{"t":[[7,8,1,"ms_cleanse",0,0],[36,37,1,"ms_draw",0,0]],"x":1},"kick_aside":{"t":[[41,42,5,"def",1,1]]},"warcry":{"t":[[37,39,20,"mana",2,1]]},"hardened":{"t":[[5,6,6,"def",1,1]]},"shatter_guard":{"t":[[7,9,10,"shred",1,1],[43,44,6,"dmg",1,1]]},"hold_the_line":{"t":[[5,7,12,"def",2,1],[31,32,6,"def",1,1]]},"grit":{"t":[[32,33,3,"def",1,1]]},"bloodletting":{"t":[[16,18,10,"mana",1,1]]},"overpower":{"t":[[5,7,18,"dmg",3,1],[46,48,10,"dmg",1,1]]},"pummel":{"t":[[5,7,10,"dmg",1,1],[36,37,1,"ms_count",0,0]]},"grudge":{"c":2},"unflinching":{"t":[[5,6,8,"def",1,1]]},"sharpen":{"t":[[33,34,6,"dmg",1,1]]},"focused_fury":{"c":2},"bloodlust":{"t":[[16,18,30,"str",5,1],[44,45,1,"ms_draw",0,0]]},"deep_cuts":{"t":[[5,6,5,"dmg",1,1],[38,39,3,"bleed",1,2]]},"shield_slam":{"t":[[21,23,50,"dmg",2,1]]},"counter_stance":{"t":[[5,7,15,"def",1,1],[85,86,5,"back",1,1]]},"rally":{"t":[[24,26,20,"str",2,1],[50,51,6,"def",1,1]]},"pinning_strike":{"t":[[5,6,6,"dmg",1,1],[21,22,3,"slow",1,2]]},"clear_head":{"t":[[49,50,1,"ms_draw",0,0]],"x":1},"cauterize":{"x":1,"n":"+2 HP healed per level (flat, on top of the per-stack heal)"},"hamstring":{"t":[[5,6,7,"dmg",1,1],[46,48,30,"pct",2,1]],"x":1},"staggering_blow":{"t":[[5,7,16,"dmg",2,1]]},"fireproof":{"t":[[5,6,8,"def",2,1]]},"mana_break":{"t":[[5,6,5,"dmg",1,1]]},"mortal_strike":{"t":[[5,7,24,"dmg",3,1]]},"spell_reflection":{"c":2},"berserker_rage":{"c":2},"sweeping_strikes":{"x":1,"n":"also hits a third enemy at +3 and a fourth at +4"},"rampage":{"t":[[5,6,8,"dmg",1,1]]},"last_stand":{"c":1},"imbue_weapon":{"t":[[90,91,1,"ms_draw",0,0]],"c":2},"concussive_blow":{"t":[[5,7,20,"dmg",3,1]]},"blood_pact":{"t":[[47,49,10,"str",1,1]],"x":1},"intervene":{"t":[[21,23,15,"def",2,1]]},"disarm":{"t":[[5,6,8,"dmg",1,1]]},"iron_will":{"t":[[38,40,10,"def",2,1],[51,52,5,"mana",1,1]],"x":1},"double_strike":{"x":1,"n":"the doubled Attack deals +2% damage per level"},"siphoning_strikes":{"r":5,"x":1},"unstoppable_force":{"t":[[20,22,50,"pct",5,1]],"x":1},"rattle":{"t":[[5,6,4,"dmg",1,1],[35,36,1,"ms_count",0,0]]},"crushing_blow":{"t":[[5,7,14,"dmg",2,1]]},"throw_weapon":{"t":[[5,6,6,"dmg",1,1]],"x":1,"n":"the target discards 3 at +5, 4 at +10 (was 2)"},"war_stomp":{"t":[[20,21,1,"ms_count",0,0]],"c":1},"shatter_will":{"t":[[19,20,1,"ms_count",0,0]],"c":2},"forge_hardened":{"t":[[5,6,6,"def",1,1]]},"rimeguard":{"t":[[5,6,6,"def",1,1]]},"tempered_steel":{"c":1},"elemental_ward":{"x":1,"n":"+5% resistance to that element per level"},"catch_your_breath":{"t":[[5,7,10,"mana",2,1]]},"hidden_reserves":{"t":[[42,44,20,"mana",2,1],[59,60,1,"ms_draw",0,0]]},"battle_rhythm":{"c":1},"steady_pace":{"t":[[5,7,10,"regen",1,1]]},"deep_reserves":{"t":[[5,7,30,"maxMana",2,1]]},"spoils_of_war":{"t":[[33,35,30,"mana",3,1]]},"conditioning":{"t":[[5,7,10,"maxMana",2,1],[25,26,5,"regen",1,1]]},"war_chest":{"t":[[62,64,10,"mana",1,1]]},"second_lung":{"t":[[5,7,20,"regen",2,1]]},"marathon":{"c":1},"momentum":{"t":[[50,51,1,"ms_draw",0,0]],"c":1,"x":1},"battle_plan":{"t":[[16,17,3,"ms_draw",0,0]]},"survey_the_field":{"t":[[16,17,3,"ms_look",1,2]],"c":2,"x":1},"reckless_abandon":{"x":1,"n":"gain 2 Strength this turn per card drawn, +1 per level after +1"},"fall_back":{"x":1,"n":"adds Heal 2 HP per level"},"blood_ritual":{"t":[[32,33,1,"ms_draw",0,0]],"c":1,"x":1},"marching_orders":{"c":1},"reckless_fury":{"t":[[5,7,50,"str",5,1]]},"adrenaline_surge":{"t":[[5,7,60,"str",10,1],[34,36,10,"decay",1,1]],"x":1,"n":"fades 1 more per level, so it lasts about as long"},"bully":{"t":[[5,7,16,"dmg",2,1],[69,71,16,"dmg",2,1]]},"fortify":{"t":[[34,35,5,"ms_turns",0,0],[48,50,10,"def",1,1]]},"shield_strike":{"t":[[21,23,25,"dmg",5,1]]},"thunderclap":{"t":[[11,13,14,"dmg",1,1]]},"indomitable":{"t":[[13,14,3,"ms_turns",0,0]],"c":1},"riposte":{"t":[[5,6,6,"def",1,1],[74,75,8,"back",1,1]],"x":1},"challenging_roar":{"t":[[5,6,8,"def",1,1]]},"read_the_blade":{"c":2},"jarring_parry":{"t":[[5,7,20,"def",2,1],[71,72,1,"ms_count",0,0]],"x":1},"bait":{"t":[[5,7,12,"def",2,1],[75,77,20,"vulnerable",2,1],[102,103,1,"ms_count",0,0]],"x":1},"partial_guard":{"c":1},"defiant_roar":{"t":[[75,77,10,"pct",2,1]],"x":1},"unnerving_guard":{"t":[[5,7,15,"def",2,1]]},"underdog":{"t":[[5,6,6,"dmg",0,1],[67,68,6,"dmg",3,1]],"x":1},"desperate_strike":{"t":[[5,6,5,"dmg",1,1],[20,21,1,"dmg",1,1]],"x":1},"collect_the_debt":{"r":5},"sanguine_guard":{"x":1,"n":"adds Heal 2 HP per level"},"transfusion":{"c":2},"pay_in_blood":{"t":[[19,21,50,"pct",5,1]],"x":1},"brace_for_impact":{"t":[[5,6,5,"def",1,1],[51,52,5,"mana",1,1]]},"hunker_down":{"t":[[51,52,5,"mana",1,2]]},"seismic_slam":{"t":[[36,38,50,"dmg",5,1]]},"wind_up":{"t":[[32,33,1,"dmg",1,3]],"x":1},"crack_armor":{"t":[[6,8,15,"vulnerable",1,1],[26,27,1,"ms_draw",0,0]]},"sundering_blow":{"t":[[5,6,4,"dmg",1,1],[14,15,3,"ms_hits",0,0],[40,41,3,"shred",1,1]],"x":1},"mark_for_death":{"t":[[6,8,20,"vulnerable",2,1],[83,84,1,"ms_draw",0,0]],"x":1},"relentless_assault":{"t":[[13,14,2,"ms_turns",0,0],[58,59,1,"vulnerable",1,2]],"x":1},"reclaim_ground":{"x":1,"n":"+1 Block per level (flat, on top of the per-Vulnerable Block)"},"killer_instinct":{"t":[[13,14,2,"ms_turns",0,0]],"c":1},"lacerate":{"t":[[5,6,4,"dmg",1,1],[36,37,8,"bleed",1,1]]},"sever":{"t":[[5,6,6,"dmg",1,1]]},"scent_of_blood":{"t":[[5,6,1,"ms_draw",0,0]],"x":1},"crimson_whirl":{"t":[[36,37,6,"dmg",1,1],[55,56,5,"bleed",1,1]]},"flush_out":{"t":[[5,6,5,"dmg",2,1]]},"iron_constitution":{"t":[[13,14,2,"ms_turns",0,0]],"c":2},"rattling_roar":{"t":[[5,6,6,"dmg",1,1],[32,33,1,"ms_less",0,0]],"x":1},"overwhelm":{"c":1},"plunder_armor":{"t":[[13,15,15,"def",2,1]],"x":1},"shatter_morale":{"x":1,"n":"you keep 5% of your Block per level (50% at +10)"},"first_blood":{"t":[[41,43,30,"pct",3,1],[66,68,30,"pct",3,1]]},"vanishing_act":{"c":1},"coated_blade":{"t":[[27,29,25,"dmg",2,1]],"x":1},"shadow_s_price":{"r":5},"accelerant_venom":{"c":1},"toxic_edge":{"c":1},"venom_flood":{"r":5},"plague_bloom":{"r":5},"toxic_detonation":{"r":5},"open_veins":{"c":1},"exsanguinate":{"t":[[49,50,5,"dmg",1,5]],"c":1,"n":"6 times at +5, 7 times at +10 (was 5)"},"rupture":{"c":1},"crimson_deluge":{"r":5},"blood_frenzy":{"t":[[51,52,5,"ms_turns",0,0]],"c":1},"hidden_arsenal":{"c":2},"sharpened_stars":{"c":1},"shuriken_storm":{"c":1},"reflexive_volley":{"c":1},"endless_blades":{"t":[[13,14,5,"ms_turns",0,0]],"c":1},"smoke_and_mirrors":{"c":1},"mutual_ruin":{"c":1},"scorched_plans":{"fr":1},"cut_the_thread":{"t":[[42,43,1,"ms_count",0,0],[87,88,1,"ms_count",0,0]],"c":1,"x":1},"total_sabotage":{"c":1},"evasive_flow":{"t":[[48,49,2,"ms_turns",0,0]],"c":2},"fleetfooted":{"c":1},"phantom_strike":{"r":5},"untouchable":{"c":1},"first_move":{"c":1},"poisoned_blade":{"t":[[5,6,5,"dmg",1,1],[24,25,3,"poison",1,2]]},"serrated_edge":{"t":[[5,6,4,"dmg",1,1],[24,25,5,"bleed",1,1]]},"backstab":{"t":[[5,6,7,"dmg",1,1],[42,44,14,"dmg",2,1]]},"lurk":{"t":[[5,6,6,"def",1,1],[64,65,1,"ms_draw",0,0]],"x":1},"lift_coin":{"t":[[5,6,5,"dmg",1,1],[20,21,5,"mana",1,1]]},"dirty_trick":{"t":[[6,8,10,"weak",1,1],[20,21,1,"ms_draw",0,0]]},"feint":{"t":[[5,6,6,"def",1,1],[19,20,1,"ms_draw",0,0]]},"sprint":{"t":[[5,6,4,"init",1,1],[34,35,1,"ms_draw",0,0]]},"smoke_bomb":{"t":[[6,7,8,"weak",1,1]]},"fan_of_knives":{"t":[[5,6,7,"dmg",1,1]]},"blade_dance":{"t":[[5,6,2,"dmg",1,2],[14,15,4,"ms_hits",0,0]]},"cheap_shot":{"t":[[5,6,6,"dmg",1,1],[48,49,4,"dmg",1,1]]},"shake_loose":{"t":[[36,37,1,"ms_draw",0,0]],"c":2},"toss_aside":{"t":[[41,42,4,"def",1,1]]},"antidote":{"t":[[38,39,5,"def",1,1]]},"stolen_moment":{"t":[[5,7,10,"mana",1,1]]},"field_dressing":{"t":[[5,6,6,"heal",1,1]]},"decoy":{"t":[[26,28,10,"def",1,1]]},"nimble":{"t":[[32,33,3,"def",1,1]]},"quick_hands":{"t":[[37,39,20,"mana",2,1]]},"tumble":{"t":[[5,6,5,"def",1,1],[51,52,5,"mana",1,1]]},"underhanded":{"t":[[5,6,6,"dmg",1,1],[67,68,6,"dmg",1,1]]},"shadow_cloak":{"t":[[5,7,10,"def",1,1]]},"ambush":{"t":[[5,7,14,"dmg",2,1],[43,45,28,"dmg",4,1],[63,64,1,"ms_draw",0,0]]},"patient_blade":{"t":[[66,67,5,"dmg",1,1]]},"ribbon_cuts":{"t":[[5,6,3,"dmg",1,1],[14,15,3,"ms_hits",0,0],[40,41,2,"bleed",1,2]]},"toxic_cloud":{"t":[[6,7,6,"poison",1,1]]},"venom_vial":{"c":2},"fester":{"c":2},"crippling_poison":{"t":[[6,7,4,"poison",1,1],[19,20,3,"slow",1,2]]},"shuriken_volley":{"t":[[4,5,3,"ms_count",0,0]],"c":2},"hidden_pockets":{"t":[[31,32,1,"ms_count",0,0]],"c":2,"x":1},"kunai_rain":{"t":[[5,6,5,"dmg",1,1]],"tw":1},"pilfer":{"t":[[5,6,4,"dmg",1,1],[35,36,1,"ms_count",0,0]]},"spread_rumors":{"t":[[4,5,2,"ms_count",0,0]],"c":2},"slip_the_snare":{"t":[[5,6,8,"def",1,1]]},"evasive_counter":{"t":[[5,7,15,"def",2,1],[76,77,5,"back",1,1]]},"phantom_lunge":{"t":[[21,23,50,"dmg",5,1]]},"quickening":{"c":2},"measured_breathing":{"t":[[5,7,10,"regen",1,1]]},"hidden_stash":{"t":[[62,64,10,"mana",1,1]]},"secret_cache":{"t":[[42,44,20,"mana",2,1],[59,60,1,"ms_draw",0,0]]},"case_the_joint":{"t":[[16,17,3,"ms_draw",0,0]],"c":2},"scout_ahead":{"c":2},"shadow_ward":{"t":[[5,6,6,"def",1,1]]},"mithridate":{"t":[[38,39,2,"def",1,1]]},"mind_numbing_poison":{"t":[[6,7,4,"poison",1,1]]},"leeching_blade":{"t":[[5,6,8,"dmg",1,1],[24,26,50,"heal",5,1]]},"expose_weakness":{"t":[[6,8,15,"vulnerable",2,1]]},"smoke_screen":{"t":[[24,25,8,"def",1,1]]},"cripple":{"t":[[5,6,7,"dmg",1,1]]},"ready_the_blades":{"t":[[33,34,5,"dmg",1,1]]},"shadow_dance":{"c":1},"vanish":{"c":2},"eviscerate":{"t":[[5,7,24,"dmg",3,1],[49,51,10,"bleed",2,1]]},"deadly_toxin":{"t":[[6,8,12,"poison",2,1]]},"virulence":{"c":1},"wound_poison":{"t":[[6,7,6,"poison",1,1]]},"arterial_strike":{"t":[[5,7,10,"dmg",1,1]]},"shuriken_mastery":{"t":[[20,21,3,"dmg",1,1]]},"storm_of_steel":{"t":[[4,5,5,"ms_count",0,0]],"c":1},"ransack":{"t":[[8,9,1,"ms_count",0,0]],"c":2},"sabotage_supplies":{"t":[[20,21,1,"ms_count",0,0]],"c":1},"cut_purse":{"t":[[5,6,5,"dmg",1,1]]},"siphon_purse":{"t":[[35,37,10,"mana",1,1]]},"disarming_flick":{"t":[[5,6,8,"dmg",1,1]]},"mirror_step":{"c":2},"shadow_echo":{"x":1,"n":"the doubled Attack deals +5% damage per level"},"killing_focus":{"t":[[13,14,2,"ms_turns",0,0]],"c":1},"kidney_shot":{"t":[[5,7,15,"dmg",2,1]]},"shadowform":{"c":1},"afterimage":{"t":[[57,58,1,"ms_draw",0,0]],"c":1,"x":1},"bounty":{"t":[[33,35,30,"mana",3,1]]},"quickened_pulse":{"t":[[5,7,20,"regen",2,1]]},"cover_escape":{"t":[[26,28,12,"def",2,1]]},"all_in":{"x":1,"n":"adds Gain 2 Dodge per level"},"deathmark":{"t":[[79,81,50,"dmg",5,1]]},"preparation":{"c":2},"kick_while_down":{"t":[[5,6,4,"dmg",1,1]]},"fade_to_black":{"c":1},"dust_in_the_eyes":{"t":[[5,6,5,"dmg",1,1]]},"corrosive_toxin":{"t":[[42,43,4,"poison",1,1]]},"grievous_shiv":{"t":[[5,6,3,"dmg",1,1],[40,41,2,"ms_turns",0,0]],"x":1},"tourniquet":{"t":[[37,38,2,"def",1,1]]},"quartermaster":{"t":[[55,56,5,"mana",1,1]]},"bankrupt":{"t":[[5,6,5,"dmg",1,1]]},"misdirection":{"c":2},"cut_the_strings":{"fr":1},"pick_the_lock":{"t":[[7,9,12,"shred",2,1],[58,59,1,"ms_draw",0,0]]},"purloined_guard":{"c":2},"deep_pockets":{"t":[[5,7,10,"maxMana",2,1],[25,26,5,"regen",1,1]]},"smuggler_s_hoard":{"t":[[5,7,30,"maxMana",2,1]]},"steady_pulse":{"t":[[5,6,5,"regen",1,1]]},"the_long_game":{"c":1},"adrenaline_rush":{"t":[[5,7,20,"str",2,1],[33,34,1,"ms_draw",0,0]]},"cold_blooded":{"t":[[16,18,30,"str",3,1]]},"honed_edge":{"t":[[5,7,20,"str",2,1]]},"grand_larceny":{"c":2},"dispelling_strike":{"t":[[5,6,3,"dmg",1,1]]},"lighten_their_purse":{"t":[[5,6,4,"dmg",1,1]]},"draining_venom":{"t":[[6,7,4,"poison",1,1],[63,64,2,"ms_turns",0,0]]},"find_the_gap":{"t":[[5,6,5,"dmg",1,1],[24,25,8,"vulnerable",1,1]]},"expose_artery":{"t":[[6,8,15,"vulnerable",2,1],[24,25,3,"bleed",1,2]]},"death_s_door":{"t":[[6,8,30,"vulnerable",3,1]]},"trip":{"t":[[5,6,5,"dmg",1,1],[24,25,3,"slow",1,2]]},"hamstring_cut":{"t":[[5,6,6,"dmg",1,1],[21,22,4,"init",1,1]]},"quickstep":{"t":[[5,6,6,"init",1,1]]},"blinding_speed":{"t":[[5,7,10,"init",1,1],[32,33,2,"ms_turns",0,0],[46,47,1,"ms_draw",0,0]],"x":1},"evasive_precision":{"c":2},"shadow_reflexes":{"t":[[72,74,25,"pct",2,1]],"x":1},"whirling_blades":{"t":[[5,6,8,"dmg",1,1]]},"poison_nova":{"t":[[5,6,5,"dmg",1,1],[31,32,3,"poison",1,2]]},"death_from_above":{"t":[[5,7,16,"dmg",2,1],[59,61,24,"dmg",3,1]]},"borrowed_power":{"c":2},"grand_conduit":{"c":1},"mana_reflux":{"t":[[66,67,3,"ms_turns",0,0]],"c":2},"falling_star":{"r":5},"arcane_cascade":{"c":1},"open_the_floodgates":{"c":1},"purge_the_static":{"t":[[47,49,10,"dmg",1,1]]},"shared_fatigue":{"c":1},"quick_study":{"t":[[47,48,2,"ms_draw",0,0]],"c":1,"x":1},"flashpoint":{"c":1},"combustion_threshold":{"c":1},"fan_the_flames":{"c":2},"cauterized_ward":{"c":2},"ashen_drain":{"x":1,"n":"you gain mana equal to 5% of the Burn per level"},"stored_impact":{"c":2},"mirror_barrier":{"c":1},"mana_shell":{"c":1},"barrier_burst":{"r":5},"shared_refuge":{"r":5},"entropic_field":{"c":1},"mana_scorch":{"fr":1},"thought_collapse":{"c":1},"temporal_siphon":{"t":[[0,2,20,"pct",2,1]],"x":1},"time_theft":{"t":[[6,7,5,"init",1,1]],"x":1},"arcane_ascension":{"t":[[53,55,30,"pct",3,1]],"x":1},"potency":{"t":[[26,28,15,"pct",2,1]]},"rule_of_three":{"c":1},"elemental_memory":{"c":1},"refill_the_mind":{"c":1},"arcane_bolt":{"t":[[5,6,5,"dmg",1,1]]},"frost_armor":{"t":[[5,6,7,"def",1,1],[54,55,3,"chill",1,2]],"x":1},"ice_lance":{"t":[[5,6,6,"dmg",1,1],[52,54,12,"dmg",2,1]]},"scorch":{"t":[[5,6,4,"dmg",1,1],[29,30,5,"burn",1,1]]},"ember":{"t":[[6,7,6,"burn",1,1]]},"arcane_intellect":{"t":[[5,7,20,"int",2,1],[37,38,1,"ms_draw",0,0]]},"channel":{"t":[[5,7,10,"mana",1,1]]},"blink":{"t":[[5,6,6,"def",1,1],[21,22,4,"init",1,1]]},"flame_wave":{"t":[[5,6,5,"dmg",1,1],[29,30,2,"burn",1,2]]},"frost_nova":{"t":[[6,7,4,"chill",1,1],[35,36,6,"def",1,1]]},"arcane_explosion":{"t":[[5,6,7,"dmg",1,1]]},"study":{"t":[[5,6,2,"ms_draw",0,0]],"c":2},"dispel":{"t":[[36,37,1,"ms_draw",0,0]],"c":2},"disenchant":{"t":[[41,42,4,"def",1,1]]},"restore":{"t":[[5,6,6,"heal",1,1]]},"warmth":{"t":[[5,6,6,"def",1,1]]},"glyph_of_warding":{"t":[[32,33,3,"def",1,1]]},"concentrate":{"t":[[41,42,8,"dmg",1,1]]},"chilling_touch":{"t":[[5,6,4,"dmg",1,1],[27,28,2,"chill",1,2],[44,45,5,"def",1,1]]},"spark":{"t":[[5,6,4,"dmg",1,1]]},"shared_ward":{"t":[[26,28,10,"def",1,1]]},"unstable_bolt":{"t":[[5,6,6,"dmg",1,1],[74,75,6,"dmg",1,1]]},"arm_living_bomb":{"c":2},"flamestrike":{"t":[[5,6,9,"dmg",1,1],[29,30,3,"burn",1,2]]},"combust":{"c":2},"ignite":{"t":[[6,7,9,"burn",2,1]]},"shatter":{"t":[[38,39,2,"dmg",1,2]]},"frostbite_curse":{"t":[[4,5,2,"frostbite",1,2]],"x":1},"hexing_word":{"c":2},"mana_drain":{"c":2},"lay_bare":{"t":[[6,7,4,"exposure",1,1]]},"echoing_rune":{"c":2},"arcane_flow":{"c":2},"torrent":{"t":[[49,50,1,"ms_draw",0,0]],"c":1,"x":1},"mirror_ward":{"t":[[5,7,15,"def",2,1],[80,81,5,"back",1,1]]},"barrier_bolt":{"t":[[28,30,50,"dmg",5,1]]},"fire_ward":{"t":[[5,6,8,"def",1,1]]},"ley_attunement":{"t":[[5,7,10,"maxMana",2,1],[25,26,5,"regen",1,1]]},"ley_line":{"t":[[5,7,10,"regen",1,1]]},"mana_gem":{"t":[[62,64,10,"mana",1,1]]},"mana_crystal":{"t":[[42,44,20,"mana",2,1],[59,60,1,"ms_draw",0,0]]},"foresight":{"t":[[16,17,3,"ms_draw",0,0]],"c":2},"scry":{"c":2},"temporal_drag":{"t":[[5,6,4,"dmg",1,1],[31,32,4,"slow",1,1]]},"warding_circle":{"t":[[24,25,8,"def",1,1]]},"drain_essence":{"t":[[5,6,8,"dmg",1,1],[31,33,50,"heal",5,1]]},"overcharge":{"t":[[5,7,50,"mana",5,1]]},"counter_ward":{"t":[[5,6,8,"def",1,1]]},"elemental_focus":{"t":[[32,34,10,"dmg",1,1]]},"flash_freeze":{"t":[[5,7,12,"dmg",2,1]]},"glacial_spike":{"t":[[5,7,30,"dmg",4,1]]},"arcane_blast":{"t":[[5,7,16,"dmg",2,1]]},"counterspell":{"c":1},"silence":{"c":2},"mana_rend":{"t":[[5,6,5,"dmg",1,1]]},"drain_reserves":{"t":[[35,37,10,"mana",1,1]]},"spellsteal":{"c":2},"ice_block":{"t":[[39,41,10,"def",1,1]]},"arcane_mirror":{"c":2},"barrier_battery":{"t":[[53,55,20,"pct",2,1]],"x":1},"elemental_attunement":{"c":1},"arcane_power":{"t":[[13,14,2,"ms_turns",0,0]],"c":1},"presence_of_mind":{"fr":1},"time_warp":{"t":[[24,25,6,"init",1,1],[56,57,1,"ms_draw",0,0]]},"arcane_reservoir":{"t":[[5,7,80,"mana",8,1],[55,56,2,"ms_turns",0,0]]},"evocation":{"t":[[5,7,20,"regen",2,1]]},"absorb_essence":{"t":[[33,35,30,"mana",3,1]]},"meteor":{"t":[[5,7,18,"dmg",3,1],[30,31,4,"burn",1,1]]},"cone_of_cold":{"t":[[5,7,12,"dmg",2,1],[31,32,6,"chill",1,1]]},"bombardment":{"c":1},"transmute":{"t":[[8,9,1,"ms_count",0,0]],"c":2},"mirror_image":{"t":[[13,14,2,"ms_turns",0,0]],"c":1},"spellweaving":{"t":[[17,18,4,"dmg",1,1]]},"void_lance":{"t":[[5,7,10,"dmg",1,1]]},"arcane_overflow":{"fr":1},"faerie_fire":{"t":[[5,6,5,"dmg",1,1]]},"malediction_mirror":{"c":1},"cauterizing_flame":{"t":[[37,38,2,"def",1,1]]},"mind_fog":{"t":[[17,18,1,"ms_less",0,0]],"c":1,"x":1},"amnesia":{"c":1},"disintegrate":{"t":[[57,58,6,"dmg",1,1]]},"melt_armor":{"c":2},"piercing_arcana":{"c":2},"confusion":{"t":[[5,6,4,"dmg",1,1],[42,43,1,"ms_count",0,0]]},"sapping_frost":{"t":[[5,6,4,"dmg",1,1],[30,32,10,"weak",1,1]]},"withering_flame":{"t":[[6,7,4,"burn",1,1],[36,37,2,"ms_turns",0,0]],"x":1},"unravel":{"c":2},"arcane_brand":{"t":[[5,6,4,"dmg",1,1],[31,33,10,"unwarded",1,1]]},"shatter_wards":{"t":[[6,8,20,"unwarded",2,1],[24,25,1,"ms_draw",0,0]]},"consecrated_arms":{"c":1},"divine_detonation":{"c":1},"retribution_aura":{"c":1},"martyr_s_reprisal":{"t":[[45,47,30,"dmg",3,1]]},"crusader_s_zeal":{"t":[[39,41,30,"pct",3,1]]},"mass_condemnation":{"c":1},"benediction":{"c":1},"cleansing_light":{"c":1},"purifying_grace":{"t":[[33,34,2,"heal",1,1]]},"delayed_judgment":{"t":[[27,29,30,"pct",3,1]],"x":1},"shield_of_the_crusade":{"c":1},"sacred_momentum":{"t":[[59,61,25,"pct",2,1]],"x":1},"balanced_guard":{"t":[[59,61,50,"pct",5,1]],"x":1},"aegis_of_light":{"c":1},"twin_verdict":{"c":1},"brand_the_wicked":{"t":[[32,34,30,"pct",3,1]]},"cleansing_flame":{"c":2},"sacred_ash":{"c":2},"zeal_of_the_pyre":{"t":[[5,6,1,"init",1,1]]},"burning_wisdom":{"t":[[5,7,10,"int",1,1]]},"patient_wrath":{"t":[[70,72,10,"pct",2,1]],"x":1},"divine_echo":{"t":[[27,29,10,"pct",2,1]],"x":1},"tithe_of_mana":{"c":2},"inquisition":{"t":[[8,9,2,"ms_count",0,0]],"c":1},"silent_judgment":{"c":1},"grace_eternal":{"t":[[56,58,30,"pct",3,1]],"x":1},"sanctuary":{"t":[[26,28,30,"pct",3,1]]},"burden_of_sin":{"r":5},"divine_communion":{"r":5},"quiet_prayer":{"t":[[13,14,6,"def",1,1]]},"morning_prayer":{"t":[[13,14,3,"devotion",1,2]]},"purify":{"c":2},"condemn":{"t":[[5,6,3,"dmg",1,1],[29,30,6,"condemnation",1,1]]},"weakening_light":{"t":[[6,8,12,"weak",1,1]]},"blessing_of_might":{"t":[[38,40,20,"str",2,1],[69,70,1,"ms_draw",0,0]]},"guarding_light":{"t":[[26,28,10,"def",1,1]]},"consecration":{"t":[[5,6,6,"dmg",1,1]]},"searing_light":{"t":[[5,6,5,"dmg",1,1],[29,30,3,"burn",1,2]]},"devout_strike":{"t":[[5,6,6,"dmg",1,1],[25,26,2,"devotion",1,2]]},"steadfast":{"t":[[32,33,3,"def",1,1]]},"cleansing_breath":{"t":[[41,42,4,"def",1,1]]},"meditate":{"t":[[37,39,20,"mana",2,1]]},"humble_offering":{"t":[[5,7,10,"mana",1,1]]},"judgment_hammer":{"t":[[5,7,22,"dmg",3,1]]},"sword_and_board":{"t":[[5,6,7,"dmg",1,1],[61,62,6,"def",1,1]]},"guarded_advance":{"t":[[5,6,7,"def",1,1]]},"soothing_light":{"t":[[29,30,6,"heal",1,1],[40,41,1,"ms_draw",0,0]]},"vow_of_penance":{"t":[[5,6,6,"dmg",1,1],[67,68,6,"dmg",1,1]]},"shield_of_faith":{"t":[[5,6,5,"def",1,1],[51,52,5,"mana",1,1]]},"fervent_prayer":{"t":[[13,14,5,"devotion",1,2],[28,29,6,"def",1,1]]},"vigil":{"t":[[73,74,3,"devotion",1,2]]},"holy_fire":{"t":[[5,6,6,"dmg",1,1],[29,30,6,"burn",1,1]]},"purging_flame":{"t":[[37,38,2,"dmg",1,2]]},"condemning_mark":{"t":[[6,8,12,"condemnation",1,1]]},"purge_the_wicked":{"t":[[47,48,2,"dmg",1,2]]},"cleanse":{"c":2},"stanch_the_wound":{"t":[[48,49,1,"heal",1,1]]},"blessing_of_kings":{"t":[[24,26,20,"str",2,1],[50,51,6,"def",1,1]]},"hand_of_freedom":{"t":[[62,63,4,"init",1,1]]},"avenging_strike":{"t":[[5,6,7,"dmg",1,1],[51,52,7,"dmg",1,1]]},"mending_prayer":{"t":[[13,14,5,"heal",1,1],[27,28,2,"devotion",1,2]]},"shield_of_righteousness":{"t":[[26,28,50,"dmg",5,1]]},"tempered_zeal":{"t":[[88,89,3,"def",1,1]]},"blessed_weapon":{"t":[[67,68,1,"ms_draw",0,0]],"c":2},"aegis":{"t":[[5,6,8,"def",1,1]]},"hammer_of_wrath":{"t":[[5,6,6,"dmg",1,1],[56,58,12,"dmg",2,1]]},"blessed_reserves":{"t":[[5,7,10,"maxMana",2,1],[25,26,5,"regen",1,1]]},"steady_faith":{"t":[[5,7,10,"regen",1,1]]},"font_of_light":{"t":[[42,44,20,"mana",2,1],[59,60,1,"ms_draw",0,0]]},"patient_faith":{"t":[[62,64,10,"mana",1,1]]},"divine_insight":{"t":[[16,17,3,"ms_draw",0,0]],"c":2},"seek_guidance":{"c":2},"overflowing_light":{"t":[[29,30,8,"heal",1,1]]},"seal_of_light":{"t":[[37,39,25,"pct",2,1]],"x":1},"reproach":{"t":[[5,6,4,"dmg",1,1],[35,36,1,"ms_count",0,0]]},"kindled_faith":{"c":2},"hammer_of_justice":{"t":[[5,7,15,"dmg",2,1]]},"divine_favor":{"fr":1},"avenging_wrath":{"t":[[13,14,2,"ms_turns",0,0]],"c":1},"blessing_of_sacrifice":{"t":[[21,23,15,"def",2,1]]},"final_verdict":{"t":[[5,7,12,"dmg",2,1],[46,47,4,"dmg",1,1]]},"divine_intervention":{"c":1},"mass_dispel":{"c":1},"repentance":{"t":[[20,21,1,"ms_count",0,0],[44,46,10,"condemnation",1,1]]},"rebuke":{"t":[[5,6,5,"dmg",1,1]]},"exact_penance":{"t":[[35,37,10,"mana",1,1]]},"consecrated_ground":{"t":[[32,33,4,"dmg",1,1]]},"prism_of_faith":{"c":1},"hand_of_retribution":{"c":2},"divine_plea":{"t":[[5,7,20,"regen",2,1]]},"reward_of_the_righteous":{"t":[[33,35,30,"mana",3,1]]},"prayer_of_healing":{"t":[[36,38,10,"heal",2,1],[48,49,3,"devotion",1,2]]},"brand_of_sin":{"t":[[6,8,10,"condemnation",1,1]]},"crusader_aura":{"t":[[54,56,10,"str",1,1],[69,71,10,"dex",1,1]]},"pyre_of_judgment":{"t":[[6,7,5,"burn",1,1],[50,51,5,"dmg",1,1]]},"aura_mastery":{"c":1},"light_of_dawn":{"t":[[28,30,20,"heal",2,1]]},"unbreakable_faith":{"t":[[13,14,3,"ms_turns",0,0]],"c":1},"mark_of_guilt":{"t":[[5,6,3,"dmg",1,1],[29,31,10,"vulnerable",1,1]]},"sacrificial_light":{"c":2},"light_reveals_all":{"t":[[5,6,5,"dmg",1,1]]},"purity_of_body":{"t":[[13,14,2,"ms_turns",0,0]],"c":2},"onward":{"t":[[5,6,5,"dmg",1,1]]},"raise_the_banner":{"t":[[5,6,3,"def",1,1],[17,18,3,"def",1,1]]},"penance":{"t":[[17,18,3,"def",1,1],[29,30,3,"def",1,1]]},"penitent_silence":{"c":2},"sealed_fate":{"t":[[13,14,2,"ms_turns",0,0]],"c":1},"righteous_breach":{"t":[[7,9,10,"shred",1,1],[55,56,5,"dmg",1,1]]},"confiscate":{"c":1},"pierce_the_veil":{"c":2},"grace_of_the_light":{"c":2},"humble_means":{"t":[[45,46,1,"devotion",1,2]]},"faith_s_bounty":{"t":[[5,7,30,"maxMana",2,1]]},"offering_plate":{"t":[[5,7,10,"mana",1,1],[17,19,10,"maxMana",2,1]]},"righteous_claim":{"c":2},"humble_the_proud":{"t":[[39,40,4,"dmg",1,1]]},"mark_of_judgment":{"t":[[5,6,3,"dmg",1,1],[29,31,10,"unwarded",1,1]]},"expose_the_profane":{"t":[[6,8,15,"unwarded",2,1],[24,25,1,"ms_draw",0,0]]},"sapping_light":{"t":[[5,6,5,"dmg",1,1],[67,68,2,"ms_turns",0,0]]},"halt":{"t":[[5,6,4,"dmg",1,1],[26,27,4,"init",1,1]]}};
 if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.CB_UPGRADES = D; })(typeof window !== 'undefined' ? window : globalThis);
+
+// Codex talent trees (Nov 1). Every codex has 10 rows; a new row opens every 2 codex levels (max level 20).
+// Each row has an Offense, a Defense and a Support talent: pick one per row (free respec in town).
+// Row 10 is the capstone: a Power that is already in play at the start of every fight.
+// fx are read by the engine (talentDef in engine.js). {D} in text becomes the class's defense (Block, Dodge, Barrier).
+(function (r) {
+  const T = (n, t, ...fx) => ({ n, t, fx });
+  const NAME = { burn: 'Burning', bleed: 'Bleeding', poison: 'Poisoned', vulnerable: 'Vulnerable', weak: 'Weak', chill: 'Chilled', exposure: 'Exposed', block: 'with Block' };
+  const ADJ = { burn: 'Burn', bleed: 'Bleed', poison: 'Poison', vulnerable: 'Vulnerable', weak: 'Weak', chill: 'Chill', exposure: 'Exposure' };
+  // ---- text helpers (keep the words and the numbers together)
+  const kindTxt = (f) => (f && f.dtype ? f.dtype + ' ' : '') + (f && f.key === 'shuriken' ? 'Shuriken ' : f && f.type ? f.type + ' ' : '') + 'damage';
+  const vsTxt = (f) => !f || !f.vs ? '' : f.vs.includes(':') ? ` to targets with ${f.vs.split(':')[1]}+ ${ADJ[f.vs.split(':')[0]]}` : f.vs === 'block' ? ' to targets that have Block' : ` to ${NAME[f.vs]} targets`;
+  const selfTxt = (c) => { if (!c) return ''; const [k, v] = c.split(':');
+    return { block: v ? ` while you have ${v}+ {D}` : ' while you have {D}', stealth: ' while in Stealth', devotion: v ? ` while you have ${v}+ Devotion` : ' while you have Devotion',
+      any: ` while any enemy is ${NAME[v]}`, prevSkill: ' right after a Skill', prevAttack: ' right after an Attack', elems: ` once you have played ${v}+ elements this turn`, lowhp: ' while below 50% HP' }[k] || ''; };
+  const costTxt = (f) => f && f.minCost ? ` costing ${f.minCost}+` : '';
+  const dmg = (n, pct, f) => T(n, `+${pct}% ${kindTxt(f)}${costTxt(f)}${vsTxt(f)}${selfTxt(f && f.self)}.`, ['dmg', pct, f || {}]);
+  const crit = (n, pct, f) => T(n, `+${pct}% crit chance${f && (f.type || f.key) ? ' with ' + (f.key === 'shuriken' ? 'Shurikens' : f.type + 's') : ''}${selfTxt(f && f.self)}.`, ['crit', pct, f || {}]);
+  const critX = (n, pct) => T(n, `Crits deal +${pct}% damage.`, ['critX', pct]);
+  const flat = (n, pct, f) => T(n, `${f && f.type ? f.type + 's' : 'Your hits'} deal bonus damage equal to ${pct}% of your {D}.`, ['flat', 'block', pct, f || {}]);
+  const per = (n, st, step, pct, max, f) => T(n, `+${pct}% ${kindTxt(f)} for every ${step} ${ADJ[st]} on the target (max +${max}%).`, ['dmgPer', st, step, pct, max, f || {}]);
+  const dotPlus = (n, st, k) => T(n, `${ADJ[st]} you apply is increased by ${k}.`, ['dotPlus', st, k]);
+  const dotX = (n, st, pct) => T(n, `${ADJ[st]} you apply is increased by ${pct}%.`, ['dotX', st, pct]);
+  const startDot = (n, st, k) => T(n, `At the start of each fight, apply ${k} ${ADJ[st]} to all enemies.`, ['start', st === 'chill' || !['burn', 'bleed', 'poison'].includes(st) ? 'debuff' : 'dot', k, st]);
+  const turnDot = (n, st, k) => T(n, `At the start of each of your turns, apply ${k} ${ADJ[st]} to all enemies.`, ['turn', st === 'chill' || !['burn', 'bleed', 'poison'].includes(st) ? 'debuff' : 'dot', k, st]);
+  const every = (n, N, f, st, k) => T(n, `Every ${N === 3 ? '3rd' : N + 'th'} ${f.dtype ? f.dtype + ' ' : ''}${f.type || 'card'} you play in a turn applies ${k} ${ADJ[st]} to all enemies.`, ['every', N, f, ['burn', 'bleed', 'poison'].includes(st) ? 'dot' : 'debuff', k, st]);
+  const spread = (n, st) => T(n, `When an enemy dies, its ${ADJ[st]} spreads to every other enemy.`, ['kill', 'spread', 0, st]);
+  const def = (n, pct, c) => T(n, `{D} you gain is increased by ${pct}%${selfTxt(c)}.`, ['def', pct, c]);
+  const inc = (n, pct, c) => T(n, `Take ${pct}% less damage${selfTxt(c)}.`, ['incoming', pct, c]);
+  const startDef = (n, k) => T(n, `Start each fight with ${k} {D}.`, ['start', 'block', k]);
+  const turnDef = (n, k) => T(n, `Gain ${k} {D} at the start of each of your turns.`, ['turn', 'block', k]);
+  const lowhp = (n, pct, mode) => T(n, mode === 'heal' ? `Once per fight, when you drop below 30% HP, heal ${pct}% of your max HP.` : `Once per fight, when you drop below 30% HP, gain {D} equal to ${pct}% of your max HP${mode === 'stealth' ? ' and enter Stealth' : ''}.`, ['lowhp', pct, mode]);
+  const cheat = (n, k, mode) => T(n, mode === 'heal' ? `Once per fight, a killing blow leaves you at 1 HP instead, then you heal ${k}% of your max HP.` : `Once per fight, a killing blow leaves you at 1 HP instead, with ${k} {D}.`, ['cheat', k, mode]);
+  const hitDot = (n, st, k) => T(n, `Enemies that hit you gain ${k} ${ADJ[st]}.`, ['hitBy', ['burn', 'bleed', 'poison'].includes(st) ? 'dot' : 'debuff', k, st]);
+  const back = (n, k) => T(n, `When an enemy attack hits your {D}, it takes ${k} damage back.`, ['hitBy', 'back', k]);
+  const healTurn = (n, pct, c) => T(n, `Heal ${pct}% of your max HP at the start of each of your turns${selfTxt(c)}.`, ['turn', 'heal', pct, null, c]);
+  const startMana = (n, k) => T(n, `Start each fight with +${k} mana.`, ['start', 'mana', k]);
+  const regen = (n, k) => T(n, `+${k} mana regeneration.`, ['stat', 'regen', k]);
+  const killDraw = (n, k) => T(n, `Draw ${k} card${k > 1 ? 's' : ''} when you kill an enemy.`, ['kill', 'draw', k]);
+  const maxMana = (n, k) => T(n, `+${k} maximum mana.`, ['stat', 'maxMana', k]);
+  const draw1 = (n) => T(n, 'Draw 1 extra card each turn.', ['stat', 'draw', 1]);
+  const turnMana = (n, k, c) => T(n, `Gain ${k} mana at the start of each of your turns${selfTxt(c)}.`, ['turn', 'mana', k, null, c]);
+  const turnDraw = (n, k, c) => T(n, `Draw ${k} extra card${k > 1 ? 's' : ''} at the start of each of your turns${selfTxt(c)}.`, ['turn', 'draw', k, null, c]);
+  const rally = (n, pct, vs) => T(n, `You and your allies deal +${pct}% damage${vs ? ` to ${NAME[vs]} targets` : ''}.`, ['dmg', pct, vs ? { vs } : {}], ['aura', [['dmg', pct, vs ? { vs } : {}]]]);
+  const shelter = (n, pct) => T(n, `You and your allies take ${pct}% less damage.`, ['incoming', pct], ['aura', [['incoming', pct]]]);
+  const firstCost = (n, k, f) => T(n, `The first ${f.dtype ? f.dtype + ' ' : ''}${f.type || 'card'} you play each turn costs ${k} less.`, ['firstCost', k, f]);
+  const cost = (n, k, f) => T(n, `${f.dtype ? f.dtype + ' ' : ''}${f.type || 'Card'}s${costTxt(f)} cost ${k} less.`, ['cost', k, f]);
+
+  // ---- class templates for the Defense and Support columns (a codex can replace any row)
+  const DEF = {
+    Warrior: [startDef('Braced', 8), def('Reinforced', 8), inc('Thick Skin', 5), turnDef('Hold Fast', 4), lowhp('Last Wall', 25), def('Bulwark Training', 15), inc('Iron Hide', 10), turnDef('Fortress', 8), cheat('Unbroken', 40)],
+    Rogue: [startDef('Light Feet', 8), def('Evasion Drills', 8), inc('Slippery', 5), turnDef('Shadowstep', 4), lowhp('Vanish', 25, 'stealth'), def('Untouchable', 15), inc('Smoke and Shade', 10), turnDef('Phantom Step', 8), cheat('Cheat Death', 40)],
+    Mage: [startDef('Warded', 8), def('Ward Weaving', 8), inc('Mana Skin', 5), turnDef('Glyph', 4), lowhp('Emergency Ward', 25), def('Ward Mastery', 15), inc('Arcane Skin', 10), turnDef('Living Glyph', 8), cheat('Phoenix', 40)],
+    Paladin: [startDef('Shield of Faith', 8), def('Devout Guard', 8), inc('Blessed', 5), turnDef('Vigilance', 4), lowhp('Divine Shield', 25), def('Holy Bulwark', 15), inc('Armor of Light', 10), turnDef('Sanctuary Wall', 8), cheat('Divine Intervention', 40)],
+  };
+  const SUP = {
+    Warrior: [startMana('Second Breath', 10), regen('Steady Breathing', 5), killDraw('Spoils of Battle', 1), maxMana('Deep Lungs', 15), draw1('War Drums'), turnMana('Field Rations', 5), rally('Rally Cry', 10), regen('Endless Reserve', 10), shelter('War Banner', 10)],
+    Rogue: [startMana('Quick Start', 10), regen('Even Breath', 5), killDraw('Loot the Body', 1), maxMana('Deep Pockets', 15), draw1('Sleight of Hand'), turnMana('Hidden Stash', 5), rally('Mark the Target', 10), regen('Second Wind', 10), shelter('Shadow Pact', 10)],
+    Mage: [startMana('Spark', 10), regen('Ley Flow', 5), killDraw('Soul Harvest', 1), maxMana('Mana Well', 15), draw1('Foresight'), turnMana('Channel', 5), rally('Empower', 10), regen('Wellspring', 10), shelter('Arcane Shelter', 10)],
+    Paladin: [startMana('Morning Prayer', 10), regen('Blessed Breath', 5), killDraw('Last Rites', 1), maxMana('Deep Faith', 15), draw1('Revelation'), turnMana('Tithe', 5), rally('Inspire', 10), regen('Grace', 10), shelter('Aura of Protection', 10)],
+  };
+  // ---- the 24 codexes: off = 9 offense talents; d / s = rows (1-9) replaced in the Defense / Support templates; cap = [offense, defense, support] capstone Powers
+  const CX = {
+    // Warrior
+    bulwark: { cls: 'Warrior', cap: ['thorned_bulwark', 'guardian_s_oath', 'deep_reserves'],
+      off: [dmg('Shield Edge', 5, { type: 'Attack', self: 'block' }), dmg('Shield Breaker', 8, { type: 'Attack', vs: 'block' }), flat('Shield Drill', 5, { type: 'Attack' }), dmg('Weight of Steel', 12, { type: 'Attack', self: 'block:20' }),
+        flat('Rampart Slam', 15, { type: 'Attack' }), dmg('Crushing Weight', 15, { type: 'Attack', self: 'block' }), flat('Steel Tide', 10, { type: 'Attack' }), dmg('Juggernaut', 25, { type: 'Attack', self: 'block:40' }), flat('Tower of Steel', 30, { type: 'Attack' })],
+      d: { 3: back('Spiked Plate', 4) }, s: {} },
+    riposte: { cls: 'Warrior', cap: ['expose_opening', 'partial_guard', 'second_lung'],
+      off: [dmg('Quick Hands', 5, { type: 'Attack' }), back('Counter Edge', 3), dmg('Read the Opening', 10, { type: 'Attack', vs: 'vulnerable' }), back('Barbed Guard', 6),
+        T('Punishing Parry', 'When you fully Parry an attack, the attacker takes 15 damage.', ['full', 'back', 15]), dmg('Riposte Mastery', 15, { type: 'Attack', vs: 'vulnerable' }), back('Sharpened Guard', 10),
+        dmg('Exploit', 25, { type: 'Attack', vs: 'vulnerable:20' }), T('Blade Dancer', 'When you fully Parry an attack, draw 1 card and gain 10 mana.', ['full', 'draw', 1], ['full', 'mana', 10])],
+      d: { 7: T('Counterweight', 'When you fully Parry an attack, the attacker gains 10 Vulnerable.', ['full', 'debuff', 10, 'vulnerable']) }, s: {} },
+    bloodbound: { cls: 'Warrior', cap: ['blood_clock', 'pay_in_blood', 'blood_ritual'],
+      off: [dotPlus('Open Veins', 'bleed', 1), dmg('Blood Scent', 8, { type: 'Attack', vs: 'bleed' }), startDot('Sanguine Start', 'bleed', 5), dotX('Deep Cuts', 'bleed', 20),
+        spread('Exsanguinator', 'bleed'), dmg('Red Frenzy', 15, { type: 'Attack', vs: 'bleed' }), every('Crimson Tide', 3, { type: 'Attack' }, 'bleed', 6), per('Bloodletting Edge', 'bleed', 10, 5, 25, { type: 'Attack' }), dotX('Blood Moon', 'bleed', 50)],
+      d: { 8: healTurn('Transfusion', 3, 'any:bleed') }, s: { 9: rally('Blood Brothers', 15, 'bleed') } },
+    colossus: { cls: 'Warrior', cap: ['unstoppable_force', 'iron_will', 'deep_reserves'],
+      off: [dmg('Heavy Hands', 5, { type: 'Attack', minCost: 20 }), T('Brute Force', 'Start each fight with +10 Strength.', ['start', 'str', 10]), dmg('Titan Grip', 12, { type: 'Attack', minCost: 30 }), firstCost('Thunderous', 5, { type: 'Attack' }),
+        dmg('Colossal Blow', 25, { type: 'Attack', minCost: 30 }), dmg('Unstoppable', 15, { type: 'Attack' }), cost('Titan\'s Hunger', 5, { type: 'Attack', minCost: 20 }), T('Avalanche', 'Start each fight with +30 Strength.', ['start', 'str', 30]), dmg('World Breaker', 40, { type: 'Attack', minCost: 30 })],
+      d: {}, s: { 6: turnMana('Bottomless', 10) } },
+    sunderer: { cls: 'Warrior', cap: ['open_wounds', 'thorned_bulwark', 'momentum'],
+      off: [dmg('Weak Points', 5, { vs: 'vulnerable' }), startDot('Expose', 'vulnerable', 10), dmg('Armor Splitter', 10, { type: 'Attack', vs: 'vulnerable' }), dmg('Shatterpoint', 12, { type: 'Attack', vs: 'vulnerable:20' }),
+        every('Sundering Wave', 3, { type: 'Attack' }, 'vulnerable', 10), dmg('Executioner', 15, { type: 'Attack', vs: 'vulnerable' }), dmg('Rend Armor', 20, { type: 'Attack', vs: 'vulnerable:40' }), turnDot('Open Season', 'vulnerable', 5), per('Total Collapse', 'vulnerable', 10, 5, 40)],
+      d: { 3: hitDot('Jagged Plate', 'vulnerable', 5) }, s: { 9: rally('Pile On', 15, 'vulnerable') } },
+    hemorrhage: { cls: 'Warrior', cap: ['mortal_precision', 'thorned_bulwark', 'momentum'],
+      off: [crit('Keen Edge', 3), dotPlus('Bleeding Strikes', 'bleed', 1), crit('Precision', 5, { type: 'Attack' }), critX('Vicious', 20),
+        crit('Arterial', 10), dmg('Blood in the Water', 15, { type: 'Attack', vs: 'bleed' }), critX('Lethal Focus', 40), dotX('Torn Flesh', 'bleed', 30), T('Death by a Thousand Cuts', '+15% crit chance and crits deal +25% damage.', ['crit', 15, {}], ['critX', 25])],
+      d: {}, s: { 3: T('Bloodrush', 'Gain 10 mana when you kill an enemy.', ['kill', 'mana', 10]) } },
+    // Rogue
+    nightstalker: { cls: 'Rogue', cap: ['first_blood', 'nimble', 'smuggler_s_hoard'],
+      off: [dmg('Lurker', 5, { type: 'Attack', self: 'stealth' }), T('Shadow Start', 'Start each fight in Stealth.', ['start', 'stealth', 1]), crit('Ambusher', 10, { type: 'Attack', self: 'stealth' }), dmg('Backstab', 12, { type: 'Attack', self: 'stealth' }),
+        T('Shadow Dance', 'Enter Stealth whenever you kill an enemy.', ['kill', 'stealth', 1]), dmg('Assassin\'s Mark', 15, { type: 'Attack', vs: 'vulnerable' }), dmg('Deadly Shade', 25, { type: 'Attack', self: 'stealth' }),
+        T('Silent Death', '+10% crit chance and crits deal +30% damage.', ['crit', 10, {}], ['critX', 30]), dmg('Nightfall', 40, { type: 'Attack', self: 'stealth' })],
+      d: {}, s: {} },
+    venomancer: { cls: 'Rogue', cap: ['accelerant_venom', 'nimble', 'the_long_game'],
+      off: [dotPlus('Toxic', 'poison', 1), dmg('Venom Sense', 8, { vs: 'poison' }), startDot('Miasma', 'poison', 6), dotX('Potent', 'poison', 20),
+        spread('Plague Carrier', 'poison'), dmg('Corrosion', 15, { vs: 'poison' }), every('Toxic Cloud', 3, { type: 'Attack' }, 'poison', 5), per('Necrosis', 'poison', 10, 5, 25), dotX('Lethal Dose', 'poison', 50)],
+      d: { 3: hitDot('Venomous Hide', 'poison', 3) }, s: { 9: rally('Plague Doctor', 15, 'poison') } },
+    bloodletter: { cls: 'Rogue', cap: ['open_veins', 'fleetfooted', 'quickened_pulse'],
+      off: [dotPlus('Nicks', 'bleed', 1), dmg('Scent of Blood', 8, { vs: 'bleed' }), startDot('Serrated Start', 'bleed', 5), dotX('Jagged', 'bleed', 25),
+        spread('Bloodbath', 'bleed'), dmg('Frenzy', 15, { vs: 'bleed' }), every('Ribbons', 3, { type: 'Attack' }, 'bleed', 5), per('Exsanguinate', 'bleed', 10, 5, 25), T('Crimson Rain', 'Bleed you apply is increased by 2 and by 30%.', ['dotPlus', 'bleed', 2], ['dotX', 'bleed', 30])],
+      d: {}, s: { 9: rally('Feeding Frenzy', 15, 'bleed') } },
+    ninja: { cls: 'Rogue', cap: ['sharpened_stars', 'reflexive_volley', 'hidden_pockets'],
+      off: [T('Sharp Stars', 'Shurikens deal 1 more damage.', ['shurPlus', 1]), T('Pocketful', 'Start each fight with a Shuriken in hand.', ['start', 'shuriken', 1]), T('Star Training', 'Shurikens deal 2 more damage.', ['shurPlus', 2]), T('Spare Stars', 'Start each fight with 2 more Shurikens in hand.', ['start', 'shuriken', 2]),
+        T('Storm of Blades', 'Shurikens deal 5 more damage.', ['shurPlus', 5]), crit('Deadly Aim', 10, { key: 'shuriken' }), T('Endless Supply', 'Add a Shuriken to your hand at the start of each of your turns.', ['turn', 'shuriken', 1]), dmg('Steel Rain', 25, { key: 'shuriken' }), T('Thousand Stars', 'Shurikens deal 8 more damage.', ['shurPlus', 8])],
+      d: {}, s: {} },
+    saboteur: { cls: 'Rogue', cap: ['cut_the_thread', 'smoke_and_mirrors', 'quartermaster'],
+      off: [dmg('Dirty Fighting', 5, { vs: 'weak' }), startDot('Rattled', 'weak', 10), dmg('Low Blow', 10, { vs: 'weak' }), T('Disrupt', 'At the start of each fight, every enemy discards 1 card.', ['start', 'discard', 1]),
+        turnDot('Sabotage Kit', 'weak', 5), dmg('Exploit Weakness', 15, { vs: 'weak' }), T('Jam the Works', 'At the start of each fight, add 2 Dazed to every enemy\'s draw pile.', ['start', 'dazed', 2]), dmg('Crippling', 25, { vs: 'weak:20' }),
+        T('Total Sabotage', 'At the start of each of your turns, every enemy discards 1 card.', ['turn', 'discard', 1])],
+      d: { 3: hitDot('Tripwire', 'weak', 5) }, s: { 9: rally('Easy Pickings', 15, 'weak') } },
+    phantom: { cls: 'Rogue', cap: ['shadow_reflexes', 'fleetfooted', 'afterimage'],
+      off: [dmg('Phase', 5, { type: 'Attack', self: 'block' }), flat('Afterimage Strike', 5, { type: 'Attack' }), dmg('Blur', 10, { type: 'Attack', self: 'block' }), flat('Phantom Edge', 10, { type: 'Attack' }),
+        flat('Spectral Blade', 20, { type: 'Attack' }), dmg('Wraith', 15, { type: 'Attack', self: 'block' }), T('Fade', 'When an attack is fully absorbed by your Dodge, the attacker takes 10 damage.', ['full', 'back', 10]), dmg('Haunt', 25, { type: 'Attack', self: 'block:30' }), flat('Specter Lord', 35, { type: 'Attack' })],
+      d: {}, s: { 3: T('Slip Away', 'When an attack is fully absorbed by your Dodge, draw 1 card.', ['full', 'draw', 1]) } },
+    // Mage
+    heart_of_winter: { cls: 'Mage', cap: ['elemental_memory', 'glyph_of_warding', 'quick_study'],
+      off: [dmg('Frostbite', 5, { dtype: 'Frost' }), startDot('Cold Snap', 'chill', 3), dmg('Shatter', 10, { dtype: 'Frost', vs: 'chill' }), dmg('Deep Freeze', 12, { dtype: 'Frost', minCost: 20 }),
+        every('Winter\'s Grip', 3, { type: 'Skill', dtype: 'Frost' }, 'chill', 4), dmg('Glacial', 15, { dtype: 'Frost' }), dmg('Brittle', 20, { vs: 'chill:5' }), turnDot('Permafrost', 'chill', 2), dmg('Absolute Zero', 35, { dtype: 'Frost' })],
+      d: { 3: hitDot('Frost Armor', 'chill', 2) }, s: { 9: rally('Frozen Field', 15, 'chill') } },
+    spellstorm: { cls: 'Mage', cap: ['spellweaving', 'malediction_mirror', 'torrent'],
+      off: [dmg('Arcane Focus', 5, { dtype: 'Arcane' }), firstCost('Flow', 5, { type: 'Skill', dtype: 'Arcane' }), dmg('Overcharge', 10, { dtype: 'Arcane' }), T('Arcane Surge', 'Every 3rd Arcane Skill you play in a turn draws a card.', ['every', 3, { type: 'Skill', dtype: 'Arcane' }, 'draw', 1]),
+        cost('Storm Caller', 5, { type: 'Skill', dtype: 'Arcane' }), dmg('Unstable', 15, { dtype: 'Arcane' }), T('Mana Torrent', 'Every 3rd Skill you play in a turn gives you 10 mana.', ['every', 3, { type: 'Skill' }, 'mana', 10]), crit('Amplified', 10, { type: 'Skill' }), dmg('Eye of the Storm', 30, { dtype: 'Arcane' })],
+      d: {}, s: {} },
+    conflagration: { cls: 'Mage', cap: ['flashpoint', 'malediction_mirror', 'evocation'],
+      off: [dotPlus('Kindling', 'burn', 1), dotX('Hotter Coals', 'burn', 10), dmg('Searing', 10, { dtype: 'Fire', vs: 'burn' }), startDot('Stoke the Pyre', 'burn', 6),
+        spread('Wildfire', 'burn'), per('Melting Point', 'burn', 10, 5, 25, { dtype: 'Fire' }), every('Pyromania', 3, { type: 'Skill', dtype: 'Fire' }, 'burn', 6), dmg('Firestorm', 20, { dtype: 'Fire', vs: 'burn' }), dotX('Inferno Heart', 'burn', 50)],
+      d: { 1: startDef('Warm Hands', 8), 2: def('Cinder Mantle', 10, 'any:burn'), 3: hitDot('Ember Skin', 'burn', 3), 5: lowhp('Phoenix Ward', 25), 6: inc('Scorched Earth', 10, 'any:burn'), 7: healTurn('Cauterizing Heat', 3, 'any:burn'), 8: turnDef('Heat Shield', 8), 9: cheat('Rekindle', 30) },
+      s: { 2: firstCost('Tinder Box', 5, { type: 'Skill', dtype: 'Fire' }), 3: killDraw('Stoke', 1), 4: T('Combustion Engine', 'Gain 2 mana per Burning enemy at the start of each of your turns.', ['turn', 'manaPer', 2, 'burn']), 5: turnDraw('Kindled Mind', 1, 'any:burn'), 9: rally('Signal Fire', 15, 'burn') } },
+    barrier_savant: { cls: 'Mage', cap: ['potency', 'glyph_of_warding', 'barrier_battery'],
+      off: [dmg('Charged Ward', 5, { type: 'Skill', self: 'block' }), flat('Ward Shards', 5, { type: 'Skill' }), dmg('Kinetic Ward', 10, { type: 'Skill', self: 'block' }), flat('Ward Lance', 10, { type: 'Skill' }),
+        flat('Overload', 20, { type: 'Skill' }), dmg('Arcane Bulwark', 15, { type: 'Skill', self: 'block:20' }), back('Reflective Ward', 8), dmg('Ward Mastery', 25, { type: 'Skill', self: 'block:40' }), flat('Aegis Cannon', 35, { type: 'Skill' })],
+      d: { 6: def('Layered Wards', 20) }, s: {} },
+    entropy: { cls: 'Mage', cap: ['temporal_siphon', 'malediction_mirror', 'evocation'],
+      off: [dmg('Siphon', 5, { vs: 'exposure' }), startDot('Entropic Start', 'exposure', 3), dmg('Decay', 10, { vs: 'exposure' }), T('Leech', 'Gain 15 mana when you kill an enemy.', ['kill', 'mana', 15]),
+        turnDot('Void Pull', 'exposure', 2), dmg('Unravel', 15, { vs: 'exposure' }), per('Collapse', 'exposure', 2, 5, 30), T('Mana Burn', 'At the start of each of your turns, drain 10 mana from every enemy.', ['turn', 'drain', 10]), dmg('Heat Death', 30, { vs: 'exposure' })],
+      d: {}, s: { 9: rally('Shared Ruin', 15, 'exposure') } },
+    archmage: { cls: 'Mage', cap: ['rule_of_three', 'glyph_of_warding', 'arcane_ascension'],
+      off: [dmg('Studied', 5, { type: 'Skill' }), T('Prism', '+10 Intelligence.', ['stat', 'intelligence', 10]), dmg('Versatile', 10, { type: 'Skill', self: 'elems:2' }), crit('Elemental Focus', 10, { type: 'Skill' }),
+        dmg('Convergence', 20, { type: 'Skill', self: 'elems:3' }), dmg('Erudite', 15, { type: 'Skill' }), T('Arcane Mind', 'Every 3rd Skill you play in a turn draws a card.', ['every', 3, { type: 'Skill' }, 'draw', 1]), critX('Overmind', 40), dmg('Archmagus', 30, { type: 'Skill', self: 'elems:2' })],
+      d: {}, s: {} },
+    // Paladin
+    bastion_of_faith: { cls: 'Paladin', cap: ['crusader_s_zeal', 'retribution_aura', 'divine_plea'],
+      off: [dmg('Holy Edge', 5, { dtype: 'Holy' }), flat('Faithful Guard', 5, { type: 'Attack' }), dmg('Smiting', 10, { dtype: 'Holy' }), flat('Bulwark of Light', 10, { type: 'Attack' }),
+        dmg('Hammer of Faith', 20, { dtype: 'Holy', self: 'block' }), dmg('Crusade', 15, { dtype: 'Holy' }), back('Radiant Shield', 6), flat('Judgement', 20, { type: 'Attack' }), dmg('Bastion Eternal', 30, { dtype: 'Holy', self: 'block' })],
+      d: {}, s: {} },
+    purifier: { cls: 'Paladin', cap: ['delayed_judgment', 'cleansing_light', 'purifying_grace'],
+      off: [dmg('Purge', 5, { dtype: 'Holy' }), T('Morning Rite', 'Remove 1 debuff from yourself at the start of each of your turns.', ['turn', 'cleanse', 1]), dmg('Righteous Fire', 10, { dtype: 'Holy' }), startDot('Weaken Evil', 'weak', 10),
+        dmg('Exorcism', 20, { dtype: 'Holy', vs: 'weak' }), dmg('Zealot', 15, { dtype: 'Holy' }), T('Absolution', 'Heal 5% of your max HP when you kill an enemy.', ['kill', 'heal', 5]), dmg('Holy Fire', 25, { dtype: 'Holy', vs: 'weak:10' }),
+        T('Divine Purge', 'At the start of each of your turns, all enemies gain 10 Weak and you remove 1 debuff from yourself.', ['turn', 'debuff', 10, 'weak'], ['turn', 'cleanse', 1])],
+      d: {}, s: {} },
+    righteous_crusader: { cls: 'Paladin', cap: ['sacred_momentum', 'shield_of_the_crusade', 'crusader_aura'],
+      off: [dmg('Rhythm', 5), dmg('Crusader Training', 10, { type: 'Attack', self: 'prevSkill' }), dmg('Tempo', 10, { type: 'Attack' }), def('Balanced Blade', 15, 'prevAttack'),
+        dmg('Crusade March', 25, { type: 'Attack', self: 'prevSkill' }), dmg('Steady Hand', 15, { type: 'Attack' }), T('Iron Rhythm', 'Every 3rd Attack you play in a turn gives 10 Block.', ['every', 3, { type: 'Attack' }, 'block', 10]),
+        dmg('Holy Tempo', 30, { type: 'Attack', self: 'prevSkill' }), T('Champion', '+25% Attack damage and +15% crit chance right after a Skill.', ['dmg', 25, { type: 'Attack', self: 'prevSkill' }], ['crit', 15, { type: 'Attack', self: 'prevSkill' }])],
+      d: {}, s: {} },
+    sacred_flame: { cls: 'Paladin', cap: ['brand_the_wicked', 'aegis_of_light', 'burning_wisdom'],
+      off: [dotPlus('Kindled Faith', 'burn', 1), dmg('Holy Embers', 8, { dtype: 'Holy', vs: 'burn' }), startDot('Sacred Pyre', 'burn', 5), dotX('Purifying Flames', 'burn', 20),
+        spread('Wildfire of Faith', 'burn'), dmg('Zeal', 15, { dtype: 'Holy', vs: 'burn' }), every('Flame Rhythm', 3, { type: 'Attack' }, 'burn', 6), per('Inquisitor', 'burn', 10, 5, 25, { dtype: 'Holy' }), dotX('Purgatory', 'burn', 50)],
+      d: { 3: hitDot('Burning Aura', 'burn', 3) }, s: { 9: rally('Beacon', 15, 'burn') } },
+    divine_wrath: { cls: 'Paladin', cap: ['divine_echo', 'steadfast', 'vigil'],
+      off: [T('Prayerful', 'Whenever you gain Devotion, gain 1 more.', ['devPlus', 1]), T('Hymn', 'Start each fight with 3 Devotion.', ['start', 'devotion', 3]), dmg('Wrathful', 10, { type: 'Attack', self: 'devotion' }), T('Faith Builds', 'Gain 1 Devotion at the start of each of your turns.', ['turn', 'devotion', 1]),
+        T('Avatar of Wrath', 'Whenever you gain Devotion, gain 2 more.', ['devPlus', 2]), dmg('Zeal', 15, { type: 'Attack', self: 'devotion' }), T('Litany', 'Every 3rd Skill you play in a turn gives 2 Devotion.', ['every', 3, { type: 'Skill' }, 'devotion', 2]),
+        crit('Holy Vengeance', 10, { type: 'Attack' }), dmg('Day of Wrath', 30, { type: 'Attack', self: 'devotion:5' })],
+      d: {}, s: {} },
+    equilibrium: { cls: 'Paladin', cap: ['consecrated_ground', 'sanctuary', 'grace_eternal'],
+      off: [T('Mercy\'s Edge', 'Your healing is 5% stronger.', ['heal', 5]), dmg('Balance', 8, { dtype: 'Holy' }), healTurn('Lifebloom', 2), T('Radiance', 'Your healing is 12% stronger.', ['heal', 12]),
+        healTurn('Equal Measure', 5), T('Righteous Mend', 'Your healing is 20% stronger.', ['heal', 20]), dmg('Judgement', 20, { dtype: 'Holy' }), T('Overflowing', 'Your healing is 30% stronger.', ['heal', 30]),
+        T('Perfect Balance', 'Heal 8% of your max HP at the start of each of your turns, and your healing is 20% stronger.', ['turn', 'heal', 8], ['heal', 20])],
+      // Equilibrium cannot gain Block: its Defense column is damage reduction and healing instead
+      d: { 1: inc('Calm', 3), 2: T('Blessed Body', '+5% resistance to every element.', ['stat', 'resistAll', 5]), 3: inc('Serenity', 5), 4: healTurn('Renewal', 2), 5: lowhp('Second Chance', 20, 'heal'), 6: inc('Still Waters', 8),
+        7: T('Absolve', 'Heal 5% of your max HP when you kill an enemy.', ['kill', 'heal', 5]), 8: inc('Perfect Calm', 12), 9: cheat('Rebirth', 30, 'heal') }, s: {} },
+  };
+  const D = {};
+  for (const [key, c] of Object.entries(CX)) {
+    const rows = [];
+    for (let i = 0; i < 9; i++) rows.push([c.off[i], (c.d && c.d[i + 1]) || DEF[c.cls][i], (c.s && c.s[i + 1]) || SUP[c.cls][i]]);
+    D[key] = { cls: c.cls, rows, cap: c.cap };
+  }
+  if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.CB_TALENTS = D;
+})(typeof window !== 'undefined' ? window : globalThis);
 
 // Cardbound combat engine, prototype v2. Pure logic: no DOM. Browser: window.CB. Node: module.exports.
 // Enemy data comes from CB_DATA (exported from the Map 1 design files).
@@ -1613,6 +1808,15 @@ class Combat {
     if (cxItem) { const cx = CODEX_BY_KEY[cxItem.codex]; let key = 'codex_' + cx.key, text = cx.text;
       if (cx.key === 'bastion_of_faith') { const w = (spec.gear || []).find(g => g.slot === 'Weapon'), o = (spec.gear || []).find(g => g.slot === 'Off-hand'); const G = this.data.gear, archOf = (it) => it && (it.arch || ((G.bases.find(b => b.name === it.name) || {}).arch) || ''), twoH = (it) => ((G.arche[archOf(it)] || {}).hands || it.hands || '').startsWith('2H'); if (!(w && !twoH(w) && o && /Shield/.test(archOf(o)))) { key = 'codex_bastion_of_faith_off'; text = 'Inactive: needs a one-handed weapon and a shield.'; } }
       p.powers.push({ key, name: cx.name + ' Codex', text, codex: true }); }
+    // codex talents: only for the codex being worn (spec.talents = { codex, picks: [row 0..9 -> 0 offense | 1 defense | 2 support] })
+    const tl = spec.talents, tr = cxItem && tl && tl.codex === cxItem.codex && TALENTS[tl.codex];
+    if (tr) {
+      const picked = []; let cap = null;
+      (tl.picks || []).forEach((j, i) => { if (j == null || j < 0 || j > 2) return; if (i < 9) { const t = tr.rows[i] && tr.rows[i][j]; if (t) picked.push(t); } else if (i === 9) cap = tr.cap[j]; });
+      for (const t of picked) for (const f of t.fx) if (f[0] === 'stat') { if (f[1] === 'resistAll') { for (const el of ELEMENTS) p.resist[el] = Math.min(75, (p.resist[el] || 0) + f[2]); } else p[f[1]] = (p[f[1]] || 0) + f[2]; }
+      if (picked.length || cap) { const label = CODEX_BY_KEY[tl.codex].name + ' talents';
+        p.powers.push({ key: 'talents', name: label, text: picked.map(t => t.n).concat(cap && C[cap] ? [C[cap].name + ' (capstone)'] : []).join(', '), talent: true, def: talentDef(picked, cap, label) }); }
+    }
     const deck = [];
     for (const x of (spec.deck || cls.deck)) {
       if (Array.isArray(x)) { for (let k = 0; k < x[1]; k++) deck.push({ uid: 'c' + (this._uid++), key: x[0] }); }
@@ -1665,6 +1869,7 @@ class Combat {
     if ((c && c.free) || (p.turn && (p.turn.freeAll || p.turn.nextFree))) return 0;
     let cost = d.cost + (p.turn.costDelta || 0) + (d.type === 'Attack' ? p.turn.costAttack || 0 : 0) + (d.type === 'Skill' ? p.turn.costSkill || 0 : 0) + (p.turn.nextCost || 0);
     const tw = p.turn.twice; if (tw && (tw.type === 'any' || tw.type === d.type)) cost += tw.extra || 0;
+    if (p.powers && p.powers.length) cost -= this.pwSum(p, 'costLess', d);
     cost = cost * (p.turn.costX || 1) * (p.costX || 1) * (1 + 0.05 * (p.exposure || 0));
     return Math.max(0, Math.round(cost));
   }
@@ -1714,7 +1919,7 @@ class Combat {
   cleanseAll(a, withBleed) { let n = 0; for (const k of this.debuffKeys(a, withBleed)) { n += a[k]; a[k] = 0; } a.disarmNext = false; if (n) this.say('player', `${a.name}: debuffs removed.`); if (this.player && this.player.isPlayer) this.fire(this.player, 'onCleanse', n); return n; }
   extraTick(e, key) { const src = this.actorById(e[key + 'By']) || this.player; if (e[key] > 0 && e.hp > 0) { this.applyHit(src, e, e[key], { isDot: true, label: key[0].toUpperCase() + key.slice(1) + ' (extra tick)', ignoreBlock: key === 'poison' }); } }
   // ----- powers
-  pws(p) { return (p && p.powers || []).map(pw => [pw, POWERS[pw.key]]).filter(x => x[1]); }
+  pws(p) { return (p && p.powers || []).map(pw => [pw, pw.def || POWERS[pw.key]]).filter(x => x[1]); }
   has(p, key) { return !!(p && p.powers && p.powers.some(pw => pw.key === key)); }
   fire(p, hook, ...args) { if (!p || !p.isPlayer || !p.powers.length) return; for (const [pw, def] of this.pws(p)) if (def[hook] && !this.over) { const was = this.player; this.player = p; this.rkPw(pw, () => def[hook](this, p, ...args, pw)); this.player = was; } }
   pwProd(p, field, ...args) { let m = 1; for (const [pw, def] of this.pws(p)) { const v = def[field]; if (v == null) continue; let x = typeof v === 'function' ? this.rkPw(pw, () => v(this, p, ...args, pw)) : v; if (pw.rkMain && typeof x === 'number' && x !== 1) x = Math.max(0, 1 + (x - 1) * pw.rkMain); m *= x; } return m; }
@@ -2047,6 +2252,7 @@ class Combat {
     if (this.over) return;
     if (a.isPlayer) {
       if (a.dead) return;
+      { const tp = a.powers.find(x => x.def && x.def.cheat && !x.cheatUsed); if (tp) { tp.cheatUsed = true; const [n, mode] = tp.def.cheat; a.hp = 1; const was = this.player; this.player = a; if (mode === 'heal') this.heal(a, Math.round(a.maxHp * n / 100), tp.def.label); else this.gainDef(n); this.player = was; this.say('crit', `${tp.def.label}: ${a.name} refuses to fall!`); return; } }
       a.dead = true; a.block = 0; a.bleed = 0; a.discard.push(...a.hand.splice(0));
       if (this.duel) { this.winner = this.alivePlayers()[0] || null; this.say('win', `${a.name} falls. ${this.winner ? this.winner.name + ' wins the duel' : 'The duel is a draw'} in ${this.round} round${this.round > 1 ? 's' : ''}.`); this.over = 'duel'; this.phase = 'over'; return; }
       if (!this.alivePlayers().length) { this.say('loss', this.partySize > 1 ? 'The whole party falls.' : 'You fall.'); this.over = 'loss'; this.phase = 'over'; return; }
@@ -2057,6 +2263,7 @@ class Combat {
     }
     if (a._dead) return; a._dead = true;
     { const q = this.current; if (q && q.isPlayer && q.turn && q.turn.killMana) { q.mana += q.turn.killMana; this.say('player', `${a.name} died: ${q.name} gains ${q.turn.killMana} mana.`); q.turn.killMana = 0; } }
+    { const q = this.current; if (q && q.isPlayer && !q.dead && q.powers.length) this.fire(q, 'onKill', a); }
     a.bleed = a.poison = a.burn = 0; a.block = 0;
     this.say('kill', `${a.name} dies.`);
     if (this.foes().length === 0) { this.say('win', `Victory in ${this.round} round${this.round > 1 ? 's' : ''}.`); this.over = 'win'; this.phase = 'over'; }
@@ -2072,6 +2279,7 @@ class Combat {
 
   hit(e, base, label) {
     const p = this.player, cd = this._playing;
+    if (p && p.isPlayer) p._devHit = 0;
     if (!e || e.hp <= 0) return 0;
     if (this._rkHits && !this._inPw && cd === this._rkCard) this._rkHits.push([e, base, label]);
     { const m = this.rkm('dmg'); if (m !== 1) base = Math.round(base * m); }
@@ -2089,7 +2297,7 @@ class Combat {
       if (kind === 'Attack' && p.windUp && cd && !cd.isPower) base += Math.floor((cd.cost || 0) / 5) * (+p.windUp);
       if (kind === 'Skill' && cd && !cd.isPower && cd.tags && cd.tags.dmg && p.turn.skillFlat) base += p.turn.skillFlat;
       const dw = this.has(p, 'codex_divine_wrath');
-      if ((dtype === 'Holy' || (dw && kind === 'Attack')) && p.devotion > 0 && cd && !cd.isPower) { const per = cd.devotionPer || (dw ? 3 : 2); base += p.devotion * per; this.say('player', `${p.devotion} Devotion: +${p.devotion * per} Holy damage.`); p.devotion = 0; }
+      if ((dtype === 'Holy' || (dw && kind === 'Attack')) && p.devotion > 0 && cd && !cd.isPower) { const per = cd.devotionPer || (dw ? 3 : 2); base += p.devotion * per; this.say('player', `${p.devotion} Devotion: +${p.devotion * per} Holy damage.`); p._devHit = p.devotion; p.devotion = 0; }
     }
     const stat = (kind === 'Attack' ? p.strength + p.strTurn + p.strCombat : p.intelligence + (p.intTurn || 0)) + (pow ? this.pwSum(p, 'statPlus', e, ctx) : 0);
     const elem = p.elem[dtype] || 0;
@@ -2437,6 +2645,99 @@ const RANK_BASE = { White: 2, Green: 4, Blue: 8, Gold: 16 };    // reaching rank
 const DECK_POINTS = { White: 15, Green: 28, Blue: 42, Gold: 59 }, DECK_RANK_STEP = 1.9 / 3;
 const DECK_CAPS = { Gold: 2, Blue: 4, Green: 6 }, DECK_MIN = 20, DECK_MAX = 30, MAX_RANK = 10;
 function bigNumber(d) { const t = d.tags || {}; return (t.dmg || 0) >= 8 || (t.def || 0) >= 8 || (t.heal || 0) >= 8; }
+
+// ---------------- Codex talents (Nov 1) ----------------
+// Wearing a codex earns XP for it (per kill); every 2 codex levels open a talent row (max level 20, 10 rows).
+// Talents only work while that codex is worn; points are kept when you swap. Data: src/talents.js.
+const TALENTS = (typeof module !== 'undefined' && module.exports) ? require('./talents.js') : (root.CB_TALENTS || {});
+const CODEX_MAX = 20;
+const CODEX_XP = (lv) => Math.round(14 * Math.pow(1.15, lv - 1)); // XP from level lv-1 to lv: about 70 full solo runs to 20, each level 15% slower
+const KILL_XP = (tier) => tier === 'Boss' ? 10 : tier === 'Elite' ? 3 : 1;
+function codexLevel(xp) { xp = Math.max(0, Math.floor(xp || 0)); let lv = 0; while (lv < CODEX_MAX && xp >= CODEX_XP(lv + 1)) { xp -= CODEX_XP(lv + 1); lv++; } return { level: lv, into: xp, need: lv < CODEX_MAX ? CODEX_XP(lv + 1) : 0, rows: Math.floor(lv / 2) }; }
+const tcond = (cb, p, c) => {
+  if (!c) return true; const [k, v] = c.split(':');
+  if (k === 'block') return p.block >= (+v || 1); if (k === 'stealth') return !!p.stealth; if (k === 'devotion') return p.devotion + (p._devHit || 0) >= (+v || 1);
+  if (k === 'any') return cb.foes().some(e => (e[v] || 0) > 0); if (k === 'prevSkill') return p.prevType === 'Skill'; if (k === 'prevAttack') return p.prevType === 'Attack';
+  if (k === 'elems') return (p.turnElems || []).length >= +v; if (k === 'lowhp') return p.hp < p.maxHp / 2; return true;
+};
+const tvs = (e, vs) => { if (!vs) return true; if (!e) return false; const [k, v] = vs.split(':'); return (e[k] || 0) >= (+v || 1); };
+const tcard = (d, f) => !!d && (!f.type || d.type === f.type) && (!f.dtype || (d.dtype || (d.type === 'Attack' ? 'Physical' : null)) === f.dtype) && (!f.key || d.key === f.key) && (!f.minCost || (d.cost || 0) >= f.minCost);
+// one hidden Power holds all of a hero's picked talents, so percentages from different rows add up
+function talentDef(list, cap, label) {
+  const D = { hm: [], cr: [], cx: 0, fl: [], dm: [], hl: 0, inc: [], dp: {}, dx: {}, dev: 0, sh: 0, start: [], turn: [], kill: [], hit: [], full: [], low: null, cheat: null, every: [], cost: [], first: [], aura: [] };
+  for (const t of list) for (const f of t.fx) {
+    const [k, a, b, c, d2, e2] = f;
+    if (k === 'dmg') D.hm.push([a, b || {}]); else if (k === 'crit') D.cr.push([a, b || {}]); else if (k === 'critX') D.cx += a; else if (k === 'flat') D.fl.push([b, c || {}]);
+    else if (k === 'dmgPer') D.hm.push([0, d2 ? Object.assign({}, e2 || {}, { per: [a, b, c, d2] }) : {}]);
+    else if (k === 'def') D.dm.push([a, b]); else if (k === 'heal') D.hl += a; else if (k === 'incoming') D.inc.push([a, b]);
+    else if (k === 'dotPlus') D.dp[a] = (D.dp[a] || 0) + b; else if (k === 'dotX') D.dx[a] = (D.dx[a] || 0) + b; else if (k === 'devPlus') D.dev += a; else if (k === 'shurPlus') D.sh += a;
+    else if (k === 'start') D.start.push([a, b, c]); else if (k === 'turn') D.turn.push([a, b, c, d2]); else if (k === 'kill') D.kill.push([a, b, c]);
+    else if (k === 'hitBy') D.hit.push([a, b, c]); else if (k === 'full') D.full.push([a, b, c]); else if (k === 'lowhp') D.low = [a, b]; else if (k === 'cheat') D.cheat = [a, b];
+    else if (k === 'every') D.every.push([a, b, c, d2, e2]); else if (k === 'cost') D.cost.push([a, b]); else if (k === 'firstCost') D.first.push([a, b]); else if (k === 'aura') D.aura.push(...a);
+  }
+  const P = { talent: true, label };
+  const act = (cb, p, what, n, key, nm) => { // one effect, for p (cb.player is p inside hooks)
+    if (cb.over) return;
+    switch (what) {
+      case 'block': cb.gainDef(n); break;
+      case 'mana': p.mana += n; break;
+      case 'manaPer': { const k2 = cb.foes().filter(e => (e[key] || 0) > 0).length * n; if (k2) { p.mana += k2; cb.say('player', `${nm}: +${k2} mana.`); } break; }
+      case 'str': p.strCombat += n; break;
+      case 'heal': cb.heal(p, Math.round(p.maxHp * n / 100), nm); break;
+      case 'draw': cb.drawCards(p, n); break;
+      case 'dot': for (const e of cb.foes()) cb.applyDot(e, key, n); break;
+      case 'debuff': for (const e of cb.foes()) { if (key === 'chill') cb.applyChill(e, n); else e[key] = (e[key] || 0) + n; } break;
+      case 'stealth': p.stealth = true; break;
+      case 'devotion': devote(cb, p, n); break;
+      case 'shuriken': for (let i = 0; i < n; i++) cb.addToHand('shuriken'); break;
+      case 'discard': for (const e of cb.foes()) cb.eDiscard(e, n); break;
+      case 'dazed': for (const e of cb.foes()) cb.eStatus(e, 'dazed', n); break;
+      case 'drain': for (const e of cb.foes()) cb.drainMana(e, n); break;
+      case 'cleanse': cb.cleanse(p, n); break;
+    }
+  };
+  const NM = 'Talent';
+  if (D.hm.length) P.hitMult = (cb, p, e, ctx) => { let m = 1; for (const [pct, f] of D.hm) { if (!tcard(ctx.d || { type: ctx.kind, dtype: ctx.dtype }, f) && !(f.dtype && !f.type && ctx.dtype === f.dtype)) continue; if (f.self && !tcond(cb, p, f.self)) continue; if (f.per) { const [st, step, pp, max] = f.per; m *= 1 + Math.min(max, Math.floor(((e && e[st]) || 0) / step) * pp) / 100; continue; } if (!tvs(e, f.vs)) continue; m *= 1 + pct / 100; } return m; };
+  if (D.cr.length) P.crit = (cb, p, d) => D.cr.reduce((s, [n, f]) => s + ((!f.type && !f.key || tcard(d, f)) && (!f.self || tcond(cb, p, f.self)) ? n : 0), 0);
+  if (D.cx) P.critMultX = 1 + D.cx / 100;
+  if (D.fl.length) P.flat = (cb, p, d) => D.fl.reduce((s, [pct, f]) => s + (tcard(d, f) ? Math.round(p.block * pct / 100) : 0), 0);
+  if (D.dm.length) P.defMultFn = (cb, p) => D.dm.reduce((m, [pct, c]) => m * (tcond(cb, p, c) ? 1 + pct / 100 : 1), 1);
+  if (D.hl) P.healMult = 1 + D.hl / 100;
+  if (D.inc.length) P.incoming = (cb, p) => D.inc.reduce((m, [pct, c]) => m * (tcond(cb, p, c) ? 1 - pct / 100 : 1), 1);
+  if (Object.keys(D.dp).length) P.dotPlus = D.dp;
+  if (Object.keys(D.dx).length) P.dotMult = Object.fromEntries(Object.entries(D.dx).map(([k, v]) => [k, 1 + v / 100]));
+  if (D.dev) P.devotionPlus = D.dev; if (D.sh) P.shurikenPlus = D.sh;
+  if (D.start.length || D.turn.length || cap || D.aura.length) P.turnStart = (cb, p, pw) => {
+    if (!pw.started) {
+      pw.started = true;
+      if (D.aura.length) { const ad = talentDef([{ fx: D.aura }], null, label); for (const a of cb.allies()) if (a !== p && a.isPlayer && !a.dead) a.powers.push({ key: 'talents_aura', name: label + ' (ally)', text: 'From ' + p.name + '\'s talents.', talent: true, def: ad }); }
+      for (const [w, n, key] of D.start) act(cb, p, w, n, key, label);
+      if (cap && C[cap] && C[cap].play) { cb.say('player', `${label}: ${C[cap].name} starts in play.`); cb.player = p; C[cap].play(cb, null); cb.player = p; }
+    }
+    for (const [w, n, key, c] of D.turn) if (tcond(cb, p, c)) act(cb, p, w, n, key, label);
+  };
+  if (D.kill.length) P.onKill = (cb, p, dead) => { for (const [w, n, key] of D.kill) {
+    if (w === 'spread') { const v = dead[key] || 0; if (v > 0) { for (const e of cb.foes()) if (e !== dead) { if (['burn', 'bleed', 'poison'].includes(key)) cb.applyDot(e, key, v); else e[key] = (e[key] || 0) + v; } cb.say('player', `${label}: ${dead.name}'s ${key} spreads.`); } }
+    else if (w === 'mana') p.mana += n; else act(cb, p, w, n, key, label); } };
+  if (D.hit.length || D.low) P.hitBy = (cb, p, e, r) => {
+    for (const [w, n, key] of D.hit) {
+      if (w === 'back') { if (r.absorbed > 0 && e.hp > 0) { cb.applyHit(p, e, n, { label }); if (e.hp <= 0) cb.onDeath(e); } }
+      else if (e.hp > 0) { if (w === 'dot') cb.applyDot(e, key, n); else if (key === 'chill') cb.applyChill(e, n); else e[key] = (e[key] || 0) + n; }
+    }
+    if (D.low && !p.tLow && p.hp > 0 && p.hp < p.maxHp * 0.3) { p.tLow = true; const [pct, mode] = D.low;
+      if (mode === 'heal') cb.heal(p, Math.round(p.maxHp * pct / 100), label); else { cb.gainDef(Math.round(p.maxHp * pct / 100)); if (mode === 'stealth') p.stealth = true; } cb.say('crit', `${label}: a last-moment save.`); }
+  };
+  if (D.full.length) P.fullBlock = (cb, p, e) => { for (const [w, n, key] of D.full) {
+    if (w === 'back') { if (e.hp > 0) { cb.applyHit(p, e, n, { label }); if (e.hp <= 0) cb.onDeath(e); } } else if (w === 'debuff') { if (e.hp > 0) e[key] = (e[key] || 0) + n; } else if (w === 'mana') p.mana += n; else act(cb, p, w, n, key, label); } };
+  if (D.cheat) P.cheat = D.cheat;
+  if (D.every.length || D.first.length) P.cardPlayed = (cb, p, d) => {
+    D.every.forEach(([N, f, w, n, key], i) => { if (!tcard(d, f)) return; const k = 'te' + i; p.turn[k] = (p.turn[k] || 0) + 1; if (p.turn[k] % N === 0) { act(cb, p, w, n, key, label); cb.say('player', `${label}: every ${N}${N === 3 ? 'rd' : 'th'} card bonus.`); } });
+    D.first.forEach(([n, f], i) => { if (tcard(d, f)) p.turn['tf' + i] = true; });
+  };
+  if (D.cost.length || D.first.length) P.costLess = (cb, p, d) => D.cost.reduce((s, [n, f]) => s + (tcard(d, f) ? n : 0), 0) + D.first.reduce((s, [n, f], i) => s + (tcard(d, f) && !p.turn['tf' + i] ? n : 0), 0);
+  return P;
+}
+
 // Per-level upgrades (Oct 31): every card has its own upgrade, set in design/Cardbound_Card_Upgrades.xlsx and built into
 // src/card_upgrades.js by design/scripts/card_upgrades.py. Each number token in the text says how it grows:
 // [start, end, base, kind, step, every]: base + step per `every` levels. Kinds ms_* are milestones: +1 at +5 and +2 at +10.
@@ -2603,7 +2904,7 @@ if (DATA) dropRemovedLoot(DATA);
 // Oct 31: Lay on Hands and Mend Wounds can be aimed at any hero in the party (yourself if you play them solo)
 if (C.mend_wounds) Object.assign(C.mend_wounds, { target: 'ally', text: 'Heal an ally (or yourself) for 8 HP.', play: (cb, t) => cb.heal(t && t.isPlayer && t.hp > 0 ? t : cb.player, 8, 'Mend Wounds') });
 if (C.lay_on_hands) Object.assign(C.lay_on_hands, { target: 'ally', text: 'Heal an ally (or yourself) for 30% of their total HP. Exhaust.', play: (cb, t) => { const a = t && t.isPlayer && t.hp > 0 ? t : cb.player; cb.heal(a, Math.round(a.maxHp * 0.3), 'Lay on Hands'); } }); // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
-const API = { CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -2613,7 +2914,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
 (function (root) {
 'use strict';
 const CB = (typeof module !== 'undefined' && module.exports) ? require('./engine.js') : root.CB;
-const { makeRng, shuffle, ri, rollItem, rollDrops, sumGear, STARTER_GEAR, presetGear, Combat, rollCards, rollNamedCards } = CB;
+const { makeRng, shuffle, ri, rollItem, rollDrops, sumGear, STARTER_GEAR, presetGear, Combat, rollCards, rollNamedCards, KILL_XP } = CB;
 
 const ROWS = 14, COLS = 5;
 const MOB_HP_STEP = 0.3; // a party fights one monster per hero, each with +30% HP per extra hero (sims: about solo difficulty)
@@ -2799,14 +3100,14 @@ class Run {
     this.data = this.opts.data || root.CB_DATA;
     this.rng = makeRng(this.opts.seed);
     this.level = this.opts.level;
-    const specs = this.opts.members || [{ key: this.opts.key, cls: this.opts.cls, name: this.opts.name, gear: this.opts.gear, deck: this.opts.deck, bank: this.opts.bank, stashFree: this.opts.stashFree }];
+    const specs = this.opts.members || [{ key: this.opts.key, cls: this.opts.cls, name: this.opts.name, gear: this.opts.gear, deck: this.opts.deck, bank: this.opts.bank, stashFree: this.opts.stashFree, talents: this.opts.talents }];
     this.sharedBank = !!this.opts.sharedBank;
     this.bankPool = this.sharedBank ? (specs[0].bank || 0) : 0;
     this.members = specs.map((sp, i) => {
       const gear = (sp.gear || (this.opts.gearPreset === 'White' ? STARTER_GEAR[sp.cls] : presetGear(sp.cls, this.opts.gearPreset))).map(x => Object.assign({}, x));
       const stats = sumGear(gear);
       return { idx: i, key: sp.key, cls: sp.cls, name: sp.name || sp.cls, gear, stats, deck: sp.deck || null, hp: stats.maxHp, mana: 0, gold: 0, sack: [],
-        bank: this.sharedBank ? 0 : (sp.bank || 0), spent: 0, orders: [], stashFree: sp.stashFree != null ? sp.stashFree : 99, kept: null, deaths: 0 };
+        bank: this.sharedBank ? 0 : (sp.bank || 0), spent: 0, orders: [], stashFree: sp.stashFree != null ? sp.stashFree : 99, kept: null, deaths: 0, talents: sp.talents || null, cxp: {} };
     });
     this.buffs = []; this.log = []; this.meter = {};
     this.mapKey = this.opts.map && this.data.maps && this.data.maps[this.opts.map] ? this.opts.map : 'physical';
@@ -2849,7 +3150,7 @@ class Run {
     this.at = nodeId; this.visited.push(nodeId);
     if (['fight', 'elite', 'boss'].includes(n.type)) {
       const buffs = this.activeBuffs();
-      const party = this.members.map(m => ({ cls: m.cls, name: m.name, gear: m.gear, deck: m.deck || undefined, hp: m.hp, mana: m.mana, buffs }));
+      const party = this.members.map(m => ({ cls: m.cls, name: m.name, gear: m.gear, deck: m.deck || undefined, hp: m.hp, mana: m.mana, buffs, talents: m.talents || undefined }));
       this.combat = new Combat({ party, enemies: n.enemies, enraged: !!n.enraged, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : this.opts.partyStep, mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * (this.members.length - 1) : 1 });
       this.note(`Row ${n.row}: ${n.type === 'boss' ? 'the boss' : n.type === 'elite' ? 'an elite' : 'a fight'} against ${n.enemies.map(k => this.data.enemies[k].name).join(', ')}.`);
     } else if (n.type === 'rest') { this.pending = { type: 'rest', heals: this.members.map(m => Math.min(m.stats.maxHp - m.hp, Math.round(m.stats.maxHp * 0.3))), keep: n.campfire ? 0.75 : 0.5 }; this.pending.heal = this.pending.heals[0]; }
@@ -2869,6 +3170,9 @@ class Run {
       for (const f of ['dealt', 'healed', 'taken']) for (const [a, v] of Object.entries(m[f])) R[f][a] = (R[f][a] || 0) + v;
       R.absorbed += m.absorbed;
     }
+    // codex XP (Nov 1): every kill counts for the codex each hero is wearing; a party splits the kills but gets +10% per extra hero
+    { const xp = cb.enemies.filter(e => e.hp <= 0).reduce((s, e) => s + KILL_XP((this.data.enemies[e.key] || {}).tier), 0), N = this.members.length;
+      if (xp > 0) for (const m of this.members) { const cx = (m.gear.find(g => g && g.slot === 'Codex') || {}).codex; if (cx) m.cxp[cx] = (m.cxp[cx] || 0) + xp / N * (1 + 0.1 * (N - 1)); } }
     for (const b of this.buffs) b.fights--;
     this.buffs = this.buffs.filter(b => b.fights > 0);
     if (cb.over === 'loss') {
@@ -3131,11 +3435,20 @@ function buyShop(p, i) {
 }
 
 // ---------- runs
+// ---------- codex talents (Nov 1): XP and picks per hero per codex; only the worn codex's talents are active
+function wornCodex(c) { const it = (c.gear || []).find(g => g && g.slot === 'Codex'); return it && it.codex && CB.CODEX_BY_KEY[it.codex] ? it.codex : null; }
+function codexState(c, key) { c.codexes = c.codexes || {}; return c.codexes[key] || (c.codexes[key] = { xp: 0, picks: [] }); }
+function codexInfo(c, key) { const st = (c.codexes || {})[key] || { xp: 0, picks: [] }; return Object.assign({ key, xp: st.xp || 0, picks: st.picks || [] }, CB.codexLevel(st.xp)); }
+function maxedCodexes(c) { return Object.values(c.codexes || {}).filter(st => CB.codexLevel(st.xp).level >= CB.CODEX_MAX).length; }
+// pick talent column j (0 offense, 1 defense, 2 support, null = clear) on row i; rows open every 2 codex levels
+function pickTalent(p, key, cx, row, col) { const c = char(p, key); if (!c || !CB.TALENTS[cx]) return false; const info = codexInfo(c, cx); if (row >= info.rows) return false; const st = codexState(c, cx); st.picks[row] = col == null ? null : col; return true; }
+function resetTalents(p, key, cx) { const c = char(p, key); if (!c) return; codexState(c, cx).picks = []; }
+function talentSpec(c) { const cx = wornCodex(c); if (!cx) return undefined; const info = codexInfo(c, cx); return { codex: cx, picks: info.picks.slice(0, info.rows) }; }
 function partyOpts(p, classes) {
   const free = Math.max(0, STASH_MAX - p.stash.length);
-  return { sharedBank: true, members: classes.map((key, i) => { const c = char(p, key); return { key, cls: c.cls, name: c.name || c.cls, bank: i === 0 ? p.gold : 0, stashFree: free, gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })) }; }) };
+  return { sharedBank: true, members: classes.map((key, i) => { const c = char(p, key); return { key, cls: c.cls, name: c.name || c.cls, bank: i === 0 ? p.gold : 0, stashFree: free, gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }) };
 }
-function runOpts(p, key) { const c = char(p, key); return { key, cls: c.cls, members: undefined, name: c.name, bank: p.gold, stashFree: Math.max(0, STASH_MAX - p.stash.length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })) }; }
+function runOpts(p, key) { const c = char(p, key); return { key, cls: c.cls, members: undefined, name: c.name, bank: p.gold, stashFree: Math.max(0, STASH_MAX - p.stash.length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }
 // Bring a finished run home: equipped gear (incl. merchant buys) stays on the character; kept loot goes to stash/collection.
 function absorbRun(p, run, mi) {
   if (mi == null && run.members && run.members.length > 1) { const res = run.members.map((m, i) => absorbRun(p, run, i)); return res[0]; }
@@ -3152,16 +3465,18 @@ function absorbRun(p, run, mi) {
     else lost++;
   }
   p.gold += kept.gold;
+  // codex XP from this run's kills; +10% for every codex this hero has maxed
+  const xpGain = {}; { const bonus = 1 + 0.1 * maxedCodexes(c); for (const [cx, v] of Object.entries(mem.cxp || {})) { if (!CB.CODEX_BY_KEY[cx]) continue; const st = codexState(c, cx), before = CB.codexLevel(st.xp).level, g = Math.round(v * bonus); st.xp += g; xpGain[cx] = { xp: g, from: before, to: CB.codexLevel(st.xp).level }; } }
   c.runs++; const row = run.currentRow(); c.best = Math.max(c.best, row); if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); }
   // the run's damage meter, kept so the Chronicler can show it later (numbers rounded to keep saves small)
   const meter = Object.values(run.meter || {}).map(m => { const r = (o) => Object.fromEntries(Object.entries(o || {}).filter(x => x[1] > 0).map(([k, v]) => [k, Math.round(v)])); return { id: m.id, name: m.name, isPlayer: m.isPlayer, cls: m.cls, dealt: r(m.dealt), healed: r(m.healed), taken: r(m.taken), absorbed: Math.round(m.absorbed || 0) }; });
   p.history.unshift({ meter: meter.length ? meter : undefined, map: run.mapKey, fights: run.fightsWon, cls: mem.cls, name: mem.name, party: run.members && run.members.length > 1 ? run.members.map(m => m.cls) : undefined, level: run.level, result: run.over, row, items, cards, gold: kept.gold, ordered, at: Date.now() });
   p.history = p.history.slice(0, 20);
   p.last = Object.assign(p.last || {}, { level: run.level });
-  return { items, cards, gold: kept.gold, lost, ordered };
+  return { items, cards, gold: kept.gold, lost, ordered, xpGain };
 }
 
-const API = { SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -4080,6 +4395,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     $('tbHero').innerHTML = `<b style="color:${CC[c.cls]}">${esc(c.name || c.cls)}</b> <span class="muted">${c.cls}</span>`;
     $('tbPower').textContent = `Power ${CBHub.powerLevel(c)} · gear ${CBHub.gearScore(c)} · deck ${CB.deckLevel(c.deck)}`;
     $('tbGold').textContent = `Gold ${profile.gold}`;
+    renderCodexBar();
   }
   $('tbChar').addEventListener('click', () => { closeTalk(); openSheet('char'); });
   function townStart(fromRun) {
@@ -4618,8 +4934,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793492964560';
-  const CB_BUILD = '1628d0d303'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793495725510';
+  const CB_BUILD = 'e7fd07f55e'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -4673,14 +4989,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (TR.s) cancelTrade(); closeModal(); $('sheet').hidden = true; if ($('talk')) $('talk').hidden = true;
     if (go.kind === 'duel') {
       run = null;
-      cb = new CB.Combat({ duel: true, party: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, uid: s.uid })), seed: go.seed, data: DATA });
+      cb = new CB.Combat({ duel: true, party: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, uid: s.uid, talents: s.talents })), seed: go.seed, data: DATA });
       cb.myMi = S.mi; startCombatUI();
     } else if (go.kind === 'raid') {
       run = null; const bk = CB.raidBoss(DATA, go.map);
-      cb = new CB.Combat({ raid: true, party: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, uid: s.uid })), enemies: [bk], level: go.level, seed: go.seed, data: DATA });
+      cb = new CB.Combat({ raid: true, party: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, uid: s.uid, talents: s.talents })), enemies: [bk], level: go.level, seed: go.seed, data: DATA });
       cb.myMi = S.mi; cb.raidMap = go.map; startCombatUI();
     } else {
-      run = new Run({ members: go.specs.map(s => ({ key: s.key, cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, bank: s.bank, stashFree: s.stashFree })), level: go.level, map: go.map || 'physical', seed: go.seed, data: DATA });
+      run = new Run({ members: go.specs.map(s => ({ key: s.key, cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, bank: s.bank, stashFree: s.stashFree, talents: s.talents })), level: go.level, map: go.map || 'physical', seed: go.seed, data: DATA });
       run.online = true; run.myMi = S.mi; run.uids = go.uids.slice();
       show('map'); renderMap(true);
       if (go.host !== SOC.me) { modal(`<h2>Your party sets out</h2><p>${esc(nameOfUid(go.host))} is leading ${go.specs.map(x => esc(x.name)).join(', ')} onto <b>${esc(run.mapName)}</b> (+${go.level}).</p><p class="muted">Click a node on the map to vote where to go. The party moves when everyone has voted (ties are a coin flip; after 45 seconds the votes in count).</p><div class="row"><button class="btn primary" id="mClose">Let's go</button></div>`); $('mClose').onclick = closeModal; }
@@ -5317,6 +5633,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // ---------- What's new: the changelog (button bottom-right) and the new-version warning
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
+    { date: '2026-11-01', items: [
+      ['Codexes', 'Codex talent trees: every codex now levels up (max 20) while you wear it, from kills: normal 1 XP, elite 3, boss 10. A party splits the kills but gets +10% XP per extra hero, and every codex you have maxed gives +10% on the others. It takes about 70 full solo runs to max one, each level 15% slower than the last.'],
+      ['Codexes', 'Every 2 levels opens a talent row (10 rows): pick an Offense, Defense or Support talent on each. Level 10 is a mini capstone; level 20 is the capstone, a Power that is already in play at the start of every fight. Mix freely; changing picks is free in town. Talents only work while that codex is worn, and you never lose points by swapping.'],
+      ['Codexes', 'Press N (town, character screen, map or fight) for your talent trees, one tab per codex of your class. The town shows your worn codex level and XP at the top, and the Compendium Codexes tab opens any codex\'s tree when you click it. Tinker Pip can add codex levels for testing.'],
+    ] },
     { date: '2026-10-31', items: [
       ['Cards', 'Card upgrades are reworked: every card now grows its own way as it ranks up, following the upgrade sheet (your Warrior list, the answered questions and the accepted suggestions). Most numbers add a small flat amount per level (+10 roughly doubles the main number); draws, hits, turns and card counts step up at +5 and +10; cards with nothing to grow get cheaper. Card text always shows the numbers at its rank. Every card is listed below, with its numbers at +0 → +5 → +10.', 'cardlist'],
       ['Combat', 'When you die you stay on the fight screen: read the combat log and damage meter, then press Results to move on.'],
@@ -5569,7 +5890,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       if (CX.own !== 'All' && (CX.own === 'Owned') !== have.has(key)) continue;
       if (q && !(name + ' ' + text + ' ' + cls).toLowerCase().includes(q)) continue;
       const from = src[name + ' Codex'] || [];
-      rows.push(`<div class="cxcod" data-cxcodex="${key}" role="button" tabindex="0" title="Click for drop sources and example rolls" style="--rc:${CC[cls]}"><div class="cxch"><b>${esc(name)} Codex</b><span style="color:${CC[cls]}">${cls}</span>${have.has(key) ? '<span class="tag good">Owned</span>' : ''}</div><div>${esc(text)}</div><small class="muted">${from.length ? from.map(f => `${esc(f.boss.split(',')[0])} on ${esc(f.map)} drops it on ${Math.round(CB.BOSS_CODEX_CHANCE * 100)}% of kills for a ${cls} (more with Luck). The raid ${esc(CB.RAID_NAMES[f.mk] || '')} always drops one of its codexes.`).join(' ') : 'Not on any loot table yet.'}</small></div>`);
+      rows.push(`<div class="cxcod" data-cxcodex="${key}" role="button" tabindex="0" title="Click for its talent tree (and drop sources)" style="--rc:${CC[cls]}"><div class="cxch"><b>${esc(name)} Codex</b><span style="color:${CC[cls]}">${cls}</span>${have.has(key) ? '<span class="tag good">Owned</span>' : ''}</div><div>${esc(text)}</div><small class="muted">${from.length ? from.map(f => `${esc(f.boss.split(',')[0])} on ${esc(f.map)} drops it on ${Math.round(CB.BOSS_CODEX_CHANCE * 100)}% of kills for a ${cls} (more with Luck). The raid ${esc(CB.RAID_NAMES[f.mk] || '')} always drops one of its codexes.`).join(' ') : 'Not on any loot table yet.'}</small></div>`);
     }
     return `<p class="muted" style="margin:0 0 6px">A codex is an item for the Codex slot (Quartermaster): a fixed class passive that shapes a playstyle, plus random stats. Tinker Pip has three test decks for each.</p>
       ${cxChips('cls', ['All', ...Object.keys(CLASSES)], 'Class')}${cxChips('own', ['All', 'Owned', 'Not owned'], 'Owned')}
@@ -5592,8 +5913,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       ${mine.length ? `<div class="list">${mine.map(m => itemHtml(m.it, `<div class="il">${esc(m.where)}</div>`)).join('')}</div>` : '<p class="muted">None yet.</p>'}
       <h4 style="margin:10px 0 4px;color:var(--accent)">Example rolls</h4><div class="list">${ex.map(it => itemHtml(it)).join('')}</div>
       ${decks ? `<p class="muted" style="font-size:13px">Tinker Pip has ${decks} test decks built around it.</p>` : ''}
-      <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
-    $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal;
+      <div class="row"><button class="btn" id="cxTal">Talent tree</button><button class="btn primary" id="mClose">Close</button></div>`);
+    $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal; if ($('cxTal')) $('cxTal').onclick = () => openTalents(key, { compendium: true });
   }
   // the Wagon's "Map loot" button: everything a map can drop, in one place
   function mapLootModal(mk, lvl) {
@@ -5633,7 +5954,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   }
   $('hpCodex').addEventListener('click', (ev) => {
     const cc = ev.target.closest('[data-cxcard]'); if (cc) return cardDetail(cc.dataset.cxcard);
-    const cx = ev.target.closest('[data-cxcodex]'); if (cx && !ev.shiftKey) return codexDetail(cx.dataset.cxcodex);
+    const cx = ev.target.closest('[data-cxcodex]'); if (cx && !ev.shiftKey) return openTalents(cx.dataset.cxcodex, { compendium: true });
     const t = ev.target.closest('[data-cxtab],[data-cx],[data-cxbase]'); if (!t) return;
     if (t.dataset.cxtab) { CX.tab = t.dataset.cxtab; CX.q = ''; }
     else if (t.dataset.cx) CX[t.dataset.cx] = t.dataset.v;
@@ -5642,6 +5963,65 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   });
   $('hpCodex').addEventListener('toggle', (ev) => { if (ev.target.open) fitCards(ev.target); }, true);
   $('hpCodex').addEventListener('input', (ev) => { if (ev.target.id !== 'cxQ') return; CX.q = ev.target.value; const pos = ev.target.selectionStart; renderCodex(); const i = $('cxQ'); i.focus(); i.setSelectionRange(pos, pos); });
+
+  // ---------- codex talent trees (Nov 1): N opens the tree for your hero; the Compendium shows any codex's tree
+  // Pick one talent per open row (free to change in town). Rows open every 2 codex levels; talents only work while that codex is worn.
+  const TCOL = [['Offense', '#e07a4f'], ['Defense', '#5fb3a1'], ['Support', '#9b8fe0']];
+  const talentText = (t, cls) => t.replace(/\{D\}/g, (CLASSES[cls] || {}).defense || 'Block');
+  const inTownNow = () => !run && !cb;
+  function openTalents(cxKey, opt) {
+    opt = opt || {};
+    const me = profile && profile.chars[heroKey] ? CBHub.char(profile, heroKey) : null;
+    if (!cxKey) { const cls = me ? me.cls : 'Warrior'; cxKey = (me && CBHub.wornCodex(me)) || CB.CODEXES[cls][0][0]; }
+    const cx = CB.CODEX_BY_KEY[cxKey], tr = CB.TALENTS[cxKey]; if (!cx || !tr) return;
+    const mine = !!me && me.cls === cx.cls, info = mine ? CBHub.codexInfo(me, cxKey) : null, worn = mine && CBHub.wornCodex(me) === cxKey;
+    const edit = mine && inTownNow(), picks = info ? info.picks : [];
+    const tabs = CB.CODEXES[cx.cls].map(([k, n]) => { const li = mine ? CBHub.codexInfo(me, k) : null, w = mine && CBHub.wornCodex(me) === k;
+      return `<button class="tltab ${k === cxKey ? 'on' : ''}" data-tltab="${k}">${esc(n)}${li ? ` <small>Lv ${li.level}</small>` : ''}${w ? ' <span class="tag good">Worn</span>' : ''}</button>`; }).join('');
+    const prog = info ? `<div class="tlprog"><b>Level ${info.level} / ${CB.CODEX_MAX}</b><div class="xpbar tlxp"><i style="width:${info.need ? Math.round(100 * info.into / info.need) : 100}%"></i></div>
+        <span class="muted">${info.need ? `${info.into} / ${info.need} XP to level ${info.level + 1}` : 'Maxed: +10% codex XP on your other codexes'} &middot; ${info.rows} of 10 rows open${info.rows > picks.filter((x, i) => x != null && i < info.rows).length ? ` &middot; <b style="color:var(--warn)">${info.rows - picks.filter((x, i) => x != null && i < info.rows).length} to pick</b>` : ''}</span></div>`
+      : `<p class="muted" style="margin:4px 0 8px">${me ? `Your hero is a ${esc(me.cls)}: this is a ${esc(cx.cls)} codex, so you can look but not pick.` : 'Make a hero to start earning codex XP.'}</p>`;
+    const rows = [];
+    for (let i = 0; i < 10; i++) {
+      const lv = (i + 1) * 2, open = info ? i < info.rows : false, dim = info && !open, cap = i === 9, mini = i === 4;
+      const cells = [0, 1, 2].map(j => {
+        let name, text;
+        if (cap) { const d = CARDS[tr.cap[j]]; name = d ? d.name : tr.cap[j]; text = (d ? d.text : '') + ' Already in play at the start of every fight.'; }
+        else { const t = tr.rows[i][j]; name = t.n; text = talentText(t.t, cx.cls); }
+        const on = picks[i] === j && (info ? i < info.rows : false);
+        return `<button class="tlcell ${on ? 'on' : ''} ${dim ? 'locked' : ''} ${open ? '' : 'noclick'} ${cap ? 'cap' : mini ? 'mini' : ''}" style="--tc:${TCOL[j][1]}" data-tlr="${i}" data-tlc="${j}" ${edit && open ? '' : 'tabindex="-1"'} aria-pressed="${on}"><b>${esc(name)}</b><span>${esc(text)}</span></button>`;
+      }).join('');
+      rows.push(`<div class="tllv ${dim ? 'locked' : ''}">Lv ${lv}${cap ? '<small>Capstone</small>' : mini ? '<small>Mini capstone</small>' : ''}</div>${cells}`);
+    }
+    modal2(`<h2>${esc(cx.name)} talents <span class="muted" style="font-size:15px"><span style="color:${CC[cx.cls]}">${esc(cx.cls)}</span> &middot; ${worn ? 'worn now' : mine ? 'not worn: talents are kept but switched off' : 'preview'}</span></h2>
+      <div class="tltabs">${tabs}</div>${prog}
+      <div class="tltree"><div></div>${TCOL.map(([n, c]) => `<div class="tlhead" style="color:${c}">${n}</div>`).join('')}${rows.join('')}</div>
+      <p class="muted" style="font-size:12.5px;margin:8px 0 0">Every kill while wearing this codex gives it XP (normal 1, elite 3, boss 10; a party splits kills but gets +10% per extra hero). A new row opens every 2 levels. ${edit ? 'Click a talent to pick it; changing picks is free in town.' : mine ? 'Picks can be changed in town.' : ''}</p>
+      <div class="row">${edit && picks.some(x => x != null) ? '<button class="btn" id="tlReset">Clear picks</button>' : ''}${opt.compendium ? '<button class="btn" id="tlDrops">Where it drops</button>' : ''}<button class="btn primary" id="mClose">Close <span class="muted">N</span></button></div>`);
+    $('modalBox').classList.add('wide', 'tlbox');
+    $('mClose').onclick = () => { closeModal(); if (opt.back) opt.back(); };
+    $('modalBox').querySelectorAll('[data-tltab]').forEach(b => b.onclick = () => openTalents(b.dataset.tltab, opt));
+    if (edit) $('modalBox').querySelectorAll('.tlcell:not(.noclick)').forEach(b => b.onclick = () => {
+      const r = +b.dataset.tlr, c = +b.dataset.tlc; CBHub.pickTalent(profile, heroKey, cxKey, r, picks[r] === c ? null : c); save(); openTalents(cxKey, opt); renderCodexBar(); });
+    if ($('tlDrops')) $('tlDrops').onclick = () => codexDetail(cxKey);
+    if ($('tlReset')) $('tlReset').onclick = () => { CBHub.resetTalents(profile, heroKey, cxKey); save(); openTalents(cxKey, opt); renderCodexBar(); };
+  }
+  // town bar: XP toward the next level of the codex you wear
+  function renderCodexBar() {
+    const el = $('tbCodex'); if (!el || !profile || !profile.chars[heroKey]) return;
+    const c = CBHub.char(profile, heroKey), k = CBHub.wornCodex(c);
+    if (!k) { el.innerHTML = `<span class="muted">No codex worn: equip one (Quartermaster) to earn codex XP and talents.</span> <button class="pilebtn" id="tbTal">Talents <span class="muted">N</span></button>`; }
+    else { const i = CBHub.codexInfo(c, k), unspent = i.rows - i.picks.filter((x, j) => x != null && j < i.rows).length;
+      el.innerHTML = `<b>${esc(CB.CODEX_BY_KEY[k].name)}</b> <span class="muted">Lv</span> <b>${i.level}</b><div class="xpbar cxxp" title="${i.need ? `${i.into} / ${i.need} XP` : 'Max level'}"><i style="width:${i.need ? Math.round(100 * i.into / i.need) : 100}%"></i></div><span class="muted">${i.need ? `${i.into} / ${i.need} XP` : 'Max level'}</span>${unspent > 0 ? ` <span class="tag good">${unspent} talent${unspent > 1 ? 's' : ''} to pick</span>` : ''} <button class="pilebtn" id="tbTal">Talents <span class="muted">N</span></button>`; }
+    $('tbTal').onclick = () => openTalents();
+  }
+  // N: the talent tree, from town, the character screen, the map or a fight (closes it again if it is open)
+  document.addEventListener('keydown', (ev) => {
+    if ((ev.key !== 'n' && ev.key !== 'N') || ev.ctrlKey || ev.metaKey || ev.altKey || ev.target.matches('input, select, textarea')) return;
+    if (!$('scrTitle').hidden || !profile || !profile.chars[heroKey]) return;
+    if (!$('modal').hidden) { if ($('modalBox').classList.contains('tlbox')) { ev.preventDefault(); closeModal(); } return; }
+    ev.preventDefault(); if (typeof P !== 'undefined' && P.held) P.held = []; openTalents();
+  });
 
   // ---------- character sheet (paperdoll), item tooltips and upgrade checks, inspecting other players, trading
   const DOLL_L = ['Helm', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves'], DOLL_R = ['Belt', 'Pants', 'Boots', 'Ring 1', 'Ring 2', 'Codex'], DOLL_B = ['Weapon', 'Off-hand'];
@@ -6062,7 +6442,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
         <button class="btn" data-tvshop="1" title="Merchant Dace normally restocks every 12 hours">Restock Merchant Dace now</button>
         <button class="btn" data-tvkit="Blue" title="Equips a full set of Blue gear for your class (the set the raid balance was tuned with). Your current gear goes to the stash; your codex stays on.">Full Blue gear kit</button>
         <button class="btn" data-tvraid="reset" title="Raid kills lock a hero out of that raid for 7 days">Reset raid lockouts</button>
-        <button class="btn" data-tvraid="unlock" title="Counts every map's boss as beaten at +10 for this hero, so every raid opens">Unlock all raids (+10)</button></div>
+        <button class="btn" data-tvraid="unlock" title="Counts every map's boss as beaten at +10 for this hero, so every raid opens">Unlock all raids (+10)</button>
+        <button class="btn" data-tvcxp="5" title="Adds 5 levels to the codex you wear (talent rows open every 2 levels)">Worn codex +5 levels</button>
+        <button class="btn" data-tvcxp="max" title="Every codex of your class jumps to level 20, so every talent row opens">Max all my codexes</button>
+        <button class="btn" data-tvcxp="zero" title="Every codex of your class back to level 0 (picks are cleared)">Reset my codex XP</button></div>
       ${TV.tab === 'decks' ? testDecksHtml(c) : TV.tab === 'cards' ? `<div class="cxchips">${['All', 'White', 'Green', 'Blue', 'Gold'].map(r => `<button class="cxchip ${TV.rar === r ? 'on' : ''}" data-tvrar="${r}">${r}</button>`).join('')}<button class="btn primary" data-tvall="1" style="margin-left:auto">Take one of each${q || TV.rar !== 'All' ? ' shown' : ''} (${cards.length})</button></div>
         <div class="pilegrid cxgrid nozoom">${cards.length ? '' : '<span class="muted">No cards match.</span>'}${cards.map(([k, d]) => `<div class="pilecard" style="display:grid;gap:4px;justify-items:center">${cardBox(d, 140)}${own[k] ? `<span class="pilecount">x${own[k]}</span>` : ''}<button class="pilebtn" data-tvcard="${k}">Take</button></div>`).join('')}</div>`
       : TV.tab === 'codex' ? `<p class="muted">Stash space: ${room}. Codexes roll random stats at map level +${profile.last.level || 0} (the Wagon's level). Only that class can equip one.</p>
@@ -6071,7 +6454,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     fitCards(el);
   }
   $('hpTest').addEventListener('click', (ev) => {
-    const b = ev.target.closest('[data-tvtab],[data-tvrar],[data-tvcard],[data-tvall],[data-tvcx],[data-tvgold],[data-tvshop],[data-tvraid],[data-tvkit],[data-tvdeck],[data-tvpeek]'); if (!b) return;
+    const b = ev.target.closest('[data-tvcxp],[data-tvtab],[data-tvrar],[data-tvcard],[data-tvall],[data-tvcx],[data-tvgold],[data-tvshop],[data-tvraid],[data-tvkit],[data-tvdeck],[data-tvpeek]'); if (!b) return;
     if (b.dataset.tvdeck) return loadTestDeck(b.dataset.tvdeck);
     if (b.dataset.tvpeek) { TV.open = TV.open === b.dataset.tvpeek ? null : b.dataset.tvpeek; return renderTestVendor(); }
     const c = profile.chars[heroKey];
@@ -6086,6 +6469,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       c.gear = [...kit, ...(c.gear || []).filter(g => g.slot === 'Codex')]; save(); renderHub();
       toast(`${c.name} is wearing a full ${b.dataset.tvkit} kit. ${kept} old item${kept === 1 ? '' : 's'} moved to the stash${lost ? `; ${lost} didn't fit and were dropped` : ''}.`);
     }
+    else if (b.dataset.tvcxp) { const c = profile.chars[heroKey]; if (!c) return; const v = b.dataset.tvcxp, need = (lv) => { let x = 0; for (let i = 1; i <= lv; i++) x += CB.CODEX_XP(i); return x; };
+      if (v === '5') { const k = CBHub.wornCodex(c); if (!k) return toast('Equip a codex first (Quartermaster).'); const st = CBHub.codexState(c, k), lv = Math.min(CB.CODEX_MAX, CB.codexLevel(st.xp).level + 5); st.xp = need(lv); toast(`${CB.CODEX_BY_KEY[k].name} is now level ${lv}. Press N for its talents.`); }
+      else for (const [k] of CB.CODEXES[c.cls]) { const st = CBHub.codexState(c, k); st.xp = v === 'max' ? need(CB.CODEX_MAX) : 0; if (v === 'zero') st.picks = []; }
+      if (v !== '5') toast(v === 'max' ? 'Every codex of your class is level 20. Press N for the talent trees.' : 'Codex XP reset.'); save(); renderCodexBar(); }
     else if (b.dataset.tvraid) { const c = profile.chars[heroKey]; if (!c) return; if (b.dataset.tvraid === 'reset') { c.raidLocks = {}; toast(`${c.name}'s raid lockouts are cleared.`); } else { c.mapKills = c.mapKills || {}; for (const mk of Object.keys(DATA.maps)) c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], 10); toast(`${c.name} counts as having beaten every map's boss at +10: all raids are open.`); } save(); }
     else if (b.dataset.tvshop) { CBHub.refreshShop(profile, DATA, profile.last.level || 0); save(); toast(`Merchant Dace has new stock (map level +${profile.last.level || 0}, ${DATA.maps[curMap()].name} gear).`); }
     else if (b.dataset.tvall) { const q = TV.q.toLowerCase(); let n = 0; for (const [k, d] of Object.entries(CARDS)) if (d.cls === hcls() && !d.designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(d.rarity) && (TV.rar === 'All' || d.rarity === TV.rar) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + d.rarity).toLowerCase().includes(q)) && ++n) c.cards.push({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), key: k, rank: 0 }); save(); toast(`Added ${n} ${hcls()} card${n === 1 ? '' : 's'} to ${c.name}'s collection.`); }
@@ -6228,7 +6615,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (run && run.over && !run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run, run.myMi); save(); }
     backToTown();
   }
-  function backToTown() { closeModal(); cb = null; run = null; if (netOn()) netEnd(); townReturn = true; show('start'); renderHub(); }
+  function backToTown() { closeModal(); cb = null; run = null; if (netOn()) netEnd(); townReturn = true; show('start'); renderHub();
+    const xg = lastResult && lastResult.xpGain; if (xg && typeof sysChat === 'function') for (const [k, g] of Object.entries(xg)) if (g.xp > 0) { sysChat(`${CB.CODEX_BY_KEY[k].name} codex: +${g.xp} XP${g.to > g.from ? `. Level ${g.to}!${Math.floor(g.to / 2) > Math.floor(g.from / 2) ? ' A new talent row is open: press N.' : ''}` : '.'}`); } if (xg) lastResult.xpGain = null; }
   function leaveRun() {
     if (!run) return closeModal();
     if (netOn()) netLeave();
@@ -6557,7 +6945,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
 
   // ---------- modals
   function modal(html) { hidePeeks(); modal2(html); }
-  function modal2(html) { $('modalBox').classList.remove('wide'); $('modalBox').innerHTML = html; $('modal').hidden = false; fitCards($('modalBox')); const f = $('modalBox').querySelector('button'); if (f) f.focus(); }
+  function modal2(html) { $('modalBox').classList.remove('wide', 'tlbox'); $('modalBox').innerHTML = html; $('modal').hidden = false; fitCards($('modalBox')); const f = $('modalBox').querySelector('button'); if (f) f.focus(); }
   function closeModal() { $('modal').hidden = true; }
   let redrawShop = null;
   // what the campfire gave: rummage finds and heals (yours, or the whole hot-seat party's)
@@ -6663,7 +7051,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function startDummy() {
     if (!profile.chars[heroKey] || run || cb) return;
     const o = CBHub.runOpts(profile, heroKey);
-    cb = new CB.Combat({ party: [{ cls: o.cls, name: o.name, gear: o.gear, deck: o.deck }], enemies: ['training_dummy'], practice: true, seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA });
+    cb = new CB.Combat({ party: [{ cls: o.cls, name: o.name, gear: o.gear, deck: o.deck, talents: o.talents }], enemies: ['training_dummy'], practice: true, seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA });
     cb.practice = true; $('sheet').hidden = true; startCombatUI();
   }
   function leaveDummy() { closeModal(); cb = null; townReturn = true; show('start'); renderHub(); }
