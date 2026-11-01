@@ -4366,10 +4366,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function townTag(g, tx, footY, name, col, guild, s, figH) {
     const head = footY - (figH != null ? figH * s : 72 * s) - 3 * s; let y = head;
     g.textAlign = 'center';
-    if (guild) { g.font = `italic 500 ${Math.round(10.5 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const t = '<' + guild + '>', w = g.measureText(t).width + 10, h = Math.round(14 * Math.max(0.9, s));
-      g.fillStyle = 'rgba(10,8,6,.72)'; g.fillRect(tx - w / 2, y - h, w, h); g.fillStyle = '#b9c8a6'; g.fillText(t, tx, y - h * .26); y -= h; }
-    g.font = `600 ${Math.round(12 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const w = g.measureText(name).width + 10, h = Math.round(17 * Math.max(0.9, s));
-    g.fillStyle = 'rgba(10,8,6,.8)'; g.fillRect(tx - w / 2, y - h, w, h); g.fillStyle = col; g.fillText(name, tx, y - h * .26);
+    if (guild) { g.font = `italic 500 ${Math.round(10.5 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const t = '<' + guild + '>', w = g.measureText(t).width + 10, h = Math.round(12 * Math.max(0.9, s));
+      g.fillStyle = 'rgba(10,8,6,.72)'; g.fillRect(tx - w / 2, y - h, w, h); g.fillStyle = '#b9c8a6'; g.fillText(t, tx, y - h * .22); y -= h - 2; }
+    g.font = `600 ${Math.round(12 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const w = g.measureText(name).width + 10, h = Math.round((guild ? 15 : 17) * Math.max(0.9, s));
+    g.fillStyle = 'rgba(10,8,6,.8)'; g.fillRect(tx - w / 2, y - h, w, h); g.fillStyle = col; g.fillText(name, tx, y - h * (guild ? .2 : .26));
     return y - h;
   }
   function drawChar(g, cx, by, dir, step, pal, s, t) {
@@ -4753,8 +4753,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     for (const [uid, st] of SOC.online) {
       if (uid === SOC.me || st.place !== 'town' || !st.cls) { SOC.others.delete(uid); continue; }
       const o = SOC.others.get(uid);
-      if (!o) SOC.others.set(uid, { uid, x: st.x, y: st.y, fx: st.x, fy: st.y, t: 1, dir: st.dir || 'down', step: 0, name: st.name, cls: st.cls, rc: st.rc || {}, party: st.party, shop: st.shop || null });
-      else Object.assign(o, { name: st.name, cls: st.cls, rc: st.rc || {}, party: st.party, shop: st.shop || null });
+      if (!o) SOC.others.set(uid, { uid, x: st.x, y: st.y, fx: st.x, fy: st.y, t: 1, dir: st.dir || 'down', step: 0, name: st.name, guild: st.guild || null, cls: st.cls, rc: st.rc || {}, party: st.party, shop: st.shop || null });
+      else Object.assign(o, { guild: st.guild || null, name: st.name, cls: st.cls, rc: st.rc || {}, party: st.party, shop: st.shop || null });
     }
     for (const uid of [...SOC.others.keys()]) if (!SOC.online.has(uid)) SOC.others.delete(uid);
   }
@@ -5182,8 +5182,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793544871535';
-  const CB_BUILD = '40bf9df64a'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793546434413';
+  const CB_BUILD = '9f169c0514'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -6016,7 +6016,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       ['Feature', 'The campfire shows everything in your sack (each hero\'s sack in a party) before you rest, rummage or extract.'],
       ['Feature', 'Hall of Records: click a card or an item on a hero\'s record to see it full size.'],
       ['Fix', 'The card tray in a fight keeps one height whether your hand is full, empty or it is the enemy\'s turn, so the screen no longer jumps.'],
-      ['Test', 'Tinker Pip: a Clear all gold button.'],
+      ['Test', 'Tinker Pip: a Clear all gold button, in the row of buttons at the top (it shows your current bank).'],
+      ['Fix', 'Other players\' guilds now show under their names in town and in co-op fights (they were sent but never read), and the guild line sits closer to the name.'],
       ['Feature', 'Hall of Records: read the notice board in town (or Menu > Hall of Records). Heroes ranks every hero by progress or power (click one to see their gear, deck, codex talents and map records); Map records shows who has reached the highest level and furthest row on each road; Raid records shows, for every raid boss, the first guild to kill it, the guild that killed it at the highest level, and the fastest kill in rounds. Heroes are posted when you sign in and whenever you come home.'],
       ['Fix', 'Shuriken Mastery, Sharpened Stars and the Ninja codex now show on the Shuriken card itself (the damage always applied, but the card still said 4).'],
       ['Art', 'Fights are now a battlefield scene: a painted road runs back to a ruined gate (tinted for each map), your heroes stand on the left diagonal and the enemies on the right, each with a clean nameplate on the outside and their intents over their heads. Everyone is drawn at one scale, the layout keeps plates, intents and fighters from covering each other, and big fights (5+ on a side) switch to small plates under the feet. Raids show the heroes as a block of small fighters in rows, and raid bosses now use their map boss\'s inked art. Fights also use more of a wide screen. Thanks to our design tester for the battlefield painting and layout. Menu > "Battlefield view" switches back to the old side-by-side stage.'],
@@ -7180,8 +7181,8 @@ css.textContent = `
 #scrCombat.bf .field-panel.bfmid > .hud { gap: 8px 10px; padding: 8px 10px; } #scrCombat.bf .field-panel.bfmid .hud .pilebtn { padding: 3px 7px; font-size: 11.5px; } #scrCombat.bf .field-panel.bfmid .hud .mana small { display: none; }
 #scrCombat.bf .field-panel.bfmid .endturn.btn.primary { padding: 7px 14px !important; font-size: 16px !important; }
 /* names over heads: a small tag just above the figure (guild under a hero's name); intents sit above it */
-#scrCombat.bf .stage .unit > .uhead { display: grid; justify-items: center; position: absolute; left: 0; bottom: calc(var(--figh, var(--fh)) + 2px); transform: translateX(-50%); white-space: nowrap; pointer-events: none; z-index: 4; background: #0b1311c9; border-radius: 3px; padding: 1px 7px 2px; line-height: 1.15; box-shadow: 0 2px 6px #0006; }
-#scrCombat.bf .stage .unit > .uhead b { font: 600 12.5px var(--f-ui); letter-spacing: .2px; } #scrCombat.bf .stage .unit > .uhead small { font: italic 500 10.5px var(--f-ui); color: #b9c8a6; }
+#scrCombat.bf .stage .unit > .uhead { display: grid; justify-items: center; position: absolute; left: 0; bottom: calc(var(--figh, var(--fh)) + 2px); transform: translateX(-50%); white-space: nowrap; pointer-events: none; z-index: 4; background: #0b1311c9; border-radius: 3px; padding: 1px 7px 2px; line-height: 1.05; box-shadow: 0 2px 6px #0006; }
+#scrCombat.bf .stage .unit > .uhead b { font: 600 12.5px var(--f-ui); letter-spacing: .2px; } #scrCombat.bf .stage .unit > .uhead small { font: italic 500 10.5px/1 var(--f-ui); color: #b9c8a6; margin-top: -1px; }
 #scrCombat.bf .stage .compact .unit > .uhead { display: none; }
 #scrCombat.bf .stage .unit.dead > .uhead { opacity: .4; }
 /* big fights (5+ on a side): small plates under each fighter's feet */
@@ -7626,6 +7627,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     el.innerHTML = `<p class="savenote" style="margin:0 0 8px"><b style="color:#e0802a">Test vendor (temporary).</b> Everything here is free so you can try cards and codexes. Cards go to ${esc(c.name)}'s collection (add them to the deck at the Scribe); codexes go to the stash (equip them in the Codex slot with C).</p>
       <div class="cxtop"><div class="tabs cxtabs" role="tablist">${[['decks', 'Test decks'], ['cards', `${hcls()} cards`], ['codex', 'Codexes'], ['misc', 'Gold']].map(([k, l]) => `<button role="tab" aria-selected="${TV.tab === k}" data-tvtab="${k}">${l}</button>`).join('')}</div>
         ${TV.tab === 'cards' ? `<input id="tvQ" type="search" placeholder="Search ${hcls()} cards by name or text..." value="${esc(TV.q)}" autocomplete="off">` : ''}
+        <button class="btn" data-tvgold="clear" title="Sets the bank to 0 gold (to test a new player)">Clear all gold (${profile.gold})</button>
         <button class="btn" data-tvshop="1" title="Merchant Dace normally restocks every 12 hours">Restock Merchant Dace now</button>
         <button class="btn" data-tvkit="Blue" title="Equips a full set of Blue gear for your class (the set the raid balance was tuned with). Your current gear goes to the stash; your codex stays on.">Full Blue gear kit</button>
         <button class="btn" data-tvraid="reset" title="Raid kills lock a hero out of that raid for 7 days">Reset raid lockouts</button>
@@ -8368,7 +8370,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   function unitGuild(a) {
     if (!a.isPlayer || typeof SOC === 'undefined') return null;
     if (a === hero() || (cb.myMi == null && !cb.duel)) return typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null;
-    for (const o of (SOC.others ? SOC.others.values() : [])) if (o.name === a.name && (o.uid === a.uid || !a.uid)) return o.guild || null;
+    for (const [uid, o] of (SOC.online || new Map())) if (uid !== SOC.me && (a.uid ? uid === a.uid : o.name === a.name)) return o.guild || null; // everyone online (town or not)
     return null;
   }
   function unitHtml(a) {

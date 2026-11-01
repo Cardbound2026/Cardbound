@@ -387,8 +387,8 @@ css.textContent = `
 #scrCombat.bf .field-panel.bfmid > .hud { gap: 8px 10px; padding: 8px 10px; } #scrCombat.bf .field-panel.bfmid .hud .pilebtn { padding: 3px 7px; font-size: 11.5px; } #scrCombat.bf .field-panel.bfmid .hud .mana small { display: none; }
 #scrCombat.bf .field-panel.bfmid .endturn.btn.primary { padding: 7px 14px !important; font-size: 16px !important; }
 /* names over heads: a small tag just above the figure (guild under a hero's name); intents sit above it */
-#scrCombat.bf .stage .unit > .uhead { display: grid; justify-items: center; position: absolute; left: 0; bottom: calc(var(--figh, var(--fh)) + 2px); transform: translateX(-50%); white-space: nowrap; pointer-events: none; z-index: 4; background: #0b1311c9; border-radius: 3px; padding: 1px 7px 2px; line-height: 1.15; box-shadow: 0 2px 6px #0006; }
-#scrCombat.bf .stage .unit > .uhead b { font: 600 12.5px var(--f-ui); letter-spacing: .2px; } #scrCombat.bf .stage .unit > .uhead small { font: italic 500 10.5px var(--f-ui); color: #b9c8a6; }
+#scrCombat.bf .stage .unit > .uhead { display: grid; justify-items: center; position: absolute; left: 0; bottom: calc(var(--figh, var(--fh)) + 2px); transform: translateX(-50%); white-space: nowrap; pointer-events: none; z-index: 4; background: #0b1311c9; border-radius: 3px; padding: 1px 7px 2px; line-height: 1.05; box-shadow: 0 2px 6px #0006; }
+#scrCombat.bf .stage .unit > .uhead b { font: 600 12.5px var(--f-ui); letter-spacing: .2px; } #scrCombat.bf .stage .unit > .uhead small { font: italic 500 10.5px/1 var(--f-ui); color: #b9c8a6; margin-top: -1px; }
 #scrCombat.bf .stage .compact .unit > .uhead { display: none; }
 #scrCombat.bf .stage .unit.dead > .uhead { opacity: .4; }
 /* big fights (5+ on a side): small plates under each fighter's feet */

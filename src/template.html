@@ -1442,10 +1442,10 @@ body.aiming { cursor: grabbing; user-select: none; }
   function townTag(g, tx, footY, name, col, guild, s, figH) {
     const head = footY - (figH != null ? figH * s : 72 * s) - 3 * s; let y = head;
     g.textAlign = 'center';
-    if (guild) { g.font = `italic 500 ${Math.round(10.5 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const t = '<' + guild + '>', w = g.measureText(t).width + 10, h = Math.round(14 * Math.max(0.9, s));
-      g.fillStyle = 'rgba(10,8,6,.72)'; g.fillRect(tx - w / 2, y - h, w, h); g.fillStyle = '#b9c8a6'; g.fillText(t, tx, y - h * .26); y -= h; }
-    g.font = `600 ${Math.round(12 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const w = g.measureText(name).width + 10, h = Math.round(17 * Math.max(0.9, s));
-    g.fillStyle = 'rgba(10,8,6,.8)'; g.fillRect(tx - w / 2, y - h, w, h); g.fillStyle = col; g.fillText(name, tx, y - h * .26);
+    if (guild) { g.font = `italic 500 ${Math.round(10.5 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const t = '<' + guild + '>', w = g.measureText(t).width + 10, h = Math.round(12 * Math.max(0.9, s));
+      g.fillStyle = 'rgba(10,8,6,.72)'; g.fillRect(tx - w / 2, y - h, w, h); g.fillStyle = '#b9c8a6'; g.fillText(t, tx, y - h * .22); y -= h - 2; }
+    g.font = `600 ${Math.round(12 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const w = g.measureText(name).width + 10, h = Math.round((guild ? 15 : 17) * Math.max(0.9, s));
+    g.fillStyle = 'rgba(10,8,6,.8)'; g.fillRect(tx - w / 2, y - h, w, h); g.fillStyle = col; g.fillText(name, tx, y - h * (guild ? .2 : .26));
     return y - h;
   }
   function drawChar(g, cx, by, dir, step, pal, s, t) {
@@ -2448,7 +2448,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   function unitGuild(a) {
     if (!a.isPlayer || typeof SOC === 'undefined') return null;
     if (a === hero() || (cb.myMi == null && !cb.duel)) return typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null;
-    for (const o of (SOC.others ? SOC.others.values() : [])) if (o.name === a.name && (o.uid === a.uid || !a.uid)) return o.guild || null;
+    for (const [uid, o] of (SOC.online || new Map())) if (uid !== SOC.me && (a.uid ? uid === a.uid : o.name === a.name)) return o.guild || null; // everyone online (town or not)
     return null;
   }
   function unitHtml(a) {
