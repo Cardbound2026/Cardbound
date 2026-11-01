@@ -861,6 +861,8 @@ class Combat {
     // party: 1 to 4 heroes. opts.party = [{cls, gear, deck, hp, mana, buffs, name}]; without it, one hero from opts.cls/gear/deck/hp/mana/buffs
     const party = this.opts.party || [{ cls: this.opts.cls, gear: this.opts.gear, deck: this.opts.deck, hp: this.opts.hp, mana: this.opts.mana, buffs: this.opts.buffs }];
     this.players = party.map((spec, i) => this.makePlayer(spec, i, party.length));
+    // codex talents: the mini-capstone party buff is on every hero from the first moment of the fight (in a duel only on its owner)
+    for (const p of this.players) for (const pw of p.powers) if (pw.def && pw.def.partyBuff) { for (const a of (this.opts.duel ? [p] : this.players)) for (const [st, n] of pw.def.partyBuff) partyStat(a, st, n); }
     this.player = this.players[0];       // the hero currently acting, or the one an enemy card is aimed at
     this.gear = sumGear(party[0].gear || STARTER_GEAR[party[0].cls]);
     this.partySize = this.players.length;
@@ -1752,6 +1754,18 @@ const tcond = (cb, p, c) => {
 };
 const tvs = (e, vs) => { if (!vs) return true; if (!e) return false; const [k, v] = vs.split(':'); return (e[k] || 0) >= (+v || 1); };
 const tcard = (d, f) => !!d && (!f.type || d.type === f.type) && (!f.dtype || (d.dtype || (d.type === 'Attack' ? 'Physical' : null)) === f.dtype) && (!f.key || d.key === f.key) && (!f.minCost || (d.cost || 0) >= f.minCost);
+// mini-capstone party buffs (row 5 Support): applied to every hero once, at the start of the fight
+function partyStat(a, st, n) {
+  if (st === 'maxHpPct') { const x = Math.round(a.maxHp * n / 100); a.maxHp += x; a.hp += x; }
+  else if (st === 'maxManaPct') a.maxMana += Math.round(a.maxMana * n / 100);
+  else if (st === 'regenPct') a.regen += Math.round(a.regen * n / 100);
+  else if (st === 'initPct') a.baseInit += Math.max(1, Math.round(a.baseInit * n / 100));
+  else if (st === 'critMult') a.critMult += n / 100;
+  else if (st === 'resistAll') { for (const el of ELEMENTS) a.resist[el] = Math.min(75, (a.resist[el] || 0) + n); }
+  else if (st !== 'luck') a[st] = (a[st] || 0) + n;
+}
+// Luck from a hero's talents (run-level: it changes loot), for the whole party
+function talentLuck(spec) { const tr = spec && TALENTS[spec.codex]; if (!tr) return 0; let n = 0; (spec.picks || []).forEach((j, i) => { const t = i < 9 && j != null && tr.rows[i] && tr.rows[i][j]; if (t) for (const f of t.fx) if (f[0] === 'party' && f[1] === 'luck') n += f[2]; }); return n; }
 // one hidden Power holds all of a hero's picked talents, so percentages from different rows add up
 function talentDef(list, cap, label) {
   const D = { hm: [], cr: [], cx: 0, fl: [], dm: [], hl: 0, inc: [], dp: {}, dx: {}, dev: 0, sh: 0, start: [], turn: [], kill: [], hit: [], full: [], low: null, cheat: null, every: [], cost: [], first: [], aura: [] };
@@ -1763,6 +1777,7 @@ function talentDef(list, cap, label) {
     else if (k === 'dotPlus') D.dp[a] = (D.dp[a] || 0) + b; else if (k === 'dotX') D.dx[a] = (D.dx[a] || 0) + b; else if (k === 'devPlus') D.dev += a; else if (k === 'shurPlus') D.sh += a;
     else if (k === 'start') D.start.push([a, b, c]); else if (k === 'turn') D.turn.push([a, b, c, d2]); else if (k === 'kill') D.kill.push([a, b, c]);
     else if (k === 'hitBy') D.hit.push([a, b, c]); else if (k === 'full') D.full.push([a, b, c]); else if (k === 'lowhp') D.low = [a, b]; else if (k === 'cheat') D.cheat = [a, b];
+    else if (k === 'party') (D.party = D.party || []).push([a, b]);
     else if (k === 'every') D.every.push([a, b, c, d2, e2]); else if (k === 'cost') D.cost.push([a, b]); else if (k === 'firstCost') D.first.push([a, b]); else if (k === 'aura') D.aura.push(...a);
   }
   const P = { talent: true, label };
@@ -1797,6 +1812,7 @@ function talentDef(list, cap, label) {
   if (Object.keys(D.dp).length) P.dotPlus = D.dp;
   if (Object.keys(D.dx).length) P.dotMult = Object.fromEntries(Object.entries(D.dx).map(([k, v]) => [k, 1 + v / 100]));
   if (D.dev) P.devotionPlus = D.dev; if (D.sh) P.shurikenPlus = D.sh;
+  if (D.party) P.partyBuff = D.party;
   if (D.start.length || D.turn.length || cap || D.aura.length) P.turnStart = (cb, p, pw) => {
     if (!pw.started) {
       pw.started = true;
@@ -1994,6 +2010,6 @@ if (DATA) dropRemovedLoot(DATA);
 // Oct 31: Lay on Hands and Mend Wounds can be aimed at any hero in the party (yourself if you play them solo)
 if (C.mend_wounds) Object.assign(C.mend_wounds, { target: 'ally', text: 'Heal an ally (or yourself) for 8 HP.', play: (cb, t) => cb.heal(t && t.isPlayer && t.hp > 0 ? t : cb.player, 8, 'Mend Wounds') });
 if (C.lay_on_hands) Object.assign(C.lay_on_hands, { target: 'ally', text: 'Heal an ally (or yourself) for 30% of their total HP. Exhaust.', play: (cb, t) => { const a = t && t.isPlayer && t.hp > 0 ? t : cb.player; cb.heal(a, Math.round(a.maxHp * 0.3), 'Lay on Hands'); } }); // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
-const API = { CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);

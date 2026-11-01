@@ -221,7 +221,7 @@ class Run {
   reachable() { return this.at ? this.map.nodes[this.at].next.slice() : this.map.starts.slice(); }
   visible() { return true; }
   activeBuffs() { const b = {}; for (const x of this.buffs) for (const [k, v] of Object.entries(x.buff)) b[k] = (b[k] || 0) + v; return b; }
-  luck(m) { return (m || this.m0).stats.luck + (this.activeBuffs().luck || 0); }
+  luck(m) { return (m || this.m0).stats.luck + (this.activeBuffs().luck || 0) + this.members.reduce((t, x) => t + CB.talentLuck(x.talents), 0); } // + party Luck from codex talents
   finish(result) { this.over = result; for (const m of this.members) if (!m.kept) m.kept = { items: [], gold: 0 }; }
 
   // party decisions: each member's vote; majority wins, ties are settled by a coin flip from the run's seed
@@ -278,7 +278,7 @@ class Run {
         fell = true; m.deaths++;
         this.note(`${m.name} fell in the fight: their sack (${m.sack.length} items, ${m.gold} gold) is lost. They get back up at half HP.`);
         m.sack = []; m.gold = 0; m.hp = Math.ceil(m.stats.maxHp / 2); m.mana = 0;
-      } else { m.hp = pl.hp; m.mana = pl.mana; }
+      } else { m.hp = Math.min(pl.hp, m.stats.maxHp); m.mana = pl.mana; } // talent max-HP buffs last for the fight only
       const regen = m.stats.healthRegen; if (regen && !fell) m.hp = Math.min(m.stats.maxHp, m.hp + regen);
       const drops = []; let gold = 0;
       for (const e of cb.enemies) {  // every hero rolls their own loot
