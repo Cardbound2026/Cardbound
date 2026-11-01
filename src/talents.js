@@ -254,7 +254,7 @@
     D[key] = { cls: c.cls, rows, cap: c.cap };
   }
   // Nov 1: damage over time that can crit, on the Lv 16 offense talent of the bleed, poison and fire codexes
-  const DOTCRIT = { bloodletter: ['Hemorrhagic Crits', 'bleed', 'Bleed'], hemorrhage: ['Arterial Crits', 'bleed', 'Bleed'], venomancer: ['Virulent Crits', 'poison', 'Poison'], conflagration: ['Searing Crits', 'burn', 'Burn'] };
+  const DOTCRIT = { bloodletter: ['Hemorrhagic Crits', 'bleed', 'Bleed'], hemorrhage: ['Arterial Crits', 'bleed', 'Bleed'], bloodbound: ['Sanguine Crits', 'bleed', 'Bleed'], venomancer: ['Virulent Crits', 'poison', 'Poison'], conflagration: ['Searing Crits', 'burn', 'Burn'] };
   for (const [k, [n, st, nm]] of Object.entries(DOTCRIT)) if (D[k]) D[k].rows[7][0] = T(n, `Your ${nm} can critically strike: every time it deals damage, it rolls your crit chance and crit damage.`, ['dotCrit', st]);
   // Nov 1 balance: every talent's numbers are halved (rounded, at least 1), except the Lv 10 row (mini capstone) and the capstone Powers.
   // Counts stay put where halving makes no sense: the "every Nth card" and "for every N stacks" steps.

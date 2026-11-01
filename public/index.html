@@ -1040,7 +1040,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.
     D[key] = { cls: c.cls, rows, cap: c.cap };
   }
   // Nov 1: damage over time that can crit, on the Lv 16 offense talent of the bleed, poison and fire codexes
-  const DOTCRIT = { bloodletter: ['Hemorrhagic Crits', 'bleed', 'Bleed'], hemorrhage: ['Arterial Crits', 'bleed', 'Bleed'], venomancer: ['Virulent Crits', 'poison', 'Poison'], conflagration: ['Searing Crits', 'burn', 'Burn'] };
+  const DOTCRIT = { bloodletter: ['Hemorrhagic Crits', 'bleed', 'Bleed'], hemorrhage: ['Arterial Crits', 'bleed', 'Bleed'], bloodbound: ['Sanguine Crits', 'bleed', 'Bleed'], venomancer: ['Virulent Crits', 'poison', 'Poison'], conflagration: ['Searing Crits', 'burn', 'Burn'] };
   for (const [k, [n, st, nm]] of Object.entries(DOTCRIT)) if (D[k]) D[k].rows[7][0] = T(n, `Your ${nm} can critically strike: every time it deals damage, it rolls your crit chance and crit damage.`, ['dotCrit', st]);
   // Nov 1 balance: every talent's numbers are halved (rounded, at least 1), except the Lv 10 row (mini capstone) and the capstone Powers.
   // Counts stay put where halving makes no sense: the "every Nth card" and "for every N stacks" steps.
@@ -5240,8 +5240,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793547962040';
-  const CB_BUILD = '03039a6425'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793548019420';
+  const CB_BUILD = '009aff49c8'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -6071,7 +6071,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     { date: '2026-11-01', items: [
       ['Feature', 'Auto-salvage: in the Loot sack during a run, each item has an Auto-salvage button (and one to mark all White gear). Marked items you bring home are salvaged straight away instead of filling the stash: gear for gold, cards for Ink. Town chat tells you what you got.'],
       ['Balance', 'Strength now increases the Bleed you apply, like Poison: with 50 Strength, a card that applies 10 Bleed applies 15. Bleed cards show the boosted number.'],
-      ['Feature', 'Damage over time can crit: the Lv 16 Offense talent of Bloodletter (Hemorrhagic Crits) and Hemorrhage (Arterial Crits) lets your Bleed crit, Venomancer (Virulent Crits) your Poison, and Conflagration (Searing Crits) your Burn. Each tick rolls your crit chance and crit damage. Holy Burn (Sacred Flame) can\'t crit.'],
+      ['Feature', 'Damage over time can crit: the Lv 16 Offense talent of Bloodletter (Hemorrhagic Crits) Hemorrhage (Arterial Crits) and Bloodbound (Sanguine Crits) lets your Bleed crit, Venomancer (Virulent Crits) your Poison, and Conflagration (Searing Crits) your Burn. Each tick rolls your crit chance and crit damage. Holy Burn (Sacred Flame) can\'t crit.'],
       ['Balance', 'Codex talents are half as strong: every number on rows Lv 2-8 and Lv 12-18 is halved (rounded, at least 1), including all % damage and flat damage. The Lv 10 mini capstones and the Lv 20 capstone Powers are unchanged.'],
       ['Balance', 'Cards that give you something for the rest of combat now Exhaust: Battle Fever, Ruthless Conversion, Time Theft and Offering Plate (Powers already stay in play once).'],
       ['Feature', 'New gear slot: Shoulders. Plate Pauldrons, Leather Spaulders and Cloth Mantles, one of each per map (18 new items), drop from every monster that drops gear and from merchants. Every hero starts with (or is given) a White pair. Gear score now averages 14 slots.'],
