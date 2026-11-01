@@ -1,7 +1,8 @@
 # Gothic Ink art pack
 
 Fight-screen figures for every hero class and every monster, plus the town walkers (heroes and NPCs, also the
-character-screen doll), in the Gothic Ink style (heavy black ink,
+character-screen doll), and the town itself: ground (grass, paths, cobbles, water, palisade) and every
+prop (tents, trees, wagon, longhouse, stall, campfire, torches, fountain, signs, chest, lecterns, the dummy), in the Gothic Ink style (heavy black ink,
 big shadow shapes, muted colours, cut-paper angles).
 
 - `paperforge.html`: PAPERFORGE v0.4.4, used to draw humans, undead, giants and demons from gear loadouts.
@@ -19,7 +20,7 @@ New monster in data.js? Re-run render.js; until then it shows the old drawn figu
 1. Delete `src/inkart.js` (the build skips the pack when the file is missing).
 2. Delete `public/img/ink/`.
 3. Optional tidy-up: the `/*INKART*/` line in `src/template.html`, the INKART replace in `build.js`,
-   the `CB_INK` lines at the top of `figure()` and `drawChar()`, the `ink:` key in `palFor()` and the
+   the `CB_INK` lines at the top of `figure()`, `drawChar()`, `buildGround()`, `drawProp()` and `drawScarecrow()`, the `ink:` key in `palFor()` and the
    `n.pal.ink` line after `NPCS` (all in `src/template.html`).
 
 The game falls back to the original drawn figures by itself.

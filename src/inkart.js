@@ -37,3 +37,197 @@
     },
   };
 })();
+
+// ---------- Gothic Ink town (Nov 1): the ground and every town prop, same ink rules as the figures.
+// buildGround() and drawProp() in src/template.html ask CB_INK first; returning nothing / false keeps the old drawing.
+(function () {
+  if (!window.CB_INK) return;
+  const INK = '#0b0a07';
+  const rng = (seed) => { let s = seed >>> 0 || 1; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; };
+  const path = (g, pts) => { g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); g.closePath(); };
+  const ink = (g, lw) => { g.lineWidth = lw; g.strokeStyle = INK; g.lineJoin = 'miter'; g.miterLimit = 2.4; g.stroke(); };
+  const P = (g, pts, fill, lw) => { path(g, pts); if (fill) { g.fillStyle = fill; g.fill(); } if (lw) ink(g, lw); };
+  const L = (g, pts, col, lw) => { g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); g.strokeStyle = col || INK; g.lineWidth = lw; g.lineJoin = 'bevel'; g.lineCap = 'butt'; g.stroke(); };
+  const bbox = (pts) => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); } return [x0, y0, x1 - x0, y1 - y0]; };
+  // a shaded piece: flat base, one hard black shadow mass on the right, a cut highlight sliver on the upper left, heavy ink
+  function S(g, pts, pal, lw, o) {
+    o = o || {}; const [x, y, w, h] = bbox(pts), k = o.mass == null ? .5 : o.mass;
+    path(g, pts); g.fillStyle = pal[0]; g.fill(); g.save(); g.clip();
+    P(g, [[x + w * (1 - k), y - 2], [x + w + 2, y - 2], [x + w + 2, y + h + 2], [x + w * (.75 - k), y + h + 2], [x + w * (1.02 - k), y + h * .55]], pal[1]);
+    if (pal[2]) { g.globalAlpha = .75; P(g, [[x + w * .08, y + h * .3], [x + w * .2, y + h * .08], [x + w * .42, y + h * .06], [x + w * .2, y + h * .16], [x + w * .12, y + h * .42]], pal[2]); g.globalAlpha = 1; }
+    if (o.cuts) { const r = rng((x * 31 + y * 17) | 0); for (let i = 0; i < o.cuts; i++) { const px = x + w * (.15 + r() * .7), py = y + h * (.2 + r() * .65); L(g, [[px, py], [px + 3 + r() * 4, py - 1.5 - r() * 2]], INK, 1.1); } }
+    g.restore(); path(g, pts); if (lw) ink(g, lw);
+  }
+  const shadow = (g, cx, cy, rx, ry, a) => { g.fillStyle = `rgba(0,0,0,${a || .45})`; g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.fill(); };
+  // jagged ink flame (cut paper): outer ember, inner gold
+  function flame(g, x, y, r, t, seed) {
+    const f = 1 + Math.sin(t / 90 + seed * 1.7) * .12 + Math.sin(t / 37 + seed) * .06, h = r * 2 * f, sw = Math.sin(t / 120 + seed) * r * .3;
+    P(g, [[x - r * .8, y], [x - r * .7, y - h * .45], [x - r * .25, y - h * .6], [x + sw, y - h], [x + r * .35, y - h * .55], [x + r * .75, y - h * .4], [x + r * .8, y]], '#d6542a', 1.6);
+    P(g, [[x - r * .4, y], [x - r * .3, y - h * .35], [x + sw * .6, y - h * .68], [x + r * .35, y - h * .32], [x + r * .4, y]], '#ffc463');
+  }
+  const W8 = ['#4a3524', '#21160d', '#7a5c3c'], WOOD = ['#3d2c1e', '#1a120b', '#6c5238'], STONE = ['#4a4741', '#1e1c19', '#7a756b'], IRON = ['#3c3d3f', '#151516', '#7c7a74'];
+
+  CB_INK.ground = function (o) {
+    const { MW, MH, TS, dpr, ground } = o, c = document.createElement('canvas'); c.width = MW * TS * dpr; c.height = MH * TS * dpr;
+    const g = c.getContext('2d'); g.scale(dpr, dpr); const R = rng(77), s = TS / 48, at = (x, y) => (ground[y] || [])[x];
+    // grass: muted olive with ink tufts and a few broad dark patches
+    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) { const v = R(); g.fillStyle = v < .33 ? '#1a1e15' : v < .66 ? '#1c2117' : '#181c13'; g.fillRect(x * TS, y * TS, TS, TS); }
+    g.globalAlpha = .28; for (let i = 0; i < MW * MH / 5; i++) { const cx = R() * MW * TS, cy = R() * MH * TS, r = TS * (.6 + R() * 1.2); P(g, [[cx - r, cy], [cx - r * .3, cy - r * .5], [cx + r * .6, cy - r * .3], [cx + r, cy + r * .2], [cx + r * .2, cy + r * .5], [cx - r * .7, cy + r * .4]], '#0a0c07'); } g.globalAlpha = 1;
+    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) for (let i = 0; i < 4; i++) {
+      const bx = x * TS + R() * TS, by = y * TS + R() * TS, hgt = (4 + R() * 5) * s;
+      L(g, [[bx - 2 * s, by - hgt * .7], [bx, by], [bx + 2.5 * s, by - hgt]], INK, 1.3 * s);
+      if (R() < .35) L(g, [[bx + 1 * s, by - 1], [bx + 2 * s, by - hgt * .8]], '#3c4630', 1 * s);
+    }
+    // dirt paths: cut-paper slabs with a jagged inked rim where they meet the grass
+    const isP = (x, y) => at(x, y) === 'p';
+    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (isP(x, y)) { const j = TS * .16, X = x * TS, Y = y * TS; P(g, [[X - j * R(), Y - j * R()], [X + TS * .5, Y - j * R()], [X + TS + j * R(), Y - j * R()], [X + TS + j * R(), Y + TS * .5], [X + TS + j * R(), Y + TS + j * R()], [X + TS * .5, Y + TS + j * R()], [X - j * R(), Y + TS + j * R()], [X - j * R(), Y + TS * .5]], '#352b20'); }
+    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (isP(x, y)) {
+      const X = x * TS, Y = y * TS;
+      if (R() < .55) { const cx = X + R() * TS, cy = Y + R() * TS, r = TS * (.25 + R() * .3); g.globalAlpha = .5; P(g, [[cx - r, cy], [cx - r * .3, cy - r * .6], [cx + r * .7, cy - r * .4], [cx + r, cy + r * .2], [cx + r * .1, cy + r * .6]], R() < .5 ? '#45382a' : '#2b2219'); g.globalAlpha = 1; }
+      for (let i = 0; i < 3; i++) { const px = X + R() * TS, py = Y + R() * TS, r = (1.6 + R() * 2.2) * s; P(g, [[px - r, py], [px, py - r * .8], [px + r, py - r * .1], [px + r * .3, py + r * .7]], R() < .5 ? '#55463a' : '#2a221a', .9 * s); }
+      // rims: a broken ink line on every side that touches grass
+      const rim = (x0, y0, x1, y1, nx, ny) => { const pts = []; for (let k = 0; k <= 4; k++) { const u = k / 4; pts.push([x0 + (x1 - x0) * u + nx * TS * (.1 + R() * .08), y0 + (y1 - y0) * u + ny * TS * (.1 + R() * .08)]); } L(g, pts, INK, 2.2 * s); };
+      if (!isP(x, y - 1) && at(x, y - 1) !== 'b') rim(X, Y, X + TS, Y, 0, -1);
+      if (!isP(x, y + 1) && at(x, y + 1) !== 'b') rim(X, Y + TS, X + TS, Y + TS, 0, 1);
+      if (!isP(x - 1, y) && at(x - 1, y) !== 'b') rim(X, Y, X, Y + TS, -1, 0);
+      if (!isP(x + 1, y) && at(x + 1, y) !== 'b') rim(X + TS, Y, X + TS, Y + TS, 1, 0);
+    }
+    // bazaar cobbles: angular stones, each inked with a lit corner
+    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (at(x, y) === 'b') {
+      g.fillStyle = '#1d1b18'; g.fillRect(x * TS, y * TS, TS, TS);
+      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { const q = TS / 3, X = x * TS + i * q + (j % 2) * q * .3, Y = y * TS + j * q, v = R(), jt = () => (R() - .5) * q * .18;
+        S(g, [[X + 1.5 + jt(), Y + 1.5 + jt()], [X + q - 1.5 + jt(), Y + 1.5 + jt()], [X + q - 1.5 + jt(), Y + q - 1.5 + jt()], [X + 1.5 + jt(), Y + q - 1.5 + jt()]], [v < .5 ? '#47423b' : '#3d3933', '#24211d', '#6a6358'], 1.2 * s, { mass: .4 }); }
+    }
+    // water: slate pool, inked ripples and pale slivers
+    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (at(x, y) === '~') { g.fillStyle = '#0e1820'; g.fillRect(x * TS - 2, y * TS - 2, TS + 4, TS + 4); }
+    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (at(x, y) === '~') { const X = x * TS, Y = y * TS; for (let i = 0; i < 3; i++) { const px = X + R() * TS * .7, py = Y + R() * TS; L(g, [[px, py], [px + 6 * s, py - 2 * s], [px + 12 * s, py]], INK, 1.6 * s); L(g, [[px + 2 * s, py - 3 * s], [px + 8 * s, py - 4 * s]], 'rgba(150,185,205,.35)', 1.2 * s); } }
+    // palisade: sharpened stakes, each shaded and inked, bound by a rope
+    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (at(x, y) === 'w') {
+      const px = x * TS, py = y * TS;
+      for (let i = 0; i < 3; i++) { const sx = px + i * TS / 3 + 1, w = TS / 3 - 2, top = py - 12 + R() * 7; S(g, [[sx, py + TS], [sx, top + 9], [sx + w * .45, top], [sx + w, top + 7], [sx + w, py + TS]], R() < .5 ? W8 : WOOD, 1.8 * s, { mass: .42, cuts: 2 }); }
+      L(g, [[px, py + TS * .52], [px + TS, py + TS * .56]], '#1a120b', 4 * s); L(g, [[px, py + TS * .5], [px + TS, py + TS * .53]], '#5a4630', 1.4 * s);
+    }
+    for (const gx of [11, 14]) S(g, [[gx * TS + TS * .22, -6], [gx * TS + TS * .78, -6], [gx * TS + TS * .78, TS], [gx * TS + TS * .22, TS]], W8, 2.2 * s, { mass: .45, cuts: 3 });
+    g.fillStyle = '#352b20'; g.fillRect(12 * TS, 0, TS * 2, TS); g.fillStyle = 'rgba(0,0,0,.6)'; g.fillRect(12 * TS, 0, TS * 2, TS * .35);
+    return c;
+  };
+
+  CB_INK.prop = function (g, p, TS, t) {
+    const x0 = p.x * TS, y0 = p.y * TS, W = p.w * TS, H = p.h * TS, s = TS / 48, lw = 2 * s;
+    if (p.kind === 'tree') {
+      const cx = x0 + TS / 2, by = y0 + TS * .9;
+      shadow(g, cx, by, TS * .44, TS * .16);
+      S(g, [[cx - 4 * s, by], [cx - 3 * s, by - 16 * s], [cx + 3 * s, by - 16 * s], [cx + 4 * s, by]], WOOD, lw, { mass: .5 });
+      const cols = [['#2a4430', '#0c160e', '#5f8a5a'], ['#2f4628', '#0d160b', '#6a8c4e'], ['#2b3a30', '#0d120f', '#5e7364']][p.v || 0];
+      for (let i = 0; i < 3; i++) { const w = (30 - i * 6) * s, base = by - (12 + i * 14) * s, top = by - (40 + i * 14) * s;
+        S(g, [[cx - w, base], [cx - w * .7, base - 5 * s], [cx - w * .45, base - 2 * s], [cx - w * .25, base - 9 * s], [cx, top], [cx + w * .3, base - 8 * s], [cx + w * .5, base - 2 * s], [cx + w * .75, base - 5 * s], [cx + w, base]], cols, lw, { mass: .52, cuts: 2 }); }
+    } else if (p.kind === 'rock') {
+      const cx = x0 + TS / 2, by = y0 + TS * .85;
+      shadow(g, cx, by, 20 * s, 6 * s);
+      S(g, [[cx - 18 * s, by], [cx - 15 * s, by - 14 * s], [cx - 4 * s, by - 23 * s], [cx + 9 * s, by - 19 * s], [cx + 17 * s, by - 9 * s], [cx + 18 * s, by]], STONE, lw, { mass: .48, cuts: 3 });
+      L(g, [[cx - 4 * s, by - 23 * s], [cx - 1 * s, by - 10 * s], [cx + 9 * s, by - 6 * s]], INK, 1.4 * s);
+    } else if (p.kind === 'torch') {
+      const cx = x0 + TS / 2, by = y0 + TS * .9;
+      shadow(g, cx, by, 8 * s, 3 * s, .35);
+      S(g, [[cx - 3 * s, by], [cx - 2.5 * s, by - 34 * s], [cx + 2.5 * s, by - 34 * s], [cx + 3 * s, by]], WOOD, 1.6 * s, { mass: .5 });
+      S(g, [[cx - 7 * s, by - 39 * s], [cx + 7 * s, by - 39 * s], [cx + 4 * s, by - 32 * s], [cx - 4 * s, by - 32 * s]], IRON, 1.6 * s, { mass: .45 });
+      flame(g, cx, by - 39 * s, 8 * s, t, p.x);
+    } else if (p.kind === 'fire') {
+      const cx = x0 + W / 2, by = y0 + TS * .8;
+      for (let i = 0; i < 9; i++) { const a = i / 9 * Math.PI * 2, sx = cx + Math.cos(a) * 30 * s, sy = by - 6 * s + Math.sin(a) * 12 * s; S(g, [[sx - 7 * s, sy + 3 * s], [sx - 5 * s, sy - 4 * s], [sx + 2 * s, sy - 6 * s], [sx + 7 * s, sy - 1 * s], [sx + 5 * s, sy + 4 * s]], STONE, 1.6 * s, { mass: .45 }); }
+      S(g, [[cx - 22 * s, by - 2 * s], [cx + 18 * s, by - 12 * s], [cx + 22 * s, by - 6 * s], [cx - 18 * s, by + 4 * s]], W8, 1.8 * s, { mass: .4, cuts: 2 });
+      S(g, [[cx + 22 * s, by - 2 * s], [cx - 18 * s, by - 12 * s], [cx - 22 * s, by - 6 * s], [cx + 18 * s, by + 4 * s]], WOOD, 1.8 * s, { mass: .4, cuts: 2 });
+      flame(g, cx - 8 * s, by - 8 * s, 15 * s, t, 1); flame(g, cx + 8 * s, by - 8 * s, 14 * s, t, 2); flame(g, cx, by - 10 * s, 21 * s, t, 3);
+    } else if (p.kind === 'tent') {
+      const by = y0 + H, mid = x0 + W / 2, cl = p.cloth, dark = mixC(cl, '#000000', .72), lite = mixC(cl, '#e8d6b0', .35);
+      shadow(g, mid, by - 4, W * .56, TS * .36);
+      S(g, [[x0 + 2, by - 6], [x0 + W * .18, by - TS * .9], [mid, y0 - TS * .6], [x0 + W * .82, by - TS * .9], [x0 + W - 2, by - 6], [x0 + W * .7, by - 2], [x0 + W * .3, by - 2]], [cl, dark, lite], 2.6 * s, { mass: .5, cuts: 6 });
+      P(g, [[mid - TS * .7, by - 4], [mid - TS * .1, by - TS * 1.9], [mid + TS * .1, by - TS * 1.9], [mid + TS * .7, by - 4]], '#0e0a07', 2.2 * s);
+      S(g, [[mid - TS * .7, by - 4], [mid - TS * .08, by - TS * 1.88], [mid - TS * .32, by - 4]], [cl, dark, lite], 1.8 * s, { mass: .3 });
+      L(g, [[x0 + 12, by - 12], [mid, y0 - TS * .48], [x0 + W - 12, by - 12]], p.trim, 2.6 * s);
+      S(g, [[mid - 2.5 * s, y0 - TS * .5], [mid - 2 * s, y0 - TS * 1.6], [mid + 2 * s, y0 - TS * 1.6], [mid + 2.5 * s, y0 - TS * .5]], WOOD, 1.4 * s);
+      const wave = Math.sin(t / 380 + p.x) * 3 * s;
+      P(g, [[mid + 2, y0 - TS * 1.56], [mid + 18 * s, y0 - TS * 1.5 + wave], [mid + 26 * s, y0 - TS * 1.45 + wave * 1.2], [mid + 18 * s, y0 - TS * 1.36 + wave], [mid + 22 * s, y0 - TS * 1.26 + wave], [mid + 2, y0 - TS * 1.22]], p.flag, 1.6 * s);
+    } else if (p.kind === 'longhouse') {
+      const by = y0 + H;
+      shadow(g, x0 + W / 2, by - 2, W * .55, TS * .3, .4);
+      S(g, [[x0 + 4, y0 + TS * .9], [x0 + W - 4, y0 + TS * .9], [x0 + W - 4, by - 2], [x0 + 4, by - 2]], W8, 2.6 * s, { mass: .32, cuts: 8 });
+      for (let i = 1; i < 6; i++) L(g, [[x0 + 4, y0 + TS * .9 + i * (H - TS) / 6], [x0 + W - 4, y0 + TS * .9 + i * (H - TS) / 6 + 1]], 'rgba(10,8,6,.7)', 1.4 * s);
+      S(g, [[x0 - 8, y0 + TS * 1.1], [x0 + 18, y0 - TS * .6], [x0 + W - 18, y0 - TS * .6], [x0 + W + 8, y0 + TS * 1.1]], ['#2c2925', '#0e0d0b', '#5b554b'], 2.8 * s, { mass: .38, cuts: 10 });
+      for (let i = 1; i < 9; i++) L(g, [[x0 + i * W / 9 + 8, y0 - TS * .5], [x0 + i * W / 9 - 2, y0 + TS * 1.05]], INK, 1.2 * s);
+      P(g, [[x0 + W / 2 - TS * .45, by - 2], [x0 + W / 2 - TS * .45, by - TS * 1.05], [x0 + W / 2 + TS * .45, by - TS * 1.1], [x0 + W / 2 + TS * .45, by - 2]], '#100b07', 2.2 * s);
+      for (const wx of [x0 + 18, x0 + W - 18 - TS * .7]) { P(g, [[wx, by - TS * 1.15], [wx + TS * .7, by - TS * 1.17], [wx + TS * .7, by - TS * .65], [wx, by - TS * .64]], '#f2a14e', 2 * s); L(g, [[wx + TS * .35, by - TS * 1.16], [wx + TS * .35, by - TS * .64]], INK, 2 * s); }
+      const cx = x0 + W / 2; S(g, [[cx - 12 * s, y0 - TS * .15], [cx + 12 * s, y0 - TS * .15], [cx + 12 * s, y0 + TS * .25], [cx, y0 + TS * .5], [cx - 12 * s, y0 + TS * .25]], ['#6b1f1a', '#2a0b09', '#b8584a'], 2 * s, { mass: .45 });
+    } else if (p.kind === 'stall') {
+      shadow(g, x0 + W / 2, y0 + H - 2, W * .52, TS * .26, .4);
+      S(g, [[x0 + 4, y0 + TS * .6], [x0 + W - 4, y0 + TS * .6], [x0 + W - 4, y0 + H - 2], [x0 + 4, y0 + H - 2]], W8, 2.2 * s, { mass: .35, cuts: 4 });
+      for (let i = 0; i < 4; i++) P(g, [[x0 + 10 + i * (W - 20) / 4, y0 + TS * .75], [x0 + 4 + (i + 1) * (W - 20) / 4, y0 + TS * .75], [x0 + 4 + (i + 1) * (W - 20) / 4, y0 + TS], [x0 + 10 + i * (W - 20) / 4, y0 + TS]], '#1a120c', 1.2 * s);
+      for (let i = 0; i < 6; i++) S(g, [[x0 + i * W / 6, y0 + TS * .6], [x0 + i * W / 6 + 6, y0 - TS * .3], [x0 + (i + 1) * W / 6 + 6, y0 - TS * .3], [x0 + (i + 1) * W / 6, y0 + TS * .6], [x0 + (i + .5) * W / 6, y0 + TS * .5]], i % 2 ? ['#5a2a22', '#24100d', '#9a5a4a'] : ['#9a8c7c', '#3a332c', '#d8ccb8'], 1.8 * s, { mass: .4 });
+      P(g, [[x0 + W * .17, y0 + TS * .55], [x0 + W * .2, y0 + TS * .44], [x0 + W * .24, y0 + TS * .55]], '#4f7f48', 1.4 * s); P(g, [[x0 + W * .3, y0 + TS * .58], [x0 + W * .33, y0 + TS * .46], [x0 + W * .36, y0 + TS * .58]], '#3f64a0', 1.4 * s);
+      S(g, [[x0 + W * .45, y0 + TS * .7], [x0 + W * .45, y0 + TS * .4], [x0 + W * .45 + 16 * s, y0 + TS * .4], [x0 + W * .45 + 16 * s, y0 + TS * .7]], IRON, 1.4 * s);
+      S(g, [[x0 + W * .65, y0 + TS * .7], [x0 + W * .65, y0 + TS * .36], [x0 + W * .65 + 12 * s, y0 + TS * .36], [x0 + W * .65 + 12 * s, y0 + TS * .7]], ['#b08a3a', '#3e2e10', '#f0d08a'], 1.4 * s);
+      P(g, [[x0 + W * .82, y0 + TS * .62], [x0 + W * .86, y0 + TS * .2], [x0 + W * .9, y0 + TS * .62]], '#c8ccd0', 1.4 * s);
+    } else if (p.kind === 'wagon') {
+      const by = y0 + H;
+      shadow(g, x0 + W / 2, by - 4, W * .55, TS * .26, .45);
+      S(g, [[x0 + 4, y0 + TS * .7], [x0 + W - 4, y0 + TS * .7], [x0 + W - 6, y0 + TS * 1.5], [x0 + 6, y0 + TS * 1.5]], W8, 2.6 * s, { mass: .38, cuts: 5 });
+      const cov = []; for (let i = 0; i <= 8; i++) { const a = Math.PI * (1 - i / 8); cov.push([x0 + W / 2 + Math.cos(a) * (W / 2 - 6) + (i % 2 ? 2 : -2) * s, y0 + TS * .74 - Math.sin(a) * TS * 1.25]); }
+      S(g, cov, ['#a89a80', '#3d362b', '#e4d8bc'], 2.6 * s, { mass: .42, cuts: 6 });
+      for (let i = 1; i < 4; i++) L(g, [[x0 + i * W / 4, y0 + TS * .7], [x0 + i * W / 4 + 2 * s, y0 - TS * .3]], INK, 2 * s);
+      for (const wx of [x0 + TS * .55, x0 + W - TS * .55]) { const cy = by - TS * .32, r = TS * .37; P(g, Array.from({ length: 10 }, (_, k) => [wx + Math.cos(k / 10 * Math.PI * 2) * r, cy + Math.sin(k / 10 * Math.PI * 2) * r]), '#3a2a1c', 2.4 * s); for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI; L(g, [[wx - Math.cos(a) * r, cy - Math.sin(a) * r], [wx + Math.cos(a) * r, cy + Math.sin(a) * r]], INK, 1.6 * s); } P(g, [[wx - 4 * s, cy], [wx, cy - 4 * s], [wx + 4 * s, cy], [wx, cy + 4 * s]], '#7a5a3a', 1.2 * s); }
+      S(g, [[x0 - TS * .5, y0 + TS * 1.2], [x0 + TS * .1, y0 + TS * 1.18], [x0 + TS * .1, y0 + TS * 1.3], [x0 - TS * .5, y0 + TS * 1.3]], WOOD, 1.4 * s);
+      P(g, [[x0 + 2, y0 + TS * .32], [x0 + 6, y0 + TS * .24], [x0 + 10, y0 + TS * .32], [x0 + 6, y0 + TS * .48]], '#ffcf7a', 1.4 * s);
+    } else if (p.kind === 'well') {
+      const cx = x0 + W / 2, by = y0 + TS * .85, rim = Array.from({ length: 12 }, (_, k) => [cx + Math.cos(k / 12 * Math.PI * 2) * W * .46, by - 8 * s + Math.sin(k / 12 * Math.PI * 2) * TS * .32]);
+      shadow(g, cx, by, W * .5, TS * .3);
+      S(g, rim, STONE, 2.2 * s, { mass: .45, cuts: 5 });
+      P(g, rim.map(([x, y]) => [cx + (x - cx) * .8, by - 10 * s + (y - by + 8 * s) * .75]), '#14283a', 1.6 * s);
+      const k = (t % 2000) / 2000; g.strokeStyle = `rgba(150,200,230,${.5 - k * .5})`; g.lineWidth = 1.5; g.beginPath(); g.ellipse(cx, by - 10 * s, W * .1 + k * W * .25, TS * .06 + k * TS * .16, 0, 0, Math.PI * 2); g.stroke();
+      S(g, [[cx - 4 * s, by - 10 * s], [cx - 3 * s, by - 30 * s], [cx + 3 * s, by - 30 * s], [cx + 4 * s, by - 10 * s]], STONE, 1.6 * s);
+      S(g, [[cx - 6 * s, by - 30 * s], [cx, by - 38 * s], [cx + 6 * s, by - 30 * s], [cx, by - 26 * s]], STONE, 1.6 * s);
+    } else if (p.kind === 'sign') {
+      const cx = x0 + TS / 2, by = y0 + TS * .95;
+      S(g, [[cx - 3 * s, by], [cx - 2.5 * s, by - 34 * s], [cx + 2.5 * s, by - 34 * s], [cx + 3 * s, by]], WOOD, 1.6 * s);
+      S(g, [[cx - 22 * s, by - 44 * s], [cx + 18 * s, by - 45 * s], [cx + 26 * s, by - 37 * s], [cx + 18 * s, by - 28 * s], [cx - 22 * s, by - 29 * s]], W8, 1.8 * s, { mass: .3, cuts: 2 });
+      g.fillStyle = '#ead2a0'; g.font = `700 ${Math.round(10 * s)}px "Barlow Semi Condensed", sans-serif`; g.textAlign = 'center'; g.fillText('BAZAAR →', cx, by - 32.5 * s);
+    } else if (p.kind === 'board') {
+      const cx = x0 + TS / 2, by = y0 + TS * .9;
+      for (const px of [cx - 18 * s, cx + 14 * s]) S(g, [[px, by], [px, by - 18 * s], [px + 4 * s, by - 18 * s], [px + 4 * s, by]], WOOD, 1.4 * s);
+      S(g, [[cx - 22 * s, by - 46 * s], [cx + 22 * s, by - 47 * s], [cx + 22 * s, by - 16 * s], [cx - 22 * s, by - 16 * s]], W8, 2 * s, { mass: .3, cuts: 3 });
+      P(g, [[cx - 17 * s, by - 42 * s], [cx - 4 * s, by - 43 * s], [cx - 4 * s, by - 26 * s], [cx - 17 * s, by - 27 * s]], '#d4c6aa', 1 * s);
+      P(g, [[cx - 1 * s, by - 40 * s], [cx + 14 * s, by - 40 * s], [cx + 13 * s, by - 29 * s], [cx - 1 * s, by - 30 * s]], '#c2b394', 1 * s);
+      P(g, [[cx + 2 * s, by - 27 * s], [cx + 13 * s, by - 26 * s], [cx + 13 * s, by - 19 * s], [cx + 2 * s, by - 19 * s]], '#ddd0b4', 1 * s);
+    } else if (p.kind === 'chest') {
+      const cx = x0 + TS / 2, by = y0 + TS * .88;
+      shadow(g, cx, by, 19 * s, 5 * s, .4);
+      S(g, [[cx - 17 * s, by], [cx - 17 * s, by - 20 * s], [cx + 17 * s, by - 20 * s], [cx + 17 * s, by]], W8, 2 * s, { mass: .4, cuts: 2 });
+      S(g, [[cx - 17 * s, by - 20 * s], [cx - 12 * s, by - 29 * s], [cx, by - 32 * s], [cx + 12 * s, by - 29 * s], [cx + 17 * s, by - 20 * s]], ['#5a4029', '#20160d', '#8a6a48'], 2 * s, { mass: .4 });
+      for (const bx of [cx - 11 * s, cx + 8 * s]) P(g, [[bx, by], [bx, by - 30 * s], [bx + 3 * s, by - 30 * s], [bx + 3 * s, by]], '#2a2a2a', 1 * s);
+      P(g, [[cx - 3 * s, by - 18 * s], [cx + 3 * s, by - 18 * s], [cx + 3 * s, by - 10 * s], [cx - 3 * s, by - 10 * s]], '#d6a14a', 1.4 * s);
+    } else if (p.kind === 'lectern') {
+      const cx = x0 + TS / 2, by = y0 + TS * .9;
+      shadow(g, cx, by, 12 * s, 4 * s, .35);
+      S(g, [[cx - 4 * s, by], [cx - 3 * s, by - 22 * s], [cx + 3 * s, by - 22 * s], [cx + 4 * s, by]], WOOD, 1.4 * s);
+      S(g, [[cx - 16 * s, by - 22 * s], [cx + 16 * s, by - 22 * s], [cx + 12 * s, by - 32 * s], [cx - 12 * s, by - 32 * s]], W8, 1.8 * s, { mass: .35 });
+      P(g, [[cx - 13 * s, by - 26 * s], [cx, by - 24 * s], [cx, by - 34 * s], [cx - 12 * s, by - 35 * s]], '#ddd0b4', 1.2 * s);
+      P(g, [[cx + 13 * s, by - 26 * s], [cx, by - 24 * s], [cx, by - 34 * s], [cx + 12 * s, by - 35 * s]], '#c8baa0', 1.2 * s);
+      P(g, [[cx + 14 * s, by - 31 * s], [cx + 14 * s, by - 40 * s], [cx + 18 * s, by - 40 * s], [cx + 18 * s, by - 31 * s]], '#e2d8c2', 1 * s); flame(g, cx + 16 * s, by - 40 * s, 4.5 * s, t, 9);
+    } else return false;
+    return true;
+  };
+  // the training dummy in ink: straw sack on a post, swaying
+  CB_INK.scarecrow = function (g, cx, by, s, t) {
+    const sw = Math.sin(t / 900) * 1.2 * s, X = (v) => cx + v * s + sw;
+    shadow(g, cx, by, 12 * s, 4 * s, .4);
+    S(g, [[cx - 2 * s, by], [cx - 2 * s, by - 40 * s], [cx + 2 * s, by - 40 * s], [cx + 2 * s, by]], WOOD, 1.4 * s);
+    S(g, [[X(-18), by - 31 * s], [X(18), by - 32 * s], [X(18), by - 27 * s], [X(-18), by - 27 * s]], WOOD, 1.4 * s);
+    S(g, [[X(-10), by - 32 * s], [X(10), by - 32 * s], [X(12), by - 12 * s], [X(5), by - 9 * s], [X(0), by - 13 * s], [X(-6), by - 9 * s], [X(-12), by - 12 * s]], ['#7a5a34', '#2a1d10', '#b89466'], 1.6 * s, { mass: .45, cuts: 3 });
+    for (const d of [-1, 1]) P(g, [[X(d * 17), by - 31 * s], [X(d * 22), by - 25 * s], [X(d * 17), by - 27 * s], [X(d * 15), by - 22 * s]], '#c9a440', 1 * s);
+    P(g, [[X(-3), by - 26 * s], [X(3), by - 26 * s], [X(3), by - 20 * s], [X(-3), by - 20 * s]], '#a83a28', 1.2 * s);
+    S(g, Array.from({ length: 8 }, (_, k) => [X(Math.cos(k / 8 * Math.PI * 2) * 8), by - 39 * s + Math.sin(k / 8 * Math.PI * 2) * 8 * s]), ['#c4aa70', '#4a3b20', '#eadbb0'], 1.6 * s, { mass: .45 });
+    for (const e of [-3, 3]) { L(g, [[X(e - 1.5), by - 41.5 * s], [X(e + 1.5), by - 38.5 * s]], INK, 1.4 * s); L(g, [[X(e + 1.5), by - 41.5 * s], [X(e - 1.5), by - 38.5 * s]], INK, 1.4 * s); }
+    S(g, [[X(-13), by - 44 * s], [X(13), by - 44 * s], [X(5), by - 47 * s], [X(2), by - 55 * s], [X(-5), by - 47 * s]], ['#3e2f20', '#140e08', '#6a5438'], 1.6 * s, { mass: .45 });
+    return true;
+  };
+  function mixC(a, b, k) { const h = (c) => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16)); const A = h(a), B = h(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * k).toString(16).padStart(2, '0')).join(''); }
+})();

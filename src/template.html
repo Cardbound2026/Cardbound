@@ -1178,6 +1178,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   function circ(g, x, y, r, fill, lw) { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fillStyle = fill; g.fill(); if (lw) line(g, lw); }
 
   function buildGround() {
+    if (window.CB_INK && CB_INK.ground) return CB_INK.ground({ MW, MH, TS: TOWN.TS, dpr: TOWN.dpr, ground }); // Gothic Ink art pack (src/inkart.js)
     const TS = TOWN.TS, d = TOWN.dpr, c = document.createElement('canvas');
     c.width = MW * TS * d; c.height = MH * TS * d; const g = c.getContext('2d'); g.scale(d, d);
     const R = rng32(77);
@@ -1215,6 +1216,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 
   // ---------- props (each draws itself relative to its footprint; base y = bottom of footprint)
   function drawProp(g, p, TS, t) {
+    if (window.CB_INK && CB_INK.prop && CB_INK.prop(g, p, TS, t)) return; // Gothic Ink art pack
     const x0 = p.x * TS, y0 = p.y * TS, W = p.w * TS, H = p.h * TS, s = TS / 48;
     if (p.kind === 'tree') {
       const cx = x0 + TS / 2, by = y0 + TS * 0.9;
@@ -1328,6 +1330,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   }
   // the training dummy: a straw scarecrow on a post, swaying a little
   function drawScarecrow(g, cx, by, s, t) {
+    if (window.CB_INK && CB_INK.scarecrow && CB_INK.scarecrow(g, cx, by, s, t)) return; // Gothic Ink art pack
     const sway = Math.sin(t / 900) * 1.2 * s;
     g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, 11 * s, 4 * s, 0, 0, Math.PI * 2); g.fill();
     rrect(g, cx - 2 * s, by - 40 * s, 4 * s, 40 * s, 1, '#5a4026', 1.4);                                   // post
