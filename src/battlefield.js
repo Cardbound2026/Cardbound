@@ -220,13 +220,21 @@ function layout(cb, opts) {
   // one side's positions for figure size s; returns null if it doesn't fit
   const plan = (n, h, s, force, compact, sh) => {
     if (!n) return [];
-    if (compact) { // 5+ on a side: small plates under the feet, one diagonal (or two staggered ones past 6)
-      const files = n > 6 ? 2 : 1, per = Math.ceil(n / files), dx = Math.max(s * .74, 2 * Math.max(...sh.map(q => q.hw)) * s * .9) + 6, ph = 38, out = [], gap = W / 2 - Math.max(16, W * .04);
-      const lift = files > 1 ? s * .62 + ph : 0, x0 = 12 + s * .52, y0 = B - ph - 2;
-      const dy = per > 1 ? Math.min(s * .7, (y0 - lift - T - s * figTop) / (per - 1)) : 0;
-      for (let i = 0; i < n; i++) { const f = files > 1 ? i % 2 : 0, col = files > 1 ? Math.floor(i / 2) : i; out.push({ x: x0 + col * dx + f * dx / 2, y: y0 - col * dy - f * lift, d: col * .7 + f * .6, G: 0 }); }
-      const ok = dy >= ph - 4 && out.every(p => p.x + s * .5 <= gap && p.y - s * figTop >= T - 4);
-      return ok || force ? out : null;
+    if (compact) { // 5+ on a side: a block of small fighters in rows (back rows higher and further in), tiny plates under the feet
+      const hw = Math.max(...sh.map(q => q.hw)) * s, ph = Math.max(30, ...h) + 4, gap = W / 2 - Math.max(16, W * .04), dx = Math.max(2 * hw * .95, 70) + 6, rh = s * figTop * Math.max(...sh.map(q => q.ht)) + ph + 2;
+      for (let rows = 1; rows <= n; rows++) {
+        const cols = Math.ceil(n / rows), shift = dx * .35, out = [];
+        if (12 + Math.max(hw, 38) + (cols - 1) * dx + (rows - 1) * shift + Math.max(hw, 38) > gap) continue;
+        if (rows * rh > B - T) break;
+        for (let i = 0; i < n; i++) { const r = Math.floor(i / cols), c = i % cols; out.push({ x: 12 + Math.max(hw, 38) + c * dx + r * shift, y: B - ph - 4 - r * rh, d: r * 1.2 + c * .1, G: 0, pw: dx - 6 }); }
+        return out;
+      }
+      if (!force) return null;
+      // too little room: as many columns as fit, rows squeezed together (back rows tuck behind the front ones)
+      const cols = Math.max(1, Math.floor((gap - 12 - 2 * Math.max(hw, 38)) / dx) + 1), rows = Math.ceil(n / cols), top = s * figTop * Math.max(...sh.map(q => q.ht));
+      const rh2 = rows > 1 ? Math.max(ph + 6, Math.min(rh, (B - ph - 4 - T - top) / (rows - 1))) : 0, out = [];
+      for (let i = 0; i < n; i++) { const r = Math.floor(i / cols), c = i % cols; out.push({ x: 12 + Math.max(hw, 38) + c * dx + r * dx * .3, y: B - ph - 4 - r * rh2, d: r * 1.2 + c * .1, G: 0, pw: dx - 6 }); }
+      return out;
     }
     // each fighter one step in and up; its plate sits just outside its own figure. If that plate would sit over the
     // fighter in front (lower down), the step up is made big enough for the plate to clear that fighter's head.
@@ -250,12 +258,13 @@ function layout(cb, opts) {
     return out;
   };
   let s = Math.round(Math.min(250, Math.max(96, (B - T) * .66))), P0 = null, P1 = null;
-  for (; s >= 56; s -= 4) { P0 = plan(sides[0].length, hts[0], s, false, cmp[0], shp[0]); P1 = plan(sides[1].length, hts[1], s, false, cmp[1], shp[1]); if (P0 && P1) break; }
-  if (!P0 || !P1) { s = Math.max(s, 56); P0 = plan(sides[0].length, hts[0], s, true, cmp[0], shp[0]); P1 = plan(sides[1].length, hts[1], s, true, cmp[1], shp[1]); }
+  const smin = cmp[0] || cmp[1] ? 36 : 56;
+  for (; s >= smin; s -= 4) { P0 = plan(sides[0].length, hts[0], s, false, cmp[0], shp[0]); P1 = plan(sides[1].length, hts[1], s, false, cmp[1], shp[1]); if (P0 && P1) break; }
+  if (!P0 || !P1) { s = Math.max(s, smin); P0 = plan(sides[0].length, hts[0], s, true, cmp[0], shp[0]); P1 = plan(sides[1].length, hts[1], s, true, cmp[1], shp[1]); }
   const put = (els, pts, enemy) => els.forEach((el, i) => {
     const p = pts[i]; if (!p) return; const big = el.dataset.boss ? 1.22 : 1, size = Math.round(s * (1 - p.d * .035) * big);
     el.style.left = Math.round(enemy ? W - p.x : p.x) + 'px'; el.style.top = Math.round(p.y) + 'px';
-    el.style.setProperty('--fh', size + 'px'); el.style.setProperty('--plate', Math.round(p.G) + 'px');
+    el.style.setProperty('--fh', size + 'px'); el.style.setProperty('--plate', Math.round(p.G) + 'px'); if (p.pw) el.style.setProperty('--pw', Math.round(p.pw) + 'px'); else el.style.removeProperty('--pw');
     el.style.zIndex = String(60 - Math.round(p.d * 6));
     const fg = el.querySelector('.figure'); if (fg) el.style.setProperty('--figh', fg.offsetHeight + 'px');
   });
@@ -376,7 +385,7 @@ css.textContent = `
 #scrCombat.bf .field-panel.bfmid > .hud { gap: 8px 10px; padding: 8px 10px; } #scrCombat.bf .field-panel.bfmid .hud .pilebtn { padding: 3px 7px; font-size: 11.5px; } #scrCombat.bf .field-panel.bfmid .hud .mana small { display: none; }
 #scrCombat.bf .field-panel.bfmid .endturn.btn.primary { padding: 7px 14px !important; font-size: 16px !important; }
 /* big fights (5+ on a side): small plates under each fighter's feet */
-#scrCombat.bf .stage .compact .uplate { left: calc(var(--fh) * -.5) !important; right: auto !important; bottom: auto; top: 4px; width: calc(var(--fh) + 8px); min-width: 74px; padding: 2px 4px; border: 0 !important; border-radius: 3px; background: #0d1715d9 !important; gap: 1px; }
+#scrCombat.bf .stage .compact .uplate { left: calc(var(--pw, 80px) * -.5) !important; right: auto !important; bottom: auto; top: 3px; width: var(--pw, 80px); padding: 2px 4px; border: 0 !important; border-radius: 3px; background: #0d1715d9 !important; gap: 1px; }
 #scrCombat.bf .stage .compact .uplate .uname small, #scrCombat.bf .stage .compact .uplate .deckbtn { display: none; }
 #scrCombat.bf .stage .compact .uplate .uname b { font: 600 11px var(--f-ui); }
 #scrCombat.bf .stage .compact .uplate .bar { height: 9px; } #scrCombat.bf .stage .compact .uplate .bar span { font-size: 8px; line-height: 8px; }

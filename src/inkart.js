@@ -32,7 +32,8 @@
     figure(a) {
       if (!a) return null;
       if (a.isPlayer) { const s = M.heroes && M.heroes[a.cls]; return s ? `<img class="inkfig" src="img/ink/hero_${a.cls.toLowerCase()}.webp" style="--s:${s}" alt="" draggable="false">` : null; }
-      const s = M.enemies && M.enemies[a.key]; return s ? `<img class="inkfig" src="img/ink/${a.key}.webp" style="--s:${s}" alt="" draggable="false">` : null;
+      let k = a.key; if (M.enemies && !M.enemies[k] && window.CB_DATA) { const d = CB_DATA.enemies[k]; if (d && d.raid && d.map && CB_DATA.maps[d.map]) k = CB_DATA.maps[d.map].boss; } // raid bosses wear their map boss's art
+      const s = M.enemies && M.enemies[k]; return s ? `<img class="inkfig" src="img/ink/${k}.webp" style="--s:${s}" alt="" draggable="false">` : null;
     },
   };
 })();
