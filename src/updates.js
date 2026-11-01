@@ -2,6 +2,10 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Balance', 'Fear: monsters now resist it 25% of the time (bosses 50%), and any damage that lands on a Feared monster (hits, damage over time, even into its Block) has a 75% chance to break the Fear.'],
+      ['Balance', 'Crit Chance on gear is cut by 75% and Crit Damage on gear by 50%, on new drops and on gear you already own (each stat line stays at least 1).'],
+      ['Balance', 'Lingering Dread applies 8 Dread (was 6).'],
+      ['Fix', 'Every Warlock card, and the newer Warrior Blood Debt cards, are now on enemy loot lists (the compendium shows where each one drops). Warlock cards drop from the same monsters, at the same odds, as Rogue cards.'],
       ['Feature', 'Group fights: tier 2 and 3 rows can now hold a group, three smaller bodies that share one monster\'s HP and damage (Pack of Wolves, Bandit Party, Ember Whelps, Magma Golems, Frostfang Pack, Barrow Wight Patrol, Spiderling Swarm, Raptor Pack, Ley Hound Pack, Animated Armor Squad, Ghoul Pack, Cultist Coven: two per map). A group counts as one monster: one loot roll, one kill, its own gear and card drops. Bring some area damage.'],
       ['Balance', 'Mana Regen now only appears on amulets. Gear that had a Mana Regen affix had it rerolled into a new stat, and the Frost Staff\'s built-in Mana Regen became Frost damage.'],
       ['Balance', 'Recovery (and Party Recovery) on gear is halved, on new drops and on gear you already own.'],

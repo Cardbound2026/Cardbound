@@ -61,7 +61,7 @@ function install(K) {
   W('sap_mana', 'Sap Mana', 'White', 'Skill', 10, 'enemy', 'Shadow', 'Deal 5 Shadow damage. Drain 8 mana from the target and gain it.', (cb, t, p) => { const e = D_(cb, t, 5, 'Sap Mana'); if (e && e.hp > 0) { const s = cb.drainMana(e, 8); p.mana += s; say(cb, `Drained ${s} mana.`); } }, { dmg: 5 });
   W('umbral_spike', 'Umbral Spike', 'White', 'Skill', 10, 'enemy', 'Shadow', 'Deal 8 Shadow damage with +15% crit chance. If it crits, draw 1 card.', (cb, t, p) => { p.turn.critPlus = (p.turn.critPlus || 0) + 15; D_(cb, t, 8, 'Umbral Spike'); p.turn.critPlus -= 15; if (cb._lastCrit) cb.drawCards(p, 1); }, { dmg: 8 });
   W('shadow_lash', 'Shadow Lash', 'White', 'Attack', 10, 'enemy', 'Shadow', 'Deal 9 Shadow damage. (A Shadow Attack: it scales with Strength.)', (cb, t) => D_(cb, t, 9, 'Shadow Lash'), { dmg: 9 });
-  W('lingering_dread', 'Lingering Dread', 'White', 'Skill', 10, 'enemy', 'Shadow', 'Apply 6 Dread.', (cb, t) => dot(cb, tgtOf(cb, t), 'dread', 6), { dot: 21 });
+  W('lingering_dread', 'Lingering Dread', 'White', 'Skill', 10, 'enemy', 'Shadow', 'Apply 8 Dread.', (cb, t) => dot(cb, tgtOf(cb, t), 'dread', 8), { dot: 21 });
   W('dark_bargain', 'Dark Bargain', 'White', 'Skill', 10, 'self', null, 'Gain 7 Absorb. Draw 1 card.', (cb, t, p) => { cb.gainDef(7); cb.drawCards(p, 1); }, { def: 7, draw: 1 });
   W('soul_spark', 'Soul Spark', 'White', 'Skill', 0, 'enemy', 'Shadow', 'Deal 4 Shadow damage. Exhaust.', (cb, t) => D_(cb, t, 4, 'Soul Spark'), { dmg: 4 }, { exhaust: true });
 

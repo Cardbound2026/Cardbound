@@ -690,36 +690,37 @@ const CLASSES = {
   Paladin: { defense: 'Block', blurb: 'Holy warrior: Block, Holy damage that ignores resistance, and heals.', deck: [['lay_on_hands', 1], ['ardent_defense', 1], ['holy_nova', 1], ['divine_shield', 1], ['divine_storm', 1], ['healing_light', 1], ['crusader_strike', 6], ['raise_shield', 2], ['righteous_blow', 2], ['sacred_ward', 1], ['smite', 3]] },
   Warlock: { defense: 'Absorb', blurb: 'Shadow caster: Dread and Rot, curses, demons and Absorb (overhealing a Warlock becomes Absorb).', deck: [['soul_beacon', 1], ['shadow_armor', 1], ['soul_shroud', 1], ['shadow_volley', 1], ['curse_of_frailty', 1], ['drain_life', 1], ['summon_gloom_imp', 1], ['shadow_bolt', 5], ['dark_ward', 4], ['dread_touch', 2], ['rotting_grasp', 1], ['siphon_soul', 1]] },
 };
-const it = (slot, base, stats, imp2) => ({ slot, name: base, rarity: 'White', ilvl: 1, stats: Object.assign({ 'Resistance:Fire': 3 }, stats), imp2: imp2 || {} });
+const it = (slot, base, stats, imp2) => ({ slot, name: base, rarity: 'White', ilvl: 1, stats: Object.assign({ 'Resistance:Fire': 3 }, stats), imp2: imp2 || {}, r2: 1, r3: 1 });
 const STARTER_GEAR = {
   Warrior: [it('Weapon', 'Arming Sword', { Strength: 3 }, { 'Multi-hit Chance': 3 }), it('Off-hand', 'Kite Shield', { Dexterity: 3 }, { Thorns: 2 }), it('Helm', 'Warband Helm', { Stamina: 6 }), it('Shoulders', 'Warband Pauldrons', { Stamina: 4 }),
-    it('Amulet', "Soldier's Pendant", { Strength: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Brigandine', { 'Crit Chance': 3 }),
-    it('Bracers', 'Iron Bracers', { 'Crit Damage': 12 }), it('Gloves', 'Leather Gauntlets', { 'Crit Chance': 3 }), it('Belt', 'War Belt', { Stamina: 6 }), it('Pants', 'Legguards', { Stamina: 6 }),
+    it('Amulet', "Soldier's Pendant", { Strength: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Brigandine', { 'Crit Chance': 1 }),
+    it('Bracers', 'Iron Bracers', { 'Crit Damage': 6 }), it('Gloves', 'Leather Gauntlets', { 'Crit Chance': 1 }), it('Belt', 'War Belt', { Stamina: 6 }), it('Pants', 'Legguards', { Stamina: 6 }),
     it('Boots', 'March Boots', { Dexterity: 3 }, { Initiative: 3 }), it('Ring 1', 'Ember-Warded Ring', { Stamina: 6 }), it('Ring 2', "Soldier's Signet", { Luck: 3 })],
-  Rogue: [it('Weapon', 'Dirk', { Strength: 3 }, { 'Crit Damage': 12 }), it('Off-hand', 'Dirk', { 'Crit Chance': 3 }, { 'Crit Damage': 12 }), it('Helm', "Scout's Cap", { Strength: 3 }), it('Shoulders', "Scout's Spaulders", { Dexterity: 2 }),
-    it('Amulet', "Soldier's Pendant", { Strength: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Brigandine', { 'Crit Chance': 3 }),
-    it('Bracers', "Archer's Bracers", { 'Crit Damage': 12 }), it('Gloves', 'Leather Gauntlets', { 'Crit Chance': 3 }), it('Belt', 'War Belt', { Stamina: 6 }), it('Pants', 'Riding Breeches', { Dexterity: 3 }),
+  Rogue: [it('Weapon', 'Dirk', { Strength: 3 }, { 'Crit Damage': 6 }), it('Off-hand', 'Dirk', { 'Crit Chance': 1 }, { 'Crit Damage': 6 }), it('Helm', "Scout's Cap", { Strength: 3 }), it('Shoulders', "Scout's Spaulders", { Dexterity: 2 }),
+    it('Amulet', "Soldier's Pendant", { Strength: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Brigandine', { 'Crit Chance': 1 }),
+    it('Bracers', "Archer's Bracers", { 'Crit Damage': 6 }), it('Gloves', 'Leather Gauntlets', { 'Crit Chance': 1 }), it('Belt', 'War Belt', { Stamina: 6 }), it('Pants', 'Riding Breeches', { Dexterity: 3 }),
     it('Boots', 'March Boots', { Stamina: 6 }, { Initiative: 3 }), it('Ring 1', 'Ember-Warded Ring', { Stamina: 6 }), it('Ring 2', "Soldier's Signet", { Luck: 3 })],
   Mage: [it('Weapon', 'Ashwood Wand', { Intelligence: 3 }, { 'Elemental/Holy Damage:Fire': 6 }), it('Off-hand', 'Battle Focus', { Dexterity: 3 }, { 'Elemental/Holy Damage:Frost': 6 }), it('Helm', 'Hedge-Mage Hood', { Intelligence: 3 }), it('Shoulders', 'Hedge-Mage Mantle', { Spirit: 2 }),
     it('Amulet', "Soldier's Pendant", { Intelligence: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Camp Robe', { Spirit: 3 }),
-    it('Bracers', 'Linen Wraps', { Intelligence: 3 }), it('Gloves', "Scribe's Handwraps", { 'Crit Chance': 3 }), it('Belt', "Officer's Sash", { Stamina: 6 }), it('Pants', 'Quilted Leggings', { Stamina: 6 }),
+    it('Bracers', 'Linen Wraps', { Intelligence: 3 }), it('Gloves', "Scribe's Handwraps", { 'Crit Chance': 1 }), it('Belt', "Officer's Sash", { Stamina: 6 }), it('Pants', 'Quilted Leggings', { Stamina: 6 }),
     it('Boots', 'Pilgrim Slippers', { Dexterity: 3 }, { Initiative: 3 }), it('Ring 1', 'Ember-Warded Ring', { Stamina: 6 }), it('Ring 2', "Soldier's Signet", { 'Max Mana': 15 })],
   Paladin: [it('Weapon', 'Flanged Mace', { Strength: 3 }, { 'Elemental/Holy Damage:Holy': 6 }), it('Off-hand', 'Pavise', { Dexterity: 3 }, { 'Defense Gain': 6 }), it('Helm', 'Warband Helm', { Stamina: 6 }), it('Shoulders', 'Warband Pauldrons', { Stamina: 4 }),
     it('Amulet', "Soldier's Pendant", { Strength: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Iron Cuirass', { Stamina: 6 }),
-    it('Bracers', 'Iron Bracers', { Strength: 3 }), it('Gloves', 'Iron Gauntlets', { 'Crit Chance': 3 }), it('Belt', 'War Girdle', { Stamina: 6 }), it('Pants', 'Legguards', { Dexterity: 3 }),
+    it('Bracers', 'Iron Bracers', { Strength: 3 }), it('Gloves', 'Iron Gauntlets', { 'Crit Chance': 1 }), it('Belt', 'War Girdle', { Stamina: 6 }), it('Pants', 'Legguards', { Dexterity: 3 }),
     it('Boots', 'Iron Sabatons', { Stamina: 6 }, { Initiative: 3 }), it('Ring 1', 'Ember-Warded Ring', { Intelligence: 3 }), it('Ring 2', "Soldier's Signet", { Spirit: 3 })],
   Warlock: [it('Weapon', 'Ashwood Wand', { Intelligence: 3 }, { 'Elemental/Holy Damage:Shadow': 6 }), it('Off-hand', 'Battle Focus', { Spirit: 3 }, { 'Elemental/Holy Damage:Shadow': 6 }), it('Helm', 'Hedge-Mage Hood', { Intelligence: 3 }), it('Shoulders', 'Hedge-Mage Mantle', { Spirit: 2 }),
     it('Amulet', "Soldier's Pendant", { Intelligence: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Camp Robe', { Stamina: 6 }),
-    it('Bracers', 'Linen Wraps', { Intelligence: 3 }), it('Gloves', "Scribe's Handwraps", { 'Crit Chance': 3 }), it('Belt', "Officer's Sash", { Stamina: 6 }), it('Pants', 'Quilted Leggings', { Stamina: 6 }),
+    it('Bracers', 'Linen Wraps', { Intelligence: 3 }), it('Gloves', "Scribe's Handwraps", { 'Crit Chance': 1 }), it('Belt', "Officer's Sash", { Stamina: 6 }), it('Pants', 'Quilted Leggings', { Stamina: 6 }),
     it('Boots', 'Pilgrim Slippers', { Dexterity: 3 }, { Initiative: 3 }), it('Ring 1', 'Ember-Warded Ring', { Stamina: 6 }), it('Ring 2', "Soldier's Signet", { Spirit: 3 })],
 };
 
 // Gear presets for testing progression: the starter set's stats scaled to the average Green or Blue item (more affixes, higher rolls).
 function presetGear(cls, rarity) {
   const scale = { White: 1, Green: 2.2, Blue: 3.6 }[rarity] || 1, imp = { White: 1, Green: 1.1, Blue: 1.2 }[rarity] || 1;
-  return STARTER_GEAR[cls].map(x => ({ slot: x.slot, name: x.name, rarity, ilvl: 1, stats: Object.fromEntries(Object.entries(x.stats).map(([k, v]) => [k, Math.round(v * scale)])),
+  return STARTER_GEAR[cls].map(x => ({ slot: x.slot, name: x.name, rarity, ilvl: 1, r2: 1, r3: 1, stats: Object.fromEntries(Object.entries(x.stats).map(([k, v]) => [k, Math.round(v * scale)])),
     imp2: Object.fromEntries(Object.entries(x.imp2).map(([k, v]) => [k, k === 'Draw' ? 4 : k === 'Regen' ? { White: 20, Green: 30, Blue: 40 }[rarity] : Math.round(v * imp)])) }));
 }
+const FEAR_RESIST = 0.25, FEAR_RESIST_BOSS = 0.5, FEAR_BREAK = 0.75;
 const BASE = { hp: 100, maxMana: 20, regen: 15, draw: 1, init: 10, critMult: 1.5 };
 // ---------- starting choices (Oct 31): pick a playstyle deck and a draw/regen amulet when you create a hero
 // every starter: 1 Gold, 2 Blue, 3 Green, 14 White (20 cards), like the original Balanced decks
@@ -764,7 +765,7 @@ const STARTER_AMULETS = [
   ['quickhand', 'Quickhand Pendant', 5, 10, 'Lots of cards, little mana: for cheap decks.'],
 ];
 const AMULET_STAT = { Warrior: 'Strength', Rogue: 'Strength', Mage: 'Intelligence', Paladin: 'Strength', Warlock: 'Intelligence' };
-function starterAmulet(cls, key) { const a = STARTER_AMULETS.find(x => x[0] === key) || STARTER_AMULETS[3]; return { slot: 'Amulet', name: a[1], rarity: 'White', ilvl: 1, stats: { [AMULET_STAT[cls] || 'Strength']: 3 }, imp2: { Draw: a[2], Regen: a[3] }, label: 'Starter amulet', amuletKey: a[0] }; }
+function starterAmulet(cls, key) { const a = STARTER_AMULETS.find(x => x[0] === key) || STARTER_AMULETS[3]; return { slot: 'Amulet', name: a[1], rarity: 'White', ilvl: 1, stats: { [AMULET_STAT[cls] || 'Strength']: 3 }, imp2: { Draw: a[2], Regen: a[3] }, label: 'Starter amulet', amuletKey: a[0], r2: 1, r3: 1 }; }
 const PRESSURE_START = 5, PRESSURE_STEP = 0.02;
 const ELEMENTS = ['Physical', 'Fire', 'Frost', 'Nature', 'Arcane', 'Shadow'];
 
@@ -782,7 +783,7 @@ function weaponFlat(x) {
 function sumGear(items) {
   const t = {}; const add = (k, v) => { t[k] = (t[k] || 0) + v; };
   let amulet = false, weaponDmg = 0;
-  for (const x of items) { if (!x) continue; const ok = (k) => k !== 'Mana Regen' || x.slot === 'Amulet', rv = (k, v) => !x.r2 && x.slot && /Recovery$/.test(k) ? halfUp(v) : v; for (const [k, v] of Object.entries(x.stats || {})) if (ok(k)) add(k, rv(k, v)); for (const [k, v] of Object.entries(x.imp2 || {})) if (ok(k)) add(k, rv(k, v)); if (x.slot === 'Amulet') amulet = true; weaponDmg += weaponFlat(x); }
+  for (const x of items) { if (!x) continue; const ok = (k) => k !== 'Mana Regen' || x.slot === 'Amulet', rv = (k, v) => !x.r2 && x.slot && /Recovery$/.test(k) ? halfUp(v) : !x.r3 && x.slot && CRIT_CUT[k] ? Math.max(1, Math.round(v * CRIT_CUT[k])) : v; for (const [k, v] of Object.entries(x.stats || {})) if (ok(k)) add(k, rv(k, v)); for (const [k, v] of Object.entries(x.imp2 || {})) if (ok(k)) add(k, rv(k, v)); if (x.slot === 'Amulet') amulet = true; weaponDmg += weaponFlat(x); }
   const res = {}, elem = {};
   for (const [k, v] of Object.entries(t)) { if (k.startsWith('Resistance:')) res[k.slice(11)] = (res[k.slice(11)] || 0) + v; if (k.startsWith('Elemental/Holy Damage:')) elem[k.slice(22)] = (elem[k.slice(22)] || 0) + v; }
   if (t['All Resistances']) for (const el of ELEMENTS) res[el] = (res[el] || 0) + t['All Resistances'];
@@ -989,11 +990,16 @@ class Combat {
   addRot(e, n, turns, src) { if (!e || e.hp <= 0 || !(n > 0)) return; (e.rotQ = e.rotQ || []).push({ left: n, turns: turns || 4 }); e.rot = e.rotQ.reduce((s, r) => s + r.left, 0); if (src) e.rotBy = src.id; }
   // Fear: the enemy skips its attacks on its next turn. Stun: it skips its whole next turn (a boss shrugs off the Stun part and is only Feared).
   // After either lands, that enemy can't be Feared or Stunned for 2 rounds (3 for bosses).
+  // Nov 1: any damage that lands on a Feared monster (hits, damage over time, even into Block) has a 75% chance to snap it out of the Fear
+  breakFear(e) { if (!e || e.isPlayer || !e.feared || e.hp <= 0) return; e.feared = 0; if (e.fearDisarm) e.disarmed = 0; e.fearDisarm = false; this.planEnemy(e, true); this.say('enemy', `${e.name} is hit and shakes off the Fear.`); }
   control(e, kind) {
     if (!e || e.hp <= 0) return false;
     if (e.isPlayer) { if (kind === 'stun') { e.frozen = true; this.say('crit', `${e.name} is Stunned and will lose the next turn.`); } else { e.disarmNext = true; this.say('player', `${e.name} is Feared: no Attacks next turn.`); } return true; }
     if ((e.ccUntil || 0) > this.round) { this.say('player', `${e.name} resists the ${kind === 'stun' ? 'Stun' : 'Fear'} (controlled too recently).`); return false; }
-    const boss = e.tier === 'Boss'; e.ccUntil = this.round + (boss ? 3 : 2);
+    const boss = e.tier === 'Boss';
+    if ((kind === 'fear' || boss) && this.rng() < (boss ? FEAR_RESIST_BOSS : FEAR_RESIST)) { this.say('player', `${e.name} resists the Fear.`); return false; } // Nov 1: monsters shrug off Fear 25% of the time, bosses 50%
+    e.ccUntil = this.round + (boss ? 3 : 2);
+    if (!(kind === 'stun' && !boss)) e.fearDisarm = !e.disarmed; // remember whether Fear is the only thing disarming it
     e.disarmed = 1; if (kind === 'stun' && !boss) { e.silenced = 1; e.stunned = 1; } else e.feared = 1;
     this.planEnemy(e, true);
     this.say('crit', kind === 'stun' && !boss ? `${e.name} is Stunned: it loses its next turn.` : `${e.name} is Feared: it skips its attacks on its next turn.`);
@@ -1420,6 +1426,7 @@ class Combat {
     if (tgt.isPlayer && dmg > 0 && tgt.mana > 0 && tgt.powers && tgt.powers.some(x => x.key === 'mana_shell')) { const m = Math.min(tgt.mana, dmg); tgt.mana -= m; dmg -= m; absorbed += m; }
     const before = tgt.hp;
     tgt.hp = Math.max(0, tgt.hp - dmg);
+    if (!tgt.isPlayer && tgt.feared && amount > 0 && tgt.hp > 0 && this.rng() < FEAR_BREAK) this.breakFear(tgt);
     if (tgt.isPlayer && tgt.hp <= 0 && (tgt.until.noDie || this.hasTimed(tgt, 'noDie'))) { tgt.hp = 1; this.say('heal', `${tgt.name} refuses to fall (Divine Intervention).`); }
     if (tgt.isPlayer && before > tgt.hp) { const lostHp = before - tgt.hp; tgt.dmgRound += lostHp; this.allyLost && this.allyLost.add(tgt.id); if (tgt.debtUser) tgt.bloodDebt += Math.round(lostHp * (this.has(tgt, 'pay_in_blood') ? 1 + this.upN(tgt, 'pay_in_blood', 0, 50) / 100 : 1)); if (tgt.until.storing) tgt.until.stored = (tgt.until.stored || 0) + lostHp; if (tgt.until.grudge && src && !src.isPlayer) tgt.until.grudge[src.id] = (tgt.until.grudge[src.id] || 0) + lostHp; }
     const real = before - tgt.hp, label = o.label || 'Attack';
@@ -1806,11 +1813,20 @@ const MANA_GEAR_CAP = 60;
 function gearRules(G) { if (!G || G._rules) return; G._rules = true; for (const A of Object.values(G.arche || {})) if (A.weights && A.slot !== 'Chest' && A.weights['Max Mana']) delete A.weights['Max Mana'];
   // Nov 1 (b): Mana Regen only comes from amulets (no gear affix rolls it; the Frost Staff's implicit becomes Frost damage), and Recovery rolls half as much
   for (const A of Object.values(G.arche || {})) { if (A.weights && A.slot !== 'Amulet') delete A.weights['Mana Regen']; if (A.imp2 === 'Mana Regen') A.imp2 = 'Frost Damage'; }
-  for (const k of ['Recovery', 'Party Recovery']) { const st = G.stats[k]; if (st && !st._half) { st._half = true; st.min = Math.max(1, Math.round(st.min / 2)); st.max = Math.max(1, Math.round(st.max / 2)); st.pts *= 2; } } }
+  for (const k of ['Recovery', 'Party Recovery']) { const st = G.stats[k]; if (st && !st._half) { st._half = true; st.min = Math.max(1, Math.round(st.min / 2)); st.max = Math.max(1, Math.round(st.max / 2)); st.pts *= 2; } }
+  // Nov 1 (c): Crit Chance on gear rolls 75% less, Crit Damage 50% less (kept as fractions so higher map levels still grow; each roll is at least 1)
+  for (const [k, f] of Object.entries(CRIT_CUT)) { const st = G.stats[k]; if (st && !st._cut) { st._cut = true; st.min *= f; st.max *= f; st.pts /= f; } } }
+const CRIT_CUT = { 'Crit Chance': 0.25, 'Crit Damage': 0.5 };
 // Bring an item made before those rules up to date (once; marked r2). Its Mana Regen affix is rerolled into a new stat and its Recovery halved.
 const halfUp = (v) => Math.max(1, Math.ceil(v / 2));
 function itemRules(it, data) {
-  if (!it || it.r2 || it.kind === 'card') return it; it.r2 = 1;
+  if (!it || it.kind === 'card') return it;
+  if (!it.r3) { it.r3 = 1; // Nov 1 (c): Crit Chance x0.25 and Crit Damage x0.5, each at least 1
+    for (const [k, f] of Object.entries(CRIT_CUT)) { const cut = (v) => Math.max(1, Math.round(v * f));
+      if (it.stats && it.stats[k]) { it.stats = Object.assign({}, it.stats); it.stats[k] = cut(it.stats[k]); }
+      if (it.imp2 && it.imp2[k]) { it.imp2 = Object.assign({}, it.imp2); it.imp2[k] = cut(it.imp2[k]); }
+      if (it.lines) it.lines = it.lines.map(l => l.stat === k ? Object.assign({}, l, { v: cut(l.v), lo: cut(l.lo || l.v), hi: cut(l.hi || l.v) }) : l); } }
+  if (it.r2) return it; it.r2 = 1;
   data = data || DATA;
   for (const k of ['Recovery', 'Party Recovery']) {
     if (it.stats && it.stats[k]) { it.stats = Object.assign({}, it.stats); it.stats[k] = halfUp(it.stats[k]); }
@@ -1866,17 +1882,34 @@ const GROUPS = {
   cultist_coven: { map: 'shadow', tier: '3', name: 'Cultist Coven', unit: 'Cultist', creature: 'Human', type: 'Shadow', weak: 'Fire', hp: 110, dmg: 1.3, art: 'cult_deacon', like: 'death_knight', desc: 'Three voices, one dark prayer.',
     deck: [[3, 'Shadow Bolt', 'Deal 8 damage.', 'Attack'], [1, 'Dark Litany', 'Deal 4 damage to every player.', 'Attack'], [1, 'Dark Sermon', 'All friendly targets gain 15 Strength this turn.', 'Buff'], [2, 'Unholy Ward', 'Gain 7 Block.', 'Defense']] },
 };
+// ---------- Named card drops for cards added after the loot tables were written (Nov 1): the Warlock's whole pool and the Warrior's Blood Debt cards.
+// Warlock: every enemy slot that names a Rogue card also names a Warlock card of the same rarity and chance (cards dealt round-robin, so every card
+// lands somewhere and the class gets the same named-drop odds as the Rogue). Missing cards of other classes take one slot of their own class's rarity.
+let CARDS_READY = false; // set at the end of this file, once every card (Warlock, Blood Debt...) exists
+function namedLoot(data) {
+  if (!data || !data.enemies || data._named) return; data._named = true;
+  const slots = (cls) => { const out = {}; for (const k of Object.keys(data.enemies).sort()) { const e = data.enemies[k]; if (e.group) continue; for (const x of e.loot || []) if (x.type === 'Card' && x.cls === cls) (out[x.rarity] = out[x.rarity] || []).push([e, x.pct]); } return out; };
+  const named = (cls) => { const s = new Set(); for (const e of Object.values(data.enemies)) for (const x of e.loot || []) if (x.type === 'Card' && x.cls === cls) s.add(x.item); return s; };
+  const add = (e, k, pct) => { e.loot = e.loot || []; e.loot.push({ item: C[k].name, type: 'Card', cls: C[k].cls, rarity: C[k].rarity, pct, note: C[k].text }); };
+  for (const cls of Object.keys(CLASSES)) {
+    const have = named(cls), miss = cardPool(cls).filter(k => !have.has(C[k].name)).sort(); if (!miss.length) continue;
+    const byR = {}; for (const k of miss) (byR[C[k].rarity] = byR[C[k].rarity] || []).push(k);
+    if (!have.size) { const T = slots('Rogue'); for (const [r, ks] of Object.entries(byR)) { const t = T[r] || []; if (!t.length) continue; for (let i = 0; i < Math.max(t.length, ks.length); i++) { const [e, pct] = t[i % t.length]; add(e, ks[i % ks.length], pct); } } }
+    else { const T = slots(cls); for (const [r, ks] of Object.entries(byR)) { const t = T[r] || []; if (!t.length) continue; ks.forEach((k, i) => { const [e, pct] = t[Math.floor((i + 0.5) * t.length / ks.length)]; add(e, k, pct); }); } }
+  }
+  for (const e of Object.values(data.enemies)) if (e.group && e.like && data.enemies[e.like]) e.loot = (data.enemies[e.like].loot || []).map(x => Object.assign({}, x)); // groups share their model monster's drops
+}
 function groupData(data) {
   if (!data || !data.enemies || data._groups) return; data._groups = true;
   for (const [k, g] of Object.entries(GROUPS)) {
     if (data.enemies[k]) continue; const like = data.enemies[g.like] || {};
     data.enemies[k] = { name: g.name, tier: g.tier, hp: g.hp, draw: 2, draw2: null, maxMana: 10, regen: 10, regen2: null, creature: g.creature, type: g.type, weak: g.weak, arch: 'Group (3 bodies)', desc: g.desc + ' A group: three bodies, one monster\'s HP and damage split between them.',
       deck: g.deck.map(([n, name, text, kind]) => ({ name, n, cost: 10, kind, text, phase2: false, dtype: /every player|damage/.test(text) ? g.type : 'Physical' })),
-      gold: g.tier === '3' ? [24, 40] : [12, 24], pool: (like.pool || []).slice(), loot: (like.loot || []).map(x => Object.assign({}, x)), map: g.map, group: GROUP_N, unit: g.unit, art: g.art, dmgScale: g.dmg || 1 };
+      gold: g.tier === '3' ? [24, 40] : [12, 24], pool: (like.pool || []).slice(), loot: (like.loot || []).map(x => Object.assign({}, x)), map: g.map, group: GROUP_N, unit: g.unit, art: g.art, like: g.like, dmgScale: g.dmg || 1 };
   }
 }
 function gearData(data) {
-  groupData(data);
+  groupData(data); if (CARDS_READY) namedLoot(data);
   if (!data || !data.gear || data._shoulders) return; data._shoulders = true; const G = data.gear;
   Object.assign(G.arche, SHOULDER_ARCHE);
   for (const [mk, names] of Object.entries(SHOULDER_BASES)) names.forEach((name, i) => { if (!G.bases.some(b => b.name === name)) G.bases.push({ name, arch: ['Pauldrons', 'Spaulders', 'Mantle'][i], label: ['Plate', 'Leather', 'Cloth'][i] + ' Shoulders', map: mk }); });
@@ -1925,7 +1958,7 @@ function rollItem(data, rng, baseName, rarity, level) {
   const ilvl = Math.max(1, Math.min(100, Math.round(5 * level + 5 * Math.min(1, points / maxPts))));
   const slot = /Shield|Focus/.test(A.slot) ? 'Off-hand' : /Axe|Sword|Dagger|Mace|Wand|Maul|Warhammer|Staff/.test(A.slot) ? 'Weapon' : A.slot;
   const out = { name: baseName, label: b.label, arch: b.arch, slot, hands: A.hands, rarity, ilvl, stats, imp2, lines, level };
-  out.rerolls = rerollPotential(out); out.r2 = 1; return out;
+  out.rerolls = rerollPotential(out); out.r2 = 1; out.r3 = 1; return out;
 }
 // ---------- Rerolls (Nov 1): every item drops with a reroll potential (White 0-1, Green 1-2, Blue 2-3, Purple 3-4). Spending a Reroll Token
 // and one point of potential rerolls one affix line of your choice: a new stat and value, rolled like a fresh drop of the same base, rarity and
@@ -2260,6 +2293,7 @@ if (DATA) dropRemovedLoot(DATA);
 // Oct 31: Lay on Hands and Mend Wounds can be aimed at any hero in the party (yourself if you play them solo)
 if (C.mend_wounds) Object.assign(C.mend_wounds, { target: 'ally', text: 'Heal an ally (or yourself) for 8 HP.', play: (cb, t) => cb.heal(t && t.isPlayer && t.hp > 0 ? t : cb.player, 8, 'Mend Wounds') });
 if (C.lay_on_hands) Object.assign(C.lay_on_hands, { target: 'ally', text: 'Heal an ally (or yourself) for 30% of their total HP. Exhaust.', play: (cb, t) => { const a = t && t.isPlayer && t.hp > 0 ? t : cb.player; cb.heal(a, Math.round(a.maxHp * 0.3), 'Lay on Hands'); } }); // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
+CARDS_READY = true; if (DATA && DATA.gear) namedLoot(DATA);
 const API = { GROUPS, groupData, itemRules, rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);
