@@ -52,7 +52,7 @@
     multiplay: ['+10% Multiplay chance'], initPct: ['+10% Initiative'], heal: ['+10% healing'], bleedChance: ['+10% chance for Attacks to apply 3 Bleed'], thorns: ['+5 Thorns (attackers take 5 damage)'], recovery: ['+5 Recovery (heal 5 HP at the start of each turn)'] };
   const PV = { lifesteal: 5, thorns: 5, recovery: 5 };
   const party = (n, stat) => stat === 'heal' ? T(n, 'You and your allies heal +10% more.', ['heal', 10], ['aura', [['heal', 10]]]) : stat === 'dmg' ? T(n, 'You and your allies deal +10% damage.', ['dmg', 10, {}], ['aura', [['dmg', 10, {}]]])
-    : T(n, `You and your allies gain ${PS[stat][0]}.`, ['party', stat, PV[stat] || 10]);
+    : stat === 'luck' ? T(n, `You and your allies gain ${PS[stat][0]}.`, ['run', 'partyLuck', 10]) : T(n, `You and your allies gain ${PS[stat][0]}.`, ['party', stat, PV[stat] || 10]);
   // ---- class templates for the Defense and Support columns (a codex can replace any row)
   const DEF = {
     Warrior: [startDef('Braced', 8), def('Reinforced', 8), inc('Thick Skin', 5), turnDef('Hold Fast', 4), lowhp('Last Wall', 25), def('Bulwark Training', 15), inc('Iron Hide', 10), turnDef('Fortress', 8), cheat('Unbroken', 40)],
@@ -176,13 +176,81 @@
         healTurn('Equal Measure', 5), T('Righteous Mend', 'Your healing is 20% stronger.', ['heal', 20]), dmg('Judgement', 20, { dtype: 'Holy' }), T('Overflowing', 'Your healing is 30% stronger.', ['heal', 30]),
         T('Perfect Balance', 'Heal 8% of your max HP at the start of each of your turns, and your healing is 20% stronger.', ['turn', 'heal', 8], ['heal', 20])],
       // Equilibrium cannot gain Block: its Defense column is damage reduction and healing instead
-      d: { 1: inc('Calm', 3), 2: T('Blessed Body', '+5% resistance to every element.', ['stat', 'resistAll', 5]), 3: inc('Serenity', 5), 4: healTurn('Renewal', 2), 5: lowhp('Second Chance', 20, 'heal'), 6: inc('Still Waters', 8),
-        7: T('Absolve', 'Heal 5% of your max HP when you kill an enemy.', ['kill', 'heal', 5]), 8: inc('Perfect Calm', 12), 9: cheat('Rebirth', 30, 'heal') }, s: {} },
+      d: { 5: lowhp('Second Chance', 20, 'heal'), 9: cheat('Rebirth', 30, 'heal') }, s: {}, noBlock: true },
   };
+
+  // ---- Nov 1: the plain Defense and Support rows are drawn from a shared pool, each effect in 4 strengths
+  // (rows 1-2 weakest, rows 3-4, rows 6-7, rows 8-9 strongest) and spread so every codex gets a different mix.
+  const TIER = [0, 0, 1, 1, null, 2, 2, 3, 3];
+  const EL = { conflagration: 'Fire', sacred_flame: 'Fire', heart_of_winter: 'Frost', venomancer: 'Nature', entropy: 'Shadow', spellstorm: 'Arcane', archmage: 'Arcane', barrier_savant: 'Arcane', nightstalker: 'Shadow',
+    phantom: 'Shadow', saboteur: 'Nature', ninja: 'Physical', bloodletter: 'Physical', bulwark: 'Physical', riposte: 'Physical', bloodbound: 'Shadow', colossus: 'Physical', sunderer: 'Physical', hemorrhage: 'Physical',
+    bastion_of_faith: 'Shadow', purifier: 'Nature', righteous_crusader: 'Physical', divine_wrath: 'Shadow', equilibrium: 'Arcane' };
+  const F = (names, v, mk, opt) => Object.assign({ names, v, mk }, opt || {});
+  const SPOOL = {
+    startMana: F(['Quick Start', 'Ready Mind', 'Charged Start', 'Overflowing Start'], [8, 12, 18, 25], (n, v) => startMana(n, v), { mana: 1 }),
+    regen: F(['Steady Breath', 'Even Flow', 'Deep Breathing', 'Endless Reserve'], [3, 5, 8, 10], (n, v) => regen(n, v), { mana: 1 }),
+    killMana: F(['Scavenger', 'Plunder', 'Battle Hunger', 'Feast'], [5, 8, 12, 15], (n, v) => T(n, `Gain ${v} mana when you kill an enemy.`, ['kill', 'mana', v]), { mana: 1 }),
+    maxMana: F(['Deep Pockets', 'Mana Well', 'Wide Reserve', 'Bottomless Well'], [8, 12, 18, 25], (n, v) => maxMana(n, v), { mana: 1 }),
+    turnMana: F(['Trickle', 'Tithe', 'Channel', 'Wellspring'], [3, 4, 6, 8], (n, v) => turnMana(n, v), { mana: 1 }),
+    killDraw: F(['Loot the Body', 'Spoils of Battle', 'Soul Harvest', 'Last Rites'], [1, 1, 1, 2], (n, v) => killDraw(n, v)),
+    draw: F(['Opening Hand', 'Prepared', 'Foresight', 'Revelation'], [1, 2, 1, 1], (n, v, t) => t < 2 ? T(n, `Draw ${v} extra card${v > 1 ? 's' : ''} on your first turn of each fight.`, ['start', 'draw', v]) : draw1(n)),
+    init: F(['Light Feet', 'Quick Reflexes', 'Lightning Reflexes', 'First to Act'], [2, 3, 5, 7], (n, v) => T(n, `+${v} Initiative.`, ['stat', 'baseInit', v])),
+    luck: F(['Lucky Charm', 'Four-Leaf', 'Fortune\'s Favor', 'Golden Touch'], [3, 5, 8, 12], (n, v) => T(n, `+${v} Luck (better loot).`, ['run', 'luck', v])),
+    crit: F(['Sharp Eyes', 'Keen Mind', 'Precision', 'Deadeye'], [2, 3, 5, 8], (n, v) => T(n, `+${v}% crit chance.`, ['crit', v, {}])),
+    debuffRes: F(['Stubborn', 'Iron Will', 'Unshakable', 'Indomitable'], [5, 8, 12, 15], (n, v) => T(n, `${v}% chance to shrug off any debuff an enemy puts on you.`, ['stat', 'debuffRes', v])),
+    partyRecovery: F(['Mending Song', 'Field Medic', 'Restoring Aura', 'Font of Life'], [1, 2, 3, 4], (n, v) => T(n, `You and your allies heal ${v} HP at the start of each turn.`, ['party', 'recovery', v])),
+    partyHealthRegen: F(['Bandages', 'Camp Cook', 'Herbalist', 'Field Surgeon'], [2, 4, 6, 8], (n, v) => T(n, `After each fight, you and your allies heal ${v} HP.`, ['run', 'partyHealthRegen', v])),
+    reflect: F(['Mirror Glint', 'Deflection', 'Reflective Guard', 'Perfect Mirror'], [3, 5, 7, 10], (n, v) => T(n, `${v}% chance to reflect an enemy attack: it hits the attacker instead of you.`, ['stat', 'reflect', v])),
+    spirit: F(['Calm Spirit', 'Inner Light', 'Kindred Spirit', 'Radiant Soul'], [3, 5, 8, 12], (n, v) => T(n, `+${v} Spirit (stronger healing and damage over time).`, ['stat', 'spirit', v])),
+    slow: F(['Tripping Strikes', 'Hamper', 'Crippling Blows', 'Leaden Limbs'], [5, 8, 12, 15], (n, v) => T(n, `${v}% chance when you hit an enemy to apply 2 Slow.`, ['stat', 'slowChance', v])),
+    statusSkip: F(['Clear Thoughts', 'Shake It Off', 'Focused Mind', 'Unclouded'], [15, 25, 35, 50], (n, v) => T(n, `${v}% chance, when you draw a status card, to discard it and draw again.`, ['stat', 'statusSkip', v])),
+    extract: F(['Light Pack', 'Well Packed', 'Escape Artist', 'Smuggler'], [5, 8, 12, 15], (n, v) => T(n, `When you extract, ${v}% more of your sack survives.`, ['run', 'extract', v])),
+    enraged: F(['Hunter\'s Call', 'Blood in the Air', 'Challenge Seeker', 'Apex Hunter'], [5, 8, 12, 15], (n, v) => T(n, `As party leader: +${v}% chance that the map has an Enraged elite (double loot).`, ['run', 'enraged', v]), { leader: 1 }),
+    shrine: F(['Pilgrim', 'Devout Path', 'Holy Ground', 'Sacred Roads'], [10, 20, 30, 40], (n, v) => T(n, `As party leader: ${v}% chance the map has an extra shrine.`, ['run', 'shrine', v]), { leader: 1 }),
+    merchant: F(['Haggler', 'Trade Routes', 'Caravan Friend', 'Merchant Prince'], [10, 20, 30, 40], (n, v) => T(n, `As party leader: ${v}% chance the map has an extra merchant.`, ['run', 'merchant', v]), { leader: 1 }),
+  };
+  const DPOOL = {
+    startDef: F(['Braced', 'Ready Guard', 'Armored Start', 'Fortified'], [6, 10, 15, 20], (n, v) => startDef(n, v), { block: 1 }),
+    defPct: F(['Reinforced', 'Hardened', 'Bulwark Training', 'Impenetrable'], [5, 8, 12, 15], (n, v) => def(n, v), { block: 1 }),
+    inc: F(['Thick Skin', 'Toughened', 'Iron Hide', 'Unyielding'], [3, 5, 8, 10], (n, v) => inc(n, v)),
+    turnDef: F(['Hold Fast', 'Steady Guard', 'Living Wall', 'Fortress'], [3, 4, 6, 8], (n, v) => turnDef(n, v), { block: 1 }),
+    healTurn: F(['Second Wind', 'Renewal', 'Regrowth', 'Undying'], [1, 1, 2, 3], (n, v) => healTurn(n, v)),
+    resist: F(['Warded', 'Resilient', 'Hardy', 'Immune'], [5, 8, 12, 15], (n, v, t, el) => T(n, `+${v}% ${el} resistance.`, ['stat', 'resist:' + el, v])),
+    taunt: F(['Provoke', 'Challenge', 'Goading Strikes', 'Center of Attention'], [10, 15, 20, 25], (n, v) => T(n, `${v}% chance when you hit an enemy to taunt it (it must attack you).`, ['stat', 'tauntChance', v])),
+    healIn: F(['Blessed', 'Receptive', 'Vital', 'Life Bloom'], [5, 10, 15, 20], (n, v) => T(n, `Healing you receive is increased by ${v}%.`, ['stat', 'healIn', v])),
+    thorns: F(['Spiked', 'Barbed', 'Thorned Hide', 'Bramble Armor'], [3, 5, 8, 10], (n, v) => T(n, `+${v} Thorns (enemies that hit you take ${v} damage).`, ['stat', 'thorns', v])),
+    killHeal: F(['Absolve', 'Reaping', 'Life Tap', 'Soul Feast'], [2, 3, 4, 5], (n, v) => T(n, `Heal ${v}% of your max HP when you kill an enemy.`, ['kill', 'heal', v]), { noBlockOnly: 1 }),
+  };
+  const used = { s: {}, d: {} };
+  function pick(pool, kind, avoid, ok) { // the least-used family that fits
+    const keys = Object.keys(pool).filter(k => !avoid.has(k) && ok(k));
+    keys.sort((a, b) => (used[kind][a] || 0) - (used[kind][b] || 0) || a.localeCompare(b));
+    const k = keys[0]; used[kind][k] = (used[kind][k] || 0) + 1; avoid.add(k); return k;
+  }
+  const make = (pool, k, i, el) => { const f = pool[k], t = TIER[i]; return f.mk(f.names[t], f.v[t], t, el); };
   const D = {};
+  let ci = 0;
   for (const [key, c] of Object.entries(CX)) {
-    const rows = [];
-    for (let i = 0; i < 9; i++) rows.push([c.off[i], (c.d && c.d[i + 1]) || DEF[c.cls][i], i === 4 ? c.party : i === 6 ? (c.s && c.s[5]) || SUP[c.cls][4] : (c.s && c.s[i + 1]) || SUP[c.cls][i]]); // Nov 1: the party buff is the row-5 Support pick; the old row-5 pick moved to row 7
+    const rows = [], sAvoid = new Set(), dAvoid = new Set(); let mana = 0, leader = 0;
+    const sOver = Object.assign({}, c.s || {}); if (sOver[5]) { sOver[7] = sOver[5]; delete sOver[5]; } // a codex's own row-5 Support moved to row 7
+    const SROWS = [0, 1, 2, 3, 5, 6, 7];
+    // rotate where each codex starts so the strong and weak versions land on different families
+    const order = SROWS.map((x, j) => SROWS[(j + ci) % SROWS.length]); ci++;
+    const sup = {}, dfn = {};
+    for (const i of order) {
+      if (sOver[i + 1]) { sup[i] = sOver[i + 1]; continue; }
+      const k = pick(SPOOL, 's', sAvoid, (k) => (mana < 2 ? !!SPOOL[k].mana : true) && !(SPOOL[k].leader && leader));
+      if (SPOOL[k].mana) mana++; if (SPOOL[k].leader) leader++;
+      sup[i] = make(SPOOL, k, i);
+    }
+    for (const i of [0, 1, 2, 3, 5, 6, 7]) {
+      if (c.d && c.d[i + 1]) { dfn[i] = c.d[i + 1]; continue; }
+      const k = pick(DPOOL, 'd', dAvoid, (k) => c.noBlock ? !DPOOL[k].block : !DPOOL[k].noBlockOnly);
+      dfn[i] = make(DPOOL, k, i, EL[key] || 'Physical');
+    }
+    for (let i = 0; i < 9; i++) rows.push([c.off[i],
+      i === 4 ? (c.d && c.d[5]) || DEF[c.cls][4] : i === 8 ? (c.d && c.d[9]) || DEF[c.cls][8] : dfn[i],
+      i === 4 ? c.party : i === 8 ? (c.s && c.s[9]) || SUP[c.cls][8] : sup[i]]);
     D[key] = { cls: c.cls, rows, cap: c.cap };
   }
   if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.CB_TALENTS = D;

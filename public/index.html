@@ -780,7 +780,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.
     multiplay: ['+10% Multiplay chance'], initPct: ['+10% Initiative'], heal: ['+10% healing'], bleedChance: ['+10% chance for Attacks to apply 3 Bleed'], thorns: ['+5 Thorns (attackers take 5 damage)'], recovery: ['+5 Recovery (heal 5 HP at the start of each turn)'] };
   const PV = { lifesteal: 5, thorns: 5, recovery: 5 };
   const party = (n, stat) => stat === 'heal' ? T(n, 'You and your allies heal +10% more.', ['heal', 10], ['aura', [['heal', 10]]]) : stat === 'dmg' ? T(n, 'You and your allies deal +10% damage.', ['dmg', 10, {}], ['aura', [['dmg', 10, {}]]])
-    : T(n, `You and your allies gain ${PS[stat][0]}.`, ['party', stat, PV[stat] || 10]);
+    : stat === 'luck' ? T(n, `You and your allies gain ${PS[stat][0]}.`, ['run', 'partyLuck', 10]) : T(n, `You and your allies gain ${PS[stat][0]}.`, ['party', stat, PV[stat] || 10]);
   // ---- class templates for the Defense and Support columns (a codex can replace any row)
   const DEF = {
     Warrior: [startDef('Braced', 8), def('Reinforced', 8), inc('Thick Skin', 5), turnDef('Hold Fast', 4), lowhp('Last Wall', 25), def('Bulwark Training', 15), inc('Iron Hide', 10), turnDef('Fortress', 8), cheat('Unbroken', 40)],
@@ -904,13 +904,81 @@ if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.
         healTurn('Equal Measure', 5), T('Righteous Mend', 'Your healing is 20% stronger.', ['heal', 20]), dmg('Judgement', 20, { dtype: 'Holy' }), T('Overflowing', 'Your healing is 30% stronger.', ['heal', 30]),
         T('Perfect Balance', 'Heal 8% of your max HP at the start of each of your turns, and your healing is 20% stronger.', ['turn', 'heal', 8], ['heal', 20])],
       // Equilibrium cannot gain Block: its Defense column is damage reduction and healing instead
-      d: { 1: inc('Calm', 3), 2: T('Blessed Body', '+5% resistance to every element.', ['stat', 'resistAll', 5]), 3: inc('Serenity', 5), 4: healTurn('Renewal', 2), 5: lowhp('Second Chance', 20, 'heal'), 6: inc('Still Waters', 8),
-        7: T('Absolve', 'Heal 5% of your max HP when you kill an enemy.', ['kill', 'heal', 5]), 8: inc('Perfect Calm', 12), 9: cheat('Rebirth', 30, 'heal') }, s: {} },
+      d: { 5: lowhp('Second Chance', 20, 'heal'), 9: cheat('Rebirth', 30, 'heal') }, s: {}, noBlock: true },
   };
+
+  // ---- Nov 1: the plain Defense and Support rows are drawn from a shared pool, each effect in 4 strengths
+  // (rows 1-2 weakest, rows 3-4, rows 6-7, rows 8-9 strongest) and spread so every codex gets a different mix.
+  const TIER = [0, 0, 1, 1, null, 2, 2, 3, 3];
+  const EL = { conflagration: 'Fire', sacred_flame: 'Fire', heart_of_winter: 'Frost', venomancer: 'Nature', entropy: 'Shadow', spellstorm: 'Arcane', archmage: 'Arcane', barrier_savant: 'Arcane', nightstalker: 'Shadow',
+    phantom: 'Shadow', saboteur: 'Nature', ninja: 'Physical', bloodletter: 'Physical', bulwark: 'Physical', riposte: 'Physical', bloodbound: 'Shadow', colossus: 'Physical', sunderer: 'Physical', hemorrhage: 'Physical',
+    bastion_of_faith: 'Shadow', purifier: 'Nature', righteous_crusader: 'Physical', divine_wrath: 'Shadow', equilibrium: 'Arcane' };
+  const F = (names, v, mk, opt) => Object.assign({ names, v, mk }, opt || {});
+  const SPOOL = {
+    startMana: F(['Quick Start', 'Ready Mind', 'Charged Start', 'Overflowing Start'], [8, 12, 18, 25], (n, v) => startMana(n, v), { mana: 1 }),
+    regen: F(['Steady Breath', 'Even Flow', 'Deep Breathing', 'Endless Reserve'], [3, 5, 8, 10], (n, v) => regen(n, v), { mana: 1 }),
+    killMana: F(['Scavenger', 'Plunder', 'Battle Hunger', 'Feast'], [5, 8, 12, 15], (n, v) => T(n, `Gain ${v} mana when you kill an enemy.`, ['kill', 'mana', v]), { mana: 1 }),
+    maxMana: F(['Deep Pockets', 'Mana Well', 'Wide Reserve', 'Bottomless Well'], [8, 12, 18, 25], (n, v) => maxMana(n, v), { mana: 1 }),
+    turnMana: F(['Trickle', 'Tithe', 'Channel', 'Wellspring'], [3, 4, 6, 8], (n, v) => turnMana(n, v), { mana: 1 }),
+    killDraw: F(['Loot the Body', 'Spoils of Battle', 'Soul Harvest', 'Last Rites'], [1, 1, 1, 2], (n, v) => killDraw(n, v)),
+    draw: F(['Opening Hand', 'Prepared', 'Foresight', 'Revelation'], [1, 2, 1, 1], (n, v, t) => t < 2 ? T(n, `Draw ${v} extra card${v > 1 ? 's' : ''} on your first turn of each fight.`, ['start', 'draw', v]) : draw1(n)),
+    init: F(['Light Feet', 'Quick Reflexes', 'Lightning Reflexes', 'First to Act'], [2, 3, 5, 7], (n, v) => T(n, `+${v} Initiative.`, ['stat', 'baseInit', v])),
+    luck: F(['Lucky Charm', 'Four-Leaf', 'Fortune\'s Favor', 'Golden Touch'], [3, 5, 8, 12], (n, v) => T(n, `+${v} Luck (better loot).`, ['run', 'luck', v])),
+    crit: F(['Sharp Eyes', 'Keen Mind', 'Precision', 'Deadeye'], [2, 3, 5, 8], (n, v) => T(n, `+${v}% crit chance.`, ['crit', v, {}])),
+    debuffRes: F(['Stubborn', 'Iron Will', 'Unshakable', 'Indomitable'], [5, 8, 12, 15], (n, v) => T(n, `${v}% chance to shrug off any debuff an enemy puts on you.`, ['stat', 'debuffRes', v])),
+    partyRecovery: F(['Mending Song', 'Field Medic', 'Restoring Aura', 'Font of Life'], [1, 2, 3, 4], (n, v) => T(n, `You and your allies heal ${v} HP at the start of each turn.`, ['party', 'recovery', v])),
+    partyHealthRegen: F(['Bandages', 'Camp Cook', 'Herbalist', 'Field Surgeon'], [2, 4, 6, 8], (n, v) => T(n, `After each fight, you and your allies heal ${v} HP.`, ['run', 'partyHealthRegen', v])),
+    reflect: F(['Mirror Glint', 'Deflection', 'Reflective Guard', 'Perfect Mirror'], [3, 5, 7, 10], (n, v) => T(n, `${v}% chance to reflect an enemy attack: it hits the attacker instead of you.`, ['stat', 'reflect', v])),
+    spirit: F(['Calm Spirit', 'Inner Light', 'Kindred Spirit', 'Radiant Soul'], [3, 5, 8, 12], (n, v) => T(n, `+${v} Spirit (stronger healing and damage over time).`, ['stat', 'spirit', v])),
+    slow: F(['Tripping Strikes', 'Hamper', 'Crippling Blows', 'Leaden Limbs'], [5, 8, 12, 15], (n, v) => T(n, `${v}% chance when you hit an enemy to apply 2 Slow.`, ['stat', 'slowChance', v])),
+    statusSkip: F(['Clear Thoughts', 'Shake It Off', 'Focused Mind', 'Unclouded'], [15, 25, 35, 50], (n, v) => T(n, `${v}% chance, when you draw a status card, to discard it and draw again.`, ['stat', 'statusSkip', v])),
+    extract: F(['Light Pack', 'Well Packed', 'Escape Artist', 'Smuggler'], [5, 8, 12, 15], (n, v) => T(n, `When you extract, ${v}% more of your sack survives.`, ['run', 'extract', v])),
+    enraged: F(['Hunter\'s Call', 'Blood in the Air', 'Challenge Seeker', 'Apex Hunter'], [5, 8, 12, 15], (n, v) => T(n, `As party leader: +${v}% chance that the map has an Enraged elite (double loot).`, ['run', 'enraged', v]), { leader: 1 }),
+    shrine: F(['Pilgrim', 'Devout Path', 'Holy Ground', 'Sacred Roads'], [10, 20, 30, 40], (n, v) => T(n, `As party leader: ${v}% chance the map has an extra shrine.`, ['run', 'shrine', v]), { leader: 1 }),
+    merchant: F(['Haggler', 'Trade Routes', 'Caravan Friend', 'Merchant Prince'], [10, 20, 30, 40], (n, v) => T(n, `As party leader: ${v}% chance the map has an extra merchant.`, ['run', 'merchant', v]), { leader: 1 }),
+  };
+  const DPOOL = {
+    startDef: F(['Braced', 'Ready Guard', 'Armored Start', 'Fortified'], [6, 10, 15, 20], (n, v) => startDef(n, v), { block: 1 }),
+    defPct: F(['Reinforced', 'Hardened', 'Bulwark Training', 'Impenetrable'], [5, 8, 12, 15], (n, v) => def(n, v), { block: 1 }),
+    inc: F(['Thick Skin', 'Toughened', 'Iron Hide', 'Unyielding'], [3, 5, 8, 10], (n, v) => inc(n, v)),
+    turnDef: F(['Hold Fast', 'Steady Guard', 'Living Wall', 'Fortress'], [3, 4, 6, 8], (n, v) => turnDef(n, v), { block: 1 }),
+    healTurn: F(['Second Wind', 'Renewal', 'Regrowth', 'Undying'], [1, 1, 2, 3], (n, v) => healTurn(n, v)),
+    resist: F(['Warded', 'Resilient', 'Hardy', 'Immune'], [5, 8, 12, 15], (n, v, t, el) => T(n, `+${v}% ${el} resistance.`, ['stat', 'resist:' + el, v])),
+    taunt: F(['Provoke', 'Challenge', 'Goading Strikes', 'Center of Attention'], [10, 15, 20, 25], (n, v) => T(n, `${v}% chance when you hit an enemy to taunt it (it must attack you).`, ['stat', 'tauntChance', v])),
+    healIn: F(['Blessed', 'Receptive', 'Vital', 'Life Bloom'], [5, 10, 15, 20], (n, v) => T(n, `Healing you receive is increased by ${v}%.`, ['stat', 'healIn', v])),
+    thorns: F(['Spiked', 'Barbed', 'Thorned Hide', 'Bramble Armor'], [3, 5, 8, 10], (n, v) => T(n, `+${v} Thorns (enemies that hit you take ${v} damage).`, ['stat', 'thorns', v])),
+    killHeal: F(['Absolve', 'Reaping', 'Life Tap', 'Soul Feast'], [2, 3, 4, 5], (n, v) => T(n, `Heal ${v}% of your max HP when you kill an enemy.`, ['kill', 'heal', v]), { noBlockOnly: 1 }),
+  };
+  const used = { s: {}, d: {} };
+  function pick(pool, kind, avoid, ok) { // the least-used family that fits
+    const keys = Object.keys(pool).filter(k => !avoid.has(k) && ok(k));
+    keys.sort((a, b) => (used[kind][a] || 0) - (used[kind][b] || 0) || a.localeCompare(b));
+    const k = keys[0]; used[kind][k] = (used[kind][k] || 0) + 1; avoid.add(k); return k;
+  }
+  const make = (pool, k, i, el) => { const f = pool[k], t = TIER[i]; return f.mk(f.names[t], f.v[t], t, el); };
   const D = {};
+  let ci = 0;
   for (const [key, c] of Object.entries(CX)) {
-    const rows = [];
-    for (let i = 0; i < 9; i++) rows.push([c.off[i], (c.d && c.d[i + 1]) || DEF[c.cls][i], i === 4 ? c.party : i === 6 ? (c.s && c.s[5]) || SUP[c.cls][4] : (c.s && c.s[i + 1]) || SUP[c.cls][i]]); // Nov 1: the party buff is the row-5 Support pick; the old row-5 pick moved to row 7
+    const rows = [], sAvoid = new Set(), dAvoid = new Set(); let mana = 0, leader = 0;
+    const sOver = Object.assign({}, c.s || {}); if (sOver[5]) { sOver[7] = sOver[5]; delete sOver[5]; } // a codex's own row-5 Support moved to row 7
+    const SROWS = [0, 1, 2, 3, 5, 6, 7];
+    // rotate where each codex starts so the strong and weak versions land on different families
+    const order = SROWS.map((x, j) => SROWS[(j + ci) % SROWS.length]); ci++;
+    const sup = {}, dfn = {};
+    for (const i of order) {
+      if (sOver[i + 1]) { sup[i] = sOver[i + 1]; continue; }
+      const k = pick(SPOOL, 's', sAvoid, (k) => (mana < 2 ? !!SPOOL[k].mana : true) && !(SPOOL[k].leader && leader));
+      if (SPOOL[k].mana) mana++; if (SPOOL[k].leader) leader++;
+      sup[i] = make(SPOOL, k, i);
+    }
+    for (const i of [0, 1, 2, 3, 5, 6, 7]) {
+      if (c.d && c.d[i + 1]) { dfn[i] = c.d[i + 1]; continue; }
+      const k = pick(DPOOL, 'd', dAvoid, (k) => c.noBlock ? !DPOOL[k].block : !DPOOL[k].noBlockOnly);
+      dfn[i] = make(DPOOL, k, i, EL[key] || 'Physical');
+    }
+    for (let i = 0; i < 9; i++) rows.push([c.off[i],
+      i === 4 ? (c.d && c.d[5]) || DEF[c.cls][4] : i === 8 ? (c.d && c.d[9]) || DEF[c.cls][8] : dfn[i],
+      i === 4 ? c.party : i === 8 ? (c.s && c.s[9]) || SUP[c.cls][8] : sup[i]]);
     D[key] = { cls: c.cls, rows, cap: c.cap };
   }
   if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.CB_TALENTS = D;
@@ -1823,7 +1891,7 @@ class Combat {
     if (tr) {
       const picked = []; let cap = null;
       (tl.picks || []).forEach((j, i) => { if (j == null || j < 0 || j > 2) return; if (i < 9) { const t = tr.rows[i] && tr.rows[i][j]; if (t) picked.push(t); } else if (i === 9) cap = tr.cap[j]; });
-      for (const t of picked) for (const f of t.fx) if (f[0] === 'stat') { if (f[1] === 'resistAll') { for (const el of ELEMENTS) p.resist[el] = Math.min(75, (p.resist[el] || 0) + f[2]); } else p[f[1]] = (p[f[1]] || 0) + f[2]; }
+      for (const t of picked) for (const f of t.fx) if (f[0] === 'stat') { if (f[1] === 'resistAll') { for (const el of ELEMENTS) p.resist[el] = Math.min(75, (p.resist[el] || 0) + f[2]); } else if (f[1].startsWith('resist:')) { const el = f[1].slice(7); p.resist[el] = Math.min(75, (p.resist[el] || 0) + f[2]); } else p[f[1]] = (p[f[1]] || 0) + f[2]; }
       if (picked.length || cap) { const label = CODEX_BY_KEY[tl.codex].name + ' talents';
         p.powers.push({ key: 'talents', name: label, text: picked.map(t => t.n).concat(cap && C[cap] ? [C[cap].name + ' (capstone)'] : []).join(', '), talent: true, def: talentDef(picked, cap, label) }); }
     }
@@ -2027,6 +2095,7 @@ class Combat {
   statusCount() { const p = this.player; return [...p.drawPile, ...p.hand, ...p.discard].filter(c => C[c.key].type === 'Status').length; }
 
   drawCards(a, n) {
+    if (a) a._skips = 0;
     if (this._rkCard && !this._inPw && this._playing === this._rkCard && a === this.player) this._rkDraw += n;
     if (a.isPlayer && a.turn && a.turn.noDraw && this.phase === 'player' && this.current === a) { if (n > 0) this.say('sys', 'No more draws this turn.'); return; }
     for (let i = 0; i < n; i++) {
@@ -2036,6 +2105,7 @@ class Combat {
         if (a.isPlayer && this.opts.practice) a.reshuffles++; else if (a.isPlayer) { a.reshuffles++; a.drawPile.splice(Math.floor(this.rng() * (a.drawPile.length + 1)), 0, { uid: 'c' + (this._uid++), key: 'fatigue' }); this.say('sys', 'Deck reshuffled. A Fatigue card was shuffled in.'); }
       }
       const c = a.drawPile.pop();
+      if (a.isPlayer && a.statusSkip && C[c.key].type === 'Status' && (a._skips || 0) < 5 && this.rng() * 100 < a.statusSkip) { a._skips = (a._skips || 0) + 1; a.discard.push(c); this.say('player', `${a.name} tosses aside ${C[c.key].name} and draws again.`); i--; continue; }
       if (a.hand.length >= 10) { a.discard.push(c); if (a.isPlayer) { this.say('sys', `Hand full: ${C[c.key].name} went to the discard pile.`); this.fire(a, 'handFull'); } }
       else { a.hand.push(c); if (!a.isPlayer && c.status) this.eDrawn(a, c); if (a.isPlayer && C[c.key].type === 'Status') this.fire(a, 'drawStatus'); if (a.isPlayer && C[c.key].onDraw) { const was = this.player, od = this.card(c); this.player = a; this.say('player', `${od.name} is drawn.`); this.rkRun(od.rk, () => { runOps(this, null, C[c.key].onDraw, C[c.key].name); if (od.ms && od.ms.draw) this.drawCards(a, od.ms.draw); }); this.player = was; } }
     }
@@ -2210,6 +2280,7 @@ class Combat {
   heal(a, n, label, quiet) {
     if (n <= 0) return 0;
     if (a.isPlayer && !['Bloodthirst', 'Lifesteal'].includes(label)) { const m = this.rkm('heal'); if (m !== 1) n = Math.round(n * m); }
+    if (a.isPlayer && a.healIn) n = Math.round(n * (1 + a.healIn / 100)); // talent: healing received
     const caster = a.isPlayer && this._playing && this.player && this.player.isPlayer ? this.player : a;
     const mult = a.isPlayer && !['Bloodthirst', 'Lifesteal'].includes(label) ? 1 + caster.spirit / 100 : 1;
     if (!a.isPlayer && a.noHealRound >= this.round) { this.say('player', `${a.name} cannot heal.`); return 0; }
@@ -2349,6 +2420,8 @@ class Combat {
     this.say(crit ? 'crit' : 'player', `${label} hits ${e.name}: ${parts.join(' ')} = ${dmg}` + (r.absorbed ? `, ${r.absorbed} blocked` : '') + `. HP ${e.hp}/${e.maxHp}.`);
     if (kind === 'Attack' && e.parryBack && r.absorbed && e.hp > 0) { const back = this.applyHit(e, p, Math.round(e.parryBack * this.dmgMult), { defer: true, label: 'Riposte' }); this.say('enemy', `${e.name} parries and strikes back: ${back.lost} HP lost.`); e.parryBack = 0; }
     if (kind === 'Attack' && e.thorns && e.hp > 0) { const t = this.applyHit(e, p, e.thorns, { defer: true, label: e.isPlayer ? 'Thorns' : 'Spikes' }); this.say('enemy', `${e.name}'s ${e.isPlayer ? 'Thorns' : 'spikes'}: ${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${t.lost} HP.`); }
+    if (p.isPlayer && p.slowChance && e.hp > 0 && this.rng() * 100 < p.slowChance) { e.slow = (e.slow || 0) + 2; this.say('player', `${e.name} is slowed (2 Slow).`); }
+    if (p.isPlayer && p.tauntChance && e.hp > 0 && !e.isPlayer && this.rng() * 100 < p.tauntChance) { this.setTaunt(p); this.say('player', `${e.name} is taunted by ${p.name}.`); }
     if (kind === 'Attack' && p.bleedChance && e.hp > 0 && this.rng() * 100 < p.bleedChance) { e.bleed += 3; e.bleedBy = p.id; this.say('crit', `Bleed Chance: ${e.name} gains 3 Bleed.`); }
     if (p.lifesteal && r.lost) this.heal(p, Math.round(r.lost * p.lifesteal / 100), 'Lifesteal', true);
     if (p.hp <= 0) { this.onDeath(p); return r.lost; }
@@ -2378,6 +2451,7 @@ class Combat {
     if (p.vulnerable) parts.push(`x ${(1 + p.vulnerable / 100).toFixed(2)} Vulnerable`);
     p.attackedThisRound = true;
     let dmgIn = dmg;
+    if (p.reflect && dmgIn > 0 && e.hp > 0 && this.rng() * 100 < p.reflect) { this.say('crit', `${p.name} reflects ${e.name}'s ${label}: ${e.name} takes ${dmgIn}.`); this.applyHit(p, e, dmgIn, { defer: true, label: 'Reflect' }); if (e.hp <= 0) this.onDeath(e); return 0; }
     if (p.powers.length) dmgIn = Math.round(dmgIn * this.pwProd(p, 'incoming'));
     const g = this.alivePlayers().find(q => q !== p && this.has(q, 'guardian_s_oath'));
     if (g && dmgIn > 0) { const part = Math.round(dmgIn * this.upN(g, 'guardian_s_oath', 0, 50) / 100); dmgIn -= part; this.applyHit(e, g, part, { defer: true, label }); this.say('player', `Guardian's Oath: ${g.name} takes ${part} of the hit for ${p.name}. HP ${g.hp}/${g.maxHp}.`); if (g.hp <= 0) this.onDeath(g); }
@@ -2396,6 +2470,7 @@ class Combat {
     if (p.until.debuffImmune) { this.say('player', `${p.name} is immune to the ${key}.`); return; }
     if (p.until.reflect && e) { p.until.reflect = false; e[key] = (e[key] || 0) + n; this.say('player', `The ${key} is reflected back onto ${e.name}.`); return; }
     if (p.negateDebuff) { p.negateDebuff = false; this.say('player', `Divine Shield negates the ${key}.`); return; }
+    if (p.debuffRes && this.rng() * 100 < p.debuffRes) { this.say('player', `${p.name} shrugs off the ${key}.`); return; }
     if (key === 'bleed') n *= this.pwKey(p, 'dotMult', 'bleed');
     p[key] = (p[key] || 0) + n; if (['bleed', 'burn', 'poison'].includes(key)) p[key + 'By'] = e && e.id;
     if (key === 'chill' && p.chill >= 10) { p.chill = 0; p.frozen = true; this.say('crit', `${this.who(p)} ${this.partySize > 1 ? 'is' : 'are'} Frozen and will lose the next turn!`); return; }
@@ -2559,6 +2634,7 @@ class Combat {
         case 'initNext': e.initNext = op.n; break;
         case 'status': {
           if (p.negateDebuff) { p.negateDebuff = false; this.say('player', `Divine Shield blocks the ${C[op.key].name}.`); break; }
+          if (p.debuffRes && this.rng() * 100 < p.debuffRes) { this.say('player', `${p.name} shrugs off the ${C[op.key].name}.`); break; }
           for (let k = 0; k < op.n; k++) { const sc = { uid: 'c' + (this._uid++), key: op.key }; if (op.pile === 'discard') p.discard.push(sc); else p.drawPile.splice(Math.floor(this.rng() * (p.drawPile.length + 1)), 0, sc); }
           this.say('enemy', `${op.n} ${C[op.key].name} added to your ${op.pile} pile.`); break;
         }
@@ -2682,8 +2758,9 @@ function partyStat(a, st, n) {
   else if (st === 'resistAll') { for (const el of ELEMENTS) a.resist[el] = Math.min(75, (a.resist[el] || 0) + n); }
   else if (st !== 'luck') a[st] = (a[st] || 0) + n;
 }
-// Luck from a hero's talents (run-level: it changes loot), for the whole party
-function talentLuck(spec) { const tr = spec && TALENTS[spec.codex]; if (!tr) return 0; let n = 0; (spec.picks || []).forEach((j, i) => { const t = i < 9 && j != null && tr.rows[i] && tr.rows[i][j]; if (t) for (const f of t.fx) if (f[0] === 'party' && f[1] === 'luck') n += f[2]; }); return n; }
+// run-level talents (loot Luck, health regen after fights, extraction, map rolls): ['run', key, n] summed for one hero
+function talentRun(spec) { const o = {}; const tr = spec && TALENTS[spec.codex]; if (!tr) return o; (spec.picks || []).forEach((j, i) => { const t = i < 9 && j != null && tr.rows[i] && tr.rows[i][j]; if (t) for (const f of t.fx) if (f[0] === 'run') o[f[1]] = (o[f[1]] || 0) + f[2]; }); return o; }
+function talentLuck(spec) { return talentRun(spec).partyLuck || 0; }
 // one hidden Power holds all of a hero's picked talents, so percentages from different rows add up
 function talentDef(list, cap, label) {
   const D = { hm: [], cr: [], cx: 0, fl: [], dm: [], hl: 0, inc: [], dp: {}, dx: {}, dev: 0, sh: 0, start: [], turn: [], kill: [], hit: [], full: [], low: null, cheat: null, every: [], cost: [], first: [], aura: [] };
@@ -2928,7 +3005,7 @@ if (DATA) dropRemovedLoot(DATA);
 // Oct 31: Lay on Hands and Mend Wounds can be aimed at any hero in the party (yourself if you play them solo)
 if (C.mend_wounds) Object.assign(C.mend_wounds, { target: 'ally', text: 'Heal an ally (or yourself) for 8 HP.', play: (cb, t) => cb.heal(t && t.isPlayer && t.hp > 0 ? t : cb.player, 8, 'Mend Wounds') });
 if (C.lay_on_hands) Object.assign(C.lay_on_hands, { target: 'ally', text: 'Heal an ally (or yourself) for 30% of their total HP. Exhaust.', play: (cb, t) => { const a = t && t.isPlayer && t.hp > 0 ? t : cb.player; cb.heal(a, Math.round(a.maxHp * 0.3), 'Lay on Hands'); } }); // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
-const API = { CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -3004,10 +3081,10 @@ function repairRows(rng, nodes) {
     if (!rows.some(r => tryRemove(r, c))) break;
   }
 }
-function generateMap(rng, data, partySize, mapKey) {
+function generateMap(rng, data, partySize, mapKey, bonus) {
   let last = null;
   for (let t = 0; t < 30; t++) { const nodes = mapTopology(rng); repairRows(rng, nodes); last = nodes; if (topologyOk(nodes)) break; }
-  return finishMap(rng, data, partySize, mapKey, last);
+  return finishMap(rng, data, partySize, mapKey, last, bonus);
 }
 function mapTopology(rng) {
   const nodes = {}, edges = new Set();
@@ -3050,7 +3127,8 @@ function mapTopology(rng) {
   }
   return nodes;
 }
-function finishMap(rng, data, partySize, mapKey, nodes) {
+function finishMap(rng, data, partySize, mapKey, nodes, bonus) {
+  bonus = bonus || {};
   mapKey = mapKey || 'physical';
   const id = (r, c) => r + ':' + c, starts = new Set(Object.values(nodes).filter(n => n.row === 1).map(n => n.col));
   const boss = { id: 'boss', row: ROWS + 1, col: 2, next: [], type: 'boss' };
@@ -3111,7 +3189,9 @@ function finishMap(rng, data, partySize, mapKey, nodes) {
     if (n.type === 'shrine') n.shrine = SHRINES[ri(rng, 0, SHRINES.length - 1)].key;
   }
   // 10% of maps: one elite is Enraged (+50% HP and damage, double loot, a guaranteed Blue or better item)
-  if (rng() < MAP_RULES.enragedChance) { const els = list.filter(n => n.type === 'elite'); if (els.length) els[Math.floor(rng() * els.length)].enraged = true; }
+  // the party leader's codex talents: a chance at an extra shrine and an extra merchant (a plain fight becomes one)
+  for (const [k, type] of [['shrine', 'shrine'], ['merchant', 'merchant']]) if (bonus[k] && rng() * 100 < bonus[k]) { const f = list.filter(n => n.type === 'fight' && n.row > 1 && n.row < ROWS); if (f.length) { const n = f[Math.floor(rng() * f.length)]; n.type = type; n.enemies = undefined; if (type === 'shrine') n.shrine = SHRINES[ri(rng, 0, SHRINES.length - 1)].key; n.bonus = true; } }
+  if (rng() < MAP_RULES.enragedChance + (bonus.enraged || 0) / 100) { const els = list.filter(n => n.type === 'elite'); if (els.length) els[Math.floor(rng() * els.length)].enraged = true; }
   boss.enemies = [(data.maps && data.maps[mapKey] && data.maps[mapKey].boss) || 'warlord_gorrath_the_iron_tide'];
   return { nodes, starts: [...starts].map(c => id(1, c)).filter(k => nodes[k]) };
 }
@@ -3137,7 +3217,7 @@ class Run {
     this.mapKey = this.opts.map && this.data.maps && this.data.maps[this.opts.map] ? this.opts.map : 'physical';
     this.mapName = this.data.maps ? this.data.maps[this.mapKey].name : 'The Broken March';
     { const bk = this.data.maps ? this.data.maps[this.mapKey].boss : 'warlord_gorrath_the_iron_tide', be = this.data.enemies[bk]; this.bossName = be ? be.name.split(',')[0].replace(/ of the .*/, '') : 'The boss'; }
-    this.map = generateMap(this.rng, this.data, specs.length, this.mapKey);
+    { const lead = CB.talentRun(specs[0] && specs[0].talents); this.map = generateMap(this.rng, this.data, specs.length, this.mapKey, { enraged: lead.enraged || 0, shrine: lead.shrine || 0, merchant: lead.merchant || 0 }); } // the leader's talents
     this.at = null; this.visited = []; this.over = null; this.fightsWon = 0; this.kills = 0; this.combat = null; this.pending = null;
     this.note(this.members.length > 1 ? `A party of ${this.members.length} (${this.members.map(m => m.name).join(', ')}) sets out on ${this.mapName} (+${this.level}).` : `A ${this.cls} sets out on ${this.mapName} (+${this.level}).`);
   }
@@ -3157,7 +3237,8 @@ class Run {
   reachable() { return this.at ? this.map.nodes[this.at].next.slice() : this.map.starts.slice(); }
   visible() { return true; }
   activeBuffs() { const b = {}; for (const x of this.buffs) for (const [k, v] of Object.entries(x.buff)) b[k] = (b[k] || 0) + v; return b; }
-  luck(m) { return (m || this.m0).stats.luck + (this.activeBuffs().luck || 0) + this.members.reduce((t, x) => t + CB.talentLuck(x.talents), 0); } // + party Luck from codex talents
+  luck(m) { m = m || this.m0; return m.stats.luck + (this.activeBuffs().luck || 0) + (CB.talentRun(m.talents).luck || 0) + this.partyTalent('partyLuck'); } // + Luck from codex talents
+  partyTalent(k) { return this.members.reduce((t, x) => t + (CB.talentRun(x.talents)[k] || 0), 0); }
   finish(result) { this.over = result; for (const m of this.members) if (!m.kept) m.kept = { items: [], gold: 0 }; }
 
   // party decisions: each member's vote; majority wins, ties are settled by a coin flip from the run's seed
@@ -3215,7 +3296,7 @@ class Run {
         this.note(`${m.name} fell in the fight: their sack (${m.sack.length} items, ${m.gold} gold) is lost. They get back up at half HP.`);
         m.sack = []; m.gold = 0; m.hp = Math.ceil(m.stats.maxHp / 2); m.mana = 0;
       } else { m.hp = Math.min(pl.hp, m.stats.maxHp); m.mana = pl.mana; } // talent max-HP buffs last for the fight only
-      const regen = m.stats.healthRegen; if (regen && !fell) m.hp = Math.min(m.stats.maxHp, m.hp + regen);
+      const regen = m.stats.healthRegen + this.partyTalent('partyHealthRegen'); if (regen && !fell) m.hp = Math.min(m.stats.maxHp, m.hp + regen);
       const drops = []; let gold = 0;
       for (const e of cb.enemies) {  // every hero rolls their own loot
         for (let k = 0; k < (e.enraged ? 2 : 1); k++) { // an Enraged elite drops everything twice
@@ -3269,9 +3350,10 @@ class Run {
     if (!this.pending || this.pending.type !== 'rest') return;
     const frac = this.pending.keep || 0.5; // the row-7 campfire keeps 75%, every other campfire 50%
     for (const m of this.members) {
-      const keep = shuffle(m.sack.slice(), this.rng).slice(0, Math.ceil(m.sack.length * frac));
-      m.kept = { items: keep, gold: Math.round(m.gold * frac) };
-      this.note(`${this.solo ? '' : m.name + ': '}${Math.round(frac * 100)}% of the sack survives: ${keep.length} of ${m.sack.length} items and ${m.kept.gold} of ${m.gold} gold.`);
+      const fr = Math.min(1, frac + (CB.talentRun(m.talents).extract || 0) / 100); // talents: more of the sack survives
+      const keep = shuffle(m.sack.slice(), this.rng).slice(0, Math.ceil(m.sack.length * fr));
+      m.kept = { items: keep, gold: Math.round(m.gold * fr) };
+      this.note(`${this.solo ? '' : m.name + ': '}${Math.round(fr * 100)}% of the sack survives: ${keep.length} of ${m.sack.length} items and ${m.kept.gold} of ${m.gold} gold.`);
     }
     this.over = 'extracted'; this.pending = null;
     this.note(`Extracted on row ${this.currentRow()}.`);
@@ -4958,8 +5040,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793496353277';
-  const CB_BUILD = 'e6f52fff0b'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793497230034';
+  const CB_BUILD = '5ac534ccbb'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -5658,6 +5740,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Codexes', 'Talent trees: the everyday Defense and Support rows are now mixed and matched across codexes, each effect in four strengths (levels 2-4 weakest, 6-8, 12-14, 16-18 strongest), so no two trees share the same set. New Support effects: Initiative, Luck, crit chance, a chance to shrug off debuffs, party Recovery (heal each turn), party Health Regen (heal after each fight), a chance to reflect an enemy attack back, Spirit, a chance on hit to Slow, a chance to toss a drawn status card and draw again, more of your sack surviving extraction, and, as party leader, better odds of an Enraged elite, an extra shrine or an extra merchant on the map. New Defense effects: resistance to one element (each codex has its own), a chance on hit to taunt, more healing received and Thorns.'],
       ['Codexes', 'Talent trees: the level-10 Support pick (mini capstone) is now a buff for you and every ally, different for each codex: +10% damage, crit chance, crit damage, Strength, Intelligence, Dexterity, Spirit, max HP, max mana, mana regeneration, Initiative, Multi-hit, Multicast, Multiplay, every resistance, healing, Luck (better loot for the whole party), 5% lifesteal, Bleed chance, Thorns or Recovery. The extra-card-draw pick that used to sit there moved to level 14.'],
       ['Codexes', 'Codex talent trees: every codex now levels up (max 20) while you wear it, from kills: normal 1 XP, elite 3, boss 10. A party splits the kills but gets +10% XP per extra hero, and every codex you have maxed gives +10% on the others. It takes about 70 full solo runs to max one, each level 15% slower than the last.'],
       ['Codexes', 'Every 2 levels opens a talent row (10 rows): pick an Offense, Defense or Support talent on each. Level 10 is a mini capstone; level 20 is the capstone, a Power that is already in play at the start of every fight. Mix freely; changing picks is free in town. Talents only work while that codex is worn, and you never lose points by swapping.'],

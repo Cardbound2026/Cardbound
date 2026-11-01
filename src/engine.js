@@ -905,7 +905,7 @@ class Combat {
     if (tr) {
       const picked = []; let cap = null;
       (tl.picks || []).forEach((j, i) => { if (j == null || j < 0 || j > 2) return; if (i < 9) { const t = tr.rows[i] && tr.rows[i][j]; if (t) picked.push(t); } else if (i === 9) cap = tr.cap[j]; });
-      for (const t of picked) for (const f of t.fx) if (f[0] === 'stat') { if (f[1] === 'resistAll') { for (const el of ELEMENTS) p.resist[el] = Math.min(75, (p.resist[el] || 0) + f[2]); } else p[f[1]] = (p[f[1]] || 0) + f[2]; }
+      for (const t of picked) for (const f of t.fx) if (f[0] === 'stat') { if (f[1] === 'resistAll') { for (const el of ELEMENTS) p.resist[el] = Math.min(75, (p.resist[el] || 0) + f[2]); } else if (f[1].startsWith('resist:')) { const el = f[1].slice(7); p.resist[el] = Math.min(75, (p.resist[el] || 0) + f[2]); } else p[f[1]] = (p[f[1]] || 0) + f[2]; }
       if (picked.length || cap) { const label = CODEX_BY_KEY[tl.codex].name + ' talents';
         p.powers.push({ key: 'talents', name: label, text: picked.map(t => t.n).concat(cap && C[cap] ? [C[cap].name + ' (capstone)'] : []).join(', '), talent: true, def: talentDef(picked, cap, label) }); }
     }
@@ -1109,6 +1109,7 @@ class Combat {
   statusCount() { const p = this.player; return [...p.drawPile, ...p.hand, ...p.discard].filter(c => C[c.key].type === 'Status').length; }
 
   drawCards(a, n) {
+    if (a) a._skips = 0;
     if (this._rkCard && !this._inPw && this._playing === this._rkCard && a === this.player) this._rkDraw += n;
     if (a.isPlayer && a.turn && a.turn.noDraw && this.phase === 'player' && this.current === a) { if (n > 0) this.say('sys', 'No more draws this turn.'); return; }
     for (let i = 0; i < n; i++) {
@@ -1118,6 +1119,7 @@ class Combat {
         if (a.isPlayer && this.opts.practice) a.reshuffles++; else if (a.isPlayer) { a.reshuffles++; a.drawPile.splice(Math.floor(this.rng() * (a.drawPile.length + 1)), 0, { uid: 'c' + (this._uid++), key: 'fatigue' }); this.say('sys', 'Deck reshuffled. A Fatigue card was shuffled in.'); }
       }
       const c = a.drawPile.pop();
+      if (a.isPlayer && a.statusSkip && C[c.key].type === 'Status' && (a._skips || 0) < 5 && this.rng() * 100 < a.statusSkip) { a._skips = (a._skips || 0) + 1; a.discard.push(c); this.say('player', `${a.name} tosses aside ${C[c.key].name} and draws again.`); i--; continue; }
       if (a.hand.length >= 10) { a.discard.push(c); if (a.isPlayer) { this.say('sys', `Hand full: ${C[c.key].name} went to the discard pile.`); this.fire(a, 'handFull'); } }
       else { a.hand.push(c); if (!a.isPlayer && c.status) this.eDrawn(a, c); if (a.isPlayer && C[c.key].type === 'Status') this.fire(a, 'drawStatus'); if (a.isPlayer && C[c.key].onDraw) { const was = this.player, od = this.card(c); this.player = a; this.say('player', `${od.name} is drawn.`); this.rkRun(od.rk, () => { runOps(this, null, C[c.key].onDraw, C[c.key].name); if (od.ms && od.ms.draw) this.drawCards(a, od.ms.draw); }); this.player = was; } }
     }
@@ -1292,6 +1294,7 @@ class Combat {
   heal(a, n, label, quiet) {
     if (n <= 0) return 0;
     if (a.isPlayer && !['Bloodthirst', 'Lifesteal'].includes(label)) { const m = this.rkm('heal'); if (m !== 1) n = Math.round(n * m); }
+    if (a.isPlayer && a.healIn) n = Math.round(n * (1 + a.healIn / 100)); // talent: healing received
     const caster = a.isPlayer && this._playing && this.player && this.player.isPlayer ? this.player : a;
     const mult = a.isPlayer && !['Bloodthirst', 'Lifesteal'].includes(label) ? 1 + caster.spirit / 100 : 1;
     if (!a.isPlayer && a.noHealRound >= this.round) { this.say('player', `${a.name} cannot heal.`); return 0; }
@@ -1431,6 +1434,8 @@ class Combat {
     this.say(crit ? 'crit' : 'player', `${label} hits ${e.name}: ${parts.join(' ')} = ${dmg}` + (r.absorbed ? `, ${r.absorbed} blocked` : '') + `. HP ${e.hp}/${e.maxHp}.`);
     if (kind === 'Attack' && e.parryBack && r.absorbed && e.hp > 0) { const back = this.applyHit(e, p, Math.round(e.parryBack * this.dmgMult), { defer: true, label: 'Riposte' }); this.say('enemy', `${e.name} parries and strikes back: ${back.lost} HP lost.`); e.parryBack = 0; }
     if (kind === 'Attack' && e.thorns && e.hp > 0) { const t = this.applyHit(e, p, e.thorns, { defer: true, label: e.isPlayer ? 'Thorns' : 'Spikes' }); this.say('enemy', `${e.name}'s ${e.isPlayer ? 'Thorns' : 'spikes'}: ${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${t.lost} HP.`); }
+    if (p.isPlayer && p.slowChance && e.hp > 0 && this.rng() * 100 < p.slowChance) { e.slow = (e.slow || 0) + 2; this.say('player', `${e.name} is slowed (2 Slow).`); }
+    if (p.isPlayer && p.tauntChance && e.hp > 0 && !e.isPlayer && this.rng() * 100 < p.tauntChance) { this.setTaunt(p); this.say('player', `${e.name} is taunted by ${p.name}.`); }
     if (kind === 'Attack' && p.bleedChance && e.hp > 0 && this.rng() * 100 < p.bleedChance) { e.bleed += 3; e.bleedBy = p.id; this.say('crit', `Bleed Chance: ${e.name} gains 3 Bleed.`); }
     if (p.lifesteal && r.lost) this.heal(p, Math.round(r.lost * p.lifesteal / 100), 'Lifesteal', true);
     if (p.hp <= 0) { this.onDeath(p); return r.lost; }
@@ -1460,6 +1465,7 @@ class Combat {
     if (p.vulnerable) parts.push(`x ${(1 + p.vulnerable / 100).toFixed(2)} Vulnerable`);
     p.attackedThisRound = true;
     let dmgIn = dmg;
+    if (p.reflect && dmgIn > 0 && e.hp > 0 && this.rng() * 100 < p.reflect) { this.say('crit', `${p.name} reflects ${e.name}'s ${label}: ${e.name} takes ${dmgIn}.`); this.applyHit(p, e, dmgIn, { defer: true, label: 'Reflect' }); if (e.hp <= 0) this.onDeath(e); return 0; }
     if (p.powers.length) dmgIn = Math.round(dmgIn * this.pwProd(p, 'incoming'));
     const g = this.alivePlayers().find(q => q !== p && this.has(q, 'guardian_s_oath'));
     if (g && dmgIn > 0) { const part = Math.round(dmgIn * this.upN(g, 'guardian_s_oath', 0, 50) / 100); dmgIn -= part; this.applyHit(e, g, part, { defer: true, label }); this.say('player', `Guardian's Oath: ${g.name} takes ${part} of the hit for ${p.name}. HP ${g.hp}/${g.maxHp}.`); if (g.hp <= 0) this.onDeath(g); }
@@ -1478,6 +1484,7 @@ class Combat {
     if (p.until.debuffImmune) { this.say('player', `${p.name} is immune to the ${key}.`); return; }
     if (p.until.reflect && e) { p.until.reflect = false; e[key] = (e[key] || 0) + n; this.say('player', `The ${key} is reflected back onto ${e.name}.`); return; }
     if (p.negateDebuff) { p.negateDebuff = false; this.say('player', `Divine Shield negates the ${key}.`); return; }
+    if (p.debuffRes && this.rng() * 100 < p.debuffRes) { this.say('player', `${p.name} shrugs off the ${key}.`); return; }
     if (key === 'bleed') n *= this.pwKey(p, 'dotMult', 'bleed');
     p[key] = (p[key] || 0) + n; if (['bleed', 'burn', 'poison'].includes(key)) p[key + 'By'] = e && e.id;
     if (key === 'chill' && p.chill >= 10) { p.chill = 0; p.frozen = true; this.say('crit', `${this.who(p)} ${this.partySize > 1 ? 'is' : 'are'} Frozen and will lose the next turn!`); return; }
@@ -1641,6 +1648,7 @@ class Combat {
         case 'initNext': e.initNext = op.n; break;
         case 'status': {
           if (p.negateDebuff) { p.negateDebuff = false; this.say('player', `Divine Shield blocks the ${C[op.key].name}.`); break; }
+          if (p.debuffRes && this.rng() * 100 < p.debuffRes) { this.say('player', `${p.name} shrugs off the ${C[op.key].name}.`); break; }
           for (let k = 0; k < op.n; k++) { const sc = { uid: 'c' + (this._uid++), key: op.key }; if (op.pile === 'discard') p.discard.push(sc); else p.drawPile.splice(Math.floor(this.rng() * (p.drawPile.length + 1)), 0, sc); }
           this.say('enemy', `${op.n} ${C[op.key].name} added to your ${op.pile} pile.`); break;
         }
@@ -1764,8 +1772,9 @@ function partyStat(a, st, n) {
   else if (st === 'resistAll') { for (const el of ELEMENTS) a.resist[el] = Math.min(75, (a.resist[el] || 0) + n); }
   else if (st !== 'luck') a[st] = (a[st] || 0) + n;
 }
-// Luck from a hero's talents (run-level: it changes loot), for the whole party
-function talentLuck(spec) { const tr = spec && TALENTS[spec.codex]; if (!tr) return 0; let n = 0; (spec.picks || []).forEach((j, i) => { const t = i < 9 && j != null && tr.rows[i] && tr.rows[i][j]; if (t) for (const f of t.fx) if (f[0] === 'party' && f[1] === 'luck') n += f[2]; }); return n; }
+// run-level talents (loot Luck, health regen after fights, extraction, map rolls): ['run', key, n] summed for one hero
+function talentRun(spec) { const o = {}; const tr = spec && TALENTS[spec.codex]; if (!tr) return o; (spec.picks || []).forEach((j, i) => { const t = i < 9 && j != null && tr.rows[i] && tr.rows[i][j]; if (t) for (const f of t.fx) if (f[0] === 'run') o[f[1]] = (o[f[1]] || 0) + f[2]; }); return o; }
+function talentLuck(spec) { return talentRun(spec).partyLuck || 0; }
 // one hidden Power holds all of a hero's picked talents, so percentages from different rows add up
 function talentDef(list, cap, label) {
   const D = { hm: [], cr: [], cx: 0, fl: [], dm: [], hl: 0, inc: [], dp: {}, dx: {}, dev: 0, sh: 0, start: [], turn: [], kill: [], hit: [], full: [], low: null, cheat: null, every: [], cost: [], first: [], aura: [] };
@@ -2010,6 +2019,6 @@ if (DATA) dropRemovedLoot(DATA);
 // Oct 31: Lay on Hands and Mend Wounds can be aimed at any hero in the party (yourself if you play them solo)
 if (C.mend_wounds) Object.assign(C.mend_wounds, { target: 'ally', text: 'Heal an ally (or yourself) for 8 HP.', play: (cb, t) => cb.heal(t && t.isPlayer && t.hp > 0 ? t : cb.player, 8, 'Mend Wounds') });
 if (C.lay_on_hands) Object.assign(C.lay_on_hands, { target: 'ally', text: 'Heal an ally (or yourself) for 30% of their total HP. Exhaust.', play: (cb, t) => { const a = t && t.isPlayer && t.hp > 0 ? t : cb.player; cb.heal(a, Math.round(a.maxHp * 0.3), 'Lay on Hands'); } }); // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
-const API = { CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);

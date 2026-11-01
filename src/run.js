@@ -68,10 +68,10 @@ function repairRows(rng, nodes) {
     if (!rows.some(r => tryRemove(r, c))) break;
   }
 }
-function generateMap(rng, data, partySize, mapKey) {
+function generateMap(rng, data, partySize, mapKey, bonus) {
   let last = null;
   for (let t = 0; t < 30; t++) { const nodes = mapTopology(rng); repairRows(rng, nodes); last = nodes; if (topologyOk(nodes)) break; }
-  return finishMap(rng, data, partySize, mapKey, last);
+  return finishMap(rng, data, partySize, mapKey, last, bonus);
 }
 function mapTopology(rng) {
   const nodes = {}, edges = new Set();
@@ -114,7 +114,8 @@ function mapTopology(rng) {
   }
   return nodes;
 }
-function finishMap(rng, data, partySize, mapKey, nodes) {
+function finishMap(rng, data, partySize, mapKey, nodes, bonus) {
+  bonus = bonus || {};
   mapKey = mapKey || 'physical';
   const id = (r, c) => r + ':' + c, starts = new Set(Object.values(nodes).filter(n => n.row === 1).map(n => n.col));
   const boss = { id: 'boss', row: ROWS + 1, col: 2, next: [], type: 'boss' };
@@ -175,7 +176,9 @@ function finishMap(rng, data, partySize, mapKey, nodes) {
     if (n.type === 'shrine') n.shrine = SHRINES[ri(rng, 0, SHRINES.length - 1)].key;
   }
   // 10% of maps: one elite is Enraged (+50% HP and damage, double loot, a guaranteed Blue or better item)
-  if (rng() < MAP_RULES.enragedChance) { const els = list.filter(n => n.type === 'elite'); if (els.length) els[Math.floor(rng() * els.length)].enraged = true; }
+  // the party leader's codex talents: a chance at an extra shrine and an extra merchant (a plain fight becomes one)
+  for (const [k, type] of [['shrine', 'shrine'], ['merchant', 'merchant']]) if (bonus[k] && rng() * 100 < bonus[k]) { const f = list.filter(n => n.type === 'fight' && n.row > 1 && n.row < ROWS); if (f.length) { const n = f[Math.floor(rng() * f.length)]; n.type = type; n.enemies = undefined; if (type === 'shrine') n.shrine = SHRINES[ri(rng, 0, SHRINES.length - 1)].key; n.bonus = true; } }
+  if (rng() < MAP_RULES.enragedChance + (bonus.enraged || 0) / 100) { const els = list.filter(n => n.type === 'elite'); if (els.length) els[Math.floor(rng() * els.length)].enraged = true; }
   boss.enemies = [(data.maps && data.maps[mapKey] && data.maps[mapKey].boss) || 'warlord_gorrath_the_iron_tide'];
   return { nodes, starts: [...starts].map(c => id(1, c)).filter(k => nodes[k]) };
 }
@@ -201,7 +204,7 @@ class Run {
     this.mapKey = this.opts.map && this.data.maps && this.data.maps[this.opts.map] ? this.opts.map : 'physical';
     this.mapName = this.data.maps ? this.data.maps[this.mapKey].name : 'The Broken March';
     { const bk = this.data.maps ? this.data.maps[this.mapKey].boss : 'warlord_gorrath_the_iron_tide', be = this.data.enemies[bk]; this.bossName = be ? be.name.split(',')[0].replace(/ of the .*/, '') : 'The boss'; }
-    this.map = generateMap(this.rng, this.data, specs.length, this.mapKey);
+    { const lead = CB.talentRun(specs[0] && specs[0].talents); this.map = generateMap(this.rng, this.data, specs.length, this.mapKey, { enraged: lead.enraged || 0, shrine: lead.shrine || 0, merchant: lead.merchant || 0 }); } // the leader's talents
     this.at = null; this.visited = []; this.over = null; this.fightsWon = 0; this.kills = 0; this.combat = null; this.pending = null;
     this.note(this.members.length > 1 ? `A party of ${this.members.length} (${this.members.map(m => m.name).join(', ')}) sets out on ${this.mapName} (+${this.level}).` : `A ${this.cls} sets out on ${this.mapName} (+${this.level}).`);
   }
@@ -221,7 +224,8 @@ class Run {
   reachable() { return this.at ? this.map.nodes[this.at].next.slice() : this.map.starts.slice(); }
   visible() { return true; }
   activeBuffs() { const b = {}; for (const x of this.buffs) for (const [k, v] of Object.entries(x.buff)) b[k] = (b[k] || 0) + v; return b; }
-  luck(m) { return (m || this.m0).stats.luck + (this.activeBuffs().luck || 0) + this.members.reduce((t, x) => t + CB.talentLuck(x.talents), 0); } // + party Luck from codex talents
+  luck(m) { m = m || this.m0; return m.stats.luck + (this.activeBuffs().luck || 0) + (CB.talentRun(m.talents).luck || 0) + this.partyTalent('partyLuck'); } // + Luck from codex talents
+  partyTalent(k) { return this.members.reduce((t, x) => t + (CB.talentRun(x.talents)[k] || 0), 0); }
   finish(result) { this.over = result; for (const m of this.members) if (!m.kept) m.kept = { items: [], gold: 0 }; }
 
   // party decisions: each member's vote; majority wins, ties are settled by a coin flip from the run's seed
@@ -279,7 +283,7 @@ class Run {
         this.note(`${m.name} fell in the fight: their sack (${m.sack.length} items, ${m.gold} gold) is lost. They get back up at half HP.`);
         m.sack = []; m.gold = 0; m.hp = Math.ceil(m.stats.maxHp / 2); m.mana = 0;
       } else { m.hp = Math.min(pl.hp, m.stats.maxHp); m.mana = pl.mana; } // talent max-HP buffs last for the fight only
-      const regen = m.stats.healthRegen; if (regen && !fell) m.hp = Math.min(m.stats.maxHp, m.hp + regen);
+      const regen = m.stats.healthRegen + this.partyTalent('partyHealthRegen'); if (regen && !fell) m.hp = Math.min(m.stats.maxHp, m.hp + regen);
       const drops = []; let gold = 0;
       for (const e of cb.enemies) {  // every hero rolls their own loot
         for (let k = 0; k < (e.enraged ? 2 : 1); k++) { // an Enraged elite drops everything twice
@@ -333,9 +337,10 @@ class Run {
     if (!this.pending || this.pending.type !== 'rest') return;
     const frac = this.pending.keep || 0.5; // the row-7 campfire keeps 75%, every other campfire 50%
     for (const m of this.members) {
-      const keep = shuffle(m.sack.slice(), this.rng).slice(0, Math.ceil(m.sack.length * frac));
-      m.kept = { items: keep, gold: Math.round(m.gold * frac) };
-      this.note(`${this.solo ? '' : m.name + ': '}${Math.round(frac * 100)}% of the sack survives: ${keep.length} of ${m.sack.length} items and ${m.kept.gold} of ${m.gold} gold.`);
+      const fr = Math.min(1, frac + (CB.talentRun(m.talents).extract || 0) / 100); // talents: more of the sack survives
+      const keep = shuffle(m.sack.slice(), this.rng).slice(0, Math.ceil(m.sack.length * fr));
+      m.kept = { items: keep, gold: Math.round(m.gold * fr) };
+      this.note(`${this.solo ? '' : m.name + ': '}${Math.round(fr * 100)}% of the sack survives: ${keep.length} of ${m.sack.length} items and ${m.kept.gold} of ${m.gold} gold.`);
     }
     this.over = 'extracted'; this.pending = null;
     this.note(`Extracted on row ${this.currentRow()}.`);
