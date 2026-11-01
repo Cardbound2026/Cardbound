@@ -13,7 +13,8 @@
   }
   // publish one hero (throttled to once a minute unless forced)
   async function publishHero(key, force) {
-    if (!supa || !supaUser) return; const c = profile.chars[key]; if (!c) return;
+    if (!supa || !supaUser || !SY.ready || SY.conflict) return; // never publish a copy that hasn't been reconciled with the account
+    const c = profile.chars[key]; if (!c) return;
     if (!force && Date.now() - (REC.pubAt[key] || 0) < 60000) return; REC.pubAt[key] = Date.now();
     const row = { user_id: supaUser.id, hero_key: key, hero_name: c.name, hero_class: c.cls, guild_name: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null,
       progress: CBHub.progressScore(c), power: CBHub.powerLevel(c), maps: c.mapBest || {}, snapshot: heroSnapshot(c), updated_at: new Date().toISOString() };
@@ -136,4 +137,4 @@
   });
   function openRecords() { closeTalk(); openSheet('records'); }
   // publish this player's heroes a little after signing in, so the board fills up without anyone opening it
-  setTimeout(function pubLater() { if (supa && supaUser && profile && Object.keys(profile.chars || {}).length) publishAllHeroes(true); else setTimeout(pubLater, 15000); }, 8000);
+  setTimeout(function pubLater() { if (supa && supaUser && profile && Object.keys(profile.chars || {}).length && SY.ready && !SY.conflict) publishAllHeroes(true); else setTimeout(pubLater, 15000); }, 8000);

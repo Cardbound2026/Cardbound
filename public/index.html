@@ -607,6 +607,9 @@ body.aiming { cursor: grabbing; user-select: none; }
 .arpick { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; max-height: 34vh; overflow: auto; }
 .arpi { display: grid; grid-template-columns: auto 1fr; gap: 6px; align-items: start; cursor: pointer; } .arpi input { margin-top: 12px; accent-color: #c9472f; }
 .arsettle { border-radius: 8px; padding: 8px 12px; margin: 6px 0; background: #1c1610; border: 1px solid #5a4a2a; } .arsettle.won { border-color: #4f8f48; } .arsettle.lost { border-color: #a8352a; } .arsettle p { margin: 4px 0 0; }
+.sycmp { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } .sycmp > div { background: #15110d; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; align-content: start; } .sycmp h3 { margin: 0; color: var(--accent); }
+.syhero { margin: 0; padding-left: 18px; } .sybk { display: flex; justify-content: space-between; gap: 10px; align-items: center; background: #15110d; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 0 0 6px; }
+@media (max-width: 700px) { .sycmp { grid-template-columns: 1fr; } }
 .recgrave li { padding: 3px 0; cursor: pointer; color: #b8b0a6; }
 .herocard.new { border-style: dashed; border-top-style: dashed; place-content: center; text-align: center; color: var(--muted); font-size: 16px; }
 .create h3 { font-family: var(--cf-name); font-weight: 400; font-size: 26px; color: var(--accent); margin-bottom: 8px; }
@@ -4212,9 +4215,25 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function renderSaveNote() {
     if (!$('scrStart').hidden) $('topInfo').textContent = storeKind === 'cloud' ? 'Progress saves to your account' : storeKind === 'account' ? 'Progress saves to your Claude account' : supa ? 'Not signed in: progress saves in this browser only' : 'Progress saves in this browser';
   }
+  // ---------- saving and cloud sync (Nov 1 rewrite after a lost-progress report)
+  // The old rule was "the copy with the newest savedAt wins", but any trivial save (opening the game) made a stale browser
+  // look newest, so a stale browser could overwrite the account and then the account overwrote the good browser.
+  // Now every save gets a write id (wid). Each browser remembers which cloud write it last synced with (base) and how
+  // much progress it had then (baseFp). Uploads only go through if the cloud still holds that base write; if someone
+  // else wrote in between, or both sides made progress, the player chooses which to keep. The other copy is always backed up.
+  const DEV = (() => { const u = navigator.userAgent || ''; return (/Edg\//.test(u) ? 'Edge' : /OPR\//.test(u) ? 'Opera' : /Firefox\//.test(u) ? 'Firefox' : /Chrome\//.test(u) ? 'Chrome' : /Safari\//.test(u) ? 'Safari' : 'Browser') + (/Mobi/.test(u) ? ' (mobile)' : ''); })();
+  const newWid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  // what counts as progress (not the shop restocking or which hero you looked at last)
+  function progFp(p) {
+    try { return JSON.stringify([p.gold || 0, p.ink || 0, p.rerollTokens || 0, (p.stash || []).map(x => x.id).sort().join(','), (p.history || []).length,
+      Object.keys(p.chars || {}).sort().map(k => { const c = p.chars[k]; return [k, c.name, c.runs || 0, c.bossKills || 0, (c.deck || []).map(x => x.id + ':' + (x.rank || 0) + ':' + (x.xp || 0)).sort().join(','), (c.cards || []).map(x => x.id).sort().join(','), (c.gear || []).map(g => g.id || g.name).sort().join(','), Math.round(Object.values(c.codexes || {}).reduce((t, x) => t + (x.xp || 0), 0)), JSON.stringify(c.mapBest || {}), JSON.stringify(c.codexes ? Object.entries(c.codexes).map(([k2, x]) => [k2, x.picks]) : [])]; })]); } catch (e) { return ''; }
+  }
+  const SY = { cloud: false, ready: false, busy: null, conflict: null, checkAt: 0, err: null };
+  function writeLocal() { try { localStorage.setItem(LS, JSON.stringify(profile)); } catch (e) {} }
   function save() {
-    profile.savedAt = Date.now();
-    try { localStorage.setItem(LS, JSON.stringify(profile)); } catch (e) {}
+    profile.savedAt = Date.now(); profile.wid = newWid(); profile.dev = DEV;
+    writeLocal();
+    if (supa) { if (supaUser && SY.ready && !SY.conflict) cloudPush(); renderSaveNote(); return; }
     if (dbRef && !saveQueued) {
       saveQueued = true;
       saving = saving.then(async () => { saveQueued = false; try { await dbRef.set({ json: JSON.stringify(profile), savedAt: profile.savedAt }); storeKind = supaUser ? 'cloud' : 'account'; } catch (e) { storeKind = 'local'; } renderSaveNote(); });
@@ -4222,6 +4241,111 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     renderSaveNote();
   }
   function loadLocal() { let p = null; try { p = JSON.parse(localStorage.getItem(LS) || 'null'); } catch (e) {} profile = CBHub.fix(p); heroKey = profile.last.cls || 'Warrior'; }
+  const hasHeroes = (p) => !!(p && p.chars && Object.keys(p.chars).length);
+  function profSummary(p) {
+    const hs = Object.values(p.chars || {}).map(c => `<li><b style="color:${CC[c.cls] || 'var(--text)'}">${esc(c.name)}</b> <span class="muted">${esc(c.cls)}</span> &middot; power ${CBHub.powerLevel(c)} &middot; ${c.runs || 0} runs${c.bossKills ? ` &middot; ${c.bossKills} boss kills` : ''}</li>`).join('');
+    return `<ul class="syhero">${hs || '<li class="muted">No heroes</li>'}</ul><p class="muted" style="margin:4px 0 0">${(p.gold || 0).toLocaleString()} gold &middot; ${(p.stash || []).length} items in the stash &middot; last saved ${p.savedAt ? new Date(p.savedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'unknown'}${p.dev ? ' on ' + esc(p.dev) : ''}</p>`;
+  }
+  // ----- backups: the last few versions this browser replaced (localStorage), and copies in the account (profile_backups table)
+  const BK = 'cb-backups';
+  function backupsLocal() { try { return JSON.parse(localStorage.getItem(BK) || '[]'); } catch (e) { return []; } }
+  function backupLocal(p, why) {
+    if (!hasHeroes(p)) return; let list = backupsLocal().filter(b => !(b.wid && b.wid === p.wid) && b.fp !== progFp(p));
+    list.unshift({ at: Date.now(), why, dev: DEV, wid: p.wid || null, fp: progFp(p), json: JSON.stringify(p) }); list = list.slice(0, 5);
+    for (let n = list.length; n > 0; n--) { try { localStorage.setItem(BK, JSON.stringify(list.slice(0, n))); return; } catch (e) {} }
+  }
+  async function cloudBackup(p, why) {
+    if (!supa || !supaUser || !hasHeroes(p)) return;
+    try {
+      const { error } = await supa.from('profile_backups').insert({ user_id: supaUser.id, data: p, reason: why, device: DEV });
+      if (error) { if (!/relation|does not exist|schema cache/i.test(error.message || '')) console.warn('backup', error); return; }
+      const { data } = await supa.from('profile_backups').select('id').eq('user_id', supaUser.id).order('created_at', { ascending: false }).range(30, 200); // keep the newest 30
+      if (data && data.length) await supa.from('profile_backups').delete().in('id', data.map(r => r.id));
+    } catch (e) {}
+  }
+  // ----- cloud sync
+  let pushQ = false;
+  function cloudPush() { if (pushQ) return; pushQ = true; saving = saving.then(async () => { pushQ = false; await pushNow(); }); }
+  async function pushNow() {
+    if (!supa || !supaUser || SY.conflict || !SY.ready) return;
+    const snap = JSON.parse(JSON.stringify(profile)), base = profile.base, id = supaUser.id, at = new Date(snap.savedAt || Date.now()).toISOString();
+    const once = async () => {
+      if (!SY.cloud || !base) { const { error } = await supa.from('profiles').upsert({ user_id: id, data: snap, updated_at: at }); if (error) throw error; return true; }
+      const { data, error } = await supa.from('profiles').update({ data: snap, updated_at: at }).eq('user_id', id).eq('data->>wid', base).select('user_id');
+      if (error) throw error; return !!(data && data.length);
+    };
+    try {
+      let ok; try { ok = await once(); } catch (e) { if (!/jwt|expired|token/i.test(e.message || '')) throw e; await supa.auth.refreshSession(); ok = await once(); }
+      if (!ok) { await cloudCheck('push refused'); return; } // the account changed under us: sort it out instead of overwriting
+      SY.cloud = true; SY.err = null; profile.base = snap.wid; profile.baseFp = progFp(snap); writeLocal(); storeKind = 'cloud';
+      let day = ''; try { day = localStorage.getItem('cb-bk-day') || ''; } catch (e) {}
+      const today = new Date().toISOString().slice(0, 10); if (day !== today) { try { localStorage.setItem('cb-bk-day', today); } catch (e) {} cloudBackup(snap, 'daily'); }
+    } catch (e) { storeKind = 'local'; SY.err = e.message || String(e); }
+    renderSaveNote();
+  }
+  function adopt(remote) {
+    remote.base = remote.wid || null; remote.baseFp = progFp(remote);
+    profile = remote; heroKey = profile.chars[heroKey] ? heroKey : (profile.last.cls && profile.chars[profile.last.cls] ? profile.last.cls : Object.keys(profile.chars)[0] || 'Warrior');
+    writeLocal(); if (!run && !cb) { renderHub(); if (!$('scrTitle').hidden) renderTitle(); }
+  }
+  async function cloudCheck(why) {
+    if (!supa || !supaUser) return; if (SY.busy) return SY.busy;
+    SY.busy = (async () => {
+      const { data: row, error } = await supa.from('profiles').select('data').eq('user_id', supaUser.id).maybeSingle(); if (error) throw error;
+      const remote = row && row.data ? CBHub.fix(row.data) : null; SY.cloud = !!remote; SY.checkAt = Date.now();
+      const L = profile;
+      if (!remote) { SY.ready = true; if (hasHeroes(L)) cloudPush(); return; }
+      if (remote.wid && remote.wid === L.wid) { L.base = remote.wid; L.baseFp = progFp(remote); writeLocal(); SY.ready = true; return; }       // already the same
+      if (remote.wid && L.base === remote.wid) { SY.ready = true; if (L.wid !== L.base) cloudPush(); return; }                                // the account is where we left it: this browser is newer
+      const fpL = progFp(L), fpR = progFp(remote);
+      const localMoved = hasHeroes(L) && (L.baseFp ? fpL !== L.baseFp : true) && fpL !== fpR;
+      if (!localMoved) { if (hasHeroes(L) && fpL !== fpR) backupLocal(L, `replaced by the account save (${why})`); adopt(remote); SY.ready = true; return; }
+      if (!hasHeroes(remote)) { SY.ready = true; L.base = remote.wid || null; cloudPush(); return; }                                            // the account is empty: keep ours
+      // both sides made progress since they last agreed: never overwrite silently. Back up both and ask.
+      backupLocal(L, 'conflict: this browser'); backupLocal(remote, 'conflict: account');
+      cloudBackup(L, 'conflict: ' + DEV); cloudBackup(remote, 'conflict: account');
+      SY.conflict = { local: L, remote }; showConflict();
+    })().catch(e => { SY.err = e.message || String(e); storeKind = 'local'; renderSaveNote(); }).finally(() => { SY.busy = null; });
+    return SY.busy;
+  }
+  function showConflict() {
+    const K = SY.conflict; if (!K) return;
+    modal(`<h2>Two different saves</h2><p>This browser (${esc(DEV)}) and your account each have progress the other doesn't. Pick the one to keep. <b>The other is not lost:</b> it is kept as a backup you can restore any time from Menu &gt; Save backups.</p>
+      <div class="sycmp"><div><h3>This browser</h3>${profSummary(K.local)}<button class="btn primary" id="syLocal">Keep this browser's</button></div><div><h3>Your account</h3>${profSummary(K.remote)}<button class="btn primary" id="syRemote">Keep the account's</button></div></div>`);
+    $('modalBox').classList.add('wide');
+    $('syLocal').onclick = () => { const K2 = SY.conflict; SY.conflict = null; profile = K2.local; profile.base = K2.remote.wid || null; SY.cloud = true; SY.ready = true; closeModal(); save(); toast('Kept this browser\'s progress. The account\'s version is saved as a backup.'); };
+    $('syRemote').onclick = () => { const K2 = SY.conflict; SY.conflict = null; adopt(K2.remote); SY.ready = true; closeModal(); toast('Kept the account\'s progress. This browser\'s version is saved as a backup.'); };
+  }
+  // another browser may have saved while this one sat open: look before playing on
+  async function cloudPeek() {
+    if (!supa || !supaUser || !SY.ready || SY.busy || run || cb) return;
+    if (SY.conflict) { if ($('modal').hidden) showConflict(); return; }
+    if (Date.now() - SY.checkAt < 30000) return; SY.checkAt = Date.now();
+    try { const { data } = await supa.from('profiles').select('wid:data->>wid').eq('user_id', supaUser.id).maybeSingle(); const w = data && data.wid;
+      if (w && w !== profile.base && w !== profile.wid) cloudCheck('another browser saved'); } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) cloudPeek(); }); window.addEventListener('focus', () => cloudPeek()); setInterval(cloudPeek, 60000);
+  // Menu > Save backups: restore an older version (the current one is backed up first)
+  async function openBackups() {
+    const loc = backupsLocal(); let cloud = [], cerr = '';
+    if (supa && supaUser) { try { const { data, error } = await supa.from('profile_backups').select('id, created_at, reason, device, data').eq('user_id', supaUser.id).order('created_at', { ascending: false }).limit(30); if (error) cerr = /relation|does not exist|schema cache/i.test(error.message || '') ? 'Account backups need a one-time database update (supabase/backups.sql).' : error.message; else cloud = data || []; } catch (e) { cerr = String(e.message || e); } }
+    const row = (src, i, at, why, dev, p) => `<div class="sybk"><div><b>${new Date(at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</b> <span class="muted">${esc(why || '')}${dev ? ' &middot; ' + esc(dev) : ''}</span>${profSummary(p)}</div><button class="btn" data-syrest="${src}:${i}">Restore</button></div>`;
+    const lp = loc.map(b => { try { return JSON.parse(b.json); } catch (e) { return null; } });
+    modal(`<h2>Save backups</h2><p class="muted">Restoring replaces your current progress everywhere you sign in. Your current progress is backed up first.</p>
+      <h3>In your account</h3>${cerr ? `<p class="muted">${esc(cerr)}</p>` : cloud.length ? cloud.map((b, i) => row('c', i, b.created_at, b.reason, b.device, b.data || {})).join('') : '<p class="muted">None yet. One is made every day you play, and whenever two saves disagree.</p>'}
+      <h3>In this browser</h3>${loc.length ? loc.map((b, i) => lp[i] ? row('l', i, b.at, b.why, b.dev, lp[i]) : '').join('') : '<p class="muted">None.</p>'}
+      <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
+    $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal;
+    $('modalBox').querySelectorAll('[data-syrest]').forEach(b => b.onclick = () => {
+      if (run || cb) return toast('Finish your run or fight first.');
+      const [src, i] = b.dataset.syrest.split(':'), data = src === 'c' ? cloud[+i] && cloud[+i].data : lp[+i]; if (!data) return;
+      if (!confirm('Restore this backup? Your current progress is backed up first.')) return;
+      backupLocal(profile, 'before a restore'); cloudBackup(profile, 'before a restore');
+      const keepBase = profile.base, keepCloud = SY.cloud; profile = CBHub.fix(JSON.parse(JSON.stringify(data))); profile.base = keepBase; SY.cloud = keepCloud;
+      heroKey = profile.last.cls && profile.chars[profile.last.cls] ? profile.last.cls : Object.keys(profile.chars)[0] || 'Warrior';
+      save(); closeModal(); renderHub(); if (!$('scrTitle').hidden) renderTitle(); toast('Backup restored.');
+    });
+  }
   // ---------- accounts and cloud saves (Supabase), when the game runs on its own site
   async function connectSupabase() {
     const C = window.CB_CONFIG;
@@ -4232,24 +4356,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     window.addEventListener('focus', renew); window.addEventListener('online', renew); setInterval(renew, 10 * 60 * 1000);
     supa.auth.onAuthStateChange((ev, session) => {
       if (session && (!supaUser || supaUser.id !== session.user.id)) attachSupaUser(session.user);
-      if (!session && supaUser) { socStop(); supaUser = null; dbRef = null; storeKind = 'local'; renderAccount(); renderSaveNote(); }
+      if (!session && supaUser) { socStop(); supaUser = null; dbRef = null; storeKind = 'local'; SY.ready = false; SY.cloud = false; SY.conflict = null; renderAccount(); renderSaveNote(); }
     });
     const { data } = await supa.auth.getSession();
     if (data && data.session) await attachSupaUser(data.session.user); else { renderAccount(); renderSaveNote(); }
   }
   async function attachSupaUser(u) {
-    supaUser = u; renderAccount();
-    try {
-      const { data: row, error } = await supa.from('profiles').select('data').eq('user_id', u.id).maybeSingle();
-      if (error) throw error;
-      // a sign-in token lasts an hour; if it lapsed (laptop asleep, tab in the background), renew it and try the save once more
-      const up = (o) => supa.from('profiles').upsert({ user_id: u.id, data: JSON.parse(o.json), updated_at: new Date(o.savedAt).toISOString() });
-      dbRef = { set: async (o) => { let { error: e } = await up(o); if (e && /jwt|expired|token/i.test(e.message || '')) { await supa.auth.refreshSession(); ({ error: e } = await up(o)); } if (e) throw e; } };
-      storeKind = 'cloud';
-      if (row && row.data) { const remote = CBHub.fix(row.data); if ((remote.savedAt || 0) > (profile.savedAt || 0)) { profile = remote; heroKey = profile.last.cls || heroKey; } }
-      if (!run) { renderHub(); if (!$('scrTitle').hidden) renderTitle(); }
-      save();
-    } catch (e) { dbRef = null; storeKind = 'local'; toast('Signed in, but your online save could not be reached (' + (e.message || e) + '). Progress keeps saving in this browser.'); }
+    supaUser = u; renderAccount(); SY.ready = false; SY.conflict = null;
+    await cloudCheck('sign-in');
+    if (SY.err && !SY.ready) toast('Signed in, but your online save could not be reached (' + SY.err + '). Progress keeps saving in this browser.');
+    else if (SY.ready) storeKind = 'cloud';
+    if (!run && !SY.conflict) { renderHub(); if (!$('scrTitle').hidden) renderTitle(); }
     renderAccount(); renderSaveNote(); socStart();
   }
   function acctName(u) { const m = (u && u.user_metadata) || {}; return (m.custom_claims && m.custom_claims.global_name) || m.full_name || m.name || m.user_name || (u && u.email) || 'Signed in'; }
@@ -5743,8 +5860,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793554280998';
-  const CB_BUILD = '48d907d0df'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793557113012';
+  const CB_BUILD = '68a83a3f26'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -6314,7 +6431,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   }
   // publish one hero (throttled to once a minute unless forced)
   async function publishHero(key, force) {
-    if (!supa || !supaUser) return; const c = profile.chars[key]; if (!c) return;
+    if (!supa || !supaUser || !SY.ready || SY.conflict) return; // never publish a copy that hasn't been reconciled with the account
+    const c = profile.chars[key]; if (!c) return;
     if (!force && Date.now() - (REC.pubAt[key] || 0) < 60000) return; REC.pubAt[key] = Date.now();
     const row = { user_id: supaUser.id, hero_key: key, hero_name: c.name, hero_class: c.cls, guild_name: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null,
       progress: CBHub.progressScore(c), power: CBHub.powerLevel(c), maps: c.mapBest || {}, snapshot: heroSnapshot(c), updated_at: new Date().toISOString() };
@@ -6437,7 +6555,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   });
   function openRecords() { closeTalk(); openSheet('records'); }
   // publish this player's heroes a little after signing in, so the board fills up without anyone opening it
-  setTimeout(function pubLater() { if (supa && supaUser && profile && Object.keys(profile.chars || {}).length) publishAllHeroes(true); else setTimeout(pubLater, 15000); }, 8000);
+  setTimeout(function pubLater() { if (supa && supaUser && profile && Object.keys(profile.chars || {}).length && SY.ready && !SY.conflict) publishAllHeroes(true); else setTimeout(pubLater, 15000); }, 8000);
 
   // ---------- the Bazaar (east of the main street): stand in the round market, set up shop, list stash items at your price.
   // While your shop is open you stay put and others can click you to browse and buy. Sales go player to player:
@@ -6802,6 +6920,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Fix', 'Saves no longer get overwritten between browsers. Before, a browser with old progress could look "newest" just by being opened, overwrite your account, and then wipe the good progress in your other browser when it signed in. Now every save knows which account version it came from: a browser only uploads if the account hasn\'t moved on, picks up the account\'s progress when it has nothing new of its own, and if both have new progress it asks you which to keep.'],
+      ['Feature', 'Save backups (Menu > Save backups): the version you don\'t pick in a save conflict is kept, plus one backup a day in your account (the newest 30) and the last few versions this browser replaced. Restore any of them with one click.'],
       ['Feature', 'Hardcore heroes: tick Hardcore when you create a hero. They get one life: the first time a hardcore hero falls in a fight (duels and the training dummy don\'t count) it becomes a normal hero. The Hall of Records has a Hardcore tab: a ladder of living hardcore heroes and a graveyard of the fallen.'],
       ['Feature', 'The Arena: the old south palisade has a gap now, leading to a sand ring with Arenamaster Kord and the Wager Board. Pin a wager (up to 3 stash items and/or gold), other players answer with offers of their own, and you accept, decline or counter. While a wager or offer is open that hero\'s gear and deck are locked and both sides can see each other\'s hero. Accept and you duel: the winner takes the other stake, a draw gives both back, leaving early forfeits.'],
       ['Art', 'A statue of Juss lies in the fire plaza: a fallen warrior slumped face down across a plinth, a sword through his back. Read the plaque.'],
@@ -8676,6 +8796,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       ${!run && !cb && !onTitle && typeof openRecords === 'function' ? `<button class="btn" id="mnRec">Hall of Records (leaderboards)</button>` : ''}
       ${!run && !onTitle ? `<button class="btn" id="mnHeroes">Switch hero</button>` : ''}
       ${!run && !cb && !onTitle && profile.chars[heroKey] ? `<button class="btn" id="mnDelHero">Delete ${esc(profile.chars[heroKey].name)}...</button><button class="btn" id="mnWipe">Start fresh (delete everything)...</button>` : ''}
+      ${supa && !run && !cb ? `<button class="btn" id="mnBackups">Save backups (restore older progress)</button>` : ''}
       ${supa ? (supaUser ? `<button class="btn" id="mnSignOut">Sign out (${esc(acctName(supaUser))})</button>` : `<button class="btn" id="mnSignIn">Sign in to save online</button>`) : ''}
       ${typeof socOn === 'function' && socOn() ? `<button class="btn" id="mnNet">Connection details (co-op)</button>` : ''}
       <h3 style="font-size:20px;margin-top:6px">Settings</h3>
@@ -8705,6 +8826,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if ($('mnHeroes')) $('mnHeroes').onclick = () => { closeModal(); $('sheet').hidden = true; show('title'); };
     if ($('mnSignIn')) $('mnSignIn').onclick = signInModal;
     if ($('mnSignOut')) $('mnSignOut').onclick = async () => { closeModal(); await supa.auth.signOut(); };
+    if ($('mnBackups')) $('mnBackups').onclick = () => { closeModal(); openBackups(); };
   }
   function toTown() {
     if (run && run.over && !run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run, run.myMi); save(); if (typeof publishHero === 'function') publishHero(heroKey, true); }
