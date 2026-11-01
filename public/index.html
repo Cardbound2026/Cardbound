@@ -1729,7 +1729,7 @@ const STARTER_DECKS = {
     ['balanced', 'Balanced', 'Stabs, Dodge and a taste of Stealth, Bleed and Poison.', null],
     ['assassin', 'Assassin', 'Slip into Stealth and strike for double damage.', [['assassinate', 1], ['eviscerate', 1], ['shadow_dance', 1], ['ambush', 1], ['hide', 1], ['shadow_cloak', 1], ['backstab', 4], ['stab', 4], ['evade', 4], ['cheap_shot', 2]]],
     ['poisoner', 'Poisoner', 'Stack Poison (scales with Strength) and let it work.', [['plague_bloom', 1], ['deadly_toxin', 1], ['virulence', 1], ['crippling_poison', 1], ['fester', 1], ['toxic_cloud', 1], ['envenom', 4], ['poisoned_blade', 4], ['evade', 4], ['stab', 2]]],
-    ['bladedancer', 'Bladedancer', 'Many small hits, Bleed and thrown Shurikens.', [['rupture', 1], ['arterial_strike', 1], ['storm_of_steel', 1], ['garrote', 1], ['ribbon_cuts', 1], ['shuriken_volley', 1], ['serrated_edge', 4], ['blade_dance', 3], ['twin_daggers', 3], ['evade', 4]]],
+    ['starthrower', 'Star Thrower', 'Bury them in Shurikens: make lots of free throwing stars and make each one hit harder.', [['shuriken_storm', 1], ['storm_of_steel', 1], ['shuriken_mastery', 1], ['hidden_pockets', 1], ['shuriken_volley', 2], ['throwing_stars', 8], ['evade', 4], ['twin_daggers', 2]]],
   ],
   Mage: [
     ['balanced', 'Balanced', 'Fire, Frost and Arcane with Barrier to stay safe.', null],
@@ -5088,8 +5088,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793502481564';
-  const CB_BUILD = 'a4d22e5ea2'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793502867797';
+  const CB_BUILD = 'd59f7c0ead'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -5788,6 +5788,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Balance', 'New Rogue starting deck, Star Thrower, replacing Bladedancer: all-in on Shurikens. Shuriken Storm (Gold), Storm of Steel and Shuriken Mastery (Blue), Hidden Pockets and 2 Shuriken Volley (Green), then 8 Throwing Stars, 4 Evade and 2 Twin Daggers. Heroes already made with Bladedancer keep their deck.'],
       ['Fix', 'Fights hold still: heroes and monsters now share one figure size picked from the busier side (a duo no longer gets shrunk to raid size), each side keeps fixed columns so nobody jumps when a mob dies, and the battlefield keeps the same height whatever is in your hand. Big hands overlap more instead of stretching the screen, and long turn orders shrink instead of wrapping.'],
       ['Fix', 'The gold box around the hero whose turn it is is gone: the turn order already shows it, and the active figure gets a soft gold glow instead.'],
       ['Feature', 'The chat column in a fight resizes like the combat log: drag its right edge, bottom edge or corner (double-click a handle to reset).'],

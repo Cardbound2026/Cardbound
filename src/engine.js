@@ -715,7 +715,7 @@ const STARTER_DECKS = {
     ['balanced', 'Balanced', 'Stabs, Dodge and a taste of Stealth, Bleed and Poison.', null],
     ['assassin', 'Assassin', 'Slip into Stealth and strike for double damage.', [['assassinate', 1], ['eviscerate', 1], ['shadow_dance', 1], ['ambush', 1], ['hide', 1], ['shadow_cloak', 1], ['backstab', 4], ['stab', 4], ['evade', 4], ['cheap_shot', 2]]],
     ['poisoner', 'Poisoner', 'Stack Poison (scales with Strength) and let it work.', [['plague_bloom', 1], ['deadly_toxin', 1], ['virulence', 1], ['crippling_poison', 1], ['fester', 1], ['toxic_cloud', 1], ['envenom', 4], ['poisoned_blade', 4], ['evade', 4], ['stab', 2]]],
-    ['bladedancer', 'Bladedancer', 'Many small hits, Bleed and thrown Shurikens.', [['rupture', 1], ['arterial_strike', 1], ['storm_of_steel', 1], ['garrote', 1], ['ribbon_cuts', 1], ['shuriken_volley', 1], ['serrated_edge', 4], ['blade_dance', 3], ['twin_daggers', 3], ['evade', 4]]],
+    ['starthrower', 'Star Thrower', 'Bury them in Shurikens: make lots of free throwing stars and make each one hit harder.', [['shuriken_storm', 1], ['storm_of_steel', 1], ['shuriken_mastery', 1], ['hidden_pockets', 1], ['shuriken_volley', 2], ['throwing_stars', 8], ['evade', 4], ['twin_daggers', 2]]],
   ],
   Mage: [
     ['balanced', 'Balanced', 'Fire, Frost and Arcane with Barrier to stay safe.', null],
