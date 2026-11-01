@@ -102,4 +102,6 @@ const NPCS = {
   raidwarden: { scheme: 'pilgrim', face: 'orc', hair: 'mohawk', beard: 'mutton', mark: 'paint', items: ['helm_3', 'plate_2', 'pauldron_2', 'glovemetal_2', 'belt_3', 'greaves_3', 'sabatons_0', 'banner_0', 'greataxe_1', 'none_0'] },
   archivist: { scheme: 'funeral', face: 'mystic', hair: 'swept', beard: 'stubble', mark: 'runes', items: ['hat_3', 'cloth_3', 'mantle_3', 'glovewrap_2', 'supply_2', 'skirt_3', 'footwrap_1', 'pack_2', 'staff_2', 'book_0'] },
 };
-if (typeof module !== 'undefined') module.exports = { HEROES, NPCS, spec };
+// classes that are not playable yet: drawn for the campfire on the create-a-hero screen only (hero_<name>.webp, not in the manifest)
+const PREVIEW = { Shaman: { scheme: 'moss', face: 'orc', hair: 'mohawk', beard: 'braided', mark: 'paint', items: ['none_0', 'leather_2', 'mantle_1', 'gloveleather_2', 'ritualbelt_1', 'pants_2', 'boot_2', 'cape_2', 'staff_2', 'light_2'] } };
+if (typeof module !== 'undefined') module.exports = { HEROES, NPCS, PREVIEW, spec };

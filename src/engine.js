@@ -559,7 +559,7 @@ function makeCodex(data, rng, key, level) {
   const name = cx.name + ' Codex', G = data.gear;
   const fake = Object.assign({}, data, { gear: Object.assign({}, G, { bases: G.bases.concat([{ name, arch: 'Codex', label: cx.cls + ' Codex' }]) }) });
   const it = rollItem(fake, rng, name, 'Blue', level || 0);
-  return Object.assign(it, { slot: 'Codex', rarity: 'Codex', codex: key, cls: cx.cls, label: cx.cls + ' Codex', passive: cx.text });
+  return Object.assign(it, { slot: 'Codex', rarity: 'Codex', codex: key, cls: cx.cls, label: cx.cls + ' Codex', passive: cx.text, rerolls: 0 });
 }
 const atkOnce = (p, key) => p.turn && p.turn[key];
 Object.assign(POWERS, {
@@ -1857,7 +1857,38 @@ function rollItem(data, rng, baseName, rarity, level) {
   const maxPts = (G.implicitMax + 4 * G.affixMax) * 1.3 * lv;
   const ilvl = Math.max(1, Math.min(100, Math.round(5 * level + 5 * Math.min(1, points / maxPts))));
   const slot = /Shield|Focus/.test(A.slot) ? 'Off-hand' : /Axe|Sword|Dagger|Mace|Wand|Maul|Warhammer|Staff/.test(A.slot) ? 'Weapon' : A.slot;
-  return { name: baseName, label: b.label, arch: b.arch, slot, hands: A.hands, rarity, ilvl, stats, imp2, lines, level };
+  const out = { name: baseName, label: b.label, arch: b.arch, slot, hands: A.hands, rarity, ilvl, stats, imp2, lines, level };
+  out.rerolls = rerollPotential(out); return out;
+}
+// ---------- Rerolls (Nov 1): every item drops with a reroll potential (White 0-1, Green 1-2, Blue 2-3, Purple 3-4). Spending a Reroll Token
+// and one point of potential rerolls one affix line of your choice: a new stat and value, rolled like a fresh drop of the same base, rarity and
+// map level. Codexes can't be rerolled; they break down into Reroll Tokens instead. The potential comes from the item's own rolls (no extra RNG).
+const REROLL_BASE = { White: 0, Green: 1, Blue: 2, 'Purple (Epic)': 3 };
+function rerollPotential(it) { if (!it || !it.lines || !it.lines.length || it.slot === 'Codex') return 0; let h = 7; for (const l of it.lines) h = (h * 31 + l.v * 7 + l.stat.length) % 1000003; return (REROLL_BASE[it.rarity] || 0) + (h % 2); }
+const CODEX_TOKENS = (it) => 3 + Math.floor((it && it.level || 0) / 2);
+function itemPoints(G, b, it) { // the points an item rolled (its implicit plus every affix), for its item level
+  const twoH = (G.arche[b.arch] || {}).hands && G.arche[b.arch].hands.startsWith('2H') ? G.twoHand : 1, base = (k) => k.split(':')[0];
+  let pts = 0; const onLines = {}; for (const l of it.lines || []) { const st = G.stats[base(l.stat)]; if (st) pts += l.v * st.pts / twoH; onLines[l.stat] = (onLines[l.stat] || 0) + l.v; }
+  const impKey = Object.keys(it.stats || {}).find(k => k.startsWith('Resistance:') && (it.stats[k] - (onLines[k] || 0)) > 0);
+  if (impKey) { const st = G.stats['Map resistance (implicit)']; if (st) pts += (it.stats[impKey] - (onLines[impKey] || 0)) * st.pts / twoH; }
+  return pts;
+}
+function rerollAffix(data, rng, it, idx) {
+  gearData(data); gearRules(data.gear);
+  const G = data.gear, b = G.bases.find(x => x.name === it.name); if (!b || !it.lines || !it.lines[idx]) return null;
+  const A = G.arche[b.arch], R = G.rarity.find(r => r.name === it.rarity); if (!A || !R) return null;
+  const level = it.level || 0, lv = Math.pow(G.levelGrowth, level), mult = R.mult * lv, twoH = A.hands && A.hands.startsWith('2H') ? G.twoHand : 1;
+  const weights = Object.entries(A.weights).filter(([st]) => it.rarity === 'Purple (Epic)' || st !== 'Efficiency');
+  const tot = weights.reduce((t, [, w]) => t + w, 0) / (1 - G.resChance);
+  let pick = rng() * tot, stat = 'Resistance'; for (const [st, w] of weights) { if (pick < w) { stat = st; break; } pick -= w; }
+  const S = G.stats[stat], lo = Math.max(1, Math.round(S.min * mult * twoH)), hi = Math.max(lo, Math.round(S.max * mult * twoH)), v = ri(rng, lo, hi);
+  const ELS = ['Fire', 'Frost', 'Nature', 'Arcane', 'Shadow', 'Holy'];
+  let key = stat; if (stat === 'Resistance') key = 'Resistance:' + ELEMENTS[ri(rng, 0, 5)]; if (stat === 'Elemental/Holy Damage') key = 'Elemental/Holy Damage:' + ELS[ri(rng, 0, 5)];
+  const old = it.lines[idx]; it.stats = Object.assign({}, it.stats); it.stats[old.stat] = (it.stats[old.stat] || 0) - old.v; if (it.stats[old.stat] <= 0) delete it.stats[old.stat];
+  it.stats[key] = (it.stats[key] || 0) + v; it.lines = it.lines.slice(); it.lines[idx] = { stat: key, v, lo, hi };
+  const maxPts = (G.implicitMax + 4 * G.affixMax) * 1.3 * lv;
+  it.ilvl = Math.max(1, Math.min(100, Math.round(5 * level + 5 * Math.min(1, itemPoints(G, b, it) / maxPts))));
+  return { old, now: it.lines[idx] };
 }
 // ---------- card ranks (Draft 10/11 rules, simplified for the prototype)
 // Cards with a big number (8+) grow it 10% of base per rank (White/Green) or 8% (Blue/Gold); +10 is about double.
@@ -2139,6 +2170,21 @@ if (C.mana_gem) C.mana_gem.cost = 0;
 // Nov 1: anything that lasts for the rest of combat exhausts (so it can't be stacked by replaying it)
 for (const k of Object.keys(C)) { const d = C[k]; if (d.designOnly || d.type === 'Status' || d.type === 'Power' || d.exhaust) continue;
   if (/for the rest of (the )?(combat|fight)/i.test(d.text || '')) { d.exhaust = true; if (!/Exhaust\.?\s*$/.test(d.text)) d.text = d.text.replace(/\s*$/, '') + ' Exhaust.'; } }
+// Nov 1: Blood Debt (Bloodbound) ties together. Blood Reckoning heals 2x your Blood Debt (and spends it); 8 new Warrior cards that build and spend it.
+DEBT_CARDS.push('blood_reckoning');
+const spendDebt = (p, pct) => { const n = Math.round(p.bloodDebt * (pct == null ? 1 : pct)); p.bloodDebt -= n; return n; };
+if (C.blood_reckoning) Object.assign(C.blood_reckoning, { text: 'Spread all Bleed on you to all enemies and double it. Then deal damage equal to all Bleed on enemies. Heal for 2x your stored Blood Debt, then clear it.',
+  play: (cb, t) => { const p = cb.player, b = p.bleed; p.bleed = 0; for (const e of cb.alive()) { e.bleed += b * 2; e.bleedBy = p.id; } for (const e of cb.alive()) if (!cb.over && e.bleed > 0) cb.hit(e, e.bleed, 'Blood Reckoning'); const d = spendDebt(p); if (d > 0) cb.heal(p, 2 * d, 'Blood Reckoning'); else say(cb, 'No Blood Debt to heal from.'); } });
+const debtCard = (key, name, rarity, type, cost, target, text, play, tags, ex) => { card(key, Object.assign({ cls: 'Warrior', name, rarity, type, cost, target, dtype: type === 'Attack' ? 'Physical' : undefined, text, play: (cb, t) => play(cb, t, cb.player), tags: tags || {} }, ex || {})); DEBT_CARDS.push(key); };
+debtCard('call_the_debt', 'Call the Debt', 'Blue', 'Attack', 0, 'enemy', 'Deal damage equal to 80% of your stored Blood Debt, then clear it.', (cb, t, p) => { const n = spendDebt(p); D_(cb, t, n * 0.8, 'Call the Debt'); }, { dmg: 1, debt: 1 });
+debtCard('reclaim_blood', 'Reclaim Blood', 'White', 'Skill', 0, 'self', 'Consume your stored Blood Debt: heal for 30% of it.', (cb, t, p) => { const n = spendDebt(p); if (n) cb.heal(p, Math.round(n * 0.3), 'Reclaim Blood'); else say(cb, 'No Blood Debt stored.'); }, { heal: 1, debt: 1 });
+debtCard('crimson_bulwark', 'Crimson Bulwark', 'Green', 'Skill', 10, 'self', 'Spend half your stored Blood Debt: gain double that much Block.', (cb, t, p) => { const n = spendDebt(p, 0.5); if (n) cb.gainDef(2 * n); else say(cb, 'No Blood Debt stored.'); }, { def: 1, debt: 1 });
+debtCard('debt_spiral', 'Debt Spiral', 'Green', 'Attack', 10, 'enemy', 'Deal 6 damage, plus 1 for every 2 Blood Debt you have stored (it is not spent).', (cb, t, p) => D_(cb, t, 6 + Math.floor(p.bloodDebt / 2), 'Debt Spiral'), { dmg: 6, debt: 1 });
+debtCard('sanguine_cleave', 'Sanguine Cleave', 'Blue', 'Attack', 20, 'all', 'Deal damage to all enemies equal to 50% of your stored Blood Debt, then clear it. Breaks Stealth.', (cb, t, p) => { const n = spendDebt(p); DA(cb, n * 0.5, 'Sanguine Cleave'); }, { dmg: 1, aoe: 1, debt: 1 });
+debtCard('blood_oath', 'Blood Oath', 'White', 'Skill', 10, 'self', 'Lose 5 HP. Gain 12 Block.', (cb, t, p) => { cb.loseHp(p, 5, 'Blood Oath'); cb.gainDef(12); }, { def: 12, debt: 1 });
+debtCard('vengeful_wound', 'Vengeful Wound', 'Green', 'Attack', 10, 'enemy', 'Deal 8 damage. Apply Bleed equal to 25% of your stored Blood Debt (it is not spent).', (cb, t, p) => { const e = D_(cb, t, 8, 'Vengeful Wound'); const n = Math.round(p.bloodDebt * 0.25); if (e && e.hp > 0 && n > 0) cb.applyDot(e, 'bleed', n); }, { dmg: 8, debt: 1 });
+POWERS.usury = { turnStart: (cb, p, ...a) => { const n = Math.round(p.bloodDebt * 20 * cb.rkm('pct') / 100); if (n > 0) { p.strTurn += n; say(cb, `Usury: +${n} Strength this turn from your Blood Debt.`); } } };
+debtCard('usury', 'Usury', 'Gold', 'Power', 20, 'self', 'At the start of each of your turns, gain Strength this turn equal to 20% of your stored Blood Debt.', (cb, t, p) => cb.addPower(p, 'usury', 'Usury', 'At the start of each of your turns, gain Strength this turn equal to 20% of your stored Blood Debt.'), { power: 1 }, { exhaust: true, powerKey: 'usury' });
 // Oct 31: Battle Trance is retired: it no longer drops or plays; owned copies become Marching Orders (hub fix)
 const REMOVED_CARDS = { battle_trance: 'marching_orders' };
 for (const k of Object.keys(REMOVED_CARDS)) if (C[k]) { C[k].designOnly = true; C[k].removed = true; }
@@ -2147,6 +2193,6 @@ if (DATA) dropRemovedLoot(DATA);
 // Oct 31: Lay on Hands and Mend Wounds can be aimed at any hero in the party (yourself if you play them solo)
 if (C.mend_wounds) Object.assign(C.mend_wounds, { target: 'ally', text: 'Heal an ally (or yourself) for 8 HP.', play: (cb, t) => cb.heal(t && t.isPlayer && t.hp > 0 ? t : cb.player, 8, 'Mend Wounds') });
 if (C.lay_on_hands) Object.assign(C.lay_on_hands, { target: 'ally', text: 'Heal an ally (or yourself) for 30% of their total HP. Exhaust.', play: (cb, t) => { const a = t && t.isPlayer && t.hp > 0 ? t : cb.player; cb.heal(a, Math.round(a.maxHp * 0.3), 'Lay on Hands'); } }); // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
-const API = { DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);

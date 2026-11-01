@@ -18,7 +18,7 @@ function newChar(cls, name, deckKey, amuletKey) {
   const seen = {}; for (const k of deck) seen[k.key] = 1;
   return { cls, name: name || cls, created: Date.now(), gear, deck, cards: [], seen, runs: 0, best: 0, bossKills: 0, gotOffense1: true, starter: (sd && sd[0]) || 'balanced' };
 }
-function newProfile() { return { v: VERSION, gold: 0, ink: 0, stash: [], chars: {}, last: { cls: 'Warrior', level: 0 }, history: [] }; }
+function newProfile() { return { v: VERSION, gold: 0, ink: 0, rerollTokens: 0, stash: [], chars: {}, last: { cls: 'Warrior', level: 0 }, history: [] }; }
 function fix(p) { // tolerate older or partial saves
   p = Object.assign(newProfile(), p || {});
   for (const [k, c] of Object.entries(p.chars)) { if (!c.cls && CLASSES[k]) c.cls = k; c.cards = c.cards || []; c.deck = c.deck || []; c.gear = c.gear || []; c.name = c.name || c.cls; }
@@ -34,6 +34,9 @@ function fix(p) { // tolerate older or partial saves
   for (const c of Object.values(p.chars)) if (!c.mapBest) { c.mapBest = {}; for (const [mk, lv] of Object.entries(c.mapKills || {})) noteMapBest(c, mk, lv, 15); for (const h of p.history || []) if (!h.raid && h.map && h.name === c.name && h.cls === c.cls) noteMapBest(c, h.map, h.level || 0, h.result === 'victory' ? 15 : (h.row || 0)); }
   // Nov 1: heroes made before the Shoulders slot get the class's starter shoulders
   for (const c of Object.values(p.chars)) if (!c.gear.some(g => g.slot === 'Shoulders')) { const st = (STARTER_GEAR[c.cls] || []).find(g => g.slot === 'Shoulders'); if (st) c.gear.push(Object.assign({ id: uid('g') }, st)); }
+  // Nov 1: rerolls. Items found before the system get their reroll potential (worked out from their own rolls); Reroll Tokens start at 0
+  p.rerollTokens = p.rerollTokens || 0;
+  for (const it of [...p.stash, ...Object.values(p.chars).flatMap(c => c.gear)]) if (it && it.rerolls == null) it.rerolls = CB.rerollPotential(it);
   return p;
 }
 // character creation: one hero per class for now, each with a name the player picks
@@ -159,6 +162,20 @@ function breakCard(p, key, cardId) {
   const c = char(p, key); const i = c ? c.cards.findIndex(x => x.id === cardId) : -1; if (i < 0) return { ok: false, why: 'Only cards in your collection can be broken down (take it out of the deck first).' };
   const g = inkValue(c.cards[i]); c.cards.splice(i, 1); p.ink = (p.ink || 0) + g; return { ok: true, ink: g };
 }
+// ---------- Rerolls (Nov 1): break a codex down into Reroll Tokens; spend a token and a point of an item's reroll potential to reroll one affix
+function findItem(p, id) { const i = p.stash.findIndex(x => x.id === id); if (i >= 0) return { it: p.stash[i], where: 'stash' }; for (const c of Object.values(p.chars)) { const g = c.gear.find(x => x.id === id); if (g) return { it: g, where: c }; } return null; }
+function breakCodex(p, itemId) {
+  const i = p.stash.findIndex(x => x.id === itemId); if (i < 0 || p.stash[i].slot !== 'Codex') return { ok: false, why: 'Only codexes in the stash can be broken down (unequip it first).' };
+  const n = CB.CODEX_TOKENS(p.stash[i]); p.stash.splice(i, 1); p.rerollTokens = (p.rerollTokens || 0) + n; return { ok: true, tokens: n };
+}
+function rerollItem(p, itemId, idx, data, rng) {
+  const f = findItem(p, itemId); if (!f) return { ok: false, why: 'Item not found.' }; const it = f.it;
+  if (it.slot === 'Codex') return { ok: false, why: 'Codexes cannot be rerolled.' };
+  if (!(it.rerolls > 0)) return { ok: false, why: 'This item has no rerolls left.' };
+  if (!((p.rerollTokens || 0) > 0)) return { ok: false, why: 'You need a Reroll Token (break down a codex).' };
+  const r = CB.rerollAffix(data, rng || CB.makeRng((Date.now() % 2147483646) + 1), it, idx); if (!r) return { ok: false, why: 'That line cannot be rerolled.' };
+  it.rerolls--; p.rerollTokens--; return { ok: true, old: r.old, now: r.now, item: it };
+}
 function craftCard(p, key, cardKey) {
   const c = char(p, key), d = CARDS[cardKey]; if (!c || !d) return { ok: false, why: 'No such card' };
   if (d.cls !== c.cls) return { ok: false, why: `Only a ${d.cls} can use that card.` };
@@ -216,6 +233,6 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk };
 }
 
-const API = { noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -45,6 +45,7 @@
       <div class="cxtop"><div class="tabs cxtabs" role="tablist">${[['decks', 'Test decks'], ['cards', `${hcls()} cards`], ['codex', 'Codexes'], ['misc', 'Gold']].map(([k, l]) => `<button role="tab" aria-selected="${TV.tab === k}" data-tvtab="${k}">${l}</button>`).join('')}</div>
         ${TV.tab === 'cards' ? `<input id="tvQ" type="search" placeholder="Search ${hcls()} cards by name or text..." value="${esc(TV.q)}" autocomplete="off">` : ''}
         <button class="btn" data-tvgold="clear" title="Sets the bank to 0 gold (to test a new player)">Clear all gold (${profile.gold})</button>
+        <button class="btn" data-tvgold="tokens" title="Reroll Tokens, spent at Jeweler Rook">+10 Reroll Tokens (${profile.rerollTokens || 0})</button>
         <button class="btn" data-tvshop="1" title="Merchant Dace normally restocks every 12 hours">Restock Merchant Dace now</button>
         <button class="btn" data-tvkit="Blue" title="Equips a full set of Blue gear for your class (the set the raid balance was tuned with). Your current gear goes to the stash; your codex stays on.">Full Blue gear kit</button>
         <button class="btn" data-tvraid="reset" title="Raid kills lock a hero out of that raid for 7 days">Reset raid lockouts</button>
@@ -83,7 +84,7 @@
     else if (b.dataset.tvshop) { CBHub.refreshShop(profile, DATA, profile.last.level || 0); save(); toast(`Merchant Dace has new stock (map level +${profile.last.level || 0}, ${DATA.maps[curMap()].name} gear).`); }
     else if (b.dataset.tvall) { const q = TV.q.toLowerCase(); let n = 0; for (const [k, d] of Object.entries(CARDS)) if (d.cls === hcls() && !d.designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(d.rarity) && (TV.rar === 'All' || d.rarity === TV.rar) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + d.rarity).toLowerCase().includes(q)) && ++n) c.cards.push({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), key: k, rank: 0 }); save(); toast(`Added ${n} ${hcls()} card${n === 1 ? '' : 's'} to ${c.name}'s collection.`); }
     else if (b.dataset.tvcx) { if (profile.stash.length >= CBHub.STASH_MAX) return toast('Stash is full.'); const it = CB.makeCodex(DATA, CB.makeRng(Date.now() % 2147483646), b.dataset.tvcx, profile.last.level || 0); profile.stash.unshift(Object.assign({ id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, it)); save(); }
-    else if (b.dataset.tvgold) { if (b.dataset.tvgold === 'clear') { profile.gold = 0; toast('Bank emptied: 0 gold.'); } else profile.gold += +b.dataset.tvgold; save(); renderTownBar(); }
+    else if (b.dataset.tvgold) { if (b.dataset.tvgold === 'tokens') { profile.rerollTokens = (profile.rerollTokens || 0) + 10; toast(`+10 Reroll Tokens (${profile.rerollTokens}).`); save(); return renderTestVendor(); } if (b.dataset.tvgold === 'clear') { profile.gold = 0; toast('Bank emptied: 0 gold.'); } else profile.gold += +b.dataset.tvgold; save(); renderTownBar(); }
     renderTestVendor();
   });
 

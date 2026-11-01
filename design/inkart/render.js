@@ -4,7 +4,7 @@
 const { chromium } = require('playwright'); const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..', '..'), OUT = path.join(ROOT, 'public', 'img', 'ink');
 const src = fs.readFileSync(path.join(ROOT, 'src', 'data.js'), 'utf8'); const DATA = JSON.parse(src.slice(src.indexOf('{'), src.lastIndexOf('}') + 1));
-const { HEROES, NPCS, spec } = require('./looks.js');
+const { HEROES, NPCS, PREVIEW, spec } = require('./looks.js');
 const BASE = 220; // image height in px for a normal fighter (shown at half size, so it stays sharp)
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
@@ -28,6 +28,7 @@ const BASE = 220; // image height in px for a normal fighter (shown at half size
       return __fit(compose(state, 540, 0, ${mirror ? 'true' : 'false'}), ${h}); })()`);
   // PAPERFORGE heads/weapons stick out above the body: a hero's image is a bit taller than BASE for the same body size
   for (const [cls, look] of Object.entries(HEROES)) { if (!want('hero_' + cls.toLowerCase())) continue; save('hero_' + cls.toLowerCase(), await pfShot(look, false, BASE * 1.12)); manifest.heroes[cls] = 1.12; }
+  for (const [cls, look] of Object.entries(PREVIEW || {})) if (want('hero_' + cls.toLowerCase())) save('hero_' + cls.toLowerCase(), await pfShot(look, false, BASE * 1.12)); // not playable yet: no manifest entry
   let n = 0;
   for (const [key, e] of Object.entries(DATA.enemies)) {
     if (!want(key)) continue; const s = spec(key, e); let url, size;

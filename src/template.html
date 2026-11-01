@@ -356,6 +356,10 @@ body.aiming { cursor: grabbing; user-select: none; }
 .amupick b { font-size: 18px; } .amupick span { font-size: 13px; color: #8fc3ff; } .amupick small { font-size: 11px; color: var(--muted); }
 .amushop { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
 .amucard { --rc: #8fc3ff; } .amucard.on { box-shadow: 0 0 0 1px var(--accent) inset; }
+.rrhead { margin: 18px 0 6px; font-family: var(--cf-name); font-weight: 400; font-size: 24px; color: var(--accent); display: flex; align-items: center; gap: 10px; } .rrtok { font: 600 13px var(--f-ui); color: #e9c98a; }
+.rrcx, .rritems { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; } .rrpick.none { opacity: .55; }
+.rrsel { max-width: 560px; } .rrlines { display: grid; gap: 6px; margin: 8px 0; } .rrline { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: #15110d; border: 1px solid var(--line); border-radius: 6px; padding: 4px 4px 4px 10px; }
+.rrlast { background: #1c1610; border: 1px solid #5a4a2a; border-radius: 6px; padding: 8px 10px; margin: 8px 0; } .itrr { color: #c9b3f0; font-size: 12px; }
 .amunums { font-size: 15px; margin: 2px 0; } .amunums b { font-size: 20px; }
 .ghead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; } .ghead h3 { margin: 0; color: var(--accent); }
 .gmotd { margin: 4px 0 8px; padding: 6px 10px; border-left: 3px solid #7fd36a; background: rgba(127,211,106,.06); font-style: italic; }
@@ -537,7 +541,45 @@ body.aiming { cursor: grabbing; user-select: none; }
 @media (max-width: 600px) { .chatlog { max-height: 90px; } }
 
 /* title / hero select */
-.title { display: grid; gap: 16px; max-width: 1000px; margin: 0 auto; width: 100%; }
+.title { display: grid; gap: 16px; max-width: 1180px; margin: 0 auto; width: 100%; }
+/* create a hero: every class sits around a campfire; click one to see its starting decks (Nov 1) */
+.create h3 .muted { font: 14px var(--f-ui); margin-left: 8px; }
+.herohead { font-family: var(--cf-name); font-weight: 400; font-size: 26px; color: var(--accent); margin: 6px 0 -6px; } .herohead[hidden] { display: none; }
+.campscene { position: relative; height: clamp(230px, 30vw, 330px); border-radius: 10px; overflow: hidden; border: 1px solid var(--line); isolation: isolate;
+  background: radial-gradient(ellipse 34% 46% at 50% 86%, rgba(255,150,60,.34), rgba(255,110,40,.08) 60%, transparent 75%), radial-gradient(ellipse 120% 70% at 50% 0%, #0d1018, #0a0b0f 60%), #0a0b0f; }
+.campscene::before { content: ''; position: absolute; inset: 0; background: radial-gradient(1px 1px at 12% 18%, #cfd6e8aa, transparent), radial-gradient(1px 1px at 33% 9%, #cfd6e8, transparent), radial-gradient(1.5px 1.5px at 61% 14%, #cfd6e8cc, transparent), radial-gradient(1px 1px at 78% 22%, #cfd6e899, transparent), radial-gradient(1px 1px at 90% 8%, #cfd6e8, transparent), radial-gradient(1px 1px at 47% 25%, #cfd6e877, transparent); z-index: -2; }
+.campscene .ground { position: absolute; left: -5%; right: -5%; bottom: -60px; height: 58%; border-radius: 50%; background: radial-gradient(ellipse 50% 45% at 50% 30%, #4a3420, #22180e 55%, #120d08 80%); z-index: -1; }
+.campscene .fire { position: absolute; left: 50%; bottom: 14%; width: 64px; height: 84px; transform: translateX(-50%); z-index: 40; pointer-events: none; }
+.campscene .fire i { position: absolute; left: 50%; bottom: 14px; width: 34px; height: 60px; margin-left: -17px; border-radius: 50% 50% 45% 45% / 65% 65% 35% 35%; background: radial-gradient(ellipse at 50% 80%, #fff3b0, #ffb340 35%, #e2541b 65%, transparent 72%); filter: blur(.6px); transform-origin: 50% 100%; animation: campflk 1.1s ease-in-out infinite alternate; mix-blend-mode: screen; }
+.campscene .fire i:nth-child(2) { width: 24px; height: 46px; margin-left: -22px; animation-duration: .8s; animation-delay: -.3s; }
+.campscene .fire i:nth-child(3) { width: 22px; height: 40px; margin-left: 0; animation-duration: .9s; animation-delay: -.6s; }
+.campscene .fire b { position: absolute; left: 4px; right: 4px; bottom: 6px; height: 12px; border-radius: 6px; background: linear-gradient(#5a3a22, #2a1a10); box-shadow: 0 0 0 2px #120c07, 8px -4px 0 -2px #4a2f1c; transform: rotate(-8deg); }
+.campscene .fire b + b { transform: rotate(10deg); }
+.campscene .fire em { position: absolute; left: 50%; bottom: 60px; width: 3px; height: 3px; border-radius: 50%; background: #ffcf6a; animation: campspark 2.4s linear infinite; }
+.campscene .fire em:nth-of-type(2) { animation-delay: -.8s; margin-left: 8px; } .campscene .fire em:nth-of-type(3) { animation-delay: -1.6s; margin-left: -10px; }
+@keyframes campflk { from { transform: scaleY(.9) skewX(-3deg); opacity: .9; } to { transform: scaleY(1.08) skewX(3deg); opacity: 1; } }
+@keyframes campspark { from { transform: translate(0, 0); opacity: 1; } to { transform: translate(10px, -90px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .campscene .fire i, .campscene .fire em { animation: none; } }
+.seat { position: absolute; transform: translateX(-50%) scale(var(--s, 1)); transform-origin: 50% 100%; background: none; border: 0; padding: 0; display: grid; justify-items: center; cursor: pointer; color: inherit; }
+.seat img { height: clamp(96px, 13vw, 150px); filter: brightness(.72) saturate(.85); transition: filter .2s; display: block; }
+.seat img.flip { transform: scaleX(-1); }
+.seat:hover img, .seat:focus-visible img { filter: brightness(1) drop-shadow(0 0 6px var(--cc)); }
+.seat.on img { filter: brightness(1.12) drop-shadow(0 0 4px var(--cc)) drop-shadow(0 0 12px var(--cc)); }
+.seat .seatname { font: 16px var(--cf-name); color: var(--cc); background: rgba(10,8,6,.8); padding: 1px 9px; border-radius: 4px; margin-top: 2px; white-space: nowrap; }
+.seat.on .seatname { box-shadow: 0 0 0 1px var(--cc); }
+.seat .seatfig { display: grid; place-items: end center; min-height: 40px; }
+.seat .seatfig .noart { width: 52px; height: 90px; border-radius: 26px 26px 8px 8px; background: var(--cc); opacity: .55; }
+.seat.soon { cursor: default; } .seat.soon img { filter: grayscale(.85) brightness(.4); } .seat.soon .seatname { color: #8f8c80; }
+.seat .soonnote { font-size: 11px; color: #d8c58e; background: rgba(10,8,6,.88); border: 1px solid #5a4a2a; padding: 2px 7px; border-radius: 4px; margin-top: 3px; white-space: nowrap; }
+.clsinfo { margin: 10px 0 0; min-height: 22px; color: #d6cab6; } .clsinfo b { font: 22px var(--cf-name); color: var(--cc); margin-right: 8px; } .clsinfo small { color: var(--muted); margin-left: 8px; }
+.creategrid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; } .creategrid[hidden] { display: none; }
+.creategrid .deckpick { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.createright { background: #120f0b; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; position: sticky; top: 10px; }
+.createright h4 { margin: 0 0 2px; color: var(--accent); font-size: 15px; } .createright p { margin: 0 0 8px; font-size: 12px; color: var(--muted); }
+.createright .findgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; justify-items: center; }
+.createright .findcard { display: grid; justify-items: center; gap: 3px; } .createright .findcard small { font-size: 11px; color: var(--muted); text-align: center; }
+.createright .findcard .cf, .createright .findcard .card { filter: drop-shadow(0 0 8px var(--glow, #e4a93a88)); }
+@media (max-width: 860px) { .creategrid { grid-template-columns: 1fr; } .createright { position: static; } .createright .findgrid { grid-template-columns: repeat(3, 1fr); } }
 .titlehead { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 10px; }
 .titlehead h2 { font-size: 34px; color: var(--accent); }
 .herolist { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
@@ -658,17 +700,24 @@ body.aiming { cursor: grabbing; user-select: none; }
   <!-- TITLE: pick or create a hero -->
   <section id="scrTitle" class="title" aria-label="Choose your hero" hidden>
     <div class="titlehead"><h2>Choose your hero</h2><span id="titleAcct"></span></div>
-    <div class="herolist" id="heroList"></div>
-    <div class="panel create" id="createPanel" hidden>
-      <h3>Create a hero</h3>
-      <div class="classpick" id="classPick" role="radiogroup" aria-label="Class"></div>
-      <h4 class="createstep">Starting deck</h4>
-      <div class="classpick deckpick" id="deckPick" role="radiogroup" aria-label="Starting deck"></div>
-      <h4 class="createstep">Starting amulet <span class="muted">(6 points split between cards drawn each round and mana regen; you can buy the others later from Jeweler Rook in town)</span></h4>
-      <div class="amupick" id="amuPick" role="radiogroup" aria-label="Starting amulet"></div>
-      <div class="namerow"><div class="field"><label for="heroName">Name</label><input id="heroName" maxlength="16" autocomplete="off" placeholder="Name your hero"></div><button class="btn primary" id="btnCreate">Create hero</button><button class="btn" id="btnCancelCreate">Cancel</button></div>
+    <div class="panel create" id="createPanel">
+      <h3>Create a hero <span class="muted" id="createHint">Pick a hero at the fire</span></h3>
+      <div class="campscene" id="classPick" role="radiogroup" aria-label="Class"></div>
+      <div class="clsinfo" id="clsInfo"></div>
+      <div class="creategrid" id="createGrid" hidden>
+        <div class="createleft">
+          <h4 class="createstep">Starting deck</h4>
+          <div class="classpick deckpick" id="deckPick" role="radiogroup" aria-label="Starting deck"></div>
+          <h4 class="createstep">Starting amulet <span class="muted">(6 points split between cards drawn each round and mana regen; you can buy the others later from Jeweler Rook in town)</span></h4>
+          <div class="amupick" id="amuPick" role="radiogroup" aria-label="Starting amulet"></div>
+          <div class="namerow"><div class="field"><label for="heroName">Name</label><input id="heroName" maxlength="16" autocomplete="off" placeholder="Name your hero"></div><button class="btn primary" id="btnCreate">Create hero</button><button class="btn" id="btnCancelCreate" hidden>Cancel</button></div>
+        </div>
+        <aside class="createright" id="createCards" aria-label="Cards this hero can find"></aside>
+      </div>
       <p class="down" id="createMsg" style="margin:0;min-height:18px"></p>
     </div>
+    <h3 class="herohead" id="heroHead">Your heroes</h3>
+    <div class="herolist" id="heroList"></div>
   </section>
 
   <!-- CAMP: the town overworld -->
@@ -1005,7 +1054,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       const cur = opts.map(sl => c.gear.find(g => g.slot === sl)).filter(Boolean);
       const vs = cur.length ? cur.map(g => { const d = (it.ilvl || 0) - (g.ilvl || 0); return `${esc(g.name)} ilvl ${g.ilvl} <span class="${d > 0 ? 'up' : d < 0 ? 'down' : ''}">(${d > 0 ? '+' : ''}${d})</span>`; }).join(', ') : 'an empty slot';
       const btns = opts.length > 1 ? opts.map(sl => `<button class="btn" data-equip="${it.id}" data-slot="${sl}">Equip as ${sl}</button>`).join('') : `<button class="btn" data-equip="${it.id}">Equip</button>`;
-      return itemHtml(it, `<div class="il">${upBadge(it, c.gear)} Replaces ${vs}</div><div class="acts">${btns}<button class="btn" data-salvage="${it.id}">Salvage +${CBHub.salvageValue(it)} gold</button></div>`);
+      return itemHtml(it, `<div class="il">${upBadge(it, c.gear)} Replaces ${vs}</div><div class="acts">${btns}${it.slot === 'Codex' ? `<button class="btn" data-breakcx="${it.id}">Break into ${CB.CODEX_TOKENS(it)} Reroll Tokens</button>` : `<button class="btn" data-salvage="${it.id}">Salvage +${CBHub.salvageValue(it)} gold</button>`}</div>`);
     }).join('');
     const multi = Object.keys(profile.chars).length > 1;
     const heroRow = multi ? `<div class="cxchips" role="tablist" aria-label="Hero" style="margin:0 0 8px">${heroKeys().map(k => `<button class="cxchip ${k === heroKey ? 'on' : ''}" data-hero="${k}"><b style="color:${CC[profile.chars[k].cls]}">${esc(profile.chars[k].name)}</b> <span class="muted">${profile.chars[k].cls}</span></button>`).join('')}</div>` : '';
@@ -1025,6 +1074,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (b.dataset.unequip) { if (!CBHub.unequip(profile, heroKey, b.dataset.unequip)) return toast('Stash is full.'); }
     else if (b.dataset.equip) { const r = CBHub.equip(profile, heroKey, b.dataset.equip, b.dataset.slot); if (!r.ok) return toast(r.why); }
     else if (b.dataset.salvage) CBHub.salvage(profile, b.dataset.salvage);
+    else if (b.dataset.breakcx) { const r = CBHub.breakCodex(profile, b.dataset.breakcx); if (!r.ok) return toast(r.why); save(); renderHub(); return toast(`+${r.tokens} Reroll Tokens (you have ${profile.rerollTokens}). Spend them at Jeweler Rook.`); }
     else return;
     save(); renderHub();
   });
@@ -1152,10 +1202,36 @@ body.aiming { cursor: grabbing; user-select: none; }
     $('hpAmu').innerHTML = `<p class="savenote" style="margin:0 0 8px">Every pendant has 6 points split between <b>cards drawn per round</b> and <b>mana regen</b> (each point not on draw is +10 regen), plus +3 ${AMULET_STAT_UI[hcls()]}. ${cur ? `You wear <b>${esc(cur.name)}</b>${ci.Draw != null ? ` (${ci.Draw} draw, +${ci.Regen || 0} regen)` : ''}.` : 'You wear no amulet (1 draw, +15 regen).'} Bank: <b style="color:var(--accent)">${profile.gold} gold</b>. Your old amulet goes to the stash.</p>
       <div class="amushop">${CB.STARTER_AMULETS.map(([k, nm, dr, rg, blurb]) => { const same = cur && cur.imp2 && cur.imp2.Draw === dr && cur.imp2.Regen === rg;
         return `<div class="item amucard ${same ? 'on' : ''}"><div class="ih"><b>${esc(nm)}</b><span>${AMU_PRICE} gold</span></div><div class="amunums"><b>${dr}</b> draw &middot; <b style="color:#8fc3ff">+${rg}</b> regen</div><div class="il">${esc(blurb)}</div>
-          <div class="acts"><button class="btn ${same ? '' : 'primary'}" data-buyamu="${k}" ${profile.gold < AMU_PRICE || same ? 'disabled' : ''}>${same ? 'Wearing one' : profile.gold < AMU_PRICE ? 'Not enough gold' : 'Buy and wear'}</button></div></div>`; }).join('')}</div>`;
+          <div class="acts"><button class="btn ${same ? '' : 'primary'}" data-buyamu="${k}" ${profile.gold < AMU_PRICE || same ? 'disabled' : ''}>${same ? 'Wearing one' : profile.gold < AMU_PRICE ? 'Not enough gold' : 'Buy and wear'}</button></div></div>`; }).join('')}</div>` + rerollShop(c);
+  }
+  // ---------- Jeweler Rook's rerolls (Nov 1): codexes break into Reroll Tokens; a token plus one point of an item's reroll potential rerolls one affix
+  let RR = { last: null, sel: null };
+  const nice2 = (k) => k.replace('Elemental/Holy Damage:', '').replace('Resistance:', '') + (k.startsWith('Elemental') ? ' Damage' : k.startsWith('Resistance:') ? ' Resistance' : '');
+  const pct2 = (k) => /Chance|Damage|Resistance|Dexterity|Strength|Intelligence|Spirit|Defense|Lifesteal|Efficiency/.test(k) ? '%' : '';
+  function rerollShop(c) {
+    const tok = profile.rerollTokens || 0, codexes = profile.stash.filter(x => x.slot === 'Codex');
+    const items = [...c.gear.map(g => [g, 'Worn']), ...profile.stash.filter(x => x.slot !== 'Codex').map(g => [g, 'Stash'])].filter(([g]) => g.lines && g.lines.length);
+    items.sort((a, b) => (b[0].rerolls > 0) - (a[0].rerolls > 0) || (b[0].ilvl || 0) - (a[0].ilvl || 0));
+    const sel = items.find(([g]) => g.id === RR.sel) || null;
+    const last = RR.last ? `<p class="rrlast">${RR.last}</p>` : '';
+    return `<h3 class="rrhead">Rerolls <span class="chip rrtok" title="Reroll Tokens: break down codexes to get more">${tok} Reroll Token${tok === 1 ? '' : 's'}</span></h3>
+      <p class="savenote" style="margin:0 0 8px">Every item drops with a <b>reroll potential</b> (White 0-1, Green 1-2, Blue 2-3, Purple 3-4). One Reroll Token and one point of potential reroll one affix line of your choice into a new random stat, rolled like a fresh drop of that item. The implicit never changes. Break down codexes you don't need for tokens (3, plus 1 for every 2 map levels it dropped on).</p>
+      ${codexes.length ? `<h4 class="createstep">Break down codexes</h4><div class="rrcx">${codexes.map(x => itemHtml(x, `<div class="acts"><button class="btn" data-breakcx="${x.id}">Break into ${CB.CODEX_TOKENS(x)} tokens</button></div>`)).join('')}</div>` : '<p class="muted" style="font-size:13px">No codexes in your stash to break down. Unequip one first if you want to break it.</p>'}
+      <h4 class="createstep">Reroll an affix</h4>
+      ${sel ? `<div class="rrsel">${itemHtml(sel[0], `<div class="rrlines">${sel[0].lines.map((l, i) => `<div class="rrline"><span>+${l.v}${pct2(l.stat)} ${esc(nice2(l.stat))} <small class="muted">(${l.lo}-${l.hi})</small></span><button class="btn ${tok && sel[0].rerolls > 0 ? 'primary' : ''}" data-rrline="${i}" ${tok && sel[0].rerolls > 0 ? '' : 'disabled'}>Reroll</button></div>`).join('')}</div><div class="acts"><button class="btn" data-rrback="1">Pick another item</button></div>`)}</div>${last}`
+        : `${last}<div class="rritems">${items.map(([g, w]) => `<div class="rrpick ${g.rerolls > 0 ? '' : 'none'}">${itemHtml(g, `<div class="acts"><span class="muted" style="font-size:12px">${w}</span><button class="btn" data-rrsel="${g.id}" ${g.rerolls > 0 ? '' : 'disabled'}>${g.rerolls > 0 ? 'Choose' : 'No rerolls left'}</button></div>`)}</div>`).join('') || '<p class="muted">No gear with affixes yet.</p>'}</div>`}`;
   }
   const AMULET_STAT_UI = { Warrior: 'Strength', Rogue: 'Strength', Mage: 'Intelligence', Paladin: 'Strength', Warlock: 'Intelligence' };
   $('hpAmu').addEventListener('click', (ev) => {
+    const r0 = ev.target.closest('[data-breakcx], [data-rrsel], [data-rrline], [data-rrback]');
+    if (r0 && !r0.disabled) {
+      if (r0.dataset.breakcx) { const it = profile.stash.find(x => x.id === r0.dataset.breakcx); const r = CBHub.breakCodex(profile, r0.dataset.breakcx); if (!r.ok) return toast(r.why); RR.last = `${esc(it.name)} breaks into <b>${r.tokens} Reroll Tokens</b>.`; }
+      else if (r0.dataset.rrsel) { RR.sel = r0.dataset.rrsel; RR.last = null; }
+      else if (r0.dataset.rrback) { RR.sel = null; RR.last = null; }
+      else { const r = CBHub.rerollItem(profile, RR.sel, +r0.dataset.rrline, DATA); if (!r.ok) return toast(r.why);
+        RR.last = `Rerolled: <s>+${r.old.v}${pct2(r.old.stat)} ${esc(nice2(r.old.stat))}</s> &rarr; <b>+${r.now.v}${pct2(r.now.stat)} ${esc(nice2(r.now.stat))}</b> <small class="muted">(${r.now.lo}-${r.now.hi})</small>. ${r.item.rerolls} reroll${r.item.rerolls === 1 ? '' : 's'} left on it.`; }
+      save(); renderHub(); renderAmuShop(); return;
+    }
     const b = ev.target.closest('[data-buyamu]'); if (!b || b.disabled) return;
     if (profile.gold < AMU_PRICE) return toast('Not enough gold.');
     if (profile.stash.length >= CBHub.STASH_MAX) return toast('Your stash is full: make room for the old amulet first.');
@@ -1240,8 +1316,8 @@ body.aiming { cursor: grabbing; user-select: none; }
       lines: ['Coin from the bank, goods to your stash. My wagons bring new stock every twelve hours.', 'I also take orders out on the March. My runners always make it home.'] },
     { id: 'guildmaster', name: 'Guildmaster Strecks', x: 3, y: 11, dir: 'right', open: 'guild', btn: 'Guilds', pal: { skin: '#b8906e', hair: '#4a3a2a', chest: '#2f4a2a', trim: '#7fd36a', legs: '#22301f', helm: null, cape: '#2a3a22', weapon: 'staff', wpnC: '#7fd36a' },
       lines: ['A guild is a promise: we ride together, we share what we learn.', 'Found one for fifty gold, or bring me an invitation.'] },
-    { id: 'jeweler', name: 'Jeweler Rook', x: 22, y: 11, dir: 'left', open: 'amulets', btn: 'Browse amulets', pal: { skin: '#c9a080', hair: '#d8d0c4', chest: '#2e3a4a', trim: '#8fc3ff', legs: '#1f2630', helm: null, cape: '#3a2a4a', weapon: null },
-      lines: ['Six points of focus in every pendant. How you split them between cards and mana is up to you.', 'Big spells want mana. Cheap combos want cards. Choose your pendant accordingly.'] },
+    { id: 'jeweler', name: 'Jeweler Rook', x: 22, y: 11, dir: 'left', open: 'amulets', btn: 'Amulets and rerolls', pal: { skin: '#c9a080', hair: '#d8d0c4', chest: '#2e3a4a', trim: '#8fc3ff', legs: '#1f2630', helm: null, cape: '#3a2a4a', weapon: null },
+      lines: ['Six points of focus in every pendant. How you split them between cards and mana is up to you.', 'Big spells want mana. Cheap combos want cards. Choose your pendant accordingly.', 'Bring me a codex you have no use for and I will grind it into Reroll Tokens. A token lets me recut one line on a piece of gear.'] },
     { id: 'tinker', name: 'Tinker Pip (test)', x: 16, y: 4, dir: 'down', open: 'test', btn: 'Free test goods', pal: { skin: '#d8b090', hair: '#e0802a', chest: '#3a4a2a', trim: '#e0802a', legs: '#2a2418', helm: 'cap', helmC: '#e0802a', cape: null, weapon: 'hammer' },
       lines: ['Testing, testing! Every card, every codex, free. Don\'t tell the merchants.'] },
     { id: 'dummy', name: 'Training Dummy', x: 18, y: 15, dir: 'down', fixed: true, open: 'dummy', btn: 'Practice on it', pal: { skin: '#cdb47a', hair: '#d9b44a', chest: '#7a5a34', trim: '#d9b44a', legs: '#6a4c2a', helm: 'cap', helmC: '#4a3826', cape: null, weapon: null },
@@ -1682,7 +1758,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     friends: { title: 'Friends', show: ['hpFriends'] },
     codex: { title: 'The Compendium: cards, bestiary, gear and codexes', show: ['hpCodex'] },
     test: { title: 'Tinker Pip: free test goods (temporary)', show: ['hpTest'] },
-    amulets: { title: 'Jeweler Rook: amulets', show: ['secChar', 'hpAmu'] },
+    amulets: { title: 'Jeweler Rook: amulets and rerolls', show: ['secChar', 'hpAmu'] },
     guild: { title: 'Guildmaster Strecks: guilds', show: ['hpGuild'] },
     raid: { title: 'Raid Warden Bagadee: raids', show: ['hpRaid'] },
     records: { title: 'Hall of Records', show: ['hpRec'] },
@@ -1790,9 +1866,9 @@ body.aiming { cursor: grabbing; user-select: none; }
   function renderTitle() {
     const keys = heroKeys(), chars = keys.map(k => profile.chars[k]);
     $('heroList').innerHTML = keys.map(k => { const c = profile.chars[k]; return `<div class="herocard" style="--cc:${CC[c.cls]}"><b>${esc(c.name)}</b><small>${c.cls} &middot; Power ${CBHub.powerLevel(c)} &middot; ${c.runs} run${c.runs === 1 ? '' : 's'}${c.bossKills ? ` &middot; ${c.bossKills} boss kill${c.bossKills === 1 ? '' : 's'}` : ''}</small><div class="row" style="display:flex;gap:6px;align-items:center"><button class="btn primary play" data-play="${k}">Enter Emberwatch</button><button class="pilebtn" data-delhero="${k}" title="Delete this hero">Delete</button></div></div>`; }).join('')
-      + (chars.length < CBHub.MAX_HEROES ? `<button class="herocard new" id="btnNewHero">+ Create a hero</button>` : '');
-    if ($('btnNewHero')) $('btnNewHero').onclick = openCreate;
-    if (!chars.length) openCreate();
+      ;
+    $('heroHead').hidden = !chars.length;
+    openCreate(true);
     $('heroList').insertAdjacentHTML('beforeend', chars.length || profile.stash.length || profile.gold ? `<p class="savenote" style="grid-column:1/-1;margin:4px 0 0">Want a clean slate? <button class="pilebtn" id="btnWipe">Start fresh: delete everything</button></p>` : '');
     if ($('btnWipe')) $('btnWipe').onclick = wipeFlow;
     $('titleAcct').innerHTML = supa ? (supaUser ? `<span class="muted">Signed in as ${esc(acctName(supaUser))}</span>` : `<button class="btn" id="btnTitleSignIn">Sign in to save online</button>`) : '';
@@ -1839,7 +1915,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   function growsInto(deck) {
     const have = {}; for (const [k, n] of deck) have[k] = (have[k] || 0) + n;
     const sc = (window.CB_TESTDECKS || []).filter(t => t.cls === createCls).map(t => ({ t, s: t.cards.reduce((a, [k, n]) => a + Math.min(n, have[k] || 0) * ({ Gold: 4, Blue: 3, Green: 2 }[(CARDS[k] || {}).rarity] || 1), 0) })).sort((a, b) => b.s - a.s);
-    const out = [], seen = new Set(); for (const x of sc) { if (seen.has(x.t.codex) || !x.s) continue; seen.add(x.t.codex); out.push({ cx: (CB.CODEX_BY_KEY[x.t.codex] || {}).name || x.t.codex, name: x.t.name }); if (out.length === 3) break; }
+    const out = [], seen = new Set(); for (const x of sc) { if (seen.has(x.t.codex) || !x.s) continue; seen.add(x.t.codex); out.push({ cx: (CB.CODEX_BY_KEY[x.t.codex] || {}).name || x.t.codex, name: x.t.name, cards: x.t.cards }); if (out.length === 3) break; }
     return out;
   }
   function renderCreateChoices() {
@@ -1850,27 +1926,51 @@ body.aiming { cursor: grabbing; user-select: none; }
       return `<button role="radio" style="--cc:${CC[createCls]}" data-deck="${k}" aria-checked="${k === createDeck}" title="${esc(d.map(([key, n]) => n + 'x ' + CARDS[key].name).join(', '))}"><b>${esc(nm)}</b><span>${esc(blurb)}</span>
         <span class="srate">${['Offense', 'Defense', 'Utility', 'Support'].map((t, i) => `<em>${t}</em><i>${'&#9733;'.repeat(R[i])}<u>${'&#9733;'.repeat(5 - R[i])}</u></i>`).join('')}</span>
         <small>Key cards: ${top}</small>${grow.length ? `<small class="sgrow">Grows into: ${grow.map(g => `<b>${esc(g.cx)}</b> <span>(${esc(g.name)})</span>`).join(', ')}</small>` : ''}</button>`; }).join('');
+    $('createGrid').hidden = !createCls; $('createHint').textContent = createCls ? '' : 'Pick a hero at the fire';
+    const C0 = createCls && CLASSES[createCls];
+    $('clsInfo').innerHTML = C0 ? `<span style="--cc:${CC[createCls]}"><b>${createCls}</b>${esc(C0.blurb)}<small>Defense: ${C0.defense}</small></span>` : '<span class="muted">Each hero at the fire is a class. Click one to see its starting decks.</span>';
+    if (createCls) { // cards to look forward to: the Gold and Blue cards of the codex decks the chosen starting deck grows into
+      const pick = list.find(x => x[0] === createDeck) || list[0], d0 = (pick && pick[3]) || CLASSES[createCls].deck, have = new Set(d0.map(([k]) => k)), grow = growsInto(d0), seen = new Set(), find = [];
+      for (const g of grow) for (const [k] of g.cards) { const c = CARDS[k]; if (!c || have.has(k) || seen.has(k) || !['Gold', 'Blue'].includes(c.rarity)) continue; seen.add(k); find.push([k, g.cx]); }
+      find.sort((a, b) => (CARDS[a[0]].rarity === 'Gold' ? 0 : 1) - (CARDS[b[0]].rarity === 'Gold' ? 0 : 1));
+      $('createCards').innerHTML = `<h4>Cards you can find</h4><p>Gold and Blue cards from the codex decks ${esc(pick ? pick[1] : '')} grows into. They drop from elites and bosses.</p><div class="findgrid">${find.slice(0, 6).map(([k, cx]) => { const c = CARDS[k]; return `<div class="findcard" style="--glow:${RC[c.rarity]}88" data-zoomcard="${k}">${cardBox(c, 118) || `<div class="cardrow"><b>${esc(c.name)}</b></div>`}<small>${esc(cx)}</small></div>`; }).join('')}</div>`;
+      fitCards($('createCards')); requestAnimationFrame(() => fitCards($('createCards')));
+    }
     $('amuPick').innerHTML = CB.STARTER_AMULETS.map(([k, nm, dr, rg, blurb]) => `<button role="radio" data-amu="${k}" aria-checked="${k === createAmu}" title="${esc(blurb)}"><b>${dr} draw</b><span>+${rg} mana regen</span><small>${esc(nm)}</small></button>`).join('');
   }
   $('deckPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-deck]'); if (!b) return; createDeck = b.dataset.deck; renderCreateChoices(); });
   $('amuPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-amu]'); if (!b) return; createAmu = b.dataset.amu; renderCreateChoices(); });
-  function openCreate() {
-    const n = Object.keys(profile.chars).length; if (!createCls) createCls = 'Warrior';
-    $('classPick').innerHTML = Object.entries(CLASSES).map(([k, c]) => { const have = Object.values(profile.chars).filter(x => x.cls === k).length; return `<button role="radio" style="--cc:${CC[k]}" data-cls="${k}" aria-checked="${k === createCls}"><b>${k}</b><span>${esc(c.blurb)}</span><small>Defense: ${c.defense}${have ? ` &middot; you have ${have}` : ''}</small></button>`; }).join('');
+  // the campfire: every class sits around it (one seat per class, plus classes still to come); click one to pick it
+  const SEATS = [[13, 4, 1], [27, 24, .86], [40, 36, .74], [60, 36, .74], [73, 24, .86], [87, 4, 1]]; // left %, bottom %, scale
+  const SOON = ['Shaman'];
+  function renderCamp() {
+    const n = Object.keys(profile.chars).length, list = [...Object.keys(CLASSES), ...SOON].slice(0, SEATS.length);
+    $('classPick').innerHTML = '<div class="ground"></div><div class="fire" aria-hidden="true"><b></b><b></b><i></i><i></i><i></i><em></em><em></em><em></em></div>' + list.map((k, i) => {
+      const [x, y, sc] = SEATS[i], flip = x > 50, soon = SOON.includes(k), have = soon ? 0 : Object.values(profile.chars).filter(c => c.cls === k).length;
+      const fig = `<span class="seatfig"><img src="img/ink/hero_${k.toLowerCase()}.webp" class="${flip ? 'flip' : ''}" alt="" draggable="false" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'noart'}))"></span>`;
+      const pos = `left:${x}%;bottom:${y}%;--s:${sc};z-index:${50 - y};--cc:${soon ? '#8f8c80' : CC[k]}`;
+      return soon ? `<div class="seat soon" style="${pos}" title="${k}: coming in a future expansion">${fig}<span class="seatname">${k}</span><span class="soonnote">Coming in a future expansion</span></div>`
+        : `<button class="seat ${k === createCls ? 'on' : ''}" role="radio" aria-checked="${k === createCls}" data-cls="${k}" style="${pos}" title="${esc(k + ': ' + CLASSES[k].blurb)}${have ? ` (you have ${have})` : ''}">${fig}<span class="seatname">${k}</span></button>`;
+    }).join('');
     $('createMsg').textContent = n >= CBHub.MAX_HEROES ? `All ${CBHub.MAX_HEROES} hero slots are used. Delete a hero first.` : '';
-    renderCreateChoices();
-    $('createPanel').hidden = false; $('btnCancelCreate').hidden = !Object.keys(profile.chars).length;
-    $('heroName').focus();
   }
-  $('classPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-cls]'); if (!b || b.disabled) return; createCls = b.dataset.cls; for (const x of $('classPick').children) x.setAttribute('aria-checked', x === b); createDeck = 'balanced'; renderCreateChoices(); });
+  function openCreate(quiet) {
+    renderCamp(); renderCreateChoices();
+    $('createPanel').hidden = false;
+    if (!quiet) $('createPanel').scrollIntoView({ block: 'start' });
+    if (createCls && !quiet) $('heroName').focus();
+  }
+  $('classPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-cls]'); if (!b) return; createCls = b.dataset.cls; createDeck = 'balanced'; renderCamp(); renderCreateChoices(); });
+  $('createCards').addEventListener('click', (ev) => { const b = ev.target.closest('[data-zoomcard]'); const zoom = $('cardZoom'); if (!b || !zoom || !CARDS[b.dataset.zoomcard]) return; const c = CARDS[b.dataset.zoomcard];
+    zoom.innerHTML = `<div class="zoomin">${cardBox(c, 300)}<p>${esc(c.rarity)} ${esc(c.cls)} card &middot; click anywhere to close</p></div>`; zoom.hidden = false; fitCards(zoom); requestAnimationFrame(() => fitCards(zoom)); });
   const doCreate = () => {
     if (!createCls) { $('createMsg').textContent = 'Pick a class.'; return; }
     const r = CBHub.createChar(profile, createCls, $('heroName').value, createDeck, createAmu);
     if (!r.ok) { $('createMsg').textContent = r.why; return; }
-    heroKey = r.id; $('heroName').value = ''; $('createPanel').hidden = true; save(); renderHub(); show('start'); saveCard();
+    heroKey = r.id; $('heroName').value = ''; createCls = null; save(); renderHub(); show('start'); saveCard();
   };
   $('btnCreate').onclick = doCreate; $('heroName').addEventListener('keydown', (e) => { if (e.key === 'Enter') doCreate(); });
-  $('btnCancelCreate').onclick = () => { $('createPanel').hidden = true; };
+  $('btnCancelCreate').onclick = () => { createCls = null; renderCamp(); renderCreateChoices(); };
 
   // ---------- Esc menu
   function openMenu() {
@@ -2198,7 +2298,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     const stats = Object.entries(it.stats || {}).map(([k, v]) => `+${v}${pct(k)} ${nice(k)}`).join(', ');
     const wf = CB.weaponFlat(it), imp = [wf ? `+${wf} damage per Attack hit` : '', ...Object.entries(it.imp2 || {}).map(([k, v]) => k === 'Draw' ? `${v} draw` : k === 'Regen' ? `${v} regen` : `+${v}${pct(k)} ${nice(k)}`)].filter(Boolean).join(', ');
     const lines = (it.lines || []).map(l => `${nice(l.stat)} ${l.v} (${l.lo}-${l.hi})`).join(' · ');
-    return `<div class="item" data-ilink="${linkKey(it)}" style="--rc:${RC[it.rarity] || 'var(--r-white)'}" title="${esc((lines ? 'Each roll: ' + lines + '. ' : '') + 'Hold Shift to compare with your gear. Shift-click to link it in chat.')}"><div class="ih"><b>${esc(it.name)}</b><span>${it.rarity === 'Purple (Epic)' ? 'Purple' : it.rarity} &middot; ilvl ${it.ilvl}</span></div><div class="il">${esc(it.label || it.slot)}</div>${it.passive ? `<div class="st" style="color:#f0b070"><b>Passive:</b> ${esc((it.codex && CB.CODEX_BY_KEY[it.codex] && CB.CODEX_BY_KEY[it.codex].text) || it.passive)}</div>` : ''}<div class="st">${esc(stats)}${imp ? '<br><span class="muted">Implicit: ' + esc(imp) + '</span>' : ''}</div>${extra || ''}</div>`;
+    return `<div class="item" data-ilink="${linkKey(it)}" style="--rc:${RC[it.rarity] || 'var(--r-white)'}" title="${esc((lines ? 'Each roll: ' + lines + '. ' : '') + 'Hold Shift to compare with your gear. Shift-click to link it in chat.')}"><div class="ih"><b>${esc(it.name)}</b><span>${it.rarity === 'Purple (Epic)' ? 'Purple' : it.rarity} &middot; ilvl ${it.ilvl}</span></div><div class="il">${esc(it.label || it.slot)}</div>${it.passive ? `<div class="st" style="color:#f0b070"><b>Passive:</b> ${esc((it.codex && CB.CODEX_BY_KEY[it.codex] && CB.CODEX_BY_KEY[it.codex].text) || it.passive)}</div>` : ''}<div class="st">${esc(stats)}${imp ? '<br><span class="muted">Implicit: ' + esc(imp) + '</span>' : ''}</div>${it.slot === 'Codex' ? `<div class="itrr">Breaks into ${CB.CODEX_TOKENS(it)} Reroll Tokens (Jeweler Rook)</div>` : it.rerolls != null && it.lines && it.lines.length ? `<div class="itrr">Rerolls: ${it.rerolls}</div>` : ''}${extra || ''}</div>`;
   }
 
   function renderSideParty() {
