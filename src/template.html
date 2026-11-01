@@ -614,6 +614,10 @@ body.aiming { cursor: grabbing; user-select: none; }
 .sycmp { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } .sycmp > div { background: #15110d; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; align-content: start; } .sycmp h3 { margin: 0; color: var(--accent); }
 .syhero { margin: 0; padding-left: 18px; } .sybk { display: flex; justify-content: space-between; gap: 10px; align-items: center; background: #15110d; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 0 0 6px; }
 @media (max-width: 700px) { .sycmp { grid-template-columns: 1fr; } }
+.kw { text-decoration: underline dotted color-mix(in srgb, currentColor 45%, transparent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.ftext .kw { text-underline-offset: 1px; }
+#kwTip { position: fixed; z-index: 200; max-width: 320px; background: #16110c; border: 1px solid #8a6a3a; border-radius: 6px; padding: 7px 10px; box-shadow: 0 8px 24px rgba(0,0,0,.6); pointer-events: none; font: 13px/1.4 var(--f-ui); color: #e8dcc6; display: grid; gap: 3px; }
+#kwTip[hidden] { display: none; } #kwTip b { color: var(--accent); font-size: 14px; }
 .recgrave li { padding: 3px 0; cursor: pointer; color: #b8b0a6; }
 .herocard.new { border-style: dashed; border-top-style: dashed; place-content: center; text-align: center; color: var(--muted); font-size: 16px; }
 .create h3 { font-family: var(--cf-name); font-weight: 400; font-size: 26px; color: var(--accent); margin-bottom: 8px; }

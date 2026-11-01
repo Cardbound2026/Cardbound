@@ -102,3 +102,52 @@
     const i = $('glQ'); i.oninput = () => { const v = i.value; openGlossary(v); const j = $('glQ'); j.focus(); j.setSelectionRange(v.length, v.length); };
     if (!q) i.focus();
   }
+  // ---------- Keyword tooltips (Nov 1): every glossary term in the game's text gets a faint dotted underline.
+  // Hold Alt while pointing at one to read its glossary entry. Works on cards, gear, merchants, tags, the log: anything on screen.
+  // A MutationObserver finds new text as screens render and wraps the terms in <span class="kw">; nothing else is touched.
+  const KW_SKIP = new Set(['Gear Score / Deck Level / Power', 'Item power', 'Full parry', 'Cards in enemy decks', 'Ranks (+1 to +10)', 'Card rarity', 'Turn order', 'Enemy intents', 'Elites and the boss', 'Party fights', 'Damage meter', 'Loot sack', 'Bank', 'Map level', 'Mana drain', 'Draws fewer', 'Draw', 'Mana', 'Elemental Damage', 'Untouchable / Immune', 'Attack / Skill / Power', 'Cannot heal / Grievous', 'Shrines']);
+  const KW_ALIAS = { Feared: 'Fear', Stunned: 'Stunned', Silenced: 'Silence', Disarmed: 'Disarm', Bleeding: 'Bleed', Poisoned: 'Poison', Burning: 'Burn', Chilled: 'Chill', Frozen: 'Chill', Freezes: 'Chill', Freeze: 'Chill', Exposed: 'Exposure',
+    Taunting: 'Taunt', taunts: 'Taunt', Taunts: 'Taunt', Exhausts: 'Exhaust', Grievous: 'Cannot heal / Grievous', Untouchable: 'Untouchable / Immune', Multicast: 'Multiplay / Multicast', Multiplay: 'Multiplay / Multicast', 'Multicast Chance': 'Multiplay / Multicast', 'Multiplay Chance': 'Multiplay / Multicast',
+    'Multi-hit': 'Multi-hit Chance', 'Shadow Armor': 'Armors (Warlock)', 'Blood Armor': 'Armors (Warlock)', 'Soul Armor': 'Armors (Warlock)', 'Nether Armor': 'Armors (Warlock)', 'Demon Armor': 'Armors (Warlock)',
+    demon: 'Demons (Warlock)', demons: 'Demons (Warlock)', Demons: 'Demons (Warlock)', Summon: 'Demons (Warlock)', 'Soul Beacon': 'Soul Beacon (Warlock)', 'Mana Regen': 'Mana Regen', 'mana regen': 'Mana Regen', 'mana regeneration': 'Mana Regen', regen: 'Mana Regen', Regen: 'Mana Regen',
+    'crit chance': 'Crit Chance', 'Crit chance': 'Crit Chance', 'crit damage': 'Crit Damage', 'Max Mana': 'Max Mana', 'max mana': 'Max Mana', 'maximum mana': 'Max Mana', 'Max HP': 'Max HP', 'Health Regen': 'Health Regen', Curse: 'Curse', Cursed: 'Curse', Fatigue: 'Fatigue', Dazed: 'Dazed' };
+  const KW = new Map();
+  for (const [, rows] of GLOSSARY) for (const [t, d] of rows) { if (KW_SKIP.has(t)) continue; for (const n of t.replace(/\s*\(.*?\)/, '').split(' / ')) if (n.length > 2 && !KW.has(n)) KW.set(n, { t, d }); }
+  const KW_BY_T = new Map(); for (const [, rows] of GLOSSARY) for (const [t, d] of rows) KW_BY_T.set(t, { t, d });
+  for (const [a, t] of Object.entries(KW_ALIAS)) if (KW_BY_T.has(t) && !KW.has(a)) KW.set(a, KW_BY_T.get(t));
+  const kwEsc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const KW_RE = new RegExp('(^|[^A-Za-z-])(' + [...KW.keys()].sort((a, b) => b.length - a.length).map(kwEsc).join('|') + ')(?![A-Za-z])', 'g');
+  const KW_NO = 'script, style, textarea, input, select, option, svg, canvas, .kw, .fname, .ftype, h1, h2, h3, button, .uhead, .onm, .seatname, .gloss, #kwTip, [contenteditable], .nokw';
+  function kwWrap(root) {
+    if (!root || (root.nodeType === 1 && root.closest && root.closest(KW_NO))) return;
+    const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: (n) => { if (!n.nodeValue || n.nodeValue.length < 3) return NodeFilter.FILTER_REJECT; const p = n.parentElement; if (!p || p.closest(KW_NO)) return NodeFilter.FILTER_REJECT; KW_RE.lastIndex = 0; return KW_RE.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT; } });
+    const list = []; let n; while ((n = tw.nextNode())) list.push(n);
+    for (const t of list) {
+      const s = t.nodeValue, frag = document.createDocumentFragment(); let last = 0, m; KW_RE.lastIndex = 0;
+      while ((m = KW_RE.exec(s))) { const at = m.index + m[1].length; if (at > last) frag.appendChild(document.createTextNode(s.slice(last, at))); const sp = document.createElement('span'); sp.className = 'kw'; sp.dataset.kw = m[2]; sp.textContent = m[2]; frag.appendChild(sp); last = at + m[2].length; KW_RE.lastIndex = last; }
+      if (last < s.length) frag.appendChild(document.createTextNode(s.slice(last)));
+      t.parentNode.replaceChild(frag, t);
+    }
+  }
+  let kwPend = new Set(), kwRaf = 0;
+  const kwFlush = () => { kwRaf = 0; const roots = [...kwPend]; kwPend = new Set(); for (const r of roots) if (r.isConnected) kwWrap(r); };
+  new MutationObserver((muts) => {
+    for (const m of muts) { if (m.type === 'characterData') { if (m.target.parentElement) kwPend.add(m.target.parentElement); continue; } for (const a of m.addedNodes) kwPend.add(a.nodeType === 3 ? a.parentElement : a); }
+    kwPend.delete(null); if (kwPend.size && !kwRaf) kwRaf = requestAnimationFrame(kwFlush);
+  }).observe(document.body, { childList: true, subtree: true, characterData: true });
+  kwWrap(document.body);
+  // the tooltip: hold Alt over an underlined word
+  const kwTip = document.createElement('div'); kwTip.id = 'kwTip'; kwTip.hidden = true; document.body.appendChild(kwTip);
+  let kwOver = null, kwAlt = false, kwX = 0, kwY = 0;
+  function kwShow() {
+    if (!kwOver || !kwAlt || !kwOver.isConnected) { kwTip.hidden = true; return; }
+    const e = KW.get(kwOver.dataset.kw); if (!e) { kwTip.hidden = true; return; }
+    kwTip.innerHTML = `<b>${esc(e.t.replace(/ \/ .*$/, '').replace(/\s*\(.*?\)/, ''))}</b><span>${esc(e.d)}</span>`; kwTip.hidden = false;
+    const w = kwTip.offsetWidth, h = kwTip.offsetHeight; let x = kwX + 14, y = kwY + 16; if (x + w > innerWidth - 8) x = innerWidth - w - 8; if (y + h > innerHeight - 8) y = kwY - h - 12;
+    kwTip.style.left = Math.max(8, x) + 'px'; kwTip.style.top = Math.max(8, y) + 'px';
+  }
+  document.addEventListener('mouseover', (ev) => { const k = ev.target.closest && ev.target.closest('.kw'); if (k !== kwOver) { kwOver = k; kwShow(); } }, true);
+  document.addEventListener('mousemove', (ev) => { kwX = ev.clientX; kwY = ev.clientY; kwAlt = ev.altKey; if (kwOver && kwAlt) kwShow(); else if (!kwTip.hidden && !kwAlt) kwTip.hidden = true; }, true);
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Alt') { kwAlt = true; if (kwOver) { ev.preventDefault(); kwShow(); } } }, true);
+  document.addEventListener('keyup', (ev) => { if (ev.key === 'Alt') { kwAlt = false; kwTip.hidden = true; if (kwOver) ev.preventDefault(); } }, true); // also keeps the browser menu from grabbing focus
+  window.addEventListener('blur', () => { kwAlt = false; kwTip.hidden = true; });

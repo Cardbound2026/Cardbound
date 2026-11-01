@@ -618,6 +618,10 @@ body.aiming { cursor: grabbing; user-select: none; }
 .sycmp { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } .sycmp > div { background: #15110d; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; align-content: start; } .sycmp h3 { margin: 0; color: var(--accent); }
 .syhero { margin: 0; padding-left: 18px; } .sybk { display: flex; justify-content: space-between; gap: 10px; align-items: center; background: #15110d; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 0 0 6px; }
 @media (max-width: 700px) { .sycmp { grid-template-columns: 1fr; } }
+.kw { text-decoration: underline dotted color-mix(in srgb, currentColor 45%, transparent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.ftext .kw { text-underline-offset: 1px; }
+#kwTip { position: fixed; z-index: 200; max-width: 320px; background: #16110c; border: 1px solid #8a6a3a; border-radius: 6px; padding: 7px 10px; box-shadow: 0 8px 24px rgba(0,0,0,.6); pointer-events: none; font: 13px/1.4 var(--f-ui); color: #e8dcc6; display: grid; gap: 3px; }
+#kwTip[hidden] { display: none; } #kwTip b { color: var(--accent); font-size: 14px; }
 .recgrave li { padding: 3px 0; cursor: pointer; color: #b8b0a6; }
 .herocard.new { border-style: dashed; border-top-style: dashed; place-content: center; text-align: center; color: var(--muted); font-size: 16px; }
 .create h3 { font-family: var(--cf-name); font-weight: 400; font-size: 26px; color: var(--accent); margin-bottom: 8px; }
@@ -5868,8 +5872,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793561274310';
-  const CB_BUILD = 'ce9f753d5d'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793561799044';
+  const CB_BUILD = 'bdc739641f'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -6928,6 +6932,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Feature', 'Keyword help everywhere: game terms on cards, gear, merchants, statuses and the combat log (Dread, Bleed, Absorb, Taunt, Crit Chance...) now have a faint dotted underline. Point at one and hold Alt to read its glossary entry.'],
       ['Balance', 'Soul Beacon now Exhausts.'],
       ['Fix', 'A card being dragged could get stuck in the middle of the screen if you right-clicked (or switched windows) mid-drag. Right-click, Esc or leaving the window now cancels the drag and puts the card back in your hand.'],
       ['Fix', 'Warlock demons now show up in fights: each one stands beside its Warlock with its own HP bar and turns left, and they appear in the turn order right after their Warlock (that is when they act).'],
@@ -8565,6 +8570,55 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     const i = $('glQ'); i.oninput = () => { const v = i.value; openGlossary(v); const j = $('glQ'); j.focus(); j.setSelectionRange(v.length, v.length); };
     if (!q) i.focus();
   }
+  // ---------- Keyword tooltips (Nov 1): every glossary term in the game's text gets a faint dotted underline.
+  // Hold Alt while pointing at one to read its glossary entry. Works on cards, gear, merchants, tags, the log: anything on screen.
+  // A MutationObserver finds new text as screens render and wraps the terms in <span class="kw">; nothing else is touched.
+  const KW_SKIP = new Set(['Gear Score / Deck Level / Power', 'Item power', 'Full parry', 'Cards in enemy decks', 'Ranks (+1 to +10)', 'Card rarity', 'Turn order', 'Enemy intents', 'Elites and the boss', 'Party fights', 'Damage meter', 'Loot sack', 'Bank', 'Map level', 'Mana drain', 'Draws fewer', 'Draw', 'Mana', 'Elemental Damage', 'Untouchable / Immune', 'Attack / Skill / Power', 'Cannot heal / Grievous', 'Shrines']);
+  const KW_ALIAS = { Feared: 'Fear', Stunned: 'Stunned', Silenced: 'Silence', Disarmed: 'Disarm', Bleeding: 'Bleed', Poisoned: 'Poison', Burning: 'Burn', Chilled: 'Chill', Frozen: 'Chill', Freezes: 'Chill', Freeze: 'Chill', Exposed: 'Exposure',
+    Taunting: 'Taunt', taunts: 'Taunt', Taunts: 'Taunt', Exhausts: 'Exhaust', Grievous: 'Cannot heal / Grievous', Untouchable: 'Untouchable / Immune', Multicast: 'Multiplay / Multicast', Multiplay: 'Multiplay / Multicast', 'Multicast Chance': 'Multiplay / Multicast', 'Multiplay Chance': 'Multiplay / Multicast',
+    'Multi-hit': 'Multi-hit Chance', 'Shadow Armor': 'Armors (Warlock)', 'Blood Armor': 'Armors (Warlock)', 'Soul Armor': 'Armors (Warlock)', 'Nether Armor': 'Armors (Warlock)', 'Demon Armor': 'Armors (Warlock)',
+    demon: 'Demons (Warlock)', demons: 'Demons (Warlock)', Demons: 'Demons (Warlock)', Summon: 'Demons (Warlock)', 'Soul Beacon': 'Soul Beacon (Warlock)', 'Mana Regen': 'Mana Regen', 'mana regen': 'Mana Regen', 'mana regeneration': 'Mana Regen', regen: 'Mana Regen', Regen: 'Mana Regen',
+    'crit chance': 'Crit Chance', 'Crit chance': 'Crit Chance', 'crit damage': 'Crit Damage', 'Max Mana': 'Max Mana', 'max mana': 'Max Mana', 'maximum mana': 'Max Mana', 'Max HP': 'Max HP', 'Health Regen': 'Health Regen', Curse: 'Curse', Cursed: 'Curse', Fatigue: 'Fatigue', Dazed: 'Dazed' };
+  const KW = new Map();
+  for (const [, rows] of GLOSSARY) for (const [t, d] of rows) { if (KW_SKIP.has(t)) continue; for (const n of t.replace(/\s*\(.*?\)/, '').split(' / ')) if (n.length > 2 && !KW.has(n)) KW.set(n, { t, d }); }
+  const KW_BY_T = new Map(); for (const [, rows] of GLOSSARY) for (const [t, d] of rows) KW_BY_T.set(t, { t, d });
+  for (const [a, t] of Object.entries(KW_ALIAS)) if (KW_BY_T.has(t) && !KW.has(a)) KW.set(a, KW_BY_T.get(t));
+  const kwEsc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const KW_RE = new RegExp('(^|[^A-Za-z-])(' + [...KW.keys()].sort((a, b) => b.length - a.length).map(kwEsc).join('|') + ')(?![A-Za-z])', 'g');
+  const KW_NO = 'script, style, textarea, input, select, option, svg, canvas, .kw, .fname, .ftype, h1, h2, h3, button, .uhead, .onm, .seatname, .gloss, #kwTip, [contenteditable], .nokw';
+  function kwWrap(root) {
+    if (!root || (root.nodeType === 1 && root.closest && root.closest(KW_NO))) return;
+    const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: (n) => { if (!n.nodeValue || n.nodeValue.length < 3) return NodeFilter.FILTER_REJECT; const p = n.parentElement; if (!p || p.closest(KW_NO)) return NodeFilter.FILTER_REJECT; KW_RE.lastIndex = 0; return KW_RE.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT; } });
+    const list = []; let n; while ((n = tw.nextNode())) list.push(n);
+    for (const t of list) {
+      const s = t.nodeValue, frag = document.createDocumentFragment(); let last = 0, m; KW_RE.lastIndex = 0;
+      while ((m = KW_RE.exec(s))) { const at = m.index + m[1].length; if (at > last) frag.appendChild(document.createTextNode(s.slice(last, at))); const sp = document.createElement('span'); sp.className = 'kw'; sp.dataset.kw = m[2]; sp.textContent = m[2]; frag.appendChild(sp); last = at + m[2].length; KW_RE.lastIndex = last; }
+      if (last < s.length) frag.appendChild(document.createTextNode(s.slice(last)));
+      t.parentNode.replaceChild(frag, t);
+    }
+  }
+  let kwPend = new Set(), kwRaf = 0;
+  const kwFlush = () => { kwRaf = 0; const roots = [...kwPend]; kwPend = new Set(); for (const r of roots) if (r.isConnected) kwWrap(r); };
+  new MutationObserver((muts) => {
+    for (const m of muts) { if (m.type === 'characterData') { if (m.target.parentElement) kwPend.add(m.target.parentElement); continue; } for (const a of m.addedNodes) kwPend.add(a.nodeType === 3 ? a.parentElement : a); }
+    kwPend.delete(null); if (kwPend.size && !kwRaf) kwRaf = requestAnimationFrame(kwFlush);
+  }).observe(document.body, { childList: true, subtree: true, characterData: true });
+  kwWrap(document.body);
+  // the tooltip: hold Alt over an underlined word
+  const kwTip = document.createElement('div'); kwTip.id = 'kwTip'; kwTip.hidden = true; document.body.appendChild(kwTip);
+  let kwOver = null, kwAlt = false, kwX = 0, kwY = 0;
+  function kwShow() {
+    if (!kwOver || !kwAlt || !kwOver.isConnected) { kwTip.hidden = true; return; }
+    const e = KW.get(kwOver.dataset.kw); if (!e) { kwTip.hidden = true; return; }
+    kwTip.innerHTML = `<b>${esc(e.t.replace(/ \/ .*$/, '').replace(/\s*\(.*?\)/, ''))}</b><span>${esc(e.d)}</span>`; kwTip.hidden = false;
+    const w = kwTip.offsetWidth, h = kwTip.offsetHeight; let x = kwX + 14, y = kwY + 16; if (x + w > innerWidth - 8) x = innerWidth - w - 8; if (y + h > innerHeight - 8) y = kwY - h - 12;
+    kwTip.style.left = Math.max(8, x) + 'px'; kwTip.style.top = Math.max(8, y) + 'px';
+  }
+  document.addEventListener('mouseover', (ev) => { const k = ev.target.closest && ev.target.closest('.kw'); if (k !== kwOver) { kwOver = k; kwShow(); } }, true);
+  document.addEventListener('mousemove', (ev) => { kwX = ev.clientX; kwY = ev.clientY; kwAlt = ev.altKey; if (kwOver && kwAlt) kwShow(); else if (!kwTip.hidden && !kwAlt) kwTip.hidden = true; }, true);
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Alt') { kwAlt = true; if (kwOver) { ev.preventDefault(); kwShow(); } } }, true);
+  document.addEventListener('keyup', (ev) => { if (ev.key === 'Alt') { kwAlt = false; kwTip.hidden = true; if (kwOver) ev.preventDefault(); } }, true); // also keeps the browser menu from grabbing focus
+  window.addEventListener('blur', () => { kwAlt = false; kwTip.hidden = true; });
 
   // ---------- TEMPORARY test vendor (Tinker Pip): every card and every codex, free. Remove before launch.
   const TV = { tab: 'decks', rar: 'All', q: '', open: null };
