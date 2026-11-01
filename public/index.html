@@ -95,6 +95,11 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .up { color: var(--good); } .down { color: #f0a08c; }
 .xpbar { height: 5px; background: #0d0b09; border-radius: 3px; overflow: hidden; margin-top: 3px; }
 .xpbar i { display: block; height: 100%; background: var(--accent); }
+.upbar { margin: 10px 0 4px; } .uplbl { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; } .uplbl .up { color: #8fe07a; }
+.uptrack { position: relative; height: 14px; background: #0d0b09; border: 2px solid #000; border-radius: 3px; overflow: hidden; box-shadow: inset 0 2px 3px rgba(0,0,0,.8); }
+.uptrack i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; transition: width .5s ease-out; }
+.uptrack .ug { background: linear-gradient(180deg, #9be884, #4f9a3c); } .uptrack .ub { background: linear-gradient(180deg, #e9bf6a, #a8792c); }
+.uptrack.flash { animation: upflash .45s ease-out; } @keyframes upflash { 0% { box-shadow: 0 0 0 2px #9be884, 0 0 16px #9be884; } 100% { box-shadow: inset 0 2px 3px rgba(0,0,0,.8); } }
 .feedlist { display: grid; gap: 4px; max-height: 300px; overflow: auto; }
 .feedlist label { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; padding: 4px 8px; background: var(--panel2); border-left: 3px solid var(--rc); border-radius: 4px; font-size: 13px; }
 .savenote { font-size: 12px; color: var(--muted); }
@@ -137,7 +142,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .runlog { font-size: 13px; color: #d6cab6; display: grid; gap: 4px; max-height: 260px; overflow: auto; }
 
 /* battlefield */
-.field-panel { background: radial-gradient(120% 90% at 50% 0%, #2a2219 0%, var(--panel) 60%); border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: grid; gap: 10px; min-width: 0; }
+.field-panel { background: radial-gradient(120% 90% at 50% 0%, #2a2219 0%, var(--panel) 60%); border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; min-width: 0; }
 .order { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; }
 .order .otile { position: relative; width: 98px; padding: 4px 4px 5px; border: 1px solid var(--line); border-radius: 8px; background: linear-gradient(#1f1915, #15110e); text-align: center; transition: transform .15s, opacity .15s; }
 .order .otile.hero { border-color: color-mix(in srgb, var(--oc) 55%, var(--line)); }
@@ -157,13 +162,13 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .order .lbl { color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-size: 11px; margin-right: 4px; }
 .order .chip.now { border-color: var(--accent); color: var(--text); background: #3a2c17; }
 .order .chip.dead { text-decoration: line-through; opacity: .5; }
-.order .round { margin-left: auto; font-family: var(--f-display); font-size: 22px; color: var(--accent); }
+.order .round { white-space: nowrap; margin-left: auto; font-family: var(--f-display); font-size: 22px; color: var(--accent); }
 .stage { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.4fr); align-items: end; gap: 12px; min-height: 200px; padding: 0 4px; border-bottom: 1px dashed var(--line); }
 .vs { font-family: var(--f-display); color: var(--line); font-size: 30px; align-self: center; }
 .foes { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
 @media (max-width: 640px) { .stage { grid-template-columns: minmax(0, 1fr); } .vs { display: none; } .foes { justify-content: flex-start; } }
 .unit { position: relative; width: min(210px, calc(50vw - 30px)); max-width: 100%; display: grid; gap: 6px; border-radius: 8px; padding: 8px; border: 1px solid transparent; }
-.unit.active { border-color: var(--accent); background: rgba(214,161,74,.07); }
+.unit.active .inkfig, .unit.active .figure svg { filter: drop-shadow(0 0 7px rgba(214,161,74,.55)) drop-shadow(0 3px 0 rgba(0,0,0,.35)); }
 .unit.dead { opacity: .35; filter: grayscale(1); }
 .unit.targetable { cursor: crosshair; border-color: var(--hp); background: rgba(201,71,47,.08); }
 .unit.targetable:hover { background: rgba(201,71,47,.18); }
@@ -250,7 +255,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .cf .ftext.long { font-size: calc(7.2cqw * var(--cf-text-s, 1)); }
 .cf .ftext.vlong { font-size: calc(6.3cqw * var(--cf-text-s, 1)); }
 .cf .ftext b { color: #8a1f12; } .cf.dark .ftext b { color: #ffcf7a; }
-.hand .cf { --cw: min(218px, max(150px, calc((100vh - 610px) / 1.5))); margin-left: calc(var(--cw) * -0.3); transform-origin: 50% 120%; transform: translateY(calc(var(--off, 0) * 1px)) rotate(calc(var(--rot, 0) * 1deg)); transition: transform .14s ease-out, filter .14s, margin .14s; position: relative; z-index: var(--z, 1); }
+.hand .cf { --cw: min(218px, max(150px, calc((100vh - 610px) / 1.5))); margin-left: calc(var(--cw) * -1 * var(--ov, .3)); transform-origin: 50% 120%; transform: translateY(calc(var(--off, 0) * 1px)) rotate(calc(var(--rot, 0) * 1deg)); transition: transform .14s ease-out, filter .14s, margin .14s; position: relative; z-index: var(--z, 1); }
 .hand .cf:first-child { margin-left: 0; }
 .hand .cf:hover:not(:disabled), .hand .cf:focus-visible { transform: translateY(-64px) rotate(0deg) scale(1.2); z-index: 50; filter: drop-shadow(0 16px 24px rgba(0,0,0,.7)); }
 .hand .cf.selected { transform: translateY(-48px) rotate(0deg) scale(1.18); z-index: 49; filter: drop-shadow(0 0 12px rgba(214,161,74,.85)); }
@@ -347,20 +352,33 @@ body.aiming { cursor: grabbing; user-select: none; }
 .partypick legend { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 0 4px; }
 .partypick label { display: inline-flex; gap: 5px; align-items: center; }
 /* party fights: heroes in a grid (2x2 for 3-4, 3 across for 5-6, 4-5 across for raids), compact names and status tags */
-#playerSlot.party { display: grid; grid-template-columns: repeat(var(--pc, 2), minmax(0, 1fr)); gap: 6px; align-items: end; }
 #playerSlot.party .unit { width: auto; min-width: 0; padding: 5px; gap: 3px; }
-#playerSlot.party .figure, #playerSlot.party .figure svg { height: 52px; }
 #playerSlot.party .uname b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 #playerSlot.party .uname small { font-size: 10px; }
 #playerSlot.party .bar span { font-size: 11px; }
 #playerSlot.party .tags { gap: 2px; }
 #playerSlot.party .tag { font-size: 10.5px; padding: 0 4px; line-height: 16px; }
-.stage.bigparty { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
-.foes.many { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; align-items: end; }
-.foes.many .unit { width: auto; min-width: 0; padding: 5px; gap: 3px; } .foes.many .figure, .foes.many .figure svg { height: 52px; } .foes.many .uname b { font-size: 13px; } .foes.many .uname small { font-size: 10px; white-space: normal; } .foes.many .intent { font-size: 11px; padding: 1px 5px; } .foes.many .deckbtn { font-size: 11px; padding: 1px 6px; }
+/* the stage: heroes and foes in fixed columns sized by how many stand on each side; every figure uses the stage's --fh */
+.stage { grid-template-columns: minmax(0, var(--hw, 1fr)) auto minmax(0, var(--fw, 1.4fr)); }
+#playerSlot.side { display: grid; grid-template-columns: repeat(var(--hcols, 1), minmax(0, 210px)); justify-content: start; gap: 6px; align-items: end; }
+.foes.side { display: grid; grid-template-columns: repeat(var(--fcols, 1), minmax(0, 230px)); justify-content: end; gap: 8px; align-items: end; }
+.stage .side .unit { width: auto; min-width: 0; }
+.stage .figure svg { height: var(--fh, 118px); }
+.foes.many { gap: 6px; }
+#scrCombat .order { flex-wrap: nowrap; } #scrCombat .order .otile { width: auto; flex: 0 1 98px; min-width: 34px; } #scrCombat .order.raid .otile { flex-basis: 62px; } .order.many .osep { display: none; } .order.many .otile .ofig, .order.many .otile .ofig svg, .order.many .otile .ofig .inkfig { height: 40px; } .order.many .otile .onm { font-size: 11px; }
+.deckbtn .dshort { display: none; } .stage.tight .deckbtn .dlong { display: none; } .stage.tight .deckbtn .dshort { display: inline; }
+.stage.tight .uname small { display: none; } .stage.tight .deckbtn { font-size: 10px; padding: 1px 4px; line-height: 1.2; } .stage.tight .uname b { font-size: 12px; }
+/* the battlefield keeps one height (the screen below the top bar) whatever is on it: the stage takes the slack, the hand and HUD sit at the bottom */
+@media (min-width: 900px) and (min-height: 560px) {
+  #scrCombat .field-panel { min-height: calc(100vh - var(--fpTop, 84px) - 12px); grid-template-rows: auto auto auto auto minmax(0, 1fr); align-content: stretch; }
+  #scrCombat .stage { height: var(--sh, 262px); min-height: 0; grid-template-rows: minmax(0, 1fr); align-items: stretch; }
+  #scrCombat .stage > .side { align-content: unsafe end; min-height: 0; } #scrCombat .stage > .vs { align-self: center; }
+  #scrCombat .hand { align-self: end; }
+}
+.foes.many .unit { width: auto; min-width: 0; padding: 5px; gap: 3px; } .foes.many .uname b { font-size: 13px; } .foes.many .uname small { font-size: 10px; white-space: normal; } .foes.many .intent { font-size: 11px; padding: 1px 5px; } .foes.many .deckbtn { font-size: 11px; padding: 1px 6px; }
 .rdone { color: #7fd36a; font-weight: 800; } .rwait { color: var(--muted); font-size: 10px; }
 .order .otile .ock { position: absolute; top: 2px; left: 4px; color: #7fd36a; font-weight: 900; font-size: 13px; text-shadow: 0 0 4px #000; }
-.unit.viewing { box-shadow: 0 0 0 2px var(--accent) inset; }
+.unit.viewing .uname b { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
 .memrow { display: grid; grid-template-columns: 70px 1fr auto; gap: 8px; align-items: center; font-size: 13px; margin: 4px 0; }
 .memrow b { color: var(--mc); }
 .sackhead { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 6px 0 2px; }
@@ -461,7 +479,13 @@ body.aiming { cursor: grabbing; user-select: none; }
 .chatlog .cguild { color: #a8e29a; } .chatlog .cguild b { color: #7fd36a; }
 .chatlog .cwhisper { color: #f0b4e6; } .chatlog .cwhisper b { color: #e889d8; }
 /* in a fight the chat docks in a column on the left, like the combat log on the right */
-#scrCombat.withchat { grid-template-columns: 260px minmax(0, 1fr) var(--ledgerW, 340px); }
+#scrCombat.withchat { grid-template-columns: var(--chatW, 260px) minmax(0, 1fr) var(--ledgerW, 340px); }
+.combatchat { position: relative; }
+#scrCombat[style*="--chatH"] .combatchat .chatlog { height: var(--chatH); max-height: none; min-height: 80px; }
+.cgrip-w { right: -30px; top: 30px; bottom: 30px; width: 12px; cursor: ew-resize; } .cgrip-w::after { left: 4px; top: 40%; height: 20%; width: 4px; }
+.cgrip-c { right: -30px; bottom: -30px; width: 22px; height: 22px; cursor: nwse-resize; } .cgrip-c::after { right: 4px; bottom: 4px; width: 10px; height: 10px; }
+.combatchat:hover .lgrip::after { background: rgba(224,160,80,.45); }
+@media (max-width: 1180px) { .cgrip-w, .cgrip-c { display: none; } }
 .combatchat { align-self: start; }
 .combatchat .chatbox { position: static; width: 100%; }
 .combatchat .chatbox input { width: 100%; box-sizing: border-box; min-width: 0; }
@@ -657,7 +681,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 
   <!-- COMBAT -->
   <section id="scrCombat" class="combatmain" hidden aria-label="Battle">
-    <aside class="panel combatchat" id="combatChat" hidden aria-label="Chat"></aside>
+    <aside class="panel combatchat" id="combatChat" hidden aria-label="Chat"><div class="lgrip cgrip-w" data-grip="w" title="Drag to resize (double-click to reset)"></div><div class="lgrip lgrip-h" data-grip="h" title="Drag to resize (double-click to reset)"></div><div class="lgrip cgrip-c" data-grip="c" title="Drag to resize (double-click to reset)"></div></aside>
     <div class="field-panel">
       <div class="order" id="order"></div>
       <div class="stage"><div id="playerSlot"></div><div class="vs">vs</div><div class="foes" id="foes"></div><div class="playedpeek" id="playedPeek" hidden aria-live="polite"></div></div>
@@ -3909,6 +3933,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     modal(`<h2>Upgrade</h2><div style="display:flex;gap:14px;align-items:center">${cardBox(CB.rankedCard(t.key, t.rank || 0), 150)}<div style="flex:1">${cardHtml(t)}</div></div>
       <p>Feed cards from your collection. Deck cards can't be fed.</p>
       <div class="feedlist">${fod.map(k => { const v = CB.rankedCard(k.key, k.rank || 0); return `<label style="--rc:${RC[CARDS[k.key].rarity]}"><input type="checkbox" value="${k.id}"><span>${esc(v.name)} <span class="muted">${CARDS[k.key].rarity}</span></span><span class="muted">+${CBHub.feedXp(t, k)} XP</span></label>`; }).join('') || '<span class="muted">No spare cards in your collection.</span>'}</div>
+      <div class="upbar"><div class="uplbl"><b id="upRank">+${t.rank || 0}</b><span id="upXp"></span></div><div class="uptrack"><i class="ug"></i><i class="ub"></i></div></div>
       <p id="upPrev" class="muted"></p>
       <div class="row"><button class="btn primary" id="mFeed" disabled>Feed</button><button class="btn" id="mClose">Close</button></div>`);
     const prev = () => {
@@ -3918,7 +3943,21 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       while (rank < CB.MAX_RANK) { const k = CBHub.rankCost({ key: t.key, rank }); if (xp < k.xp || gold < k.gold) break; xp -= k.xp; gold -= k.gold; cost += k.gold; rank++; }
       $('upPrev').innerHTML = ids.length ? `+${gain} XP. Result: <b>+${rank}</b>${rank > (t.rank || 0) ? ` for ${cost} gold` : ''}, ${xp} XP banked.` + (rank < CB.MAX_RANK && xp >= CBHub.rankCost({ key: t.key, rank }).xp ? ' <span class="down">Not enough gold for the next rank.</span>' : '') : '';
       $('mFeed').disabled = !ids.length;
+      bar(rank, xp, gain);
     };
+    // the XP bar: gold is what the card already has, green is what the ticked cards add; it fills, rolls over on a rank-up, and drains back when you untick
+    const r0 = t.rank || 0, need = (r) => r >= CB.MAX_RANK ? 0 : CBHub.rankCost({ key: t.key, rank: r }).xp;
+    const UB = $('modalBox').querySelector('.ub'), UG = $('modalBox').querySelector('.ug'); let shown = r0, tm = null;
+    const setW = (el, f, anim) => { el.style.transition = anim ? '' : 'none'; el.style.width = (Math.max(0, Math.min(1, f)) * 100) + '%'; if (!anim) void el.offsetWidth; };
+    const label = (r, xp, gain) => { $('upRank').innerHTML = r > r0 ? `+${r0} &rarr; <span class="up">+${r}</span>` : `+${r}`; $('upXp').innerHTML = r >= CB.MAX_RANK ? 'Max rank' : `${xp} / ${need(r)} XP${gain ? ` <span class="up">(+${gain})</span>` : ''}`; };
+    const bar = (rank, xp, gain) => {
+      clearTimeout(tm); const base = rank === r0 ? (t.xp || 0) : 0, f = rank >= CB.MAX_RANK ? 1 : xp / need(rank);
+      const finish = () => { setW(UB, rank === r0 ? base / need(r0) : 0, true); setW(UG, f, true); label(rank, xp, gain); shown = rank; };
+      if (rank > shown) { setW(UG, 1, true); label(shown, need(shown), gain); tm = setTimeout(() => { setW(UB, 0, false); setW(UG, 0, false); shown++; UG.parentElement.classList.remove('flash'); void UG.offsetWidth; UG.parentElement.classList.add('flash'); bar(rank, xp, gain); }, 520); }
+      else if (rank < shown) { setW(UB, 0, false); setW(UG, 0, false); shown = rank; setW(UG, 1, false); finish(); }
+      else finish();
+    };
+    setW(UB, (t.xp || 0) / (need(r0) || 1), false); setW(UG, (t.xp || 0) / (need(r0) || 1), false); label(r0, t.xp || 0, 0);
     $('modalBox').querySelector('.feedlist').addEventListener('change', prev);
     $('mClose').onclick = closeModal;
     $('mFeed').onclick = () => { const ids = [...$('modalBox').querySelectorAll('input:checked')].map(i => i.value); CBHub.feed(profile, heroKey, t.id, ids); save(); closeModal(); renderHub(); };
@@ -4728,7 +4767,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   document.addEventListener('click', (ev) => {
     if (ev.shiftKey || ev.target.closest('button, input, #cardZoom')) return;
     const a = ev.target.closest('.item[data-ilink]'); if (!a) return; const it = ILINK.get(a.dataset.ilink); if (!it || it.kind !== 'card' || !CARDS[it.key]) return;
-    zoom.innerHTML = `<div class="zoomin">${cardBox(CB.rankedCard(it.key, it.rank || 0), 300)}<p>${esc(CARDS[it.key].rarity)} ${esc(CARDS[it.key].cls || '')} card &middot; click anywhere to close</p></div>`; fitCards(zoom); zoom.hidden = false;
+    zoom.innerHTML = `<div class="zoomin">${cardBox(CB.rankedCard(it.key, it.rank || 0), 300)}<p>${esc(CARDS[it.key].rarity)} ${esc(CARDS[it.key].cls || '')} card &middot; click anywhere to close</p></div>`; zoom.hidden = false; fitCards(zoom); requestAnimationFrame(() => fitCards(zoom));
   });
   function showLinked(it) {
     const body = it.kind === 'card' ? (cardBox(CB.rankedCard(it.key, it.rank || 0), 230) || itemHtml(it)) : itemHtml(it);
@@ -5049,8 +5088,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793500796309';
-  const CB_BUILD = '37a4df0771'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793502481564';
+  const CB_BUILD = 'a4d22e5ea2'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -5749,6 +5788,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Fix', 'Fights hold still: heroes and monsters now share one figure size picked from the busier side (a duo no longer gets shrunk to raid size), each side keeps fixed columns so nobody jumps when a mob dies, and the battlefield keeps the same height whatever is in your hand. Big hands overlap more instead of stretching the screen, and long turn orders shrink instead of wrapping.'],
+      ['Fix', 'The gold box around the hero whose turn it is is gone: the turn order already shows it, and the active figure gets a soft gold glow instead.'],
+      ['Feature', 'The chat column in a fight resizes like the combat log: drag its right edge, bottom edge or corner (double-click a handle to reset).'],
+      ['Feature', 'Upgrading a card shows an XP bar: gold is what the card has, green fills in as you tick cards to feed, rolls over with a flash on each rank-up and drains back when you untick.'],
+      ['Fix', 'Clicking a dropped card to see it big now fits the rules text inside the card instead of showing it at full size.'],
       ['Fix', 'Hotkeys close what they open: C closes the character screen again, and M closes the map view in a fight (G and N already did).'],
       ['Fix', 'At the Wagon, the map you picked now stands out: it lights up in its element colour with a "Selected" tag.'],
       ['Art', 'The interface is in Gothic Ink too: windows and panels are framed in inked stone, buttons are wooden planks (the main action is banded oak), and tabs, chips, bars and inputs have heavy black outlines on dark slate. Cards are unchanged. To go back to the old look, open Menu and untick "Gothic Ink interface".'],
@@ -6156,7 +6200,6 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   const css = document.createElement('style');
   css.textContent = `.figure:has(> .inkfig) { height: auto; overflow: visible; min-height: 80px; }
     .inkfig { display: block; width: auto; height: calc(var(--fh, 118px) * var(--s, 1)); max-width: 100%; object-fit: contain; filter: drop-shadow(0 3px 0 rgba(0,0,0,.35)); pointer-events: none; user-select: none; }
-    #playerSlot.party .inkfig, .foes.many .inkfig { --fh: 74px; } #playerSlot.raid .inkfig { --fh: 48px; }
     .order .otile .ofig .inkfig { height: 58px; width: 100%; filter: none; } .order.raid .otile .ofig .inkfig { height: 30px; }
     .unit.dead .inkfig { filter: grayscale(1) brightness(.55); opacity: .7; }`;
   document.head.appendChild(css);
@@ -6492,7 +6535,6 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   body.inkui .bar i { background: linear-gradient(180deg, #d0553b, #8f2c1e); box-shadow: inset 0 1px 0 rgba(255,200,170,.35); }
   /* fight units and the turn order as inked slabs */
   body.inkui .unit { border: 2px solid transparent; }
-  body.inkui .unit.active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--ink), 0 0 14px rgba(210,167,92,.35); }
   body.inkui .order .otile { border: 2px solid var(--ink); box-shadow: 2px 3px 0 rgba(0,0,0,.45); background: linear-gradient(180deg, #2a2829, #1b191a); }
   /* inputs and selects: sunk into the stone */
   body.inkui input:not([type=range]):not([type=checkbox]):not([type=radio]), body.inkui select, body.inkui textarea { background: #121112; border: 2px solid var(--ink); box-shadow: inset 0 2px 4px rgba(0,0,0,.7); color: var(--text); border-radius: 3px; }
@@ -6975,7 +7017,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // ---------- settings (this browser)
   const settings = (() => { try { return Object.assign({ fast: false }, JSON.parse(localStorage.getItem('cb-settings') || '{}')); } catch (e) { return { fast: false }; } })();
   // combat log: drag its left edge (width), bottom edge (height) or the corner; double-click a grip to reset; remembered per browser
-  function applyLedgerSize() { const sc = $('scrCombat'); if (!sc) return; if (settings.ledgerW) sc.style.setProperty('--ledgerW', settings.ledgerW + 'px'); else sc.style.removeProperty('--ledgerW'); if (settings.ledgerH) sc.style.setProperty('--ledgerH', settings.ledgerH + 'px'); else sc.style.removeProperty('--ledgerH'); }
+  function applyLedgerSize() { const sc = $('scrCombat'); if (!sc) return; for (const [k, v] of [['--chatW', settings.chatW], ['--chatH', settings.chatH]]) { if (v) sc.style.setProperty(k, v + 'px'); else sc.style.removeProperty(k); } if (settings.ledgerW) sc.style.setProperty('--ledgerW', settings.ledgerW + 'px'); else sc.style.removeProperty('--ledgerW'); if (settings.ledgerH) sc.style.setProperty('--ledgerH', settings.ledgerH + 'px'); else sc.style.removeProperty('--ledgerH'); }
   (function () {
     let g = null;
     $('ledger').addEventListener('pointerdown', (ev) => { const h = ev.target.closest('.lgrip'); if (!h) return; ev.preventDefault(); const r = $('ledger').getBoundingClientRect(); g = { k: h.dataset.grip, h, x: ev.clientX, y: ev.clientY, w: r.width, ht: r.height }; h.classList.add('on'); h.setPointerCapture(ev.pointerId); });
@@ -6985,6 +7027,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       applyLedgerSize(); });
     $('ledger').addEventListener('pointerup', () => { if (!g) return; g.h.classList.remove('on'); g = null; saveSettings(); });
     $('ledger').addEventListener('dblclick', (ev) => { const h = ev.target.closest('.lgrip'); if (!h) return; if (h.dataset.grip !== 'h') delete settings.ledgerW; if (h.dataset.grip !== 'w') delete settings.ledgerH; applyLedgerSize(); saveSettings(); });
+  })();
+  // the chat column in a fight resizes the same way: drag its right edge, bottom edge or corner
+  (function () {
+    let g = null; const cc = $('combatChat');
+    cc.addEventListener('pointerdown', (ev) => { const h = ev.target.closest('.lgrip'); if (!h) return; ev.preventDefault(); const lg = cc.querySelector('.chatlog'); g = { k: h.dataset.grip, h, x: ev.clientX, y: ev.clientY, w: cc.getBoundingClientRect().width, ht: lg ? lg.getBoundingClientRect().height : 300 }; h.classList.add('on'); h.setPointerCapture(ev.pointerId); });
+    cc.addEventListener('pointermove', (ev) => { if (!g) return;
+      if (g.k !== 'h') settings.chatW = Math.round(Math.max(180, Math.min(innerWidth * 0.4, g.w + (ev.clientX - g.x))));
+      if (g.k !== 'w') settings.chatH = Math.round(Math.max(80, Math.min(innerHeight - 160, g.ht + (ev.clientY - g.y))));
+      applyLedgerSize(); });
+    cc.addEventListener('pointerup', () => { if (!g) return; g.h.classList.remove('on'); g = null; saveSettings(); });
+    cc.addEventListener('dblclick', (ev) => { const h = ev.target.closest('.lgrip'); if (!h) return; if (h.dataset.grip !== 'h') delete settings.chatW; if (h.dataset.grip !== 'w') delete settings.chatH; applyLedgerSize(); saveSettings(); });
   })();
   function saveSettings() { try { localStorage.setItem('cb-settings', JSON.stringify(settings)); } catch (e) {} }
 
@@ -7637,7 +7690,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const sub = a.isPlayer ? (cb.raid ? "" : `Init ${ini}`) : `${a.tier === 'Elite' || a.tier === 'Boss' ? a.tier + ' &middot; ' : ''}${a.type} &middot; weak ${a.weakTo} &middot; Init ${ini}`;
     return `<div class="unit ${isNow ? 'active' : ''} ${a.isPlayer && cb.partySize > 1 && a === viewHero && !isNow ? 'viewing' : ''} ${a.hp <= 0 ? 'dead' : ''} ${targetable ? 'targetable' : ''}" data-id="${a.id}" ${targetable ? 'role="button" tabindex="0"' : ''}>
       ${a.isPlayer ? '' : `<div class="intents">${intentHtml(a)}</div>`}
-      ${a.isPlayer ? '' : `<button class="pilebtn deckbtn" data-enemy="${a.id}">Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}</button>`}
+      ${a.isPlayer ? '' : `<button class="pilebtn deckbtn" data-enemy="${a.id}" title="Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}"><span class="dlong">Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}</span><span class="dshort">Deck ${a.hand.length}/${a.drawPile.length}/${a.discard.length}</span></button>`}
       <div class="figure">${figure(a)}</div>
       <div class="uname"><b ${a.isPlayer ? `style="color:${CC[a.cls]}"` : ''}>${esc(a.name)}</b><small>${cb.raid && a.isPlayer && a.hp > 0 && !cb.over ? (cb.raidDone && cb.raidDone.has(a.id) ? '<span class="rdone" title="Ended their turn">&#10003; Done</span>' : cb.phase === 'player' ? '<span class="rwait">playing...</span>' : '') : sub}</small></div>
       <div class="bar"><i style="width:${pct}%"></i><span>${a.hp} / ${a.maxHp}</span></div>
@@ -7672,11 +7725,20 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (!cb) return;
     if (cb.round !== render.whereRound && typeof retrack === 'function') { render.whereRound = cb.round; try { retrack(); } catch (e) {} } // friends see the round/row we're on
     const p = hero(), party = cb.partySize > 1, wh = watchedHero(p);
-    $('order').classList.toggle('raid', !!cb.raid && cb.partySize > 4);
+    $('order').classList.toggle('raid', !!cb.raid && cb.partySize > 4); $('order').classList.toggle('many', cb.order.length > 5 && !(cb.raid && cb.partySize > 4));
     $('order').innerHTML = `<span class="lbl">Turn<br>order</span>` + cb.order.map((id, i) => { const a = cb.actorById(id); const st = a.hp <= 0 ? 'dead' : cb.raid && a.isPlayer ? (cb.raidDone && cb.raidDone.has(a.id) ? 'done' : cb.phase === 'player' && !cb.over ? 'now' : '') : i === cb.turnIndex && !cb.over ? 'now' : i < cb.turnIndex ? 'done' : '';
       return `${i ? '<span class="osep" aria-hidden="true">&rsaquo;</span>' : ''}<div class="otile ${a.isPlayer ? 'hero' : 'foe'} ${st}" style="--oc:${a.isPlayer ? CC[a.cls] : '#e0b8a8'}" title="${esc(a.name)}: Initiative ${cb.initiative(a)}, HP ${a.hp}/${a.maxHp}"><span class="oini">${cb.initiative(a)}</span>${cb.raid && a.isPlayer && a.hp > 0 && cb.raidDone && cb.raidDone.has(a.id) ? '<span class="ock" title="Ended their turn">&#10003;</span>' : ''}<div class="ofig">${figure(a)}</div><div class="onm">${a.isPlayer && !party ? 'You' : a === p && cb.myMi != null ? 'You' : esc(a.name)}</div><div class="obar"><i style="width:${Math.max(0, 100 * a.hp / a.maxHp)}%"></i></div></div>`; }).join('') + `<span class="round">Round ${cb.round}</span>${run && run.over && cb.over ? '<button class="btn primary" id="btnCResults" style="padding:4px 12px">Results</button>' : run ? '<button class="pilebtn" id="btnCMap" title="Look at the map (M)">Map</button>' : ''}${cb.practice ? '<button class="pilebtn" id="btnCReset" title="Start a fresh fight">Reset</button><button class="pilebtn" id="btnCLeave">Leave</button>' : ''}`;
     const mine = cb.duel ? [p] : cb.players, foes = cb.duel ? cb.players.filter(x => x !== p) : cb.enemies;
-    $('playerSlot').className = cb.raid && cb.partySize > 4 ? 'party raid' : party && !cb.duel ? 'party' : ''; { const n = cb.partySize; $('playerSlot').style.setProperty('--pc', n <= 4 ? 2 : n <= 6 ? 3 : n <= 8 ? 4 : 5); $('playerSlot').parentElement.classList.toggle('bigparty', !cb.duel && n >= 3); $('foes').classList.toggle('many', !cb.duel && cb.enemies.length >= 3); } $('playerSlot').innerHTML = mine.map(unitHtml).join('');
+    { // one shared figure size for heroes and foes, picked from the busier side, so nobody is drawn at a different scale or jumps around mid-fight
+      const hc = mine.length, fc = foes.length, hCols = hc <= 5 ? hc : Math.ceil(hc / 2), fCols = fc <= 4 ? fc : Math.ceil(fc / 2), rows = hc > 5 || fc > 4, n = Math.max(hCols, fCols);
+      const st = $('playerSlot').parentElement, compact = rows || n >= 3; st.classList.toggle('tight', rows || n >= 3);
+      st.style.setProperty('--fh', (rows ? 56 : n <= 1 ? 118 : n === 2 ? 100 : n === 3 ? 84 : 72) + 'px');
+      st.style.setProperty('--sh', (rows ? 340 : Math.max(262, (rows ? 56 : n <= 1 ? 118 : n === 2 ? 100 : n === 3 ? 84 : 72) + 135)) + 'px');
+      st.style.setProperty('--hcols', hCols); st.style.setProperty('--fcols', fCols); st.style.setProperty('--hw', Math.max(1, hCols) + 'fr'); st.style.setProperty('--fw', Math.max(1.3, fCols) + 'fr');
+      $('playerSlot').className = 'side' + (compact ? ' party' : '') + (cb.raid && cb.partySize > 4 ? ' raid' : '');
+      $('foes').className = 'foes side' + (compact ? ' many' : '');
+      const fp = st.parentElement, top = Math.round(fp.getBoundingClientRect().top + window.scrollY); if (top > 0 && top < 400) fp.style.setProperty('--fpTop', top + 'px');
+    } $('playerSlot').innerHTML = mine.map(unitHtml).join('');
     $('foes').innerHTML = foes.map(unitHtml).join('');
     if (withPops) popups(); else snapshot();
     $('orb').textContent = p.mana;
@@ -7705,6 +7767,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
         <span class="ctext">${esc(d.text)}</span><span class="cfoot">${chk.ok ? (d.target === 'enemy' ? 'Single enemy' : d.target === 'all' ? 'All enemies' : d.target === 'ally' ? 'Ally' : 'Self') : esc(chk.why)}</span></button>`;
     }).join('') || `<span class="hint">${myTurn ? 'No cards in hand.' : ''}</span>`;
     fitCards($('hand'));
+    { // big hands overlap more instead of pushing the battlefield wider
+      const H = $('hand'), f = H.querySelector('.cf'), n = H.querySelectorAll('.cf').length;
+      if (f && n > 1) { const cw = f.offsetWidth, W = H.clientWidth - 70; H.style.setProperty('--ov', Math.max(0.3, Math.min(0.85, 1 - (W - cw) / ((n - 1) * cw))).toFixed(3)); } else H.style.removeProperty('--ov');
+    }
     if ($('btnWatch')) $('btnWatch').onclick = () => { watchMine = !watchMine; render(); };
     if (!$('pCMeter').hidden) renderMeter($('meterC'));
     const logEl = $('log');

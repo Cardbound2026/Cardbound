@@ -2,6 +2,11 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Fix', 'Fights hold still: heroes and monsters now share one figure size picked from the busier side (a duo no longer gets shrunk to raid size), each side keeps fixed columns so nobody jumps when a mob dies, and the battlefield keeps the same height whatever is in your hand. Big hands overlap more instead of stretching the screen, and long turn orders shrink instead of wrapping.'],
+      ['Fix', 'The gold box around the hero whose turn it is is gone: the turn order already shows it, and the active figure gets a soft gold glow instead.'],
+      ['Feature', 'The chat column in a fight resizes like the combat log: drag its right edge, bottom edge or corner (double-click a handle to reset).'],
+      ['Feature', 'Upgrading a card shows an XP bar: gold is what the card has, green fills in as you tick cards to feed, rolls over with a flash on each rank-up and drains back when you untick.'],
+      ['Fix', 'Clicking a dropped card to see it big now fits the rules text inside the card instead of showing it at full size.'],
       ['Fix', 'Hotkeys close what they open: C closes the character screen again, and M closes the map view in a fight (G and N already did).'],
       ['Fix', 'At the Wagon, the map you picked now stands out: it lights up in its element colour with a "Selected" tag.'],
       ['Art', 'The interface is in Gothic Ink too: windows and panels are framed in inked stone, buttons are wooden planks (the main action is banded oak), and tabs, chips, bars and inputs have heavy black outlines on dark slate. Cards are unchanged. To go back to the old look, open Menu and untick "Gothic Ink interface".'],

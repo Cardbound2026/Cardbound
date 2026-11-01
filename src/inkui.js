@@ -110,7 +110,6 @@
   body.inkui .bar i { background: linear-gradient(180deg, #d0553b, #8f2c1e); box-shadow: inset 0 1px 0 rgba(255,200,170,.35); }
   /* fight units and the turn order as inked slabs */
   body.inkui .unit { border: 2px solid transparent; }
-  body.inkui .unit.active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--ink), 0 0 14px rgba(210,167,92,.35); }
   body.inkui .order .otile { border: 2px solid var(--ink); box-shadow: 2px 3px 0 rgba(0,0,0,.45); background: linear-gradient(180deg, #2a2829, #1b191a); }
   /* inputs and selects: sunk into the stone */
   body.inkui input:not([type=range]):not([type=checkbox]):not([type=radio]), body.inkui select, body.inkui textarea { background: #121112; border: 2px solid var(--ink); box-shadow: inset 0 2px 4px rgba(0,0,0,.7); color: var(--text); border-radius: 3px; }

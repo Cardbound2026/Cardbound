@@ -8,7 +8,6 @@
   const css = document.createElement('style');
   css.textContent = `.figure:has(> .inkfig) { height: auto; overflow: visible; min-height: 80px; }
     .inkfig { display: block; width: auto; height: calc(var(--fh, 118px) * var(--s, 1)); max-width: 100%; object-fit: contain; filter: drop-shadow(0 3px 0 rgba(0,0,0,.35)); pointer-events: none; user-select: none; }
-    #playerSlot.party .inkfig, .foes.many .inkfig { --fh: 74px; } #playerSlot.raid .inkfig { --fh: 48px; }
     .order .otile .ofig .inkfig { height: 58px; width: 100%; filter: none; } .order.raid .otile .ofig .inkfig { height: 30px; }
     .unit.dead .inkfig { filter: grayscale(1) brightness(.55); opacity: .7; }`;
   document.head.appendChild(css);

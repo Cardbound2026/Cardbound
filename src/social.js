@@ -202,7 +202,7 @@
   document.addEventListener('click', (ev) => {
     if (ev.shiftKey || ev.target.closest('button, input, #cardZoom')) return;
     const a = ev.target.closest('.item[data-ilink]'); if (!a) return; const it = ILINK.get(a.dataset.ilink); if (!it || it.kind !== 'card' || !CARDS[it.key]) return;
-    zoom.innerHTML = `<div class="zoomin">${cardBox(CB.rankedCard(it.key, it.rank || 0), 300)}<p>${esc(CARDS[it.key].rarity)} ${esc(CARDS[it.key].cls || '')} card &middot; click anywhere to close</p></div>`; fitCards(zoom); zoom.hidden = false;
+    zoom.innerHTML = `<div class="zoomin">${cardBox(CB.rankedCard(it.key, it.rank || 0), 300)}<p>${esc(CARDS[it.key].rarity)} ${esc(CARDS[it.key].cls || '')} card &middot; click anywhere to close</p></div>`; zoom.hidden = false; fitCards(zoom); requestAnimationFrame(() => fitCards(zoom));
   });
   function showLinked(it) {
     const body = it.kind === 'card' ? (cardBox(CB.rankedCard(it.key, it.rank || 0), 230) || itemHtml(it)) : itemHtml(it);
