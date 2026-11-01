@@ -68,11 +68,14 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .talk p { margin: 0; font-size: 16px; color: #e6dac4; }
 .talk .row { display: flex; gap: 8px; flex-wrap: wrap; }
 .sheet { position: fixed; inset: 0; background: rgba(8,6,4,.72); z-index: 15; display: grid; place-items: start center; padding: 16px; overflow: auto; }
-.sheetbox { width: min(1180px, 100%); background: var(--bg); border: 1px solid var(--accent); border-radius: 10px; padding: 14px; display: grid; gap: 12px; }
+.sheetbox { box-sizing: border-box; width: min(1280px, 100%); background: var(--bg); border: 1px solid var(--accent); border-radius: 10px; padding: 14px; display: grid; gap: 12px; }
 .sheethead { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .sheethead h2 { font-size: 32px; color: var(--accent); }
 .sheetgrid { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 12px; align-items: start; }
 .sheetgrid.solo { grid-template-columns: minmax(0, 1fr); }
+/* the Barracks: hero list beside the stats panel instead of above it */
+@media (min-width: 900px) { #sheet[data-kind="heroes"] .sheetbox { grid-template-columns: 330px minmax(0, 1fr); align-items: start; } #sheet[data-kind="heroes"] .sheethead { grid-column: 1 / -1; } #sheet[data-kind="heroes"] #secHeroes { grid-column: 2; grid-row: 2; } #sheet[data-kind="heroes"] .sheetgrid { grid-column: 1; grid-row: 2; grid-template-columns: minmax(0, 1fr); } }
+body.sheetopen #btnUpdates, body.modalopen #btnUpdates { display: none; }
 @media (max-width: 900px) { .sheetgrid { grid-template-columns: minmax(0, 1fr); } }
 .sheetmain { display: grid; gap: 12px; min-width: 0; }
 .camp { display: grid; gap: 10px; }
@@ -100,7 +103,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted
 .uptrack i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; transition: width .5s ease-out; }
 .uptrack .ug { background: linear-gradient(180deg, #9be884, #4f9a3c); } .uptrack .ub { background: linear-gradient(180deg, #e9bf6a, #a8792c); }
 .uptrack.flash { animation: upflash .45s ease-out; } @keyframes upflash { 0% { box-shadow: 0 0 0 2px #9be884, 0 0 16px #9be884; } 100% { box-shadow: inset 0 2px 3px rgba(0,0,0,.8); } }
-.inkbar { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 0 0 8px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: rgba(20,16,12,.5); font-size: 13px; } .inkbar b { font-size: 16px; color: #b9a6ff; } .inkbar .muted { flex: 1; min-width: 200px; }
+.inkbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 0 0 8px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: rgba(20,16,12,.5); font-size: 13px; } .inkbar b { font-size: 16px; color: #b9a6ff; } .inkbar .muted { flex: 1; min-width: 200px; }
 .inkscroll { max-height: 58vh; overflow: auto; padding-right: 4px; } .inklist { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 4px; }
 .inkrow { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; padding: 3px 4px 3px 8px; border-left: 3px solid var(--rc); background: var(--panel2); border-radius: 4px; font-size: 13px; } .inkrow .nm { cursor: help; } .inkrow.unseen .nm { color: var(--muted); font-style: italic; } .inkrow .btn { padding: 2px 10px; font-size: 13px; }
 .feedlist { display: grid; gap: 4px; max-height: 300px; overflow: auto; }
@@ -385,7 +388,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 .memrow { display: grid; grid-template-columns: 70px 1fr auto; gap: 8px; align-items: center; font-size: 13px; margin: 4px 0; }
 .memrow b { color: var(--mc); }
 .sackhead { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 6px 0 2px; }
-.modal .box.wide { width: min(980px, 100%); }
+.modal .box.wide { width: min(1080px, 100%); }
 .cxtop { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
 .cxtop input { flex: 1; min-width: 180px; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; font: inherit; }
 .cxtabs { margin: 0; }
@@ -534,7 +537,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 .namerow input, .menu input { background: var(--panel2); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; color: var(--text); font: inherit; font-size: 16px; min-width: 220px; }
 .menu { display: grid; gap: 8px; }
 .menu .btn { text-align: left; padding: 10px 14px; }
-.menu label.toggle { display: flex; gap: 8px; align-items: center; font-size: 15px; }
+.menu label.toggle { display: flex; gap: 10px; align-items: center; justify-content: flex-start; font-size: 15px; text-align: left; } .menu label.toggle input[type=checkbox] { width: 16px !important; min-width: 0; height: 16px; flex: none; margin: 0; }
 .cardpeek { position: fixed; z-index: 12; pointer-events: none; filter: drop-shadow(0 14px 28px rgba(0,0,0,.75)); }
 .cardpeek .cf { --cw: 270px; }
 @media (hover: none) { .cardpeek { display: none; } }
@@ -549,7 +552,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 
 /* modal */
 .modal { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(8,6,4,.74); z-index: 20; padding: 16px; }
-.modal .box { background: var(--panel); border: 1px solid var(--accent); border-radius: 10px; padding: 20px 22px; width: min(560px, 100%); max-height: calc(100vh - 40px); overflow: auto; display: grid; gap: 12px; }
+.modal .box { background: var(--panel); border: 1px solid var(--accent); border-radius: 10px; padding: 20px 22px; width: min(660px, 100%); max-height: calc(100vh - 32px); overflow: auto; display: grid; gap: 12px; }
 .modal h2 { font-size: 38px; color: var(--accent); }
 .modal h2.loss { color: var(--hp); }
 .modal p { margin: 0; color: #d6cab6; }
@@ -557,6 +560,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 .shop { display: grid; gap: 8px; }
 
 /* ===== UI art pass (Oct 31): painted frames, plaque buttons, battle backdrops (art in design/ui, keyed by design/scripts/ui_key.py) ===== */
+.modal .box { box-sizing: border-box; }
 .sheetbox, .modal .box { border: 62px solid transparent; border-image: url(img/ui/frame_big.webp) 330 fill / 62px / 14px round; background: none; border-radius: 0; padding: 2px 6px; }
 .modal .box { padding: 0 4px; }
 .panel, .talk { border: 32px solid transparent; border-image: url(img/ui/frame_thin.webp) 190 fill / 32px / 6px round; background: none; border-radius: 0; padding: 2px 4px; }
@@ -613,7 +617,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   .maploot { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; max-height: 64vh; overflow: auto; } .maploot h4 { color: var(--accent); margin: 6px 0 4px; } .mlslot { font-size: 13.5px; margin: 3px 0; } [data-cxcard].cardrow { cursor: pointer; }
   #playerSlot .unit.targetable, .unit.allytgt { border-color: #7fd36a; background: rgba(127,211,106,.08); cursor: pointer; } #playerSlot .unit.dropover { background: rgba(127,211,106,.2); }
   /* chat stays usable beside the big windows (link items and cards into it) */
-  @media (min-width: 1000px) { body.sheetopen #townWrap #chatBox, body.modalopen #townWrap #chatBox { position: fixed; left: 12px; bottom: 12px; width: 300px; z-index: 21; background: rgba(12,10,8,.94); border: 1px solid var(--line); border-radius: 8px; padding: 6px; }
+  @media (min-width: 1640px) { body.sheetopen #townWrap #chatBox, body.modalopen #townWrap #chatBox { position: fixed; left: 12px; bottom: 12px; width: 300px; z-index: 21; background: rgba(12,10,8,.94); border: 1px solid var(--line); border-radius: 8px; padding: 6px; }
     body.sheetopen .sheet { padding-left: 330px; } body.modalopen .modal { padding-left: 330px; } }
   .campbtns { flex-wrap: wrap; }
   #cardZoom { position: fixed; inset: 0; z-index: 60; background: rgba(6,5,4,.78); display: grid; place-items: center; cursor: zoom-out; } #cardZoom[hidden] { display: none; } #cardZoom .zoomin { display: grid; justify-items: center; gap: 8px; } #cardZoom p { color: var(--muted); font-size: 13px; margin: 0; }
@@ -3933,9 +3937,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const coll = c.cards.slice().sort(sortCards).map(k => { const a = CBHub.canAdd(c, k.id); return cardHtml(k, `<button class="btn" data-add="${k.id}" ${a.ok ? '' : `disabled title="${esc(a.why)}"`}>Add to deck</button><button class="btn" data-up="${k.id}">Upgrade</button><button class="btn" data-ink="${k.id}" title="Break this card down for Ink">Ink +${CBHub.inkValue(k)}</button>`); }).join('');
     const spare = c.cards.filter(k => c.deck.some(d => d.key === k.key && (d.rank || 0) < CB.MAX_RANK)).length;
     $('hpDeck').innerHTML = `<p class="savenote" style="margin:0 0 8px">Deck rules: ${CB.DECK_MIN} to ${CB.DECK_MAX} cards, at most 2 Gold, 4 Blue and 6 Green. Feed spare cards into a card to rank it up (to +${CB.MAX_RANK}). Each card gives White 1, Green 3, Blue 9, Gold 27 XP, doubled when it's a copy of the same card. Reaching rank N costs N x 2/4/8/16 XP (by rarity) plus 5x that in gold.</p>
+      <div class="inkbar"><b>Ink ${profile.ink || 0}</b><span class="muted">Break spare cards down for Ink (White ${CBHub.INK_GET.White}, Green ${CBHub.INK_GET.Green}, Blue ${CBHub.INK_GET.Blue}, Gold ${CBHub.INK_GET.Gold}; more for ranked cards), then buy cards: normal price for ones you have owned before, ${CBHub.INK_UNSEEN}x for ones you haven't found yet.</span><button class="btn primary" id="btnInkShop">Buy cards with Ink</button></div>
       <div class="two"><div><h3><span>Deck ${c.deck.length}</span><span>${n.Gold}/2 Gold &middot; ${n.Blue}/4 Blue &middot; ${n.Green}/6 Green &middot; ${n.White} White</span></h3>
         ${chk.ok ? '' : `<p class="down" style="margin:0 0 6px;font-size:13px">Deck ${chk.problems.join(', ')}.</p>`}<div class="list tall cardgrid">${deck}</div></div>
-      <div class="inkbar"><b>Ink ${profile.ink || 0}</b><span class="muted">Break spare cards down for Ink (White ${CBHub.INK_GET.White}, Green ${CBHub.INK_GET.Green}, Blue ${CBHub.INK_GET.Blue}, Gold ${CBHub.INK_GET.Gold}; more for ranked cards), then buy cards: normal price for ones you have owned before, ${CBHub.INK_UNSEEN}x for ones you haven't found yet.</span><button class="btn primary" id="btnInkShop">Buy cards with Ink</button></div>
       <div><h3><span>Collection ${c.cards.length}</span>${spare ? `<button class="btn" id="btnFeedAll" style="padding:3px 9px;font-size:13px">Feed ${spare} spare cop${spare === 1 ? 'y' : 'ies'} into your deck</button>` : ''}</h3>
         <div class="list tall cardgrid">${coll || '<span class="muted">Empty. Cards dropped on a run land here when you make it home.</span>'}</div></div></div>`;
     if ($('btnFeedAll')) $('btnFeedAll').onclick = feedAll;
@@ -5144,8 +5148,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793507963202';
-  const CB_BUILD = 'b74f603689'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793508842924';
+  const CB_BUILD = '0dbe268086'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -5848,9 +5852,6 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       ['Feature', 'Ink: at the Scribe, break spare cards down for Ink (White 1, Green 4, Blue 10, Gold 25; ranked cards give more), then buy any card of your class with "Buy cards with Ink". Cards you have owned before cost 10 / 40 / 100 / 300; ones you have never found cost 3x. Ink is shared by all your heroes.'],
       ['Balance', 'Every boss kill now also drops a Green weapon and a Green chest piece for your class.'],
       ['Balance', 'A map\'s boss has 15% less HP until you beat it for the first time (in a party: until everyone has).'],
-      ['Feature', 'Ink: break spare cards down at the Scribe (White 1, Green 4, Blue 10, Gold 25 Ink, more for ranked cards) and buy any card of your class with it. Cards you have owned before cost 10 / 40 / 100 / 300 Ink; ones you have never found cost 3x.'],
-      ['Balance', 'Every boss kill now also drops a Green weapon and a Green chest piece for your class, from that map.'],
-      ['Balance', "A map's boss has 15% less HP until you beat it for the first time (in a party, if anyone hasn't beaten it yet)."],
       ['Balance', 'New Rogue starting deck, Star Thrower, replacing Bladedancer: all-in on Shurikens. Shuriken Storm (Gold), Storm of Steel and Shuriken Mastery (Blue), Hidden Pockets and 2 Shuriken Volley (Green), then 8 Throwing Stars, 4 Evade and 2 Twin Daggers. Heroes already made with Bladedancer keep their deck.'],
       ['Fix', 'Fights hold still: heroes and monsters now share one figure size picked from the busier side (a duo no longer gets shrunk to raid size), each side keeps fixed columns so nobody jumps when a mob dies, and the battlefield keeps the same height whatever is in your hand. Big hands overlap more instead of stretching the screen, and long turn orders shrink instead of wrapping.'],
       ['Fix', 'The gold box around the hero whose turn it is is gone: the turn order already shows it, and the active figure gets a soft gold glow instead.'],
@@ -6579,6 +6580,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   body.inkui .btn:not(.primary) { border-style: solid; border-width: 9px 20px; border-color: transparent; border-image: url(${T.pine}) 18 30 fill / 9px 20px stretch; background: none; box-shadow: none; color: #eadfc8; text-shadow: 0 1px 0 var(--ink), 0 0 4px rgba(0,0,0,.8); border-radius: 0; padding: 0 4px; }
   body.inkui .btn:not(.primary):hover:not(:disabled) { filter: brightness(1.2); color: #fff4dc; }
   body.inkui .btn:active:not(:disabled) { transform: translateY(1px); }
+  body.inkui .btn, body.inkui .tabs button { white-space: nowrap; }
   body.inkui .endturn.btn.primary { border-width: 16px 44px; border-image-width: 16px 44px; }
   /* small controls: inked stone chips and tabs */
   body.inkui .chip, body.inkui .tag, body.inkui .pilebtn { background: linear-gradient(180deg, #2c2a2b, #1f1d1e); border: 2px solid var(--ink); box-shadow: inset 0 1px 0 rgba(255,240,210,.08), 1px 2px 0 rgba(0,0,0,.5); color: #ddd2bc; }
@@ -6830,22 +6832,36 @@ function layout(cb, opts) {
   document.getElementById('playerSlot').classList.toggle('compact', cmp[0]); document.getElementById('foes').classList.toggle('compact', cmp[1]);
   const P = narrow ? 112 : W < 900 ? 124 : 136; stage.style.setProperty('--plw', P + 'px');
   const hts = sides.map(us => us.map(el => { const pl = el.querySelector('.uplate'); return pl ? pl.offsetHeight : 40; }));
+  // each figure's visible half-width and height, as a share of the figure size (from the image's shape; re-run when images load)
+  const shp = sides.map(us => us.map(el => { const im = el.querySelector('.figure img'); let a = .8, k = 1;
+    if (im) { if (im.naturalWidth) a = im.naturalWidth / im.naturalHeight; else if (!im.dataset.bfw) { im.dataset.bfw = 1; im.addEventListener('load', () => again && again(), { once: true }); } k = parseFloat(im.style.getPropertyValue('--s')) || 1; }
+    return { hw: a * k * .5 * .8, ht: k * (el.dataset.boss ? 1.22 : 1) }; }));
   const figTop = 1.08;
   // one side's positions for figure size s; returns null if it doesn't fit
-  const plan = (n, h, s, force, compact) => {
+  const plan = (n, h, s, force, compact, sh) => {
     if (!n) return [];
     if (compact) { // 5+ on a side: small plates under the feet, one diagonal (or two staggered ones past 6)
-      const files = n > 6 ? 2 : 1, per = Math.ceil(n / files), dx = s * .74 + 6, ph = 38, out = [], gap = W / 2 - Math.max(16, W * .04);
+      const files = n > 6 ? 2 : 1, per = Math.ceil(n / files), dx = Math.max(s * .74, 2 * Math.max(...sh.map(q => q.hw)) * s * .9) + 6, ph = 38, out = [], gap = W / 2 - Math.max(16, W * .04);
       const lift = files > 1 ? s * .62 + ph : 0, x0 = 12 + s * .52, y0 = B - ph - 2;
       const dy = per > 1 ? Math.min(s * .7, (y0 - lift - T - s * figTop) / (per - 1)) : 0;
       for (let i = 0; i < n; i++) { const f = files > 1 ? i % 2 : 0, col = files > 1 ? Math.floor(i / 2) : i; out.push({ x: x0 + col * dx + f * dx / 2, y: y0 - col * dy - f * lift, d: col * .7 + f * .6, G: 0 }); }
       const ok = dy >= ph - 4 && out.every(p => p.x + s * .5 <= gap && p.y - s * figTop >= T - 4);
       return ok || force ? out : null;
     }
-    const dx = s * .7 + 8, out = [];
-    let x = 12 + P + s * .34 + 8, y = B;
-    for (let i = 0; i < n; i++) { if (i) { x += dx; y -= Math.max(h[i - 1] + 5, s * .2); } const G = i ? Math.max(s * .34 + 8, dx + s * .32 + 6) : s * .34 + 8; out.push({ x, y, d: i, G }); }
-    const last = out[n - 1], ok = last.x + s * .34 <= W / 2 - Math.max(20, W * .05) && last.y - Math.max(s * figTop, h[n - 1]) >= T;
+    // each fighter one step in and up; its plate sits just outside its own figure. If that plate would sit over the
+    // fighter in front (lower down), the step up is made big enough for the plate to clear that fighter's head.
+    const out = [];
+    let x = 12 + P + sh[0].hw * s + 8, y = B;
+    for (let i = 0; i < n; i++) {
+      if (i) {
+        const pv = out[i - 1], dx = Math.max(s * .5, (sh[i - 1].hw + sh[i].hw) * s * .8) + 8; x += dx;
+        const pl = x - sh[i].hw * s - 8 - P, pr = x - sh[i].hw * s - 8, fl = pv.x - sh[i - 1].hw * s, fr = pv.x + sh[i - 1].hw * s;
+        const over = pr > fl + 4 && pl < fr - 4;
+        y -= Math.max(h[i - 1] + 5, over ? s * sh[i - 1].ht * .92 : 0, s * .2);
+      }
+      out.push({ x, y, d: i, G: sh[i].hw * s + 8 });
+    }
+    const last = out[n - 1], ok = last.x + sh[n - 1].hw * s <= W / 2 - Math.max(20, W * .05) && last.y - Math.max(s * figTop * sh[n - 1].ht, h[n - 1]) >= T;
     if (ok) return out;
     if (!force) return null;
     // still too tall: squeeze the steps evenly (plates may overlap a little; nearer ones draw on top)
@@ -6853,9 +6869,9 @@ function layout(cb, opts) {
     if (need > span && n > 1) { const k = span / need; for (const p of out) p.y = B - (B - p.y) * k; }
     return out;
   };
-  let s = Math.round(Math.min(215, Math.max(96, (B - T) * .66))), P0 = null, P1 = null;
-  for (; s >= 56; s -= 4) { P0 = plan(sides[0].length, hts[0], s, false, cmp[0]); P1 = plan(sides[1].length, hts[1], s, false, cmp[1]); if (P0 && P1) break; }
-  if (!P0 || !P1) { s = Math.max(s, 56); P0 = plan(sides[0].length, hts[0], s, true, cmp[0]); P1 = plan(sides[1].length, hts[1], s, true, cmp[1]); }
+  let s = Math.round(Math.min(250, Math.max(96, (B - T) * .66))), P0 = null, P1 = null;
+  for (; s >= 56; s -= 4) { P0 = plan(sides[0].length, hts[0], s, false, cmp[0], shp[0]); P1 = plan(sides[1].length, hts[1], s, false, cmp[1], shp[1]); if (P0 && P1) break; }
+  if (!P0 || !P1) { s = Math.max(s, 56); P0 = plan(sides[0].length, hts[0], s, true, cmp[0], shp[0]); P1 = plan(sides[1].length, hts[1], s, true, cmp[1], shp[1]); }
   const put = (els, pts, enemy) => els.forEach((el, i) => {
     const p = pts[i]; if (!p) return; const big = el.dataset.boss ? 1.22 : 1, size = Math.round(s * (1 - p.d * .035) * big);
     el.style.left = Math.round(enemy ? W - p.x : p.x) + 'px'; el.style.top = Math.round(p.y) + 'px';
@@ -6976,6 +6992,9 @@ css.textContent = `
 .wrap:has(> #scrCombat.bf:not([hidden])), .wrap:has(#scrCombat.bf:not([hidden])) { max-width: 1840px; }
 #scrCombat.bf .field-panel.bfnarrow .hud > .hint, #scrCombat.bf .field-panel.bfmid .hud .piles > span { display: none; }
 #scrCombat.bf .hud > .endturn { justify-self: end; grid-column: -2; }
+#scrCombat.bf .hud .piles { flex-wrap: nowrap; }
+#scrCombat.bf .field-panel.bfmid > .hud { gap: 8px 10px; padding: 8px 10px; } #scrCombat.bf .field-panel.bfmid .hud .pilebtn { padding: 3px 7px; font-size: 11.5px; } #scrCombat.bf .field-panel.bfmid .hud .mana small { display: none; }
+#scrCombat.bf .field-panel.bfmid .endturn.btn.primary { padding: 7px 14px !important; font-size: 16px !important; }
 /* big fights (5+ on a side): small plates under each fighter's feet */
 #scrCombat.bf .stage .compact .uplate { left: calc(var(--fh) * -.5) !important; right: auto !important; bottom: auto; top: 4px; width: calc(var(--fh) + 8px); min-width: 74px; padding: 2px 4px; border: 0 !important; border-radius: 3px; background: #0d1715d9 !important; gap: 1px; }
 #scrCombat.bf .stage .compact .uplate .uname small, #scrCombat.bf .stage .compact .uplate .deckbtn { display: none; }

@@ -90,6 +90,7 @@
   body.inkui .btn:not(.primary) { border-style: solid; border-width: 9px 20px; border-color: transparent; border-image: url(${T.pine}) 18 30 fill / 9px 20px stretch; background: none; box-shadow: none; color: #eadfc8; text-shadow: 0 1px 0 var(--ink), 0 0 4px rgba(0,0,0,.8); border-radius: 0; padding: 0 4px; }
   body.inkui .btn:not(.primary):hover:not(:disabled) { filter: brightness(1.2); color: #fff4dc; }
   body.inkui .btn:active:not(:disabled) { transform: translateY(1px); }
+  body.inkui .btn, body.inkui .tabs button { white-space: nowrap; }
   body.inkui .endturn.btn.primary { border-width: 16px 44px; border-image-width: 16px 44px; }
   /* small controls: inked stone chips and tabs */
   body.inkui .chip, body.inkui .tag, body.inkui .pilebtn { background: linear-gradient(180deg, #2c2a2b, #1f1d1e); border: 2px solid var(--ink); box-shadow: inset 0 1px 0 rgba(255,240,210,.08), 1px 2px 0 rgba(0,0,0,.5); color: #ddd2bc; }

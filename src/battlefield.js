@@ -212,22 +212,36 @@ function layout(cb, opts) {
   document.getElementById('playerSlot').classList.toggle('compact', cmp[0]); document.getElementById('foes').classList.toggle('compact', cmp[1]);
   const P = narrow ? 112 : W < 900 ? 124 : 136; stage.style.setProperty('--plw', P + 'px');
   const hts = sides.map(us => us.map(el => { const pl = el.querySelector('.uplate'); return pl ? pl.offsetHeight : 40; }));
+  // each figure's visible half-width and height, as a share of the figure size (from the image's shape; re-run when images load)
+  const shp = sides.map(us => us.map(el => { const im = el.querySelector('.figure img'); let a = .8, k = 1;
+    if (im) { if (im.naturalWidth) a = im.naturalWidth / im.naturalHeight; else if (!im.dataset.bfw) { im.dataset.bfw = 1; im.addEventListener('load', () => again && again(), { once: true }); } k = parseFloat(im.style.getPropertyValue('--s')) || 1; }
+    return { hw: a * k * .5 * .8, ht: k * (el.dataset.boss ? 1.22 : 1) }; }));
   const figTop = 1.08;
   // one side's positions for figure size s; returns null if it doesn't fit
-  const plan = (n, h, s, force, compact) => {
+  const plan = (n, h, s, force, compact, sh) => {
     if (!n) return [];
     if (compact) { // 5+ on a side: small plates under the feet, one diagonal (or two staggered ones past 6)
-      const files = n > 6 ? 2 : 1, per = Math.ceil(n / files), dx = s * .74 + 6, ph = 38, out = [], gap = W / 2 - Math.max(16, W * .04);
+      const files = n > 6 ? 2 : 1, per = Math.ceil(n / files), dx = Math.max(s * .74, 2 * Math.max(...sh.map(q => q.hw)) * s * .9) + 6, ph = 38, out = [], gap = W / 2 - Math.max(16, W * .04);
       const lift = files > 1 ? s * .62 + ph : 0, x0 = 12 + s * .52, y0 = B - ph - 2;
       const dy = per > 1 ? Math.min(s * .7, (y0 - lift - T - s * figTop) / (per - 1)) : 0;
       for (let i = 0; i < n; i++) { const f = files > 1 ? i % 2 : 0, col = files > 1 ? Math.floor(i / 2) : i; out.push({ x: x0 + col * dx + f * dx / 2, y: y0 - col * dy - f * lift, d: col * .7 + f * .6, G: 0 }); }
       const ok = dy >= ph - 4 && out.every(p => p.x + s * .5 <= gap && p.y - s * figTop >= T - 4);
       return ok || force ? out : null;
     }
-    const dx = s * .7 + 8, out = [];
-    let x = 12 + P + s * .34 + 8, y = B;
-    for (let i = 0; i < n; i++) { if (i) { x += dx; y -= Math.max(h[i - 1] + 5, s * .2); } const G = i ? Math.max(s * .34 + 8, dx + s * .32 + 6) : s * .34 + 8; out.push({ x, y, d: i, G }); }
-    const last = out[n - 1], ok = last.x + s * .34 <= W / 2 - Math.max(20, W * .05) && last.y - Math.max(s * figTop, h[n - 1]) >= T;
+    // each fighter one step in and up; its plate sits just outside its own figure. If that plate would sit over the
+    // fighter in front (lower down), the step up is made big enough for the plate to clear that fighter's head.
+    const out = [];
+    let x = 12 + P + sh[0].hw * s + 8, y = B;
+    for (let i = 0; i < n; i++) {
+      if (i) {
+        const pv = out[i - 1], dx = Math.max(s * .5, (sh[i - 1].hw + sh[i].hw) * s * .8) + 8; x += dx;
+        const pl = x - sh[i].hw * s - 8 - P, pr = x - sh[i].hw * s - 8, fl = pv.x - sh[i - 1].hw * s, fr = pv.x + sh[i - 1].hw * s;
+        const over = pr > fl + 4 && pl < fr - 4;
+        y -= Math.max(h[i - 1] + 5, over ? s * sh[i - 1].ht * .92 : 0, s * .2);
+      }
+      out.push({ x, y, d: i, G: sh[i].hw * s + 8 });
+    }
+    const last = out[n - 1], ok = last.x + sh[n - 1].hw * s <= W / 2 - Math.max(20, W * .05) && last.y - Math.max(s * figTop * sh[n - 1].ht, h[n - 1]) >= T;
     if (ok) return out;
     if (!force) return null;
     // still too tall: squeeze the steps evenly (plates may overlap a little; nearer ones draw on top)
@@ -235,9 +249,9 @@ function layout(cb, opts) {
     if (need > span && n > 1) { const k = span / need; for (const p of out) p.y = B - (B - p.y) * k; }
     return out;
   };
-  let s = Math.round(Math.min(215, Math.max(96, (B - T) * .66))), P0 = null, P1 = null;
-  for (; s >= 56; s -= 4) { P0 = plan(sides[0].length, hts[0], s, false, cmp[0]); P1 = plan(sides[1].length, hts[1], s, false, cmp[1]); if (P0 && P1) break; }
-  if (!P0 || !P1) { s = Math.max(s, 56); P0 = plan(sides[0].length, hts[0], s, true, cmp[0]); P1 = plan(sides[1].length, hts[1], s, true, cmp[1]); }
+  let s = Math.round(Math.min(250, Math.max(96, (B - T) * .66))), P0 = null, P1 = null;
+  for (; s >= 56; s -= 4) { P0 = plan(sides[0].length, hts[0], s, false, cmp[0], shp[0]); P1 = plan(sides[1].length, hts[1], s, false, cmp[1], shp[1]); if (P0 && P1) break; }
+  if (!P0 || !P1) { s = Math.max(s, 56); P0 = plan(sides[0].length, hts[0], s, true, cmp[0], shp[0]); P1 = plan(sides[1].length, hts[1], s, true, cmp[1], shp[1]); }
   const put = (els, pts, enemy) => els.forEach((el, i) => {
     const p = pts[i]; if (!p) return; const big = el.dataset.boss ? 1.22 : 1, size = Math.round(s * (1 - p.d * .035) * big);
     el.style.left = Math.round(enemy ? W - p.x : p.x) + 'px'; el.style.top = Math.round(p.y) + 'px';
@@ -358,6 +372,9 @@ css.textContent = `
 .wrap:has(> #scrCombat.bf:not([hidden])), .wrap:has(#scrCombat.bf:not([hidden])) { max-width: 1840px; }
 #scrCombat.bf .field-panel.bfnarrow .hud > .hint, #scrCombat.bf .field-panel.bfmid .hud .piles > span { display: none; }
 #scrCombat.bf .hud > .endturn { justify-self: end; grid-column: -2; }
+#scrCombat.bf .hud .piles { flex-wrap: nowrap; }
+#scrCombat.bf .field-panel.bfmid > .hud { gap: 8px 10px; padding: 8px 10px; } #scrCombat.bf .field-panel.bfmid .hud .pilebtn { padding: 3px 7px; font-size: 11.5px; } #scrCombat.bf .field-panel.bfmid .hud .mana small { display: none; }
+#scrCombat.bf .field-panel.bfmid .endturn.btn.primary { padding: 7px 14px !important; font-size: 16px !important; }
 /* big fights (5+ on a side): small plates under each fighter's feet */
 #scrCombat.bf .stage .compact .uplate { left: calc(var(--fh) * -.5) !important; right: auto !important; bottom: auto; top: 4px; width: calc(var(--fh) + 8px); min-width: 74px; padding: 2px 4px; border: 0 !important; border-radius: 3px; background: #0d1715d9 !important; gap: 1px; }
 #scrCombat.bf .stage .compact .uplate .uname small, #scrCombat.bf .stage .compact .uplate .deckbtn { display: none; }
