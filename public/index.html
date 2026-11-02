@@ -2624,8 +2624,8 @@ class Combat {
       let m = (1 + stat / 100) * (1 + (p.elem[dtype] || 0) / 100) * (1 - Math.min(p.weak, 90) / 100) * setup * (T.nextMult || 1);
       if (pow) { try { m *= this.pwProd(p, 'cardMult', d); } catch (x) {} }
       if (e && e.hp > 0) { // aimed at a target: its weakness/resistance, Vulnerable, Condemnation and Unwarded too
-        m *= this.typeMod(e, dtype) * (1 + (e.vulnerable || 0) / 100 * (pow ? Math.max(1, ...this.pws(p).map(([, q]) => q.vulnX || 1)) : 1));
-        m *= (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? (1 + (e.unwarded || 0) / 100) * (1 + (e.magicVuln || 0) / 100) : 1);
+        m *= this.typeMod(e, dtype) * (1 + Math.min(0.5, (e.vulnerable || 0) / 100 * (pow ? Math.max(1, ...this.pws(p).map(([, q]) => q.vulnX || 1)) : 1))); // Nov 2: Vulnerable caps at +50%
+        m *= (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? (1 + (e.unwarded || 0) / 100) * (1 + Math.min(50, e.magicVuln || 0) / 100) : 1); // Magic Vulnerability caps at +50%
         if (e.isPlayer) m *= (1 - Math.min(75, e.resist[dtype] || 0) / 100) * (1 + this.pressure());
       }
       return m;
@@ -2821,7 +2821,7 @@ class Combat {
       const src = this.actorById(a[key + 'By']), ticks = src && src.isPlayer ? this.pwKey(src, 'dotTicks', key) : 1;
       const immune = a.isPlayer && ((key === 'bleed' && this.hasTimed(a, 'noBleed')) || (a.until.immuneTypes && a.until.immuneTypes.includes(key === 'burn' ? 'Fire' : key === 'poison' ? 'Poison' : key === 'dread' ? 'Shadow' : 'Bleed')) || a.until.immune);
       const blockable = key === 'poison' && a.isPlayer && this.hasTimed(a, 'poisonBlock');
-      for (let k = 0; k < ticks; k++) if (a[key] > 0 && a.hp > 0 && !this.over) { if (immune) this.say('player', `${a.name} ignores the ${label}.`); else { const dc = this.dotCritRoll(src, key, a[key]); this.applyHit(src || (a.isPlayer ? null : this.player), a, dc.n, { isDot: true, label: label + (k ? ' (again)' : '') + (dc.crit ? ' (crit!)' : ''), ignoreBlock: ignoresBlock && !blockable }); } a[key] = Math.max(0, a[key] - 1); }
+      for (let k = 0; k < ticks; k++) if (a[key] > 0 && a.hp > 0 && !this.over) { if (immune) this.say('player', `${a.name} ignores the ${label}.`); else { const dc = this.dotCritRoll(src, key, a[key]); this.applyHit(src || (a.isPlayer ? null : this.player), a, dc.n, { isDot: true, label: label + (k ? ' (again)' : '') + (dc.crit ? ' (crit!)' : ''), ignoreBlock: ignoresBlock && !blockable }); } a[key] = Math.max(0, a[key] - (key === 'dread' ? 2 : 1)); } // Nov 2: Dread fades 2 stacks a turn
     }
     if (a.rotQ && a.rotQ.length && a.hp > 0 && !this.over) { // Rot: every application deals its share this turn
       let n = 0; for (const r of a.rotQ) { const t = Math.round(r.left / r.turns); n += t; r.left -= t; r.turns--; }
@@ -2868,7 +2868,7 @@ class Combat {
   applyDot(e, key, n) {
     if (!e || e.hp <= 0) return;
     const q = this.player, strMult = (key === 'poison' || key === 'bleed') && q.isPlayer ? 1 + (q.strength + q.strTurn + q.strCombat) / 100 : (key === 'dread' || key === 'rot') && q.isPlayer ? 1 + (q.intelligence + (q.intTurn || 0)) / 100 : 1; // Nov 1: Poison and Bleed scale with Strength (50 Strength: 10 Bleed becomes 15); the Warlock's Dread and Rot with Intelligence
-    const v = Math.round(n * strMult * this.pwKey(this.player, 'dotMult', key) * (key === 'bleed' && this.player.bleedX ? this.player.bleedX : 1)) + this.pwKey(this.player, 'dotPlus', key, 'sum');
+    const v = Math.round(n * strMult * (key === 'dread' ? 0.9 : 1) * this.pwKey(this.player, 'dotMult', key) * (key === 'bleed' && this.player.bleedX ? this.player.bleedX : 1)) + this.pwKey(this.player, 'dotPlus', key, 'sum');
     if (key === 'rot') { this.fxPush({ t: 'apply', d: e.id, key: 'rot' }); const before = e.rot || 0, w = Math.round(v * this.rkm('rot')); this.addRot(e, w, 4, this.player); if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, w, before); this.say('player', `${e.name} gains ${w} Rot over 4 turns (Rot ${e.rot}).`); return; }
     const before = e[key] || 0; e[key] = before + v; e[key + 'By'] = this.player.id; this.fxPush({ t: 'apply', d: e.id, key });
     if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, v, before);
@@ -2960,9 +2960,9 @@ class Combat {
     const elem = p.elem[dtype] || 0;
     const crit = this.rng() * 100 < p.crit + (pow ? this.pwSum(p, 'crit', cd) : 0) + (p.turn && p.turn.critPlus || 0); this._lastCrit = crit;
     const tm = this.typeMod(e, dtype);
-    const weakMod = 1 - Math.min(p.weak, 90) / 100, vulnMod = 1 + e.vulnerable / 100 * (pow ? Math.max(1, ...this.pws(p).map(([, d]) => d.vulnX || 1)) : 1);
+    const weakMod = 1 - Math.min(p.weak, 90) / 100, vulnMod = 1 + Math.min(0.5, e.vulnerable / 100 * (pow ? Math.max(1, ...this.pws(p).map(([, d]) => d.vulnX || 1)) : 1)); // Nov 2: Vulnerable caps at +50%
     const holyUp = dtype === 'Holy' && p.nextHolyMult > 1 ? p.nextHolyMult : 1; if (holyUp > 1) p.nextHolyMult = 1;
-    const curse = (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? (1 + (e.unwarded || 0) / 100) * (1 + (e.magicVuln || 0) / 100) : 1);
+    const curse = (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? (1 + (e.unwarded || 0) / 100) * (1 + Math.min(50, e.magicVuln || 0) / 100) : 1); // Magic Vulnerability caps at +50%
     const pm = (pow ? this.pwProd(p, 'hitMult', e, ctx) : 1) * (this._cmult || 1) * holyUp * curse * (crit && p.turn && p.turn.killingBlow ? (p.turn.killingBlow === true ? 2 : p.turn.killingBlow) : 1), cmx = pow ? this.pwProd(p, 'critMultX') : 1;
     if (crit && p.turn && p.turn.killingBlow) { p.turn.killingBlow = false; this.say('crit', 'Killing Blow: the crit hits harder.'); }
     const pvp = e.isPlayer ? (1 - Math.min(75, e.resist[dtype] || 0) / 100) * (1 + this.pressure()) : 1;
@@ -3018,14 +3018,14 @@ class Combat {
     const str = e.strength + e.strTurn, press = this.pressure();
     const res = Math.min(75, p.resist[dtype] || 0) / 100;
     const bonus = extra || 0;
-    const dmg = Math.max(0, Math.round((base + bonus) * this.dmgMult * e.dmgTune * (1 + str / 100) * (1 - Math.min(e.weak, 90) / 100) * (1 + press) * (1 - res) * (1 + p.vulnerable / 100) * (e.weakNext ? 1 - (e.weakNext === 1 || e.weakNext === true ? 0.3 : e.weakNext) : 1) * (p.until.lessDmg ? 1 - p.until.lessDmg : 1) * (dtype !== 'Physical' ? 1 + (p.unwarded || 0) / 100 : 1)));
+    const dmg = Math.max(0, Math.round((base + bonus) * this.dmgMult * e.dmgTune * (1 + str / 100) * (1 - Math.min(e.weak, 90) / 100) * (1 + press) * (1 - res) * (1 + Math.min(50, p.vulnerable) / 100) * (e.weakNext ? 1 - (e.weakNext === 1 || e.weakNext === true ? 0.3 : e.weakNext) : 1) * (p.until.lessDmg ? 1 - p.until.lessDmg : 1) * (dtype !== 'Physical' ? 1 + (p.unwarded || 0) / 100 : 1)));
     const parts = [`${base}${bonus ? ' + ' + bonus : ''}`];
     if (this.dmgMult !== 1) parts.push(`x ${this.dmgMult.toFixed(2)} map level`);
     if (str) parts.push(`x ${(1 + str / 100).toFixed(2)} Strength`);
     if (e.weak) parts.push(`x ${(1 - e.weak / 100).toFixed(2)} Weak`);
     if (press) parts.push(`x ${(1 + press).toFixed(2)} Pressure`);
     if (res) parts.push(`x ${(1 - res).toFixed(2)} ${dtype} resist`);
-    if (p.vulnerable) parts.push(`x ${(1 + p.vulnerable / 100).toFixed(2)} Vulnerable`);
+    if (p.vulnerable) parts.push(`x ${(1 + Math.min(50, p.vulnerable) / 100).toFixed(2)} Vulnerable`);
     if (!this._aoeHit && !this.taunting()) { const tk = this.demonTaunt(); if (tk) { this.hurtDemon(tk[0], tk[1], dmg, `${e.name}'s ${label}`); return 0; } } // the Bulwark Fiend takes single-target hits
     if (this._aoeHit && p.demons && p.demons.length) for (const dm of p.demons.slice()) this.hurtDemon(p, dm, dmg, `${e.name}'s ${label}`); // area attacks also hit demons
     p.attackedThisRound = true;
@@ -3060,7 +3060,7 @@ class Combat {
     p[key] = (p[key] || 0) + n; if (['bleed', 'burn', 'poison'].includes(key)) p[key + 'By'] = e && e.id;
     if (key === 'chill' && p.chill >= 10) { p.chill = 0; p.frozen = true; this.say('crit', `${this.who(p)} ${this.partySize > 1 ? 'is' : 'are'} Frozen and will lose the next turn!`); return; }
     const W = this.partySize > 1 ? p.name : 'You', is = this.partySize > 1 ? 'is' : 'are', gain = this.partySize > 1 ? 'gains' : 'gain';
-    const txt = { weak: `${W} ${is} Weak ${p.weak}: ${p.weak}% less damage dealt.`, vulnerable: `${W} ${is} Vulnerable ${p.vulnerable}: ${p.vulnerable}% more damage taken.`, bleed: `${W} ${gain} ${n} Bleed (now ${p.bleed}).`, slow: `${W} ${is} Slowed ${p.slow}.`,
+    const txt = { weak: `${W} ${is} Weak ${p.weak}: ${p.weak}% less damage dealt.`, vulnerable: `${W} ${is} Vulnerable ${p.vulnerable}: ${Math.min(50, p.vulnerable)}% more damage taken.`, bleed: `${W} ${gain} ${n} Bleed (now ${p.bleed}).`, slow: `${W} ${is} Slowed ${p.slow}.`,
       burn: `${W} ${gain} ${n} Burn (now ${p.burn}).`, poison: `${W} ${gain} ${n} Poison (now ${p.poison}).`, chill: `${W} ${is} Chilled ${p.chill} (Freezes at 10).`,
       unwarded: `${W} ${is} Unwarded ${p.unwarded}: +${p.unwarded}% magic damage taken.`, exposure: `${W} ${gain} ${n} Exposure: cards cost ${Math.min(10, p.exposure) * 5}% more.` };
     this.say('enemy', txt[key]);
@@ -6683,8 +6683,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793662663020';
-  const CB_BUILD = '76560b3542'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793663075268';
+  const CB_BUILD = 'df223d014d'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -7787,43 +7787,111 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
-      ['Balance', 'Monsters have 10% more HP and hit 10% harder; elites have 15% more HP and hit 5% harder; map bosses have 10% less HP and hit 10% softer.'],
-      ['Change', 'Some codexes need the right weapons: Riposte and Colossus a two-handed weapon; Bulwark and Bastion of Faith a one-handed weapon and a shield; Nightstalker a dagger in the main hand; Phantom, Bloodletter and Venomancer a weapon in each hand; Barrier Savant a staff. Without them the passive is off (talents still work).'],
+      ['Balance', 'Dread: cards and powers apply 10% less Dread.'],
+      ['Balance', 'Dread now loses 2 stacks a turn (was 1).'],
+      ['Balance', 'Vulnerable can raise damage taken by at most +50%, however many stacks there are.'],
+      ['Balance', 'Magic Vulnerability can raise magic damage taken by at most +50%.'],
+      ['Balance', 'Spirit now only boosts healing. It no longer makes Poison, Bleed, Burn, Dread or Rot stronger.'],
+      ['Balance', 'Exposure can raise an enemy\'s card costs by at most +50% (10 stacks).'],
+      ['Balance', 'Riposte talents: Lv 4 Opening Strike: if you parried last turn, your first Attack of the turn deals 33% more damage.'],
+      ['Balance', 'Riposte talents: Lv 8 Sweeping Riposte: if you parried last turn, your first Attack of the turn also hits another enemy.'],
+      ['Balance', 'Colossus talents: Lv 4 Brute Force gives bonus Strength equal to 33% of the Strength on your gear.'],
+      ['Balance', 'Colossus talents: Lv 8 Thunderous: Attacks that cost 20+ mana have a 50% chance to hit an extra target.'],
+      ['Balance', 'Colossus talents: Lv 14 Titan\'s Hunger: Attacks that cost 20+ mana have a 20% chance to strike again.'],
+      ['Balance', 'Righteous Crusader talents: Lv 4 offense gives bonus Strength equal to 25% of the Stamina on your gear.'],
+      ['Balance', 'Righteous Crusader talents: Lv 6 defense gives bonus Stamina equal to 25% of the Strength on your gear.'],
+      ['Balance', 'Monsters have 10% more HP and hit 10% harder.'],
+      ['Balance', 'Elites have 15% more HP and hit 5% harder.'],
+      ['Balance', 'Map bosses have 10% less HP and hit 10% softer.'],
+      ['Change', 'Some codexes need the right weapons, or their passive is off (talents still work).'],
+      ['Change', 'Riposte and Colossus need a two-handed weapon.'],
+      ['Change', 'Bulwark and Bastion of Faith need a one-handed weapon and a shield.'],
+      ['Change', 'Nightstalker needs a dagger in your main hand.'],
+      ['Change', 'Phantom, Bloodletter and Venomancer need a weapon in each hand.'],
+      ['Change', 'Barrier Savant needs a staff.'],
+      ['Balance', 'Barrier Savant talents: Lv 2 defense, Staff and Shield, lets you carry a shield with a staff.'],
       ['Change', 'Stealth lasts until you attack out of it (or something hits everyone), not just until your next turn.'],
-      ['Feature', 'New weapon: the two-handed Scythe, with Shadow damage built in. New Mage cards: Runic Ward and Spiked Ward. New debuff: Magic Vulnerability.'],
-      ['Balance', 'Codex and talent changes for Blightcaller, Spellstorm, Colossus, Riposte, Bulwark, Archmage, Phantom, Righteous Crusader, Heart of Winter, Sunderer, Shadow Knight, Nightstalker, Entropy, Bloodmancer and Barrier Savant. Card changes: Battle Fever, Expose Opening, Unnerving Guard, Bait, Arcane Blast, Pilfer.'],
-      ['Change', 'Warriors and Paladins say Block with a shield and Parry without one. Titles sit before or after your name ("Veteran Brann", "Brann the Blooded").'],
-      ['Change', 'Trades, Bazaar sales and Arena wagers are now confirmed by the server before anything changes hands. If one fails, nothing moves and you are told why.'],
+      ['Feature', 'New weapon: the two-handed Scythe, with Shadow damage built in. It drops wherever Warhammers drop.'],
+      ['Feature', 'New Mage card: Runic Ward (Green, 10 mana): gain 20 Barrier.'],
+      ['Feature', 'New Mage card: Spiked Ward (Blue, 0 mana): Barrier you gain this turn also gives Thorns, until your Barrier runs out.'],
+      ['Feature', 'New debuff: Magic Vulnerability: more magic (non-Physical) damage taken; it fades 10% a turn.'],
+      ['Balance', 'Blightcaller Codex: Dread +25% (was +50%).'],
+      ['Balance', 'Blightcaller talents: Dark Whispers is +2% Shadow damage.'],
+      ['Balance', 'Blightcaller talents: Deeper Dread is +5% Dread.'],
+      ['Balance', 'Blightcaller talents: Abyssal Dread is +10% Dread.'],
+      ['Balance', 'Spellstorm Codex: each Arcane Skill makes your next card cost 5 less (was every Skill for the rest of the turn).'],
+      ['Balance', 'Spellstorm Codex: its card draw is capped at 3 a turn.'],
+      ['Balance', 'Spellstorm talents: Lv 8 is +5% Multicast.'],
+      ['Balance', 'Spellstorm talents: Lv 10 gives +5 mana regeneration for the fight after your first Arcane Skill.'],
+      ['Balance', 'Colossus Codex: a Stun for every 30 mana spent on Attacks (was 50).'],
+      ['Balance', 'Colossus talents: Lv 2 Rattled Giant: +50% damage to enemies with a Stun in hand.'],
+      ['Balance', 'Riposte Codex: 75% of a fully parried hit goes back to the attacker (was 50%).'],
+      ['Balance', 'Riposte talents: Lv 2 Duelist\'s Poise gives bonus Dexterity equal to your Strength.'],
+      ['Balance', 'Bulwark Codex: when you are hit, the attacker takes Thorns damage equal to 25% of your Block.'],
+      ['Balance', 'Archmage Codex: switching elements gives +50% damage (was 25%), and it carries over between turns.'],
+      ['Balance', 'Phantom Codex: Dodge you gain is increased by 20%.'],
+      ['Balance', 'Righteous Crusader Codex: the Attack and Block bonuses are 45% (were 30%).'],
+      ['Balance', 'Righteous Crusader talents: Lv 2 support gives bonus Initiative equal to half your Strength.'],
+      ['Balance', 'Heart of Winter Codex: +25% Frost damage to Chilled targets, with a 10% chance to Freeze them (they lose their next turn).'],
+      ['Balance', 'Sunderer Codex: Vulnerable on enemies fades 10% a turn instead of half.'],
+      ['Balance', 'Shadow Knight Codex: 20% more Strength from gear.'],
+      ['Balance', 'Shadow Knight talents: Lv 4 gives bonus Strength equal to 10% of your Stamina.'],
+      ['Balance', 'Nightstalker Codex: Attacks from Stealth also get +25% crit chance and +50% crit damage.'],
+      ['Balance', 'Entropy Codex: every point of mana drained applies 3 Exposure and 2 Magic Vulnerability.'],
+      ['Balance', 'Bloodmancer Codex: Physical Skills deal 20% more damage.'],
+      ['Balance', 'Bloodmancer talents: Lv 12 makes your Physical Skills apply Bleed equal to 20% of their damage.'],
+      ['Balance', 'Battle Fever: works if you have taken damage at any point in the fight.'],
+      ['Balance', 'Expose Opening applies 40 Vulnerable (was 10).'],
+      ['Balance', 'Unnerving Guard adds a Stun to the attacker\'s draw pile (was a Hex).'],
+      ['Balance', 'Bait waits for your next parry, however long that takes.'],
+      ['Balance', 'Arcane Blast: 8 base damage (was 16), and the bonus from earlier Arcane Skills is capped at +18.'],
+      ['Balance', 'Pilfer costs 20 mana (was 10).'],
+      ['Change', 'Warriors and Paladins say Block with a shield in hand and Parry without one.'],
+      ['Change', 'Titles sit before or after your name: "Veteran Brann", "Brann the Blooded".'],
+      ['Change', 'Tinker Pip has moved next to the eternal flame in Ember Square.'],
+      ['Change', 'Trades, Bazaar sales and Arena wagers are confirmed by the server before anything changes hands. If one fails, nothing moves and you are told why.'],
       ['Change', 'The Hall of Records is written by the server from your saved heroes, so every name on the board earned its place.'],
-      ['Change', 'Cleaner look: the old classic UI and battlefield toggles are gone, and the top bar says where you are.'],
-      ['Feature', 'Emberwatch is a city now: a walled city with Ember Square and its eternal flame in the middle, Market Row, the Old Market, the Grand Bazaar, a Colosseum five times the size of the old ring, the Wagon Yard at the South Gate, the Barracks and training yard (six dummies), Guild Row, the Scholars\' Quarter, the Keep, the Cathedral and the River Ash. Every townsperson has moved into their own building. You log in at Ember Square.'],
-      ['Feature', 'The Bank: Banker Hollis on Market Row keeps a vault of 120 more item slots for your heroes (Hardcore heroes have their own).'],
+      ['Change', 'The top bar says where you are.'],
+      ['Change', 'The old classic UI and battlefield toggles are gone.'],
+      ['Feature', 'Emberwatch is a walled city, with Ember Square and its eternal flame at the center.'],
+      ['Change', 'You log in at Ember Square.'],
+      ['Feature', 'City districts: Market Row, the Old Market, the Grand Bazaar, the Wagon Yard at the South Gate, the Barracks and training yard, Guild Row, the Scholars\' Quarter, the Keep, the Cathedral and the River Ash.'],
+      ['Feature', 'The Colosseum: five times the size of the old ring.'],
+      ['Feature', 'Every townsperson has moved into their own building.'],
+      ['Feature', 'The Bank: Banker Hollis on Market Row keeps a vault of 120 more item slots (Hardcore heroes have their own).'],
       ['Feature', 'City map in the corner: see where everyone is, and click anywhere on it to walk there.'],
       ['Feature', 'Day and night follow the time in New York: dusk from 6pm, night from 9pm, dawn at 5am.'],
+      ['Feature', 'Mounts: press M in town to ride a horse. Everyone in town sees you ride.'],
       ['Balance', 'Mounts run at 225% speed.'],
-      ['Feature', 'Achievements and titles: 35 achievements (bosses by level, class and road, Hardcore, raids, duels, the Bazaar, and feats like The Unburned and Frozen). Each one unlocks a title for all your heroes: pick it on your character sheet (C). Titles show over your head in town and on the Hall of Records. Menu > Achievements and titles lists them all.'],
-      ['Feature', 'Mounts: press M in town to ride a horse, 25% faster. Everyone in town sees you ride. More mounts to come.'],
-      ['Change', 'Hardcore is its own world: Hardcore heroes have their own stash, gold, Ink and Reroll Tokens (shared only with your other Hardcore heroes), and can only party, raid, trade, buy at the Bazaar and wager with other Hardcore heroes. Normal heroes keep the normal stash, gold and Ink.'],
+      ['Feature', 'Achievements: 35 of them, for bosses by level, class and road, Hardcore, raids, duels, the Bazaar, and feats like The Unburned and Frozen.'],
+      ['Feature', 'Titles: every achievement unlocks a title for all your heroes. Pick one on your character sheet (C); it shows in town and on the Hall of Records.'],
+      ['Change', 'Hardcore heroes have their own stash, gold, Ink and Reroll Tokens, shared only with your other Hardcore heroes.'],
+      ['Change', 'Hardcore heroes can only party, raid, trade, buy at the Bazaar and wager with other Hardcore heroes.'],
       ['Change', 'Wagoneer Arisha explains runs and fights the first time a new hero talks to her, and any time after with "How do runs and fights work?".'],
-      ['Balance', 'Rot: every Rot card applies 15% more Rot, and its upgrades grow 15% faster.'],
-      ['Fix', 'Monsters are drawn the moment a fight starts (their art now loads while you are in town and on the map).'],
-      ['Fix', 'Warlock demons move: they breathe while they wait, lunge when they act and flinch when hit.'],
-      ['Feature', 'Tutorial: a guided tour of Emberwatch and every system (runs, fights, gear, deck, codexes, the Compendium, the Glossary, merchants, trading, guilds, raids and the Hall of Records). Tick it when you create a hero (it is ticked for your first), or start it from the Menu any time.'],
-      ['Feature', 'Seasons: the Hall of Records now ranks one season at a time. Season 0.02 starts today with a clean board. Everything before it is Season 0.01, and you can still look at its final standings. Heroes keep their gear, cards, codexes and map unlocks; their map records and boss kill counts start over for the new season.'],
-      ['Balance', 'New season, new economy: everyone\'s gold has been reset to 0.'],
-      ['Fix', 'Hall of Records: deleted heroes are taken off the board (the next time their owner is online).'],
-      ['Change', 'Reroll Tokens are now rare: breaking down a codex gives 1 token by chance, 10% for a +0 codex and 5% more for every map level it dropped on (certain from +18).'],
-      ['Balance', 'Gold: monsters drop half as much gold, and gold grows 5% per map level instead of 50%. Salvaging gear follows the same 5% curve. Merchants (in runs and in town) charge double.'],
-      ['Change', 'Item power is now worked out for your hero: the codex you wear (or the one closest to your deck), the gear you already have and the map you are playing. Stats your codex doesn\'t use, resistance past 75% and resistance to another map\'s element count for nothing. 10 power = 1% fight strength.'],
-      ['Change', 'Hit and spell effects redrawn as cut paper to match the heroes: shaded pieces with sharp ink outlines and muted colours that stamp in and tumble away. Crits show a torn rust-red scrap with ink strokes instead of a bright red star.'],
-      ['Feature', 'The Forge (link at Tinker Pip\'s test shop): preview any class in any gear, every hero move, hit effect, spell and card combo, the town walker, and change which drawn piece each item uses per map and the colours.'],
-      ['Fix', 'Phones: the fight screen stacks the combat log under the battlefield instead of covering it, and the greyed-out Shaman seat at the campfire no longer blocks picking the Paladin.'],
-      ['Feature', 'Your hero in town shows your gear to everyone: other players see exactly what you\'re wearing (and you see theirs). It updates a few seconds after you change gear.'],
-      ['Feature', 'Hit effects: slashes, stabs, smashes and claw marks by weapon, element bursts (fire, frost, shadow, holy, arcane, nature), bleed drops, poison bubbles, burn, dread and rot ticks, heals, Block shields, parry sparks, dodges, and a red burst with a screen shake on crits. Spells fly from the caster to the target.'],
-      ['Feature', 'More hero moves: two-handed heroes leap in and slam big Attacks, daggers lunge, multi-hit Attacks strike twice, Powers rise into a glow, Rogues sidestep dodged hits, Warriors parry, Stealth makes your hero see-through, big hits knock you back, and fallen heroes slump. Monsters lunge when they attack and shake when hit.'],
-      ['Change', 'Damage and heal numbers are inked: heavy black outline, blocky letters; crits are big and red.'],
-      ['Feature', 'Heroes wear their gear: your hero is now drawn from what you have equipped, in fights, in town and on the character sheet. Every helm, chest, shoulder, glove, belt, leg, boot, cloak, weapon and off-hand shows, each map\'s gear has its own look and colours, and rarity shows on the trim.'],
-      ['Feature', 'Animations in fights: heroes swing their weapon when you play an Attack, spin when an Attack hits every enemy, cast spells and heals, brace for Block cards and flinch when hit.'],
+      ['Balance', 'Rot cards apply 15% more Rot, and their upgrades grow 15% faster.'],
+      ['Fix', 'Monsters are drawn the moment a fight starts.'],
+      ['Fix', 'Warlock demons breathe while they wait, lunge when they act and flinch when hit.'],
+      ['Feature', 'Tutorial: a guided tour of Emberwatch and every system. Tick it when you create a hero (it is ticked for your first), or start it from the Menu.'],
+      ['Feature', 'Seasons: the Hall of Records ranks one season at a time. Season 0.02 starts today with a clean board.'],
+      ['Change', 'Season 0.01\'s final standings stay viewable.'],
+      ['Change', 'Heroes keep their gear, cards, codexes and map unlocks into the new season.'],
+      ['Balance', 'Everyone\'s gold has been reset to 0 for the new season.'],
+      ['Fix', 'Hall of Records: deleted heroes are taken off the board.'],
+      ['Change', 'Reroll Tokens are rare: breaking down a codex gives 1 token by chance (10% at +0, 5% more per map level).'],
+      ['Balance', 'Monsters drop half as much gold, and gold grows 5% per map level (was 50%).'],
+      ['Balance', 'Salvaging gear follows the same 5% per level curve.'],
+      ['Balance', 'Merchants (in runs and in town) charge double.'],
+      ['Change', 'Item power is worked out for your hero: your codex, the gear you have and the map you are on. Stats your codex doesn\'t use count for nothing.'],
+      ['Change', 'Hit and spell effects are redrawn as cut paper, to match the heroes.'],
+      ['Feature', 'The Forge (link at Tinker Pip): preview any class in any gear, every move, hit effect and spell.'],
+      ['Fix', 'Phones: the fight screen stacks the combat log under the battlefield.'],
+      ['Fix', 'Phones: the Shaman seat at the campfire no longer blocks picking the Paladin.'],
+      ['Feature', 'Other players see the gear your hero wears in town, a few seconds after you change it.'],
+      ['Feature', 'Hit effects by weapon and element: slashes, stabs, smashes, bursts, damage-over-time ticks, heals, Block shields, parries and dodges.'],
+      ['Feature', 'More hero moves: leaps and slams, lunges, double strikes, glowing Powers, sidesteps, parries and knockbacks. Monsters lunge and shake when hit.'],
+      ['Change', 'Damage and heal numbers are inked; crits are big and red.'],
+      ['Feature', 'Heroes wear their gear: in fights, in town and on the character sheet. Each map\'s gear has its own look, and rarity shows on the trim.'],
+      ['Feature', 'Fight animations: swings, spins for area Attacks, spellcasting, bracing for Block and flinching when hit.'],
     ] },
     { date: '2026-11-01', items: [
       ['Change', 'Merchant Dace in town now stocks gear from the map and level of the last boss you killed, not the last map you entered. Stock rolled from a map you never beat was replaced.'],
@@ -11526,11 +11594,11 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     ]],
     ['Debuffs', [
       ['Weak', 'Deals that % less damage. Halves at the end of each turn.'],
-      ['Vulnerable', 'Takes that % more damage. Halves at the end of each turn.'],
+      ['Vulnerable', 'Takes that % more damage, up to +50%. Halves at the end of each turn.'],
       ['Bleed', 'Takes damage equal to its stacks at the start of its turn (Block absorbs it), then loses 1 stack.'],
       ['Poison', 'Like Bleed, but ignores Block.'],
       ['Burn', 'Like Bleed: damage each turn equal to its stacks, then -1.'],
-      ['Dread', 'Warlock. Like Poison: ignores Block, deals its stacks at the start of the target\'s turn, then loses 1. Scales with Intelligence.'],
+      ['Dread', 'Warlock. Like Poison: ignores Block, deals its stacks at the start of the target\'s turn, then loses 2. Scales with Intelligence.'],
       ['Rot', 'Warlock. Each application deals its amount over 4 turns (12 Rot: 3 a turn) and ignores Block; every application keeps its own timer. Scales with Intelligence.'],
       ['Fear', 'The enemy skips its attacks on its next turn. Monsters resist Fear 25% of the time (bosses 50%), and direct damage that lands on a Feared monster has a 75% chance to snap it out (damage over time: 10% per tick). After a Fear or Stun lands, that enemy can\'t be Feared or Stunned for 2 rounds (3 for bosses).'],
       ['Stunned', 'The enemy loses its whole next turn. Bosses are only Feared by it.'],
@@ -11543,7 +11611,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       ['Condemnation', 'Takes +1% Holy damage per stack. Halves after each enemy turn.'],
       ['Unwarded', 'Takes +1% Skill (spell) damage per stack. Halves after each enemy turn.'],
       ['Exposure', 'Its cards cost 5% more mana per stack, up to +50% (10 stacks).'],
-      ['Magic Vulnerability', 'Takes +1% magic (non-Physical) damage per stack. Loses 10% of its stacks after each enemy turn.'],
+      ['Magic Vulnerability', 'Takes +1% magic (non-Physical) damage per stack, up to +50%. Loses 10% of its stacks after each enemy turn.'],
       ['Freeze', 'A Frozen enemy loses its next turn, like a Stun.'],
       ['Cannot heal / Grievous', 'Cannot heal until your next turn / healing received is halved for 2 turns.'],
       ['Draws fewer', 'The enemy draws that many fewer cards for its next turn.'],

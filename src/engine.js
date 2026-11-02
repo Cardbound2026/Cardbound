@@ -1207,8 +1207,8 @@ class Combat {
       let m = (1 + stat / 100) * (1 + (p.elem[dtype] || 0) / 100) * (1 - Math.min(p.weak, 90) / 100) * setup * (T.nextMult || 1);
       if (pow) { try { m *= this.pwProd(p, 'cardMult', d); } catch (x) {} }
       if (e && e.hp > 0) { // aimed at a target: its weakness/resistance, Vulnerable, Condemnation and Unwarded too
-        m *= this.typeMod(e, dtype) * (1 + (e.vulnerable || 0) / 100 * (pow ? Math.max(1, ...this.pws(p).map(([, q]) => q.vulnX || 1)) : 1));
-        m *= (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? (1 + (e.unwarded || 0) / 100) * (1 + (e.magicVuln || 0) / 100) : 1);
+        m *= this.typeMod(e, dtype) * (1 + Math.min(0.5, (e.vulnerable || 0) / 100 * (pow ? Math.max(1, ...this.pws(p).map(([, q]) => q.vulnX || 1)) : 1))); // Nov 2: Vulnerable caps at +50%
+        m *= (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? (1 + (e.unwarded || 0) / 100) * (1 + Math.min(50, e.magicVuln || 0) / 100) : 1); // Magic Vulnerability caps at +50%
         if (e.isPlayer) m *= (1 - Math.min(75, e.resist[dtype] || 0) / 100) * (1 + this.pressure());
       }
       return m;
@@ -1404,7 +1404,7 @@ class Combat {
       const src = this.actorById(a[key + 'By']), ticks = src && src.isPlayer ? this.pwKey(src, 'dotTicks', key) : 1;
       const immune = a.isPlayer && ((key === 'bleed' && this.hasTimed(a, 'noBleed')) || (a.until.immuneTypes && a.until.immuneTypes.includes(key === 'burn' ? 'Fire' : key === 'poison' ? 'Poison' : key === 'dread' ? 'Shadow' : 'Bleed')) || a.until.immune);
       const blockable = key === 'poison' && a.isPlayer && this.hasTimed(a, 'poisonBlock');
-      for (let k = 0; k < ticks; k++) if (a[key] > 0 && a.hp > 0 && !this.over) { if (immune) this.say('player', `${a.name} ignores the ${label}.`); else { const dc = this.dotCritRoll(src, key, a[key]); this.applyHit(src || (a.isPlayer ? null : this.player), a, dc.n, { isDot: true, label: label + (k ? ' (again)' : '') + (dc.crit ? ' (crit!)' : ''), ignoreBlock: ignoresBlock && !blockable }); } a[key] = Math.max(0, a[key] - 1); }
+      for (let k = 0; k < ticks; k++) if (a[key] > 0 && a.hp > 0 && !this.over) { if (immune) this.say('player', `${a.name} ignores the ${label}.`); else { const dc = this.dotCritRoll(src, key, a[key]); this.applyHit(src || (a.isPlayer ? null : this.player), a, dc.n, { isDot: true, label: label + (k ? ' (again)' : '') + (dc.crit ? ' (crit!)' : ''), ignoreBlock: ignoresBlock && !blockable }); } a[key] = Math.max(0, a[key] - (key === 'dread' ? 2 : 1)); } // Nov 2: Dread fades 2 stacks a turn
     }
     if (a.rotQ && a.rotQ.length && a.hp > 0 && !this.over) { // Rot: every application deals its share this turn
       let n = 0; for (const r of a.rotQ) { const t = Math.round(r.left / r.turns); n += t; r.left -= t; r.turns--; }
@@ -1451,7 +1451,7 @@ class Combat {
   applyDot(e, key, n) {
     if (!e || e.hp <= 0) return;
     const q = this.player, strMult = (key === 'poison' || key === 'bleed') && q.isPlayer ? 1 + (q.strength + q.strTurn + q.strCombat) / 100 : (key === 'dread' || key === 'rot') && q.isPlayer ? 1 + (q.intelligence + (q.intTurn || 0)) / 100 : 1; // Nov 1: Poison and Bleed scale with Strength (50 Strength: 10 Bleed becomes 15); the Warlock's Dread and Rot with Intelligence
-    const v = Math.round(n * strMult * this.pwKey(this.player, 'dotMult', key) * (key === 'bleed' && this.player.bleedX ? this.player.bleedX : 1)) + this.pwKey(this.player, 'dotPlus', key, 'sum');
+    const v = Math.round(n * strMult * (key === 'dread' ? 0.9 : 1) * this.pwKey(this.player, 'dotMult', key) * (key === 'bleed' && this.player.bleedX ? this.player.bleedX : 1)) + this.pwKey(this.player, 'dotPlus', key, 'sum');
     if (key === 'rot') { this.fxPush({ t: 'apply', d: e.id, key: 'rot' }); const before = e.rot || 0, w = Math.round(v * this.rkm('rot')); this.addRot(e, w, 4, this.player); if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, w, before); this.say('player', `${e.name} gains ${w} Rot over 4 turns (Rot ${e.rot}).`); return; }
     const before = e[key] || 0; e[key] = before + v; e[key + 'By'] = this.player.id; this.fxPush({ t: 'apply', d: e.id, key });
     if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, v, before);
@@ -1543,9 +1543,9 @@ class Combat {
     const elem = p.elem[dtype] || 0;
     const crit = this.rng() * 100 < p.crit + (pow ? this.pwSum(p, 'crit', cd) : 0) + (p.turn && p.turn.critPlus || 0); this._lastCrit = crit;
     const tm = this.typeMod(e, dtype);
-    const weakMod = 1 - Math.min(p.weak, 90) / 100, vulnMod = 1 + e.vulnerable / 100 * (pow ? Math.max(1, ...this.pws(p).map(([, d]) => d.vulnX || 1)) : 1);
+    const weakMod = 1 - Math.min(p.weak, 90) / 100, vulnMod = 1 + Math.min(0.5, e.vulnerable / 100 * (pow ? Math.max(1, ...this.pws(p).map(([, d]) => d.vulnX || 1)) : 1)); // Nov 2: Vulnerable caps at +50%
     const holyUp = dtype === 'Holy' && p.nextHolyMult > 1 ? p.nextHolyMult : 1; if (holyUp > 1) p.nextHolyMult = 1;
-    const curse = (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? (1 + (e.unwarded || 0) / 100) * (1 + (e.magicVuln || 0) / 100) : 1);
+    const curse = (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? (1 + (e.unwarded || 0) / 100) * (1 + Math.min(50, e.magicVuln || 0) / 100) : 1); // Magic Vulnerability caps at +50%
     const pm = (pow ? this.pwProd(p, 'hitMult', e, ctx) : 1) * (this._cmult || 1) * holyUp * curse * (crit && p.turn && p.turn.killingBlow ? (p.turn.killingBlow === true ? 2 : p.turn.killingBlow) : 1), cmx = pow ? this.pwProd(p, 'critMultX') : 1;
     if (crit && p.turn && p.turn.killingBlow) { p.turn.killingBlow = false; this.say('crit', 'Killing Blow: the crit hits harder.'); }
     const pvp = e.isPlayer ? (1 - Math.min(75, e.resist[dtype] || 0) / 100) * (1 + this.pressure()) : 1;
@@ -1601,14 +1601,14 @@ class Combat {
     const str = e.strength + e.strTurn, press = this.pressure();
     const res = Math.min(75, p.resist[dtype] || 0) / 100;
     const bonus = extra || 0;
-    const dmg = Math.max(0, Math.round((base + bonus) * this.dmgMult * e.dmgTune * (1 + str / 100) * (1 - Math.min(e.weak, 90) / 100) * (1 + press) * (1 - res) * (1 + p.vulnerable / 100) * (e.weakNext ? 1 - (e.weakNext === 1 || e.weakNext === true ? 0.3 : e.weakNext) : 1) * (p.until.lessDmg ? 1 - p.until.lessDmg : 1) * (dtype !== 'Physical' ? 1 + (p.unwarded || 0) / 100 : 1)));
+    const dmg = Math.max(0, Math.round((base + bonus) * this.dmgMult * e.dmgTune * (1 + str / 100) * (1 - Math.min(e.weak, 90) / 100) * (1 + press) * (1 - res) * (1 + Math.min(50, p.vulnerable) / 100) * (e.weakNext ? 1 - (e.weakNext === 1 || e.weakNext === true ? 0.3 : e.weakNext) : 1) * (p.until.lessDmg ? 1 - p.until.lessDmg : 1) * (dtype !== 'Physical' ? 1 + (p.unwarded || 0) / 100 : 1)));
     const parts = [`${base}${bonus ? ' + ' + bonus : ''}`];
     if (this.dmgMult !== 1) parts.push(`x ${this.dmgMult.toFixed(2)} map level`);
     if (str) parts.push(`x ${(1 + str / 100).toFixed(2)} Strength`);
     if (e.weak) parts.push(`x ${(1 - e.weak / 100).toFixed(2)} Weak`);
     if (press) parts.push(`x ${(1 + press).toFixed(2)} Pressure`);
     if (res) parts.push(`x ${(1 - res).toFixed(2)} ${dtype} resist`);
-    if (p.vulnerable) parts.push(`x ${(1 + p.vulnerable / 100).toFixed(2)} Vulnerable`);
+    if (p.vulnerable) parts.push(`x ${(1 + Math.min(50, p.vulnerable) / 100).toFixed(2)} Vulnerable`);
     if (!this._aoeHit && !this.taunting()) { const tk = this.demonTaunt(); if (tk) { this.hurtDemon(tk[0], tk[1], dmg, `${e.name}'s ${label}`); return 0; } } // the Bulwark Fiend takes single-target hits
     if (this._aoeHit && p.demons && p.demons.length) for (const dm of p.demons.slice()) this.hurtDemon(p, dm, dmg, `${e.name}'s ${label}`); // area attacks also hit demons
     p.attackedThisRound = true;
@@ -1643,7 +1643,7 @@ class Combat {
     p[key] = (p[key] || 0) + n; if (['bleed', 'burn', 'poison'].includes(key)) p[key + 'By'] = e && e.id;
     if (key === 'chill' && p.chill >= 10) { p.chill = 0; p.frozen = true; this.say('crit', `${this.who(p)} ${this.partySize > 1 ? 'is' : 'are'} Frozen and will lose the next turn!`); return; }
     const W = this.partySize > 1 ? p.name : 'You', is = this.partySize > 1 ? 'is' : 'are', gain = this.partySize > 1 ? 'gains' : 'gain';
-    const txt = { weak: `${W} ${is} Weak ${p.weak}: ${p.weak}% less damage dealt.`, vulnerable: `${W} ${is} Vulnerable ${p.vulnerable}: ${p.vulnerable}% more damage taken.`, bleed: `${W} ${gain} ${n} Bleed (now ${p.bleed}).`, slow: `${W} ${is} Slowed ${p.slow}.`,
+    const txt = { weak: `${W} ${is} Weak ${p.weak}: ${p.weak}% less damage dealt.`, vulnerable: `${W} ${is} Vulnerable ${p.vulnerable}: ${Math.min(50, p.vulnerable)}% more damage taken.`, bleed: `${W} ${gain} ${n} Bleed (now ${p.bleed}).`, slow: `${W} ${is} Slowed ${p.slow}.`,
       burn: `${W} ${gain} ${n} Burn (now ${p.burn}).`, poison: `${W} ${gain} ${n} Poison (now ${p.poison}).`, chill: `${W} ${is} Chilled ${p.chill} (Freezes at 10).`,
       unwarded: `${W} ${is} Unwarded ${p.unwarded}: +${p.unwarded}% magic damage taken.`, exposure: `${W} ${gain} ${n} Exposure: cards cost ${Math.min(10, p.exposure) * 5}% more.` };
     this.say('enemy', txt[key]);
