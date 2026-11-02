@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Feature', 'The Forge (link at Tinker Pip\'s test shop): preview any class in any gear, every hero move, hit effect, spell and card combo, the town walker, and change which drawn piece each item uses per map and the colours.'],
+      ['Fix', 'Phones: the fight screen stacks the combat log under the battlefield instead of covering it, and the greyed-out Shaman seat at the campfire no longer blocks picking the Paladin.'],
       ['Feature', 'Your hero in town shows your gear to everyone: other players see exactly what you\'re wearing (and you see theirs). It updates a few seconds after you change gear.'],
       ['Feature', 'Hit effects: slashes, stabs, smashes and claw marks by weapon, element bursts (fire, frost, shadow, holy, arcane, nature), bleed drops, poison bubbles, burn, dread and rot ticks, heals, Block shields, parry sparks, dodges, and a red burst with a screen shake on crits. Spells fly from the caster to the target.'],
       ['Feature', 'More hero moves: two-handed heroes leap in and slam big Attacks, daggers lunge, multi-hit Attacks strike twice, Powers rise into a glow, Rogues sidestep dodged hits, Warriors parry, Stealth makes your hero see-through, big hits knock you back, and fallen heroes slump. Monsters lunge when they attack and shake when hit.'],

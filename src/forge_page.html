@@ -1,0 +1,193 @@
+<title>The Forge · Cardbound</title>
+<style>
+:root { color-scheme: dark; --bg: #14110e; --panel: #1d1915; --line: #3d342a; --ink: #e8dcc6; --dim: #9b8f7c; --gold: #d6a14a; --fh: 170px; }
+* { box-sizing: border-box; } body { margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { display: flex; align-items: baseline; gap: 14px; padding: 12px 18px; border-bottom: 1px solid var(--line); background: #191510; flex-wrap: wrap; }
+header h1 { margin: 0; font: 700 24px Georgia, serif; letter-spacing: 3px; color: #e6d4ac; } header span { color: var(--dim); }
+main { display: grid; grid-template-columns: 290px minmax(0, 1fr) 340px; gap: 12px; padding: 12px; }
+@media (max-width: 1100px) { main { grid-template-columns: 1fr; } }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; min-width: 0; }
+h2 { font: 600 15px Georgia, serif; color: var(--gold); margin: 4px 0 8px; letter-spacing: .5px; } h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--dim); margin: 12px 0 6px; }
+label.row { display: grid; grid-template-columns: 74px 1fr; gap: 6px; align-items: center; margin: 3px 0; } select, input, textarea, button { font: inherit; color: var(--ink); background: #26211b; border: 1px solid var(--line); border-radius: 5px; }
+select, input[type=text] { padding: 4px 6px; width: 100%; min-width: 0; } textarea { width: 100%; min-height: 90px; padding: 6px; font: 11.5px ui-monospace, monospace; }
+button { padding: 5px 10px; cursor: pointer; } button:hover { border-color: var(--gold); } button.on { background: #4a3a22; border-color: var(--gold); }
+.btns { display: flex; flex-wrap: wrap; gap: 5px; } .btns button { padding: 4px 8px; font-size: 12px; }
+.stage { position: relative; height: 330px; border-radius: 8px; overflow: hidden; background: radial-gradient(ellipse at 50% 85%, #3a4a3a 0%, #1d2a24 45%, #0f1513 100%); display: grid; grid-template-columns: 1fr 1fr; align-items: end; padding: 0 40px 34px; }
+.stage::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 40px; background: linear-gradient(transparent, rgba(0,0,0,.35)); pointer-events: none; }
+.unit { position: relative; display: flex; justify-content: center; } .figure { position: relative; }
+#foes .figure img { display: block; height: calc(var(--fh) * var(--s, 1)); width: auto; filter: drop-shadow(0 3px 0 rgba(0,0,0,.35)); }
+.figure:has(> .forgefig) { height: auto; overflow: visible; min-height: 80px; }
+.forgefig { position: relative; display: block; margin: 0 auto; height: calc(var(--fh) * var(--s, 1)); width: calc(var(--fh) * var(--s, 1) * var(--ar, .62)); pointer-events: none; }
+.forgefig canvas { position: absolute; left: 0; top: 0; filter: drop-shadow(0 3px 0 rgba(0,0,0,.35)); } .forgefig:not(.on) canvas { display: none; } .forgefig.on > img { display: none; }
+.forgefig > img { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); height: 100%; }
+.unit.dead .forgefig canvas { filter: grayscale(1) brightness(.6); }
+#town { width: 100%; height: 190px; background: #2a2620; border-radius: 8px; display: block; }
+.pieces { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 5px; max-height: 330px; overflow: auto; padding-right: 4px; }
+.piece { display: grid; gap: 2px; justify-items: center; padding: 3px; border: 1px solid var(--line); border-radius: 5px; background: #221d18; cursor: pointer; font-size: 10.5px; line-height: 1.15; text-align: center; color: var(--dim); }
+.piece canvas { width: 54px; height: 63px; } .piece.cur { border-color: var(--gold); color: var(--ink); background: #3a2e1e; } .piece:hover { border-color: #a07a3a; }
+.slotpick { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; } .muted { color: var(--dim); } .note { font-size: 12px; color: var(--dim); margin: 6px 0 0; }
+.colors { display: grid; grid-template-columns: 80px repeat(6, 1fr); gap: 4px; align-items: center; font-size: 11px; } .colors input { width: 100%; height: 22px; padding: 0; border: 0; background: none; }
+.status { color: #8fdc6a; font-size: 12px; min-height: 16px; }
+</style>
+<header><h1>THE FORGE</h1><span>Hero sprites, gear pieces, moves and fight effects for Cardbound. Everything here is drawn by the same code as the game.</span><a href="index.html" style="margin-left:auto;color:var(--gold)">Back to the game</a></header>
+<main>
+  <section>
+    <h2>Hero</h2>
+    <label class="row">Class <select id="cls"></select></label>
+    <label class="row">Rarity <select id="rar"><option>White</option><option>Green</option><option>Blue</option><option>Purple (Epic)</option></select></label>
+    <div class="btns" style="margin:6px 0"><button id="bStarter">Starter gear</button><button id="bRandom">Random</button><select id="randMap" style="width:auto"></select><button id="bNaked">Base body</button></div>
+    <h3>Gear (any map, any rarity)</h3>
+    <div id="slots"></div>
+  </section>
+  <section>
+    <h2>Preview</h2>
+    <div class="stage" id="stage">
+      <div id="heroes"><div class="unit" data-id="p0"><div class="figure" id="heroFig"></div></div></div>
+      <div id="foes"><div class="unit" data-id="e0"><div class="figure" id="foeFig"></div></div></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin:8px 0 2px;flex-wrap:wrap"><span class="muted">Target</span><select id="foe" style="width:auto"></select><label><input type="checkbox" id="loop"> Repeat</label><label><input type="checkbox" id="stealth"> Stealth</label><label><input type="checkbox" id="dead"> Fallen</label></div>
+    <h3>Hero moves</h3><div class="btns" id="moves"></div>
+    <h3>Monster moves</h3><div class="btns" id="emoves"></div>
+    <h3>Hit effects</h3><div class="btns" id="fx"></div>
+    <h3>Spells (caster to target)</h3><div class="btns" id="bolts"></div>
+    <h3>Combos (what cards look like)</h3><div class="btns" id="combos"></div>
+    <h3>Town walker</h3><canvas id="town"></canvas>
+    <div class="btns" style="margin-top:6px"><button id="tWalk" class="on">Walking</button><button id="tFace">Turn around</button></div>
+  </section>
+  <section>
+    <h2>Gear pieces</h2>
+    <p class="note" style="margin-top:0">Pick a slot, then click a piece: it becomes what that item type looks like on that map (the item in the slot shows which). Changes show at once in this browser.</p>
+    <div class="slotpick" id="slotPick"></div>
+    <div id="pieceHead" class="muted" style="margin-bottom:6px"></div>
+    <div class="pieces" id="pieces"></div>
+    <h3>Colours</h3>
+    <div class="colors" id="colors"></div>
+    <h3>Save for everyone</h3>
+    <p class="note">Your changes live in this browser until they go into the game. Copy them and send them to Claude (they go in <code>src/forge_overrides.js</code>), or paste a set back here.</p>
+    <div class="btns" style="margin:6px 0"><button id="bCopy">Copy changes</button><button id="bApply">Load pasted</button><button id="bReset">Reset to game</button></div>
+    <div class="status" id="status"></div>
+    <textarea id="ovr" spellcheck="false"></textarea>
+  </section>
+</main>
+<script>
+/*DATA*/
+/*FORGEOVR*/
+/*FORGEENGINE*/
+/*INKART*/
+(function () {
+  /*FORGE*/
+  /*FX*/
+  const STARTER = /*STARTER*/;
+  const F = window.CB_FORGE, X = window.CB_FX, D = window.CB_DATA, P = F.P, $ = (id) => document.getElementById(id);
+  const MAPS = Object.values(D.maps).sort((a, b) => a.num - b.num);
+  const LS = 'cb-forge-ovr';
+  let ovr = {}; try { ovr = JSON.parse(localStorage.getItem(LS) || '{}') || {}; } catch (e) { ovr = {}; }
+  const deep = (o) => JSON.parse(JSON.stringify(o));
+  const DEFAULTS = { arch: deep(F.ARCH), metal: F.METAL.slice(), soft: F.SOFT.slice(), trim: Object.assign({}, F.TRIM), offWeapon: Object.assign({}, F.OFF_WEAPON) };
+  function applyAll() { F.applyOverrides(deep(DEFAULTS)); F.applyOverrides(window.CB_FORGE_OVERRIDES || {}); F.applyOverrides(ovr); } // defaults, then the game's saved set, then this browser's
+  // game slots shown on the sprite, and the bases that fit each
+  const SLOTS = ['Helm', 'Shoulders', 'Chest', 'Cloak', 'Gloves', 'Bracers', 'Belt', 'Pants', 'Boots', 'Weapon', 'Off-hand'];
+  const WEAPON = /Axe|Sword|Dagger|Mace|Wand|Maul|Warhammer|Staff/, OFF = /Shield|Focus/;
+  const slotOf = (A) => OFF.test(A.slot) ? 'Off-hand' : WEAPON.test(A.slot) ? 'Weapon' : A.slot;
+  const basesFor = (sl) => D.gear.bases.filter((b) => { const A = D.gear.arche[b.arch]; if (!A) return false; const s = slotOf(A); return s === sl || (sl === 'Off-hand' && s === 'Weapon' && /1H/.test(A.hands || '')); });
+  const gear = {}; // slot -> base name
+  $('cls').innerHTML = Object.keys(F.CLASS_LOOK).map((c) => `<option>${c}</option>`).join('');
+  $('randMap').innerHTML = MAPS.map((m) => `<option value="${m.key}">${m.num}. ${m.name}</option>`).join('');
+  $('slots').innerHTML = SLOTS.map((sl) => { const groups = MAPS.map((m) => { const bs = basesFor(sl).filter((b) => (b.map || 'physical') === m.key); return bs.length ? `<optgroup label="${m.num}. ${m.name}">${bs.map((b) => `<option>${b.name}</option>`).join('')}</optgroup>` : ''; }).join('');
+    return `<label class="row">${sl} <select data-slot="${sl}"><option value="">(empty)</option>${groups}</select></label>`; }).join('');
+  function gearList() { const r = $('rar').value; return SLOTS.filter((sl) => gear[sl]).map((sl) => ({ slot: sl, name: gear[sl], arch: (D.gear.bases.find((b) => b.name === gear[sl]) || {}).arch, rarity: r })); }
+  function syncSelects() { for (const s of document.querySelectorAll('[data-slot]')) s.value = gear[s.dataset.slot] || ''; }
+  function starter() { for (const sl of SLOTS) delete gear[sl]; for (const g of STARTER[$('cls').value] || []) if (SLOTS.includes(g.slot)) gear[g.slot] = g.name; syncSelects(); refresh(); }
+  function random() { const mk = $('randMap').value; for (const sl of SLOTS) { if (sl === 'Bracers') { delete gear[sl]; continue; } const bs = basesFor(sl).filter((b) => (b.map || 'physical') === mk); gear[sl] = bs.length ? bs[Math.floor(Math.random() * bs.length)].name : undefined; if (!gear[sl]) delete gear[sl]; }
+    const w = D.gear.arche[(D.gear.bases.find((b) => b.name === gear.Weapon) || {}).arch]; if (w && /2H/.test(w.hands || '')) delete gear['Off-hand']; syncSelects(); refresh(); }
+  // the hero on the stage
+  const hero = () => ({ id: 'p0', cls: $('cls').value, look: gearList() });
+  function refresh() { $('heroFig').innerHTML = F.figureHtml(hero(), ''); F.setStates({ p0: { stealth: $('stealth').checked, dead: $('dead').checked } }); $('heroFig').closest('.unit').classList.toggle('dead', $('dead').checked); renderPieces(); }
+  // the target: any monster picture from the game
+  const foes = Object.entries(D.enemies).filter(([k, e]) => !e.raid && e.map !== 'town' && window.CB_INK && CB_INK.figure({ key: k })).map(([k, e]) => [k, e.name]);
+  $('foe').innerHTML = foes.map(([k, n]) => `<option value="${k}" ${k === 'dire_wolf' ? 'selected' : ''}>${n}</option>`).join('');
+  function setFoe() { $('foeFig').innerHTML = (window.CB_INK && CB_INK.figure({ key: $('foe').value })) || ''; }
+  // buttons
+  const MOVE_NAMES = { attack: 'Swing', heavy: 'Heavy (2H)', leap: 'Leap slam (2H)', lunge: 'Lunge (dagger)', double: 'Double strike', twirl: 'Twirl (hits all)', cast: 'Cast', empower: 'Empower (Power)', guard: 'Guard', guard2: 'Double guard', hit: 'Flinch', knock: 'Knocked back', dodge: 'Dodge', parry: 'Parry', vanish: 'Vanish' };
+  $('moves').innerHTML = Object.keys(F.MOVES).map((m) => `<button data-move="${m}">${MOVE_NAMES[m] || m}</button>`).join('');
+  $('emoves').innerHTML = Object.keys(F.EMOVES).map((m) => `<button data-emove="${m}">${{ elunge: 'Attack lunge', ehit: 'Hit shake', eknock: 'Big hit' }[m] || m}</button>`).join('');
+  $('fx').innerHTML = Object.keys(X.DRAW).filter((k) => k !== 'bolt').map((k) => `<button data-fx="${k}">${k}</button>`).join('');
+  const ELS = ['Fire', 'Frost', 'Shadow', 'Holy', 'Arcane', 'Nature', 'Physical'];
+  $('bolts').innerHTML = ELS.map((e) => `<button data-bolt="${e}">${e}</button>`).join('') + '<button data-bolt="star">Shuriken</button>';
+  const COMBOS = {
+    'Slash + Bleed': () => { F.play('p0', 'attack'); hitAt('slash', 260); X.add('bleed', { id: 'e0', seed: 5 }, 420); },
+    'Triple slash': () => { F.play('p0', 'double'); [0, 1, 2].forEach((i) => hitAt('slash', 200 + i * 150, { ang: -2.4 + i * 0.9 * (i % 2 ? 1 : -1) })); },
+    'Crit smash': () => { F.play('p0', 'heavy'); hitAt('blunt', 360, { big: true }); X.add('crit', { id: 'e0' }, 360); shake(360); },
+    'Leap slam': () => { F.play('p0', 'leap'); hitAt('slash', 520, { big: true }); },
+    'Fireball': () => { F.play('p0', 'cast'); X.add('bolt', { from: 'p0', to: 'e0', el: 'Fire' }, 160); hitAt('fire', 400); X.add('burn', { id: 'e0', seed: 3 }, 700); },
+    'Frost bolt + Chill': () => { F.play('p0', 'cast'); X.add('bolt', { from: 'p0', to: 'e0', el: 'Frost' }, 160); hitAt('frost', 400); X.add('chill', { id: 'e0' }, 560); },
+    'Shadow bolt + Dread': () => { F.play('p0', 'cast'); X.add('bolt', { from: 'p0', to: 'e0', el: 'Shadow' }, 160); hitAt('shadow', 400); X.add('dread', { id: 'e0' }, 600); },
+    'Poison stab': () => { F.play('p0', 'lunge'); hitAt('pierce', 260, { side: 1 }); X.add('poison', { id: 'e0', seed: 9 }, 420); },
+    'Smite': () => { F.play('p0', 'cast'); hitAt('holy', 300); },
+    'Whirlwind': () => { F.play('p0', 'twirl'); hitAt('slash', 300, { ang: -0.6, big: true }); },
+    'Heal': () => { F.play('p0', 'cast'); X.add('heal', { id: 'p0', seed: 4 }, 200); },
+    'Block x2': () => { F.play('p0', 'guard2'); X.add('block', { id: 'p0' }); X.add('block', { id: 'p0' }, 330); },
+    'Monster claws you': () => { F.play('e0', 'elunge'); X.add('claw', { id: 'p0', col: '#f4ecdc' }, 200); setTimeout(() => F.play('p0', 'hit'), 200); },
+    'Monster hits hard': () => { F.play('e0', 'elunge'); X.add('slash', { id: 'p0', big: true }, 200); setTimeout(() => F.play('p0', 'knock'), 200); },
+    'Dodged': () => { F.play('e0', 'elunge'); setTimeout(() => F.play('p0', 'dodge'), 180); X.add('whoosh', { id: 'p0', side: 1 }, 200); },
+    'Parried': () => { F.play('e0', 'elunge'); setTimeout(() => F.play('p0', 'parry'), 180); X.add('clank', { id: 'p0', side: -1 }, 200); },
+    'Vanish (Stealth)': () => { F.play('p0', 'vanish'); X.add('smoke', { id: 'p0' }); },
+  };
+  $('combos').innerHTML = Object.keys(COMBOS).map((k) => `<button data-combo="${k}">${k}</button>`).join('');
+  function hitAt(kind, delay, o) { X.add(kind, Object.assign({ id: 'e0', seed: Math.random() * 1e9, side: 1 }, o || {}), delay); setTimeout(() => F.play('e0', (o && o.big) ? 'eknock' : 'ehit'), delay); }
+  function shake(delay) { setTimeout(() => { const s = $('stage'); s.style.animation = 'none'; void s.offsetWidth; s.style.animation = 'fxshake .26s linear'; }, delay); }
+  let last = null, loopT = null;
+  function run(btn) { last = btn; const d = btn.dataset;
+    if (d.move) F.play('p0', d.move); else if (d.emove) F.play('e0', d.emove);
+    else if (d.fx) X.add(d.fx, { id: ['heal', 'block', 'aura', 'smoke', 'shimmer', 'whoosh', 'vanish'].includes(d.fx) ? 'p0' : 'e0', seed: Math.random() * 1e9, side: 1 });
+    else if (d.bolt) { F.play('p0', 'cast'); X.add('bolt', { from: 'p0', to: 'e0', el: d.bolt === 'star' ? 'Physical' : d.bolt, star: d.bolt === 'star' }, 160); }
+    else if (d.combo) COMBOS[d.combo]();
+    clearTimeout(loopT); if ($('loop').checked) loopT = setTimeout(() => run(btn), 1700); }
+  document.querySelector('main').addEventListener('click', (ev) => { const b = ev.target.closest('[data-move],[data-emove],[data-fx],[data-bolt],[data-combo]'); if (b) run(b); });
+  $('loop').onchange = () => { clearTimeout(loopT); if ($('loop').checked && last) run(last); };
+  // town walker
+  const tc = $('town'), tg = tc.getContext('2d'); let walking = true, faceLeft = false;
+  function townLoop(t) { requestAnimationFrame(townLoop); const w = tc.clientWidth, h = tc.clientHeight; if (tc.width !== w * 2) { tc.width = w * 2; tc.height = h * 2; }
+    tg.setTransform(2, 0, 0, 2, 0, 0); tg.fillStyle = '#2a2620'; tg.fillRect(0, 0, w, h); tg.fillStyle = '#3a3428'; for (let x = 0; x < w; x += 24) for (let y = 0; y < h; y += 24) if ((x + y) % 48 === 0) tg.fillRect(x, y, 24, 24);
+    const hp = hero(); F.town(tg, hp.cls, hp.look, w / 2, h - 14, faceLeft ? 'left' : 'right', walking ? 1 : 0, 2.2, t, 'page'); }
+  requestAnimationFrame(townLoop);
+  $('tWalk').onclick = () => { walking = !walking; $('tWalk').classList.toggle('on', walking); $('tWalk').textContent = walking ? 'Walking' : 'Standing'; };
+  $('tFace').onclick = () => { faceLeft = !faceLeft; };
+  // ---------- gear pieces: thumbnails of every piece for a slot; clicking one maps the hero's item (its type, on its map) to it
+  const PSLOT = { Helm: 'head', Shoulders: 'shoulders', Chest: 'chest', Cloak: 'back', Gloves: 'hands', Bracers: 'hands', Belt: 'waist', Pants: 'legs', Boots: 'feet', Weapon: 'weapon', 'Off-hand': 'offhand' };
+  let pickSlot = 'Chest'; const thumbs = {};
+  $('slotPick').innerHTML = SLOTS.map((sl) => `<button data-ps="${sl}">${sl}</button>`).join('');
+  $('slotPick').onclick = (ev) => { const b = ev.target.closest('[data-ps]'); if (b) { pickSlot = b.dataset.ps; renderPieces(); } };
+  function thumb(slot, id) { const k = slot + ':' + id; if (thumbs[k]) return thumbs[k];
+    const L = F.lookFor($('cls').value, []); L.items = Object.assign({}, L.items, { [slot]: id }); const s = F.stateFor(L), cv = P.compose(s, 108, 0, false); thumbs[k] = cv.toDataURL(); return thumbs[k]; }
+  function renderPieces() {
+    for (const b of document.querySelectorAll('[data-ps]')) b.classList.toggle('on', b.dataset.ps === pickSlot);
+    const ps = PSLOT[pickSlot], name = gear[pickSlot], base = name && D.gear.bases.find((b) => b.name === name), arch = base && base.arch, mi = base ? (F.MAP_N[base.map || 'physical'] || 0) : 0;
+    const row = arch && F.ARCH[arch], cur = name ? F.lookFor($('cls').value, gearList()).items[ps] : null;
+    $('pieceHead').innerHTML = name ? `<b>${name}</b> (${arch}, Map ${mi + 1}) shows as <b style="color:var(--gold)">${(P.CATALOG[ps].find((x) => x.id === cur) || {}).name || cur}</b>${row && row.length === 2 ? ' <span class="muted">(same piece on every map)</span>' : ''}` : `Put an item in the ${pickSlot} slot (left) to choose how it looks.`;
+    $('pieces').innerHTML = P.CATALOG[ps].map((x) => `<div class="piece ${x.id === cur ? 'cur' : ''}" data-piece="${x.id}" title="${x.name}"><img src="${thumb(ps, x.id)}" width="54" height="63" alt=""><span>${x.name}</span></div>`).join('');
+  }
+  $('pieces').onclick = (ev) => { const p = ev.target.closest('[data-piece]'); if (!p) return; const name = gear[pickSlot]; if (!name) return status('Put an item in that slot first.');
+    const base = D.gear.bases.find((b) => b.name === name), arch = base && base.arch; if (!arch) return; const mi = F.MAP_N[base.map || 'physical'] || 0;
+    if (pickSlot === 'Off-hand' && F.OFF_WEAPON[arch]) { ovr.offWeapon = Object.assign({}, ovr.offWeapon, { [arch]: p.dataset.piece }); }
+    else { const row = (ovr.arch && ovr.arch[arch]) || F.ARCH[arch] || [PSLOT[pickSlot]]; const full = [row[0]]; for (let i = 0; i < 6; i++) full.push(row[1 + (i % Math.max(1, row.length - 1))] || p.dataset.piece); full[1 + mi] = p.dataset.piece; ovr.arch = Object.assign({}, ovr.arch, { [arch]: full }); }
+    save(); status(`${arch} on Map ${mi + 1} now shows ${p.title}.`); };
+  // colours
+  const RARS = ['White', 'Green', 'Blue', 'Purple (Epic)', 'Codex'];
+  function renderColors() { const c = (arr, k) => arr.map((v, i) => `<input type="color" value="${v}" data-col="${k}" data-i="${i}" title="Map ${i + 1}">`).join('');
+    $('colors').innerHTML = `<span>Metal</span>${c(F.METAL, 'metal')}<span>Cloth/leather</span>${c(F.SOFT, 'soft')}<span>Trim</span>${RARS.map((r) => `<input type="color" value="${F.TRIM[r]}" data-col="trim" data-i="${r}" title="${r}">`).join('')}`; }
+  $('colors').oninput = (ev) => { const t = ev.target; if (!t.dataset.col) return; if (t.dataset.col === 'trim') ovr.trim = Object.assign({}, ovr.trim, { [t.dataset.i]: t.value }); else { const arr = (ovr[t.dataset.col] || F[t.dataset.col === 'metal' ? 'METAL' : 'SOFT'].slice()); arr[+t.dataset.i] = t.value; ovr[t.dataset.col] = arr; } save(true); };
+  // saving
+  function status(t) { $('status').textContent = t; clearTimeout(status.t); status.t = setTimeout(() => { $('status').textContent = ''; }, 4000); }
+  function save(soft) { try { localStorage.setItem(LS, JSON.stringify(ovr)); } catch (e) {} applyAll(); for (const k in thumbs) delete thumbs[k]; $('ovr').value = JSON.stringify(ovr, null, 1); refresh(); if (!soft) renderColors(); }
+  $('bCopy').onclick = async () => { const t = JSON.stringify(ovr, null, 1); $('ovr').value = t; try { await navigator.clipboard.writeText(t); status('Copied. Send it to Claude to make it live for everyone.'); } catch (e) { $('ovr').select(); status('Select the text below and copy it.'); } };
+  $('bApply').onclick = () => { try { ovr = JSON.parse($('ovr').value || '{}'); save(); status('Loaded.'); } catch (e) { status('That isn\'t valid JSON.'); } };
+  $('bReset').onclick = () => { ovr = {}; save(); status('Back to what the game ships with.'); };
+  // wiring
+  $('slots').onchange = (ev) => { const s = ev.target.closest('[data-slot]'); if (!s) return; if (s.value) gear[s.dataset.slot] = s.value; else delete gear[s.dataset.slot]; pickSlot = s.dataset.slot; refresh(); };
+  $('cls').onchange = () => { for (const k in thumbs) delete thumbs[k]; starter(); };
+  $('rar').onchange = refresh; $('bStarter').onclick = starter; $('bRandom').onclick = random; $('bNaked').onclick = () => { for (const sl of SLOTS) delete gear[sl]; syncSelects(); refresh(); };
+  $('foe').onchange = setFoe; $('stealth').onchange = refresh; $('dead').onchange = refresh;
+  applyAll(); $('ovr').value = JSON.stringify(ovr, null, 1); renderColors(); setFoe(); starter();
+})();
+</script>

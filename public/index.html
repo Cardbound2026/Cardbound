@@ -585,7 +585,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 .seat.on .seatname { box-shadow: 0 0 0 1px var(--cc); }
 .seat .seatfig { display: grid; place-items: end center; min-height: 40px; }
 .seat .seatfig .noart { width: 52px; height: 90px; border-radius: 26px 26px 8px 8px; background: var(--cc); opacity: .55; }
-.seat.soon { cursor: default; } .seat.soon img { filter: grayscale(.85) brightness(.4); } .seat.soon .seatname { color: #8f8c80; }
+.seat.soon { cursor: default; pointer-events: none; z-index: 0; } .seat:not(.soon) { z-index: 1; } /* the greyed seat (and its wide label) never blocks a real class on small screens */ .seat.soon img { filter: grayscale(.85) brightness(.4); } .seat.soon .seatname { color: #8f8c80; }
 .seat .soonnote { font-size: 11px; color: #d8c58e; background: rgba(10,8,6,.88); border: 1px solid #5a4a2a; padding: 2px 7px; border-radius: 4px; margin-top: 3px; white-space: nowrap; }
 .clsinfo { margin: 10px 0 0; min-height: 22px; color: #d6cab6; } .clsinfo b { font: 22px var(--cf-name); color: var(--cc); margin-right: 8px; } .clsinfo small { color: var(--muted); margin-left: 8px; }
 .creategrid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; } .creategrid[hidden] { display: none; }
@@ -655,6 +655,8 @@ body.aiming { cursor: grabbing; user-select: none; }
 .forgefig canvas { position: absolute; left: 0; top: 0; filter: drop-shadow(0 3px 0 rgba(0,0,0,.35)); } .forgefig:not(.on) canvas { display: none; } .forgefig.on > img { display: none; }
 .forgefig > img { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); height: 100%; width: auto; max-width: none; }
 .unit.active .forgefig canvas { filter: drop-shadow(0 0 7px rgba(214,161,74,.55)) drop-shadow(0 3px 0 rgba(0,0,0,.35)); } .unit.dead .forgefig canvas { filter: grayscale(1) brightness(.55); opacity: .7; }
+/* Nov 2: phones: the fight screen is one column (battlefield, then the combat log and chat below it) */
+@media (max-width: 760px) { #scrCombat, #scrCombat.bf, #scrCombat.withchat, #scrCombat.bf.withchat { grid-template-columns: minmax(0, 1fr) !important; } #scrCombat #ledger { max-height: 300px; min-height: 160px; } #scrCombat .combatchat { grid-column: 1 / -1; } #scrCombat .field-panel { min-width: 0; } }
 .recgrave li { padding: 3px 0; cursor: pointer; color: #b8b0a6; }
 .herocard.new { border-style: dashed; border-top-style: dashed; place-content: center; text-align: center; color: var(--muted); font-size: 16px; }
 .create h3 { font-family: var(--cf-name); font-weight: 400; font-size: 26px; color: var(--accent); margin-bottom: 8px; }
@@ -6155,8 +6157,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793595156371';
-  const CB_BUILD = '8c374b9cd0'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793595754394';
+  const CB_BUILD = '06c8148c7a'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -7226,6 +7228,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Feature', 'The Forge (link at Tinker Pip\'s test shop): preview any class in any gear, every hero move, hit effect, spell and card combo, the town walker, and change which drawn piece each item uses per map and the colours.'],
+      ['Fix', 'Phones: the fight screen stacks the combat log under the battlefield instead of covering it, and the greyed-out Shaman seat at the campfire no longer blocks picking the Paladin.'],
       ['Feature', 'Your hero in town shows your gear to everyone: other players see exactly what you\'re wearing (and you see theirs). It updates a few seconds after you change gear.'],
       ['Feature', 'Hit effects: slashes, stabs, smashes and claw marks by weapon, element bursts (fire, frost, shadow, holy, arcane, nature), bleed drops, poison bubbles, burn, dread and rot ticks, heals, Block shields, parry sparks, dodges, and a red burst with a screen shake on crits. Spells fly from the caster to the target.'],
       ['Feature', 'More hero moves: two-handed heroes leap in and slam big Attacks, daggers lunge, multi-hit Attacks strike twice, Powers rise into a glow, Rogues sidestep dodged hits, Warriors parry, Stealth makes your hero see-through, big hits knock you back, and fallen heroes slump. Monsters lunge when they attack and shake when hit.'],
@@ -7698,6 +7702,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (!$('modal').hidden) { if ($('modalBox').classList.contains('tlbox')) { ev.preventDefault(); closeModal(); } return; }
     ev.preventDefault(); if (typeof P !== 'undefined' && P.held) P.held = []; openTalents();
   });
+
+  // ---------- Forge overrides (made in public/forge.html, the Forge page): which sprite piece each item archetype uses on each map, and colours.
+  // Format: { arch: { 'Greathelm': ['head', 'helm_2', 'helm_0', ...one per map] }, metal: [6 colours], soft: [6 colours], trim: { White: '#..' },
+  //           classLook: { Warrior: { face, hair, beard, mark, scheme } }, base: { chest: 'cloth_0' } }. Empty = the defaults in src/forge.js.
+  window.CB_FORGE_OVERRIDES = {};
 
 // GENERATED by design/inkart/build_forge.js from design/inkart/paperforge.html (PAPERFORGE ): its drawing core, no editor UI.
 // Do not edit by hand: change paperforge.html (or src/forge.js for game-side behaviour) and re-run the build script.
@@ -9327,6 +9336,17 @@ async function exportTravelPack(){
     const METAL = ['#8b9286', '#8a6a52', '#a3b6c2', '#7d8a62', '#8a7ca6', '#5d5468'], SOFT = ['#6b5640', '#7a3e30', '#4f6577', '#4f6040', '#5a4a78', '#3e3846'];
     const TRIM = { White: '#9b8a6a', Green: '#8fbf6a', Blue: '#7fb0e8', 'Purple (Epic)': '#c890ee', Codex: '#e0802a' };
     const isMetal = (id) => /^(helm|mail|plate|pauldron|glovemetal|greaves|sabatons|belt_3|shield|sword|greatsword|axe|greataxe|mace|hammer|dagger|secondary)/.test(id);
+    // overrides made in the Forge page (public/forge.html): which sprite piece each item archetype uses per map, and the colours.
+    // Saved for everyone in src/forge_overrides.js (window.CB_FORGE_OVERRIDES); the page also keeps unsaved ones in this browser.
+    function applyOverrides(o) {
+      if (!o) return; for (const [k, row] of Object.entries(o.arch || {})) if (Array.isArray(row) && row.length >= 2) ARCH[k] = row.slice();
+      for (const [k, v] of Object.entries(o.offWeapon || {})) OFF_WEAPON[k] = v;
+      if (Array.isArray(o.metal)) o.metal.forEach((c, i) => { if (c) METAL[i] = c; }); if (Array.isArray(o.soft)) o.soft.forEach((c, i) => { if (c) SOFT[i] = c; });
+      for (const [k, v] of Object.entries(o.trim || {})) TRIM[k] = v;
+      for (const [cls, L] of Object.entries(o.classLook || {})) if (CLASS_LOOK[cls]) Object.assign(CLASS_LOOK[cls], L);
+      for (const [sl, id] of Object.entries(o.base || {})) BASE[sl] = id;
+      cache.clear(); queue.length = 0;
+    }
     const DATA = window.CB_DATA, baseOf = {}; for (const b of (DATA && DATA.gear && DATA.gear.bases) || []) baseOf[b.name] = b;
     // the look for a hero: class face plus one piece per equipped item
     function lookFor(cls, gear) {
@@ -9488,7 +9508,8 @@ async function exportTravelPack(){
     function weaponKind(a) { const id = lookFor(a.cls, a.look).items.weapon || 'none_0'; return /^(dagger|polearm)/.test(id) ? 'pierce' : /^(mace|hammer|staff|wand|none|fist)/.test(id) ? (/^fist/.test(id) ? 'claw' : 'blunt') : 'slash'; }
     function twoHanded(a) { return /^(greatsword|greataxe|hammer|polearm|staff)/.test(lookFor(a.cls, a.look).items.weapon || ''); }
     function warm(cls, gear) { return fightFrames(sprite(lookFor(cls, gear))); } // start drawing a hero before the fight opens
-    return { town, lookFor, stateFor, sprite, figureHtml, play, setStates, events, weaponKind, twoHanded, warm, cache, ARCH, CLASS_LOOK, MOVES, EMOVES, frameFor, fightFrames };
+    applyOverrides(window.CB_FORGE_OVERRIDES);
+    return { applyOverrides, METAL, SOFT, TRIM, BASE, OFF_WEAPON, SLOT_OF, MAP_N, P, town, lookFor, stateFor, sprite, figureHtml, play, setStates, events, weaponKind, twoHanded, warm, cache, ARCH, CLASS_LOOK, MOVES, EMOVES, frameFor, fightFrames };
   })();
 
   // ---------- Fight effects (Nov 2): ink-style hit effects, spell projectiles and the move each hero makes, all driven by the engine's events.
@@ -10974,7 +10995,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     const cards = Object.entries(CARDS).filter(([k, d]) => d.cls === hcls() && !d.designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(d.rarity) && (TV.rar === 'All' || d.rarity === TV.rar) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + d.rarity).toLowerCase().includes(q)))
       .sort((a, b) => RAR_ORDER[b[1].rarity] - RAR_ORDER[a[1].rarity] || a[1].name.localeCompare(b[1].name));
     const room = CBHub.STASH_MAX - profile.stash.length;
-    el.innerHTML = `<p class="savenote" style="margin:0 0 8px"><b style="color:#e0802a">Test vendor (temporary).</b> Everything here is free so you can try cards and codexes. Cards go to ${esc(c.name)}'s collection (add them to the deck at the Scribe); codexes go to the stash (equip them in the Codex slot with C).</p>
+    el.innerHTML = `<p class="savenote" style="margin:0 0 8px"><a href="forge.html" target="_blank" rel="noopener" style="color:var(--accent);font-weight:600">Open the Forge</a> <span class="muted">(hero sprites, gear pieces, moves and fight effects)</span></p><p class="savenote" style="margin:0 0 8px"><b style="color:#e0802a">Test vendor (temporary).</b> Everything here is free so you can try cards and codexes. Cards go to ${esc(c.name)}'s collection (add them to the deck at the Scribe); codexes go to the stash (equip them in the Codex slot with C).</p>
       <div class="cxtop"><div class="tabs cxtabs" role="tablist">${[['decks', 'Test decks'], ['cards', `${hcls()} cards`], ['codex', 'Codexes'], ['misc', 'Gold']].map(([k, l]) => `<button role="tab" aria-selected="${TV.tab === k}" data-tvtab="${k}">${l}</button>`).join('')}</div>
         ${TV.tab === 'cards' ? `<input id="tvQ" type="search" placeholder="Search ${hcls()} cards by name or text..." value="${esc(TV.q)}" autocomplete="off">` : ''}
         <button class="btn" data-tvgold="clear" title="Sets the bank to 0 gold (to test a new player)">Clear all gold (${profile.gold})</button>

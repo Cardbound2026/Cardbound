@@ -48,3 +48,11 @@ Heroes are no longer still pictures: they are drawn live from the gear they wear
 - Fights: the engine queues one entry per card a hero plays (`cb.animQ`); the screen turns it into a clip (Attack: swing, or twirl if it
   hits every enemy; damaging or healing Skill: cast; Block Skill: guard). Losing HP plays the flinch.
 - To remove: delete both files; heroes fall back to the ink pictures.
+
+## Fight effects (src/fx.js) and the Forge page (public/forge.html)
+- `src/fx.js` draws every hit, heal, Block and debuff effect plus spell projectiles on one overlay canvas, in code (no images), and picks the
+  hero's move for each card. The engine feeds it `cb.animQ` (cards played) and `cb.fxQ` (hits, heals, Block, debuffs). New effect: add an
+  entry to `DRAW` (ms + a draw function); new move: add it to `MOVES` in src/forge.js.
+- `public/forge.html` (built from `src/forge_page.html` by build.js) previews any class in any gear, every move, effect, projectile and
+  card combo, and the town walker. Its gear-piece picker and colours save to the browser; "Copy changes" gives JSON that goes in
+  `src/forge_overrides.js` to make it live for everyone. Linked from Tinker Pip's test shop in town.

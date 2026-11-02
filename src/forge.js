@@ -40,6 +40,17 @@
     const METAL = ['#8b9286', '#8a6a52', '#a3b6c2', '#7d8a62', '#8a7ca6', '#5d5468'], SOFT = ['#6b5640', '#7a3e30', '#4f6577', '#4f6040', '#5a4a78', '#3e3846'];
     const TRIM = { White: '#9b8a6a', Green: '#8fbf6a', Blue: '#7fb0e8', 'Purple (Epic)': '#c890ee', Codex: '#e0802a' };
     const isMetal = (id) => /^(helm|mail|plate|pauldron|glovemetal|greaves|sabatons|belt_3|shield|sword|greatsword|axe|greataxe|mace|hammer|dagger|secondary)/.test(id);
+    // overrides made in the Forge page (public/forge.html): which sprite piece each item archetype uses per map, and the colours.
+    // Saved for everyone in src/forge_overrides.js (window.CB_FORGE_OVERRIDES); the page also keeps unsaved ones in this browser.
+    function applyOverrides(o) {
+      if (!o) return; for (const [k, row] of Object.entries(o.arch || {})) if (Array.isArray(row) && row.length >= 2) ARCH[k] = row.slice();
+      for (const [k, v] of Object.entries(o.offWeapon || {})) OFF_WEAPON[k] = v;
+      if (Array.isArray(o.metal)) o.metal.forEach((c, i) => { if (c) METAL[i] = c; }); if (Array.isArray(o.soft)) o.soft.forEach((c, i) => { if (c) SOFT[i] = c; });
+      for (const [k, v] of Object.entries(o.trim || {})) TRIM[k] = v;
+      for (const [cls, L] of Object.entries(o.classLook || {})) if (CLASS_LOOK[cls]) Object.assign(CLASS_LOOK[cls], L);
+      for (const [sl, id] of Object.entries(o.base || {})) BASE[sl] = id;
+      cache.clear(); queue.length = 0;
+    }
     const DATA = window.CB_DATA, baseOf = {}; for (const b of (DATA && DATA.gear && DATA.gear.bases) || []) baseOf[b.name] = b;
     // the look for a hero: class face plus one piece per equipped item
     function lookFor(cls, gear) {
@@ -201,5 +212,6 @@
     function weaponKind(a) { const id = lookFor(a.cls, a.look).items.weapon || 'none_0'; return /^(dagger|polearm)/.test(id) ? 'pierce' : /^(mace|hammer|staff|wand|none|fist)/.test(id) ? (/^fist/.test(id) ? 'claw' : 'blunt') : 'slash'; }
     function twoHanded(a) { return /^(greatsword|greataxe|hammer|polearm|staff)/.test(lookFor(a.cls, a.look).items.weapon || ''); }
     function warm(cls, gear) { return fightFrames(sprite(lookFor(cls, gear))); } // start drawing a hero before the fight opens
-    return { town, lookFor, stateFor, sprite, figureHtml, play, setStates, events, weaponKind, twoHanded, warm, cache, ARCH, CLASS_LOOK, MOVES, EMOVES, frameFor, fightFrames };
+    applyOverrides(window.CB_FORGE_OVERRIDES);
+    return { applyOverrides, METAL, SOFT, TRIM, BASE, OFF_WEAPON, SLOT_OF, MAP_N, P, town, lookFor, stateFor, sprite, figureHtml, play, setStates, events, weaponKind, twoHanded, warm, cache, ARCH, CLASS_LOOK, MOVES, EMOVES, frameFor, fightFrames };
   })();
