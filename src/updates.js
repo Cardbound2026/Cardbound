@@ -2,6 +2,10 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Change', 'Merchant Dace in town now stocks gear from the map and level of the last boss you killed, not the last map you entered. Stock rolled from a map you never beat was replaced.'],
+      ['Change', 'Merchants on the run map only appear from row 5 on (the first tier 2 row).'],
+      ['Change', 'Card text is cleaner: no more explanations in brackets, like Smite\'s note about Holy damage. Hold Alt over an underlined keyword for its glossary entry. Rules that were in brackets (caps, "or yourself") are now part of the sentence.'],
+      ['Fix', 'Sanguine Frenzy: ranked-up copies now really give more damage per 10% of HP missing, still capped at 40% as the card says (before, ranks didn\'t respect the cap).'],
       ['Fix', 'Scroll bars keep their place everywhere: salvaging, feeding cards, buying with Ink, buying from shops and the like no longer jump the list back to the top. Feeding cards also keeps the upgrade window open so you can keep going.'],
       ['Feature', 'Hall of Records > Map records: each map now also has a "Most kills" leaderboard for its boss (kills at any level), under the highest clears. Kills from before today are counted from your run history.'],
       ['Change', 'Hall of Records now ranks completed maps, not maps you only entered: Progress is 15 points per level of each map you\'ve beaten, plus the furthest row on the next level up, and "Best clear" shows your highest completed map. Map records list who cleared each road at the highest level first.'],

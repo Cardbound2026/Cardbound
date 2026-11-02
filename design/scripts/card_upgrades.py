@@ -14,7 +14,7 @@ def classify(t, m):
     s, e = m.start(), m.end(); n = int(m.group(1)); pct = m.group(2) == '%'
     after = t[e:e + 40]; before = t[max(0, s - 24):s]
     if pct:
-        if re.search(r'(below|above|under|over|least|than|up to|max)\s*$', before): return None
+        if re.search(r'(below|above|under|over|least|than|up to|max|every)\s*$', before): return None
         if re.match(r' chance', after): return ('pct', max(2, round(n / 10)), 1)
         return ('pct', max(2, round(n / 10)), 1)
     if re.search(r'([Ll]ose|[Pp]ay|costs?|[Tt]ake|takes)\s*$', before) and re.match(r' (HP|health|more mana|mana)', after): return None

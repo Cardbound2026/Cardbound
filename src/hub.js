@@ -38,6 +38,9 @@ function fix(p) { // tolerate older or partial saves
     for (const [mk, b] of Object.entries(c.mapBest || {})) if (b.row >= 15) up(mk, b.lvl); for (const h of p.history || []) if (!h.raid && h.map && h.result === 'victory' && h.name === c.name && h.cls === c.cls) up(h.map, h.level || 0); }
   // Nov 1: boss kills per map, counted from run history for heroes who had kills before this was tracked (at least 1 for any map they've beaten)
   for (const c of Object.values(p.chars)) if (!c.bossKillsBy) { const bk = c.bossKillsBy = {}; for (const h of p.history || []) if (!h.raid && h.map && h.result === 'victory' && h.name === c.name && h.cls === c.cls) bk[h.map] = (bk[h.map] || 0) + 1; for (const mk of Object.keys(c.mapKills || {})) if (!bk[mk]) bk[mk] = 1; }
+  // Nov 1: the merchant's level comes from your last boss kill; older saves take it from the newest boss win in the run history
+  if (!p.lastBoss) { const h = (p.history || []).find(x => !x.raid && x.map && x.result === 'victory'); if (h) p.lastBoss = { map: h.map, level: h.level || 0, at: h.at || 0 }; }
+  if (p.shop && p.shop.level != null && !p.shop.map) { const sb = shopBasis(p); if (p.shop.level > sb.level) p.shop.at = 0; } // stock rolled above your last boss: restock now
   // Nov 1: heroes made before the Shoulders slot get the class's starter shoulders
   for (const c of Object.values(p.chars)) if (!c.gear.some(g => g.slot === 'Shoulders')) { const st = (STARTER_GEAR[c.cls] || []).find(g => g.slot === 'Shoulders'); if (st) c.gear.push(Object.assign({ id: uid('g') }, st)); }
   // Nov 1: rerolls. Items found before the system get their reroll potential (worked out from their own rolls); Reroll Tokens start at 0
@@ -155,8 +158,11 @@ const SHOP_RESTOCK_MS = 12 * 60 * 60 * 1000;
 function shopDue(p, now) { return !p.shop || !p.shop.at || (now || Date.now()) - p.shop.at >= SHOP_RESTOCK_MS; }
 const SHOP_PRICE = { White: 20, Green: 50, Blue: 120 };
 function shopPrice(rar, level) { return Math.round(SHOP_PRICE[rar] * Math.pow(1.5, level)); }
+// Nov 1: stock comes from the map and level of the last boss you killed (not the last map you entered), so you can't stock up from a map you can't beat
+function shopBasis(p) { const lb = p.lastBoss; return lb && lb.map ? { map: lb.map, level: lb.level || 0 } : { map: 'physical', level: 0 }; }
 function refreshShop(p, data, level, rng, now) {
-  rng = rng || Math.random; const mk = (p.last && p.last.map) || 'physical'; let bases = data.gear.bases.filter(b => (b.map || 'physical') === mk).map(b => b.name); if (!bases.length) bases = data.gear.bases.map(b => b.name); p.shop = { level, items: [], at: now || Date.now() };
+  const sb = shopBasis(p); level = sb.level;
+  rng = rng || Math.random; const mk = sb.map; let bases = data.gear.bases.filter(b => (b.map || 'physical') === mk).map(b => b.name); if (!bases.length) bases = data.gear.bases.map(b => b.name); p.shop = { level, map: mk, items: [], at: now || Date.now() };
   for (let i = 0; i < 6; i++) { const x = rng() * 100, rar = x < 35 ? 'White' : x < 78 ? 'Green' : 'Blue'; const it = CB.rollItem(data, rng, bases[Math.floor(rng() * bases.length)], rar, level); it.price = shopPrice(rar, level); p.shop.items.push(it); }
 }
 function buyShop(p, i) {
@@ -246,6 +252,7 @@ function absorbRun(p, run, mi) {
   c.runs++; const row = run.currentRow(); c.best = Math.max(c.best, row);
   noteMapBest(c, run.mapKey || 'physical', run.level || 0, run.over === 'victory' ? 15 : row); // Hall of Records: furthest level and row per map
   if (run.over === 'victory') { const mk0 = run.mapKey || 'physical', had = c.mapKills && c.mapKills[mk0] != null ? c.mapKills[mk0] : -1; if ((run.level || 0) > had) (c.mapKillAt = c.mapKillAt || {})[mk0] = Date.now(); }
+  if (run.over === 'victory') p.lastBoss = { map: run.mapKey || 'physical', level: run.level || 0, at: Date.now() }; // the town merchant stocks gear from your last boss kill
   if (run.over === 'victory') { const bk = (c.bossKillsBy = c.bossKillsBy || {}); bk[run.mapKey || 'physical'] = (bk[run.mapKey || 'physical'] || 0) + 1; } // Nov 1: boss kills per map (Hall of Records)
   if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); }
   // the run's damage meter, kept so the Chronicler can show it later (numbers rounded to keep saves small)
@@ -256,6 +263,6 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk };
 }
 
-const API = { mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);

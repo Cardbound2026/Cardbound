@@ -66,6 +66,8 @@
     ]],
     ['Cards', [
       ['Attack / Skill / Power', 'Attacks scale with Strength, Skills with Intelligence. A Power is played once and stays active for the whole fight (shown with a ◆ on your hero).'],
+      ['Holy damage', 'Paladin damage type. Holy ignores resistance and weakness: it always hits for its full amount.'],
+      ['Revealed', 'Can\'t enter Stealth until the end of its next turn.'],
       ['Exhaust', 'Removed for the rest of the fight after it is played.'],
       ['Retain', 'Stays in your hand at the end of your turn instead of being discarded.'],
       ['Fatigue', 'Every time your deck reshuffles, a Fatigue (unplayable) is shuffled in. Long fights clog your deck.'],

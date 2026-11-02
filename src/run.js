@@ -19,6 +19,7 @@ const SLOTS = ['Weapon', 'Off-hand', 'Helm', 'Shoulders', 'Amulet', 'Cloak', 'Ch
 
 // map rules (Oct 31): every row has 3 to 5 nodes, at most 3 rows have only 3, at least 5 rows have exactly 4;
 // 5 or 6 shrines; never more than 4 fights (incl. elites) in a row along any path; 10% of maps hide one Enraged elite
+const MERCHANT_MIN_ROW = 5;
 const MAP_RULES = { minRow: 3, maxThreeRows: 3, minFourRows: 5, maxEdgeCol: 11, minShrines: 5, maxShrines: 6, maxFightRun: 4, enragedChance: 0.1 };
 function rowCounts(nodes) { const n = {}; for (let r = 1; r <= ROWS; r++) n[r] = 0; for (const x of Object.values(nodes)) if (x.row >= 1 && x.row <= ROWS) n[x.row]++; return n; }
 function topologyOk(nodes) {
@@ -176,6 +177,8 @@ function finishMap(rng, data, partySize, mapKey, nodes, bonus) {
     n.type = 'fight'; if (runOk()) continue;
     n.type = !nearRest(n) && rng() < 0.4 && list.filter(x => x.type === 'rest').length < 8 ? 'rest' : 'merchant';
   }
+  // Nov 1: no merchants before row 5 (no rushing a map you can't handle just to shop): early ones become shrines, or fights once shrines are full
+  for (const n of list) if (n.type === 'merchant' && n.row < MERCHANT_MIN_ROW) n.type = list.filter(x => x.type === 'shrine').length < MAP_RULES.maxShrines ? 'shrine' : 'fight';
   // enemies
   const byTier = { 1: [], 2: [], 3: [], Elite: [] };
   for (const [k, e] of Object.entries(data.enemies)) if (byTier[e.tier] && (e.map || 'physical') === mapKey) byTier[e.tier].push(k);
@@ -188,7 +191,7 @@ function finishMap(rng, data, partySize, mapKey, nodes, bonus) {
   }
   // 10% of maps: one elite is Enraged (+50% HP and damage, double loot, a guaranteed Blue or better item)
   // the party leader's codex talents: a chance at an extra shrine and an extra merchant (a plain fight becomes one)
-  for (const [k, type] of [['shrine', 'shrine'], ['merchant', 'merchant']]) if (bonus[k] && rng() * 100 < bonus[k]) { const f = list.filter(n => n.type === 'fight' && n.row > 1 && n.row < ROWS); if (f.length) { const n = f[Math.floor(rng() * f.length)]; n.type = type; n.enemies = undefined; if (type === 'shrine') n.shrine = SHRINES[ri(rng, 0, SHRINES.length - 1)].key; n.bonus = true; } }
+  for (const [k, type] of [['shrine', 'shrine'], ['merchant', 'merchant']]) if (bonus[k] && rng() * 100 < bonus[k]) { const f = list.filter(n => n.type === 'fight' && n.row > (type === 'merchant' ? MERCHANT_MIN_ROW - 1 : 1) && n.row < ROWS); if (f.length) { const n = f[Math.floor(rng() * f.length)]; n.type = type; n.enemies = undefined; if (type === 'shrine') n.shrine = SHRINES[ri(rng, 0, SHRINES.length - 1)].key; n.bonus = true; } }
   if (rng() < MAP_RULES.enragedChance + (bonus.enraged || 0) / 100) { const els = list.filter(n => n.type === 'elite'); if (els.length) els[Math.floor(rng() * els.length)].enraged = true; }
   boss.enemies = [(data.maps && data.maps[mapKey] && data.maps[mapKey].boss) || 'warlord_gorrath_the_iron_tide'];
   return { nodes, starts: [...starts].map(c => id(1, c)).filter(k => nodes[k]) };

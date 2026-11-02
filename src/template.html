@@ -1438,14 +1438,14 @@ body.aiming { cursor: grabbing; user-select: none; }
   // ---------- Merchant Dace (town shop)
   function restockIn() { const ms = Math.max(0, profile.shop.at + CBHub.SHOP_RESTOCK_MS - Date.now()); const h = Math.floor(ms / 3600000), m = Math.ceil((ms % 3600000) / 60000); return h ? `${h}h ${m}m` : `${m}m`; }
   function renderShopTab(c) {
-    if (CBHub.shopDue(profile)) { CBHub.refreshShop(profile, DATA, profile.last.level || 0); save(); }
+    if (CBHub.shopDue(profile)) { CBHub.refreshShop(profile, DATA); save(); }
     const sh = profile.shop, full = profile.stash.length >= CBHub.STASH_MAX;
     const rows = sh.items.map((it, i) => {
       const cur = CBHub.slotOptions(it).map(sl => c.gear.find(g => g.slot === sl)).filter(Boolean);
       const vs = cur.length ? cur.map(g => { const d = (it.ilvl || 0) - (g.ilvl || 0); return `${esc(g.name)} (${rarName(g.rarity)}, ilvl ${g.ilvl}) <span class="${d > 0 ? 'up' : d < 0 ? 'down' : ''}">${d > 0 ? '+' : ''}${d}</span>`; }).join(', ') : 'an empty slot';
       return itemHtml(it, `<div class="il">${upBadge(it, c.gear)}</div><div class="il">${esc(c.name)} wears ${vs}</div><div class="acts"><button class="btn" data-shop="${i}" ${it.sold || profile.gold < it.price || full ? 'disabled' : ''}>${it.sold ? 'Sold' : 'Buy for ' + it.price + ' gold'}</button></div>`);
     }).join('');
-    $('hpShop').innerHTML = `<p class="savenote" style="margin:0 0 8px">Bank: <b style="color:var(--accent)">${profile.gold} gold</b>. Stock rolled at Map 1 +${sh.level}. <b>New stock in ${restockIn()}</b> (every 12 hours, at the map level you last played). Purchases go to your stash.${full ? ' <b class="down">Your stash is full.</b>' : ''}</p><div class="list tall" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px">${rows}</div>`;
+    $('hpShop').innerHTML = `<p class="savenote" style="margin:0 0 8px">Bank: <b style="color:var(--accent)">${profile.gold} gold</b>. Stock comes from your last boss kill: <b>${DATA.maps[sh.map || 'physical'] ? 'Map ' + DATA.maps[sh.map || 'physical'].num + ' ' + esc(DATA.maps[sh.map || 'physical'].name) : 'Map 1'} +${sh.level}</b>. <b>New stock in ${restockIn()}</b> (every 12 hours, at the map level you last played). Purchases go to your stash.${full ? ' <b class="down">Your stash is full.</b>' : ''}</p><div class="list tall" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px">${rows}</div>`;
   }
   $('hpShop').addEventListener('click', (ev) => { const b = ev.target.closest('[data-shop]'); if (!b || b.disabled) return; const r = CBHub.buyShop(profile, +b.dataset.shop); if (!r.ok) return toast(r.why); save(); renderHub(); });
 
