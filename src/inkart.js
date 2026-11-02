@@ -28,6 +28,17 @@
       g.drawImage(img, f * m.w, 0, m.w, m.h, -m.ax * k, -H, m.w * k, H); g.restore();
       return true;
     },
+    // Nov 2: fetch and decode figure art ahead of time, so a fight opens with its monsters already drawn
+    // (they used to pop in a few seconds late the first time each one was met). keys: enemy keys or art names.
+    preload(keys) {
+      const keep = this._pre || (this._pre = {});
+      for (let k of keys || []) {
+        if (window.CB_DATA && CB_DATA.enemies[k]) { const d = CB_DATA.enemies[k]; if (M.enemies && !M.enemies[k]) k = d.raid && d.map && CB_DATA.maps[d.map] ? CB_DATA.maps[d.map].boss : d.art || k; }
+        if (keep[k] || !(M.enemies && M.enemies[k]) && !/^hero_|^(ash_imp|obsidian_brute|brimstone_warden|shade|hellhound_alpha)$/.test(k)) continue;
+        const im = keep[k] = new Image(); im.decoding = 'async'; im.src = 'img/ink/' + k + '.webp'; if (im.decode) im.decode().catch(() => {});
+      }
+    },
+    preloadMap(mk) { if (!window.CB_DATA) return; this.preload(Object.entries(CB_DATA.enemies).filter(([k, e]) => (e.map || 'physical') === mk && !e.raid).map(([k]) => k)); },
     // HTML for an actor's figure, or null to use the original art
     figure(a) {
       if (!a) return null;

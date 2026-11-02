@@ -81,7 +81,7 @@
       $('mNew').onclick = backToTown; $('mClose').onclick = closeModal; return;
     }
     if (S && S.host === SOC.me && typeof recordRaidKill === 'function') recordRaidKill(cb); // Hall of Records: the raid leader writes the kill
-    if (c && !cb._locked) { cb._locked = true; c.raidLocks = c.raidLocks || {}; c.raidLocks[mk] = Date.now(); c.raidKills = (c.raidKills || 0) + 1; save(); if (typeof publishHero === 'function') publishHero(heroKey, true); }
+    if (c && !cb._locked) { cb._locked = true; c.raidLocks = c.raidLocks || {}; c.raidLocks[mk] = Date.now(); c.raidKills = (c.raidKills || 0) + 1; CBHub.achCheck(profile, { type: 'raid', level: cb.level || 0, hero: c.name }); save(); if (typeof publishHero === 'function') publishHero(heroKey, true); }
     if (!cb.raidLoot) { cb.raidLoot = raidLootRoll(cb); if (S) S.lootAt = Date.now(); sysChat(`${CB.RAID_NAMES[mk]} falls! ${cb.raidLoot.length} items dropped: roll Need, Greed or Pass.`); }
     raidLootModal();
   }

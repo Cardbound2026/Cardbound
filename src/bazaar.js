@@ -118,7 +118,7 @@
       else if (i < 0) res = { kind: 'res', to: p.from, rid: p.rid, ok: false, why: 'it was already sold' };
       else if (B.items[i].price !== p.price) res = { kind: 'res', to: p.from, rid: p.rid, ok: false, why: 'the price changed' };
       else {
-        const l = B.items.splice(i, 1)[0]; profile.gold += l.price; save(); renderTownBar();
+        const l = B.items.splice(i, 1)[0]; profile.gold += l.price; CBHub.bump(profile, 'bazaarSales'); profile.stats.bazaarBest = Math.max(profile.stats.bazaarBest || 0, l.price); save(); renderTownBar(); // achievements: Merchant, Businessman
         res = { kind: 'res', to: p.from, rid: p.rid, ok: true, it: l.it, price: l.price };
         sysChat(`${String(p.name || nameOfUid(p.from)).slice(0, 24)} bought ${l.it.name} for ${l.price} gold.`);
         if (!B.items.length) { closeShop(true); sysChat('Sold out: your shop is closed.'); }

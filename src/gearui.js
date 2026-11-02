@@ -115,7 +115,7 @@
     return `<div class="doll">
       <div class="dcol">${DOLL_L.map(slot).join('')}</div>
       <div class="dmid"><canvas class="dportrait" width="220" height="250" data-cls="${cls}" data-rc="${esc(JSON.stringify(rcOf(ch)))}" data-gear="${esc(JSON.stringify((ch.gear || []).map(g => ({ slot: g.slot, name: g.name, arch: g.arch, rarity: g.rarity }))))}"></canvas>
-        <div class="dname" style="color:${CC[cls]}">${esc(ch.name || cls)}</div><div class="muted" style="font-size:13px">${cls}${o.acct ? ' &middot; ' + esc(o.acct) : ''}</div>
+        <div class="dname" style="color:${CC[cls]}">${esc(ch.name || cls)}</div><div class="muted" style="font-size:13px">${cls}${o.acct ? ' &middot; ' + esc(o.acct) : ''}</div>${o.own && typeof titlePicker === 'function' ? titlePicker(ch) : ch.titleText ? `<div class="dtitle">${esc(ch.titleText)}</div>` : ''}
         <div class="dpow"><span><b>${CBHub.powerLevel(ch)}</b>Power</span><span><b>${CBHub.gearScore(ch)}</b>Gear</span><span><b>${CB.deckLevel(ch.deck)}</b>Deck</span></div></div>
       <div class="dcol">${DOLL_R.map(slot).join('')}</div>
       <div class="dbot">${DOLL_B.map(slot).join('')}</div>
@@ -162,7 +162,7 @@
     modal(`<h2>Inspecting ${esc(nameOfUid(uid))}...</h2><p class="muted">Asking their game for their hero.</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`); $('mClose').onclick = closeModal;
     setTimeout(() => { if (INS.waiting === uid) { INS.waiting = null; if (!$('modal').hidden && /Inspecting/.test($('modalBox').innerText)) toast(`${nameOfUid(uid)} didn't answer. They may have just gone offline.`); } }, 6000);
   }
-  function inspectCard() { const c = profile.chars[heroKey]; if (!c) return null; return { name: c.name, cls: c.cls, gear: c.gear.map(g => { const x = Object.assign({}, g); delete x.id; return x; }), deck: c.deck.map(k => ({ key: k.key, rank: k.rank || 0 })), runs: c.runs, best: c.best, bossKills: c.bossKills, duels: c.duels || null, acct: supaUser ? acctName(supaUser) : '' }; }
+  function inspectCard() { const c = profile.chars[heroKey]; if (!c) return null; return { name: c.name, cls: c.cls, gear: c.gear.map(g => { const x = Object.assign({}, g); delete x.id; return x; }), deck: c.deck.map(k => ({ key: k.key, rank: k.rank || 0 })), runs: c.runs, best: c.best, bossKills: c.bossKills, duels: c.duels || null, titleText: CBHub.titleOf(c, profile), acct: supaUser ? acctName(supaUser) : '' }; }
   function showInspect(ch) {
     const deck = ch.deck.slice().sort((a, b) => RAR_ORDER[CARDS[a.key].rarity] - RAR_ORDER[CARDS[b.key].rarity] || CARDS[a.key].name.localeCompare(CARDS[b.key].name));
     const groups = []; for (const k of deck) { const g = groups.find(x => x.key === k.key && x.rank === k.rank); if (g) g.n++; else groups.push({ key: k.key, rank: k.rank, n: 1 }); }

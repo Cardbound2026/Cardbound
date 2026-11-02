@@ -1026,13 +1026,13 @@ class Combat {
     return dm;
   }
   demonMult(p) { return 1 + ((p.demonDmg || 0) + (p.powers.length ? this.pwSum(p, 'demonDmg') : 0)) / 100; }
-  demonAct(p, dm) { const D = DEMONS[dm.key]; if (!D || this.over || dm.hp <= 0) return; const pool = this.duel ? this.players.filter(q => q !== p && q.hp > 0) : this.foes(); if (!pool.length) return; const e = (D.pick && !this.duel ? D.pick(this) : null) || pool[Math.floor(this.rng() * pool.length)]; if (!e) return; D.act(this, p, dm, e, (n) => Math.round(n * this.demonMult(p) * (dm.mult || 1))); dm.acts++; if (p.powers.length) this.fire(p, 'demonActed', dm, e); }
+  demonAct(p, dm) { const D = DEMONS[dm.key]; if (!D || this.over || dm.hp <= 0) return; const pool = this.duel ? this.players.filter(q => q !== p && q.hp > 0) : this.foes(); if (!pool.length) return; const e = (D.pick && !this.duel ? D.pick(this) : null) || pool[Math.floor(this.rng() * pool.length)]; if (!e) return; this.fxPush({ t: 'demon', d: p.id, u: dm.uid, tg: e.id }); D.act(this, p, dm, e, (n) => Math.round(n * this.demonMult(p) * (dm.mult || 1))); dm.acts++; if (p.powers.length) this.fire(p, 'demonActed', dm, e); }
   demonsAct(p) {
     if (!p || !p.demons || !p.demons.length || this.over) return;
     for (const dm of p.demons.slice()) { if (this.over) break; this.demonAct(p, dm); dm.turns--; if (dm.turns <= 0) { this.say('player', `${dm.name} returns to the void.`); if (DEMONS[dm.key].depart) DEMONS[dm.key].depart(this, p, dm); } }
     p.demons = p.demons.filter(d => d.turns > 0 && d.hp > 0);
   }
-  hurtDemon(p, dm, n, by) { if (!dm || n <= 0) return; dm.hp = Math.max(0, dm.hp - n); this.say('enemy', `${by ? by + ' hits ' : ''}${dm.name} for ${n}. ${dm.hp > 0 ? `HP ${dm.hp}/${dm.maxHp}.` : 'It is destroyed.'}`); if (dm.hp <= 0) { p.demons = p.demons.filter(d => d !== dm); if (p.powers.length) this.fire(p, 'demonDied', dm); } }
+  hurtDemon(p, dm, n, by) { if (!dm || n <= 0) return; dm.hp = Math.max(0, dm.hp - n); this.fxPush({ t: 'demonHit', d: p.id, u: dm.uid, dead: dm.hp <= 0 }); this.say('enemy', `${by ? by + ' hits ' : ''}${dm.name} for ${n}. ${dm.hp > 0 ? `HP ${dm.hp}/${dm.maxHp}.` : 'It is destroyed.'}`); if (dm.hp <= 0) { p.demons = p.demons.filter(d => d !== dm); if (p.powers.length) this.fire(p, 'demonDied', dm); } }
   demonTaunt() { for (const q of this.alivePlayers()) for (const dm of (q.demons || [])) if (dm.hp > 0 && DEMONS[dm.key].taunt) return [q, dm]; return null; }
   bloodCap(p) { return BLOOD_CAP + (p.bloodCapPlus || 0) + (p.powers.length ? this.pwSum(p, 'bloodCap') : 0); } // HP a hero can pay for cards in one turn
   bloodPay(p) { return !!(p && p.isPlayer && ((p.turn && p.turn.bloodPay) || (p.powers.length && this.pws(p).some(([, d]) => d.bloodPay)))); }
@@ -1120,7 +1120,7 @@ class Combat {
     if (!fromAura && key !== 'aura_mastery' && this.has(p, 'aura_mastery')) for (const a of this.allies()) if (a !== p) this.addPower(a, key, name, text, true);
   }
   // paying HP can kill you (Oct 31): the card still finishes, then you fall. Divine Intervention-style 'cannot fall' still holds at 1
-  loseHp(p, n, label) { const b0 = p.hp; p.hp = (p.until && p.until.noDie) || this.hasTimed(p, 'noDie') ? Math.max(1, p.hp - n) : Math.max(0, p.hp - n); if (p.debtUser) p.bloodDebt += Math.round((b0 - p.hp) * (this.has(p, 'pay_in_blood') ? 1 + this.upN(p, 'pay_in_blood', 0, 50) / 100 : 1)); p.dmgRound += b0 - p.hp; this.say('player', `${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${n} HP (${label}). HP ${p.hp}/${p.maxHp}.`); this.fire(p, 'loseHp'); if (p.hp <= 0) { if (this._playing) this._pendingDeath = p; else this.onDeath(p); } }
+  loseHp(p, n, label) { const b0 = p.hp; if (p.isPlayer && n > 0) p.fxLost = (p.fxLost || 0) + Math.min(n, p.hp); p.hp = (p.until && p.until.noDie) || this.hasTimed(p, 'noDie') ? Math.max(1, p.hp - n) : Math.max(0, p.hp - n); if (p.debtUser) p.bloodDebt += Math.round((b0 - p.hp) * (this.has(p, 'pay_in_blood') ? 1 + this.upN(p, 'pay_in_blood', 0, 50) / 100 : 1)); p.dmgRound += b0 - p.hp; this.say('player', `${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${n} HP (${label}). HP ${p.hp}/${p.maxHp}.`); this.fire(p, 'loseHp'); if (p.hp <= 0) { if (this._playing) this._pendingDeath = p; else this.onDeath(p); } }
   cleanse(p, n) { let left = n, removed = 0; for (const k of ['vulnerable', 'weak', 'bleed', 'poison', 'burn', 'dread', 'rot', 'slow', 'chill']) if (left > 0 && p[k]) { removed += p[k]; p[k] = 0; if (k === 'rot') p.rotQ = []; left--; } if (left > 0) p.disarmNext = false; this.say('player', removed ? `${this.who(p)}: debuffs removed.` : 'No debuffs to remove.'); this.fire(p, 'onCleanse', removed); }
   powerHit(p, e, n, label, dtype, kind) {
     const keep = [this._playing, this.player, this._rankMult, this._attackMult, this._skillMult, this._cmult];
@@ -1392,7 +1392,7 @@ class Combat {
     if (p.isPlayer && this.has(p, 'mana_shell')) { const v = Math.round(n * (1 + p.dexterity / 100)); p.mana += v; this.say('player', `Mana Shell: +${v} mana instead of ${p.defName}.`); return v; }
     const mult = 1 + p.dexterity / 100; const v = Math.round(n * mult);
     p.block += v;
-    if (v > 0) this.fxPush({ t: 'block', d: p.id, n: v });
+    if (v > 0) { this.fxPush({ t: 'block', d: p.id, n: v }); if (p.isPlayer) p.fxDef = (p.fxDef || 0) + v; }
     this.say('player', `${this.partySize > 1 ? p.name + ' gains' : 'You gain'} ${v} ${p.defName}` + (p.dexterity ? ` (${n} x ${mult.toFixed(2)} Dexterity)` : '') + (label === 'delayed' ? ' from last turn' : '') + `. ${p.defName} ${p.block}.`);
     return v;
   }
@@ -1409,7 +1409,7 @@ class Combat {
     const want = Math.round(n * mult), h = Math.min(a.maxHp - a.hp, want);
     let flowed = false; if (want > h && caster.turn && caster.turn.overflow) { const extra = want - h; caster.turn.overflow = false; this.defFor(a, extra); flowed = true; }
     if (want > h && !flowed && a.isPlayer && a.cls === 'Warlock' && a.hp > 0) { const x = want - h; a.block += x; this.say('heal', `${this.partySize > 1 ? a.name + "'s" : 'Your'} overhealing becomes ${x} Absorb (${a.block}).`); }
-    a.hp += h; if (a.isPlayer) this.stats.healed += h;
+    a.hp += h; if (a.isPlayer) { this.stats.healed += h; if (h > 0) a.fxHealed = (a.fxHealed || 0) + h; }
     if (h > 0 && caster.isPlayer) this.fire(caster, 'onHeal', a, h);
     if (h > 0 && !quiet) this.fxPush({ t: 'heal', d: a.id, n: h });
     if (h > 0) { const m = this.mtr(caster).healed, k = (label || 'Heal') + (caster !== a ? ' on ' + a.name : ''); m[k] = (m[k] || 0) + h; }
@@ -1439,7 +1439,7 @@ class Combat {
     if (tgt.block > 0 && !o.ignoreBlock) { absorbed = Math.min(tgt.block, dmg); tgt.block -= absorbed; dmg -= absorbed; }
     if (tgt.isPlayer && dmg > 0 && tgt.mana > 0 && tgt.powers && tgt.powers.some(x => x.key === 'mana_shell')) { const m = Math.min(tgt.mana, dmg); tgt.mana -= m; dmg -= m; absorbed += m; }
     const before = tgt.hp;
-    tgt.hp = Math.max(0, tgt.hp - dmg);
+    if (tgt.isPlayer && dmg > 0) tgt.fxLost = (tgt.fxLost || 0) + Math.min(dmg, tgt.hp); tgt.hp = Math.max(0, tgt.hp - dmg);
     if (!tgt.isPlayer && tgt.feared && amount > 0 && tgt.hp > 0 && this.rng() < (o.isDot ? FEAR_BREAK_DOT : FEAR_BREAK)) this.breakFear(tgt);
     if (tgt.isPlayer && tgt.hp <= 0 && (tgt.until.noDie || this.hasTimed(tgt, 'noDie'))) { tgt.hp = 1; this.say('heal', `${tgt.name} refuses to fall (Divine Intervention).`); }
     if (tgt.isPlayer && before > tgt.hp) { const lostHp = before - tgt.hp; tgt.dmgRound += lostHp; this.allyLost && this.allyLost.add(tgt.id); if (tgt.debtUser) tgt.bloodDebt += Math.round(lostHp * (this.has(tgt, 'pay_in_blood') ? 1 + this.upN(tgt, 'pay_in_blood', 0, 50) / 100 : 1)); if (tgt.until.storing) tgt.until.stored = (tgt.until.stored || 0) + lostHp; if (tgt.until.grudge && src && !src.isPlayer) tgt.until.grudge[src.id] = (tgt.until.grudge[src.id] || 0) + lostHp; }
@@ -2356,7 +2356,7 @@ const TEXT_FIX = {
 "crusader_aura": "Whenever you alternate between Attack and Skill, gain 10 Strength after an Attack or 10 Dexterity after a Skill this turn.",
 "light_reveals_all": "Deal 5 Holy damage. Remove Stealth from the target. It can't enter Stealth until the end of its next turn.",
 "dread_touch": "Deal 4 Shadow damage and apply 5 Dread.",
-"rotting_grasp": "Apply 18 Rot.",
+"rotting_grasp": "Apply 21 Rot.",
 "shadow_mend": "Heal an ally or yourself for 9 HP.",
 "demon_whip": "Each of your demons acts once now without losing a turn. Draw 1 card.",
 "blood_bolt": "Deal 10 Physical damage. Scales with Intelligence.",

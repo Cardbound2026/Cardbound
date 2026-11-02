@@ -28,7 +28,7 @@
   function myPresence() {
     const c = profile.chars[heroKey];
     const place = !$('scrStart').hidden ? 'town' : run ? 'run' : cb && cb.duel ? 'duel' : 'menu';
-    return { lk: lookList(c), uid: SOC.me, guild: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), shop: typeof BZ !== 'undefined' && BZ.open ? { t: shopTitle(), n: bzState().items.length } : null, arena: typeof arenaPresence === 'function' ? arenaPresence() : null, x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
+    return { lk: lookList(c), uid: SOC.me, guild: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), shop: typeof BZ !== 'undefined' && BZ.open ? { t: shopTitle(), n: bzState().items.length } : null, arena: typeof arenaPresence === 'function' ? arenaPresence() : null, x: P.x, y: P.y, dir: P.dir, mount: P.mount || null, title: c ? CBHub.titleOf(c, profile) || null : null, party: SOC.party ? SOC.party.id : null };
   }
 
   async function socStart() {
@@ -92,7 +92,7 @@
     SOC.posTimer = null; const b = SOC.posBuf || []; SOC.posBuf = [];
     if (!b.length || !socOn() || !SOC.others.size) return;
     const last = b[b.length - 1];
-    SOC.ch.send({ type: 'broadcast', event: 'pos', payload: { uid: SOC.me, x: last[0], y: last[1], dir: last[2], path: b.slice(-6) } });
+    SOC.ch.send({ type: 'broadcast', event: 'pos', payload: { uid: SOC.me, x: last[0], y: last[1], dir: last[2], m: P.mount || null, path: b.slice(-6) } });
   }
 
   // ---------- other players walking around town
@@ -100,26 +100,27 @@
     for (const [uid, st] of SOC.online) {
       if (uid === SOC.me || st.place !== 'town' || !st.cls) { SOC.others.delete(uid); continue; }
       const o = SOC.others.get(uid);
-      if (!o) SOC.others.set(uid, { uid, x: st.x, y: st.y, fx: st.x, fy: st.y, t: 1, dir: st.dir || 'down', step: 0, name: st.name, guild: st.guild || null, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, party: st.party, shop: st.shop || null });
-      else Object.assign(o, { guild: st.guild || null, name: st.name, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, party: st.party, shop: st.shop || null });
+      if (!o) SOC.others.set(uid, { uid, x: st.x, y: st.y, fx: st.x, fy: st.y, t: 1, dir: st.dir || 'down', step: 0, name: st.name, guild: st.guild || null, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, party: st.party, shop: st.shop || null, mount: st.mount || null, title: st.title || null });
+      else Object.assign(o, { guild: st.guild || null, name: st.name, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, party: st.party, shop: st.shop || null, mount: st.mount || null, title: st.title || null });
     }
     for (const uid of [...SOC.others.keys()]) if (!SOC.online.has(uid)) SOC.others.delete(uid);
   }
   function moveOther(p) {
-    const o = SOC.others.get(p.uid); if (!o) return;
+    const o = SOC.others.get(p.uid); if (!o) return; if ('m' in p) o.mount = p.m;
     o.q = o.q || []; for (const s of (p.path || [[p.x, p.y, p.dir]])) o.q.push(s);
     if (o.q.length > 8) { const s = o.q[o.q.length - 1]; o.q = []; Object.assign(o, { fx: s[0], fy: s[1], x: s[0], y: s[1], t: 1, dir: s[2] }); } // fell far behind: jump
   }
   function otherPos(o) { const k = Math.min(1, o.t); return { x: o.fx + (o.x - o.fx) * k, y: o.fy + (o.y - o.fy) * k }; }
-  function updateOthers(dt) { for (const o of SOC.others.values()) { if (o.t < 1) o.t += dt / STEP_MS; if (o.t >= 1 && o.q && o.q.length) { const s = o.q.shift(); Object.assign(o, { fx: o.x, fy: o.y, x: s[0], y: s[1], t: 0, dir: s[2] || o.dir, step: o.step + 1 }); } } }
+  function updateOthers(dt) { for (const o of SOC.others.values()) { if (o.t < 1) o.t += dt / (o.mount ? STEP_MS / MOUNT_SPEED : STEP_MS); if (o.t >= 1 && o.q && o.q.length) { const s = o.q.shift(); Object.assign(o, { fx: o.x, fy: o.y, x: s[0], y: s[1], t: 0, dir: s[2] || o.dir, step: o.step + 1 }); } } }
   function othersDrawList(TS, s, t) {
     const out = [];
     for (const o of SOC.others.values()) {
       const p = otherPos(o), moving = o.t < 1;
       const pal = Object.assign(palFor(o.cls, o.rc || {}), o.lk ? { forge: { cls: o.cls, gear: lookGear(o.lk), who: o.uid } } : {}); // their real gear (src/forge.js)
       out.push({ y: p.y + 0.5, f: () => {
-        drawChar(gx, p.x * TS + TS / 2, p.y * TS + TS * 0.92, o.dir, moving ? ((o.step + (o.t > 0.5 ? 1 : 0)) % 2 ? 1 : 2) : 0, pal, s, t);
-        const tx = p.x * TS + TS / 2, ty = townTag(gx, tx, p.y * TS + TS * 0.92, o.name, SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0', o.guild, s);
+        if (o.mount) drawRider(gx, p.x * TS + TS / 2, p.y * TS + TS * 0.92, o.dir, moving ? ((o.step % 2) + o.t) / 2 : 0, pal, s, t, o.mount, CC[o.cls]);
+        else drawChar(gx, p.x * TS + TS / 2, p.y * TS + TS * 0.92, o.dir, moving ? ((o.step + (o.t > 0.5 ? 1 : 0)) % 2 ? 1 : 2) : 0, pal, s, t);
+        const tx = p.x * TS + TS / 2, ty = townTag(gx, tx, p.y * TS + TS * 0.92, o.name, SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0', o.guild, s, o.mount ? 72 + MOUNT_RISE : null, o.title);
         if (o.shop && o.shop.t) drawShopSign(gx, tx, ty - 4, o.shop.t, s);
       } });
     }

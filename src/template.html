@@ -186,6 +186,12 @@ body.sheetopen #btnUpdates, body.modalopen #btnUpdates { display: none; }
 svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
 .demons { display: flex; align-items: flex-end; justify-content: center; gap: 4px; margin-top: -4px; pointer-events: auto; }
 .demon { display: grid; justify-items: center; gap: 1px; } .demon .dfig .dimg { height: calc(80px * var(--ds)); width: auto; display: block; }
+/* Nov 2: demons breathe while they wait, lunge at their target when they act and shake when hit */
+.demon .dfig { transform-origin: 50% 100%; animation: dmidle 2.6s ease-in-out infinite; } .demon:nth-child(2) .dfig { animation-delay: -.9s; } .demon:nth-child(3) .dfig { animation-delay: -1.7s; }
+@keyframes dmidle { 0%, 100% { transform: translateY(0) scaleY(1); } 50% { transform: translateY(-3%) scaleY(1.025); } }
+.demon.dact .dfig { animation: dmlunge .55s cubic-bezier(.3,.7,.3,1); } @keyframes dmlunge { 0% { transform: none; } 30% { transform: translateX(-8%) rotate(-4deg); } 55% { transform: translateX(42%) rotate(7deg) scale(1.08); } 100% { transform: none; } }
+.demon.dhit .dfig { animation: dmhit .4s linear; } @keyframes dmhit { 0%, 100% { transform: none; filter: none; } 20% { transform: translateX(-7%) rotate(-5deg); filter: brightness(1.8); } 45% { transform: translateX(5%) rotate(4deg); } 70% { transform: translateX(-3%); } }
+#foes .demon.dact .dfig { animation-name: dmlungeL; } @keyframes dmlungeL { 0% { transform: none; } 30% { transform: translateX(8%) rotate(4deg); } 55% { transform: translateX(-42%) rotate(-7deg) scale(1.08); } 100% { transform: none; } }
 .demon .dbar { width: 34px; height: 4px; background: #0b0a0c; border: 1px solid #00000088; border-radius: 2px; overflow: hidden; } .demon .dbar i { display: block; height: 100%; background: linear-gradient(90deg, #8a3f8f, #d07ad8); }
 .demon small { font-size: 9px; color: #f0b6ea; background: rgba(12,8,14,.8); padding: 0 4px; border-radius: 3px; white-space: nowrap; }
 .intent .itgt { font-weight: 600; font-size: 11px; margin-left: 2px; opacity: .95; }
@@ -600,6 +606,15 @@ body.aiming { cursor: grabbing; user-select: none; }
 .herocard small { color: var(--muted); font-size: 13px; }
 .herocard .play { justify-self: start; margin-top: 4px; }
 .hcbadge { font: 700 11px var(--f-ui); letter-spacing: .06em; text-transform: uppercase; color: #ffb0a0; background: #4a1410; border: 1px solid #a8352a; border-radius: 4px; padding: 1px 6px; vertical-align: middle; } .hcbadge.fell { color: #b8b0a6; background: #2a2623; border-color: #5a524a; }
+.achbanner { position: fixed; left: 50%; top: 14px; z-index: 90; transform: translate(-50%, -140%); transition: transform .4s cubic-bezier(.2,.9,.3,1.2); display: grid; justify-items: center; gap: 2px; min-width: 300px; max-width: calc(100vw - 24px); padding: 10px 22px 12px; background: #1a140c; border: 3px solid #0b0a07; outline: 2px solid #d6a14a; outline-offset: -6px; box-shadow: 6px 8px 0 rgba(0,0,0,.45); cursor: pointer; text-align: center; }
+.achbanner.on { transform: translate(-50%, 0); } .achbanner small { color: var(--muted); text-transform: uppercase; letter-spacing: .12em; font-size: 11px; } .achbanner b { color: var(--accent); font-size: 21px; } .achbanner span { font-size: 13px; } .achbanner em { color: #e4c27a; font-size: 14px; }
+.achwrap { max-height: 64vh; overflow: auto; padding-right: 4px; } .achcat { margin: 10px 0 4px; color: var(--accent); font-size: 17px; } .achlist { display: grid; gap: 4px; }
+.ach { display: grid; grid-template-columns: 26px 1fr auto; gap: 8px; align-items: center; padding: 6px 8px; border: 1px solid var(--line); border-radius: 5px; background: #15110d; opacity: .78; } .ach.got { opacity: 1; border-color: #8a6a2e; background: #1c160d; }
+.ach .achic { font-size: 20px; color: #6a5a44; text-align: center; } .ach.got .achic { color: #e4c27a; } .ach .achtx { display: grid; gap: 1px; font-size: 13px; } .ach .achtx b { font-size: 15px; } .ach .achtitle { display: grid; justify-items: end; gap: 3px; } .ach .achtitle em { color: #e4c27a; font-size: 13px; white-space: nowrap; }
+.achbar { display: block; height: 6px; background: #0b0a07; border-radius: 3px; overflow: hidden; margin-top: 3px; max-width: 260px; } .achbar i { display: block; height: 100%; background: #d6a14a; }
+.titlepick { display: flex; gap: 4px; justify-content: center; margin: 4px 0 2px; } .titlepick select { background: #15110d; color: #e4c27a; border: 1px solid #6a5422; border-radius: 4px; padding: 2px 6px; font: inherit; font-size: 13px; font-style: italic; max-width: 150px; } .titlepick .btn { padding: 2px 8px; font-size: 12px; }
+.rectitle { color: #e4c27a; font-size: .85em; font-weight: 500; }
+.dtitle { color: #e4c27a; font-style: italic; font-size: 13px; }
 .tutpick { border-color: #6a5422; background: #1a150b; } .tutpick input { accent-color: var(--accent); }
 .tutbox { position: fixed; right: 16px; bottom: 16px; z-index: 40; width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; background: #15110d; border: 2px solid #d6a14a; border-radius: 8px; padding: 10px 14px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.6); font-size: 15px; line-height: 1.45; }
 .tutbox h3 { margin: 2px 0 6px; color: var(--accent); font-size: 19px; } .tutbox p { margin: 0 0 8px; } .tutbox .row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
@@ -795,7 +810,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 
   <!-- CAMP: the town overworld -->
   <section id="scrStart" class="camp" aria-label="Town">
-    <div class="townbar"><span id="tbHero"></span><span class="chip" id="tbPower"></span><span class="chip" id="tbGold"></span><button class="pilebtn" id="tbShop" hidden title="Set up your Bazaar shop">Set up shop</button><button class="pilebtn" id="tbChar" title="Your hero's gear and stats (C)">Character <span class="muted">C</span></button><button class="pilebtn" id="tbFriends" hidden>Friends</button><span id="acct"></span><span class="muted tbhelp">Walk: arrow keys or WASD, or click/tap where to go. Talk: Space, or click someone.</span></div>
+    <div class="townbar"><span id="tbHero"></span><span class="chip" id="tbPower"></span><span class="chip" id="tbGold"></span><button class="pilebtn" id="tbShop" hidden title="Set up your Bazaar shop">Set up shop</button><button class="pilebtn" id="tbChar" title="Your hero's gear and stats (C)">Character <span class="muted">C</span></button><button class="pilebtn" id="tbFriends" hidden>Friends</button><span id="acct"></span><span class="muted tbhelp">Walk: arrow keys or WASD, or click/tap where to go. Talk: Space, or click someone. Ride: M.</span></div>
     <div class="townwrap" id="townWrap">
       <div class="cxbarrow" id="tbCodex"></div>
       <canvas id="town" tabindex="0" aria-label="The town of Emberwatch. Walk to the quartermaster, scribe, chronicler, wagoneer or captain and talk to them."></canvas>
@@ -1141,6 +1156,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   $('heroes').addEventListener('click', (ev) => { if (ev.target.closest('#heroNew')) { $('sheet').hidden = true; show('title'); openCreate(); return; } const b = ev.target.closest('.hero'); if (!b) return; heroKey = b.dataset.cls; CBHub.char(profile, heroKey); profile.last.cls = heroKey; save(); renderHub(); });
 
   function renderHub() {
+    CBHub.useStash(profile, heroKey); // hardcore heroes see the hardcore stash, everyone else the normal one
     if (!profile.chars[heroKey]) { const k = Object.keys(profile.chars)[0]; if (!k) return; heroKey = k; }
     const c = CBHub.char(profile, heroKey), s = CB.sumGear(c.gear), dl = CB.deckLevel(c.deck), gs = CBHub.gearScore(c);
     heroTabs();
@@ -1173,7 +1189,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     lvlInfo();
     $('btnStart').onclick = startRun;
     $('btnMapLoot').onclick = () => mapLootModal(mk, +$('selLevel').value);
-    $('hubWagon').querySelectorAll('[data-map]').forEach(b => b.onclick = () => { profile.last.map = b.dataset.map; save(); renderHub(); });
+    $('hubWagon').querySelectorAll('[data-map]').forEach(b => b.onclick = () => { profile.last.map = b.dataset.map; if (window.CB_INK && CB_INK.preloadMap) CB_INK.preloadMap(b.dataset.map); save(); renderHub(); });
     const partyNote = () => { const n = 1 + $('hubWagon').querySelectorAll('[data-party]:checked:not(:disabled)').length; $('partyNote').textContent = n > 1 ? `Party of ${n}: enemies get +${Math.round(85 * (n - 1))}% HP, mana and regen and draw ${n - 1} more card${n > 2 ? 's' : ''}. Every hero rolls their own loot; one who falls loses their sack and gets up at half HP.` : 'Solo run. Tick more heroes to bring a party.'; };
     if ($('partyNote')) { $('hubWagon').querySelector('.partypick').addEventListener('change', partyNote); partyNote(); }
     renderGearTab(c); renderDeckTab(c); renderLogTab(); renderShopTab(c);
@@ -1252,7 +1268,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     const heroRow = multi ? `<div class="cxchips" role="tablist" aria-label="Hero" style="margin:0 0 8px">${heroKeys().map(k => `<button class="cxchip ${k === heroKey ? 'on' : ''}" data-hero="${k}"><b style="color:${CC[profile.chars[k].cls]}">${esc(profile.chars[k].name)}</b> <span class="muted">${profile.chars[k].cls}</span></button>`).join('')}</div>` : '';
     $('hpGear').innerHTML = `${heroRow}<div class="gearwrap"><div>${paperdoll(c, c.cls, { own: true })}<p class="muted" style="font-size:12px;margin:6px 0 0">Hover a slot for the item, click it to swap or unequip.</p></div>
       <div class="gearside"><div class="tabs gtabs" role="tablist"><button role="tab" data-gtab="deck" aria-selected="${GT.tab === 'deck'}">Deck ${c.deck.length}</button><button role="tab" data-gtab="stash" aria-selected="${GT.tab === 'stash'}">Stash ${profile.stash.length} / ${CBHub.STASH_MAX}</button></div>
-      ${GT.tab === 'deck' ? deckPanel(c) : `<p class="muted" style="font-size:12px;margin:0 0 6px">Shared by all heroes.</p><div class="list tall stashgrid">${st || '<span class="muted">Empty. Gear you bring home from a run lands here. Unequipped gear goes here too.</span>'}</div>`}</div></div>`;
+      ${GT.tab === 'deck' ? deckPanel(c) : `<p class="muted" style="font-size:12px;margin:0 0 6px">${c.hardcore ? '<b style="color:#e06a5a">Hardcore stash</b>: shared by your hardcore heroes only.' : 'Shared by all your heroes (hardcore heroes have their own stash).'}</p><div class="list tall stashgrid">${st || '<span class="muted">Empty. Gear you bring home from a run lands here. Unequipped gear goes here too.</span>'}</div>`}</div></div>`;
     fitCards($('hpGear'));
     paintPortraits($('hpGear'));
   }
@@ -1468,6 +1484,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   $('hpShop').addEventListener('click', (ev) => { const b = ev.target.closest('[data-shop]'); if (!b || b.disabled) return; const r = CBHub.buyShop(profile, +b.dataset.shop); if (!r.ok) return toast(r.why); save(); renderHub(); });
 
   loadLocal();
+  setTimeout(() => { try { if (window.CB_INK && CB_INK.preload) { CB_INK.preloadMap(curMap()); CB_INK.preload(['hero_warrior', 'hero_rogue', 'hero_mage', 'hero_paladin', 'hero_warlock', 'ash_imp', 'obsidian_brute', 'brimstone_warden', 'shade', 'hellhound_alpha']); } } catch (e) {} }, 1500); // Nov 2: your road's monsters, ready before the first fight
   // ---------- the town (overworld): grid movement like Pokemon, NPCs open the camp screens
   // Everything is drawn in code: thick dark outlines, muted colors, torchlight over a dark night layer.
   const MW = 42, MH = 30; // Oct 31: the town grew east (x 26-41) for the Bazaar; Nov 1: and south (y 18-28) for the Arena
@@ -1762,13 +1779,14 @@ body.aiming { cursor: grabbing; user-select: none; }
     poly(g, [[cx - 13 * s + sway, by - 44 * s], [cx + 13 * s + sway, by - 44 * s], [cx + 5 * s + sway, by - 47 * s], [cx + 2 * s + sway, by - 55 * s], [cx - 5 * s + sway, by - 47 * s]], '#4a3826', 1.6); // floppy hat
   }
   // a name tag (and an optional <Guild> line under it) sitting just above a town figure's head; returns the top of the tag
-  function townTag(g, tx, footY, name, col, guild, s, figH) {
+  function townTag(g, tx, footY, name, col, guild, s, figH, title) {
     const head = footY - (figH != null ? figH * s : 72 * s) - 3 * s; let y = head;
     g.textAlign = 'center';
     if (guild) { g.font = `italic 500 ${Math.round(10.5 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const t = '<' + guild + '>', w = g.measureText(t).width + 10, h = Math.round(12 * Math.max(0.9, s));
       g.fillStyle = 'rgba(10,8,6,.72)'; g.fillRect(tx - w / 2, y - h, w, h); g.fillStyle = '#b9c8a6'; g.fillText(t, tx, y - h * .22); y -= h - 2; }
     g.font = `600 ${Math.round(12 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const w = g.measureText(name).width + 10, h = Math.round((guild ? 15 : 17) * Math.max(0.9, s));
     g.fillStyle = 'rgba(10,8,6,.8)'; g.fillRect(tx - w / 2, y - h, w, h); g.fillStyle = col; g.fillText(name, tx, y - h * (guild ? .2 : .26));
+    if (title) { y -= h - 1; g.font = `italic 600 ${Math.round(10.5 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const tw = g.measureText(title).width + 10, th = Math.round(12 * Math.max(0.9, s)); g.fillStyle = 'rgba(10,8,6,.72)'; g.fillRect(tx - tw / 2, y - th, tw, th); g.fillStyle = '#e4c27a'; g.fillText(title, tx, y - th * .22); return y - th; } // Nov 2: titles
     return y - h;
   }
   function drawChar(g, cx, by, dir, step, pal, s, t) {
@@ -1868,7 +1886,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     for (const n of NPCS) list.push({ y: n.y + 0.5, f: () => n.id === 'dummy' ? drawScarecrow(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, s, t) : drawChar(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.dir, 0, n.pal, s, t) });
     const hp = heroPos(); const walking = P.mv ? (Math.floor(P.mv.t * 2) % 2 ? 2 : 1) * (P.step % 2 ? 1 : 1) : 0;
     const stepF = P.mv ? ((P.step + (P.mv.t > 0.5 ? 1 : 0)) % 2 ? 1 : 2) : 0;
-    list.push({ y: hp.y + 0.5, f: () => drawChar(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, P.dir, stepF, heroPal(), s, t) });
+    list.push({ y: hp.y + 0.5, f: () => P.mount ? drawRider(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, P.dir, P.mv ? ((P.step % 2) + P.mv.t) / 2 : 0, heroPal(), s, t, P.mount, CC[(profile.chars[heroKey] || {}).cls]) : drawChar(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, P.dir, stepF, heroPal(), s, t) });
     for (const o of othersDrawList(TS, s, t)) list.push(o);
     list.sort((a, b) => a.y - b.y); for (const o of list) o.f();
     if (BZ.open) drawShopSign(gx, hp.x * TS + TS / 2, hp.y * TS - TS * 0.12, shopTitle(), s);
@@ -1876,7 +1894,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     for (const e of TOWN.embers) { gx.fillStyle = `rgba(255,${150 + (e.life * 80 | 0)},70,${e.life})`; gx.fillRect(e.x * TS, e.y * TS, 2.5 * s, 2.5 * s); }
     // name tags over every head: townspeople always, and your own hero with your guild under the name
     for (const n of NPCS) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.id === 'dummy' ? 52 : null);
-    { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s); }
+    { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? 72 + MOUNT_RISE : null, CBHub.titleOf(c, profile)); }
     // night: darken everything, then cut light pools around fires and the hero
     const dk = TOWN.dark, dg = dk.getContext('2d');
     dg.setTransform(1, 0, 0, 1, 0, 0); dg.globalCompositeOperation = 'source-over'; dg.clearRect(0, 0, dk.width, dk.height);
@@ -1917,7 +1935,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     TOWN.embers = TOWN.embers.filter(e => e.life > 0);
     // NPCs glance at the hero when close
     for (const n of NPCS) { if (n.fixed) continue; const dx = P.x - n.x, dy = P.y - n.y; if (Math.abs(dx) + Math.abs(dy) <= 2) n.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'); else n.dir = n.home; }
-    if (P.mv) { P.mv.t += dt / STEP_MS; if (P.mv.t >= 1) P.mv = null; else return; }
+    if (P.mv) { P.mv.t += dt / (P.mount ? STEP_MS / MOUNT_SPEED : STEP_MS); if (P.mv.t >= 1) P.mv = null; else return; }
     if (townBusy()) { P.path = []; return; }
     if (P.path.length) {
       const nx = P.path.shift(); const dir = nx.x > P.x ? 'right' : nx.x < P.x ? 'left' : nx.y > P.y ? 'down' : 'up';
@@ -1981,6 +1999,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (ev.key === ' ' || ev.key === 'Enter' || ev.key === 'e' || ev.key === 'E') { ev.preventDefault(); const n = interactTarget(); if (n) talk(n); }
     if (ev.key === 't' || ev.key === 'T') { ev.preventDefault(); P.held = []; $('chatIn').focus(); }
     if ((ev.key === 'c' || ev.key === 'C') && !ev.ctrlKey && !ev.metaKey) { ev.preventDefault(); P.held = []; closeTalk(); openSheet('char'); }
+    if ((ev.key === 'm' || ev.key === 'M') && !ev.ctrlKey && !ev.metaKey && !ev.altKey) { ev.preventDefault(); toggleMount(); }
   });
   document.addEventListener('keyup', (ev) => { const d = KEYDIR[ev.key]; if (d) P.held = P.held.filter(x => x !== d); });
   // G opens (or closes) the guild window from anywhere: town, the map, a fight
@@ -2020,10 +2039,11 @@ body.aiming { cursor: grabbing; user-select: none; }
     P.held = []; P.path = []; P.target = null;
     if (!n.fixed) n.dir = n.x > P.x ? 'left' : n.x < P.x ? 'right' : n.y > P.y ? 'up' : 'down';
     n.lineN = ((n.lineN == null ? -1 : n.lineN) + 1) % n.lines.length;
-    $('talk').innerHTML = `<b>${esc(n.name)}</b><p>${esc(n.lines[n.lineN])}</p><div class="row">${n.open ? `<button class="btn primary" id="tOpen">${esc(n.btn)}</button>` : ''}<button class="btn" id="tBye">${n.open ? 'Not now' : 'Farewell'}</button></div>`;
+    { const c = profile.chars[heroKey]; if (n.id === 'wagon' && c && !c.tutRoad && !(c.runs > 0)) { c.tutRoad = 1; save(); closeTalk(); tutStart('road'); return; } } // Nov 2: the first talk with Arisha is the road and fight tutorial
+    $('talk').innerHTML = `<b>${esc(n.name)}</b><p>${esc(n.lines[n.lineN])}</p><div class="row">${n.open ? `<button class="btn primary" id="tOpen">${esc(n.btn)}</button>` : ''}${n.id === 'wagon' ? '<button class="btn" id="tHow">How do runs and fights work?</button>' : ''}<button class="btn" id="tBye">${n.open ? 'Not now' : 'Farewell'}</button></div>`;
     $('talk').hidden = false; updatePrompt();
     if (n.open) $('tOpen').onclick = () => { closeTalk(); if (n.open === 'dummy') startDummy(); else openSheet(n.open); };
-    $('tBye').onclick = closeTalk;
+    $('tBye').onclick = closeTalk; if ($('tHow')) $('tHow').onclick = () => { closeTalk(); tutStart('road'); };
   }
   function closeTalk() { $('talk').hidden = true; updatePrompt(); cv.focus({ preventScroll: true }); }
   function openSheet(kind) {
@@ -2093,6 +2113,8 @@ body.aiming { cursor: grabbing; user-select: none; }
 /*TESTVENDOR*/
 /*GUIDE*/
 /*TUTORIAL*/
+/*MOUNT*/
+/*ACHUI*/
   let townReturn = false;
 
   // ---------- settings (this browser)
@@ -2242,6 +2264,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       <button class="btn primary" id="mClose">Resume</button>
       <button class="btn" id="mnGloss">Glossary: stats and effects</button>
       ${profile && profile.chars[heroKey] && !onTitle ? `<button class="btn" id="mnGuide">Build guide: playstyles, decks, where to farm</button>` : ''}
+      ${profile && profile.chars[heroKey] && !onTitle ? `<button class="btn" id="mnAch">Achievements and titles</button>` : ''}
       ${profile && profile.chars[heroKey] && !onTitle && !run && !cb ? `<button class="btn" id="mnTut">Tutorial: a tour of Emberwatch</button>` : ''}
       ${inRun ? `<button class="btn" id="mnLeave">Leave run and return to town</button>` : ''}
       ${cb && cb.duel && !cb.over ? `<button class="btn" id="mnForfeit">Forfeit the duel</button>` : ''}
@@ -2263,6 +2286,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     $('mClose').onclick = closeModal;
     $('mnGloss').onclick = () => openGlossary();
     if ($('mnGuide')) $('mnGuide').onclick = () => openGuide();
+    if ($('mnAch')) $('mnAch').onclick = () => openAchievements();
     if ($('mnTut')) $('mnTut').onclick = () => { closeModal(); tutStart(); };
     $('setFast').onchange = (e) => { settings.fast = e.target.checked; saveSettings(); };
     if ($('setInkUi')) $('setInkUi').onchange = (e) => CB_UI.set(e.target.checked);
@@ -2317,6 +2341,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   const RH = 58, CW = 78, PADX = 40, PADY = 34;
   function pos(n) { return { x: PADX + n.col * CW, y: PADY + (ROWS + 1 - n.row) * RH }; }
   function renderMap(scroll) {
+    if (run && !run._pre && window.CB_INK && CB_INK.preload) { run._pre = 1; CB_INK.preload(Object.values(run.map.nodes).flatMap(n => n.enemies || [])); } // Nov 2: monsters' art loads while you pick a path
     if (typeof retrack === 'function') try { retrack(); } catch (e) {}
     trimPlans();
     $('mapScroll').innerHTML = mapSvg(true);
@@ -2895,7 +2920,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   }
   function demonsHtml(a) {
     if (!a.isPlayer || !a.demons || !a.demons.length || a.hp <= 0) return '';
-    return `<div class="demons">${a.demons.map(dm => { const D = CB.DEMONS[dm.key] || {}; return `<div class="demon" style="--ds:${DEMON_SZ[dm.key] || .6}" title="${esc(dm.name)}: ${dm.hp}/${dm.maxHp} HP, ${dm.turns} turn${dm.turns > 1 ? 's' : ''} left. ${esc(D.text || '')}${D.taunt ? '' : ' Single-target attacks can\'t hit it; area attacks can.'}">
+    return `<div class="demons">${a.demons.map(dm => { const D = CB.DEMONS[dm.key] || {}; return `<div class="demon" data-du="${dm.uid || ''}" style="--ds:${DEMON_SZ[dm.key] || .6}" title="${esc(dm.name)}: ${dm.hp}/${dm.maxHp} HP, ${dm.turns} turn${dm.turns > 1 ? 's' : ''} left. ${esc(D.text || '')}${D.taunt ? '' : ' Single-target attacks can\'t hit it; area attacks can.'}">
       <div class="dfig">${demonFig(dm)}</div><div class="dbar"><i style="width:${Math.max(0, 100 * dm.hp / dm.maxHp)}%"></i></div><small>${esc(D.short || dm.name)} &middot; ${dm.turns}t</small></div>`; }).join('')}</div>`;
   }
   function unitHtml(a) {
@@ -2938,6 +2963,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     playedTimer = setTimeout(() => { el.classList.add('out'); playedTimer = setTimeout(() => { el.hidden = true; }, 350); }, 2200);
   }
   function render(withPops) {
+    if (cb && !cb._pre && window.CB_INK && CB_INK.preload) { cb._pre = 1; CB_INK.preload(cb.enemies.map(e => e.key)); }
     if (!cb) return;
     if (cb.round !== render.whereRound && typeof retrack === 'function') { render.whereRound = cb.round; try { retrack(); } catch (e) {} } // friends see the round/row we're on
     const p = hero(), party = cb.partySize > 1, wh = watchedHero(p);

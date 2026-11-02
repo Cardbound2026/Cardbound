@@ -2,6 +2,13 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Feature', 'Achievements and titles: 35 achievements (bosses by level, class and road, Hardcore, raids, duels, the Bazaar, and feats like The Unburned and Frozen). Each one unlocks a title for all your heroes: pick it on your character sheet (C). Titles show over your head in town and on the Hall of Records. Menu > Achievements and titles lists them all.'],
+      ['Feature', 'Mounts: press M in town to ride a horse, 25% faster. Everyone in town sees you ride. More mounts to come.'],
+      ['Change', 'Hardcore heroes now have their own stash, shared only with your other Hardcore heroes. Normal heroes keep the normal stash.'],
+      ['Change', 'Wagoneer Arisha explains runs and fights the first time a new hero talks to her, and any time after with "How do runs and fights work?".'],
+      ['Balance', 'Rot: every Rot card applies 15% more Rot, and its upgrades grow 15% faster.'],
+      ['Fix', 'Monsters are drawn the moment a fight starts (their art now loads while you are in town and on the map).'],
+      ['Fix', 'Warlock demons move: they breathe while they wait, lunge when they act and flinch when hit.'],
       ['Feature', 'Tutorial: a guided tour of Emberwatch and every system (runs, fights, gear, deck, codexes, the Compendium, the Glossary, merchants, trading, guilds, raids and the Hall of Records). Tick it when you create a hero (it is ticked for your first), or start it from the Menu any time.'],
       ['Feature', 'Seasons: the Hall of Records now ranks one season at a time. Season 0.02 starts today with a clean board. Everything before it is Season 0.01, and you can still look at its final standings. Heroes keep their gear, cards, codexes and map unlocks; their map records and boss kill counts start over for the new season.'],
       ['Balance', 'New season, new economy: everyone\'s gold has been reset to 0.'],

@@ -229,6 +229,9 @@
           add(fx, { id: e.d, ang: -2.4 + (i - 1) * 0.9 * (i % 2 ? 1 : -1), big, side, seed: Math.random() * 1e9 }, delay);
           if (e.crit) { add('crit', { id: e.d }, delay); setTimeout(() => { const st = document.querySelector('#scrCombat .stage') || document.getElementById('scrCombat'); if (st) { st.classList.remove('fxshake'); void st.offsetWidth; st.classList.add('fxshake'); } }, delay); }
           if (F) setTimeout(() => F.play(e.d, tgt.isPlayer ? (big ? 'knock' : 'hit') : (big ? 'eknock' : 'ehit')), delay);
+        } else if (e.t === 'demon' || e.t === 'demonHit') { // Warlock demons (src/template.html demonsHtml): lunge when they act, shake when hit
+          const k = e.t === 'demon' ? 'dact' : 'dhit', wait = e.t === 'demon' ? (nth['dm' + e.d] = (nth['dm' + e.d] || 0) + 1) * 260 - 260 : 140;
+          setTimeout(() => { const el = document.querySelector(`.unit[data-id="${e.d}"] .demon[data-du="${e.u}"]`); if (!el) return; el.classList.remove('dact', 'dhit'); void el.offsetWidth; el.classList.add(k); setTimeout(() => el.classList.remove(k), 600); }, wait);
         } else if (e.t === 'apply') { add(DOT[e.key] || 'bleed', { id: e.d, n: 4, seed: Math.random() * 1e9 }, 260); }
         else if (e.t === 'heal') add('heal', { id: e.d, seed: Math.random() * 1e9 });
         else if (e.t === 'block') add('block', { id: e.d, col: (cb.actorById(e.d) || {}).cls === 'Mage' ? 'ward' : (cb.actorById(e.d) || {}).cls === 'Warlock' ? 'absorb' : null });

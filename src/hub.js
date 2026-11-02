@@ -60,6 +60,8 @@ function fix(p) { // tolerate older or partial saves
       c.season = SEASON; c.sKills = {}; c.mapBest = {}; c.mapRows = {}; c.mapKillAt = {}; c.bossKillsBy = {};
     }
   }
+  achCheck(p, {}, null, true); // Nov 2: achievements a save can already prove (boss kills, duels, ranks...) unlock quietly
+  useStash(p, p.last && p.last.cls); // the stash of the hero you were last playing (hardcore heroes have their own)
   // Nov 2: gold wipe for the start of season 0.02 (once per save)
   if (!p.goldWipe1) { p.gold = 0; p.goldWipe1 = 1; }
   return p;
@@ -140,6 +142,59 @@ function upgradeDelta(c, it, mk) {
   for (const sl of slotOptions(it)) { const d = pw(gearValue(c, swapIn(gear, it, sl), mk) - base); if (!best || d > best.d) best = { d, slot: sl, vs: gear.find(g => g.slot === sl) || null }; }
   return best || { d: 0, slot: null, vs: null };
 }
+// ---------- Achievements and titles (Nov 2). Unlocked for the whole account (p.ach = { id: { at, by } }); every achievement gives a
+// title any of your heroes can wear (c.title = achievement id, picked on the character sheet). Counters live in p.stats.
+// achCheck(p, ev) tests every locked achievement against the account and the event (ev.type: 'run', 'raid', 'duel', 'sale', ...)
+// and returns the newly unlocked ones. A save made before achievements existed unlocks what it can prove, silently, on load.
+const MAP_TITLES = { physical: ['The Broken March', 'Ironbreaker'], fire: ['The Cinder Reach', 'Emberborn'], frost: ['The Rimewatch', 'Winterborn'], nature: ['The Tanglewild', 'Thornwarden'], arcane: ['The Shattered Spire', 'Spirebreaker'], shadow: ['The Hollow Crypts', 'Cryptkeeper'] };
+const CLASS_TITLES = { Warrior: 'Warmaster', Rogue: 'Nightblade', Mage: 'Spellbinder', Paladin: 'Lightbringer', Warlock: 'Voidcaller' };
+const heroes = (p) => Object.values(p.chars || {});
+const bestKill = (c, mk) => { const k = c.mapKills || {}; return mk ? (k[mk] == null ? -1 : k[mk]) : Math.max(-1, ...Object.values(k)); };
+const won = (ev, lvl) => ev.type === 'run' && ev.victory && (ev.level || 0) >= lvl;
+const st = (p, k) => (p.stats || {})[k] || 0;
+const ACH = [
+  { id: 'first_boss', cat: 'Roads', name: 'Blooded', how: 'Kill a map boss.', title: 'the Blooded', test: (p, ev) => won(ev, 0) || heroes(p).some(c => bestKill(c) >= 0) },
+  { id: 'clear5', cat: 'Roads', name: 'Veteran', how: 'Kill a map boss at +5 or higher.', title: 'Veteran', test: (p, ev) => won(ev, 5) || heroes(p).some(c => bestKill(c) >= 5) },
+  { id: 'clear10', cat: 'Roads', name: 'Champion', how: 'Kill a map boss at +10 or higher.', title: 'Champion', test: (p, ev) => won(ev, 10) || heroes(p).some(c => bestKill(c) >= 10) },
+  { id: 'clear15', cat: 'Roads', name: 'Legend', how: 'Kill a map boss at +15 or higher.', title: 'Legend', test: (p, ev) => won(ev, 15) || heroes(p).some(c => bestKill(c) >= 15) },
+  { id: 'clear19', cat: 'Roads', name: 'Mythic', how: 'Kill a map boss at +19.', title: 'the Mythic', test: (p, ev) => won(ev, 19) || heroes(p).some(c => bestKill(c) >= 19) },
+  ...Object.entries(CLASS_TITLES).map(([cls, t]) => ({ id: 'cls_' + cls, cat: 'Classes', name: t, how: `Kill a map boss at +12 or higher as a ${cls}.`, title: t,
+    test: (p, ev) => (won(ev, 12) && ev.cls === cls) || heroes(p).some(c => c.cls === cls && bestKill(c) >= 12) })),
+  ...Object.entries(MAP_TITLES).map(([mk, [nm, t]]) => ({ id: 'map_' + mk, cat: 'Roads', name: t, how: `Kill the boss of ${nm} at +10 or higher.`, title: t,
+    test: (p, ev) => (won(ev, 10) && ev.map === mk) || heroes(p).some(c => bestKill(c, mk) >= 10) })),
+  { id: 'hc5', cat: 'Hardcore', name: 'Hardcore Champion', how: 'Kill a map boss at +5 or higher with a Hardcore hero.', title: 'Hardcore Champion', test: (p, ev) => (won(ev, 5) && ev.hc) || heroes(p).some(c => c.hardcore && bestKill(c) >= 5) },
+  { id: 'hc10', cat: 'Hardcore', name: 'Hardcore Legend', how: 'Kill a map boss at +10 or higher with a Hardcore hero.', title: 'Hardcore Legend', test: (p, ev) => (won(ev, 10) && ev.hc) || heroes(p).some(c => c.hardcore && bestKill(c) >= 10) },
+  { id: 'raid1', cat: 'Raids', name: 'Raider', how: 'Kill a raid boss.', title: 'Raider', test: (p, ev) => ev.type === 'raid' || heroes(p).some(c => c.raidKills > 0) },
+  { id: 'raid5', cat: 'Raids', name: 'Warbreaker', how: 'Kill a raid boss at +5 or higher.', title: 'Warbreaker', test: (p, ev) => ev.type === 'raid' && (ev.level || 0) >= 5 },
+  { id: 'duel1', cat: 'Arena', name: 'Duelist', how: 'Win a duel.', title: 'Duelist', n: 1, count: (p) => heroes(p).reduce((s, c) => s + ((c.duels || {}).w || 0), 0) },
+  { id: 'duel100', cat: 'Arena', name: 'Gladiator', how: 'Win 100 duels.', title: 'Gladiator', n: 100, count: (p) => heroes(p).reduce((s, c) => s + ((c.duels || {}).w || 0), 0) },
+  { id: 'duel1000', cat: 'Arena', name: 'Warlord', how: 'Win 1,000 duels.', title: 'Warlord', n: 1000, count: (p) => heroes(p).reduce((s, c) => s + ((c.duels || {}).w || 0), 0) },
+  { id: 'gold1m', cat: 'Wealth', name: 'Tycoon', how: 'Bring home 1,000,000 gold from the roads.', title: 'Tycoon', n: 1000000, count: (p) => st(p, 'goldLooted') },
+  { id: 'sale1', cat: 'Wealth', name: 'Merchant', how: 'Sell an item at the Bazaar.', title: 'Merchant', n: 1, count: (p) => st(p, 'bazaarSales') },
+  { id: 'sale100k', cat: 'Wealth', name: 'Businessman', how: 'Sell one item at the Bazaar for 100,000 gold or more.', title: 'Businessman', test: (p) => st(p, 'bazaarBest') >= 100000 },
+  { id: 'unburned', cat: 'Feats', name: 'The Unburned', how: 'Kill the boss of a +5 or higher Cinder Reach without healing or gaining any Block (or Dodge, Barrier, Absorb) in the boss fight.', title: 'the Unburned',
+    test: (p, ev) => won(ev, 5) && ev.map === 'fire' && ev.bossClean },
+  { id: 'frozen', cat: 'Feats', name: 'Frozen', how: 'Clear a +5 or higher Rimewatch run without losing a single point of HP.', title: 'the Frozen', test: (p, ev) => won(ev, 5) && ev.map === 'frost' && ev.lost === 0 },
+  { id: 'untouchable', cat: 'Feats', name: 'Untouchable', how: 'Kill a +10 or higher map boss without losing any HP in the boss fight.', title: 'the Untouchable', test: (p, ev) => won(ev, 10) && ev.bossLost === 0 },
+  { id: 'party4', cat: 'Feats', name: 'Fellowship', how: 'Kill a map boss in a party of four.', title: 'of the Fellowship', test: (p, ev) => won(ev, 0) && ev.party >= 4 },
+  { id: 'card10', cat: 'Collection', name: 'Inkbound', how: 'Rank a card up to +10.', title: 'Inkbound', test: (p) => heroes(p).some(c => [...(c.deck || []), ...(c.cards || [])].some(k => (k.rank || 0) >= MAX_RANK)) },
+  { id: 'codex20', cat: 'Collection', name: 'Codexmaster', how: 'Take a codex to its top level.', title: 'Codexmaster', test: (p) => heroes(p).some(c => Object.values(c.codexes || {}).some(s => CB.codexLevel(s.xp || 0).level >= CB.CODEX_MAX)) },
+  { id: 'runs100', cat: 'Roads', name: 'Roadworn', how: 'Finish 100 runs (any result, all heroes together).', title: 'the Roadworn', n: 100, count: (p) => heroes(p).reduce((s, c) => s + (c.runs || 0), 0) },
+  { id: 'extract10', cat: 'Roads', name: 'Survivor', how: 'Extract from 10 runs at a campfire.', title: 'Survivor', n: 10, count: (p) => st(p, 'extracts') },
+  { id: 'deaths25', cat: 'Roads', name: 'Gravewalker', how: 'Die 25 times. It happens.', title: 'Gravewalker', n: 25, count: (p) => st(p, 'deaths') },
+];
+const ACH_BY = Object.fromEntries(ACH.map(a => [a.id, a]));
+const ACH_FRESH = []; // unlocks waiting to be announced by the page (achTake)
+function achTake() { return ACH_FRESH.splice(0); }
+function achCheck(p, ev, who, quiet) {
+  p.ach = p.ach || {}; ev = ev || {}; const fresh = [];
+  for (const a of ACH) { if (p.ach[a.id]) continue; let ok = false; try { ok = a.count ? a.count(p) >= a.n : !!a.test(p, ev); } catch (e) {} if (ok) { p.ach[a.id] = { at: Date.now(), by: who || ev.hero || null }; fresh.push(a); } }
+  if (!quiet) ACH_FRESH.push(...fresh);
+  return fresh;
+}
+function bump(p, k, n) { p.stats = p.stats || {}; p.stats[k] = (p.stats[k] || 0) + (n == null ? 1 : n); }
+function titleOf(c, p) { const a = c && c.title && ACH_BY[c.title]; return a && (!p || (p.ach || {})[a.id]) ? a.title : ''; }
+function setTitle(p, key, id) { const c = char(p, key); if (!c) return false; if (id && !(p.ach || {})[id]) return false; c.title = id || null; return true; }
 // one-handed weapons go in either hand (dual wielding); starter weapons predate the 'hands' field, so they are listed by name
 const STARTER_1H = ['Arming Sword', 'Dirk', 'Ashwood Wand', 'Flanged Mace'];
 const isOneHand = (item) => (item.slot === 'Weapon' || item.slot === 'Off-hand') && (/^1H/.test(item.hands || '') || STARTER_1H.includes(item.name));
@@ -148,7 +203,17 @@ function slotOptions(item) { if (item.slot === 'Ring' || /^Ring/.test(item.slot)
 let OUT_CHECK = () => false; // set by the page: true while the hero is out on a run (its gear is a copy that comes home when the run ends)
 function setOutCheck(f) { OUT_CHECK = f; }
 function arenaLock(p, cls) { if (OUT_CHECK(cls)) return 'You\'re out on a run: gear and deck changes wait until you\'re back in town.'; return p.arena && p.arena.hero === cls ? 'Locked: this hero has a wager at the Arena. Settle or withdraw it first.' : null; }
+// Nov 2: hardcore heroes have their own stash. p.stash is always the stash of the hero you're playing (p.stashMode says which);
+// the other one waits in p.stashOther. useStash() swaps them when you switch between a normal and a hardcore hero.
+const stashMode = (c) => c && c.hardcore ? 'hc' : 'normal';
+function useStash(p, key) {
+  if (!p) return; p.stashMode = p.stashMode || 'normal'; p.stashOther = p.stashOther || []; p.stash = p.stash || [];
+  const want = stashMode(p.chars[key]); if (!p.chars[key] || p.stashMode === want) return;
+  const t = p.stash; p.stash = p.stashOther; p.stashOther = t; p.stashMode = want;
+}
+function stashFor(p, c) { p.stashMode = p.stashMode || 'normal'; p.stashOther = p.stashOther || []; return stashMode(c) === p.stashMode ? p.stash : p.stashOther; }
 function equip(p, cls, itemId, slotWanted) {
+  useStash(p, cls);
   { const lk = arenaLock(p, cls); if (lk) return { ok: false, why: lk }; }
   const c = char(p, cls), i = p.stash.findIndex(x => x.id === itemId); if (i < 0) return { ok: false, why: 'Not in stash' };
   if (p.stash[i].slot === 'Codex' && p.stash[i].cls && p.stash[i].cls !== c.cls) return { ok: false, why: `Only a ${p.stash[i].cls} can use the ${p.stash[i].name}.` };
@@ -166,6 +231,7 @@ function equip(p, cls, itemId, slotWanted) {
   return { ok: true, removed: off };
 }
 function unequip(p, cls, slot) {
+  useStash(p, cls);
   if (arenaLock(p, cls)) return false;
   const c = char(p, cls), it = c.gear.find(g => g.slot === slot); if (!it) return false;
   if (p.stash.length >= STASH_MAX) return false;
@@ -292,10 +358,9 @@ function pickTalent(p, key, cx, row, col) { const c = char(p, key); if (!c || !C
 function resetTalents(p, key, cx) { const c = char(p, key); if (!c) return; codexState(c, cx).picks = []; }
 function talentSpec(c) { const cx = wornCodex(c); if (!cx) return undefined; const info = codexInfo(c, cx); return { codex: cx, picks: info.picks.slice(0, info.rows) }; }
 function partyOpts(p, classes) {
-  const free = Math.max(0, STASH_MAX - p.stash.length);
-  return { sharedBank: true, members: classes.map((key, i) => { const c = char(p, key); return { key, cls: c.cls, name: c.name || c.cls, bank: i === 0 ? p.gold : 0, stashFree: free, gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }) };
+  return { sharedBank: true, members: classes.map((key, i) => { const c = char(p, key); return { key, cls: c.cls, name: c.name || c.cls, bank: i === 0 ? p.gold : 0, stashFree: Math.max(0, STASH_MAX - stashFor(p, c).length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }) };
 }
-function runOpts(p, key) { const c = char(p, key); return { key, cls: c.cls, members: undefined, name: c.name, bank: p.gold, stashFree: Math.max(0, STASH_MAX - p.stash.length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }
+function runOpts(p, key) { const c = char(p, key); return { key, cls: c.cls, members: undefined, name: c.name, bank: p.gold, stashFree: Math.max(0, STASH_MAX - stashFor(p, c).length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }
 // Bring a finished run home: equipped gear (incl. merchant buys) stays on the character; kept loot goes to stash/collection.
 function absorbRun(p, run, mi) {
   if (mi == null && run.members && run.members.length > 1) { const res = run.members.map((m, i) => absorbRun(p, run, i)); return res[0]; }
@@ -305,12 +370,13 @@ function absorbRun(p, run, mi) {
   const kept = mem.kept || { items: [], gold: 0 };
   let lost = 0, items = 0, cards = 0, ordered = 0;
   p.gold = Math.max(0, p.gold - (mem.spent || 0));
-  for (const o of mem.orders || []) { if (p.stash.length < STASH_MAX) { p.stash.unshift(Object.assign({ id: uid('g') }, o, { slot: /^Ring/.test(o.slot) ? 'Ring' : o.slot })); ordered++; } }
+  const ST = stashFor(p, c); // this hero's stash (hardcore heroes have their own)
+  for (const o of mem.orders || []) { if (ST.length < STASH_MAX) { ST.unshift(Object.assign({ id: uid('g') }, o, { slot: /^Ring/.test(o.slot) ? 'Ring' : o.slot })); ordered++; } }
   let salvaged = 0, salvGold = 0, salvInk = 0;
   for (const it of kept.items) {
     if (it.autoSalvage) { salvaged++; if (it.kind === 'card') { const v = inkValue(it); p.ink = (p.ink || 0) + v; salvInk += v; (c.seen = c.seen || {})[it.key] = 1; } else { const v = salvageValue(it); p.gold += v; salvGold += v; } continue; } // marked in the sack during the run
     if (it.kind === 'card') { c.cards.push({ id: uid('k'), key: it.key, rank: 0 }); (c.seen = c.seen || {})[it.key] = 1; cards++; }
-    else if (p.stash.length < STASH_MAX) { p.stash.unshift(Object.assign({ id: uid('g') }, it, { slot: /^Ring/.test(it.slot) ? 'Ring' : it.slot })); items++; }
+    else if (ST.length < STASH_MAX) { ST.unshift(Object.assign({ id: uid('g') }, it, { slot: /^Ring/.test(it.slot) ? 'Ring' : it.slot })); items++; }
     else lost++;
   }
   p.gold += kept.gold;
@@ -327,9 +393,13 @@ function absorbRun(p, run, mi) {
   p.history.unshift({ meter: meter.length ? meter : undefined, map: run.mapKey, fights: run.fightsWon, cls: mem.cls, name: mem.name, party: run.members && run.members.length > 1 ? run.members.map(m => m.cls) : undefined, level: run.level, result: run.over, row, items, cards, gold: kept.gold, ordered, at: Date.now() });
   p.history = p.history.slice(0, 20);
   p.last = Object.assign(p.last || {}, { level: run.level });
-  return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk };
+  // Nov 2: achievement counters and checks for this hero's run
+  bump(p, 'goldLooted', kept.gold || 0); if (run.over === 'extracted') bump(p, 'extracts'); if (run.over === 'dead') bump(p, 'deaths'); else if (mem.deaths) bump(p, 'deaths', mem.deaths);
+  const F = mem.feat || {}, ach = achCheck(p, { type: 'run', victory: run.over === 'victory', level: run.level || 0, map: run.mapKey || 'physical', cls: c.cls, hc: !!c.hardcore, hero: c.name,
+    party: run.members ? run.members.length : 1, lost: F.lost, bossClean: F.bossClean, bossLost: F.bossLost });
+  return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk, ach };
 }
 
-const API = { SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);
