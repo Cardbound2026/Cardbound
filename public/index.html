@@ -4411,13 +4411,15 @@ function slotOptions(item) { if (item.slot === 'Ring' || /^Ring/.test(item.slot)
 let OUT_CHECK = () => false; // set by the page: true while the hero is out on a run (its gear is a copy that comes home when the run ends)
 function setOutCheck(f) { OUT_CHECK = f; }
 function arenaLock(p, cls) { if (OUT_CHECK(cls)) return 'You\'re out on a run: gear and deck changes wait until you\'re back in town.'; return p.arena && p.arena.hero === cls ? 'Locked: this hero has a wager at the Arena. Settle or withdraw it first.' : null; }
-// Nov 2: hardcore heroes have their own stash. p.stash is always the stash of the hero you're playing (p.stashMode says which);
-// the other one waits in p.stashOther. useStash() swaps them when you switch between a normal and a hardcore hero.
+// Nov 2: hardcore heroes have their own stash, gold and Ink. p.stash, p.gold and p.ink are always the ones of the hero you're playing
+// (p.stashMode says which); the other set waits in p.stashOther, p.goldOther and p.inkOther. useStash() swaps them when you switch
+// between a normal and a hardcore hero.
 const stashMode = (c) => c && c.hardcore ? 'hc' : 'normal';
 function useStash(p, key) {
   if (!p) return; p.stashMode = p.stashMode || 'normal'; p.stashOther = p.stashOther || []; p.stash = p.stash || [];
   const want = stashMode(p.chars[key]); if (!p.chars[key] || p.stashMode === want) return;
   const t = p.stash; p.stash = p.stashOther; p.stashOther = t; p.stashMode = want;
+  const g = p.gold || 0; p.gold = p.goldOther || 0; p.goldOther = g; const k = p.ink || 0; p.ink = p.inkOther || 0; p.inkOther = k;
 }
 function stashFor(p, c) { p.stashMode = p.stashMode || 'normal'; p.stashOther = p.stashOther || []; return stashMode(c) === p.stashMode ? p.stash : p.stashOther; }
 function equip(p, cls, itemId, slotWanted) {
@@ -4479,6 +4481,7 @@ const RANK_XP_MULT = 2; // Nov 1: ranking cards takes twice the XP (gold cost un
 function rankCost(card) { const n = (card.rank || 0) + 1, b = RANK_BASE[CARDS[card.key].rarity]; return { xp: n * b * RANK_XP_MULT, gold: n * b * 5 }; }
 // Feed collection cards (never deck cards) into a target. XP banks on the card; each rank-up also costs gold, paid automatically while you can afford it.
 function feed(p, cls, targetId, fodderIds) {
+  useStash(p, cls);
   { const lk = arenaLock(p, cls); if (lk && char(p, cls).deck.some(x => x.id === targetId)) return { ok: false, why: lk }; }
   const c = char(p, cls), t = findCard(c, targetId); if (!t) return { ok: false, why: 'No such card' };
   if ((t.rank || 0) >= MAX_RANK) return { ok: false, why: `Already +${MAX_RANK}` };
@@ -4521,6 +4524,7 @@ function inkValue(card) { return Math.round((INK_GET[CARDS[card.key].rarity] || 
 const INK_UNSEEN = 3; // a card you have never owned costs 3x
 function inkCost(key, c) { return (INK_COST[CARDS[key].rarity] || 10) * (c && !(c.seen || {})[key] ? INK_UNSEEN : 1); }
 function breakCard(p, key, cardId) {
+  useStash(p, key);
   const c = char(p, key); const i = c ? c.cards.findIndex(x => x.id === cardId) : -1; if (i < 0) return { ok: false, why: 'Only cards in your collection can be broken down (take it out of the deck first).' };
   const g = inkValue(c.cards[i]); c.cards.splice(i, 1); p.ink = (p.ink || 0) + g; return { ok: true, ink: g };
 }
@@ -4540,6 +4544,7 @@ function rerollItem(p, itemId, idx, data, rng) {
   it.rerolls--; p.rerollTokens--; return { ok: true, old: r.old, now: r.now, item: it };
 }
 function craftCard(p, key, cardKey) {
+  useStash(p, key);
   const c = char(p, key), d = CARDS[cardKey]; if (!c || !d) return { ok: false, why: 'No such card' };
   if (d.cls !== c.cls) return { ok: false, why: `Only a ${d.cls} can use that card.` };
   const cost = inkCost(cardKey, c); if ((p.ink || 0) < cost) return { ok: false, why: `Needs ${cost} Ink (you have ${p.ink || 0}).` };
@@ -4566,14 +4571,16 @@ function pickTalent(p, key, cx, row, col) { const c = char(p, key); if (!c || !C
 function resetTalents(p, key, cx) { const c = char(p, key); if (!c) return; codexState(c, cx).picks = []; }
 function talentSpec(c) { const cx = wornCodex(c); if (!cx) return undefined; const info = codexInfo(c, cx); return { codex: cx, picks: info.picks.slice(0, info.rows) }; }
 function partyOpts(p, classes) {
+  useStash(p, classes[0]); // a party is all hardcore or all normal heroes: the leader's wallet pays
   return { sharedBank: true, members: classes.map((key, i) => { const c = char(p, key); return { key, cls: c.cls, name: c.name || c.cls, bank: i === 0 ? p.gold : 0, stashFree: Math.max(0, STASH_MAX - stashFor(p, c).length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }) };
 }
-function runOpts(p, key) { const c = char(p, key); return { key, cls: c.cls, members: undefined, name: c.name, bank: p.gold, stashFree: Math.max(0, STASH_MAX - stashFor(p, c).length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }
+function runOpts(p, key) { useStash(p, key); const c = char(p, key); return { key, cls: c.cls, members: undefined, name: c.name, bank: p.gold, stashFree: Math.max(0, STASH_MAX - stashFor(p, c).length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }
 // Bring a finished run home: equipped gear (incl. merchant buys) stays on the character; kept loot goes to stash/collection.
 function absorbRun(p, run, mi) {
   if (mi == null && run.members && run.members.length > 1) { const res = run.members.map((m, i) => absorbRun(p, run, i)); return res[0]; }
   const mem = run.members ? run.members[mi || 0] : run;
   const c = char(p, mem.key || mem.cls); if (!c) return { items: 0, cards: 0, gold: 0, lost: 0, ordered: 0 };
+  useStash(p, mem.key || mem.cls); // this hero's stash, gold and Ink (hardcore heroes have their own)
   c.gear = mem.gear.map(g => Object.assign({ id: g.id || uid('g') }, g));
   const kept = mem.kept || { items: [], gold: 0 };
   let lost = 0, items = 0, cards = 0, ordered = 0;
@@ -4885,7 +4892,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       <p class="savenote" style="margin:4px 0 0">${mapBlurb(mk)}</p>
       <div class="field" style="margin:8px 0"><label for="selLevel">Map ${M.num}: ${esc(M.name)} &middot; level <b id="lvlOut">+${lvl}</b></label><input type="range" id="selLevel" min="0" max="19" step="1" value="${lvl}"></div>
       <p class="savenote" id="lvlInfo"></p>
-      ${onlineParty() ? onlineWagonHtml() : `<fieldset class="partypick"><legend>Party (play them all yourself, in Initiative order)</legend>${heroKeys().map(k => `<label><input type="checkbox" data-party="${k}" ${k === heroKey ? 'checked disabled' : (profile.last.party || []).includes(k) ? 'checked' : ''}> ${esc(profile.chars[k].name)} <span class="muted">(${profile.chars[k].cls})</span></label>`).join('')}</fieldset>
+      ${onlineParty() ? onlineWagonHtml() : `<fieldset class="partypick"><legend>Party (play them all yourself, in Initiative order)</legend>${heroKeys().map(k => { const off = k !== heroKey && !!profile.chars[k].hardcore !== !!(profile.chars[heroKey] || {}).hardcore; return `<label ${off ? 'title="Hardcore heroes only ride with other Hardcore heroes" class="muted"' : ''}><input type="checkbox" data-party="${k}" ${k === heroKey ? 'checked disabled' : off ? 'disabled' : (profile.last.party || []).includes(k) ? 'checked' : ''}> ${esc(profile.chars[k].name)} <span class="muted">(${profile.chars[k].cls}${profile.chars[k].hardcore ? ', Hardcore' : ''})</span></label>`; }).join('')}</fieldset>
       <p class="savenote" id="partyNote" style="margin:4px 0 0"></p>`}
       <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn" id="btnMapLoot" title="Everything this map can drop">Map loot</button><button class="btn primary" id="btnStart" ${chk.ok && (!onlineParty() || SOC.party.leader === SOC.me) ? '' : 'disabled'}>${onlineParty() ? (SOC.party.leader === SOC.me ? `Set out with the party (${SOC.party.members.length})` : 'Waiting for the leader') : 'Set out'}</button></div>
       ${chk.ok ? '' : `<p class="down" style="margin:6px 0 0;font-size:13px">Fix your deck first: it ${chk.problems.join(', ')}.</p>`}
@@ -4925,7 +4932,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function bossName(r) { r = r || run; const M = DATA.maps[(r && r.mapKey) || 'physical']; return M ? DATA.enemies[M.boss].name.split(',')[0].replace(/ of the .*/, '') : 'the boss'; }
   function startRun() {
     const lvl = +$('selLevel').value, mk = curMap();
-    if (onlineParty()) { if (SOC.party.leader !== SOC.me) return; if (SOC.party.members.length > 4) return toast(`The Wagon takes 4 heroes at most; your party has ${SOC.party.members.length}. Bigger parties are for raids (Raid Warden).`); profile.last.level = lvl; save(); $('sheet').hidden = true; netStart('run', SOC.party.members.map(m => m.uid), lvl, mk); return; }
+    if (onlineParty()) { if (SOC.party.leader !== SOC.me) return; { const bad = SOC.party.members.filter(m => m.uid !== SOC.me && hcOf(m.uid) != null && hcOf(m.uid) !== myHc()); if (bad.length) return toast(`${bad.map(m => m.name).join(', ')} ${bad.length > 1 ? 'are' : 'is'} on a ${myHc() ? 'normal' : 'Hardcore'} hero. Hardcore heroes only ride with other Hardcore heroes.`); } if (SOC.party.members.length > 4) return toast(`The Wagon takes 4 heroes at most; your party has ${SOC.party.members.length}. Bigger parties are for raids (Raid Warden).`); profile.last.level = lvl; save(); $('sheet').hidden = true; netStart('run', SOC.party.members.map(m => m.uid), lvl, mk); return; }
     const extra = [...$('hubWagon').querySelectorAll('[data-party]:checked:not(:disabled)')].map(x => x.dataset.party);
     const party = [heroKey, ...extra];
     for (const k of extra) { const d = CBHub.deckCheck(CBHub.char(profile, k).deck); if (!d.ok) return toast(`${k}'s deck ${d.problems.join(', ')}. Fix it at the Scribe first.`); }
@@ -5833,7 +5840,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function myPresence() {
     const c = profile.chars[heroKey];
     const place = !$('scrStart').hidden ? 'town' : run ? 'run' : cb && cb.duel ? 'duel' : 'menu';
-    return { lk: lookList(c), uid: SOC.me, guild: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), shop: typeof BZ !== 'undefined' && BZ.open ? { t: shopTitle(), n: bzState().items.length } : null, arena: typeof arenaPresence === 'function' ? arenaPresence() : null, x: P.x, y: P.y, dir: P.dir, mount: P.mount || null, title: c ? CBHub.titleOf(c, profile) || null : null, party: SOC.party ? SOC.party.id : null };
+    return { lk: lookList(c), uid: SOC.me, guild: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), shop: typeof BZ !== 'undefined' && BZ.open ? { t: shopTitle(), n: bzState().items.length } : null, arena: typeof arenaPresence === 'function' ? arenaPresence() : null, x: P.x, y: P.y, dir: P.dir, mount: P.mount || null, title: c ? CBHub.titleOf(c, profile) || null : null, hc: !!(c && c.hardcore), party: SOC.party ? SOC.party.id : null };
   }
 
   async function socStart() {
@@ -5905,8 +5912,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     for (const [uid, st] of SOC.online) {
       if (uid === SOC.me || st.place !== 'town' || !st.cls) { SOC.others.delete(uid); continue; }
       const o = SOC.others.get(uid);
-      if (!o) SOC.others.set(uid, { uid, x: st.x, y: st.y, fx: st.x, fy: st.y, t: 1, dir: st.dir || 'down', step: 0, name: st.name, guild: st.guild || null, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, party: st.party, shop: st.shop || null, mount: st.mount || null, title: st.title || null });
-      else Object.assign(o, { guild: st.guild || null, name: st.name, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, party: st.party, shop: st.shop || null, mount: st.mount || null, title: st.title || null });
+      if (!o) SOC.others.set(uid, { uid, x: st.x, y: st.y, fx: st.x, fy: st.y, t: 1, dir: st.dir || 'down', step: 0, name: st.name, guild: st.guild || null, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, party: st.party, shop: st.shop || null, mount: st.mount || null, title: st.title || null, hc: !!st.hc });
+      else Object.assign(o, { guild: st.guild || null, name: st.name, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, party: st.party, shop: st.shop || null, mount: st.mount || null, title: st.title || null, hc: !!st.hc });
     }
     for (const uid of [...SOC.others.keys()]) if (!SOC.online.has(uid)) SOC.others.delete(uid);
   }
@@ -6072,16 +6079,24 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   async function acceptFriend(id) { await supa.from('friends').update({ status: 'accepted' }).eq('user_id', id).eq('friend_id', SOC.me); await loadFriends(); }
   async function removeFriend(id) { await supa.from('friends').delete().eq('user_id', id).eq('friend_id', SOC.me); await supa.from('friends').delete().eq('user_id', SOC.me).eq('friend_id', id); await loadFriends(); }
 
+  // ---------- Nov 2: Hardcore heroes only group, trade and wager with other Hardcore heroes (and normal heroes with normal ones)
+  const myHc = () => !!((profile.chars[heroKey] || {}).hardcore);
+  function hcOf(uid) { const o = SOC.others.get(uid); if (o && o.hc != null) return !!o.hc; const pr = SOC.online && SOC.online.get(uid); return pr && pr.hc != null ? !!pr.hc : null; } // null: not known
+  function hcBlock(uid, what) {
+    const h = hcOf(uid); if (h == null || h === myHc()) return false;
+    toast(myHc() ? `Your hero is Hardcore: Hardcore heroes can only ${what} with other Hardcore heroes.` : `${nameOfUid(uid)} is playing a Hardcore hero. Hardcore heroes can only ${what} with other Hardcore heroes.`);
+    return true;
+  }
   // ---------- parties: the inviter leads; up to 4 players
   const newPartyId = () => 'p' + Math.random().toString(36).slice(2, 10);
-  function meMember() { const c = profile.chars[heroKey]; return { uid: SOC.me, name: c ? c.name : acctName(supaUser), cls: c ? c.cls : null }; }
+  function meMember() { const c = profile.chars[heroKey]; return { uid: SOC.me, name: c ? c.name : acctName(supaUser), cls: c ? c.cls : null, hc: !!(c && c.hardcore) }; }
   function invite(uid) {
-    if (!socOn()) return;
+    if (!socOn()) return; if (hcBlock(uid, 'group')) return;
     if (SOC.party && SOC.party.leader !== SOC.me) { toast('Only the party leader can invite.'); return; }
     if (!SOC.party) SOC.party = { id: newPartyId(), leader: SOC.me, members: [meMember()] };
     if (SOC.party.members.length >= PARTY_MAX) { toast(`The party is full (${PARTY_MAX} players).`); return; }
     const c = profile.chars[heroKey];
-    SOC.ch.send({ type: 'broadcast', event: 'invite', payload: { to: uid, from: SOC.me, name: c ? c.name : acctName(supaUser), partyId: SOC.party.id } });
+    SOC.ch.send({ type: 'broadcast', event: 'invite', payload: { to: uid, from: SOC.me, name: c ? c.name : acctName(supaUser), partyId: SOC.party.id, hc: myHc() } });
     const f = SOC.friends.find(x => x.id === uid) || SOC.others.get(uid);
     sysChat(`Party invite sent to ${f ? f.name : 'player'}.`); retrack(true); renderSocial();
   }
@@ -6092,6 +6107,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function answerInvite(from, accept) {
     const inv = SOC.invites.find(i => i.from === from); if (!inv) return;
     SOC.invites = SOC.invites.filter(i => i.from !== from);
+    if (accept && inv.hc != null && !!inv.hc !== myHc()) { toast(inv.hc ? `${inv.name} leads a Hardcore party: only Hardcore heroes can join. Switch to a Hardcore hero first.` : `${inv.name}'s party is for normal heroes: your Hardcore hero can only group with other Hardcore heroes.`); accept = false; }
     if (accept && SOC.party) leaveParty(true);
     const msg = { type: 'broadcast', event: 'invite-reply', payload: Object.assign({ to: from, partyId: inv.partyId, accept }, meMember()) };
     SOC.ch.send(msg);
@@ -6102,6 +6118,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function gotReply(p) {
     if (!SOC.party || SOC.party.id !== p.partyId || SOC.party.leader !== SOC.me) return;
     if (!p.accept) { sysChat(`${p.name} declined the invite.`); return; }
+    if (p.hc != null && !!p.hc !== myHc()) { sysChat(`${p.name} is on a ${p.hc ? 'Hardcore' : 'normal'} hero and can't join a ${myHc() ? 'Hardcore' : 'normal'} party.`); return; }
     if (SOC.party.members.length >= PARTY_MAX || SOC.party.members.some(m => m.uid === p.uid)) return;
     SOC.party.members.push({ uid: p.uid, name: p.name, cls: p.cls });
     sysChat(`${p.name} joined the party.`); sendParty();
@@ -6335,8 +6352,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793636366903';
-  const CB_BUILD = '27fe1aad08'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793636792817';
+  const CB_BUILD = 'cf19cb1c4e'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -6812,6 +6829,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const why = raidBlock(c, mk, lvl); if (why) return toast(`Your hero ${why}.`);
     if (!SOC.party || SOC.party.leader !== SOC.me) return toast('Only the party leader can start a raid.');
     const n = SOC.party.members.length; if (n < CB.RAID.min || n > CB.RAID.max) return toast(`Raids take ${CB.RAID.min} to ${CB.RAID.max} heroes.`);
+    { const bad = SOC.party.members.filter(m => m.uid !== SOC.me && hcOf(m.uid) != null && hcOf(m.uid) !== myHc()); if (bad.length) return toast(`${bad.map(m => m.name).join(', ')} ${bad.length > 1 ? 'are' : 'is'} on a ${myHc() ? 'normal' : 'Hardcore'} hero. Hardcore heroes only raid with other Hardcore heroes.`); }
     $('sheet').hidden = true; netStart('raid', SOC.party.members.map(m => m.uid), lvl, mk);
   });
 
@@ -7123,7 +7141,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
 
   // ----- browsing someone else's shop
   function browseShop(uid) {
-    if (!socOn()) return;
+    if (!socOn()) return; if (hcBlock(uid, 'trade')) return;
     BZ.view = { uid, items: null, at: Date.now() }; bzSend({ kind: 'req', to: uid });
     modal(`<h2>${esc(nameOfUid(uid))}'s shop</h2><p class="muted">Asking the shopkeeper for their wares...</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`); $('mClose').onclick = closeModal;
     setTimeout(() => { if (BZ.view && BZ.view.uid === uid && !BZ.view.items && !$('modal').hidden && /Asking the shopkeeper/.test($('modalBox').innerText)) toast(`${nameOfUid(uid)} didn't answer. Their shop may have just closed.`); }, 6000);
@@ -7146,7 +7164,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const rid = 'r' + Math.random().toString(36).slice(2, 10);
     profile.gold -= l.price; save(); renderTownBar(); // the gold is held until the seller answers
     BZ.pend[rid] = { rid, seller, lid: l.lid, price: l.price, name: l.it.name, at: Date.now(), tries: 0 };
-    bzSend({ kind: 'buy', to: seller, rid, lid: l.lid, price: l.price, name: myName() });
+    bzSend({ kind: 'buy', to: seller, rid, lid: l.lid, price: l.price, name: myName(), hc: myHc() });
     drawBrowse();
   }
   // buyers re-send until the seller answers; after 30 s the held gold comes back
@@ -7172,6 +7190,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       const i = B.items.findIndex(l => l.lid === p.lid);
       let res;
       if (!BZ.open) res = { kind: 'res', to: p.from, rid: p.rid, ok: false, why: 'the shop is closed' };
+      else if (p.hc != null && !!p.hc !== myHc()) res = { kind: 'res', to: p.from, rid: p.rid, ok: false, why: 'Hardcore heroes only trade with Hardcore heroes' };
       else if (i < 0) res = { kind: 'res', to: p.from, rid: p.rid, ok: false, why: 'it was already sold' };
       else if (B.items[i].price !== p.price) res = { kind: 'res', to: p.from, rid: p.rid, ok: false, why: 'the price changed' };
       else {
@@ -7249,7 +7268,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   }
   // ----- offering
   function makeOffer(post, ids, gold, note, reviseOf) {
-    if (!socOn()) return toast('You are not connected.');
+    if (!socOn()) return toast('You are not connected.'); if (hcBlock(post.uid, 'wager')) return;
     const a0 = arMe(); if (a0 && !(reviseOf && a0.role === 'offer' && a0.oid === reviseOf)) return toast('You already have a wager open. Withdraw it first.');
     const c = profile.chars[a0 ? a0.hero : heroKey]; if (!c) return; const chk = CBHub.deckCheck(c.deck); if (!chk.ok) return toast(`Fix your deck first (it ${chk.problems.join(', ')}).`);
     if (a0) giveBack(a0.stake); // revising: the old stake comes back first
@@ -7287,6 +7306,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     switch (p.type) {
       case 'ar-offer': {
         if (!a || a.role !== 'post' || a.pid !== p.pid || a.status !== 'open') { arSend('ar-decline', { to: p.from, pid: p.pid, oid: p.oid, why: 'is no longer on the board' }); return; }
+        { const ph = hcOf(p.from), mine = !!(profile.chars[a.hero] || {}).hardcore; if (ph != null && ph !== mine) { arSend('ar-decline', { to: p.from, pid: p.pid, oid: p.oid, why: mine ? 'is a Hardcore wager (Hardcore heroes only)' : 'is for normal heroes (Hardcore heroes only wager with Hardcore heroes)' }); return; } }
         const was = AR.offers[p.oid];
         AR.offers[p.oid] = { oid: p.oid, from: p.from, name: p.name, cls: p.cls, gold: Math.max(0, +p.gold || 0), items: (p.items || []).slice(0, AR_ITEMS), note: p.note || '', hero: p.hero, at: Date.now() };
         sysChat(`${p.name} ${was ? 'revised their offer' : 'made an offer'} on your wager: ${stakeTxt(AR.offers[p.oid])}. Open the Wager Board to answer.`);
@@ -7420,7 +7440,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     { date: '2026-11-02', items: [
       ['Feature', 'Achievements and titles: 35 achievements (bosses by level, class and road, Hardcore, raids, duels, the Bazaar, and feats like The Unburned and Frozen). Each one unlocks a title for all your heroes: pick it on your character sheet (C). Titles show over your head in town and on the Hall of Records. Menu > Achievements and titles lists them all.'],
       ['Feature', 'Mounts: press M in town to ride a horse, 25% faster. Everyone in town sees you ride. More mounts to come.'],
-      ['Change', 'Hardcore heroes now have their own stash, shared only with your other Hardcore heroes. Normal heroes keep the normal stash.'],
+      ['Change', 'Hardcore is its own world: Hardcore heroes have their own stash, gold and Ink (shared only with your other Hardcore heroes), and can only party, raid, trade, buy at the Bazaar and wager with other Hardcore heroes. Normal heroes keep the normal stash, gold and Ink.'],
       ['Change', 'Wagoneer Arisha explains runs and fights the first time a new hero talks to her, and any time after with "How do runs and fights work?".'],
       ['Balance', 'Rot: every Rot card applies 15% more Rot, and its upgrades grow 15% faster.'],
       ['Fix', 'Monsters are drawn the moment a fight starts (their art now loads while you are in town and on the map).'],
@@ -10989,12 +11009,15 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   function tradeAsk(uid) {
     if (!socOn()) return; if (run || cb || NET.s) { toast('You can only trade in Emberwatch.'); return; }
     if (TR.s) { toast('Finish your current trade first.'); return; }
-    const c = profile.chars[heroKey]; netSend('tr-ask', { to: uid, name: c ? c.name : acctName(supaUser) });
+    if (hcBlock(uid, 'trade')) return;
+    const c = profile.chars[heroKey]; netSend('tr-ask', { to: uid, name: c ? c.name : acctName(supaUser), hc: myHc() });
     TR.asked = uid; sysChat(`Trade request sent to ${nameOfUid(uid)}.`);
   }
   function answerTrade(from, ok) {
-    TR.inv = TR.inv.filter(i => i.from !== from); renderSocial();
+    const inv = TR.inv.find(i => i.from === from); TR.inv = TR.inv.filter(i => i.from !== from); renderSocial();
+    if (ok && inv && inv.hc != null && !!inv.hc !== myHc()) { toast(inv.hc ? `${inv.name} is playing a Hardcore hero. Hardcore heroes can only trade with other Hardcore heroes.` : 'Your hero is Hardcore: Hardcore heroes can only trade with other Hardcore heroes.'); ok = false; }
     if (ok && (run || cb || NET.s || TR.s)) { toast('You can only trade from Emberwatch, one trade at a time.'); ok = false; }
+    if (ok && hcBlock(from, 'trade')) ok = false;
     netSend('tr-ans', { to: from, ok });
     if (ok) openTrade(from);
   }
@@ -11056,7 +11079,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     switch (p.type) {
       case 'insp-req': { const ch = inspectCard(); if (ch) netSend('insp', { to: p.from, ch }); return; }
       case 'insp': { if (INS.waiting !== p.from) return; INS.waiting = null; showInspect(p.ch); return; }
-      case 'tr-ask': { if (TR.inv.some(i => i.from === p.from)) return; TR.inv.push({ from: p.from, name: p.name }); sysChat(`${p.name} wants to trade with you.`); renderSocial(); return; }
+      case 'tr-ask': { if (TR.inv.some(i => i.from === p.from)) return; TR.inv.push({ from: p.from, name: p.name, hc: p.hc }); sysChat(`${p.name} wants to trade with you.`); renderSocial(); return; }
       case 'tr-ans': { if (TR.asked !== p.from) return; TR.asked = null; if (!p.ok) { sysChat(`${nameOfUid(p.from)} declined the trade.`); return; } if (TR.s || run || cb) { netSend('tr-cancel', { to: p.from }); return; } openTrade(p.from); return; }
       case 'tr-offer': { const S = TR.s; if (!S || S.with !== p.from) return; S.theirs = (p.items || []).slice(0, 12); S.theirGold = Math.max(0, Math.floor(p.gold || 0)); S.myAcc = null; S.theirAcc = null; renderTrade(); return; }
       case 'tr-acc': { const S = TR.s; if (!S || S.with !== p.from) return; S.theirAcc = p.hash; if (S.myAcc && S.myAcc === p.hash) doTrade(); else renderTrade(); return; }
@@ -11554,7 +11577,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     { t: 'The Training Dummy', at: 'dummy', open: ['Practice on it', () => startDummy()],
       x: `<p>99,999 HP and it never hits back. Try a new deck or combo here before you risk a run.</p>` },
     { t: 'Captain Ilsa: your heroes', at: 'captain', open: ['Heroes', () => openSheet('heroes')],
-      x: `<p>Make more heroes (any class, up to 20) and switch between them here. They share the <b>stash</b>, the <b>gold</b> and the Ink, so an alt can use what your main finds.</p><p><b>Hardcore</b> heroes have one life, their own leaderboard and their own stash.</p>` },
+      x: `<p>Make more heroes (any class, up to 20) and switch between them here. They share the <b>stash</b>, the <b>gold</b> and the Ink, so an alt can use what your main finds.</p><p><b>Hardcore</b> heroes have one life, their own leaderboard, their own stash, gold and Ink, and only group and trade with other Hardcore heroes.</p>` },
     { t: 'Chronicler Osk', at: 'chron', open: ['Run history', () => openSheet('log')],
       x: `<p>Every run you've played: where it ended, what you brought home, and a damage meter of every fight.</p>` },
     { t: 'The Hall of Records', at: { x: 16, y: 12, solid: true }, open: ['Read the records', () => openSheet('records')],

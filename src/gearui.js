@@ -181,12 +181,15 @@
   function tradeAsk(uid) {
     if (!socOn()) return; if (run || cb || NET.s) { toast('You can only trade in Emberwatch.'); return; }
     if (TR.s) { toast('Finish your current trade first.'); return; }
-    const c = profile.chars[heroKey]; netSend('tr-ask', { to: uid, name: c ? c.name : acctName(supaUser) });
+    if (hcBlock(uid, 'trade')) return;
+    const c = profile.chars[heroKey]; netSend('tr-ask', { to: uid, name: c ? c.name : acctName(supaUser), hc: myHc() });
     TR.asked = uid; sysChat(`Trade request sent to ${nameOfUid(uid)}.`);
   }
   function answerTrade(from, ok) {
-    TR.inv = TR.inv.filter(i => i.from !== from); renderSocial();
+    const inv = TR.inv.find(i => i.from === from); TR.inv = TR.inv.filter(i => i.from !== from); renderSocial();
+    if (ok && inv && inv.hc != null && !!inv.hc !== myHc()) { toast(inv.hc ? `${inv.name} is playing a Hardcore hero. Hardcore heroes can only trade with other Hardcore heroes.` : 'Your hero is Hardcore: Hardcore heroes can only trade with other Hardcore heroes.'); ok = false; }
     if (ok && (run || cb || NET.s || TR.s)) { toast('You can only trade from Emberwatch, one trade at a time.'); ok = false; }
+    if (ok && hcBlock(from, 'trade')) ok = false;
     netSend('tr-ans', { to: from, ok });
     if (ok) openTrade(from);
   }
@@ -248,7 +251,7 @@
     switch (p.type) {
       case 'insp-req': { const ch = inspectCard(); if (ch) netSend('insp', { to: p.from, ch }); return; }
       case 'insp': { if (INS.waiting !== p.from) return; INS.waiting = null; showInspect(p.ch); return; }
-      case 'tr-ask': { if (TR.inv.some(i => i.from === p.from)) return; TR.inv.push({ from: p.from, name: p.name }); sysChat(`${p.name} wants to trade with you.`); renderSocial(); return; }
+      case 'tr-ask': { if (TR.inv.some(i => i.from === p.from)) return; TR.inv.push({ from: p.from, name: p.name, hc: p.hc }); sysChat(`${p.name} wants to trade with you.`); renderSocial(); return; }
       case 'tr-ans': { if (TR.asked !== p.from) return; TR.asked = null; if (!p.ok) { sysChat(`${nameOfUid(p.from)} declined the trade.`); return; } if (TR.s || run || cb) { netSend('tr-cancel', { to: p.from }); return; } openTrade(p.from); return; }
       case 'tr-offer': { const S = TR.s; if (!S || S.with !== p.from) return; S.theirs = (p.items || []).slice(0, 12); S.theirGold = Math.max(0, Math.floor(p.gold || 0)); S.myAcc = null; S.theirAcc = null; renderTrade(); return; }
       case 'tr-acc': { const S = TR.s; if (!S || S.with !== p.from) return; S.theirAcc = p.hash; if (S.myAcc && S.myAcc === p.hash) doTrade(); else renderTrade(); return; }

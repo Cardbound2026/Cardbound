@@ -28,7 +28,7 @@
   function myPresence() {
     const c = profile.chars[heroKey];
     const place = !$('scrStart').hidden ? 'town' : run ? 'run' : cb && cb.duel ? 'duel' : 'menu';
-    return { lk: lookList(c), uid: SOC.me, guild: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), shop: typeof BZ !== 'undefined' && BZ.open ? { t: shopTitle(), n: bzState().items.length } : null, arena: typeof arenaPresence === 'function' ? arenaPresence() : null, x: P.x, y: P.y, dir: P.dir, mount: P.mount || null, title: c ? CBHub.titleOf(c, profile) || null : null, party: SOC.party ? SOC.party.id : null };
+    return { lk: lookList(c), uid: SOC.me, guild: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), shop: typeof BZ !== 'undefined' && BZ.open ? { t: shopTitle(), n: bzState().items.length } : null, arena: typeof arenaPresence === 'function' ? arenaPresence() : null, x: P.x, y: P.y, dir: P.dir, mount: P.mount || null, title: c ? CBHub.titleOf(c, profile) || null : null, hc: !!(c && c.hardcore), party: SOC.party ? SOC.party.id : null };
   }
 
   async function socStart() {
@@ -100,8 +100,8 @@
     for (const [uid, st] of SOC.online) {
       if (uid === SOC.me || st.place !== 'town' || !st.cls) { SOC.others.delete(uid); continue; }
       const o = SOC.others.get(uid);
-      if (!o) SOC.others.set(uid, { uid, x: st.x, y: st.y, fx: st.x, fy: st.y, t: 1, dir: st.dir || 'down', step: 0, name: st.name, guild: st.guild || null, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, party: st.party, shop: st.shop || null, mount: st.mount || null, title: st.title || null });
-      else Object.assign(o, { guild: st.guild || null, name: st.name, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, party: st.party, shop: st.shop || null, mount: st.mount || null, title: st.title || null });
+      if (!o) SOC.others.set(uid, { uid, x: st.x, y: st.y, fx: st.x, fy: st.y, t: 1, dir: st.dir || 'down', step: 0, name: st.name, guild: st.guild || null, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, party: st.party, shop: st.shop || null, mount: st.mount || null, title: st.title || null, hc: !!st.hc });
+      else Object.assign(o, { guild: st.guild || null, name: st.name, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, party: st.party, shop: st.shop || null, mount: st.mount || null, title: st.title || null, hc: !!st.hc });
     }
     for (const uid of [...SOC.others.keys()]) if (!SOC.online.has(uid)) SOC.others.delete(uid);
   }
@@ -267,16 +267,24 @@
   async function acceptFriend(id) { await supa.from('friends').update({ status: 'accepted' }).eq('user_id', id).eq('friend_id', SOC.me); await loadFriends(); }
   async function removeFriend(id) { await supa.from('friends').delete().eq('user_id', id).eq('friend_id', SOC.me); await supa.from('friends').delete().eq('user_id', SOC.me).eq('friend_id', id); await loadFriends(); }
 
+  // ---------- Nov 2: Hardcore heroes only group, trade and wager with other Hardcore heroes (and normal heroes with normal ones)
+  const myHc = () => !!((profile.chars[heroKey] || {}).hardcore);
+  function hcOf(uid) { const o = SOC.others.get(uid); if (o && o.hc != null) return !!o.hc; const pr = SOC.online && SOC.online.get(uid); return pr && pr.hc != null ? !!pr.hc : null; } // null: not known
+  function hcBlock(uid, what) {
+    const h = hcOf(uid); if (h == null || h === myHc()) return false;
+    toast(myHc() ? `Your hero is Hardcore: Hardcore heroes can only ${what} with other Hardcore heroes.` : `${nameOfUid(uid)} is playing a Hardcore hero. Hardcore heroes can only ${what} with other Hardcore heroes.`);
+    return true;
+  }
   // ---------- parties: the inviter leads; up to 4 players
   const newPartyId = () => 'p' + Math.random().toString(36).slice(2, 10);
-  function meMember() { const c = profile.chars[heroKey]; return { uid: SOC.me, name: c ? c.name : acctName(supaUser), cls: c ? c.cls : null }; }
+  function meMember() { const c = profile.chars[heroKey]; return { uid: SOC.me, name: c ? c.name : acctName(supaUser), cls: c ? c.cls : null, hc: !!(c && c.hardcore) }; }
   function invite(uid) {
-    if (!socOn()) return;
+    if (!socOn()) return; if (hcBlock(uid, 'group')) return;
     if (SOC.party && SOC.party.leader !== SOC.me) { toast('Only the party leader can invite.'); return; }
     if (!SOC.party) SOC.party = { id: newPartyId(), leader: SOC.me, members: [meMember()] };
     if (SOC.party.members.length >= PARTY_MAX) { toast(`The party is full (${PARTY_MAX} players).`); return; }
     const c = profile.chars[heroKey];
-    SOC.ch.send({ type: 'broadcast', event: 'invite', payload: { to: uid, from: SOC.me, name: c ? c.name : acctName(supaUser), partyId: SOC.party.id } });
+    SOC.ch.send({ type: 'broadcast', event: 'invite', payload: { to: uid, from: SOC.me, name: c ? c.name : acctName(supaUser), partyId: SOC.party.id, hc: myHc() } });
     const f = SOC.friends.find(x => x.id === uid) || SOC.others.get(uid);
     sysChat(`Party invite sent to ${f ? f.name : 'player'}.`); retrack(true); renderSocial();
   }
@@ -287,6 +295,7 @@
   function answerInvite(from, accept) {
     const inv = SOC.invites.find(i => i.from === from); if (!inv) return;
     SOC.invites = SOC.invites.filter(i => i.from !== from);
+    if (accept && inv.hc != null && !!inv.hc !== myHc()) { toast(inv.hc ? `${inv.name} leads a Hardcore party: only Hardcore heroes can join. Switch to a Hardcore hero first.` : `${inv.name}'s party is for normal heroes: your Hardcore hero can only group with other Hardcore heroes.`); accept = false; }
     if (accept && SOC.party) leaveParty(true);
     const msg = { type: 'broadcast', event: 'invite-reply', payload: Object.assign({ to: from, partyId: inv.partyId, accept }, meMember()) };
     SOC.ch.send(msg);
@@ -297,6 +306,7 @@
   function gotReply(p) {
     if (!SOC.party || SOC.party.id !== p.partyId || SOC.party.leader !== SOC.me) return;
     if (!p.accept) { sysChat(`${p.name} declined the invite.`); return; }
+    if (p.hc != null && !!p.hc !== myHc()) { sysChat(`${p.name} is on a ${p.hc ? 'Hardcore' : 'normal'} hero and can't join a ${myHc() ? 'Hardcore' : 'normal'} party.`); return; }
     if (SOC.party.members.length >= PARTY_MAX || SOC.party.members.some(m => m.uid === p.uid)) return;
     SOC.party.members.push({ uid: p.uid, name: p.name, cls: p.cls });
     sysChat(`${p.name} joined the party.`); sendParty();

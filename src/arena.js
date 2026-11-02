@@ -49,7 +49,7 @@
   }
   // ----- offering
   function makeOffer(post, ids, gold, note, reviseOf) {
-    if (!socOn()) return toast('You are not connected.');
+    if (!socOn()) return toast('You are not connected.'); if (hcBlock(post.uid, 'wager')) return;
     const a0 = arMe(); if (a0 && !(reviseOf && a0.role === 'offer' && a0.oid === reviseOf)) return toast('You already have a wager open. Withdraw it first.');
     const c = profile.chars[a0 ? a0.hero : heroKey]; if (!c) return; const chk = CBHub.deckCheck(c.deck); if (!chk.ok) return toast(`Fix your deck first (it ${chk.problems.join(', ')}).`);
     if (a0) giveBack(a0.stake); // revising: the old stake comes back first
@@ -87,6 +87,7 @@
     switch (p.type) {
       case 'ar-offer': {
         if (!a || a.role !== 'post' || a.pid !== p.pid || a.status !== 'open') { arSend('ar-decline', { to: p.from, pid: p.pid, oid: p.oid, why: 'is no longer on the board' }); return; }
+        { const ph = hcOf(p.from), mine = !!(profile.chars[a.hero] || {}).hardcore; if (ph != null && ph !== mine) { arSend('ar-decline', { to: p.from, pid: p.pid, oid: p.oid, why: mine ? 'is a Hardcore wager (Hardcore heroes only)' : 'is for normal heroes (Hardcore heroes only wager with Hardcore heroes)' }); return; } }
         const was = AR.offers[p.oid];
         AR.offers[p.oid] = { oid: p.oid, from: p.from, name: p.name, cls: p.cls, gold: Math.max(0, +p.gold || 0), items: (p.items || []).slice(0, AR_ITEMS), note: p.note || '', hero: p.hero, at: Date.now() };
         sysChat(`${p.name} ${was ? 'revised their offer' : 'made an offer'} on your wager: ${stakeTxt(AR.offers[p.oid])}. Open the Wager Board to answer.`);

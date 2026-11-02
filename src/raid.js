@@ -53,6 +53,7 @@
     const why = raidBlock(c, mk, lvl); if (why) return toast(`Your hero ${why}.`);
     if (!SOC.party || SOC.party.leader !== SOC.me) return toast('Only the party leader can start a raid.');
     const n = SOC.party.members.length; if (n < CB.RAID.min || n > CB.RAID.max) return toast(`Raids take ${CB.RAID.min} to ${CB.RAID.max} heroes.`);
+    { const bad = SOC.party.members.filter(m => m.uid !== SOC.me && hcOf(m.uid) != null && hcOf(m.uid) !== myHc()); if (bad.length) return toast(`${bad.map(m => m.name).join(', ')} ${bad.length > 1 ? 'are' : 'is'} on a ${myHc() ? 'normal' : 'Hardcore'} hero. Hardcore heroes only raid with other Hardcore heroes.`); }
     $('sheet').hidden = true; netStart('raid', SOC.party.members.map(m => m.uid), lvl, mk);
   });
 

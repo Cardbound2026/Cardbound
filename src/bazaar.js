@@ -66,7 +66,7 @@
 
   // ----- browsing someone else's shop
   function browseShop(uid) {
-    if (!socOn()) return;
+    if (!socOn()) return; if (hcBlock(uid, 'trade')) return;
     BZ.view = { uid, items: null, at: Date.now() }; bzSend({ kind: 'req', to: uid });
     modal(`<h2>${esc(nameOfUid(uid))}'s shop</h2><p class="muted">Asking the shopkeeper for their wares...</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`); $('mClose').onclick = closeModal;
     setTimeout(() => { if (BZ.view && BZ.view.uid === uid && !BZ.view.items && !$('modal').hidden && /Asking the shopkeeper/.test($('modalBox').innerText)) toast(`${nameOfUid(uid)} didn't answer. Their shop may have just closed.`); }, 6000);
@@ -89,7 +89,7 @@
     const rid = 'r' + Math.random().toString(36).slice(2, 10);
     profile.gold -= l.price; save(); renderTownBar(); // the gold is held until the seller answers
     BZ.pend[rid] = { rid, seller, lid: l.lid, price: l.price, name: l.it.name, at: Date.now(), tries: 0 };
-    bzSend({ kind: 'buy', to: seller, rid, lid: l.lid, price: l.price, name: myName() });
+    bzSend({ kind: 'buy', to: seller, rid, lid: l.lid, price: l.price, name: myName(), hc: myHc() });
     drawBrowse();
   }
   // buyers re-send until the seller answers; after 30 s the held gold comes back
@@ -115,6 +115,7 @@
       const i = B.items.findIndex(l => l.lid === p.lid);
       let res;
       if (!BZ.open) res = { kind: 'res', to: p.from, rid: p.rid, ok: false, why: 'the shop is closed' };
+      else if (p.hc != null && !!p.hc !== myHc()) res = { kind: 'res', to: p.from, rid: p.rid, ok: false, why: 'Hardcore heroes only trade with Hardcore heroes' };
       else if (i < 0) res = { kind: 'res', to: p.from, rid: p.rid, ok: false, why: 'it was already sold' };
       else if (B.items[i].price !== p.price) res = { kind: 'res', to: p.from, rid: p.rid, ok: false, why: 'the price changed' };
       else {

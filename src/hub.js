@@ -203,13 +203,15 @@ function slotOptions(item) { if (item.slot === 'Ring' || /^Ring/.test(item.slot)
 let OUT_CHECK = () => false; // set by the page: true while the hero is out on a run (its gear is a copy that comes home when the run ends)
 function setOutCheck(f) { OUT_CHECK = f; }
 function arenaLock(p, cls) { if (OUT_CHECK(cls)) return 'You\'re out on a run: gear and deck changes wait until you\'re back in town.'; return p.arena && p.arena.hero === cls ? 'Locked: this hero has a wager at the Arena. Settle or withdraw it first.' : null; }
-// Nov 2: hardcore heroes have their own stash. p.stash is always the stash of the hero you're playing (p.stashMode says which);
-// the other one waits in p.stashOther. useStash() swaps them when you switch between a normal and a hardcore hero.
+// Nov 2: hardcore heroes have their own stash, gold and Ink. p.stash, p.gold and p.ink are always the ones of the hero you're playing
+// (p.stashMode says which); the other set waits in p.stashOther, p.goldOther and p.inkOther. useStash() swaps them when you switch
+// between a normal and a hardcore hero.
 const stashMode = (c) => c && c.hardcore ? 'hc' : 'normal';
 function useStash(p, key) {
   if (!p) return; p.stashMode = p.stashMode || 'normal'; p.stashOther = p.stashOther || []; p.stash = p.stash || [];
   const want = stashMode(p.chars[key]); if (!p.chars[key] || p.stashMode === want) return;
   const t = p.stash; p.stash = p.stashOther; p.stashOther = t; p.stashMode = want;
+  const g = p.gold || 0; p.gold = p.goldOther || 0; p.goldOther = g; const k = p.ink || 0; p.ink = p.inkOther || 0; p.inkOther = k;
 }
 function stashFor(p, c) { p.stashMode = p.stashMode || 'normal'; p.stashOther = p.stashOther || []; return stashMode(c) === p.stashMode ? p.stash : p.stashOther; }
 function equip(p, cls, itemId, slotWanted) {
@@ -271,6 +273,7 @@ const RANK_XP_MULT = 2; // Nov 1: ranking cards takes twice the XP (gold cost un
 function rankCost(card) { const n = (card.rank || 0) + 1, b = RANK_BASE[CARDS[card.key].rarity]; return { xp: n * b * RANK_XP_MULT, gold: n * b * 5 }; }
 // Feed collection cards (never deck cards) into a target. XP banks on the card; each rank-up also costs gold, paid automatically while you can afford it.
 function feed(p, cls, targetId, fodderIds) {
+  useStash(p, cls);
   { const lk = arenaLock(p, cls); if (lk && char(p, cls).deck.some(x => x.id === targetId)) return { ok: false, why: lk }; }
   const c = char(p, cls), t = findCard(c, targetId); if (!t) return { ok: false, why: 'No such card' };
   if ((t.rank || 0) >= MAX_RANK) return { ok: false, why: `Already +${MAX_RANK}` };
@@ -313,6 +316,7 @@ function inkValue(card) { return Math.round((INK_GET[CARDS[card.key].rarity] || 
 const INK_UNSEEN = 3; // a card you have never owned costs 3x
 function inkCost(key, c) { return (INK_COST[CARDS[key].rarity] || 10) * (c && !(c.seen || {})[key] ? INK_UNSEEN : 1); }
 function breakCard(p, key, cardId) {
+  useStash(p, key);
   const c = char(p, key); const i = c ? c.cards.findIndex(x => x.id === cardId) : -1; if (i < 0) return { ok: false, why: 'Only cards in your collection can be broken down (take it out of the deck first).' };
   const g = inkValue(c.cards[i]); c.cards.splice(i, 1); p.ink = (p.ink || 0) + g; return { ok: true, ink: g };
 }
@@ -332,6 +336,7 @@ function rerollItem(p, itemId, idx, data, rng) {
   it.rerolls--; p.rerollTokens--; return { ok: true, old: r.old, now: r.now, item: it };
 }
 function craftCard(p, key, cardKey) {
+  useStash(p, key);
   const c = char(p, key), d = CARDS[cardKey]; if (!c || !d) return { ok: false, why: 'No such card' };
   if (d.cls !== c.cls) return { ok: false, why: `Only a ${d.cls} can use that card.` };
   const cost = inkCost(cardKey, c); if ((p.ink || 0) < cost) return { ok: false, why: `Needs ${cost} Ink (you have ${p.ink || 0}).` };
@@ -358,14 +363,16 @@ function pickTalent(p, key, cx, row, col) { const c = char(p, key); if (!c || !C
 function resetTalents(p, key, cx) { const c = char(p, key); if (!c) return; codexState(c, cx).picks = []; }
 function talentSpec(c) { const cx = wornCodex(c); if (!cx) return undefined; const info = codexInfo(c, cx); return { codex: cx, picks: info.picks.slice(0, info.rows) }; }
 function partyOpts(p, classes) {
+  useStash(p, classes[0]); // a party is all hardcore or all normal heroes: the leader's wallet pays
   return { sharedBank: true, members: classes.map((key, i) => { const c = char(p, key); return { key, cls: c.cls, name: c.name || c.cls, bank: i === 0 ? p.gold : 0, stashFree: Math.max(0, STASH_MAX - stashFor(p, c).length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }) };
 }
-function runOpts(p, key) { const c = char(p, key); return { key, cls: c.cls, members: undefined, name: c.name, bank: p.gold, stashFree: Math.max(0, STASH_MAX - stashFor(p, c).length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }
+function runOpts(p, key) { useStash(p, key); const c = char(p, key); return { key, cls: c.cls, members: undefined, name: c.name, bank: p.gold, stashFree: Math.max(0, STASH_MAX - stashFor(p, c).length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }
 // Bring a finished run home: equipped gear (incl. merchant buys) stays on the character; kept loot goes to stash/collection.
 function absorbRun(p, run, mi) {
   if (mi == null && run.members && run.members.length > 1) { const res = run.members.map((m, i) => absorbRun(p, run, i)); return res[0]; }
   const mem = run.members ? run.members[mi || 0] : run;
   const c = char(p, mem.key || mem.cls); if (!c) return { items: 0, cards: 0, gold: 0, lost: 0, ordered: 0 };
+  useStash(p, mem.key || mem.cls); // this hero's stash, gold and Ink (hardcore heroes have their own)
   c.gear = mem.gear.map(g => Object.assign({ id: g.id || uid('g') }, g));
   const kept = mem.kept || { items: [], gold: 0 };
   let lost = 0, items = 0, cards = 0, ordered = 0;

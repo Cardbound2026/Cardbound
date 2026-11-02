@@ -39,7 +39,7 @@
     { t: 'The Training Dummy', at: 'dummy', open: ['Practice on it', () => startDummy()],
       x: `<p>99,999 HP and it never hits back. Try a new deck or combo here before you risk a run.</p>` },
     { t: 'Captain Ilsa: your heroes', at: 'captain', open: ['Heroes', () => openSheet('heroes')],
-      x: `<p>Make more heroes (any class, up to 20) and switch between them here. They share the <b>stash</b>, the <b>gold</b> and the Ink, so an alt can use what your main finds.</p><p><b>Hardcore</b> heroes have one life, their own leaderboard and their own stash.</p>` },
+      x: `<p>Make more heroes (any class, up to 20) and switch between them here. They share the <b>stash</b>, the <b>gold</b> and the Ink, so an alt can use what your main finds.</p><p><b>Hardcore</b> heroes have one life, their own leaderboard, their own stash, gold and Ink, and only group and trade with other Hardcore heroes.</p>` },
     { t: 'Chronicler Osk', at: 'chron', open: ['Run history', () => openSheet('log')],
       x: `<p>Every run you've played: where it ended, what you brought home, and a damage meter of every fight.</p>` },
     { t: 'The Hall of Records', at: { x: 16, y: 12, solid: true }, open: ['Read the records', () => openSheet('records')],

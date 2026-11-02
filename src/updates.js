@@ -4,7 +4,7 @@
     { date: '2026-11-02', items: [
       ['Feature', 'Achievements and titles: 35 achievements (bosses by level, class and road, Hardcore, raids, duels, the Bazaar, and feats like The Unburned and Frozen). Each one unlocks a title for all your heroes: pick it on your character sheet (C). Titles show over your head in town and on the Hall of Records. Menu > Achievements and titles lists them all.'],
       ['Feature', 'Mounts: press M in town to ride a horse, 25% faster. Everyone in town sees you ride. More mounts to come.'],
-      ['Change', 'Hardcore heroes now have their own stash, shared only with your other Hardcore heroes. Normal heroes keep the normal stash.'],
+      ['Change', 'Hardcore is its own world: Hardcore heroes have their own stash, gold and Ink (shared only with your other Hardcore heroes), and can only party, raid, trade, buy at the Bazaar and wager with other Hardcore heroes. Normal heroes keep the normal stash, gold and Ink.'],
       ['Change', 'Wagoneer Arisha explains runs and fights the first time a new hero talks to her, and any time after with "How do runs and fights work?".'],
       ['Balance', 'Rot: every Rot card applies 15% more Rot, and its upgrades grow 15% faster.'],
       ['Fix', 'Monsters are drawn the moment a fight starts (their art now loads while you are in town and on the map).'],
