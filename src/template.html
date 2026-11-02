@@ -637,6 +637,10 @@ body.aiming { cursor: grabbing; user-select: none; }
 .gdkeys { margin: 0; padding-left: 18px; font-size: 13px; } .gdkeys li { margin-bottom: 4px; } .gdfarm { margin: 0; padding-left: 18px; font-size: 13px; } .gdfarm li { margin-bottom: 6px; }
 .gdline { margin: 0 0 8px; font-size: 13.5px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; } .gdline .btn { padding: 4px 10px; font-size: 13px; }
 @media (max-width: 760px) { .gdtop, .gdcols { grid-template-columns: 1fr; } }
+.mapsearch { display: flex; gap: 8px; align-items: center; margin: 0 0 6px; } .mapsearch input { flex: 1; min-width: 0; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: rgba(0,0,0,.35); color: inherit; font: 14px var(--f-ui); }
+.mapsearch span { font-size: 13px; white-space: nowrap; }
+.mapfindres { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 6px; font-size: 12.5px; } .mfr { background: rgba(255,210,74,.08); border: 1px solid rgba(255,210,74,.35); color: inherit; border-radius: 5px; padding: 3px 8px; cursor: pointer; font: inherit; text-align: left; } .mfr b { color: #ffd24a; }
+.node.hit .ring { stroke: #ffd24a !important; stroke-width: 4 !important; filter: drop-shadow(0 0 6px rgba(255,210,74,.9)); } .node.miss { opacity: .35; }
 .recgrave li { padding: 3px 0; cursor: pointer; color: #b8b0a6; }
 .herocard.new { border-style: dashed; border-top-style: dashed; place-content: center; text-align: center; color: var(--muted); font-size: 16px; }
 .create h3 { font-family: var(--cf-name); font-weight: 400; font-size: 26px; color: var(--accent); margin-bottom: 8px; }
@@ -787,6 +791,8 @@ body.aiming { cursor: grabbing; user-select: none; }
   <!-- MAP -->
   <section id="scrMap" class="runmain" hidden aria-label="Campaign map">
     <div class="panel mapwrap">
+      <div class="mapsearch"><input id="mapFind" type="search" placeholder="Search the map: a card, an item, a monster, a shrine..." aria-label="Search the map" autocomplete="off"><span id="mapFindN" class="muted"></span></div>
+      <div class="mapfindres" id="mapFindRes" hidden></div>
       <div class="mapscroll" id="mapScroll"></div>
       <div class="info" id="nodeInfo"></div>
       <div class="legend" id="legend"></div>
@@ -1166,8 +1172,8 @@ body.aiming { cursor: grabbing; user-select: none; }
   const ELC = { Physical: '#c9c2b2', Fire: '#ff7a3c', Frost: '#7fd3ff', Nature: '#7fd36a', Arcane: '#c48bff', Shadow: '#9a8cb8' };
   function curMap() { const k = profile.last.map; return DATA.maps[k] ? k : 'physical'; }
   function mapBlurb(mk) {
-    const M = DATA.maps[mk], prev = Object.values(DATA.maps).find(m => m.dropResist === M.element);
-    return M.dmgScale ? `${esc(M.theme || '')} Enemies hit ${Math.round((M.dmgScale - 1) * 100)}% harder than on the Broken March${prev && prev.key !== mk ? `: bring ${M.element} Resistance, which gear from ${esc(prev.name)} rolls` : ''}.` : `${esc(M.theme || '')} The starting road.`;
+    const M = DATA.maps[mk];
+    return M.dmgScale ? `${esc(M.theme || '')} Enemies hit ${Math.round((M.dmgScale - 1) * 100)}% harder than on the Broken March: bring ${M.element} Resistance. Gear from this map rolls it, so its early rows are the place to farm it.` : `${esc(M.theme || '')} The starting road. Its gear rolls ${M.element} Resistance.`;
   }
   function bossName(r) { r = r || run; const M = DATA.maps[(r && r.mapKey) || 'physical']; return M ? DATA.enemies[M.boss].name.split(',')[0].replace(/ of the .*/, '') : 'the boss'; }
   function startRun() {
@@ -2280,7 +2286,45 @@ body.aiming { cursor: grabbing; user-select: none; }
     renderSide();
     $('topInfo').textContent = `${run.solo ? run.cls : "Party of " + run.members.length} · ${run.mapName || 'Map'} +${run.level} · row ${curRow} of ${ROWS}`;
     if (run.over) endScreen();
+    mapFind();
   }
+  // ---------- map search (Nov 1): type a card, item, monster, shrine or node type; every node that has it lights up
+  // Matches: monster names and types, their named card drops (your party's classes) and codexes, the gear bases they drop, shrines, node types.
+  function nodeMatches(n, q) {
+    const why = [], t = NODE[n.type], has = (x) => x && String(x).toLowerCase().includes(q);
+    if (has(t && t.label)) why.push(t.label);
+    if (n.shrine) { const sh = SHRINES.find(x => x.key === n.shrine); if (sh && (has(sh.name) || has(sh.text))) why.push(`${sh.name}: ${sh.text}`); }
+    const classes = new Set(run.members.map(m => m.cls));
+    for (const k of n.enemies || []) { const e = DATA.enemies[k]; if (!e) continue;
+      if (has(e.name) || has(e.unit) || has(e.creature)) why.push(e.name + (e.group ? ' (group)' : ''));
+      for (const x of e.loot || []) { if (x.type === 'Card' && !classes.has(x.cls)) continue; if (has(x.item)) why.push(`${e.name} drops ${x.item} (${x.type === 'Codex' ? +CB.bossCodexPct(e).toFixed(1) : x.pct}%)`); }
+      for (const bn of e.pool || []) { const b = DATA.gear.bases.find(y => y.name === bn), A = b && DATA.gear.arche[b.arch]; if (has(bn) || has(b && b.label) || has(A && A.slot)) why.push(`${e.name} drops ${bn}${b && b.label ? ' (' + b.label + ')' : ''}`); } }
+    return [...new Set(why)];
+  }
+  function mapFind() {
+    const inp = $('mapFind'); if (!inp || !run) return; const q = inp.value.trim().toLowerCase(), res = $('mapFindRes');
+    for (const g of $('mapScroll').querySelectorAll('.node')) g.classList.remove('hit', 'miss');
+    if (q.length < 2) { $('mapFindN').textContent = ''; res.hidden = true; return; }
+    const hits = []; for (const n of Object.values(run.map.nodes)) { const why = nodeMatches(n, q); if (why.length) hits.push({ n, why }); }
+    const ids = new Set(hits.map(h => h.n.id));
+    for (const g of $('mapScroll').querySelectorAll('.node')) g.classList.add(ids.has(g.dataset.id) ? 'hit' : 'miss');
+    let elsewhere = '';
+    if (!hits.length) { const classes = new Set(run.members.map(m => m.cls)), found = {};
+      for (const e of Object.values(DATA.enemies)) { if (e.raid || !e.map || e.map === 'town' || e.map === run.mapKey) continue; const M = DATA.maps[e.map]; if (!M) continue;
+        const hit = (e.loot || []).find(x => (x.type !== 'Card' || classes.has(x.cls)) && x.item.toLowerCase().includes(q)) || ((e.pool || []).some(bn => bn.toLowerCase().includes(q)) ? { item: e.pool.find(bn => bn.toLowerCase().includes(q)) } : null) || (e.name.toLowerCase().includes(q) ? { item: e.name } : null);
+        if (hit) { const F = found[M.key] || (found[M.key] = { M, list: [] }); if (F.list.length < 2) F.list.push(`${e.name}${hit.item !== e.name ? ' (' + hit.item + ')' : ''}`); } }
+      const f = Object.values(found).sort((a, b) => a.M.num - b.M.num).slice(0, 3);
+      if (f.length) elsewhere = 'Not on this map. ' + f.map(F => `Map ${F.M.num} ${F.M.name}: ${F.list.join(', ')}`).join(' &middot; ');
+    }
+    $('mapFindN').textContent = hits.length ? `${hits.length} node${hits.length === 1 ? '' : 's'}` : elsewhere ? '' : 'nothing on any map';
+    hits.sort((a, b) => a.n.row - b.n.row);
+    res.hidden = !hits.length && !elsewhere;
+    if (!hits.length) { res.innerHTML = `<span class="muted">${esc(elsewhere).replace(/&amp;middot;/g, '&middot;')}</span>`; return; }
+    res.innerHTML = hits.slice(0, 8).map(h => `<button class="mfr" data-mfr="${h.n.id}"><b>Row ${h.n.row > ROWS ? 'boss' : h.n.row}</b> ${esc(h.why.slice(0, 2).join('; '))}${h.why.length > 2 ? ` <span class="muted">+${h.why.length - 2}</span>` : ''}</button>`).join('') + (hits.length > 8 ? `<span class="muted">+${hits.length - 8} more nodes</span>` : '');
+  }
+  $('mapFind').addEventListener('input', mapFind);
+  $('mapFind').addEventListener('keydown', (ev) => { ev.stopPropagation(); if (ev.key === 'Escape') { ev.target.value = ''; mapFind(); ev.target.blur(); } });
+  $('mapFindRes').addEventListener('click', (ev) => { const b = ev.target.closest('[data-mfr]'); if (!b) return; const g = $('mapScroll').querySelector(`.node[data-id="${b.dataset.mfr}"]`); if (g) { const sc = $('mapScroll'), r = g.getBoundingClientRect(), sr = sc.getBoundingClientRect(); sc.scrollTop += r.top - sr.top - sc.clientHeight / 2; } nodeInfo(b.dataset.mfr); });
   // the map as an SVG; interactive = clickable reachable nodes (the map screen), otherwise a read-only view (the Map button in a fight)
   function mapSvg(interactive) {
     const nodes = run.map.nodes, reach = new Set(run.over || !interactive ? [] : run.reachable());
@@ -2412,7 +2456,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       <p class="muted">Luck ${lk}: every chance is multiplied by ${(1 + lk / 100).toFixed(2)}.${t.chance['Purple (Epic)'] ? '' : ' Purples only drop from elites and the boss.'}</p>
       <p><b>Item bases it drops</b> (one picked per roll; stats roll at map +${lvl}):</p><div class="cardlist">${e.pool.map(b => { const bb = G.bases.find(x => x.name === b); return `<div class="cardrow" style="--rc:var(--line)"><span class="n"></span><b>${esc(b)}</b><span class="cst">${esc(bb ? bb.label : '')}</span></div>`; }).join('')}</div>` : '';
     const cards = (e.loot || []).filter(x => x.type === 'Card' || x.type === 'Codex');
-    const cardHtml = cards.length ? `<p><b>Cards and codexes</b> (each rolls on its own; Gold cards only drop here):</p><div class="cardlist">${cards.map(x => `<div class="cardrow" style="--rc:${RC[x.rarity] || 'var(--line)'}"><span class="n">${x.pct}%</span><b>${esc(x.item)} <span class="muted">${esc(x.cls)} ${esc(x.rarity)} ${x.type === 'Codex' ? 'codex' : ''}</span></b><span class="cst"></span><span class="tx">${esc(x.note || '')}</span></div>`).join('')}</div>` : '';
+    const cardHtml = cards.length ? `<p><b>Cards and codexes</b> (each rolls on its own; Gold cards only drop here):</p><div class="cardlist">${cards.map(x => `<div class="cardrow" style="--rc:${RC[x.rarity] || 'var(--line)'}"><span class="n">${x.type === 'Codex' ? +CB.bossCodexPct(e).toFixed(1) : x.pct}%</span><b>${esc(x.item)} <span class="muted">${esc(x.cls)} ${esc(x.rarity)} ${x.type === 'Codex' ? 'codex' : ''}</span></b><span class="cst"></span><span class="tx">${esc(x.note || '')}</span></div>`).join('')}</div>` : '';
     modal(`<h2>${esc(e.name)}: loot</h2><p><b>Gold:</b> ${Math.round(e.gold[0] * gm)} to ${Math.round(e.gold[1] * gm)} per kill.</p>${gear}${cardHtml}<p><b>Prototype card drops:</b> ${{ 1: '30% per kill (mostly White)', 2: '40% per kill', 3: '50% per kill', Elite: 'always 1 card, Green or better (10% Gold)', Boss: '2 cards, Blue or Gold' }[e.tier]}, from your class's implemented cards. The named cards above come from the Map 1 design and arrive when more cards are built.</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     $('mClose').onclick = closeModal;
   }

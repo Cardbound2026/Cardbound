@@ -62,7 +62,7 @@
     return out.sort((a, b) => a.map.num - b.map.num || b.pct - a.pct);
   }
   function gCodexSrc(key) { const cx = CB.CODEX_BY_KEY[key]; if (!cx) return []; const name = cx.name + ' Codex', out = [];
-    for (const [mk, M] of Object.entries(DATA.maps)) { const b = DATA.enemies[M.boss]; const x = b && (b.loot || []).find(l => l.type === 'Codex' && l.item === name); if (x) out.push({ M, b, pct: x.pct || Math.round(CB.BOSS_CODEX_CHANCE * 100) }); }
+    for (const [mk, M] of Object.entries(DATA.maps)) { const b = DATA.enemies[M.boss]; const x = b && (b.loot || []).find(l => l.type === 'Codex' && l.item === name); if (x) out.push({ M, b, pct: +CB.bossCodexPct(b).toFixed(1) }); }
     return out.sort((a, b) => a.M.num - b.M.num); }
   function gHasCodex(key) { return profile.stash.some(it => it.slot === 'Codex' && it.codex === key) || Object.values(profile.chars).some(c => (c.gear || []).some(g => g.slot === 'Codex' && g.codex === key)); }
   // gear stats to look for, read from the build's cards (and the codex passive)
@@ -160,7 +160,7 @@
         <div><h3>Card checklist</h3><table class="gdlist"><tbody>${rows}</tbody></table></div>
         <div>
           <h3>Rank these up first</h3><ul class="gdkeys">${keys.map(k => { const r = mine ? gBestRank(c, k) : -1; return `<li><span class="gdcard" data-cardinfo="${k}" style="color:${RC[CARDS[k].rarity]}">${esc(CARDS[k].name)}</span>${r >= 0 ? ` <span class="muted">(you have +${r})</span>` : ''}<br><span class="muted">${esc(why[k] || CARDS[k].text)}</span></li>`; }).join('')}</ul>
-          <h3>Gear stats to look for</h3><ul class="gdkeys">${top.map(s => `<li><b>${esc(s)}</b> <span class="muted">${esc(G_WHY[s] || '')}</span></li>`).join('')}${elem.length ? `<li><b>${elem[0]} Damage</b> <span class="muted">most of the deck's damage is ${elem[0]}</span></li>` : ''}<li><b>Stamina and Resistance</b> <span class="muted">for the map you're on (each map's gear resists the next map's element)</span></li></ul>
+          <h3>Gear stats to look for</h3><ul class="gdkeys">${top.map(s => `<li><b>${esc(s)}</b> <span class="muted">${esc(G_WHY[s] || '')}</span></li>`).join('')}${elem.length ? `<li><b>${elem[0]} Damage</b> <span class="muted">most of the deck's damage is ${elem[0]}</span></li>` : ''}<li><b>Stamina and Resistance</b> <span class="muted">for the map you're on (each map's gear resists that map's own element)</span></li></ul>
           <h3>Where to farm</h3>${mine && missing.length ? '<p class="muted" style="font-size:12.5px;margin:0 0 4px">Easiest map first. Named drops below; tier 1 monsters are on rows 1-4, tier 2 on rows 5-9, tier 3 on rows 10-14.</p>' : ''}${farmHtml}
         </div>
       </div>

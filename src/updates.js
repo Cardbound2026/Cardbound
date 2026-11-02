@@ -2,6 +2,10 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Feature', 'Map search: type a card, item, monster, shrine or node type above the run map and every node that has it lights up, with a list of what matched (click one to jump to it). If it isn\'t on this map, it tells you which map has it.'],
+      ['Fix', 'Damage over time now counts as damage you deal: Rot, Dread, Poison, Bleed and Burn ticks trigger the Soulbinder Codex\'s party heal, your Lifesteal and Soul Beacon.'],
+      ['Balance', 'Gear now resists its own map\'s element (Cinder Reach gear: Fire Resistance, and so on), so you can farm protection for the map you\'re stuck on. Gear you already own was moved over. Starter gear and codexes keep their Fire Resistance.'],
+      ['Balance', 'Map bosses drop a codex 25% of the time (was 50%), and it can be any class\'s codex from that boss: trade it, stash it for an alt, or break it into Reroll Tokens.'],
       ['Feature', 'Build guide: "What kind of Warrior do you want to play?" Pick a playstyle (tank, big hits, many small hits, Bleed...), then a codex, then one of its builds, and get a checklist: which of its 22 cards you have, which you\'re missing and exactly which monsters drop them, where the codex drops, the gear stats to look for, the cards to rank up first, and which maps to farm (easiest first). Track a build to see your progress on the character sheet. New heroes get it right after creation; it\'s also in the Menu and on the character sheet (C).'],
       ['Balance', 'Fear: monsters now resist it 25% of the time (bosses 50%), and damage that lands on a Feared monster can break the Fear: 75% for direct damage (even into its Block), 10% for each damage-over-time tick.'],
       ['Balance', 'Crit Chance on gear is cut by 75% and Crit Damage on gear by 50%, on new drops and on gear you already own (each stat line stays at least 1).'],

@@ -641,6 +641,10 @@ body.aiming { cursor: grabbing; user-select: none; }
 .gdkeys { margin: 0; padding-left: 18px; font-size: 13px; } .gdkeys li { margin-bottom: 4px; } .gdfarm { margin: 0; padding-left: 18px; font-size: 13px; } .gdfarm li { margin-bottom: 6px; }
 .gdline { margin: 0 0 8px; font-size: 13.5px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; } .gdline .btn { padding: 4px 10px; font-size: 13px; }
 @media (max-width: 760px) { .gdtop, .gdcols { grid-template-columns: 1fr; } }
+.mapsearch { display: flex; gap: 8px; align-items: center; margin: 0 0 6px; } .mapsearch input { flex: 1; min-width: 0; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: rgba(0,0,0,.35); color: inherit; font: 14px var(--f-ui); }
+.mapsearch span { font-size: 13px; white-space: nowrap; }
+.mapfindres { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 6px; font-size: 12.5px; } .mfr { background: rgba(255,210,74,.08); border: 1px solid rgba(255,210,74,.35); color: inherit; border-radius: 5px; padding: 3px 8px; cursor: pointer; font: inherit; text-align: left; } .mfr b { color: #ffd24a; }
+.node.hit .ring { stroke: #ffd24a !important; stroke-width: 4 !important; filter: drop-shadow(0 0 6px rgba(255,210,74,.9)); } .node.miss { opacity: .35; }
 .recgrave li { padding: 3px 0; cursor: pointer; color: #b8b0a6; }
 .herocard.new { border-style: dashed; border-top-style: dashed; place-content: center; text-align: center; color: var(--muted); font-size: 16px; }
 .create h3 { font-family: var(--cf-name); font-weight: 400; font-size: 26px; color: var(--accent); margin-bottom: 8px; }
@@ -794,6 +798,8 @@ body.aiming { cursor: grabbing; user-select: none; }
   <!-- MAP -->
   <section id="scrMap" class="runmain" hidden aria-label="Campaign map">
     <div class="panel mapwrap">
+      <div class="mapsearch"><input id="mapFind" type="search" placeholder="Search the map: a card, an item, a monster, a shrine..." aria-label="Search the map" autocomplete="off"><span id="mapFindN" class="muted"></span></div>
+      <div class="mapfindres" id="mapFindRes" hidden></div>
       <div class="mapscroll" id="mapScroll"></div>
       <div class="info" id="nodeInfo"></div>
       <div class="legend" id="legend"></div>
@@ -1957,6 +1963,7 @@ Object.assign(POWERS, {
   codex_sacred_flame: { dealt: (cb, p, h) => { if (h.dtype === 'Holy' && h.lost > 0 && h.e.hp > 0) { const n = Math.max(1, Math.round(h.lost * 0.2)); h.e.burn += n; h.e.burnBy = p.id; } } },
   codex_divine_wrath: { devotionPlus: 1 },
   codex_soulbinder: { beaconX: 1.5, hitMult: (cb, p, e, c) => c.dtype === 'Shadow' ? 1.1 : 1, dealt: (cb, p, h, pw) => { if (!(h.lost > 0)) return; pw.acc = (pw.acc || 0) + h.lost * 0.05; const n = Math.floor(pw.acc); if (n > 0) { pw.acc -= n; for (const a of cb.allies()) cb.heal(a, n, 'Soulbinder', true); } } },
+  // (dotDealt: the same 5% party heal from damage-over-time ticks, see Combat.dotHeal)
   codex_blightcaller: { dotMult: { dread: 1.5 } },
   codex_shadow_knight: { dtype: { Physical: 'Shadow' }, dealt: (cb, p, h) => { if (h.kind === 'Attack' && h.dtype === 'Shadow' && h.lost > 0) { const n = Math.round(h.lost * 0.05); if (n > 0) cb.heal(p, n, 'Lifesteal', true); } } },
   codex_demonologist: { demonTurns: 1 },
@@ -2056,7 +2063,7 @@ const CLASSES = {
   Paladin: { defense: 'Block', blurb: 'Holy warrior: Block, Holy damage that ignores resistance, and heals.', deck: [['lay_on_hands', 1], ['ardent_defense', 1], ['holy_nova', 1], ['divine_shield', 1], ['divine_storm', 1], ['healing_light', 1], ['crusader_strike', 6], ['raise_shield', 2], ['righteous_blow', 2], ['sacred_ward', 1], ['smite', 3]] },
   Warlock: { defense: 'Absorb', blurb: 'Shadow caster: Dread and Rot, curses, demons and Absorb (overhealing a Warlock becomes Absorb).', deck: [['soul_beacon', 1], ['shadow_armor', 1], ['soul_shroud', 1], ['shadow_volley', 1], ['curse_of_frailty', 1], ['drain_life', 1], ['summon_gloom_imp', 1], ['shadow_bolt', 5], ['dark_ward', 4], ['dread_touch', 2], ['rotting_grasp', 1], ['siphon_soul', 1]] },
 };
-const it = (slot, base, stats, imp2) => ({ slot, name: base, rarity: 'White', ilvl: 1, stats: Object.assign({ 'Resistance:Fire': 3 }, stats), imp2: imp2 || {}, r2: 1, r3: 1 });
+const it = (slot, base, stats, imp2) => ({ slot, name: base, rarity: 'White', ilvl: 1, stats: Object.assign({ 'Resistance:Fire': 3 }, stats), imp2: imp2 || {}, r2: 1, r3: 1, r4: 1 }); // starter gear keeps Fire (it isn't Map 1 loot; Physical here would make Map 1 trivial)
 const STARTER_GEAR = {
   Warrior: [it('Weapon', 'Arming Sword', { Strength: 3 }, { 'Multi-hit Chance': 3 }), it('Off-hand', 'Kite Shield', { Dexterity: 3 }, { Thorns: 2 }), it('Helm', 'Warband Helm', { Stamina: 6 }), it('Shoulders', 'Warband Pauldrons', { Stamina: 4 }),
     it('Amulet', "Soldier's Pendant", { Strength: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Brigandine', { 'Crit Chance': 1 }),
@@ -2083,7 +2090,7 @@ const STARTER_GEAR = {
 // Gear presets for testing progression: the starter set's stats scaled to the average Green or Blue item (more affixes, higher rolls).
 function presetGear(cls, rarity) {
   const scale = { White: 1, Green: 2.2, Blue: 3.6 }[rarity] || 1, imp = { White: 1, Green: 1.1, Blue: 1.2 }[rarity] || 1;
-  return STARTER_GEAR[cls].map(x => ({ slot: x.slot, name: x.name, rarity, ilvl: 1, r2: 1, r3: 1, stats: Object.fromEntries(Object.entries(x.stats).map(([k, v]) => [k, Math.round(v * scale)])),
+  return STARTER_GEAR[cls].map(x => ({ slot: x.slot, name: x.name, rarity, ilvl: 1, r2: 1, r3: 1, r4: 1, stats: Object.fromEntries(Object.entries(x.stats).map(([k, v]) => [k, Math.round(v * scale)])),
     imp2: Object.fromEntries(Object.entries(x.imp2).map(([k, v]) => [k, k === 'Draw' ? 4 : k === 'Regen' ? { White: 20, Green: 30, Blue: 40 }[rarity] : Math.round(v * imp)])) }));
 }
 const FEAR_RESIST = 0.25, FEAR_RESIST_BOSS = 0.5, FEAR_BREAK = 0.75, FEAR_BREAK_DOT = 0.1;
@@ -2131,7 +2138,7 @@ const STARTER_AMULETS = [
   ['quickhand', 'Quickhand Pendant', 5, 10, 'Lots of cards, little mana: for cheap decks.'],
 ];
 const AMULET_STAT = { Warrior: 'Strength', Rogue: 'Strength', Mage: 'Intelligence', Paladin: 'Strength', Warlock: 'Intelligence' };
-function starterAmulet(cls, key) { const a = STARTER_AMULETS.find(x => x[0] === key) || STARTER_AMULETS[3]; return { slot: 'Amulet', name: a[1], rarity: 'White', ilvl: 1, stats: { [AMULET_STAT[cls] || 'Strength']: 3 }, imp2: { Draw: a[2], Regen: a[3] }, label: 'Starter amulet', amuletKey: a[0], r2: 1, r3: 1 }; }
+function starterAmulet(cls, key) { const a = STARTER_AMULETS.find(x => x[0] === key) || STARTER_AMULETS[3]; return { slot: 'Amulet', name: a[1], rarity: 'White', ilvl: 1, stats: { [AMULET_STAT[cls] || 'Strength']: 3 }, imp2: { Draw: a[2], Regen: a[3] }, label: 'Starter amulet', amuletKey: a[0], r2: 1, r3: 1, r4: 1 }; }
 const PRESSURE_START = 5, PRESSURE_STEP = 0.02;
 const ELEMENTS = ['Physical', 'Fire', 'Frost', 'Nature', 'Arcane', 'Shadow'];
 
@@ -2217,7 +2224,8 @@ function intentKind(ops) {
 }
 
 // per-enemy tuning on top of the Map 1 design numbers
-const BOSS_CODEX_CHANCE = 0.5;
+const BOSS_CODEX_CHANCE = 0.25; // Nov 1: was 0.5 and always your own class; now 25%, and the codex is any class's on that boss's table
+const bossCodexPct = (d) => { const n = ((d && d.loot) || []).filter(x => x.type === 'Codex').length; return n ? BOSS_CODEX_CHANCE * 100 / n : 0; }; // chance of one particular codex per kill
 const DEBT_CARDS = ['collect_the_debt', 'sanguine_guard', 'pay_in_blood'];
 // enemy card ops that land on heroes (single-target unless the op is marked all)
 const ENEMY_PLAYER_OPS = ['damage', 'execute', 'damageBlock', 'debuff', 'stealMana', 'burnMana', 'drawLess', 'disarm', 'purge', 'shred', 'shredAll', 'tickBleed', 'status'];
@@ -2462,6 +2470,14 @@ class Combat {
   // ----- powers
   pws(p) { return (p && p.powers || []).map(pw => [pw, pw.def || POWERS[pw.key]]).filter(x => x[1]); }
   has(p, key) { return !!(p && p.powers && p.powers.some(pw => pw.key === key)); }
+  // damage-over-time ticks (Rot, Dread, Poison, Bleed, Burn) from a hero: Soulbinder's party heal, Lifesteal and Soul Beacon count them too.
+  // Ticks are small, so the fractions carry over until they make a whole HP.
+  dotHeal(p, e, lost) {
+    this.fire(p, 'dotDealt', { e, lost });
+    if (p.lifesteal > 0) { p._lsAcc = (p._lsAcc || 0) + lost * p.lifesteal / 100; const n = Math.floor(p._lsAcc); if (n > 0) { p._lsAcc -= n; this.heal(p, n, 'Lifesteal', true); } }
+    if (e.beacon && e.hp > 0) { const by = this.actorById(e.beacon.by); e.beacon.acc = (e.beacon.acc || 0) + lost * e.beacon.pct / 100 * (by && by.isPlayer && by.powers.length ? this.pwProd(by, 'beaconX') : 1); const n = Math.floor(e.beacon.acc);
+      if (n > 0) { e.beacon.acc -= n; const was = this.player; if (by && by.isPlayer) this.player = by; for (const a of this.allies()) this.heal(a, n, 'Soul Beacon', true); this.player = was; } }
+  }
   fire(p, hook, ...args) { if (!p || !p.isPlayer || !p.powers.length) return; for (const [pw, def] of this.pws(p)) if (def[hook] && !this.over) { const was = this.player; this.player = p; this.rkPw(pw, () => def[hook](this, p, ...args, pw)); this.player = was; } }
   pwProd(p, field, ...args) { let m = 1; for (const [pw, def] of this.pws(p)) { const v = def[field]; if (v == null) continue; let x = typeof v === 'function' ? this.rkPw(pw, () => v(this, p, ...args, pw)) : v; if (pw.rkMain && typeof x === 'number' && x !== 1) x = Math.max(0, 1 + (x - 1) * pw.rkMain); m *= x; } return m; }
   pwSum(p, field, ...args) { let m = 0; for (const [pw, def] of this.pws(p)) { const v = def[field]; if (v == null) continue; let x = typeof v === 'function' ? this.rkPw(pw, () => v(this, p, ...args, pw)) : v; if (pw.rkMain && typeof x === 'number' && x) x = Number.isInteger(x) ? Math.round(x * pw.rkMain) : x * pw.rkMain; m += x; } return m; }
@@ -2799,6 +2815,7 @@ class Combat {
     if (src) { const m = this.mtr(src).dealt; m[label] = (m[label] || 0) + real; }
     { const t = this.mtr(tgt); const k = src ? src.name : label; t.taken[k] = (t.taken[k] || 0) + real; t.absorbed += absorbed; }
     if (tgt.isPlayer) { this.stats.taken += dmg; this.stats.blocked += absorbed; } else this.stats.dealt += dmg;
+    if (o.isDot && src && src.isPlayer && src.hp > 0 && !tgt.isPlayer && real > 0) this.dotHeal(src, tgt, real); // Nov 1: damage over time counts as damage you deal (Soulbinder, Lifesteal, Soul Beacon)
     if (o.isDot) this.say('dot', `${tgt.isPlayer ? 'You take' : tgt.name + ' takes'} ${amount} ${o.label}` + (absorbed ? ` (${absorbed} absorbed)` : '') + `. HP ${tgt.hp}/${tgt.maxHp}.`);
     if (tgt.hp <= 0 && !o.defer) this.onDeath(tgt);
     return { lost: dmg, absorbed };
@@ -3187,6 +3204,11 @@ const CRIT_CUT = { 'Crit Chance': 0.25, 'Crit Damage': 0.5 };
 const halfUp = (v) => Math.max(1, Math.ceil(v / 2));
 function itemRules(it, data) {
   if (!it || it.kind === 'card') return it;
+  if (!it.r4) { it.r4 = 1; const D0 = data || DATA; // Nov 1 (d): the implicit resistance moves to the item's own map's element
+    if (D0 && D0.gear && D0.maps && it.slot !== 'Codex' && it.slot !== 'Amulet' && it.lines) { mapResist(D0); // rolled drops only (starter gear has no affix lines)
+      const b = D0.gear.bases.find(x => x.name === it.name), M = D0.maps[(b && b.map) || 'physical'], from = M && 'Resistance:' + (M.dropOld || 'Fire'), to = M && 'Resistance:' + M.element;
+      if (M && from !== to && it.stats && it.stats[from]) { const onLines = (it.lines || []).filter(l => l.stat === from).reduce((t, l) => t + l.v, 0), imp = it.stats[from] - onLines;
+        if (imp > 0) { it.stats = Object.assign({}, it.stats); it.stats[from] -= imp; if (it.stats[from] <= 0) delete it.stats[from]; it.stats[to] = (it.stats[to] || 0) + imp; } } } }
   if (!it.r3) { it.r3 = 1; // Nov 1 (c): Crit Chance x0.25 and Crit Damage x0.5, each at least 1
     for (const [k, f] of Object.entries(CRIT_CUT)) { const cut = (v) => Math.max(1, Math.round(v * f));
       if (it.stats && it.stats[k]) { it.stats = Object.assign({}, it.stats); it.stats[k] = cut(it.stats[k]); }
@@ -3274,8 +3296,11 @@ function groupData(data) {
       gold: g.tier === '3' ? [24, 40] : [12, 24], pool: (like.pool || []).slice(), loot: (like.loot || []).map(x => Object.assign({}, x)), map: g.map, group: GROUP_N, unit: g.unit, art: g.art, like: g.like, dmgScale: g.dmg || 1 };
   }
 }
+// Nov 1 (d): every map's gear rolls that map's own resistance (Fire Reach gear: Fire Resistance), so you can farm the map you're stuck on.
+// It used to roll the next map's element. M.dropOld remembers the old one so owned items can be moved over (itemRules, r4).
+function mapResist(data) { if (!data || !data.maps || data._ownResist) return; data._ownResist = true; for (const M of Object.values(data.maps)) { M.dropOld = M.dropResist; M.dropResist = M.element; } }
 function gearData(data) {
-  groupData(data); if (CARDS_READY) namedLoot(data);
+  mapResist(data); groupData(data); if (CARDS_READY) namedLoot(data);
   if (!data || !data.gear || data._shoulders) return; data._shoulders = true; const G = data.gear;
   Object.assign(G.arche, SHOULDER_ARCHE);
   for (const [mk, names] of Object.entries(SHOULDER_BASES)) names.forEach((name, i) => { if (!G.bases.some(b => b.name === name)) G.bases.push({ name, arch: ['Pauldrons', 'Spaulders', 'Mantle'][i], label: ['Plate', 'Leather', 'Cloth'][i] + ' Shoulders', map: mk }); });
@@ -3297,7 +3322,7 @@ function rollItem(data, rng, baseName, rarity, level) {
   const lv = Math.pow(G.levelGrowth, level), mult = R.mult * lv, twoH = A.hands && A.hands.startsWith('2H') ? G.twoHand : 1;
   const rollStat = (stat) => { const s = G.stats[stat]; const lo = Math.max(1, Math.round(s.min * mult * twoH)), hi = Math.max(lo, Math.round(s.max * mult * twoH)); const v = ri(rng, lo, hi); return { v, lo, hi, pts: v * s.pts / twoH }; };
   const stats = {}, lines = [];
-  const impEl = (data.maps && b.map && data.maps[b.map] && data.maps[b.map].dropResist) || 'Fire'; // each map's gear rolls the next map's resistance
+  mapResist(data); const impEl = (b.map && data.maps && data.maps[b.map] && data.maps[b.map].dropResist) || 'Fire'; // each map's gear rolls its own resistance (Nov 1); codexes (no map) keep Fire
   const imp = rollStat('Map resistance (implicit)'); stats['Resistance:' + impEl] = imp.v;
   let points = imp.pts;
   const weights = Object.entries(A.weights).filter(([s]) => rarity === 'Purple (Epic)' || s !== 'Efficiency');
@@ -3324,7 +3349,7 @@ function rollItem(data, rng, baseName, rarity, level) {
   const ilvl = Math.max(1, Math.min(100, Math.round(5 * level + 5 * Math.min(1, points / maxPts))));
   const slot = /Shield|Focus/.test(A.slot) ? 'Off-hand' : /Axe|Sword|Dagger|Mace|Wand|Maul|Warhammer|Staff/.test(A.slot) ? 'Weapon' : A.slot;
   const out = { name: baseName, label: b.label, arch: b.arch, slot, hands: A.hands, rarity, ilvl, stats, imp2, lines, level };
-  out.rerolls = rerollPotential(out); out.r2 = 1; out.r3 = 1; return out;
+  out.rerolls = rerollPotential(out); out.r2 = 1; out.r3 = 1; out.r4 = 1; return out;
 }
 // ---------- Rerolls (Nov 1): every item drops with a reroll potential (White 0-1, Green 1-2, Blue 2-3, Purple 3-4). Spending a Reroll Token
 // and one point of potential rerolls one affix line of your choice: a new stat and value, rolled like a fresh drop of the same base, rarity and
@@ -3617,10 +3642,10 @@ function rollDrops(data, rng, enemyKey, level, luck, cls) {
     if (got) out.push(rollItem(data, rng, d.pool[Math.floor(rng() * d.pool.length)], got, level));
   }
   // codexes: bosses list one per class on their loot table (each rolls on its own)
-  // map bosses drop one codex half the time (more with Luck): the one on their table for the looting hero's class (Oct 31)
+  // map bosses drop one codex 25% of the time (more with Luck), picked at random from every class's codex on their table (Nov 1)
   if (d.tier === 'Boss' && !d.raid) {
     if (rng() >= Math.min(1, BOSS_CODEX_CHANCE * lk)) return out;
-    const all = (d.loot || []).filter(x => x.type === 'Codex'), mine = all.filter(x => x.cls === cls), pick = (mine.length ? mine : all);
+    const pick = (d.loot || []).filter(x => x.type === 'Codex'); // any class: trade or stash the ones your hero can't use
     if (pick.length) { const x = pick[Math.floor(rng() * pick.length)], key = Object.keys(CODEX_BY_KEY).find(k => CODEX_BY_KEY[k].name + ' Codex' === x.item); if (key) out.push(makeCodex(data, rng, key, level)); }
     return out;
   }
@@ -3659,8 +3684,9 @@ if (DATA) dropRemovedLoot(DATA);
 // Oct 31: Lay on Hands and Mend Wounds can be aimed at any hero in the party (yourself if you play them solo)
 if (C.mend_wounds) Object.assign(C.mend_wounds, { target: 'ally', text: 'Heal an ally (or yourself) for 8 HP.', play: (cb, t) => cb.heal(t && t.isPlayer && t.hp > 0 ? t : cb.player, 8, 'Mend Wounds') });
 if (C.lay_on_hands) Object.assign(C.lay_on_hands, { target: 'ally', text: 'Heal an ally (or yourself) for 30% of their total HP. Exhaust.', play: (cb, t) => { const a = t && t.isPlayer && t.hp > 0 ? t : cb.player; cb.heal(a, Math.round(a.maxHp * 0.3), 'Lay on Hands'); } }); // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
+POWERS.codex_soulbinder.dotDealt = POWERS.codex_soulbinder.dealt;
 CARDS_READY = true; if (DATA && DATA.gear) namedLoot(DATA);
-const API = { GROUPS, groupData, itemRules, rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { bossCodexPct, GROUPS, groupData, itemRules, rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -4620,8 +4646,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   const ELC = { Physical: '#c9c2b2', Fire: '#ff7a3c', Frost: '#7fd3ff', Nature: '#7fd36a', Arcane: '#c48bff', Shadow: '#9a8cb8' };
   function curMap() { const k = profile.last.map; return DATA.maps[k] ? k : 'physical'; }
   function mapBlurb(mk) {
-    const M = DATA.maps[mk], prev = Object.values(DATA.maps).find(m => m.dropResist === M.element);
-    return M.dmgScale ? `${esc(M.theme || '')} Enemies hit ${Math.round((M.dmgScale - 1) * 100)}% harder than on the Broken March${prev && prev.key !== mk ? `: bring ${M.element} Resistance, which gear from ${esc(prev.name)} rolls` : ''}.` : `${esc(M.theme || '')} The starting road.`;
+    const M = DATA.maps[mk];
+    return M.dmgScale ? `${esc(M.theme || '')} Enemies hit ${Math.round((M.dmgScale - 1) * 100)}% harder than on the Broken March: bring ${M.element} Resistance. Gear from this map rolls it, so its early rows are the place to farm it.` : `${esc(M.theme || '')} The starting road. Its gear rolls ${M.element} Resistance.`;
   }
   function bossName(r) { r = r || run; const M = DATA.maps[(r && r.mapKey) || 'physical']; return M ? DATA.enemies[M.boss].name.split(',')[0].replace(/ of the .*/, '') : 'the boss'; }
   function startRun() {
@@ -6010,8 +6036,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793570323151';
-  const CB_BUILD = '94b3bdb73a'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793585780921';
+  const CB_BUILD = '5df91ab582'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -7070,6 +7096,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Feature', 'Map search: type a card, item, monster, shrine or node type above the run map and every node that has it lights up, with a list of what matched (click one to jump to it). If it isn\'t on this map, it tells you which map has it.'],
+      ['Fix', 'Damage over time now counts as damage you deal: Rot, Dread, Poison, Bleed and Burn ticks trigger the Soulbinder Codex\'s party heal, your Lifesteal and Soul Beacon.'],
+      ['Balance', 'Gear now resists its own map\'s element (Cinder Reach gear: Fire Resistance, and so on), so you can farm protection for the map you\'re stuck on. Gear you already own was moved over. Starter gear and codexes keep their Fire Resistance.'],
+      ['Balance', 'Map bosses drop a codex 25% of the time (was 50%), and it can be any class\'s codex from that boss: trade it, stash it for an alt, or break it into Reroll Tokens.'],
       ['Feature', 'Build guide: "What kind of Warrior do you want to play?" Pick a playstyle (tank, big hits, many small hits, Bleed...), then a codex, then one of its builds, and get a checklist: which of its 22 cards you have, which you\'re missing and exactly which monsters drop them, where the codex drops, the gear stats to look for, the cards to rank up first, and which maps to farm (easiest first). Track a build to see your progress on the character sheet. New heroes get it right after creation; it\'s also in the Menu and on the character sheet (C).'],
       ['Balance', 'Fear: monsters now resist it 25% of the time (bosses 50%), and damage that lands on a Feared monster can break the Fear: 75% for direct damage (even into its Block), 10% for each damage-over-time tick.'],
       ['Balance', 'Crit Chance on gear is cut by 75% and Crit Damage on gear by 50%, on new drops and on gear you already own (each stat line stays at least 1).'],
@@ -7335,7 +7365,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     return `${cxMapChips()}${cxChips('slot', ['All', ...SLOTN], 'Slot')}
       <div class="cxrules">
         <div><h4>Rarity</h4>${G.rarity.map(r => `<div style="color:${RC[r.name]}">${r.name === 'Purple (Epic)' ? 'Purple' : r.name}: ${r.affixes} affix${r.affixes > 1 ? 'es' : ''}, stats x${r.mult}</div>`).join('')}</div>
-        <div><h4>Every item</h4><p>An implicit <b>+${statRange('Map resistance (implicit)')} ${M ? M.dropResist : 'map'} Resistance</b> (${M ? 'Map ' + M.num + ' gear rolls the resistance the next map hits with' : 'each map rolls the next map\'s element'}), plus its base's implicit below. Each map level multiplies every roll by ${G.levelGrowth}; two-handed weapons roll x${G.twoHand}. Affixes pick a stat by the weights shown (the same stat can roll twice and stacks).</p></div>
+        <div><h4>Every item</h4><p>An implicit <b>+${statRange('Map resistance (implicit)')} ${M ? M.dropResist : 'map'} Resistance</b> (${M ? 'Map ' + M.num + ' gear resists its own map\'s element, so you can farm protection for the map you\'re on' : 'each map\'s gear resists that map\'s own element'}), plus its base's implicit below. Each map level multiplies every roll by ${G.levelGrowth}; two-handed weapons roll x${G.twoHand}. Affixes pick a stat by the weights shown (the same stat can roll twice and stacks).</p></div>
         <div><h4>Affix ranges (White, +0)</h4><div class="cxranges">${Object.keys(G.stats).filter(s => !/implicit/.test(s)).map(s => `<span>${esc(s)} <b>${statRange(s)}</b></span>`).join('')}</div></div>
       </div>
       <p class="savenote">${bases.length} item bases${M ? ` on ${esc(M.name)}` : ''}.${M ? '' : ' Bases come from every map; each map\'s versions roll that map\'s resistance.'}</p>
@@ -7406,7 +7436,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     modal2(`<h2>${esc(name)} <span class="muted" style="font-size:15px"><span style="color:${CC[cx.cls]}">${esc(cx.cls)}</span> codex</span></h2>
       <p><b style="color:#f0b070">Passive:</b> ${esc(cx.text)}</p>
       <h4 style="margin:10px 0 4px;color:var(--accent)">Where it drops</h4>
-      ${src.length ? `<table class="cxdt"><thead><tr><th>Source</th><th>Map</th><th>Chance</th></tr></thead><tbody>${src.map(({ mk, M, b }) => `<tr><td><b>${esc(b.name)}</b> (boss)</td><td>${M.num}. ${esc(M.name)}</td><td>${pct}% per kill for a ${esc(cx.cls)} (more with Luck)</td></tr><tr><td><b>${esc(CB.RAID_NAMES[mk] || 'Raid')}</b> (raid)</td><td>${M.num}. ${esc(M.name)}</td><td>Every kill drops one of this boss's ${(b.loot || []).filter(x => x.type === 'Codex').length} codexes (rolled for the raid)</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Not on any loot table yet.</p>'}
+      ${src.length ? `<table class="cxdt"><thead><tr><th>Source</th><th>Map</th><th>Chance</th></tr></thead><tbody>${src.map(({ mk, M, b }) => `<tr><td><b>${esc(b.name)}</b> (boss)</td><td>${M.num}. ${esc(M.name)}</td><td>${+CB.bossCodexPct(b).toFixed(1)}% per kill (a boss drops a codex ${pct}% of the time, any class; more with Luck)</td></tr><tr><td><b>${esc(CB.RAID_NAMES[mk] || 'Raid')}</b> (raid)</td><td>${M.num}. ${esc(M.name)}</td><td>Every kill drops one of this boss's ${(b.loot || []).filter(x => x.type === 'Codex').length} codexes (rolled for the raid)</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Not on any loot table yet.</p>'}
       <p class="muted" style="font-size:13px">Codexes roll random stats like gear (they are the only source of All Resistances), and they can't be upgraded: farm a better roll. Item level follows the map level it drops on.</p>
       <h4 style="margin:10px 0 4px;color:var(--accent)">Your copies (${mine.length})</h4>
       ${mine.length ? `<div class="list">${mine.map(m => itemHtml(m.it, `<div class="il">${esc(m.where)}</div>`)).join('')}</div>` : '<p class="muted">None yet.</p>'}
@@ -7430,7 +7460,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     modal(`<h2>${esc(M.name)} +${lvl}: what drops</h2>
       <p class="muted" style="margin:0 0 6px">Gear rolls item level ${Math.max(1, 5 * lvl)} to ${5 * lvl + 5}, with a ${esc(M.dropResist || '')} Resistance implicit. Each kill rolls on its own (Luck raises every chance).</p>
       <div class="maploot">
-        <div><h4>Codexes (boss)</h4>${cx.map(x => `<div class="cardrow" style="--rc:${RC.Codex}"><span class="n" style="color:${CC[x.cls]}">${esc(x.cls)}</span><b>${esc(x.item)}</b><span class="cst">${Math.round(CB.BOSS_CODEX_CHANCE * 100)}% per kill for a ${esc(x.cls)}</span></div>`).join('') || '<span class="muted">None.</span>'}
+        <div><h4>Codexes (boss)</h4>${cx.map(x => `<div class="cardrow" style="--rc:${RC.Codex}"><span class="n" style="color:${CC[x.cls]}">${esc(x.cls)}</span><b>${esc(x.item)}</b><span class="cst">${+CB.bossCodexPct(boss).toFixed(1)}% per kill</span></div>`).join('') || '<span class="muted">None.</span>'}
           <h4>${esc(cls)} cards (named drops)</h4>${mine.map(c => `<div class="cardrow" style="--rc:${RC[CARDS[c.key] ? CARDS[c.key].rarity : 'White']}" ${c.key ? `data-cxcard="${c.key}" role="button" tabindex="0"` : ''}><span class="n">${c.x.pct}%</span><b>${esc(c.x.item)}</b><span class="cst">${esc(c.e.name)}</span></div>`).join('') || '<span class="muted">None for your class here.</span>'}
           <p class="muted" style="font-size:12px">Every kill can also roll a random card of your class. ${cards.length - mine.length} more named cards here are for other classes.</p></div>
         <div><h4>Gear by slot (${bases.size} item bases)</h4>${Object.keys(bySlot).sort().map(sl => `<div class="mlslot"><b>${esc(sl)}</b> ${bySlot[sl].map(x => `<span title="Dropped by ${esc(x.from.join(', '))}">${esc(x.b)}</span>`).join(', ')}</div>`).join('')}
@@ -8631,7 +8661,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       ['Crit Chance', 'Chance for a hit to critically strike.'],
       ['Crit Damage', 'How hard a critical strike hits: shown as a multiplier, x1.5 by default.'],
       ['Initiative', 'Turn order: highest acts first each round (ties are random). Slow and Chill lower it.'],
-      ['Resistance', 'Less damage taken of that element, up to 75%. Every Map 1 item has some Fire resistance.'],
+      ['Resistance', 'Less damage taken of that element, up to 75%. Every item from a map resists that map\'s element (Cinder Reach gear: Fire), so you can farm resistance where you need it.'],
       ['Elemental Damage', '+% damage for cards of that element (Fire, Frost, Arcane, Nature, Shadow, Holy).'],
       ['Luck', 'Raises every drop chance: +1% per point.'],
       ['Multi-hit Chance', 'Chance an Attack hits twice.'],
@@ -8642,7 +8672,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       ['Recovery', 'Heal this much at the start of each of your turns.'],
       ['Health Regen', 'Heal this much after each fight you win.'],
       ['Defense Gain', '+% to the Block, Barrier or Dodge you gain.'],
-      ['Codex', 'A class-only gear slot (bottom right of the character sheet). Random stats like gear (the only source of All Resistances) plus one fixed passive that boosts a playstyle. Codexes drop only from bosses, one per class per boss.'],
+      ['Codex', 'A class-only gear slot (bottom right of the character sheet). Random stats like gear (the only source of All Resistances) plus one fixed passive that boosts a playstyle. Codexes drop only from map bosses: each kill has a 25% chance to drop one, picked at random from the five on that boss (any class, so trade or break the ones you can\'t use).'],
       ['Gear Score / Deck Level / Power', 'Gear score is the average item level of your 14 slots; deck level rates your best 20 cards; Power is the average of the two.'],
       ['Item power', 'Shown on upgrade badges: an item\'s stats added up by their value. Stats your class barely uses count for a quarter.'],
     ]],
@@ -8926,7 +8956,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     return out.sort((a, b) => a.map.num - b.map.num || b.pct - a.pct);
   }
   function gCodexSrc(key) { const cx = CB.CODEX_BY_KEY[key]; if (!cx) return []; const name = cx.name + ' Codex', out = [];
-    for (const [mk, M] of Object.entries(DATA.maps)) { const b = DATA.enemies[M.boss]; const x = b && (b.loot || []).find(l => l.type === 'Codex' && l.item === name); if (x) out.push({ M, b, pct: x.pct || Math.round(CB.BOSS_CODEX_CHANCE * 100) }); }
+    for (const [mk, M] of Object.entries(DATA.maps)) { const b = DATA.enemies[M.boss]; const x = b && (b.loot || []).find(l => l.type === 'Codex' && l.item === name); if (x) out.push({ M, b, pct: +CB.bossCodexPct(b).toFixed(1) }); }
     return out.sort((a, b) => a.M.num - b.M.num); }
   function gHasCodex(key) { return profile.stash.some(it => it.slot === 'Codex' && it.codex === key) || Object.values(profile.chars).some(c => (c.gear || []).some(g => g.slot === 'Codex' && g.codex === key)); }
   // gear stats to look for, read from the build's cards (and the codex passive)
@@ -9024,7 +9054,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
         <div><h3>Card checklist</h3><table class="gdlist"><tbody>${rows}</tbody></table></div>
         <div>
           <h3>Rank these up first</h3><ul class="gdkeys">${keys.map(k => { const r = mine ? gBestRank(c, k) : -1; return `<li><span class="gdcard" data-cardinfo="${k}" style="color:${RC[CARDS[k].rarity]}">${esc(CARDS[k].name)}</span>${r >= 0 ? ` <span class="muted">(you have +${r})</span>` : ''}<br><span class="muted">${esc(why[k] || CARDS[k].text)}</span></li>`; }).join('')}</ul>
-          <h3>Gear stats to look for</h3><ul class="gdkeys">${top.map(s => `<li><b>${esc(s)}</b> <span class="muted">${esc(G_WHY[s] || '')}</span></li>`).join('')}${elem.length ? `<li><b>${elem[0]} Damage</b> <span class="muted">most of the deck's damage is ${elem[0]}</span></li>` : ''}<li><b>Stamina and Resistance</b> <span class="muted">for the map you're on (each map's gear resists the next map's element)</span></li></ul>
+          <h3>Gear stats to look for</h3><ul class="gdkeys">${top.map(s => `<li><b>${esc(s)}</b> <span class="muted">${esc(G_WHY[s] || '')}</span></li>`).join('')}${elem.length ? `<li><b>${elem[0]} Damage</b> <span class="muted">most of the deck's damage is ${elem[0]}</span></li>` : ''}<li><b>Stamina and Resistance</b> <span class="muted">for the map you're on (each map's gear resists that map's own element)</span></li></ul>
           <h3>Where to farm</h3>${mine && missing.length ? '<p class="muted" style="font-size:12.5px;margin:0 0 4px">Easiest map first. Named drops below; tier 1 monsters are on rows 1-4, tier 2 on rows 5-9, tier 3 on rows 10-14.</p>' : ''}${farmHtml}
         </div>
       </div>
@@ -9281,7 +9311,45 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     renderSide();
     $('topInfo').textContent = `${run.solo ? run.cls : "Party of " + run.members.length} · ${run.mapName || 'Map'} +${run.level} · row ${curRow} of ${ROWS}`;
     if (run.over) endScreen();
+    mapFind();
   }
+  // ---------- map search (Nov 1): type a card, item, monster, shrine or node type; every node that has it lights up
+  // Matches: monster names and types, their named card drops (your party's classes) and codexes, the gear bases they drop, shrines, node types.
+  function nodeMatches(n, q) {
+    const why = [], t = NODE[n.type], has = (x) => x && String(x).toLowerCase().includes(q);
+    if (has(t && t.label)) why.push(t.label);
+    if (n.shrine) { const sh = SHRINES.find(x => x.key === n.shrine); if (sh && (has(sh.name) || has(sh.text))) why.push(`${sh.name}: ${sh.text}`); }
+    const classes = new Set(run.members.map(m => m.cls));
+    for (const k of n.enemies || []) { const e = DATA.enemies[k]; if (!e) continue;
+      if (has(e.name) || has(e.unit) || has(e.creature)) why.push(e.name + (e.group ? ' (group)' : ''));
+      for (const x of e.loot || []) { if (x.type === 'Card' && !classes.has(x.cls)) continue; if (has(x.item)) why.push(`${e.name} drops ${x.item} (${x.type === 'Codex' ? +CB.bossCodexPct(e).toFixed(1) : x.pct}%)`); }
+      for (const bn of e.pool || []) { const b = DATA.gear.bases.find(y => y.name === bn), A = b && DATA.gear.arche[b.arch]; if (has(bn) || has(b && b.label) || has(A && A.slot)) why.push(`${e.name} drops ${bn}${b && b.label ? ' (' + b.label + ')' : ''}`); } }
+    return [...new Set(why)];
+  }
+  function mapFind() {
+    const inp = $('mapFind'); if (!inp || !run) return; const q = inp.value.trim().toLowerCase(), res = $('mapFindRes');
+    for (const g of $('mapScroll').querySelectorAll('.node')) g.classList.remove('hit', 'miss');
+    if (q.length < 2) { $('mapFindN').textContent = ''; res.hidden = true; return; }
+    const hits = []; for (const n of Object.values(run.map.nodes)) { const why = nodeMatches(n, q); if (why.length) hits.push({ n, why }); }
+    const ids = new Set(hits.map(h => h.n.id));
+    for (const g of $('mapScroll').querySelectorAll('.node')) g.classList.add(ids.has(g.dataset.id) ? 'hit' : 'miss');
+    let elsewhere = '';
+    if (!hits.length) { const classes = new Set(run.members.map(m => m.cls)), found = {};
+      for (const e of Object.values(DATA.enemies)) { if (e.raid || !e.map || e.map === 'town' || e.map === run.mapKey) continue; const M = DATA.maps[e.map]; if (!M) continue;
+        const hit = (e.loot || []).find(x => (x.type !== 'Card' || classes.has(x.cls)) && x.item.toLowerCase().includes(q)) || ((e.pool || []).some(bn => bn.toLowerCase().includes(q)) ? { item: e.pool.find(bn => bn.toLowerCase().includes(q)) } : null) || (e.name.toLowerCase().includes(q) ? { item: e.name } : null);
+        if (hit) { const F = found[M.key] || (found[M.key] = { M, list: [] }); if (F.list.length < 2) F.list.push(`${e.name}${hit.item !== e.name ? ' (' + hit.item + ')' : ''}`); } }
+      const f = Object.values(found).sort((a, b) => a.M.num - b.M.num).slice(0, 3);
+      if (f.length) elsewhere = 'Not on this map. ' + f.map(F => `Map ${F.M.num} ${F.M.name}: ${F.list.join(', ')}`).join(' &middot; ');
+    }
+    $('mapFindN').textContent = hits.length ? `${hits.length} node${hits.length === 1 ? '' : 's'}` : elsewhere ? '' : 'nothing on any map';
+    hits.sort((a, b) => a.n.row - b.n.row);
+    res.hidden = !hits.length && !elsewhere;
+    if (!hits.length) { res.innerHTML = `<span class="muted">${esc(elsewhere).replace(/&amp;middot;/g, '&middot;')}</span>`; return; }
+    res.innerHTML = hits.slice(0, 8).map(h => `<button class="mfr" data-mfr="${h.n.id}"><b>Row ${h.n.row > ROWS ? 'boss' : h.n.row}</b> ${esc(h.why.slice(0, 2).join('; '))}${h.why.length > 2 ? ` <span class="muted">+${h.why.length - 2}</span>` : ''}</button>`).join('') + (hits.length > 8 ? `<span class="muted">+${hits.length - 8} more nodes</span>` : '');
+  }
+  $('mapFind').addEventListener('input', mapFind);
+  $('mapFind').addEventListener('keydown', (ev) => { ev.stopPropagation(); if (ev.key === 'Escape') { ev.target.value = ''; mapFind(); ev.target.blur(); } });
+  $('mapFindRes').addEventListener('click', (ev) => { const b = ev.target.closest('[data-mfr]'); if (!b) return; const g = $('mapScroll').querySelector(`.node[data-id="${b.dataset.mfr}"]`); if (g) { const sc = $('mapScroll'), r = g.getBoundingClientRect(), sr = sc.getBoundingClientRect(); sc.scrollTop += r.top - sr.top - sc.clientHeight / 2; } nodeInfo(b.dataset.mfr); });
   // the map as an SVG; interactive = clickable reachable nodes (the map screen), otherwise a read-only view (the Map button in a fight)
   function mapSvg(interactive) {
     const nodes = run.map.nodes, reach = new Set(run.over || !interactive ? [] : run.reachable());
@@ -9413,7 +9481,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       <p class="muted">Luck ${lk}: every chance is multiplied by ${(1 + lk / 100).toFixed(2)}.${t.chance['Purple (Epic)'] ? '' : ' Purples only drop from elites and the boss.'}</p>
       <p><b>Item bases it drops</b> (one picked per roll; stats roll at map +${lvl}):</p><div class="cardlist">${e.pool.map(b => { const bb = G.bases.find(x => x.name === b); return `<div class="cardrow" style="--rc:var(--line)"><span class="n"></span><b>${esc(b)}</b><span class="cst">${esc(bb ? bb.label : '')}</span></div>`; }).join('')}</div>` : '';
     const cards = (e.loot || []).filter(x => x.type === 'Card' || x.type === 'Codex');
-    const cardHtml = cards.length ? `<p><b>Cards and codexes</b> (each rolls on its own; Gold cards only drop here):</p><div class="cardlist">${cards.map(x => `<div class="cardrow" style="--rc:${RC[x.rarity] || 'var(--line)'}"><span class="n">${x.pct}%</span><b>${esc(x.item)} <span class="muted">${esc(x.cls)} ${esc(x.rarity)} ${x.type === 'Codex' ? 'codex' : ''}</span></b><span class="cst"></span><span class="tx">${esc(x.note || '')}</span></div>`).join('')}</div>` : '';
+    const cardHtml = cards.length ? `<p><b>Cards and codexes</b> (each rolls on its own; Gold cards only drop here):</p><div class="cardlist">${cards.map(x => `<div class="cardrow" style="--rc:${RC[x.rarity] || 'var(--line)'}"><span class="n">${x.type === 'Codex' ? +CB.bossCodexPct(e).toFixed(1) : x.pct}%</span><b>${esc(x.item)} <span class="muted">${esc(x.cls)} ${esc(x.rarity)} ${x.type === 'Codex' ? 'codex' : ''}</span></b><span class="cst"></span><span class="tx">${esc(x.note || '')}</span></div>`).join('')}</div>` : '';
     modal(`<h2>${esc(e.name)}: loot</h2><p><b>Gold:</b> ${Math.round(e.gold[0] * gm)} to ${Math.round(e.gold[1] * gm)} per kill.</p>${gear}${cardHtml}<p><b>Prototype card drops:</b> ${{ 1: '30% per kill (mostly White)', 2: '40% per kill', 3: '50% per kill', Elite: 'always 1 card, Green or better (10% Gold)', Boss: '2 cards, Blue or Gold' }[e.tier]}, from your class's implemented cards. The named cards above come from the Map 1 design and arrive when more cards are built.</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     $('mClose').onclick = closeModal;
   }
