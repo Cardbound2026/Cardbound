@@ -41,12 +41,13 @@
     if (!A.imp2) return '';
     if (A.imp2 === 'Draw / regen pool') return 'Card draw 3-5 plus Mana Regen: a pool of 6 (White) to 9 (Purple) points split between them, each point not spent on draw is +10 regen';
     if (A.imp2.startsWith('Elemental damage')) return `+${statRange('Elemental/Holy Damage', two)} damage of one random element`;
+    if (A.imp2 === 'Shadow Damage') return `+${statRange('Elemental/Holy Damage', two)} Shadow damage`;
     if (A.imp2 === 'Elemental/Holy Damage') return /Mace|Warhammer/.test(b.arch) ? `+${statRange('Elemental/Holy Damage', two)} Holy damage` : `+${statRange('Elemental/Holy Damage', two)} damage of one random element`;
     return `+${statRange(A.imp2, two)} ${A.imp2}`;
   }
   function codexGear() {
     const G = DATA.gear, q = CX.q.toLowerCase();
-    const slotOf = (A) => /Shield|Focus|Codex/.test(A.slot) ? 'Off-hand' : /Axe|Sword|Dagger|Mace|Wand|Maul|Warhammer|Staff/.test(A.slot) ? 'Weapon' : A.slot;
+    const slotOf = (A) => /Shield|Focus|Codex/.test(A.slot) ? 'Off-hand' : /Axe|Sword|Dagger|Mace|Wand|Maul|Warhammer|Staff|Scythe/.test(A.slot) ? 'Weapon' : A.slot;
     const SLOTN = ['Weapon', 'Off-hand', 'Helm', 'Shoulders', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves', 'Belt', 'Pants', 'Boots', 'Ring'];
     const droppers = {}; for (const e of Object.values(DATA.enemies)) for (const b of e.pool || []) (droppers[b] = droppers[b] || []).push(e.name);
     const mk = cxMapKey(), M = mk && DATA.maps[mk];
@@ -144,7 +145,7 @@
     const tierOrder = { 1: 0, 2: 1, 3: 2, Elite: 3, Boss: 4 };
     mobs.sort((a, b) => tierOrder[a[1].tier] - tierOrder[b[1].tier] || a[1].name.localeCompare(b[1].name));
     const bases = new Map(); for (const [k, e] of mobs) for (const b of e.pool || []) { const x = bases.get(b) || { from: [] }; x.from.push(e.name); bases.set(b, x); }
-    const bySlot = {}; for (const [b, x] of bases) { const bb = G.bases.find(z => z.name === b); const A = bb && G.arche[bb.arch]; const sl = A ? (/Shield|Focus/.test(A.slot) ? 'Off-hand' : /Axe|Sword|Dagger|Mace|Wand|Maul|Warhammer|Staff/.test(A.slot) ? 'Weapon' : A.slot) : 'Other'; (bySlot[sl] = bySlot[sl] || []).push({ b, label: bb ? bb.label : '', from: x.from }); }
+    const bySlot = {}; for (const [b, x] of bases) { const bb = G.bases.find(z => z.name === b); const A = bb && G.arche[bb.arch]; const sl = A ? (/Shield|Focus/.test(A.slot) ? 'Off-hand' : /Axe|Sword|Dagger|Mace|Wand|Maul|Warhammer|Staff|Scythe/.test(A.slot) ? 'Weapon' : A.slot) : 'Other'; (bySlot[sl] = bySlot[sl] || []).push({ b, label: bb ? bb.label : '', from: x.from }); }
     const cards = []; for (const [k, e] of mobs) for (const x of e.loot || []) if (x.type === 'Card') cards.push({ x, e, key: Object.keys(CARDS).find(q => CARDS[q].name === x.item && CARDS[q].cls === x.cls) });
     const mine = cards.filter(c => c.x.cls === cls).sort((a, b) => RAR_ORDER[CARDS[b.key] ? CARDS[b.key].rarity : 'White'] - RAR_ORDER[CARDS[a.key] ? CARDS[a.key].rarity : 'White'] || b.x.pct - a.x.pct);
     const boss = DATA.enemies[M.boss], cx = (boss.loot || []).filter(x => x.type === 'Codex');

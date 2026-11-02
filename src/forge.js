@@ -29,7 +29,7 @@
       '1H Sword': ['weapon', 'sword_0', 'sword_2', 'sword_3', 'sword_1', 'sword_3', 'sword_4'], '1H Axe': ['weapon', 'axe_0', 'axe_1', 'axe_2', 'axe_3', 'axe_1', 'axe_3'], Dagger: ['weapon', 'dagger_0', 'dagger_3', 'dagger_1', 'dagger_2', 'dagger_0', 'dagger_4'],
       '1H Mace': ['weapon', 'mace_0', 'mace_1', 'mace_3', 'mace_1', 'mace_2', 'mace_3'], Wand: ['weapon', 'wand_0', 'wand_1', 'wand_3', 'wand_2', 'wand_0', 'wand_2'],
       '2H Sword': ['weapon', 'greatsword_0', 'greatsword_2', 'greatsword_1', 'greatsword_0', 'greatsword_1', 'greatsword_3'], '2H Axe': ['weapon', 'greataxe_0', 'greataxe_1', 'greataxe_2', 'greataxe_0', 'greataxe_1', 'greataxe_2'],
-      '2H Maul': ['weapon', 'hammer_0', 'hammer_2', 'hammer_1', 'hammer_2', 'hammer_1', 'hammer_3'], '2H Warhammer': ['weapon', 'hammer_1', 'hammer_2', 'hammer_0', 'hammer_2', 'hammer_1', 'hammer_3'],
+      '2H Maul': ['weapon', 'hammer_0', 'hammer_2', 'hammer_1', 'hammer_2', 'hammer_1', 'hammer_3'], '2H Scythe': ['weapon', 'polearm_0', 'polearm_1', 'polearm_2', 'polearm_3', 'polearm_4', 'polearm_1'], '2H Warhammer': ['weapon', 'hammer_1', 'hammer_2', 'hammer_0', 'hammer_2', 'hammer_1', 'hammer_3'],
       'Arcane Staff': ['weapon', 'staff_2'], 'Fire Staff': ['weapon', 'staff_4'], 'Frost Staff': ['weapon', 'staff_2'], 'Nature Staff': ['weapon', 'staff_3'], 'Shadow Staff': ['weapon', 'staff_1'],
       'Kite Shield': ['offhand', 'shield_1', 'shield_0', 'shield_1', 'shield_5', 'shield_1', 'shield_4'], 'Tower Shield': ['offhand', 'shield_2'], Focus: ['offhand', 'arcane_2', 'light_2', 'arcane_0', 'relic_1', 'arcane_1', 'book_2'],
     };

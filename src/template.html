@@ -1165,7 +1165,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     $('hubChar').innerHTML = `<div class="charhead"><h3>${esc(c.name)} <span class="muted" style="font-size:15px">${c.cls}</span></h3><span class="chip">Gold ${profile.gold}</span></div>
       <div class="power"><div><b>${gs}</b><span>Gear score</span></div><div><b>${dl}</b><span>Deck level</span></div><div><b>${CBHub.powerLevel(c)}</b><span>Power</span></div></div>
       <dl class="kv"><dt>Max HP</dt><dd>${s.maxHp}</dd><dt>Mana</dt><dd>${s.maxMana} max${s.manaOver ? ' <span class="down">(capped)</span>' : ''}, +${s.regen}/turn</dd><dt>Draw per round</dt><dd>${s.draw}</dd>
-      <dt>Strength / Intelligence</dt><dd>+${s.strength}% / +${s.intelligence}%</dd><dt>Dexterity (${CLASSES[c.cls].defense})</dt><dd>+${s.dexterity + s.defGain}%</dd>
+      <dt>Strength / Intelligence</dt><dd>+${s.strength}% / +${s.intelligence}%</dd><dt>Dexterity (${CBHub.defWord(c) || CLASSES[c.cls].defense})</dt><dd>+${s.dexterity + s.defGain}%</dd>
       <dt>Crit</dt><dd>${s.crit}% x${s.critMult.toFixed(2)}</dd><dt>Initiative</dt><dd>${s.init}</dd>${s.weaponDmg ? `<dt>Weapon damage</dt><dd>+${s.weaponDmg} per Attack hit</dd>` : ''}
       <dt>Runs / best row / boss kills</dt><dd>${c.runs} / ${c.best > ROWS ? 'Boss' : c.best} / ${c.bossKills}</dd></dl>
       <p class="savenote" style="margin:8px 0 0">Gear score is the average item level of your 14 slots. Deck level is your best 20 cards against a perfect +10 deck. Power is the average of the two (0 to 100).</p>`;
@@ -1693,9 +1693,16 @@ body.aiming { cursor: grabbing; user-select: none; }
     g.textAlign = 'center';
     if (guild) { g.font = `italic 500 ${Math.round(10.5 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const t = '<' + guild + '>', w = g.measureText(t).width + 10, h = Math.round(12 * Math.max(0.9, s));
       g.fillStyle = 'rgba(10,8,6,.72)'; g.fillRect(tx - w / 2, y - h, w, h); g.fillStyle = '#b9c8a6'; g.fillText(t, tx, y - h * .22); y -= h - 2; }
-    g.font = `600 ${Math.round(12 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const w = g.measureText(name).width + 10, h = Math.round((guild ? 15 : 17) * Math.max(0.9, s));
-    g.fillStyle = 'rgba(10,8,6,.8)'; g.fillRect(tx - w / 2, y - h, w, h); g.fillStyle = col; g.fillText(name, tx, y - h * (guild ? .2 : .26));
-    if (title) { y -= h - 1; g.font = `italic 600 ${Math.round(10.5 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const tw = g.measureText(title).width + 10, th = Math.round(12 * Math.max(0.9, s)); g.fillStyle = 'rgba(10,8,6,.72)'; g.fillRect(tx - tw / 2, y - th, tw, th); g.fillStyle = '#e4c27a'; g.fillText(title, tx, y - th * .22); return y - th; } // Nov 2: titles
+    // Nov 2: one line, the title before the name ("Veteran Brann") or after it ("Brann the Blooded"), in gold
+    const fN = `600 ${Math.round(12 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`, fT = `italic 600 ${Math.round(11.5 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`;
+    g.font = fN; const wn = g.measureText(name).width; let wt = 0, sp = 0; if (title) { g.font = fT; wt = g.measureText(title).width; g.font = fN; sp = g.measureText(' ').width; }
+    const w = wn + wt + sp + 10, h = Math.round((guild ? 15 : 17) * Math.max(0.9, s)), ty = y - h * (guild ? .2 : .26), x0 = tx - (wn + wt + sp) / 2;
+    g.fillStyle = 'rgba(10,8,6,.8)'; g.fillRect(tx - w / 2, y - h, w, h); g.textAlign = 'left';
+    const after = !title || CBHub.titleAfter(title), xn = after ? x0 : x0 + wt + sp, xt = after ? x0 + wn + sp : x0;
+    g.font = fN; g.fillStyle = col; g.fillText(name, xn, ty);
+    if (title) { g.font = fT; g.fillStyle = '#e4c27a'; g.fillText(title, xt, ty); }
+    g.textAlign = 'center';
+    if (false) { y -= h - 1; g.font = `italic 600 ${Math.round(10.5 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const tw = g.measureText(title).width + 10, th = Math.round(12 * Math.max(0.9, s)); g.fillStyle = 'rgba(10,8,6,.72)'; g.fillRect(tx - tw / 2, y - th, tw, th); g.fillStyle = '#e4c27a'; g.fillText(title, tx, y - th * .22); return y - th; } // Nov 2: titles
     return y - h;
   }
   function drawChar(g, cx, by, dir, step, pal, s, t) {
@@ -2463,6 +2470,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   const GEMC = { Enemy: '#a3402c', White: '#d8d2c4', Green: '#4fae4a', Blue: '#3f7fe0', Gold: '#e6a52c', Token: '#9a8f82', Status: '#6c6258' };
   function cardIcon(d) { if (d.ekind === 'status' || d.type === 'Status') return ICON.debuff || ICON.buff; if (d.ekind) return ICON[d.ekind]; return d.type === 'Attack' ? ICON.attack : d.tags && (d.tags.def || d.tags.heal) ? ICON.defend : ICON.buff; }
   function cardFace(d, o) {
+    if (d && (d.cls === 'Warrior' || d.cls === 'Paladin') && typeof profile !== 'undefined' && profile && profile.chars) { const hc = profile.chars[heroKey]; const t2 = CBHub.defText(hc, d.cls, d.text); if (t2 !== d.text) d = Object.assign({}, d, { text: t2 }); } // Nov 2: Block with a shield, Parry without
     o = o || {}; const F = (window.CB_FRAMES || {})[d.cls] || (d.type === 'Status' || d.ekind === 'status' ? (window.CB_FRAMES || {})['S:junk'] : null); if (!F) return null;
     const pct = (v) => (v * 100).toFixed(2) + '%';
     const L = (r) => `left:${pct(r[0])};top:${pct(r[1])};width:${pct(r[2])};height:${pct(r[3])}`;
@@ -2788,7 +2796,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       for (const x of a.timed || []) { const L = { keepBlock: 'Block locked', critBuff: 'Crit up', mirror: 'Mirror Image', noBleed: 'Bleed immune', poisonBlock: 'Poison blockable', fortify: 'Fortify', relentless: 'Relentless', endless: 'Endless Blades', defX: 'Defense x2', warEngine: 'Regen x3', bleedX: 'Bleed x2', adrenaline: 'Adrenaline', shadowArmor: 'Shadow Armor', bloodArmor: 'Blood Armor', soulArmor: 'Soul Armor', netherArmor: 'Nether Armor', demonArmor: 'Demon Armor' }[x.key]; if (L) t.push(`<span class="tag good">${L} ${x.turns}</span>`); }
       if (a.turn && (cb.raid ? cb.phase === 'player' : cb.current === a)) { const T = a.turn; if (T.twice) t.push(`<span class="tag good">Next ${T.twice.type === 'any' ? 'card' : T.twice.type} twice</span>`); if (T.nextFree || T.freeAll) t.push(`<span class="tag good">Free</span>`); if (T.noDraw) t.push(`<span class="tag bad">No draws</span>`); if (T.killMana) t.push(`<span class="tag good">Kill: +${T.killMana} mana</span>`); }
     } else {
-      for (const [k, l, tip] of [['condemn', 'Condemn', 'Takes more Holy damage (%)'], ['unwarded', 'Unwarded', 'Takes more Skill damage (%)'], ['exposure', 'Exposure', 'Its cards cost 5% more per stack']]) if (a[k]) t.push(`<span class="tag bad" title="${tip}">${l} ${a[k]}</span>`);
+      for (const [k, l, tip] of [['condemn', 'Condemn', 'Takes more Holy damage (%)'], ['unwarded', 'Unwarded', 'Takes more Skill damage (%)'], ['exposure', 'Exposure', 'Its cards cost 5% more per stack'], ['magicVuln', 'Magic Vulnerability', 'Takes more magic (non-Physical) damage (%); wears off 10% a turn']]) if (a[k]) t.push(`<span class="tag bad" title="${tip}">${l} ${a[k]}</span>`);
       if (a.stunned) t.push(`<span class="tag bad" title="Loses its next turn">Stunned</span>`); else if (a.feared) t.push(`<span class="tag bad" title="Skips its attacks on its next turn">Feared</span>`);
       if (a.beacon) { const bw = cb.actorById(a.beacon.by); t.push(`<span class="tag good" title="Damage to it heals every hero for ${a.beacon.pct}% of it">Soul Beacon${bw && cb.partySize > 1 ? ' (' + esc(bw.name) + ')' : ''}</span>`); }
       if (a.counter) t.push(`<span class="tag bad">Countered</span>`); if (a.silenced && !a.stunned) t.push(`<span class="tag bad">Silenced</span>`); if (a.disarmed && !a.feared && !a.stunned) t.push(`<span class="tag bad">Disarmed</span>`);

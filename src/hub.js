@@ -115,12 +115,16 @@ function gearProfile(c) {
 const mapElement = (mk) => { const M = root.CB_DATA && root.CB_DATA.maps && root.CB_DATA.maps[mk]; return M ? M.element : mk ? mk[0].toUpperCase() + mk.slice(1) : 'Physical'; };
 // value of a whole set of gear (log fight strength, up to a constant)
 function gearValue(c, gear, mk) {
+  const cxIt = gear.find(g => g && g.slot === 'Codex'), cxk = cxIt && cxIt.codex, st = cxk && (c.codexes || {})[cxk];
+  gear = CB.legalGear ? CB.legalGear({ cls: c.cls, gear, talents: { codex: cxk, picks: (st && st.picks) || [] } }) : gear; // a shield beside a staff only counts with the talent
   const w = gearProfile(c).w, t = CB.sumGear(gear), el = mapElement(mk || 'physical');
   let v = Math.log(Math.max(1, t.maxHp)) * (w.hp || 1) + 0.5 * Math.log(1 + (t.healthRegen || 0) / Math.max(1, t.maxHp)); // Health Regen: heals between fights
   for (const k of LINEAR) v += (w[k] || 0) * (k === 'critDmg' ? t.critDmg : t[k] || 0);
   v += (w.resist || 0) * Math.min(75, (t.resist || {})[el] || 0);
   for (const [e, n] of Object.entries(t.elem || {})) v += (w['elem:' + e] || 0) * n;
-  return v + LUCK_W * (t.luck || 0);
+  v += LUCK_W * (t.luck || 0);
+  if (cxk && CB.codexNeed && CB.codexNeed(cxk, gear)) v -= 0.25 * Math.abs(v); // Nov 2: the codex passive is off without the weapons it needs
+  return v;
 }
 const is2H = (it) => !!(it && it.hands && it.hands.startsWith('2H'));
 // gear with `it` put in `slot`, pushing out what equip() would push out
@@ -193,6 +197,15 @@ function achCheck(p, ev, who, quiet) {
   return fresh;
 }
 function bump(p, k, n) { p.stats = p.stats || {}; p.stats[k] = (p.stats[k] || 0) + (n == null ? 1 : n); }
+// Nov 2: titles that read as a description ("the Blooded", "of the Fellowship") follow the name; ranks ("Veteran") come first
+const titleAfter = (t) => /^(the|of) /i.test(t || '');
+const titled = (name, t) => !t ? name : titleAfter(t) ? `${name} ${t}` : `${t} ${name}`;
+// Nov 2: Warriors and Paladins call their defense Block with a shield in hand and Parry without one
+function defWord(c) { if (!c) return null; const cls = CLASSES[c.cls]; if (!cls) return null; if (c.cls !== 'Warrior' && c.cls !== 'Paladin') return cls.defense;
+  const o = (c.gear || []).find(g => g && g.slot === 'Off-hand'); return o && (/Shield/.test(o.arch || o.label || '') || ['Kite Shield', 'Pavise'].includes(o.name)) ? 'Block' : 'Parry'; }
+function defText(c, cls, text) { const w = defWord(c); if (!w || !text || (cls !== 'Warrior' && cls !== 'Paladin') || c.cls !== cls) return text;
+  const lo = w.toLowerCase(), ed = w === 'Block' ? 'Blocked' : 'Parried';
+  return text.replace(/\b(Block|Parry)\b/g, w).replace(/\b(block|parry)\b/g, lo).replace(/\b(Blocked|Parried)\b/g, ed).replace(/\b(blocked|parried)\b/g, ed.toLowerCase()); }
 function titleOf(c, p) { const a = c && c.title && ACH_BY[c.title]; return a && (!p || (p.ach || {})[a.id]) ? a.title : ''; }
 function setTitle(p, key, id) { const c = char(p, key); if (!c) return false; if (id && !(p.ach || {})[id]) return false; c.title = id || null; return true; }
 // one-handed weapons go in either hand (dual wielding); starter weapons predate the 'hands' field, so they are listed by name
@@ -227,8 +240,10 @@ function equip(p, cls, itemId, slotWanted) {
   const item = p.stash[i], opts = slotOptions(item);
   let slot = slotWanted && opts.includes(slotWanted) ? slotWanted : opts[0];
   if (opts.length > 1 && !slotWanted && opts[0] !== 'Weapon') { const free = opts.find(s => !c.gear.find(g => g.slot === s)); if (free) slot = free; else { const a = c.gear.find(g => g.slot === opts[0]), b = c.gear.find(g => g.slot === opts[1]); slot = (a.ilvl || 0) <= (b.ilvl || 0) ? opts[0] : opts[1]; } }
-  const twoH = item.hands && item.hands.startsWith('2H');
-  const mainIs2H = () => { const w = c.gear.find(g => g.slot === 'Weapon'); return w && w.hands && w.hands.startsWith('2H'); };
+  // Nov 2: Barrier Savant's 'Staff and Shield' talent lets a staff share the hands with a shield
+  const ss = staffShield(c), isStaff = (it) => /Staff/.test((it && (it.arch || it.label)) || ''), isShield = (it) => /Shield/.test((it && (it.arch || it.label)) || '') || ['Kite Shield', 'Pavise'].includes(it && it.name);
+  const twoH = item.hands && item.hands.startsWith('2H') && !(ss && isStaff(item) && isShield(c.gear.find(g => g.slot === 'Off-hand')));
+  const mainIs2H = () => { const w = c.gear.find(g => g.slot === 'Weapon'); return w && w.hands && w.hands.startsWith('2H') && !(ss && isStaff(w) && isShield(item)); };
   const off = c.gear.filter(g => g.slot === slot || (twoH && g.slot === 'Off-hand') || (slot === 'Off-hand' && g.slot === 'Weapon' && mainIs2H()));
   if (p.stash.length - 1 + off.length > STASH_MAX) return { ok: false, why: 'Stash is full' };
   p.stash.splice(i, 1);
@@ -360,6 +375,7 @@ function beatMap(c, mk) { return !!(c && c.mapKills && c.mapKills[mk] != null); 
 // ---------- runs
 // ---------- codex talents (Nov 1): XP and picks per hero per codex; only the worn codex's talents are active
 function wornCodex(c) { const it = (c.gear || []).find(g => g && g.slot === 'Codex'); return it && it.codex && CB.CODEX_BY_KEY[it.codex] ? it.codex : null; }
+function staffShield(c) { if (wornCodex(c) !== 'barrier_savant') return false; const st = (c.codexes || {}).barrier_savant; return !!(st && st.picks && st.picks[0] === 1); }
 function codexState(c, key) { c.codexes = c.codexes || {}; return c.codexes[key] || (c.codexes[key] = { xp: 0, picks: [] }); }
 function codexInfo(c, key) { const st = (c.codexes || {})[key] || { xp: 0, picks: [] }; return Object.assign({ key, xp: st.xp || 0, picks: st.picks || [] }, CB.codexLevel(st.xp)); }
 function maxedCodexes(c) { return Object.values(c.codexes || {}).filter(st => CB.codexLevel(st.xp).level >= CB.CODEX_MAX).length; }
@@ -412,6 +428,6 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk, ach };
 }
 
-const API = { VAULT_MAX, toVault, fromVault, ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { defWord, defText, titleAfter, titled, staffShield, VAULT_MAX, toVault, fromVault, ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);

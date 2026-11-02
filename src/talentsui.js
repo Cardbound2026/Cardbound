@@ -1,7 +1,7 @@
   // ---------- codex talent trees (Nov 1): N opens the tree for your hero; the Compendium shows any codex's tree
   // Pick one talent per open row (free to change in town). Rows open every 2 codex levels; talents only work while that codex is worn.
   const TCOL = [['Offense', '#e07a4f'], ['Defense', '#5fb3a1'], ['Support', '#9b8fe0']];
-  const talentText = (t, cls) => t.replace(/\{D\}/g, (CLASSES[cls] || {}).defense || 'Block');
+  const talentText = (t, cls, c) => t.replace(/\{D\}/g, (c && c.cls === cls && CBHub.defWord(c)) || (CLASSES[cls] || {}).defense || 'Block');
   const inTownNow = () => !run && !cb;
   function openTalents(cxKey, opt) {
     opt = opt || {};
@@ -21,7 +21,7 @@
       const cells = [0, 1, 2].map(j => {
         let name, text;
         if (cap) { const d = CARDS[tr.cap[j]]; name = d ? d.name : tr.cap[j]; text = (d ? d.text : '') + ' Already in play at the start of every fight.'; }
-        else { const t = tr.rows[i][j]; name = t.n; text = talentText(t.t, cx.cls); }
+        else { const t = tr.rows[i][j]; name = t.n; text = talentText(t.t, cx.cls, me); }
         const on = picks[i] === j && (info ? i < info.rows : false); const other = !on && open && picks[i] != null && picks[i] !== j; // another talent on this row is picked
         return `<button class="tlcell ${on ? 'on' : ''} ${other ? 'other' : ''} ${dim ? 'locked' : ''} ${open ? '' : 'noclick'} ${cap ? 'cap' : mini ? 'mini' : ''}" style="--tc:${TCOL[j][1]}" data-tlr="${i}" data-tlc="${j}" ${edit && open ? '' : 'tabindex="-1"'} aria-pressed="${on}"><b>${esc(name)}</b><span>${esc(text)}</span></button>`;
       }).join('');
@@ -46,7 +46,8 @@
     const c = CBHub.char(profile, heroKey), k = CBHub.wornCodex(c);
     if (!k) { el.innerHTML = `<span class="muted">No codex worn: equip one (Quartermaster) to earn codex XP and talents.</span> <button class="pilebtn" id="tbTal">Talents <span class="muted">N</span></button>`; }
     else { const i = CBHub.codexInfo(c, k), unspent = i.rows - i.picks.filter((x, j) => x != null && j < i.rows).length;
-      el.innerHTML = `<b>${esc(CB.CODEX_BY_KEY[k].name)}</b> <span class="muted">Lv</span> <b>${i.level}</b><div class="xpbar cxxp" title="${i.need ? `${i.into} / ${i.need} XP` : 'Max level'}"><i style="width:${i.need ? Math.round(100 * i.into / i.need) : 100}%"></i></div><span class="muted">${i.need ? `${i.into} / ${i.need} XP` : 'Max level'}</span>${unspent > 0 ? ` <span class="tag good">${unspent} talent${unspent > 1 ? 's' : ''} to pick</span>` : ''} <button class="pilebtn" id="tbTal">Talents <span class="muted">N</span></button>`; }
+      const need = CB.codexNeed(k, c.gear, window.CB_DATA); // Nov 2: weapon requirements
+      el.innerHTML = `${need ? `<span class="tag bad" title="The codex passive needs ${esc(need)}. Talents still work.">Inactive: needs ${esc(need)}</span> ` : ''}<b>${esc(CB.CODEX_BY_KEY[k].name)}</b> <span class="muted">Lv</span> <b>${i.level}</b><div class="xpbar cxxp" title="${i.need ? `${i.into} / ${i.need} XP` : 'Max level'}"><i style="width:${i.need ? Math.round(100 * i.into / i.need) : 100}%"></i></div><span class="muted">${i.need ? `${i.into} / ${i.need} XP` : 'Max level'}</span>${unspent > 0 ? ` <span class="tag good">${unspent} talent${unspent > 1 ? 's' : ''} to pick</span>` : ''} <button class="pilebtn" id="tbTal">Talents <span class="muted">N</span></button>`; }
     $('tbTal').onclick = () => openTalents();
   }
   // N: the talent tree, from town, the character screen, the map or a fight (closes it again if it is open)

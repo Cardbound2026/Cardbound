@@ -4,6 +4,7 @@
 // fx are read by the engine (talentDef in engine.js). {D} in text becomes the class's defense (Block, Dodge, Barrier).
 (function (r) {
   const T = (n, t, ...fx) => ({ n, t, fx });
+  const X = (t) => Object.assign(t, { halved: true }); // Nov 2: numbers set exactly (skip the halving pass at the bottom)
   const NAME = { dread: 'Dreading', rot: 'Rotting', beacon: 'Beaconed', burn: 'Burning', bleed: 'Bleeding', poison: 'Poisoned', vulnerable: 'Vulnerable', weak: 'Weak', chill: 'Chilled', exposure: 'Exposed', block: 'with Block' };
   const ADJ = { dread: 'Dread', rot: 'Rot', burn: 'Burn', bleed: 'Bleed', poison: 'Poison', vulnerable: 'Vulnerable', weak: 'Weak', chill: 'Chill', exposure: 'Exposure' };
   // ---- text helpers (keep the words and the numbers together)
@@ -76,7 +77,7 @@
         flat('Rampart Slam', 15, { type: 'Attack' }), dmg('Crushing Weight', 15, { type: 'Attack', self: 'block' }), flat('Steel Tide', 10, { type: 'Attack' }), dmg('Juggernaut', 25, { type: 'Attack', self: 'block:40' }), flat('Tower of Steel', 30, { type: 'Attack' })],
       d: { 3: back('Spiked Plate', 4) }, s: {} },
     riposte: { party: party('Killer Instinct', 'critMult'), cls: 'Warrior', cap: ['expose_opening', 'partial_guard', 'second_lung'],
-      off: [dmg('Quick Hands', 5, { type: 'Attack' }), back('Counter Edge', 3), dmg('Read the Opening', 10, { type: 'Attack', vs: 'vulnerable' }), back('Barbed Guard', 6),
+      off: [X(T('Duelist\'s Poise', '100% of your Strength is converted to Dexterity (more Parry).', ['convert', 'strength', 'dexterity', 100])), back('Counter Edge', 3), dmg('Read the Opening', 10, { type: 'Attack', vs: 'vulnerable' }), back('Barbed Guard', 6),
         T('Punishing Parry', 'When you fully Parry an attack, the attacker takes 15 damage.', ['full', 'back', 15]), dmg('Riposte Mastery', 15, { type: 'Attack', vs: 'vulnerable' }), back('Sharpened Guard', 10),
         dmg('Exploit', 25, { type: 'Attack', vs: 'vulnerable:20' }), T('Blade Dancer', 'When you fully Parry an attack, draw 1 card and gain 10 mana.', ['full', 'draw', 1], ['full', 'mana', 10])],
       d: { 7: T('Counterweight', 'When you fully Parry an attack, the attacker gains 10 Vulnerable.', ['full', 'debuff', 10, 'vulnerable']) }, s: {} },
@@ -85,7 +86,7 @@
         spread('Exsanguinator', 'bleed'), dmg('Red Frenzy', 15, { type: 'Attack', vs: 'bleed' }), every('Crimson Tide', 3, { type: 'Attack' }, 'bleed', 6), per('Bloodletting Edge', 'bleed', 10, 5, 25, { type: 'Attack' }), dotX('Blood Moon', 'bleed', 50)],
       d: { 8: healTurn('Transfusion', 3, 'any:bleed') }, s: { 9: rally('Blood Brothers', 15, 'bleed') } },
     colossus: { party: party('War Cry', 'strength'), cls: 'Warrior', cap: ['unstoppable_force', 'iron_will', 'deep_reserves'],
-      off: [dmg('Heavy Hands', 5, { type: 'Attack', minCost: 20 }), T('Brute Force', 'Start each fight with +10 Strength.', ['start', 'str', 10]), dmg('Titan Grip', 12, { type: 'Attack', minCost: 30 }), firstCost('Thunderous', 5, { type: 'Attack' }),
+      off: [X(T('Rattled Giant', '+50% damage to enemies that have a Stun in their hand.', ['dmg', 50, { vs: 'stunHand' }])), T('Brute Force', 'Start each fight with +10 Strength.', ['start', 'str', 10]), dmg('Titan Grip', 12, { type: 'Attack', minCost: 30 }), firstCost('Thunderous', 5, { type: 'Attack' }),
         dmg('Colossal Blow', 25, { type: 'Attack', minCost: 30 }), dmg('Unstoppable', 15, { type: 'Attack' }), cost('Titan\'s Hunger', 5, { type: 'Attack', minCost: 20 }), T('Avalanche', 'Start each fight with +30 Strength.', ['start', 'str', 30]), dmg('World Breaker', 40, { type: 'Attack', minCost: 30 })],
       d: {}, s: { 6: turnMana('Bottomless', 10) } },
     sunderer: { party: party('Rally Cry', 'dmg'), cls: 'Warrior', cap: ['open_wounds', 'thorned_bulwark', 'momentum'],
@@ -140,7 +141,7 @@
     barrier_savant: { party: party('Fortitude', 'maxHpPct'), cls: 'Mage', cap: ['potency', 'glyph_of_warding', 'barrier_battery'],
       off: [dmg('Charged Ward', 5, { type: 'Skill', self: 'block' }), flat('Ward Shards', 5, { type: 'Skill' }), dmg('Kinetic Ward', 10, { type: 'Skill', self: 'block' }), flat('Ward Lance', 10, { type: 'Skill' }),
         flat('Overload', 20, { type: 'Skill' }), dmg('Arcane Bulwark', 15, { type: 'Skill', self: 'block:20' }), back('Reflective Ward', 8), dmg('Ward Mastery', 25, { type: 'Skill', self: 'block:40' }), flat('Aegis Cannon', 35, { type: 'Skill' })],
-      d: { 6: def('Layered Wards', 20) }, s: {} },
+      d: { 1: X(T('Staff and Shield', 'You can carry a shield in your off-hand while wielding a staff.', ['gear', 'staffShield'])), 6: def('Layered Wards', 20) }, s: {} },
     entropy: { party: party('Deep Well', 'maxManaPct'), cls: 'Mage', cap: ['temporal_siphon', 'malediction_mirror', 'evocation'],
       off: [dmg('Siphon', 5, { vs: 'exposure' }), startDot('Entropic Start', 'exposure', 3), dmg('Decay', 10, { vs: 'exposure' }), T('Leech', 'Gain 15 mana when you kill an enemy.', ['kill', 'mana', 15]),
         turnDot('Void Pull', 'exposure', 2), dmg('Unravel', 15, { vs: 'exposure' }), per('Collapse', 'exposure', 2, 5, 30), T('Mana Burn', 'At the start of each of your turns, drain 10 mana from every enemy.', ['turn', 'drain', 10]), dmg('Heat Death', 30, { vs: 'exposure' })],
@@ -163,7 +164,7 @@
       off: [dmg('Rhythm', 5), dmg('Crusader Training', 10, { type: 'Attack', self: 'prevSkill' }), dmg('Tempo', 10, { type: 'Attack' }), def('Balanced Blade', 15, 'prevAttack'),
         dmg('Crusade March', 25, { type: 'Attack', self: 'prevSkill' }), dmg('Steady Hand', 15, { type: 'Attack' }), T('Iron Rhythm', 'Every 3rd Attack you play in a turn gives 10 Block.', ['every', 3, { type: 'Attack' }, 'block', 10]),
         dmg('Holy Tempo', 30, { type: 'Attack', self: 'prevSkill' }), T('Champion', '+25% Attack damage and +15% crit chance right after a Skill.', ['dmg', 25, { type: 'Attack', self: 'prevSkill' }], ['crit', 15, { type: 'Attack', self: 'prevSkill' }])],
-      d: {}, s: {} },
+      d: {}, s: { 1: X(T('Swift Justice', '50% of your Strength is converted to Initiative.', ['convert', 'strength', 'baseInit', 50])) } },
     sacred_flame: { party: party('Blessing of Spirit', 'spirit'), cls: 'Paladin', cap: ['brand_the_wicked', 'aegis_of_light', 'burning_wisdom'],
       off: [dotPlus('Kindled Faith', 'burn', 1), dmg('Holy Embers', 8, { dtype: 'Holy', vs: 'burn' }), startDot('Sacred Pyre', 'burn', 5), dotX('Purifying Flames', 'burn', 20),
         spread('Wildfire of Faith', 'burn'), dmg('Zeal', 15, { dtype: 'Holy', vs: 'burn' }), every('Flame Rhythm', 3, { type: 'Attack' }, 'burn', 6), per('Inquisitor', 'burn', 10, 5, 25, { dtype: 'Holy' }), dotX('Purgatory', 'burn', 50)],
@@ -186,11 +187,11 @@
         T('Soul Shepherd', 'Your healing is 20% stronger and you deal +15% Shadow damage.', ['heal', 20], ['dmg', 15, { dtype: 'Shadow' }])],
       d: {}, s: { 9: shelter('Spirit Shelter', 15) } },
     blightcaller: { party: party('Blessing of Spirit', 'spirit'), cls: 'Warlock', cap: ['creeping_doom', 'blighted_skin', 'plague_of_dread'],
-      off: [dotPlus('Dark Whispers', 'dread', 1), dmg('Dread Sense', 8, { vs: 'dread' }), startDot('Haunting', 'dread', 6), dotX('Deeper Dread', 'dread', 20),
-        spread('Contagion', 'dread'), dmg('Terror', 15, { vs: 'dread' }), every('Nightmare', 3, { type: 'Skill' }, 'dread', 5), per('Paralysing Fear', 'dread', 10, 5, 25), dotX('Abyssal Dread', 'dread', 50)],
+      off: [X(dmg('Dark Whispers', 2, { dtype: 'Shadow' })), dmg('Dread Sense', 8, { vs: 'dread' }), startDot('Haunting', 'dread', 6), X(dotX('Deeper Dread', 'dread', 5)),
+        spread('Contagion', 'dread'), dmg('Terror', 15, { vs: 'dread' }), every('Nightmare', 3, { type: 'Skill' }, 'dread', 5), per('Paralysing Fear', 'dread', 10, 5, 25), X(dotX('Abyssal Dread', 'dread', 10))],
       d: { 3: hitDot('Haunted Skin', 'dread', 3) }, s: { 9: rally('Dread Choir', 15, 'dread') } },
     shadow_knight: { party: party('War Cry', 'strength'), cls: 'Warlock', cap: ['unholy_might', 'bone_armor', 'death_pact'],
-      off: [dmg('Dark Edge', 5, { type: 'Attack' }), T('Grave Strength', 'Start each fight with +10 Strength.', ['start', 'str', 10]), dmg('Umbral Blade', 10, { type: 'Attack', dtype: 'Shadow' }), crit('Reaper', 5, { type: 'Attack' }),
+      off: [dmg('Dark Edge', 5, { type: 'Attack' }), X(T('Grave Strength', 'Gain bonus Strength equal to 10% of your Stamina.', ['statFrom', 'strength', 'stamina', 10])), dmg('Umbral Blade', 10, { type: 'Attack', dtype: 'Shadow' }), crit('Reaper', 5, { type: 'Attack' }),
         dmg('Executioner\'s Shadow', 25, { type: 'Attack', minCost: 20 }), dmg('Death Knight', 15, { type: 'Attack' }), dmg('Dread Edge', 20, { type: 'Attack', vs: 'dread' }), T('Lord of Ruin', 'Start each fight with +30 Strength.', ['start', 'str', 30]), dmg('Ebon Blade', 35, { type: 'Attack', dtype: 'Shadow' })],
       d: {}, s: {} },
     demonologist: { party: party('Fel Haste', 'initPct'), cls: 'Warlock', cap: ['demonic_pact', 'grim_bulwark', 'infernal_bond'],
@@ -200,7 +201,7 @@
       d: { 3: T('Fel Guardian', 'Summon a Bulwark Fiend at the start of each fight.', ['start', 'summon', 1, 'bulwark']) }, s: {} },
     bloodmancer: { party: party('Blood Bond', 'lifesteal'), cls: 'Warlock', cap: ['sanguine_frenzy', 'crimson_aegis', 'blood_bank'],
       off: [dmg('Thin Blood', 5, { dtype: 'Physical', type: 'Skill' }), T('Blood Reserves', 'You can pay 4 more HP for cards each turn.', ['stat', 'bloodCapPlus', 4]), dmg('Hemomancy', 10, { dtype: 'Physical', type: 'Skill' }), dmg('Desperation', 12, { self: 'lowhp' }),
-        dmg('Crimson Tide', 20, { dtype: 'Physical', type: 'Skill' }), T('Deep Veins', 'You can pay 8 more HP for cards each turn.', ['stat', 'bloodCapPlus', 8]), dmg('Bloodlust', 25, { self: 'lowhp' }), crit('Red Mist', 10, { type: 'Skill' }), dmg('Blood God', 35, { dtype: 'Physical', type: 'Skill' })],
+        dmg('Crimson Tide', 20, { dtype: 'Physical', type: 'Skill' }), X(T('Hemorrhagic Spells', 'Your Physical Skills make the target Bleed for 20% of the damage they deal.', ['dealtBleed', 20, { type: 'Skill', dtype: 'Physical' }])), dmg('Bloodlust', 25, { self: 'lowhp' }), crit('Red Mist', 10, { type: 'Skill' }), dmg('Blood God', 35, { dtype: 'Physical', type: 'Skill' })],
       d: { 7: healTurn('Transfusion', 3) }, s: {} },
     umbral_ruin: { party: party('Keen Eyes', 'crit'), cls: 'Warlock', cap: ['shadow_mastery', 'void_shell', 'dark_insight'],
       off: [crit('Dark Focus', 3), dmg('Void Touched', 8, { dtype: 'Shadow', minCost: 20 }), crit('Umbral Precision', 5, { type: 'Skill' }), critX('Ruinous', 20),
