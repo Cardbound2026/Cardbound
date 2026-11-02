@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Change', 'Hall of Records now ranks completed maps, not maps you only entered: Progress is 15 points per level of each map you\'ve beaten, plus the furthest row on the next level up, and "Best clear" shows your highest completed map. Map records list who cleared each road at the highest level first.'],
+      ['Fix', 'Boss kills weren\'t being saved since the Hall of Records arrived, so raids didn\'t unlock and the first-kill boss discount never ended. Fixed, and your past boss kills were rebuilt from your map records and run history.'],
       ['Balance', 'Ranking up cards takes twice as much XP at every rank (the gold cost is unchanged). XP already banked on your cards still counts.'],
       ['Feature', 'Map search: type a card, item, monster, shrine or node type above the run map and every node that has it lights up, with a list of what matched (click one to jump to it). If it isn\'t on this map, it tells you which map has it.'],
       ['Fix', 'Damage over time now counts as damage you deal: Rot, Dread, Poison, Bleed and Burn ticks trigger the Soulbinder Codex\'s party heal, your Lifesteal and Soul Beacon.'],

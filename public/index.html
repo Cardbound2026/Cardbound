@@ -4126,6 +4126,9 @@ function fix(p) { // tolerate older or partial saves
   for (const c of Object.values(p.chars)) { c.seen = c.seen || {}; for (const k of [...c.deck, ...c.cards]) c.seen[k.key] = 1; }
   // Nov 1: Hall of Records. Fill map records from the boss kills and run history of heroes made before it existed
   for (const c of Object.values(p.chars)) if (!c.mapBest) { c.mapBest = {}; for (const [mk, lv] of Object.entries(c.mapKills || {})) noteMapBest(c, mk, lv, 15); for (const h of p.history || []) if (!h.raid && h.map && h.name === c.name && h.cls === c.cls) noteMapBest(c, h.map, h.level || 0, h.result === 'victory' ? 15 : (h.row || 0)); }
+  // Nov 1: boss kills weren't being recorded (mapKills) since the Hall of Records; rebuild them from map records and run history
+  for (const c of Object.values(p.chars)) { const k = c.mapKills = c.mapKills || {}; const up = (mk, lv) => { if (k[mk] == null || lv > k[mk]) k[mk] = lv; };
+    for (const [mk, b] of Object.entries(c.mapBest || {})) if (b.row >= 15) up(mk, b.lvl); for (const h of p.history || []) if (!h.raid && h.map && h.result === 'victory' && h.name === c.name && h.cls === c.cls) up(h.map, h.level || 0); }
   // Nov 1: heroes made before the Shoulders slot get the class's starter shoulders
   for (const c of Object.values(p.chars)) if (!c.gear.some(g => g.slot === 'Shoulders')) { const st = (STARTER_GEAR[c.cls] || []).find(g => g.slot === 'Shoulders'); if (st) c.gear.push(Object.assign({ id: uid('g') }, st)); }
   // Nov 1: rerolls. Items found before the system get their reroll potential (worked out from their own rolls); Reroll Tokens start at 0
@@ -4287,9 +4290,13 @@ function craftCard(p, key, cardKey) {
   p.ink -= cost; c.cards.push({ id: uid('k'), key: cardKey, rank: 0 }); (c.seen = c.seen || {})[cardKey] = 1; return { ok: true, cost };
 }
 // Hall of Records (Nov 1): per map, the highest level reached and the furthest row at that level (15 = the boss is dead)
-function noteMapBest(c, mk, lvl, row) { c.mapBest = c.mapBest || {}; const b = c.mapBest[mk]; if (!b || lvl > b.lvl || (lvl === b.lvl && row > b.row)) c.mapBest[mk] = { lvl, row, at: Date.now() }; }
+function noteMapBest(c, mk, lvl, row) { const R = ((c.mapRows = c.mapRows || {})[mk] = c.mapRows[mk] || {}); R[lvl] = Math.max(R[lvl] || 0, row); c.mapBest = c.mapBest || {}; const b = c.mapBest[mk]; if (!b || lvl > b.lvl || (lvl === b.lvl && row > b.row)) c.mapBest[mk] = { lvl, row, at: Date.now() }; }
 // progress score for the leaderboard: every map counts its best level x 15 + furthest row (so +1 row 1 beats +0 boss)
-function progressScore(c) { return Object.values(c.mapBest || {}).reduce((s, b) => s + (b.lvl * 15 + b.row), 0); }
+// Nov 1: progress counts maps you COMPLETED: 15 points per level of a map you've beaten (+0 counts), plus the furthest row on the next level up.
+// Entering a high level without clearing the ones below gives nothing until you beat it.
+function mapCleared(c, mk) { return c && c.mapKills && c.mapKills[mk] != null ? c.mapKills[mk] : -1; }
+function progressScore(c) { let s = 0; const keys = new Set([...Object.keys(c.mapBest || {}), ...Object.keys(c.mapKills || {})]);
+  for (const mk of keys) { const cl = mapCleared(c, mk), b = (c.mapBest || {})[mk], nr = ((c.mapRows || {})[mk] || {})[cl + 1] || (b && b.lvl === cl + 1 ? b.row : 0); s += (cl + 1) * 15 + Math.min(14, nr || 0); } return s; }
 function beatMap(c, mk) { return !!(c && c.mapKills && c.mapKills[mk] != null); }
 
 // ---------- runs
@@ -4328,7 +4335,9 @@ function absorbRun(p, run, mi) {
   // codex XP from this run's kills; +10% for every codex this hero has maxed
   const xpGain = {}; { const bonus = 1 + 0.1 * maxedCodexes(c); for (const [cx, v] of Object.entries(mem.cxp || {})) { if (!CB.CODEX_BY_KEY[cx]) continue; const st = codexState(c, cx), before = CB.codexLevel(st.xp).level, g = Math.round(v * bonus); st.xp += g; xpGain[cx] = { xp: g, from: before, to: CB.codexLevel(st.xp).level }; } }
   c.runs++; const row = run.currentRow(); c.best = Math.max(c.best, row);
-  noteMapBest(c, run.mapKey || 'physical', run.level || 0, run.over === 'victory' ? 15 : row); // Hall of Records: furthest level and row per map if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); }
+  noteMapBest(c, run.mapKey || 'physical', run.level || 0, run.over === 'victory' ? 15 : row); // Hall of Records: furthest level and row per map
+  if (run.over === 'victory') { const mk0 = run.mapKey || 'physical', had = c.mapKills && c.mapKills[mk0] != null ? c.mapKills[mk0] : -1; if ((run.level || 0) > had) (c.mapKillAt = c.mapKillAt || {})[mk0] = Date.now(); }
+  if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); }
   // the run's damage meter, kept so the Chronicler can show it later (numbers rounded to keep saves small)
   const meter = Object.values(run.meter || {}).map(m => { const r = (o) => Object.fromEntries(Object.entries(o || {}).filter(x => x[1] > 0).map(([k, v]) => [k, Math.round(v)])); return { id: m.id, name: m.name, isPlayer: m.isPlayer, cls: m.cls, dealt: r(m.dealt), healed: r(m.healed), taken: r(m.taken), absorbed: Math.round(m.absorbed || 0) }; });
   p.history.unshift({ meter: meter.length ? meter : undefined, map: run.mapKey, fights: run.fightsWon, cls: mem.cls, name: mem.name, party: run.members && run.members.length > 1 ? run.members.map(m => m.cls) : undefined, level: run.level, result: run.over, row, items, cards, gold: kept.gold, ordered, at: Date.now() });
@@ -4337,7 +4346,7 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk };
 }
 
-const API = { setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -6037,8 +6046,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793586047003';
-  const CB_BUILD = '7d07774e9f'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793586372549';
+  const CB_BUILD = '446298b793'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -6612,7 +6621,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const c = profile.chars[key]; if (!c) return;
     if (!force && Date.now() - (REC.pubAt[key] || 0) < 60000) return; REC.pubAt[key] = Date.now();
     const row = { user_id: supaUser.id, hero_key: key, hero_name: c.name, hero_class: c.cls, guild_name: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null,
-      progress: CBHub.progressScore(c), power: CBHub.powerLevel(c), maps: c.mapBest || {}, snapshot: heroSnapshot(c), updated_at: new Date().toISOString() };
+      progress: CBHub.progressScore(c), power: CBHub.powerLevel(c), maps: recMapsOf(c), snapshot: heroSnapshot(c), updated_at: new Date().toISOString() };
     const { error } = await supa.from('hero_records').upsert(row);
     if (error) { if (recSetupErr(error)) REC.err = 'setup'; else console.warn('hero_records', error); }
   }
@@ -6639,7 +6648,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     REC.busy = false; renderRecords();
   }
   const mapsInOrder = () => Object.values(DATA.maps).sort((a, b) => a.num - b.num);
-  const bestMapOf = (h) => { let best = null; for (const M of mapsInOrder()) { const b = (h.maps || {})[M.key]; if (b && (!best || b.lvl * 15 + b.row + M.num * .01 > best.score)) best = { M, b, score: b.lvl * 15 + b.row + M.num * .01 }; } return best; };
+  // published per map: furthest level/row reached (lvl, row) plus the highest level completed (done, -1 = never) and when
+  function recMapsOf(c) { const out = {}; const keys = new Set([...Object.keys(c.mapBest || {}), ...Object.keys(c.mapKills || {})]);
+    for (const mk of keys) out[mk] = Object.assign({}, (c.mapBest || {})[mk] || { lvl: 0, row: 0 }, { done: CBHub.mapCleared(c, mk), doneAt: (c.mapKillAt || {})[mk] || null }); return out; }
+  const doneOf = (b) => b ? (b.done != null ? b.done : b.row >= 15 ? b.lvl : -1) : -1; // older records: a boss kill shows as row 15
+  const bestMapOf = (h) => { let best = null; for (const M of mapsInOrder()) { const d = doneOf((h.maps || {})[M.key]); if (d >= 0 && (!best || d * 100 + M.num > best.score)) best = { M, d, score: d * 100 + M.num }; } return best; }; // highest map level completed
   function renderRecords() {
     const el = $('hpRec'); if (!el) return;
     const tabs = [['heroes', 'Heroes'], ['hardcore', 'Hardcore'], ['maps', 'Map records'], ['raids', 'Raid records']].map(([k, n]) => `<button role="tab" data-rectab="${k}" aria-selected="${REC.tab === k}">${n}</button>`).join('');
@@ -6658,11 +6671,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     let list = REC.heroes.filter(h => REC.cls === 'All' || h.hero_class === REC.cls);
     list = list.slice().sort((a, b) => REC.sort === 'power' ? b.power - a.power || b.progress - a.progress : b.progress - a.progress || b.power - a.power);
     const filt = `<div class="recfilt"><span class="muted">Sort</span>${[['progress', 'Progress'], ['power', 'Power']].map(([k, n]) => `<button class="chip ${REC.sort === k ? 'on' : ''}" data-recsort="${k}">${n}</button>`).join('')}<span class="muted" style="margin-left:10px">Class</span>${['All', 'Warrior', 'Rogue', 'Mage', 'Paladin', 'Warlock'].map(k => `<button class="chip ${REC.cls === k ? 'on' : ''}" data-reccls="${k}">${k}</button>`).join('')}</div>
-      <p class="savenote" style="margin:0 0 6px">Progress adds up every map: 15 points per map level reached plus the furthest row at that level (the boss counts as row 15). Click a hero to see their gear, deck and talents.</p>`;
+      <p class="savenote" style="margin:0 0 6px">Progress counts completed maps: 15 points for every level of a map you've beaten (beating +2 means +0, +1 and +2 count), plus the furthest row on the next level up. Best clear is the highest map level the hero has completed. Click a hero to see their gear, deck and talents.</p>`;
     if (!list.length) return filt + '<p class="muted">No heroes yet.</p>';
     const rows = list.slice(0, 100).map((h, i) => { const bm = bestMapOf(h), cx = h.snapshot && h.snapshot.codex, cxn = cx && CB.CODEX_BY_KEY[cx.key] ? CB.CODEX_BY_KEY[cx.key].name : '';
-      return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td><b style="color:${CC[h.hero_class] || 'var(--text)'}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num">${h.progress}</td><td class="num">${h.power}</td><td>${bm ? `${esc(bm.M.name)} +${bm.b.lvl}, ${ROWTXT(bm.b.row)}` : '<span class="muted">no runs yet</span>'}</td><td class="muted">${cxn ? `${esc(cxn)} Lv ${cx.level}` : ''}</td></tr>`; }).join('');
-    return filt + `<div class="rectable"><table><thead><tr><th>#</th><th>Hero</th><th>Guild</th><th class="num">Progress</th><th class="num">Power</th><th>Furthest</th><th>Codex</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td><b style="color:${CC[h.hero_class] || 'var(--text)'}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num">${h.progress}</td><td class="num">${h.power}</td><td>${bm ? `Map ${bm.M.num} ${esc(bm.M.name)} +${bm.d}` : '<span class="muted">no map completed yet</span>'}</td><td class="muted">${cxn ? `${esc(cxn)} Lv ${cx.level}` : ''}</td></tr>`; }).join('');
+    return filt + `<div class="rectable"><table><thead><tr><th>#</th><th>Hero</th><th>Guild</th><th class="num">Progress</th><th class="num">Power</th><th>Best clear</th><th>Codex</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
   // Nov 1: hardcore heroes have their own ladder (living ones), plus a graveyard of hardcore heroes who fell (they play on as normal heroes)
   function recHardcore() {
@@ -6670,15 +6683,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const fell = REC.heroes.filter(h => h.snapshot && !h.snapshot.hardcore && h.snapshot.hcFell).sort((a, b) => (b.snapshot.hcFell.progress || 0) - (a.snapshot.hcFell.progress || 0));
     const filt = `<div class="recfilt"><span class="muted">Class</span>${['All', ...Object.keys(CLASSES)].map(k => `<button class="chip ${REC.cls === k ? 'on' : ''}" data-reccls="${k}">${k}</button>`).join('')}</div>
       <p class="savenote" style="margin:0 0 6px">Hardcore heroes have one life: the first time one falls in a fight (duels and the training dummy don't count) it becomes a normal hero and leaves this ladder for the graveyard.</p>`;
-    const rows = alive.slice(0, 100).map((h, i) => { const bm = bestMapOf(h); return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td><b style="color:${CC[h.hero_class] || 'var(--text)'}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num">${h.progress}</td><td class="num">${h.power}</td><td>${bm ? `${esc(bm.M.name)} +${bm.b.lvl}, ${ROWTXT(bm.b.row)}` : '<span class="muted">-</span>'}</td></tr>`; }).join('');
+    const rows = alive.slice(0, 100).map((h, i) => { const bm = bestMapOf(h); return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td><b style="color:${CC[h.hero_class] || 'var(--text)'}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num">${h.progress}</td><td class="num">${h.power}</td><td>${bm ? `Map ${bm.M.num} ${esc(bm.M.name)} +${bm.d}` : '<span class="muted">-</span>'}</td></tr>`; }).join('');
     const grave = fell.slice(0, 50).map(h => { const f = h.snapshot.hcFell; return `<li data-rechero="${h.user_id}|${esc(h.hero_key)}"><b style="color:${CC[h.hero_class] || 'var(--text)'}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.hero_class)}</span> &middot; fell ${f.where ? 'on ' + esc(f.where) : ''}${f.progress != null ? ` with ${f.progress} progress` : ''}${f.at ? ' &middot; ' + new Date(f.at).toLocaleDateString() : ''}</li>`; }).join('');
-    return filt + (rows ? `<div class="rectable"><table><thead><tr><th>#</th><th>Hero</th><th>Guild</th><th class="num">Progress</th><th class="num">Power</th><th>Furthest</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted">No living hardcore heroes yet. Tick Hardcore when you create a hero.</p>')
+    return filt + (rows ? `<div class="rectable"><table><thead><tr><th>#</th><th>Hero</th><th>Guild</th><th class="num">Progress</th><th class="num">Power</th><th>Best clear</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted">No living hardcore heroes yet. Tick Hardcore when you create a hero.</p>')
       + `<h4 style="margin:14px 0 4px;color:var(--accent)">The graveyard</h4>${grave ? `<ol class="recgrave">${grave}</ol>` : '<p class="muted">No hardcore hero has fallen yet.</p>'}`;
   }
   function recMaps() {
-    return `<p class="savenote" style="margin:0 0 6px">For each road: the highest map level any hero has reached, then the furthest row at that level.</p><div class="recgrid">${mapsInOrder().map(M => {
-      const top = REC.heroes.filter(h => h.maps && h.maps[M.key]).map(h => ({ h, b: h.maps[M.key] })).sort((x, y) => y.b.lvl - x.b.lvl || y.b.row - x.b.row || (x.b.at || 0) - (y.b.at || 0)).slice(0, 5);
-      return `<div class="reccard" style="--ec:${ELC[M.element] || 'var(--accent)'}"><h4>${M.num}. ${esc(M.name)}</h4>${top.length ? `<ol>${top.map(({ h, b }, i) => `<li data-rechero="${h.user_id}|${esc(h.hero_key)}"><b style="color:${CC[h.hero_class]}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.guild_name || '')}</span><span class="rv">+${b.lvl} &middot; ${ROWTXT(b.row)}</span></li>`).join('')}</ol>` : '<p class="muted">Nobody has walked this road yet.</p>'}</div>`; }).join('')}</div>`;
+    return `<p class="savenote" style="margin:0 0 6px">For each road: the highest map level any hero has completed (beaten the boss), first to do it ranked higher.</p><div class="recgrid">${mapsInOrder().map(M => {
+      const top = REC.heroes.filter(h => h.maps && doneOf(h.maps[M.key]) >= 0).map(h => ({ h, b: h.maps[M.key], d: doneOf(h.maps[M.key]) })).sort((x, y) => y.d - x.d || ((x.b.doneAt || x.b.at || 0) - (y.b.doneAt || y.b.at || 0))).slice(0, 5);
+      return `<div class="reccard" style="--ec:${ELC[M.element] || 'var(--accent)'}"><h4>${M.num}. ${esc(M.name)}</h4>${top.length ? `<ol>${top.map(({ h, b, d }, i) => `<li data-rechero="${h.user_id}|${esc(h.hero_key)}"><b style="color:${CC[h.hero_class]}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.guild_name || '')}</span><span class="rv">+${d} cleared</span></li>`).join('')}</ol>` : '<p class="muted">Nobody has beaten this road\'s boss yet.</p>'}</div>`; }).join('')}</div>`;
   }
   function recRaids() {
     const who = (k) => k.guild_name ? esc(k.guild_name) : `<span class="muted">No guild</span> (${esc((k.heroes[0] || {}).name || '?')}'s party)`;
@@ -7097,6 +7110,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Change', 'Hall of Records now ranks completed maps, not maps you only entered: Progress is 15 points per level of each map you\'ve beaten, plus the furthest row on the next level up, and "Best clear" shows your highest completed map. Map records list who cleared each road at the highest level first.'],
+      ['Fix', 'Boss kills weren\'t being saved since the Hall of Records arrived, so raids didn\'t unlock and the first-kill boss discount never ended. Fixed, and your past boss kills were rebuilt from your map records and run history.'],
       ['Balance', 'Ranking up cards takes twice as much XP at every rank (the gold cost is unchanged). XP already banked on your cards still counts.'],
       ['Feature', 'Map search: type a card, item, monster, shrine or node type above the run map and every node that has it lights up, with a list of what matched (click one to jump to it). If it isn\'t on this map, it tells you which map has it.'],
       ['Fix', 'Damage over time now counts as damage you deal: Rot, Dread, Poison, Bleed and Burn ticks trigger the Soulbinder Codex\'s party heal, your Lifesteal and Soul Beacon.'],

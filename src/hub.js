@@ -33,6 +33,9 @@ function fix(p) { // tolerate older or partial saves
   for (const c of Object.values(p.chars)) { c.seen = c.seen || {}; for (const k of [...c.deck, ...c.cards]) c.seen[k.key] = 1; }
   // Nov 1: Hall of Records. Fill map records from the boss kills and run history of heroes made before it existed
   for (const c of Object.values(p.chars)) if (!c.mapBest) { c.mapBest = {}; for (const [mk, lv] of Object.entries(c.mapKills || {})) noteMapBest(c, mk, lv, 15); for (const h of p.history || []) if (!h.raid && h.map && h.name === c.name && h.cls === c.cls) noteMapBest(c, h.map, h.level || 0, h.result === 'victory' ? 15 : (h.row || 0)); }
+  // Nov 1: boss kills weren't being recorded (mapKills) since the Hall of Records; rebuild them from map records and run history
+  for (const c of Object.values(p.chars)) { const k = c.mapKills = c.mapKills || {}; const up = (mk, lv) => { if (k[mk] == null || lv > k[mk]) k[mk] = lv; };
+    for (const [mk, b] of Object.entries(c.mapBest || {})) if (b.row >= 15) up(mk, b.lvl); for (const h of p.history || []) if (!h.raid && h.map && h.result === 'victory' && h.name === c.name && h.cls === c.cls) up(h.map, h.level || 0); }
   // Nov 1: heroes made before the Shoulders slot get the class's starter shoulders
   for (const c of Object.values(p.chars)) if (!c.gear.some(g => g.slot === 'Shoulders')) { const st = (STARTER_GEAR[c.cls] || []).find(g => g.slot === 'Shoulders'); if (st) c.gear.push(Object.assign({ id: uid('g') }, st)); }
   // Nov 1: rerolls. Items found before the system get their reroll potential (worked out from their own rolls); Reroll Tokens start at 0
@@ -194,9 +197,13 @@ function craftCard(p, key, cardKey) {
   p.ink -= cost; c.cards.push({ id: uid('k'), key: cardKey, rank: 0 }); (c.seen = c.seen || {})[cardKey] = 1; return { ok: true, cost };
 }
 // Hall of Records (Nov 1): per map, the highest level reached and the furthest row at that level (15 = the boss is dead)
-function noteMapBest(c, mk, lvl, row) { c.mapBest = c.mapBest || {}; const b = c.mapBest[mk]; if (!b || lvl > b.lvl || (lvl === b.lvl && row > b.row)) c.mapBest[mk] = { lvl, row, at: Date.now() }; }
+function noteMapBest(c, mk, lvl, row) { const R = ((c.mapRows = c.mapRows || {})[mk] = c.mapRows[mk] || {}); R[lvl] = Math.max(R[lvl] || 0, row); c.mapBest = c.mapBest || {}; const b = c.mapBest[mk]; if (!b || lvl > b.lvl || (lvl === b.lvl && row > b.row)) c.mapBest[mk] = { lvl, row, at: Date.now() }; }
 // progress score for the leaderboard: every map counts its best level x 15 + furthest row (so +1 row 1 beats +0 boss)
-function progressScore(c) { return Object.values(c.mapBest || {}).reduce((s, b) => s + (b.lvl * 15 + b.row), 0); }
+// Nov 1: progress counts maps you COMPLETED: 15 points per level of a map you've beaten (+0 counts), plus the furthest row on the next level up.
+// Entering a high level without clearing the ones below gives nothing until you beat it.
+function mapCleared(c, mk) { return c && c.mapKills && c.mapKills[mk] != null ? c.mapKills[mk] : -1; }
+function progressScore(c) { let s = 0; const keys = new Set([...Object.keys(c.mapBest || {}), ...Object.keys(c.mapKills || {})]);
+  for (const mk of keys) { const cl = mapCleared(c, mk), b = (c.mapBest || {})[mk], nr = ((c.mapRows || {})[mk] || {})[cl + 1] || (b && b.lvl === cl + 1 ? b.row : 0); s += (cl + 1) * 15 + Math.min(14, nr || 0); } return s; }
 function beatMap(c, mk) { return !!(c && c.mapKills && c.mapKills[mk] != null); }
 
 // ---------- runs
@@ -235,7 +242,9 @@ function absorbRun(p, run, mi) {
   // codex XP from this run's kills; +10% for every codex this hero has maxed
   const xpGain = {}; { const bonus = 1 + 0.1 * maxedCodexes(c); for (const [cx, v] of Object.entries(mem.cxp || {})) { if (!CB.CODEX_BY_KEY[cx]) continue; const st = codexState(c, cx), before = CB.codexLevel(st.xp).level, g = Math.round(v * bonus); st.xp += g; xpGain[cx] = { xp: g, from: before, to: CB.codexLevel(st.xp).level }; } }
   c.runs++; const row = run.currentRow(); c.best = Math.max(c.best, row);
-  noteMapBest(c, run.mapKey || 'physical', run.level || 0, run.over === 'victory' ? 15 : row); // Hall of Records: furthest level and row per map if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); }
+  noteMapBest(c, run.mapKey || 'physical', run.level || 0, run.over === 'victory' ? 15 : row); // Hall of Records: furthest level and row per map
+  if (run.over === 'victory') { const mk0 = run.mapKey || 'physical', had = c.mapKills && c.mapKills[mk0] != null ? c.mapKills[mk0] : -1; if ((run.level || 0) > had) (c.mapKillAt = c.mapKillAt || {})[mk0] = Date.now(); }
+  if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); }
   // the run's damage meter, kept so the Chronicler can show it later (numbers rounded to keep saves small)
   const meter = Object.values(run.meter || {}).map(m => { const r = (o) => Object.fromEntries(Object.entries(o || {}).filter(x => x[1] > 0).map(([k, v]) => [k, Math.round(v)])); return { id: m.id, name: m.name, isPlayer: m.isPlayer, cls: m.cls, dealt: r(m.dealt), healed: r(m.healed), taken: r(m.taken), absorbed: Math.round(m.absorbed || 0) }; });
   p.history.unshift({ meter: meter.length ? meter : undefined, map: run.mapKey, fights: run.fightsWon, cls: mem.cls, name: mem.name, party: run.members && run.members.length > 1 ? run.members.map(m => m.cls) : undefined, level: run.level, result: run.over, row, items, cards, gold: kept.gold, ordered, at: Date.now() });
@@ -244,6 +253,6 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk };
 }
 
-const API = { setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);

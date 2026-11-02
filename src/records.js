@@ -17,7 +17,7 @@
     const c = profile.chars[key]; if (!c) return;
     if (!force && Date.now() - (REC.pubAt[key] || 0) < 60000) return; REC.pubAt[key] = Date.now();
     const row = { user_id: supaUser.id, hero_key: key, hero_name: c.name, hero_class: c.cls, guild_name: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null,
-      progress: CBHub.progressScore(c), power: CBHub.powerLevel(c), maps: c.mapBest || {}, snapshot: heroSnapshot(c), updated_at: new Date().toISOString() };
+      progress: CBHub.progressScore(c), power: CBHub.powerLevel(c), maps: recMapsOf(c), snapshot: heroSnapshot(c), updated_at: new Date().toISOString() };
     const { error } = await supa.from('hero_records').upsert(row);
     if (error) { if (recSetupErr(error)) REC.err = 'setup'; else console.warn('hero_records', error); }
   }
@@ -44,7 +44,11 @@
     REC.busy = false; renderRecords();
   }
   const mapsInOrder = () => Object.values(DATA.maps).sort((a, b) => a.num - b.num);
-  const bestMapOf = (h) => { let best = null; for (const M of mapsInOrder()) { const b = (h.maps || {})[M.key]; if (b && (!best || b.lvl * 15 + b.row + M.num * .01 > best.score)) best = { M, b, score: b.lvl * 15 + b.row + M.num * .01 }; } return best; };
+  // published per map: furthest level/row reached (lvl, row) plus the highest level completed (done, -1 = never) and when
+  function recMapsOf(c) { const out = {}; const keys = new Set([...Object.keys(c.mapBest || {}), ...Object.keys(c.mapKills || {})]);
+    for (const mk of keys) out[mk] = Object.assign({}, (c.mapBest || {})[mk] || { lvl: 0, row: 0 }, { done: CBHub.mapCleared(c, mk), doneAt: (c.mapKillAt || {})[mk] || null }); return out; }
+  const doneOf = (b) => b ? (b.done != null ? b.done : b.row >= 15 ? b.lvl : -1) : -1; // older records: a boss kill shows as row 15
+  const bestMapOf = (h) => { let best = null; for (const M of mapsInOrder()) { const d = doneOf((h.maps || {})[M.key]); if (d >= 0 && (!best || d * 100 + M.num > best.score)) best = { M, d, score: d * 100 + M.num }; } return best; }; // highest map level completed
   function renderRecords() {
     const el = $('hpRec'); if (!el) return;
     const tabs = [['heroes', 'Heroes'], ['hardcore', 'Hardcore'], ['maps', 'Map records'], ['raids', 'Raid records']].map(([k, n]) => `<button role="tab" data-rectab="${k}" aria-selected="${REC.tab === k}">${n}</button>`).join('');
@@ -63,11 +67,11 @@
     let list = REC.heroes.filter(h => REC.cls === 'All' || h.hero_class === REC.cls);
     list = list.slice().sort((a, b) => REC.sort === 'power' ? b.power - a.power || b.progress - a.progress : b.progress - a.progress || b.power - a.power);
     const filt = `<div class="recfilt"><span class="muted">Sort</span>${[['progress', 'Progress'], ['power', 'Power']].map(([k, n]) => `<button class="chip ${REC.sort === k ? 'on' : ''}" data-recsort="${k}">${n}</button>`).join('')}<span class="muted" style="margin-left:10px">Class</span>${['All', 'Warrior', 'Rogue', 'Mage', 'Paladin', 'Warlock'].map(k => `<button class="chip ${REC.cls === k ? 'on' : ''}" data-reccls="${k}">${k}</button>`).join('')}</div>
-      <p class="savenote" style="margin:0 0 6px">Progress adds up every map: 15 points per map level reached plus the furthest row at that level (the boss counts as row 15). Click a hero to see their gear, deck and talents.</p>`;
+      <p class="savenote" style="margin:0 0 6px">Progress counts completed maps: 15 points for every level of a map you've beaten (beating +2 means +0, +1 and +2 count), plus the furthest row on the next level up. Best clear is the highest map level the hero has completed. Click a hero to see their gear, deck and talents.</p>`;
     if (!list.length) return filt + '<p class="muted">No heroes yet.</p>';
     const rows = list.slice(0, 100).map((h, i) => { const bm = bestMapOf(h), cx = h.snapshot && h.snapshot.codex, cxn = cx && CB.CODEX_BY_KEY[cx.key] ? CB.CODEX_BY_KEY[cx.key].name : '';
-      return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td><b style="color:${CC[h.hero_class] || 'var(--text)'}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num">${h.progress}</td><td class="num">${h.power}</td><td>${bm ? `${esc(bm.M.name)} +${bm.b.lvl}, ${ROWTXT(bm.b.row)}` : '<span class="muted">no runs yet</span>'}</td><td class="muted">${cxn ? `${esc(cxn)} Lv ${cx.level}` : ''}</td></tr>`; }).join('');
-    return filt + `<div class="rectable"><table><thead><tr><th>#</th><th>Hero</th><th>Guild</th><th class="num">Progress</th><th class="num">Power</th><th>Furthest</th><th>Codex</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td><b style="color:${CC[h.hero_class] || 'var(--text)'}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num">${h.progress}</td><td class="num">${h.power}</td><td>${bm ? `Map ${bm.M.num} ${esc(bm.M.name)} +${bm.d}` : '<span class="muted">no map completed yet</span>'}</td><td class="muted">${cxn ? `${esc(cxn)} Lv ${cx.level}` : ''}</td></tr>`; }).join('');
+    return filt + `<div class="rectable"><table><thead><tr><th>#</th><th>Hero</th><th>Guild</th><th class="num">Progress</th><th class="num">Power</th><th>Best clear</th><th>Codex</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
   // Nov 1: hardcore heroes have their own ladder (living ones), plus a graveyard of hardcore heroes who fell (they play on as normal heroes)
   function recHardcore() {
@@ -75,15 +79,15 @@
     const fell = REC.heroes.filter(h => h.snapshot && !h.snapshot.hardcore && h.snapshot.hcFell).sort((a, b) => (b.snapshot.hcFell.progress || 0) - (a.snapshot.hcFell.progress || 0));
     const filt = `<div class="recfilt"><span class="muted">Class</span>${['All', ...Object.keys(CLASSES)].map(k => `<button class="chip ${REC.cls === k ? 'on' : ''}" data-reccls="${k}">${k}</button>`).join('')}</div>
       <p class="savenote" style="margin:0 0 6px">Hardcore heroes have one life: the first time one falls in a fight (duels and the training dummy don't count) it becomes a normal hero and leaves this ladder for the graveyard.</p>`;
-    const rows = alive.slice(0, 100).map((h, i) => { const bm = bestMapOf(h); return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td><b style="color:${CC[h.hero_class] || 'var(--text)'}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num">${h.progress}</td><td class="num">${h.power}</td><td>${bm ? `${esc(bm.M.name)} +${bm.b.lvl}, ${ROWTXT(bm.b.row)}` : '<span class="muted">-</span>'}</td></tr>`; }).join('');
+    const rows = alive.slice(0, 100).map((h, i) => { const bm = bestMapOf(h); return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td><b style="color:${CC[h.hero_class] || 'var(--text)'}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num">${h.progress}</td><td class="num">${h.power}</td><td>${bm ? `Map ${bm.M.num} ${esc(bm.M.name)} +${bm.d}` : '<span class="muted">-</span>'}</td></tr>`; }).join('');
     const grave = fell.slice(0, 50).map(h => { const f = h.snapshot.hcFell; return `<li data-rechero="${h.user_id}|${esc(h.hero_key)}"><b style="color:${CC[h.hero_class] || 'var(--text)'}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.hero_class)}</span> &middot; fell ${f.where ? 'on ' + esc(f.where) : ''}${f.progress != null ? ` with ${f.progress} progress` : ''}${f.at ? ' &middot; ' + new Date(f.at).toLocaleDateString() : ''}</li>`; }).join('');
-    return filt + (rows ? `<div class="rectable"><table><thead><tr><th>#</th><th>Hero</th><th>Guild</th><th class="num">Progress</th><th class="num">Power</th><th>Furthest</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted">No living hardcore heroes yet. Tick Hardcore when you create a hero.</p>')
+    return filt + (rows ? `<div class="rectable"><table><thead><tr><th>#</th><th>Hero</th><th>Guild</th><th class="num">Progress</th><th class="num">Power</th><th>Best clear</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted">No living hardcore heroes yet. Tick Hardcore when you create a hero.</p>')
       + `<h4 style="margin:14px 0 4px;color:var(--accent)">The graveyard</h4>${grave ? `<ol class="recgrave">${grave}</ol>` : '<p class="muted">No hardcore hero has fallen yet.</p>'}`;
   }
   function recMaps() {
-    return `<p class="savenote" style="margin:0 0 6px">For each road: the highest map level any hero has reached, then the furthest row at that level.</p><div class="recgrid">${mapsInOrder().map(M => {
-      const top = REC.heroes.filter(h => h.maps && h.maps[M.key]).map(h => ({ h, b: h.maps[M.key] })).sort((x, y) => y.b.lvl - x.b.lvl || y.b.row - x.b.row || (x.b.at || 0) - (y.b.at || 0)).slice(0, 5);
-      return `<div class="reccard" style="--ec:${ELC[M.element] || 'var(--accent)'}"><h4>${M.num}. ${esc(M.name)}</h4>${top.length ? `<ol>${top.map(({ h, b }, i) => `<li data-rechero="${h.user_id}|${esc(h.hero_key)}"><b style="color:${CC[h.hero_class]}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.guild_name || '')}</span><span class="rv">+${b.lvl} &middot; ${ROWTXT(b.row)}</span></li>`).join('')}</ol>` : '<p class="muted">Nobody has walked this road yet.</p>'}</div>`; }).join('')}</div>`;
+    return `<p class="savenote" style="margin:0 0 6px">For each road: the highest map level any hero has completed (beaten the boss), first to do it ranked higher.</p><div class="recgrid">${mapsInOrder().map(M => {
+      const top = REC.heroes.filter(h => h.maps && doneOf(h.maps[M.key]) >= 0).map(h => ({ h, b: h.maps[M.key], d: doneOf(h.maps[M.key]) })).sort((x, y) => y.d - x.d || ((x.b.doneAt || x.b.at || 0) - (y.b.doneAt || y.b.at || 0))).slice(0, 5);
+      return `<div class="reccard" style="--ec:${ELC[M.element] || 'var(--accent)'}"><h4>${M.num}. ${esc(M.name)}</h4>${top.length ? `<ol>${top.map(({ h, b, d }, i) => `<li data-rechero="${h.user_id}|${esc(h.hero_key)}"><b style="color:${CC[h.hero_class]}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.guild_name || '')}</span><span class="rv">+${d} cleared</span></li>`).join('')}</ol>` : '<p class="muted">Nobody has beaten this road\'s boss yet.</p>'}</div>`; }).join('')}</div>`;
   }
   function recRaids() {
     const who = (k) => k.guild_name ? esc(k.guild_name) : `<span class="muted">No guild</span> (${esc((k.heroes[0] || {}).name || '?')}'s party)`;
