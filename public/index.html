@@ -3382,7 +3382,9 @@ function rollItem(data, rng, baseName, rarity, level) {
 // map level. Codexes can't be rerolled; they break down into Reroll Tokens instead. The potential comes from the item's own rolls (no extra RNG).
 const REROLL_BASE = { White: 0, Green: 1, Blue: 2, 'Purple (Epic)': 3 };
 function rerollPotential(it) { if (!it || !it.lines || !it.lines.length || it.slot === 'Codex') return 0; let h = 7; for (const l of it.lines) h = (h * 31 + l.v * 7 + l.stat.length) % 1000003; return (REROLL_BASE[it.rarity] || 0) + (h % 2); }
-const CODEX_TOKENS = (it) => 3 + Math.floor((it && it.level || 0) / 2);
+const CODEX_TOKENS = (it) => 3 + Math.floor((it && it.level || 0) / 2); // (before Nov 2; kept for old callers)
+// Nov 2: Reroll Tokens are rare. Breaking a codex gives 1 token by chance: 10% for a +0 codex, +5% per map level it dropped on (certain from +18)
+const CODEX_TOKEN_CHANCE = (it) => Math.min(1, 0.1 + 0.05 * (it && it.level || 0));
 function itemPoints(G, b, it) { // the points an item rolled (its implicit plus every affix), for its item level
   const twoH = (G.arche[b.arch] || {}).hands && G.arche[b.arch].hands.startsWith('2H') ? G.twoHand : 1, base = (k) => k.split(':')[0];
   let pts = 0; const onLines = {}; for (const l of it.lines || []) { const st = G.stats[base(l.stat)]; if (st) pts += l.v * st.pts / twoH; onLines[l.stat] = (onLines[l.stat] || 0) + l.v; }
@@ -3771,7 +3773,7 @@ const TEXT_FIX = {
 for (const [k, t] of Object.entries(TEXT_FIX)) if (C[k]) C[k].text = t;
 POWERS.codex_soulbinder.dotDealt = POWERS.codex_soulbinder.dealt;
 CARDS_READY = true; if (DATA && DATA.gear) namedLoot(DATA);
-const API = { bossCodexPct, GROUPS, groupData, itemRules, rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { CODEX_TOKEN_CHANCE, bossCodexPct, GROUPS, groupData, itemRules, rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -4342,7 +4344,7 @@ function unequip(p, cls, slot) {
   return true;
 }
 const SALVAGE = { White: 2, Green: 6, Blue: 15, 'Purple (Epic)': 40 };
-function salvageValue(it) { return Math.round((SALVAGE[it.rarity] || 2) * Math.pow(1.5, it.level || 0)); }
+function salvageValue(it) { return Math.round((SALVAGE[it.rarity] || 2) * Math.pow(1.05, it.level || 0)); } // Nov 2: +5% per map level (was 1.5x), like monster gold
 function salvage(p, itemId) { const i = p.stash.findIndex(x => x.id === itemId); if (i < 0) return 0; const g = salvageValue(p.stash[i]); p.stash.splice(i, 1); p.gold += g; return g; }
 
 // ---------- deck and cards
@@ -4423,7 +4425,7 @@ function breakCard(p, key, cardId) {
 function findItem(p, id) { const i = p.stash.findIndex(x => x.id === id); if (i >= 0) return { it: p.stash[i], where: 'stash' }; for (const c of Object.values(p.chars)) { const g = c.gear.find(x => x.id === id); if (g) return { it: g, where: c }; } return null; }
 function breakCodex(p, itemId) {
   const i = p.stash.findIndex(x => x.id === itemId); if (i < 0 || p.stash[i].slot !== 'Codex') return { ok: false, why: 'Only codexes in the stash can be broken down (unequip it first).' };
-  const n = CB.CODEX_TOKENS(p.stash[i]); p.stash.splice(i, 1); p.rerollTokens = (p.rerollTokens || 0) + n; return { ok: true, tokens: n };
+  const n = Math.random() < CB.CODEX_TOKEN_CHANCE(p.stash[i]) ? 1 : 0; p.stash.splice(i, 1); p.rerollTokens = (p.rerollTokens || 0) + n; return { ok: true, tokens: n };
 }
 function rerollItem(p, itemId, idx, data, rng) {
   const f = findItem(p, itemId); if (!f) return { ok: false, why: 'Item not found.' }; const it = f.it;
@@ -4864,7 +4866,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       const cur = opts.map(sl => c.gear.find(g => g.slot === sl)).filter(Boolean);
       const vs = cur.length ? cur.map(g => { const d = (it.ilvl || 0) - (g.ilvl || 0); return `${esc(g.name)} ilvl ${g.ilvl} <span class="${d > 0 ? 'up' : d < 0 ? 'down' : ''}">(${d > 0 ? '+' : ''}${d})</span>`; }).join(', ') : 'an empty slot';
       const btns = opts.length > 1 ? opts.map(sl => `<button class="btn" data-equip="${it.id}" data-slot="${sl}">Equip as ${sl}</button>`).join('') : `<button class="btn" data-equip="${it.id}">Equip</button>`;
-      return itemHtml(it, `<div class="il">${upBadge(it, c.gear)} Replaces ${vs}</div><div class="acts">${btns}${it.slot === 'Codex' ? `<button class="btn" data-breakcx="${it.id}">Break into ${CB.CODEX_TOKENS(it)} Reroll Tokens</button>` : `<button class="btn" data-salvage="${it.id}">Salvage +${CBHub.salvageValue(it)} gold</button>`}</div>`);
+      return itemHtml(it, `<div class="il">${upBadge(it, c.gear)} Replaces ${vs}</div><div class="acts">${btns}${it.slot === 'Codex' ? `<button class="btn" data-breakcx="${it.id}">Break down (${Math.round(CB.CODEX_TOKEN_CHANCE(it) * 100)}% chance of a Reroll Token)</button>` : `<button class="btn" data-salvage="${it.id}">Salvage +${CBHub.salvageValue(it)} gold</button>`}</div>`);
     }).join('');
     const multi = Object.keys(profile.chars).length > 1;
     const heroRow = multi ? `<div class="cxchips" role="tablist" aria-label="Hero" style="margin:0 0 8px">${heroKeys().map(k => `<button class="cxchip ${k === heroKey ? 'on' : ''}" data-hero="${k}"><b style="color:${CC[profile.chars[k].cls]}">${esc(profile.chars[k].name)}</b> <span class="muted">${profile.chars[k].cls}</span></button>`).join('')}</div>` : '';
@@ -4885,7 +4887,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (b.dataset.unequip) { if (!CBHub.unequip(profile, heroKey, b.dataset.unequip)) return toast(CBHub.arenaLock(profile, heroKey) || 'Stash is full.'); }
     else if (b.dataset.equip) { const r = CBHub.equip(profile, heroKey, b.dataset.equip, b.dataset.slot); if (!r.ok) return toast(r.why); }
     else if (b.dataset.salvage) CBHub.salvage(profile, b.dataset.salvage);
-    else if (b.dataset.breakcx) { const r = CBHub.breakCodex(profile, b.dataset.breakcx); if (!r.ok) return toast(r.why); keepScroll(() => { save(); renderHub(); }); return toast(`+${r.tokens} Reroll Tokens (you have ${profile.rerollTokens}). Spend them at Jeweler Rook.`); }
+    else if (b.dataset.breakcx) { const r = CBHub.breakCodex(profile, b.dataset.breakcx); if (!r.ok) return toast(r.why); keepScroll(() => { save(); renderHub(); }); return toast(r.tokens ? `+1 Reroll Token (you have ${profile.rerollTokens}). Spend it at Jeweler Rook.` : 'The codex crumbles to dust. No Reroll Token this time.'); }
     else return;
     keepScroll(() => { save(); renderHub(); });
   });
@@ -5046,8 +5048,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const sel = items.find(([g]) => g.id === RR.sel) || null;
     const last = RR.last ? `<p class="rrlast">${RR.last}</p>` : '';
     return `<h3 class="rrhead">Rerolls <span class="chip rrtok" title="Reroll Tokens: break down codexes to get more">${tok} Reroll Token${tok === 1 ? '' : 's'}</span></h3>
-      <p class="savenote" style="margin:0 0 8px">Every item drops with a <b>reroll potential</b> (White 0-1, Green 1-2, Blue 2-3, Purple 3-4). One Reroll Token and one point of potential reroll one affix line of your choice into a new random stat, rolled like a fresh drop of that item. The implicit never changes. Break down codexes you don't need for tokens (3, plus 1 for every 2 map levels it dropped on).</p>
-      ${codexes.length ? `<h4 class="createstep">Break down codexes</h4><div class="rrcx">${codexes.map(x => itemHtml(x, `<div class="acts"><button class="btn" data-breakcx="${x.id}">Break into ${CB.CODEX_TOKENS(x)} tokens</button></div>`)).join('')}</div>` : '<p class="muted" style="font-size:13px">No codexes in your stash to break down. Unequip one first if you want to break it.</p>'}
+      <p class="savenote" style="margin:0 0 8px">Every item drops with a <b>reroll potential</b> (White 0-1, Green 1-2, Blue 2-3, Purple 3-4). One Reroll Token and one point of potential reroll one affix line of your choice into a new random stat, rolled like a fresh drop of that item. The implicit never changes. Reroll Tokens are rare: breaking down a codex gives one only by chance (10% for a +0 codex, 5% more for every map level it dropped on, certain from +18).</p>
+      ${codexes.length ? `<h4 class="createstep">Break down codexes</h4><div class="rrcx">${codexes.map(x => itemHtml(x, `<div class="acts"><button class="btn" data-breakcx="${x.id}">Break down (${Math.round(CB.CODEX_TOKEN_CHANCE(x) * 100)}% chance of a token)</button></div>`)).join('')}</div>` : '<p class="muted" style="font-size:13px">No codexes in your stash to break down. Unequip one first if you want to break it.</p>'}
       <h4 class="createstep">Reroll an affix</h4>
       ${sel ? `<div class="rrsel">${itemHtml(sel[0], `<div class="rrlines">${sel[0].lines.map((l, i) => `<div class="rrline"><span>+${l.v}${pct2(l.stat)} ${esc(nice2(l.stat))} <small class="muted">(${l.lo}-${l.hi})</small></span><button class="btn ${tok && sel[0].rerolls > 0 ? 'primary' : ''}" data-rrline="${i}" ${tok && sel[0].rerolls > 0 ? '' : 'disabled'}>Reroll</button></div>`).join('')}</div><div class="acts"><button class="btn" data-rrback="1">Pick another item</button></div>`)}</div>${last}`
         : `${last}<div class="rritems">${items.map(([g, w]) => `<div class="rrpick ${g.rerolls > 0 ? '' : 'none'}">${itemHtml(g, `<div class="acts"><span class="muted" style="font-size:12px">${w}</span><button class="btn" data-rrsel="${g.id}" ${g.rerolls > 0 ? '' : 'disabled'}>${g.rerolls > 0 ? 'Choose' : 'No rerolls left'}</button></div>`)}</div>`).join('') || '<p class="muted">No gear with affixes yet.</p>'}</div>`}`;
@@ -5056,7 +5058,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   $('hpAmu').addEventListener('click', (ev) => {
     const r0 = ev.target.closest('[data-breakcx], [data-rrsel], [data-rrline], [data-rrback]');
     if (r0 && !r0.disabled) {
-      if (r0.dataset.breakcx) { const it = profile.stash.find(x => x.id === r0.dataset.breakcx); const r = CBHub.breakCodex(profile, r0.dataset.breakcx); if (!r.ok) return toast(r.why); RR.last = `${esc(it.name)} breaks into <b>${r.tokens} Reroll Tokens</b>.`; }
+      if (r0.dataset.breakcx) { const it = profile.stash.find(x => x.id === r0.dataset.breakcx); const r = CBHub.breakCodex(profile, r0.dataset.breakcx); if (!r.ok) return toast(r.why); RR.last = r.tokens ? `${esc(it.name)} breaks down into <b>a Reroll Token</b>!` : `${esc(it.name)} crumbles to dust. No token this time.`; }
       else if (r0.dataset.rrsel) { RR.sel = r0.dataset.rrsel; RR.last = null; }
       else if (r0.dataset.rrback) { RR.sel = null; RR.last = null; }
       else { const r = CBHub.rerollItem(profile, RR.sel, +r0.dataset.rrline, DATA); if (!r.ok) return toast(r.why);
@@ -6219,8 +6221,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793631175158';
-  const CB_BUILD = '9d6874d38e'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793631902954';
+  const CB_BUILD = 'a8b3a47408'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -7290,6 +7292,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Change', 'Reroll Tokens are now rare: breaking down a codex gives 1 token by chance, 10% for a +0 codex and 5% more for every map level it dropped on (certain from +18).'],
+      ['Balance', 'Gold: monsters drop half as much gold, and gold grows 5% per map level instead of 50%. Salvaging gear follows the same 5% curve. Merchants (in runs and in town) charge double.'],
+      ['Change', 'Item power is now worked out for your hero: the codex you wear (or the one closest to your deck), the gear you already have and the map you are playing. Stats your codex doesn\'t use, resistance past 75% and resistance to another map\'s element count for nothing. 10 power = 1% fight strength.'],
       ['Change', 'Hit and spell effects redrawn as cut paper to match the heroes: shaded pieces with sharp ink outlines and muted colours that stamp in and tumble away. Crits show a torn rust-red scrap with ink strokes instead of a bright red star.'],
       ['Feature', 'The Forge (link at Tinker Pip\'s test shop): preview any class in any gear, every hero move, hit effect, spell and card combo, the town walker, and change which drawn piece each item uses per map and the colours.'],
       ['Fix', 'Phones: the fight screen stacks the combat log under the battlefield instead of covering it, and the greyed-out Shaman seat at the campfire no longer blocks picking the Paladin.'],

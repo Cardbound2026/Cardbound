@@ -158,7 +158,7 @@ function unequip(p, cls, slot) {
   return true;
 }
 const SALVAGE = { White: 2, Green: 6, Blue: 15, 'Purple (Epic)': 40 };
-function salvageValue(it) { return Math.round((SALVAGE[it.rarity] || 2) * Math.pow(1.5, it.level || 0)); }
+function salvageValue(it) { return Math.round((SALVAGE[it.rarity] || 2) * Math.pow(1.05, it.level || 0)); } // Nov 2: +5% per map level (was 1.5x), like monster gold
 function salvage(p, itemId) { const i = p.stash.findIndex(x => x.id === itemId); if (i < 0) return 0; const g = salvageValue(p.stash[i]); p.stash.splice(i, 1); p.gold += g; return g; }
 
 // ---------- deck and cards
@@ -239,7 +239,7 @@ function breakCard(p, key, cardId) {
 function findItem(p, id) { const i = p.stash.findIndex(x => x.id === id); if (i >= 0) return { it: p.stash[i], where: 'stash' }; for (const c of Object.values(p.chars)) { const g = c.gear.find(x => x.id === id); if (g) return { it: g, where: c }; } return null; }
 function breakCodex(p, itemId) {
   const i = p.stash.findIndex(x => x.id === itemId); if (i < 0 || p.stash[i].slot !== 'Codex') return { ok: false, why: 'Only codexes in the stash can be broken down (unequip it first).' };
-  const n = CB.CODEX_TOKENS(p.stash[i]); p.stash.splice(i, 1); p.rerollTokens = (p.rerollTokens || 0) + n; return { ok: true, tokens: n };
+  const n = Math.random() < CB.CODEX_TOKEN_CHANCE(p.stash[i]) ? 1 : 0; p.stash.splice(i, 1); p.rerollTokens = (p.rerollTokens || 0) + n; return { ok: true, tokens: n };
 }
 function rerollItem(p, itemId, idx, data, rng) {
   const f = findItem(p, itemId); if (!f) return { ok: false, why: 'Item not found.' }; const it = f.it;

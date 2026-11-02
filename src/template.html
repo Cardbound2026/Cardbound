@@ -1240,7 +1240,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       const cur = opts.map(sl => c.gear.find(g => g.slot === sl)).filter(Boolean);
       const vs = cur.length ? cur.map(g => { const d = (it.ilvl || 0) - (g.ilvl || 0); return `${esc(g.name)} ilvl ${g.ilvl} <span class="${d > 0 ? 'up' : d < 0 ? 'down' : ''}">(${d > 0 ? '+' : ''}${d})</span>`; }).join(', ') : 'an empty slot';
       const btns = opts.length > 1 ? opts.map(sl => `<button class="btn" data-equip="${it.id}" data-slot="${sl}">Equip as ${sl}</button>`).join('') : `<button class="btn" data-equip="${it.id}">Equip</button>`;
-      return itemHtml(it, `<div class="il">${upBadge(it, c.gear)} Replaces ${vs}</div><div class="acts">${btns}${it.slot === 'Codex' ? `<button class="btn" data-breakcx="${it.id}">Break into ${CB.CODEX_TOKENS(it)} Reroll Tokens</button>` : `<button class="btn" data-salvage="${it.id}">Salvage +${CBHub.salvageValue(it)} gold</button>`}</div>`);
+      return itemHtml(it, `<div class="il">${upBadge(it, c.gear)} Replaces ${vs}</div><div class="acts">${btns}${it.slot === 'Codex' ? `<button class="btn" data-breakcx="${it.id}">Break down (${Math.round(CB.CODEX_TOKEN_CHANCE(it) * 100)}% chance of a Reroll Token)</button>` : `<button class="btn" data-salvage="${it.id}">Salvage +${CBHub.salvageValue(it)} gold</button>`}</div>`);
     }).join('');
     const multi = Object.keys(profile.chars).length > 1;
     const heroRow = multi ? `<div class="cxchips" role="tablist" aria-label="Hero" style="margin:0 0 8px">${heroKeys().map(k => `<button class="cxchip ${k === heroKey ? 'on' : ''}" data-hero="${k}"><b style="color:${CC[profile.chars[k].cls]}">${esc(profile.chars[k].name)}</b> <span class="muted">${profile.chars[k].cls}</span></button>`).join('')}</div>` : '';
@@ -1261,7 +1261,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (b.dataset.unequip) { if (!CBHub.unequip(profile, heroKey, b.dataset.unequip)) return toast(CBHub.arenaLock(profile, heroKey) || 'Stash is full.'); }
     else if (b.dataset.equip) { const r = CBHub.equip(profile, heroKey, b.dataset.equip, b.dataset.slot); if (!r.ok) return toast(r.why); }
     else if (b.dataset.salvage) CBHub.salvage(profile, b.dataset.salvage);
-    else if (b.dataset.breakcx) { const r = CBHub.breakCodex(profile, b.dataset.breakcx); if (!r.ok) return toast(r.why); keepScroll(() => { save(); renderHub(); }); return toast(`+${r.tokens} Reroll Tokens (you have ${profile.rerollTokens}). Spend them at Jeweler Rook.`); }
+    else if (b.dataset.breakcx) { const r = CBHub.breakCodex(profile, b.dataset.breakcx); if (!r.ok) return toast(r.why); keepScroll(() => { save(); renderHub(); }); return toast(r.tokens ? `+1 Reroll Token (you have ${profile.rerollTokens}). Spend it at Jeweler Rook.` : 'The codex crumbles to dust. No Reroll Token this time.'); }
     else return;
     keepScroll(() => { save(); renderHub(); });
   });
@@ -1422,8 +1422,8 @@ body.aiming { cursor: grabbing; user-select: none; }
     const sel = items.find(([g]) => g.id === RR.sel) || null;
     const last = RR.last ? `<p class="rrlast">${RR.last}</p>` : '';
     return `<h3 class="rrhead">Rerolls <span class="chip rrtok" title="Reroll Tokens: break down codexes to get more">${tok} Reroll Token${tok === 1 ? '' : 's'}</span></h3>
-      <p class="savenote" style="margin:0 0 8px">Every item drops with a <b>reroll potential</b> (White 0-1, Green 1-2, Blue 2-3, Purple 3-4). One Reroll Token and one point of potential reroll one affix line of your choice into a new random stat, rolled like a fresh drop of that item. The implicit never changes. Break down codexes you don't need for tokens (3, plus 1 for every 2 map levels it dropped on).</p>
-      ${codexes.length ? `<h4 class="createstep">Break down codexes</h4><div class="rrcx">${codexes.map(x => itemHtml(x, `<div class="acts"><button class="btn" data-breakcx="${x.id}">Break into ${CB.CODEX_TOKENS(x)} tokens</button></div>`)).join('')}</div>` : '<p class="muted" style="font-size:13px">No codexes in your stash to break down. Unequip one first if you want to break it.</p>'}
+      <p class="savenote" style="margin:0 0 8px">Every item drops with a <b>reroll potential</b> (White 0-1, Green 1-2, Blue 2-3, Purple 3-4). One Reroll Token and one point of potential reroll one affix line of your choice into a new random stat, rolled like a fresh drop of that item. The implicit never changes. Reroll Tokens are rare: breaking down a codex gives one only by chance (10% for a +0 codex, 5% more for every map level it dropped on, certain from +18).</p>
+      ${codexes.length ? `<h4 class="createstep">Break down codexes</h4><div class="rrcx">${codexes.map(x => itemHtml(x, `<div class="acts"><button class="btn" data-breakcx="${x.id}">Break down (${Math.round(CB.CODEX_TOKEN_CHANCE(x) * 100)}% chance of a token)</button></div>`)).join('')}</div>` : '<p class="muted" style="font-size:13px">No codexes in your stash to break down. Unequip one first if you want to break it.</p>'}
       <h4 class="createstep">Reroll an affix</h4>
       ${sel ? `<div class="rrsel">${itemHtml(sel[0], `<div class="rrlines">${sel[0].lines.map((l, i) => `<div class="rrline"><span>+${l.v}${pct2(l.stat)} ${esc(nice2(l.stat))} <small class="muted">(${l.lo}-${l.hi})</small></span><button class="btn ${tok && sel[0].rerolls > 0 ? 'primary' : ''}" data-rrline="${i}" ${tok && sel[0].rerolls > 0 ? '' : 'disabled'}>Reroll</button></div>`).join('')}</div><div class="acts"><button class="btn" data-rrback="1">Pick another item</button></div>`)}</div>${last}`
         : `${last}<div class="rritems">${items.map(([g, w]) => `<div class="rrpick ${g.rerolls > 0 ? '' : 'none'}">${itemHtml(g, `<div class="acts"><span class="muted" style="font-size:12px">${w}</span><button class="btn" data-rrsel="${g.id}" ${g.rerolls > 0 ? '' : 'disabled'}>${g.rerolls > 0 ? 'Choose' : 'No rerolls left'}</button></div>`)}</div>`).join('') || '<p class="muted">No gear with affixes yet.</p>'}</div>`}`;
@@ -1432,7 +1432,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   $('hpAmu').addEventListener('click', (ev) => {
     const r0 = ev.target.closest('[data-breakcx], [data-rrsel], [data-rrline], [data-rrback]');
     if (r0 && !r0.disabled) {
-      if (r0.dataset.breakcx) { const it = profile.stash.find(x => x.id === r0.dataset.breakcx); const r = CBHub.breakCodex(profile, r0.dataset.breakcx); if (!r.ok) return toast(r.why); RR.last = `${esc(it.name)} breaks into <b>${r.tokens} Reroll Tokens</b>.`; }
+      if (r0.dataset.breakcx) { const it = profile.stash.find(x => x.id === r0.dataset.breakcx); const r = CBHub.breakCodex(profile, r0.dataset.breakcx); if (!r.ok) return toast(r.why); RR.last = r.tokens ? `${esc(it.name)} breaks down into <b>a Reroll Token</b>!` : `${esc(it.name)} crumbles to dust. No token this time.`; }
       else if (r0.dataset.rrsel) { RR.sel = r0.dataset.rrsel; RR.last = null; }
       else if (r0.dataset.rrback) { RR.sel = null; RR.last = null; }
       else { const r = CBHub.rerollItem(profile, RR.sel, +r0.dataset.rrline, DATA); if (!r.ok) return toast(r.why);

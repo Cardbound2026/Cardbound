@@ -1991,7 +1991,9 @@ function rollItem(data, rng, baseName, rarity, level) {
 // map level. Codexes can't be rerolled; they break down into Reroll Tokens instead. The potential comes from the item's own rolls (no extra RNG).
 const REROLL_BASE = { White: 0, Green: 1, Blue: 2, 'Purple (Epic)': 3 };
 function rerollPotential(it) { if (!it || !it.lines || !it.lines.length || it.slot === 'Codex') return 0; let h = 7; for (const l of it.lines) h = (h * 31 + l.v * 7 + l.stat.length) % 1000003; return (REROLL_BASE[it.rarity] || 0) + (h % 2); }
-const CODEX_TOKENS = (it) => 3 + Math.floor((it && it.level || 0) / 2);
+const CODEX_TOKENS = (it) => 3 + Math.floor((it && it.level || 0) / 2); // (before Nov 2; kept for old callers)
+// Nov 2: Reroll Tokens are rare. Breaking a codex gives 1 token by chance: 10% for a +0 codex, +5% per map level it dropped on (certain from +18)
+const CODEX_TOKEN_CHANCE = (it) => Math.min(1, 0.1 + 0.05 * (it && it.level || 0));
 function itemPoints(G, b, it) { // the points an item rolled (its implicit plus every affix), for its item level
   const twoH = (G.arche[b.arch] || {}).hands && G.arche[b.arch].hands.startsWith('2H') ? G.twoHand : 1, base = (k) => k.split(':')[0];
   let pts = 0; const onLines = {}; for (const l of it.lines || []) { const st = G.stats[base(l.stat)]; if (st) pts += l.v * st.pts / twoH; onLines[l.stat] = (onLines[l.stat] || 0) + l.v; }
@@ -2380,6 +2382,6 @@ const TEXT_FIX = {
 for (const [k, t] of Object.entries(TEXT_FIX)) if (C[k]) C[k].text = t;
 POWERS.codex_soulbinder.dotDealt = POWERS.codex_soulbinder.dealt;
 CARDS_READY = true; if (DATA && DATA.gear) namedLoot(DATA);
-const API = { bossCodexPct, GROUPS, groupData, itemRules, rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { CODEX_TOKEN_CHANCE, bossCodexPct, GROUPS, groupData, itemRules, rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -2,6 +2,9 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Change', 'Reroll Tokens are now rare: breaking down a codex gives 1 token by chance, 10% for a +0 codex and 5% more for every map level it dropped on (certain from +18).'],
+      ['Balance', 'Gold: monsters drop half as much gold, and gold grows 5% per map level instead of 50%. Salvaging gear follows the same 5% curve. Merchants (in runs and in town) charge double.'],
+      ['Change', 'Item power is now worked out for your hero: the codex you wear (or the one closest to your deck), the gear you already have and the map you are playing. Stats your codex doesn\'t use, resistance past 75% and resistance to another map\'s element count for nothing. 10 power = 1% fight strength.'],
       ['Change', 'Hit and spell effects redrawn as cut paper to match the heroes: shaded pieces with sharp ink outlines and muted colours that stamp in and tumble away. Crits show a torn rust-red scrap with ink strokes instead of a bright red star.'],
       ['Feature', 'The Forge (link at Tinker Pip\'s test shop): preview any class in any gear, every hero move, hit effect, spell and card combo, the town walker, and change which drawn piece each item uses per map and the colours.'],
       ['Fix', 'Phones: the fight screen stacks the combat log under the battlefield instead of covering it, and the greyed-out Shaman seat at the campfire no longer blocks picking the Paladin.'],
