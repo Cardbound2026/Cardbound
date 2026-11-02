@@ -46,7 +46,8 @@
   const mapsInOrder = () => Object.values(DATA.maps).sort((a, b) => a.num - b.num);
   // published per map: furthest level/row reached (lvl, row) plus the highest level completed (done, -1 = never) and when
   function recMapsOf(c) { const out = {}; const keys = new Set([...Object.keys(c.mapBest || {}), ...Object.keys(c.mapKills || {})]);
-    for (const mk of keys) out[mk] = Object.assign({}, (c.mapBest || {})[mk] || { lvl: 0, row: 0 }, { done: CBHub.mapCleared(c, mk), doneAt: (c.mapKillAt || {})[mk] || null }); return out; }
+    for (const mk of Object.keys(c.bossKillsBy || {})) keys.add(mk);
+    for (const mk of keys) out[mk] = Object.assign({}, (c.mapBest || {})[mk] || { lvl: 0, row: 0 }, { done: CBHub.mapCleared(c, mk), doneAt: (c.mapKillAt || {})[mk] || null, kills: (c.bossKillsBy || {})[mk] || 0 }); return out; }
   const doneOf = (b) => b ? (b.done != null ? b.done : b.row >= 15 ? b.lvl : -1) : -1; // older records: a boss kill shows as row 15
   const bestMapOf = (h) => { let best = null; for (const M of mapsInOrder()) { const d = doneOf((h.maps || {})[M.key]); if (d >= 0 && (!best || d * 100 + M.num > best.score)) best = { M, d, score: d * 100 + M.num }; } return best; }; // highest map level completed
   function renderRecords() {
@@ -84,10 +85,16 @@
     return filt + (rows ? `<div class="rectable"><table><thead><tr><th>#</th><th>Hero</th><th>Guild</th><th class="num">Progress</th><th class="num">Power</th><th>Best clear</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted">No living hardcore heroes yet. Tick Hardcore when you create a hero.</p>')
       + `<h4 style="margin:14px 0 4px;color:var(--accent)">The graveyard</h4>${grave ? `<ol class="recgrave">${grave}</ol>` : '<p class="muted">No hardcore hero has fallen yet.</p>'}`;
   }
+  // most kills of each map's boss (any level), heroes with the same count ranked by who got there first
+  function killsList(M) {
+    const boss = DATA.enemies[M.boss], nm = boss ? boss.name.split(',')[0] : 'the boss';
+    const top = REC.heroes.map(h => ({ h, n: (h.maps && h.maps[M.key] && h.maps[M.key].kills) || 0 })).filter(x => x.n > 0).sort((a, b) => b.n - a.n || String(a.h.updated_at).localeCompare(String(b.h.updated_at))).slice(0, 5);
+    return `<h5 class="recsub">Most kills: ${esc(nm)}</h5>${top.length ? `<ol>${top.map(({ h, n }) => `<li data-rechero="${h.user_id}|${esc(h.hero_key)}"><b style="color:${CC[h.hero_class]}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.guild_name || '')}</span><span class="rv">${n} kill${n === 1 ? '' : 's'}</span></li>`).join('')}</ol>` : '<p class="muted">No kills counted yet.</p>'}`;
+  }
   function recMaps() {
-    return `<p class="savenote" style="margin:0 0 6px">For each road: the highest map level any hero has completed (beaten the boss), first to do it ranked higher.</p><div class="recgrid">${mapsInOrder().map(M => {
+    return `<p class="savenote" style="margin:0 0 6px">For each road: the highest map level any hero has completed (beaten the boss), first to do it ranked higher, then who has killed that map\'s boss the most times (any level).</p><div class="recgrid">${mapsInOrder().map(M => {
       const top = REC.heroes.filter(h => h.maps && doneOf(h.maps[M.key]) >= 0).map(h => ({ h, b: h.maps[M.key], d: doneOf(h.maps[M.key]) })).sort((x, y) => y.d - x.d || ((x.b.doneAt || x.b.at || 0) - (y.b.doneAt || y.b.at || 0))).slice(0, 5);
-      return `<div class="reccard" style="--ec:${ELC[M.element] || 'var(--accent)'}"><h4>${M.num}. ${esc(M.name)}</h4>${top.length ? `<ol>${top.map(({ h, b, d }, i) => `<li data-rechero="${h.user_id}|${esc(h.hero_key)}"><b style="color:${CC[h.hero_class]}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.guild_name || '')}</span><span class="rv">+${d} cleared</span></li>`).join('')}</ol>` : '<p class="muted">Nobody has beaten this road\'s boss yet.</p>'}</div>`; }).join('')}</div>`;
+      return `<div class="reccard" style="--ec:${ELC[M.element] || 'var(--accent)'}"><h4>${M.num}. ${esc(M.name)}</h4><h5 class="recsub">Highest clear</h5>${top.length ? `<ol>${top.map(({ h, b, d }, i) => `<li data-rechero="${h.user_id}|${esc(h.hero_key)}"><b style="color:${CC[h.hero_class]}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.guild_name || '')}</span><span class="rv">+${d} cleared</span></li>`).join('')}</ol>` : '<p class="muted">Nobody has beaten this road\'s boss yet.</p>'}${killsList(M)}</div>`; }).join('')}</div>`;
   }
   function recRaids() {
     const who = (k) => k.guild_name ? esc(k.guild_name) : `<span class="muted">No guild</span> (${esc((k.heroes[0] || {}).name || '?')}'s party)`;

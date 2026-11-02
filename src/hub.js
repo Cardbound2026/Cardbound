@@ -36,6 +36,8 @@ function fix(p) { // tolerate older or partial saves
   // Nov 1: boss kills weren't being recorded (mapKills) since the Hall of Records; rebuild them from map records and run history
   for (const c of Object.values(p.chars)) { const k = c.mapKills = c.mapKills || {}; const up = (mk, lv) => { if (k[mk] == null || lv > k[mk]) k[mk] = lv; };
     for (const [mk, b] of Object.entries(c.mapBest || {})) if (b.row >= 15) up(mk, b.lvl); for (const h of p.history || []) if (!h.raid && h.map && h.result === 'victory' && h.name === c.name && h.cls === c.cls) up(h.map, h.level || 0); }
+  // Nov 1: boss kills per map, counted from run history for heroes who had kills before this was tracked (at least 1 for any map they've beaten)
+  for (const c of Object.values(p.chars)) if (!c.bossKillsBy) { const bk = c.bossKillsBy = {}; for (const h of p.history || []) if (!h.raid && h.map && h.result === 'victory' && h.name === c.name && h.cls === c.cls) bk[h.map] = (bk[h.map] || 0) + 1; for (const mk of Object.keys(c.mapKills || {})) if (!bk[mk]) bk[mk] = 1; }
   // Nov 1: heroes made before the Shoulders slot get the class's starter shoulders
   for (const c of Object.values(p.chars)) if (!c.gear.some(g => g.slot === 'Shoulders')) { const st = (STARTER_GEAR[c.cls] || []).find(g => g.slot === 'Shoulders'); if (st) c.gear.push(Object.assign({ id: uid('g') }, st)); }
   // Nov 1: rerolls. Items found before the system get their reroll potential (worked out from their own rolls); Reroll Tokens start at 0
@@ -244,6 +246,7 @@ function absorbRun(p, run, mi) {
   c.runs++; const row = run.currentRow(); c.best = Math.max(c.best, row);
   noteMapBest(c, run.mapKey || 'physical', run.level || 0, run.over === 'victory' ? 15 : row); // Hall of Records: furthest level and row per map
   if (run.over === 'victory') { const mk0 = run.mapKey || 'physical', had = c.mapKills && c.mapKills[mk0] != null ? c.mapKills[mk0] : -1; if ((run.level || 0) > had) (c.mapKillAt = c.mapKillAt || {})[mk0] = Date.now(); }
+  if (run.over === 'victory') { const bk = (c.bossKillsBy = c.bossKillsBy || {}); bk[run.mapKey || 'physical'] = (bk[run.mapKey || 'physical'] || 0) + 1; } // Nov 1: boss kills per map (Hall of Records)
   if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); }
   // the run's damage meter, kept so the Chronicler can show it later (numbers rounded to keep saves small)
   const meter = Object.values(run.meter || {}).map(m => { const r = (o) => Object.fromEntries(Object.entries(o || {}).filter(x => x[1] > 0).map(([k, v]) => [k, Math.round(v)])); return { id: m.id, name: m.name, isPlayer: m.isPlayer, cls: m.cls, dealt: r(m.dealt), healed: r(m.healed), taken: r(m.taken), absorbed: Math.round(m.absorbed || 0) }; });
