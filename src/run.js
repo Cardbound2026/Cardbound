@@ -197,6 +197,9 @@ function finishMap(rng, data, partySize, mapKey, nodes, bonus) {
   return { nodes, starts: [...starts].map(c => id(1, c)).filter(k => nodes[k]) };
 }
 
+// Nov 2: gold inflation. Monster gold is halved and grows 5% per map level (was 1.5x per level); merchants charge double.
+const goldMult = (level) => 0.5 * Math.pow(1.05, level || 0);
+const MERCHANT_PRICE_MULT = 2;
 class Run {
   // opts: level, seed, data, and either members: [{cls, gear, deck, bank, stashFree, name}] (a party of 1 to 4)
   // or the solo fields cls, gear/gearPreset, deck, bank, stashFree. sharedBank: true when every member spends one bank (hot-seat party).
@@ -306,7 +309,7 @@ class Run {
           drops.push(...rollDrops(this.data, this.rng, e.key, this.level, this.luck(m), m.cls));
           drops.push(...rollCards(this.rng, m.cls, this.data.enemies[e.key].tier, this.luck(m)));
           drops.push(...rollNamedCards(this.data, this.rng, e.key, m.cls, this.luck(m)));
-          const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * Math.pow(1.5, this.level));
+          const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * goldMult(this.level));
         }
         if (e.enraged) { const pool = this.data.enemies[e.key].pool; if (pool && pool.length) { const it = rollItem(this.data, this.rng, pool[Math.floor(this.rng() * pool.length)], this.rng() < 0.25 * (1 + this.luck(m) / 100) ? 'Purple (Epic)' : 'Blue', this.level); if (it) drops.push(it); } } // plus a guaranteed Blue, 25% Epic
       }
@@ -340,7 +343,7 @@ class Run {
         if (pool.length) {
           const k = pool[Math.floor(this.rng() * pool.length)], e = this.data.enemies[k];
           const drops = [...rollDrops(this.data, this.rng, k, this.level, this.luck(m), m.cls), ...rollCards(this.rng, m.cls, e.tier, this.luck(m)), ...rollNamedCards(this.data, this.rng, k, m.cls, this.luck(m))];
-          const gold = Math.round(ri(this.rng, e.gold[0], e.gold[1]) * Math.pow(1.5, this.level));
+          const gold = Math.round(ri(this.rng, e.gold[0], e.gold[1]) * goldMult(this.level));
           m.sack.push(...drops); m.gold += gold; out[i].drops = drops; out[i].gold = gold; out[i].from = e.name;
           this.note(`${this.solo ? 'You rummage' : m.name + ' rummages'} through what the ${e.name} left behind: ${drops.length} drop${drops.length === 1 ? '' : 's'} and ${gold} gold.`);
         }
@@ -371,7 +374,7 @@ class Run {
     for (let i = 0; i < (n || 4 + Math.min(4, this.members.length - 1) * 2); i++) {
       const x = this.rng() * 100, rar = x < 45 ? 'White' : x < 80 ? 'Green' : 'Blue';
       const item = rollItem(this.data, this.rng, bases[ri(this.rng, 0, bases.length - 1)], rar, this.level);
-      item.price = Math.round({ White: 20, Green: 50, Blue: 120 }[rar] * Math.pow(1.5, this.level));
+      item.price = Math.round({ White: 20, Green: 50, Blue: 120 }[rar] * Math.pow(1.5, this.level) * MERCHANT_PRICE_MULT);
       out.push(item);
     }
     return out;

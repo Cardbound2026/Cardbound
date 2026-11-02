@@ -45,6 +45,7 @@ function fix(p) { // tolerate older or partial saves
   for (const c of Object.values(p.chars)) if (!c.gear.some(g => g.slot === 'Shoulders')) { const st = (STARTER_GEAR[c.cls] || []).find(g => g.slot === 'Shoulders'); if (st) c.gear.push(Object.assign({ id: uid('g') }, st)); }
   // Nov 1: rerolls. Items found before the system get their reroll potential (worked out from their own rolls); Reroll Tokens start at 0
   p.rerollTokens = p.rerollTokens || 0;
+  for (const it of (p.shop && p.shop.items) || []) if (!it.px2) { if (it.price) it.price *= 2; it.px2 = 1; } // Nov 2: merchant prices doubled, stock already on the shelf too
   for (const it of [...p.stash, ...Object.values(p.chars).flatMap(c => c.gear)]) if (it && it.rerolls == null) it.rerolls = CB.rerollPotential(it);
   return p;
 }
@@ -208,13 +209,13 @@ function rankUp(p, t) {
 const SHOP_RESTOCK_MS = 12 * 60 * 60 * 1000;
 function shopDue(p, now) { return !p.shop || !p.shop.at || (now || Date.now()) - p.shop.at >= SHOP_RESTOCK_MS; }
 const SHOP_PRICE = { White: 20, Green: 50, Blue: 120 };
-function shopPrice(rar, level) { return Math.round(SHOP_PRICE[rar] * Math.pow(1.5, level)); }
+function shopPrice(rar, level) { return Math.round(SHOP_PRICE[rar] * Math.pow(1.5, level) * 2); } // Nov 2: merchant prices doubled
 // Nov 1: stock comes from the map and level of the last boss you killed (not the last map you entered), so you can't stock up from a map you can't beat
 function shopBasis(p) { const lb = p.lastBoss; return lb && lb.map ? { map: lb.map, level: lb.level || 0 } : { map: 'physical', level: 0 }; }
 function refreshShop(p, data, level, rng, now) {
   const sb = shopBasis(p); level = sb.level;
   rng = rng || Math.random; const mk = sb.map; let bases = data.gear.bases.filter(b => (b.map || 'physical') === mk).map(b => b.name); if (!bases.length) bases = data.gear.bases.map(b => b.name); p.shop = { level, map: mk, items: [], at: now || Date.now() };
-  for (let i = 0; i < 6; i++) { const x = rng() * 100, rar = x < 35 ? 'White' : x < 78 ? 'Green' : 'Blue'; const it = CB.rollItem(data, rng, bases[Math.floor(rng() * bases.length)], rar, level); it.price = shopPrice(rar, level); p.shop.items.push(it); }
+  for (let i = 0; i < 6; i++) { const x = rng() * 100, rar = x < 35 ? 'White' : x < 78 ? 'Green' : 'Blue'; const it = CB.rollItem(data, rng, bases[Math.floor(rng() * bases.length)], rar, level); it.price = shopPrice(rar, level); it.px2 = 1; p.shop.items.push(it); }
 }
 function buyShop(p, i) {
   const it = p.shop && p.shop.items[i]; if (!it || it.sold) return { ok: false, why: 'Already sold' };
