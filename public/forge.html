@@ -1755,7 +1755,7 @@ async function exportTravelPack(){
 
   CB_INK.ground = function (o) {
     const { MW, MH, TS, dpr, ground } = o, c = document.createElement('canvas'); c.width = MW * TS * dpr; c.height = MH * TS * dpr;
-    const g = c.getContext('2d'); g.scale(dpr, dpr); const R = rng(77), s = TS / 48, at = (x, y) => (ground[y] || [])[x];
+    const g = c.getContext('2d'); g.scale(dpr, dpr); const R = rng(o.seed || 77), s = TS / 48, at = (x, y) => (ground[y] || [])[x];
     // grass: muted olive with ink tufts and a few broad dark patches
     for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) { const v = R(); g.fillStyle = v < .33 ? '#1a1e15' : v < .66 ? '#1c2117' : '#181c13'; g.fillRect(x * TS, y * TS, TS, TS); }
     g.globalAlpha = .28; for (let i = 0; i < MW * MH / 5; i++) { const cx = R() * MW * TS, cy = R() * MH * TS, r = TS * (.6 + R() * 1.2); P(g, [[cx - r, cy], [cx - r * .3, cy - r * .5], [cx + r * .6, cy - r * .3], [cx + r, cy + r * .2], [cx + r * .2, cy + r * .5], [cx - r * .7, cy + r * .4]], '#0a0c07'); } g.globalAlpha = 1;

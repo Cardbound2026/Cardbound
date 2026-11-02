@@ -615,6 +615,10 @@ body.aiming { cursor: grabbing; user-select: none; }
 .titlepick { display: flex; gap: 4px; justify-content: center; margin: 4px 0 2px; } .titlepick select { background: #15110d; color: #e4c27a; border: 1px solid #6a5422; border-radius: 4px; padding: 2px 6px; font: inherit; font-size: 13px; font-style: italic; max-width: 150px; } .titlepick .btn { padding: 2px 8px; font-size: 12px; }
 .rectitle { color: #e4c27a; font-size: .85em; font-weight: 500; }
 .dtitle { color: #e4c27a; font-style: italic; font-size: 13px; }
+.bankcols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } @media (max-width: 760px) { .bankcols { grid-template-columns: 1fr; } }
+.minimap { position: absolute; right: 10px; top: 36px; z-index: 3; border: 2px solid #0b0a07; outline: 1px solid #8a6a2e; box-shadow: 4px 5px 0 rgba(0,0,0,.45); cursor: crosshair; image-rendering: pixelated; }
+.minibtn { position: absolute; right: 10px; top: 10px; z-index: 4; font: 600 12px "Barlow Semi Condensed", sans-serif; background: #15110d; color: #e4c27a; border: 1px solid #6a5422; border-radius: 3px; padding: 1px 8px; cursor: pointer; }
+@media (max-width: 760px) { .minimap { width: 120px !important; height: auto !important; } }
 .tutpick { border-color: #6a5422; background: #1a150b; } .tutpick input { accent-color: var(--accent); }
 .tutbox { position: fixed; right: 16px; bottom: 16px; z-index: 40; width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; background: #15110d; border: 2px solid #d6a14a; border-radius: 8px; padding: 10px 14px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.6); font-size: 15px; line-height: 1.45; }
 .tutbox h3 { margin: 2px 0 6px; color: var(--accent); font-size: 19px; } .tutbox p { margin: 0 0 8px; } .tutbox .row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
@@ -867,7 +871,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   <div id="secHeroes"><div class="heroes" id="heroes" role="tablist" aria-label="Characters"></div></div>
   <div class="sheetgrid" id="sheetGrid">
     <aside id="secChar"><div class="panel" id="hubChar"></div></aside>
-    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div><div id="hpFriends"></div><div id="hpCodex"></div><div id="hpTest"></div><div id="hpAmu"></div><div id="hpGuild"></div><div id="hpRaid"></div><div id="hpRec"></div><div id="hpArena"></div></div>
+    <div class="sheetmain"><div id="secWagon"><div class="panel" id="hubWagon"></div></div><div id="hpGear"></div><div id="hpDeck"></div><div id="hpLog"></div><div id="hpShop"></div><div id="hpFriends"></div><div id="hpCodex"></div><div id="hpTest"></div><div id="hpAmu"></div><div id="hpGuild"></div><div id="hpRaid"></div><div id="hpRec"></div><div id="hpBank"></div><div id="hpArena"></div></div>
   </div>
 </div></div>
 <div class="modal" id="modal" hidden><div class="box" id="modalBox"></div></div>
@@ -950,7 +954,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   function progFp(p) {
     try { const hc = p.stashMode === 'hc', W = (a, o) => hc ? [o, a] : [a, o]; // normal and hardcore wallets in a fixed order, whichever hero is active
       const ids = (L) => (L || []).map(x => x.id).sort().join(',');
-      return JSON.stringify([W(p.gold || 0, p.goldOther || 0), W(p.ink || 0, p.inkOther || 0), W(p.rerollTokens || 0, p.tokensOther || 0), W(ids(p.stash), ids(p.stashOther)), (p.history || []).length,
+      return JSON.stringify([W(p.gold || 0, p.goldOther || 0), W(p.ink || 0, p.inkOther || 0), W(p.rerollTokens || 0, p.tokensOther || 0), W(ids(p.stash), ids(p.stashOther)), W(ids(p.vault), ids(p.vaultOther)), (p.history || []).length,
       Object.keys(p.chars || {}).sort().map(k => { const c = p.chars[k]; return [k, c.name, c.runs || 0, c.bossKills || 0, (c.deck || []).map(x => x.id + ':' + (x.rank || 0) + ':' + (x.xp || 0)).sort().join(','), (c.cards || []).map(x => x.id).sort().join(','), (c.gear || []).map(g => g.id || g.name).sort().join(','), Math.round(Object.values(c.codexes || {}).reduce((t, x) => t + (x.xp || 0), 0)), JSON.stringify(c.mapBest || {}), JSON.stringify(c.codexes ? Object.entries(c.codexes).map(([k2, x]) => [k2, x.picks]) : [])]; })]); } catch (e) { return ''; }
   }
   const SY = { cloud: false, ready: false, busy: null, conflict: null, checkAt: 0, err: null };
@@ -1489,59 +1493,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   setTimeout(() => { try { if (window.CB_INK && CB_INK.preload) { CB_INK.preloadMap(curMap()); CB_INK.preload(['hero_warrior', 'hero_rogue', 'hero_mage', 'hero_paladin', 'hero_warlock', 'ash_imp', 'obsidian_brute', 'brimstone_warden', 'shade', 'hellhound_alpha']); } } catch (e) {} }, 1500); // Nov 2: your road's monsters, ready before the first fight
   // ---------- the town (overworld): grid movement like Pokemon, NPCs open the camp screens
   // Everything is drawn in code: thick dark outlines, muted colors, torchlight over a dark night layer.
-  const MW = 42, MH = 30; // Oct 31: the town grew east (x 26-41) for the Bazaar; Nov 1: and south (y 18-28) for the Arena
-  const BAZ = { x: 34, y: 9.5, r: 6.3 }; // the round market square; inside it you can set up shop
-  const inBazaar = (x, y) => Math.hypot(x - BAZ.x, y - BAZ.y) <= BAZ.r;
-  const ARN = { x: 20.5, y: 23.5, r: 4.4 }; // the dueling ring south of the old palisade
-  const inArena = (x, y) => y >= 18;
-  const TOWN = { running: false, last: 0, t: 0, TS: 48, dpr: 1, cache: null, dark: null, sprites: {}, embers: [] };
-  const P = { x: 12, y: 4, dir: 'down', mv: null, path: [], held: [], talkTo: null, step: 0 };
-  const STEP_MS = 165;
-  const ground = []; const solid = new Set(); const K = (x, y) => x + ',' + y;
-  for (let y = 0; y < MH; y++) { ground.push([]); for (let x = 0; x < MW; x++) ground[y].push('g'); }
-  const setG = (x, y, v) => { if (x >= 0 && y >= 0 && x < MW && y < MH) ground[y][x] = v; };
-  for (let x = 0; x < MW; x++) { setG(x, 0, 'w'); setG(x, MH - 1, 'w'); }
-  for (let y = 0; y < MH; y++) { setG(0, y, 'w'); setG(MW - 1, y, 'w'); }
-  for (let y = 0; y <= 10; y++) { setG(12, y, 'p'); setG(13, y, 'p'); }               // road in from the gate
-  for (let x = 3; x <= 22; x++) { setG(x, 9, 'p'); setG(x, 10, 'p'); }               // main street
-  for (let y = 11; y <= 15; y++) for (let x = 9; x <= 16; x++) if (Math.hypot(x - 12.5, (y - 13) * 1.15) < 3.6) setG(x, y, 'p'); // fire plaza
-  for (let y = 11; y <= 12; y++) { setG(5, y, 'p'); setG(6, y, 'p'); setG(19, y, 'p'); setG(20, y, 'p'); }
-  // the Bazaar: a palisade with a gap on the main street, then a round cobbled market
-  for (let y = 0; y < 18; y++) if (y !== 9 && y !== 10) setG(25, y, 'w');
-  // the Arena (Nov 1): the old south palisade (row 17) gets a gap at x 17-18; a path leads down to a round sand ring
-  for (let x = 0; x < MW; x++) if (x !== 17 && x !== 18) setG(x, 17, 'w');
-  for (let y = 16; y <= 19; y++) { setG(17, y, 'p'); setG(18, y, 'p'); }
-  for (let y = 18; y < MH - 1; y++) for (let x = 1; x < MW - 1; x++) if (Math.hypot(x - ARN.x, (y - ARN.y) * 1.1) <= ARN.r) setG(x, y, 'a');
-  for (let x = 23; x <= 29; x++) { setG(x, 9, 'p'); setG(x, 10, 'p'); }
-  for (let y = 1; y < MH - 1; y++) for (let x = 26; x < MW - 1; x++) if (Math.hypot(x - BAZ.x, y - BAZ.y) <= BAZ.r) setG(x, y, 'b');
-  for (let y = 15; y <= 16; y++) for (let x = 21; x <= 23; x++) setG(x, y, '~');
-  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'w' || ground[y][x] === '~') solid.add(K(x, y));
-  solid.delete(K(12, 0)); solid.delete(K(13, 0)); setG(12, 0, 'p'); setG(13, 0, 'p');  // the gate
-  solid.add(K(12, 0)); solid.add(K(13, 0));                                              // ...but you leave by wagon, not on foot
-
-  // props: x, y = footprint top-left; w, h footprint in tiles (solid); kind picks the drawing
-  const PROPS = [
-    { kind: 'tent', x: 3, y: 4, w: 5, h: 4, cloth: '#5b2a22', trim: '#c9472f', flag: '#c9472f' },
-    { kind: 'tent', x: 18, y: 4, w: 5, h: 4, cloth: '#26314d', trim: '#4f93e6', flag: '#8461b8' },
-    { kind: 'longhouse', x: 2, y: 13, w: 7, h: 3 },
-    { kind: 'stall', x: 18, y: 13, w: 4, h: 2 },
-    { kind: 'wagon', x: 15, y: 1, w: 3, h: 2 },
-    { kind: 'fire', x: 12, y: 13, w: 2, h: 1 },
-    { kind: 'board', x: 16, y: 12, w: 1, h: 1 },
-    { kind: 'statue', x: 10, y: 11, w: 1, h: 1 }, // Juss, the first to fall
-    { kind: 'arenaboard', x: 14, y: 20, w: 1, h: 1 },
-    ...[0, 1, 2, 3, 4, 5].map(i => { const a = i / 6 * Math.PI * 2 + Math.PI / 6; return { kind: 'torch', x: Math.round(ARN.x + Math.cos(a) * 5.4), y: Math.round(ARN.y + Math.sin(a) * 4.9), w: 1, h: 1 }; }),
-    ...[[3, 20], [6, 25], [2, 27], [9, 19], [31, 20], [35, 24], [38, 27], [28, 26], [33, 19], [12, 27]].map(([x, y]) => ({ kind: 'tree', x, y, w: 1, h: 1, v: (x * 7 + y * 3) % 3 })),
-    { kind: 'chest', x: 4, y: 8, w: 1, h: 1 },
-    { kind: 'lectern', x: 21, y: 8, w: 1, h: 1 },
-    { kind: 'lectern', x: 11, y: 7, w: 1, h: 1 },
-    { kind: 'well', x: 33, y: 9, w: 2, h: 1 }, { kind: 'sign', x: 24, y: 8, w: 1, h: 1 },
-    ...[0, 1, 2, 3, 4, 5, 6, 7].map(i => { const a = i / 8 * Math.PI * 2 + Math.PI / 8; return { kind: 'torch', x: Math.round(BAZ.x + Math.cos(a) * 6.9), y: Math.round(BAZ.y + Math.sin(a) * 6.6), w: 1, h: 1 }; }),
-    { kind: 'rock', x: 9, y: 3, w: 1, h: 1 }, { kind: 'rock', x: 23, y: 11, w: 1, h: 1 }, { kind: 'rock', x: 10, y: 16, w: 1, h: 1 },
-    ...[[1, 1], [2, 2], [3, 1], [1, 4], [1, 7], [2, 11], [1, 9], [23, 1], [24, 3], [22, 2], [24, 6], [24, 13], [27, 2], [30, 1], [39, 1], [40, 4], [27, 16], [40, 16], [27, 5], [40, 13], [20, 16], [16, 16], [9, 1], [7, 2], [8, 6], [10, 5], [16, 6]].map(([x, y]) => ({ kind: 'tree', x, y, w: 1, h: 1, v: (x * 7 + y * 3) % 3 })),
-    ...[[11, 2], [14, 5], [9, 8], [16, 8], [8, 11], [17, 11]].map(([x, y]) => ({ kind: 'torch', x, y, w: 1, h: 1 })),
-  ];
-  for (const p of PROPS) for (let y = p.y; y < p.y + p.h; y++) for (let x = p.x; x < p.x + p.w; x++) solid.add(K(x, y));
+/*CITY*/
 
   const NPCS = [
     { id: 'qm', name: 'Quartermaster Old Arthur', x: 6, y: 8, dir: 'down', open: 'gear', btn: 'Gear & stash', pal: { skin: '#c99a76', hair: '#3b2a1e', chest: '#4a3a2a', trim: '#8a6a40', legs: '#2b231b', helm: null, cape: null, weapon: 'hammer' },
@@ -1571,21 +1523,14 @@ body.aiming { cursor: grabbing; user-select: none; }
     { id: 'archivist', name: 'Archivist Casey Jones', x: 10, y: 7, dir: 'down', open: 'codex', btn: 'Open the Compendium', pal: { skin: '#cfa889', hair: '#9c9488', chest: '#3a2a3e', trim: '#b48cd8', legs: '#22182a', helm: 'hood', helmC: '#3a2a3e', cape: null, weapon: 'book' },
       lines: ['Every card, every beast on every road, every scrap of iron worth wearing. It is all written here.', 'Ask before you ride. The Compendium knows what drops where.', 'Looking for a codex for your Codex slot? I keep a page on every one of them.'] },
   ];
-  for (const n of NPCS) n.pal.ink = 'npc_' + n.id; // town art pack key (src/inkart.js)
+  // Nov 2: the city. The Banker, five more training dummies, and everyone moves into their new building
+  NPCS.push({ id: 'banker', name: 'Banker Hollis', x: 0, y: 0, dir: 'down', open: 'bank', btn: 'Open your vault', pal: Object.assign({ skin: '#c8a080', hair: '#3a2a20', chest: '#2a2a3a', trim: '#d6a14a', legs: '#1e1e28', helm: null, cape: null, weapon: null }, { forge: { cls: 'Mage', gear: CB.presetGear('Mage', 'Blue'), who: 'npc_banker' } }),
+    lines: ['Your stash is for what you carry. The vault is for what you keep.', 'Every coin and every blade, counted twice. Hardcore accounts are kept in a separate ledger.'] });
+  { const d0 = NPCS.find(n => n.id === 'dummy'); for (const [i, x, y] of [[2, 24, 92], [3, 30, 92], [4, 36, 92], [5, 24, 98], [6, 30, 98]]) NPCS.push(Object.assign({}, d0, { id: 'dummy' + i, x, y, pal: Object.assign({}, d0.pal) })); }
+  for (const n of NPCS) { const q = CITY_NPC[n.id]; if (q) { n.x = q[0]; n.y = q[1]; n.dir = q[2]; } }
+  for (const n of NPCS) n.pal.ink = 'npc_' + (/^dummy/.test(n.id) ? 'dummy' : n.id); // town art pack key (src/inkart.js)
   for (const n of NPCS) { n.home = n.dir; solid.add(K(n.x, n.y)); }
 
-  const LIGHTS = () => {
-    const L = [];
-    for (const p of PROPS) {
-      if (p.kind === 'torch') L.push({ x: p.x + 0.5, y: p.y + 0.1, r: 3.2, c: '255,150,60' });
-      if (p.kind === 'fire') L.push({ x: p.x + 1, y: p.y + 0.4, r: 5.5, c: '255,140,50' });
-      if (p.kind === 'lectern') L.push({ x: p.x + 0.5, y: p.y + 0.1, r: 1.6, c: '255,200,120' });
-      if (p.kind === 'tent') L.push({ x: p.x + p.w / 2, y: p.y + p.h - 0.4, r: 2.2, c: '255,170,90' });
-      if (p.kind === 'wagon') L.push({ x: p.x + 0.2, y: p.y + 0.4, r: 2.4, c: '255,170,80' });
-      if (p.kind === 'longhouse') L.push({ x: p.x + 3.5, y: p.y + 2.8, r: 2.4, c: '255,160,80' });
-    }
-    return L;
-  };
 
   // ---------- drawing helpers
   const OUT = '#0a0806';
@@ -1636,6 +1581,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 
   // ---------- props (each draws itself relative to its footprint; base y = bottom of footprint)
   function drawProp(g, p, TS, t) {
+    if (CITYDRAW.prop(g, p, TS, t, TOWN.dpr)) return; // the city's buildings (src/city.js)
     if (window.CB_INK && CB_INK.prop && CB_INK.prop(g, p, TS, t)) return; // Gothic Ink art pack
     const x0 = p.x * TS, y0 = p.y * TS, W = p.w * TS, H = p.h * TS, s = TS / 48;
     if (p.kind === 'tree') {
@@ -1859,7 +1805,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     const TS = w < 600 ? 40 : 48, dpr = Math.min(2, window.devicePixelRatio || 1);
     const h = Math.max(340, Math.min(window.innerHeight - 150, MH * TS));
     cv.style.width = w + 'px'; cv.style.height = h + 'px'; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
-    if (TS !== TOWN.TS || dpr !== TOWN.dpr || !TOWN.cache) { TOWN.TS = TS; TOWN.dpr = dpr; TOWN.cache = buildGround(); }
+    if (TS !== TOWN.TS || dpr !== TOWN.dpr) { TOWN.TS = TS; TOWN.dpr = dpr; TOWN.chunks.clear(); }
     TOWN.vw = w; TOWN.vh = h;
     TOWN.dark = document.createElement('canvas'); TOWN.dark.width = cv.width; TOWN.dark.height = cv.height;
   }
@@ -1881,11 +1827,13 @@ body.aiming { cursor: grabbing; user-select: none; }
   function draw(t) {
     const TS = TOWN.TS, d = TOWN.dpr, s = TS / 48, cam = camera();
     gx.setTransform(1, 0, 0, 1, 0, 0); gx.fillStyle = '#0b0907'; gx.fillRect(0, 0, cv.width, cv.height);
-    gx.drawImage(TOWN.cache, cam.x * d, cam.y * d, TOWN.vw * d, TOWN.vh * d, 0, 0, TOWN.vw * d, TOWN.vh * d);
+    drawGround(cam);
     gx.setTransform(d, 0, 0, d, -cam.x * d, -cam.y * d);
-    // depth sort: props by footprint bottom, characters by their tile
-    const list = PROPS.map(p => ({ y: p.y + p.h - 0.01, f: () => drawProp(gx, p, TS, t) }));
-    for (const n of NPCS) list.push({ y: n.y + 0.5, f: () => n.id === 'dummy' ? drawScarecrow(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, s, t) : drawChar(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.dir, 0, n.pal, s, t) });
+    // only what's on screen (plus a margin for tall buildings): props by footprint bottom, characters by their tile
+    const vx0 = cam.x / TS, vy0 = cam.y / TS, vx1 = (cam.x + TOWN.vw) / TS, vy1 = (cam.y + TOWN.vh) / TS, onV = (x, y, w, h) => x + w > vx0 - 3 && x < vx1 + 3 && y + h > vy0 - 1 && y < vy1 + 7;
+    const list = []; for (const p of PROPS) { const big = p.kind === 'colosseum'; if (big ? onV(p.x, p.cy0, p.w, p.ch) : onV(p.x, p.y, p.w, p.h)) list.push({ y: p.y + p.h - 0.01, f: () => drawProp(gx, p, TS, t) }); }
+    const NV = NPCS.filter(n => onV(n.x, n.y, 1, 1));
+    for (const n of NV) list.push({ y: n.y + 0.5, f: () => n.open === 'dummy' ? drawScarecrow(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, s, t) : drawChar(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.dir, 0, n.pal, s, t) });
     const hp = heroPos(); const walking = P.mv ? (Math.floor(P.mv.t * 2) % 2 ? 2 : 1) * (P.step % 2 ? 1 : 1) : 0;
     const stepF = P.mv ? ((P.step + (P.mv.t > 0.5 ? 1 : 0)) % 2 ? 1 : 2) : 0;
     list.push({ y: hp.y + 0.5, f: () => P.mount ? drawRider(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, P.dir, P.mv ? ((P.step % 2) + P.mv.t) / 2 : 0, heroPal(), s, t, P.mount, CC[(profile.chars[heroKey] || {}).cls]) : drawChar(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, P.dir, stepF, heroPal(), s, t) });
@@ -1895,26 +1843,29 @@ body.aiming { cursor: grabbing; user-select: none; }
     // embers over the fire
     for (const e of TOWN.embers) { gx.fillStyle = `rgba(255,${150 + (e.life * 80 | 0)},70,${e.life})`; gx.fillRect(e.x * TS, e.y * TS, 2.5 * s, 2.5 * s); }
     // name tags over every head: townspeople always, and your own hero with your guild under the name
-    for (const n of NPCS) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.id === 'dummy' ? 52 : null);
+    for (const n of NV) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.open === 'dummy' ? 52 : n.pal && n.pal.forge ? 80 : null);
     { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? 72 + MOUNT_RISE : null, CBHub.titleOf(c, profile)); }
     // night: darken everything, then cut light pools around fires and the hero
     const dk = TOWN.dark, dg = dk.getContext('2d');
     dg.setTransform(1, 0, 0, 1, 0, 0); dg.globalCompositeOperation = 'source-over'; dg.clearRect(0, 0, dk.width, dk.height);
-    dg.fillStyle = 'rgba(6,5,12,0.66)'; dg.fillRect(0, 0, dk.width, dk.height);
+    const night = nightness(t); dg.fillStyle = `rgba(6,5,12,${(0.1 + 0.56 * night).toFixed(3)})`; dg.fillRect(0, 0, dk.width, dk.height); // Nov 2: day and night on New York time
     dg.setTransform(d, 0, 0, d, -cam.x * d, -cam.y * d); dg.globalCompositeOperation = 'destination-out';
-    const lights = LIGHTS(); lights.push({ x: hp.x + 0.5, y: hp.y + 0.2, r: 2.6, c: '255,220,180', hero: true });
+    const lights = night > 0.02 ? LIGHTS(vx0, vy0, vx1, vy1) : []; if (night > 0.02) lights.push({ x: hp.x + 0.5, y: hp.y + 0.2, r: 2.6, c: '255,220,180', hero: true });
     for (const L of lights) {
       const fl = L.hero ? 1 : 1 + Math.sin(t / 110 + L.x * 3) * 0.04 + Math.sin(t / 47 + L.y) * 0.03;
       const r = L.r * TS * fl, x = L.x * TS, y = L.y * TS;
-      const gr = dg.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(0.55, 'rgba(0,0,0,.6)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      const gr = dg.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(0,0,0,${night})`); gr.addColorStop(0.55, `rgba(0,0,0,${.6 * night})`); gr.addColorStop(1, 'rgba(0,0,0,0)');
       dg.fillStyle = gr; dg.beginPath(); dg.arc(x, y, r, 0, Math.PI * 2); dg.fill();
     }
     gx.setTransform(1, 0, 0, 1, 0, 0); gx.drawImage(dk, 0, 0);
     gx.setTransform(d, 0, 0, d, -cam.x * d, -cam.y * d); gx.globalCompositeOperation = 'lighter';
-    for (const L of lights) { if (L.hero) continue; const r = L.r * TS * 0.8, x = L.x * TS, y = L.y * TS; const gr = gx.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(${L.c},.16)`); gr.addColorStop(1, `rgba(${L.c},0)`); gx.fillStyle = gr; gx.beginPath(); gx.arc(x, y, r, 0, Math.PI * 2); gx.fill(); }
+    for (const L of lights) { if (L.hero) continue; const r = L.r * TS * 0.8, x = L.x * TS, y = L.y * TS; const gr = gx.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(${L.c},${(.16 * night).toFixed(3)})`); gr.addColorStop(1, `rgba(${L.c},0)`); gx.fillStyle = gr; gx.beginPath(); gx.arc(x, y, r, 0, Math.PI * 2); gx.fill(); }
     gx.globalCompositeOperation = 'source-over';
     if (typeof tutDraw === 'function') tutDraw(gx, TS, t); // the tutorial's arrow
+    // the district name, for a few seconds after you walk into one
+    { const a = (t - TOWN.districtAt) / 3200; if (TOWN.district && a < 1) { gx.setTransform(d, 0, 0, d, 0, 0); const al = a < .15 ? a / .15 : a > .7 ? (1 - a) / .3 : 1; gx.globalAlpha = Math.max(0, al); gx.textAlign = 'center'; gx.font = `700 ${Math.round(26 * Math.max(.8, s))}px "Cinzel", "Barlow Semi Condensed", serif`; const w2 = gx.measureText(TOWN.district).width + 40; gx.fillStyle = 'rgba(14,10,7,.82)'; gx.fillRect(TOWN.vw / 2 - w2 / 2, 54, w2, 42); gx.strokeStyle = '#d6a14a'; gx.lineWidth = 1.5; gx.strokeRect(TOWN.vw / 2 - w2 / 2 + 4, 58, w2 - 8, 34); gx.fillStyle = '#e4c27a'; gx.fillText(TOWN.district, TOWN.vw / 2, 84); gx.globalAlpha = 1; gx.setTransform(d, 0, 0, d, -cam.x * d, -cam.y * d); } }
     // click marker
+    drawMini(t);
     if (P.target) { const k = (t % 900) / 900; gx.strokeStyle = `rgba(214,161,74,${1 - k})`; gx.lineWidth = 2; gx.beginPath(); gx.ellipse(P.target.x * TS + TS / 2, P.target.y * TS + TS * 0.8, TS * 0.3 * (0.6 + k * 0.5), TS * 0.12 * (0.6 + k * 0.5), 0, 0, Math.PI * 2); gx.stroke(); }
   }
 
@@ -1927,12 +1878,14 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (BZ.open) { P.path = []; return false; } // a vendor stays at their stall
     P.dir = dir; const [dx, dy] = DIRS[dir];
     if (!free(P.x + dx, P.y + dy)) return false;
-    P.mv = { fx: P.x, fy: P.y, t: 0 }; P.x += dx; P.y += dy; P.step++; socPos(); return true;
+    P.mv = { fx: P.x, fy: P.y, t: 0 }; P.x += dx; P.y += dy; P.step++; socPos();
+    { const dn = districtAt(P.x, P.y); if (dn !== TOWN.district) { TOWN.district = dn; TOWN.districtAt = TOWN.t; } }
+    return true;
   }
   function update(dt) {
     updateOthers(dt);
     // embers
-    if (Math.random() < dt / 60) TOWN.embers.push({ x: 12.6 + (Math.random() - 0.5) * 1.2, y: 13.2, vx: (Math.random() - 0.5) * 0.0004, vy: -0.0012 - Math.random() * 0.0008, life: 1 });
+    if (Math.random() < dt / 40) TOWN.embers.push({ x: 74.5 + (Math.random() - 0.5) * 1.6, y: 57.2, vx: (Math.random() - 0.5) * 0.0004, vy: -0.0012 - Math.random() * 0.0008, life: 1 });
     for (const e of TOWN.embers) { e.x += e.vx * dt + Math.sin(TOWN.t / 300 + e.y * 5) * 0.0004 * dt; e.y += e.vy * dt; e.life -= dt / 2200; }
     TOWN.embers = TOWN.embers.filter(e => e.life > 0);
     // NPCs glance at the hero when close
@@ -1955,9 +1908,9 @@ body.aiming { cursor: grabbing; user-select: none; }
   }
   function bfs(tx, ty, toNpc) {
     const goal = (x, y) => toNpc ? Math.abs(x - tx) + Math.abs(y - ty) === 1 : x === tx && y === ty;
-    const prev = new Map([[K(P.x, P.y), null]]), q = [[P.x, P.y]];
-    while (q.length) {
-      const [x, y] = q.shift();
+    const prev = new Map([[K(P.x, P.y), null]]), q = [[P.x, P.y]]; let qi = 0;
+    while (qi < q.length) {
+      const [x, y] = q[qi++];
       if (goal(x, y)) { const out = []; let k = K(x, y); while (prev.get(k)) { const [a, b] = k.split(',').map(Number); out.unshift({ x: a, y: b }); k = prev.get(k); } return out; }
       for (const [dx, dy] of Object.values(DIRS)) { const nx = x + dx, ny = y + dy, nk = K(nx, ny); if (!prev.has(nk) && free(nx, ny)) { prev.set(nk, K(x, y)); q.push([nx, ny]); } }
     }
@@ -1980,10 +1933,10 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (!free(tx, ty)) return;
     const path = bfs(tx, ty, false); if (path) { P.path = path; P.talkTo = null; P.target = { x: tx, y: ty }; }
   });
-  const BOARD = { id: 'board', name: 'Hall of Records', fixed: true, x: 16, y: 12, open: 'records', btn: 'Read the records', lines: ['The notice board: who has gone furthest on every road, and which guilds have felled the raid bosses.', 'Names are carved, scratched and painted over each other. Someone has added a crown next to theirs.'] };
+  const BOARD = { id: 'board', name: 'Hall of Records', fixed: true, x: 73, y: 49, open: 'records', btn: 'Read the records', lines: ['The notice board: who has gone furthest on every road, and which guilds have felled the raid bosses.', 'Names are carved, scratched and painted over each other. Someone has added a crown next to theirs.'] };
   // Nov 1: the statue of Juss in the fire plaza, and the wager board at the Arena
-  const STATUE = { id: 'statue', name: 'Statue of Juss', fixed: true, x: 10, y: 11, lines: ['Here lies Juss, who was the first into battle and the first to fall.'] };
-  const ARENA_BOARD = { id: 'arenaboard', name: 'Wager Board', fixed: true, x: 14, y: 20, open: 'arena', btn: 'Read the wagers', lines: ['Wagers are pinned here: what each fighter puts up, and what others offer to match it. Both sides\' gear and decks are locked once an offer is on the table.'] };
+  const STATUE = { id: 'statue', name: 'Statue of Juss', fixed: true, x: 68, y: 55, lines: ['Here lies Juss, who was the first into battle and the first to fall.'] };
+  const ARENA_BOARD = { id: 'arenaboard', name: 'Wager Board', fixed: true, x: 99, y: 88, open: 'arena', btn: 'Read the wagers', lines: ['Wagers are pinned here: what each fighter puts up, and what others offer to match it. Both sides\' gear and decks are locked once an offer is on the table.'] };
   const TALK_PROPS = ['board', 'statue', 'arenaboard'];
   function propNpc(p) { return p.kind === 'board' ? BOARD : p.kind === 'statue' ? STATUE : p.kind === 'arenaboard' ? ARENA_BOARD : null; }
   function interactFor(p) { return p.kind === 'chest' ? NPCS[0] : p.kind === 'wagon' ? NPCS.find(n => n.id === 'wagon') : TALK_PROPS.includes(p.kind) ? propNpc(p) : NPCS.find(n => n.id === 'chron'); }
@@ -2035,6 +1988,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     guild: { title: 'Guildmaster Strecks: guilds', show: ['hpGuild'] },
     raid: { title: 'Raid Warden Bagadee: raids', show: ['hpRaid'] },
     records: { title: 'Hall of Records', show: ['hpRec'] },
+    bank: { title: 'The Bank: your vault', show: ['hpBank'] },
     arena: { title: 'The Arena: wagers', show: ['hpArena'] },
   };
   function talk(n) {
@@ -2051,12 +2005,13 @@ body.aiming { cursor: grabbing; user-select: none; }
   function openSheet(kind) {
     const k = SHEETS[kind]; if (k.gtab) GT.tab = k.gtab; renderHub();
     $('sheetTitle').textContent = k.title;
-    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends', 'hpCodex', 'hpTest', 'hpAmu', 'hpGuild', 'hpRaid', 'hpRec', 'hpArena']) $(id).hidden = !k.show.includes(id);
+    for (const id of ['secHeroes', 'secChar', 'secWagon', 'hpGear', 'hpDeck', 'hpLog', 'hpShop', 'hpFriends', 'hpCodex', 'hpTest', 'hpAmu', 'hpGuild', 'hpRaid', 'hpRec', 'hpArena', 'hpBank']) $(id).hidden = !k.show.includes(id);
     $('sheetGrid').classList.toggle('solo', !k.show.includes('secChar'));
     $('sheet').hidden = false; $('sheet').dataset.kind = kind; fitCards($('sheet')); $('sheetClose').focus();
     if (kind === 'friends') { renderFriendsTab(); loadFriends(); }
     if (kind === 'codex') renderCodex();
     if (kind === 'test') renderTestVendor();
+    if (kind === 'bank') renderBank();
     if (kind === 'amulets') renderAmuShop();
     if (kind === 'guild') { renderGuild(); guildLoad(); }
     if (kind === 'raid') renderRaid();
@@ -2083,7 +2038,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   }
   $('tbChar').addEventListener('click', () => { closeTalk(); openSheet('char'); });
   function townStart(fromRun) {
-    if (fromRun) { P.x = 13; P.y = 3; P.dir = 'down'; }
+    if (fromRun) { P.x = CITY_RETURN.x; P.y = CITY_RETURN.y; P.dir = 'down'; }
     P.mv = null; P.path = []; P.held = []; P.target = null;
     $('talk').hidden = true; $('sheet').hidden = true;
     sizeTown(); renderTownBar(); retrack(true); renderSocial();
@@ -2625,6 +2580,14 @@ body.aiming { cursor: grabbing; user-select: none; }
     else { const [mi, i] = b.dataset.as.split(':').map(Number), it = run.members[mi] && run.members[mi].sack[i]; if (it) it.autoSalvage = !it.autoSalvage; }
     renderMap();
   });
+  // ---------- the Bank (Nov 2): move gear between your stash and your vault
+  function renderBank() {
+    const c = profile.chars[heroKey], v = profile.vault = profile.vault || [], st = profile.stash.filter(x => x.kind !== 'card');
+    const col = (list, btn, lbl, max) => `<div><h3>${lbl} <span class="muted">${list.length} / ${max}</span></h3><div class="list tall">${list.map(it => itemHtml(it, `<div class="acts"><button class="btn" data-${btn}="${it.id}">${btn === 'tovault' ? 'To vault &#9654;' : '&#9664; To stash'}</button></div>`)).join('') || '<p class="muted">Empty.</p>'}</div></div>`;
+    $('hpBank').innerHTML = `<p class="savenote" style="margin:0 0 8px">Your <b>stash</b> is what you carry between runs; the <b>vault</b> holds up to ${CBHub.VAULT_MAX} more items for safekeeping. Both are shared by all your ${c && c.hardcore ? 'Hardcore' : 'normal'} heroes. Gear in the vault can't be equipped, salvaged or traded until you take it out.</p>
+      <div class="bankcols">${col(st, 'tovault', 'Stash', CBHub.STASH_MAX)}${col(v, 'fromvault', 'Vault', CBHub.VAULT_MAX)}</div>`;
+  }
+  $('hpBank').addEventListener('click', (ev) => { const a = ev.target.closest('[data-tovault], [data-fromvault]'); if (!a) return; const r = a.dataset.tovault ? CBHub.toVault(profile, a.dataset.tovault) : CBHub.fromVault(profile, a.dataset.fromvault); if (!r.ok) return toast(r.why); keepScroll(() => { save(); renderBank(); }); });
   function itemHtml(it, extra) {
     if (it.kind === 'card') { const d = CARDS[it.key]; return `<div class="item" data-ilink="${linkKey(it)}" style="--rc:${RC[d.rarity]};grid-template-columns:auto 1fr;align-items:center;column-gap:10px">${cardBox(d, 96)}<div><div class="ih"><b>${esc(d.name)}</b></div><div class="il">${d.rarity} card &middot; ${d.cost} mana</div>${extra || ''}</div></div>`; }
     const nice = (k) => k.replace('Elemental/Holy Damage:', '').replace('Resistance:', '') + (k.startsWith('Elemental') ? ' Damage' : k.startsWith('Resistance:') ? ' Resistance' : '');

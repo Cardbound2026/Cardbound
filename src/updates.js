@@ -2,6 +2,11 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Feature', 'Emberwatch is a city now: a walled city with Ember Square and its eternal flame in the middle, Market Row, the Old Market, the Grand Bazaar, a Colosseum five times the size of the old ring, the Wagon Yard at the South Gate, the Barracks and training yard (six dummies), Guild Row, the Scholars\' Quarter, the Keep, the Cathedral and the River Ash. Every townsperson has moved into their own building. You log in at Ember Square.'],
+      ['Feature', 'The Bank: Banker Hollis on Market Row keeps a vault of 120 more item slots for your heroes (Hardcore heroes have their own).'],
+      ['Feature', 'City map in the corner: see where everyone is, and click anywhere on it to walk there.'],
+      ['Feature', 'Day and night follow the time in New York: dusk from 6pm, night from 9pm, dawn at 5am.'],
+      ['Balance', 'Mounts run at 225% speed.'],
       ['Feature', 'Achievements and titles: 35 achievements (bosses by level, class and road, Hardcore, raids, duels, the Bazaar, and feats like The Unburned and Frozen). Each one unlocks a title for all your heroes: pick it on your character sheet (C). Titles show over your head in town and on the Hall of Records. Menu > Achievements and titles lists them all.'],
       ['Feature', 'Mounts: press M in town to ride a horse, 25% faster. Everyone in town sees you ride. More mounts to come.'],
       ['Change', 'Hardcore is its own world: Hardcore heroes have their own stash, gold, Ink and Reroll Tokens (shared only with your other Hardcore heroes), and can only party, raid, trade, buy at the Bazaar and wager with other Hardcore heroes. Normal heroes keep the normal stash, gold and Ink.'],

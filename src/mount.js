@@ -1,7 +1,7 @@
   // ---------- Mounts (Nov 2): press M in town to ride, 25% faster, no cast time. Everyone in town sees you ride.
   // Drawn in the same cut-paper ink as the heroes: flat colour, one hard shadow mass, a cut highlight, heavy black outline.
   // drawMount(..., 'back') goes under the rider and drawMount(..., 'front') over the rider's legs, so they sit in the saddle.
-  const MOUNT_SPEED = 1.25, MOUNT_RISE = 31, MOUNT_SCALE = 1.55; // the rider sits this many (town) pixels higher; the horse is drawn this much bigger than its sketch
+  const MOUNT_SPEED = 2.25, MOUNT_RISE = 31, MOUNT_SCALE = 1.55; // the rider sits this many (town) pixels higher; the horse is drawn this much bigger than its sketch
   const MOUNTS = { horse: { name: 'Horse', coat: ['#6b4a2e', '#3c2817', '#94704a'], mane: '#1a120c', hoof: '#16100b' } };
   const MINK = '#0b0a07';
   function mpoly(g, pts, fill, lw) { g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]); g.closePath(); if (fill) { g.fillStyle = fill; g.fill(); } if (lw) { g.lineWidth = lw; g.strokeStyle = MINK; g.lineJoin = 'miter'; g.miterLimit = 2.4; g.stroke(); } }
@@ -78,7 +78,7 @@
   function toggleMount() {
     if ($('scrStart').hidden || (typeof BZ !== 'undefined' && BZ.open)) return;
     P.mount = P.mount ? null : 'horse'; settings.mount = P.mount; saveSettings();
-    if (typeof sysChat === 'function') sysChat(P.mount ? 'You mount your horse (25% faster). Press M to get down.' : 'You get down from your horse.');
+    if (typeof sysChat === 'function') sysChat(P.mount ? 'You mount your horse (225% speed). Press M to get down.' : 'You get down from your horse.');
     if (typeof retrack === 'function') retrack(true);
   }
   setTimeout(() => { try { if (settings.mount && MOUNTS[settings.mount]) P.mount = settings.mount; } catch (e) {} }, 0); // you stay mounted between sessions

@@ -211,8 +211,13 @@ function useStash(p, key) {
   if (!p) return; p.stashMode = p.stashMode || 'normal'; p.stashOther = p.stashOther || []; p.stash = p.stash || [];
   const want = stashMode(p.chars[key]); if (!p.chars[key] || p.stashMode === want) return;
   const t = p.stash; p.stash = p.stashOther; p.stashOther = t; p.stashMode = want;
+  const v = p.vault || []; p.vault = p.vaultOther || []; p.vaultOther = v;
   const g = p.gold || 0; p.gold = p.goldOther || 0; p.goldOther = g; const k = p.ink || 0; p.ink = p.inkOther || 0; p.inkOther = k; const r = p.rerollTokens || 0; p.rerollTokens = p.tokensOther || 0; p.tokensOther = r;
 }
+// Nov 2: the Bank. A vault of VAULT_MAX slots next to the stash, for gear you keep but don't need at hand (hardcore heroes have their own).
+const VAULT_MAX = 120;
+function toVault(p, itemId) { p.vault = p.vault || []; const i = p.stash.findIndex(x => x.id === itemId); if (i < 0) return { ok: false, why: 'Not in your stash.' }; if (p.vault.length >= VAULT_MAX) return { ok: false, why: `Your vault is full (${VAULT_MAX}).` }; p.vault.unshift(p.stash.splice(i, 1)[0]); return { ok: true }; }
+function fromVault(p, itemId) { p.vault = p.vault || []; const i = p.vault.findIndex(x => x.id === itemId); if (i < 0) return { ok: false, why: 'Not in your vault.' }; if (p.stash.length >= STASH_MAX) return { ok: false, why: 'Your stash is full.' }; p.stash.unshift(p.vault.splice(i, 1)[0]); return { ok: true }; }
 function stashFor(p, c) { p.stashMode = p.stashMode || 'normal'; p.stashOther = p.stashOther || []; return stashMode(c) === p.stashMode ? p.stash : p.stashOther; }
 function equip(p, cls, itemId, slotWanted) {
   useStash(p, cls);
@@ -407,6 +412,6 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk, ach };
 }
 
-const API = { ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { VAULT_MAX, toVault, fromVault, ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);

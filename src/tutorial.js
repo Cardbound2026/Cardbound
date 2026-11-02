@@ -19,8 +19,8 @@
       x: `<p>"Map 1, +0 for your first run. Take the fights you can win, rest when you're low, and come back with a full sack."</p>` },
   ];
   const TUT_STEPS = [
-    { t: 'Welcome to Emberwatch', x: `<p>This is the last town before the March. You'll ride out on <b>runs</b>, fight your way down a road, kill its boss and bring the loot home to make your hero stronger.</p><p>This tour takes a few minutes. <b>Skip</b> any time; it's in the Menu (Esc) if you want it again.</p>` },
-    { t: 'Getting around', x: `<p><b>Walk</b> with the arrow keys or WASD, or click where you want to go. <b>Talk</b> to someone by clicking them (or press Space next to them). Gold names do something; grey ones just chat.</p><p><b>Esc</b> opens the Menu. <b>C</b> opens your character sheet, in town and in fights. <b>T</b> chats with everyone in town.</p>` },
+    { t: 'Welcome to Emberwatch', x: `<p>This is the last city before the March. You'll ride out on <b>runs</b>, fight your way down a road, kill its boss and bring the loot home to make your hero stronger.</p><p>This tour takes a few minutes. <b>Skip</b> any time; it's in the Menu (Esc) if you want it again.</p>` },
+    { t: 'Getting around', x: `<p><b>Walk</b> with the arrow keys or WASD, or click where you want to go. <b>Talk</b> to someone by clicking them (or press Space next to them). Gold names do something; grey ones just chat.</p><p><b>Esc</b> opens the Menu. <b>C</b> opens your character sheet, in town and in fights. <b>T</b> chats with everyone in town. <b>M</b> mounts your horse, and the map in the corner takes you anywhere: click a spot on it.</p>` },
     { t: 'Wagoneer Arisha: the roads', at: 'wagon', open: ['Pick a road', () => openSheet('wagon')],
       x: `<p>Arisha takes you out on the roads. The first time you talk to her she explains how a run and a fight work (ask her again any time).</p>` },
     { t: 'The Glossary', open: ['Open the Glossary', () => openGlossary()],
@@ -42,12 +42,12 @@
       x: `<p>Make more heroes (any class, up to 20) and switch between them here. They share the <b>stash</b>, the <b>gold</b> and the Ink, so an alt can use what your main finds.</p><p><b>Hardcore</b> heroes have one life, their own leaderboard, their own stash, gold, Ink and Reroll Tokens, and only group and trade with other Hardcore heroes.</p>` },
     { t: 'Chronicler Osk', at: 'chron', open: ['Run history', () => openSheet('log')],
       x: `<p>Every run you've played: where it ended, what you brought home, and a damage meter of every fight.</p>` },
-    { t: 'The Hall of Records', at: { x: 16, y: 12, solid: true }, open: ['Read the records', () => openSheet('records')],
+    { t: 'The Hall of Records', at: { x: 73, y: 49, solid: true }, open: ['Read the records', () => openSheet('records')],
       x: `<p>The leaderboards: every hero's progress, the highest clear on every road, the most boss kills, and the raid records. Records run in <b>seasons</b>, and every new season starts with a clean board.</p>` },
-    { t: 'The Bazaar: trading', at: { x: 34, y: 10 },
-      x: `<p>East of the main street. Stand in the market and <b>Set up shop</b> to list stash items at your price; other players click you to browse and buy.</p><p>To trade directly, click another player in town. Gear for someone else's codex is worth gold to them.</p>` },
+    { t: 'The Bazaar: trading', at: { x: 112, y: 62 },
+      x: `<p>East of Ember Square, down Market Street. Stand anywhere in the Bazaar and <b>Set up shop</b> to list stash items at your price; other players click you to browse and buy.</p><p>To trade directly, click another player in town. Gear for someone else's codex is worth gold to them.</p>` },
     { t: 'Friends, guilds, raids and the Arena', at: 'guildmaster', open: ['Guilds', () => openSheet('guild')],
-      x: `<p><b>Friends</b> (button at the top, when signed in): invite them to your party and run together.</p><p><b>Guildmaster Strecks</b>: found a guild (${typeof GUILD_COST !== 'undefined' ? GUILD_COST : 50} gold) or join one. <b>Raid Warden Bagadee</b>: bigger bosses for 2 to 10 players, once a week. <b>Arenamaster Kord</b> (south): wager gear or gold and duel other players.</p>` },
+      x: `<p><b>Friends</b> (button at the top, when signed in): invite them to your party and run together.</p><p><b>Guildmaster Strecks</b>: found a guild (${typeof GUILD_COST !== 'undefined' ? GUILD_COST : 50} gold) or join one. <b>Raid Warden Bagadee</b>: bigger bosses for 2 to 10 players, once a week. <b>Arenamaster Kord</b> at the Colosseum (south-east): wager gear or gold and duel other players.</p>` },
     { t: "You're ready", x: `<p>Next: pick a <b>playstyle</b> in the Build guide so you know which cards and codex to look for, then talk to <b>Wagoneer Arisha</b> and ride out on <b>Map 1 +0</b>.</p><p>Good luck out there.</p>`, open: ['Open the Build guide', () => { tutStop(); openGuide({ fresh: true }); }], last: true },
   ];
   function tutBox() { let b = document.getElementById('tutBox'); if (!b) { b = document.createElement('div'); b.id = 'tutBox'; b.className = 'tutbox'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-live', 'polite'); document.body.appendChild(b); b.addEventListener('click', tutClick); } return b; }
