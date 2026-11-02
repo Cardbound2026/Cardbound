@@ -600,6 +600,12 @@ body.aiming { cursor: grabbing; user-select: none; }
 .herocard small { color: var(--muted); font-size: 13px; }
 .herocard .play { justify-self: start; margin-top: 4px; }
 .hcbadge { font: 700 11px var(--f-ui); letter-spacing: .06em; text-transform: uppercase; color: #ffb0a0; background: #4a1410; border: 1px solid #a8352a; border-radius: 4px; padding: 1px 6px; vertical-align: middle; } .hcbadge.fell { color: #b8b0a6; background: #2a2623; border-color: #5a524a; }
+.tutpick { border-color: #6a5422; background: #1a150b; } .tutpick input { accent-color: var(--accent); }
+.tutbox { position: fixed; right: 16px; bottom: 16px; z-index: 40; width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; background: #15110d; border: 2px solid #d6a14a; border-radius: 8px; padding: 10px 14px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.6); font-size: 15px; line-height: 1.45; }
+.tutbox h3 { margin: 2px 0 6px; color: var(--accent); font-size: 19px; } .tutbox p { margin: 0 0 8px; } .tutbox .row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.tutbox .tuthead { display: flex; justify-content: space-between; align-items: center; font-size: 13px; } .tutbox .tutx { background: none; border: 1px solid var(--line); color: var(--text); border-radius: 4px; cursor: pointer; padding: 0 8px; }
+.tutbox .tutskip { margin-left: auto; opacity: .75; } .tutbox.min { width: auto; padding: 0; border-width: 1px; } .tutbox .tutpill { background: #15110d; color: var(--accent); border: 0; padding: 8px 12px; cursor: pointer; font: inherit; font-size: 14px; }
+@media (max-width: 760px) { .tutbox { right: 8px; left: 8px; bottom: 8px; width: auto; font-size: 14px; max-height: 55vh; } .tutbox.min { left: auto; } }
 .hcpick { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid #6a2a22; border-radius: 6px; background: #1c0f0c; cursor: pointer; align-self: end; } .hcpick small { color: var(--muted); } .hcpick input { accent-color: #c9472f; }
 .arbox, .aroffer, .arpost { background: #15110d; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 0 0 10px; display: grid; gap: 6px; }
 .arbox.mine { border-color: #7a3a2a; box-shadow: inset 3px 0 0 #c9472f; } .arpost.on { border-color: var(--accent); }
@@ -777,7 +783,7 @@ body.aiming { cursor: grabbing; user-select: none; }
           <div class="classpick deckpick" id="deckPick" role="radiogroup" aria-label="Starting deck"></div>
           <h4 class="createstep">Starting amulet <span class="muted">(6 points split between cards drawn each round and mana regen; you can buy the others later from Jeweler Rook in town)</span></h4>
           <div class="amupick" id="amuPick" role="radiogroup" aria-label="Starting amulet"></div>
-          <div class="namerow"><div class="field"><label for="heroName">Name</label><input id="heroName" maxlength="16" autocomplete="off" placeholder="Name your hero"></div><label class="hcpick" title="One life: the first time this hero falls in a fight (not duels or the dummy), it becomes a normal hero. Hardcore heroes have their own leaderboard."><input type="checkbox" id="heroHC"> <b>Hardcore</b> <small>one life, own leaderboard</small></label><button class="btn primary" id="btnCreate">Create hero</button><button class="btn" id="btnCancelCreate" hidden>Cancel</button></div>
+          <div class="namerow"><div class="field"><label for="heroName">Name</label><input id="heroName" maxlength="16" autocomplete="off" placeholder="Name your hero"></div><label class="hcpick" title="One life: the first time this hero falls in a fight (not duels or the dummy), it becomes a normal hero. Hardcore heroes have their own leaderboard."><input type="checkbox" id="heroHC"> <b>Hardcore</b> <small>one life, own leaderboard</small></label><label class="hcpick tutpick" title="A short guided tour of the town and every system, right after you create your hero. You can also start it from the Menu any time."><input type="checkbox" id="heroTut"> <b>Tutorial</b> <small>show me around</small></label><button class="btn primary" id="btnCreate">Create hero</button><button class="btn" id="btnCancelCreate" hidden>Cancel</button></div>
         </div>
         <aside class="createright" id="createCards" aria-label="Cards this hero can find"></aside>
       </div>
@@ -1887,6 +1893,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     gx.setTransform(d, 0, 0, d, -cam.x * d, -cam.y * d); gx.globalCompositeOperation = 'lighter';
     for (const L of lights) { if (L.hero) continue; const r = L.r * TS * 0.8, x = L.x * TS, y = L.y * TS; const gr = gx.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(${L.c},.16)`); gr.addColorStop(1, `rgba(${L.c},0)`); gx.fillStyle = gr; gx.beginPath(); gx.arc(x, y, r, 0, Math.PI * 2); gx.fill(); }
     gx.globalCompositeOperation = 'source-over';
+    if (typeof tutDraw === 'function') tutDraw(gx, TS, t); // the tutorial's arrow
     // click marker
     if (P.target) { const k = (t % 900) / 900; gx.strokeStyle = `rgba(214,161,74,${1 - k})`; gx.lineWidth = 2; gx.beginPath(); gx.ellipse(P.target.x * TS + TS / 2, P.target.y * TS + TS * 0.8, TS * 0.3 * (0.6 + k * 0.5), TS * 0.12 * (0.6 + k * 0.5), 0, 0, Math.PI * 2); gx.stroke(); }
   }
@@ -2085,6 +2092,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 /*GLOSSARY*/
 /*TESTVENDOR*/
 /*GUIDE*/
+/*TUTORIAL*/
   let townReturn = false;
 
   // ---------- settings (this browser)
@@ -2209,6 +2217,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   }
   function openCreate(quiet) {
     renderCamp(); renderCreateChoices();
+    if ($('heroTut')) $('heroTut').checked = !Object.keys(profile.chars || {}).length; // the tour is ticked for a player's first hero
     $('createPanel').hidden = false;
     if (!quiet) $('createPanel').scrollIntoView({ block: 'start' });
     if (createCls && !quiet) $('heroName').focus();
@@ -2220,7 +2229,8 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (!createCls) { $('createMsg').textContent = 'Pick a class.'; return; }
     const r = CBHub.createChar(profile, createCls, $('heroName').value, createDeck, createAmu, $('heroHC').checked);
     if (!r.ok) { $('createMsg').textContent = r.why; return; }
-    heroKey = r.id; $('heroName').value = ''; $('heroHC').checked = false; createCls = null; save(); renderHub(); show('start'); saveCard(); openGuide({ fresh: true }); // new players: what kind of hero do you want to play?
+    const tut = $('heroTut').checked; heroKey = r.id; $('heroName').value = ''; $('heroHC').checked = false; createCls = null; save(); renderHub(); show('start'); saveCard();
+    if (tut) tutStart(); else openGuide({ fresh: true }); // new players: the tour (it ends at the build guide), or straight to what kind of hero do you want to play?
   };
   $('btnCreate').onclick = doCreate; $('heroName').addEventListener('keydown', (e) => { if (e.key === 'Enter') doCreate(); });
   $('btnCancelCreate').onclick = () => { createCls = null; renderCamp(); renderCreateChoices(); };
@@ -2232,6 +2242,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       <button class="btn primary" id="mClose">Resume</button>
       <button class="btn" id="mnGloss">Glossary: stats and effects</button>
       ${profile && profile.chars[heroKey] && !onTitle ? `<button class="btn" id="mnGuide">Build guide: playstyles, decks, where to farm</button>` : ''}
+      ${profile && profile.chars[heroKey] && !onTitle && !run && !cb ? `<button class="btn" id="mnTut">Tutorial: a tour of Emberwatch</button>` : ''}
       ${inRun ? `<button class="btn" id="mnLeave">Leave run and return to town</button>` : ''}
       ${cb && cb.duel && !cb.over ? `<button class="btn" id="mnForfeit">Forfeit the duel</button>` : ''}
       ${cb && cb.duel && cb.over ? `<button class="btn" id="mnTown">Return to town</button>` : ''}
@@ -2252,6 +2263,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     $('mClose').onclick = closeModal;
     $('mnGloss').onclick = () => openGlossary();
     if ($('mnGuide')) $('mnGuide').onclick = () => openGuide();
+    if ($('mnTut')) $('mnTut').onclick = () => { closeModal(); tutStart(); };
     $('setFast').onchange = (e) => { settings.fast = e.target.checked; saveSettings(); };
     if ($('setInkUi')) $('setInkUi').onchange = (e) => CB_UI.set(e.target.checked);
     if ($('setBf')) $('setBf').onchange = (e) => { CB_BF.set(e.target.checked); if (cb) render(); };

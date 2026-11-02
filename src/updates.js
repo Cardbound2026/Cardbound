@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Feature', 'Tutorial: a guided tour of Emberwatch and every system (runs, fights, gear, deck, codexes, the Compendium, the Glossary, merchants, trading, guilds, raids and the Hall of Records). Tick it when you create a hero (it is ticked for your first), or start it from the Menu any time.'],
       ['Feature', 'Seasons: the Hall of Records now ranks one season at a time. Season 0.02 starts today with a clean board. Everything before it is Season 0.01, and you can still look at its final standings. Heroes keep their gear, cards, codexes and map unlocks; their map records and boss kill counts start over for the new season.'],
       ['Balance', 'New season, new economy: everyone\'s gold has been reset to 0.'],
       ['Fix', 'Hall of Records: deleted heroes are taken off the board (the next time their owner is online).'],
