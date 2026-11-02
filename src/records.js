@@ -21,7 +21,17 @@
     const { error } = await supa.from('hero_records').upsert(row);
     if (error) { if (recSetupErr(error)) REC.err = 'setup'; else console.warn('hero_records', error); }
   }
-  async function publishAllHeroes(force) { for (const k of Object.keys(profile.chars || {})) await publishHero(k, force); }
+  async function publishAllHeroes(force) { for (const k of Object.keys(profile.chars || {})) await publishHero(k, force); await pruneHeroes(); }
+  // Nov 2: take down the records of heroes this account no longer has (deleted heroes stayed on the board forever)
+  async function pruneHeroes() {
+    if (!supa || !supaUser || !SY.ready || SY.conflict) return; // only with a save that matches the account, so a stale copy can't remove real heroes
+    try {
+    const keys = Object.keys(profile.chars || {}); if (!keys.length) return; // an empty roster is more likely a load problem than a real wipe: leave the board alone
+    const { data, error } = await supa.from('hero_records').select('hero_key').eq('user_id', supaUser.id); if (error || !data) return;
+    const gone = data.map(r => r.hero_key).filter(k => !keys.includes(k));
+    if (gone.length) { const { error: e2 } = await supa.from('hero_records').delete().eq('user_id', supaUser.id).in('hero_key', gone); if (e2) console.warn('hero_records prune', e2); }
+    } catch (e) { console.warn('hero_records prune', e); }
+  }
   // the raid leader records a kill (once per fight)
   async function recordRaidKill(cbx) {
     if (!supa || !supaUser || !cbx || cbx._recKill) return; cbx._recKill = true;

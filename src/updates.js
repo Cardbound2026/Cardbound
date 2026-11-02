@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Fix', 'Hall of Records: deleted heroes are taken off the board (the next time their owner is online).'],
       ['Change', 'Reroll Tokens are now rare: breaking down a codex gives 1 token by chance, 10% for a +0 codex and 5% more for every map level it dropped on (certain from +18).'],
       ['Balance', 'Gold: monsters drop half as much gold, and gold grows 5% per map level instead of 50%. Salvaging gear follows the same 5% curve. Merchants (in runs and in town) charge double.'],
       ['Change', 'Item power is now worked out for your hero: the codex you wear (or the one closest to your deck), the gear you already have and the map you are playing. Stats your codex doesn\'t use, resistance past 75% and resistance to another map\'s element count for nothing. 10 power = 1% fight strength.'],

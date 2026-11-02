@@ -2148,7 +2148,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   function deleteHeroFlow(cls) {
     if (busyElsewhere()) return; const c = profile.chars[cls]; if (!c) return;
     confirmTyped(`Delete ${esc(c.name)}?`, `<p>This permanently deletes your ${c.cls} <b>${esc(c.name)}</b>: their equipped gear, deck, card collection, level and records. The shared stash and banked gold stay. This cannot be undone.</p>`, c.name,
-      () => { CBHub.deleteChar(profile, cls); afterRosterChange(); toast(`${c.name} is gone.`); });
+      () => { CBHub.deleteChar(profile, cls); afterRosterChange(); toast(`${c.name} is gone.`); setTimeout(() => { if (typeof pruneHeroes === 'function') pruneHeroes(); }, 3000); }); // their Hall of Records entry goes too (after the save syncs)
   }
   function wipeFlow() {
     if (busyElsewhere()) return;

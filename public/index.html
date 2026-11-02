@@ -6221,8 +6221,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793631902954';
-  const CB_BUILD = 'a8b3a47408'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793633230439';
+  const CB_BUILD = '497abe4165'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -6800,7 +6800,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const { error } = await supa.from('hero_records').upsert(row);
     if (error) { if (recSetupErr(error)) REC.err = 'setup'; else console.warn('hero_records', error); }
   }
-  async function publishAllHeroes(force) { for (const k of Object.keys(profile.chars || {})) await publishHero(k, force); }
+  async function publishAllHeroes(force) { for (const k of Object.keys(profile.chars || {})) await publishHero(k, force); await pruneHeroes(); }
+  // Nov 2: take down the records of heroes this account no longer has (deleted heroes stayed on the board forever)
+  async function pruneHeroes() {
+    if (!supa || !supaUser || !SY.ready || SY.conflict) return; // only with a save that matches the account, so a stale copy can't remove real heroes
+    try {
+    const keys = Object.keys(profile.chars || {}); if (!keys.length) return; // an empty roster is more likely a load problem than a real wipe: leave the board alone
+    const { data, error } = await supa.from('hero_records').select('hero_key').eq('user_id', supaUser.id); if (error || !data) return;
+    const gone = data.map(r => r.hero_key).filter(k => !keys.includes(k));
+    if (gone.length) { const { error: e2 } = await supa.from('hero_records').delete().eq('user_id', supaUser.id).in('hero_key', gone); if (e2) console.warn('hero_records prune', e2); }
+    } catch (e) { console.warn('hero_records prune', e); }
+  }
   // the raid leader records a kill (once per fight)
   async function recordRaidKill(cbx) {
     if (!supa || !supaUser || !cbx || cbx._recKill) return; cbx._recKill = true;
@@ -7292,6 +7302,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Fix', 'Hall of Records: deleted heroes are taken off the board (the next time their owner is online).'],
       ['Change', 'Reroll Tokens are now rare: breaking down a codex gives 1 token by chance, 10% for a +0 codex and 5% more for every map level it dropped on (certain from +18).'],
       ['Balance', 'Gold: monsters drop half as much gold, and gold grows 5% per map level instead of 50%. Salvaging gear follows the same 5% curve. Merchants (in runs and in town) charge double.'],
       ['Change', 'Item power is now worked out for your hero: the codex you wear (or the one closest to your deck), the gear you already have and the map you are playing. Stats your codex doesn\'t use, resistance past 75% and resistance to another map\'s element count for nothing. 10 power = 1% fight strength.'],
@@ -11425,7 +11436,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   function deleteHeroFlow(cls) {
     if (busyElsewhere()) return; const c = profile.chars[cls]; if (!c) return;
     confirmTyped(`Delete ${esc(c.name)}?`, `<p>This permanently deletes your ${c.cls} <b>${esc(c.name)}</b>: their equipped gear, deck, card collection, level and records. The shared stash and banked gold stay. This cannot be undone.</p>`, c.name,
-      () => { CBHub.deleteChar(profile, cls); afterRosterChange(); toast(`${c.name} is gone.`); });
+      () => { CBHub.deleteChar(profile, cls); afterRosterChange(); toast(`${c.name} is gone.`); setTimeout(() => { if (typeof pruneHeroes === 'function') pruneHeroes(); }, 3000); }); // their Hall of Records entry goes too (after the save syncs)
   }
   function wipeFlow() {
     if (busyElsewhere()) return;
