@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Change', 'Hit and spell effects redrawn as cut paper to match the heroes: shaded pieces with sharp ink outlines and muted colours that stamp in and tumble away. Crits show a torn rust-red scrap with ink strokes instead of a bright red star.'],
       ['Feature', 'The Forge (link at Tinker Pip\'s test shop): preview any class in any gear, every hero move, hit effect, spell and card combo, the town walker, and change which drawn piece each item uses per map and the colours.'],
       ['Fix', 'Phones: the fight screen stacks the combat log under the battlefield instead of covering it, and the greyed-out Shaman seat at the campfire no longer blocks picking the Paladin.'],
       ['Feature', 'Your hero in town shows your gear to everyone: other players see exactly what you\'re wearing (and you see theirs). It updates a few seconds after you change gear.'],
