@@ -411,7 +411,7 @@ const CUSTOM = {
   elemental_focus: { play: (cb, t, p) => { p.turn.skillFlat = (p.turn.skillFlat || 0) + 10; say(cb, 'Your next damaging Skill deals 10 more.'); } },
   flash_freeze: { play: (cb, t) => { const e = D_(cb, t, 12, 'Flash Freeze'); if (e && e.chill >= 5) cb.applyChill(e, 5); } },
   glacial_spike: { play: (cb, t) => { const e = tgtOf(cb, t); const ch = e && e.chill > 0; D_(cb, e, 30, 'Glacial Spike'); if (ch && e.hp > 0) { e.frozen = true; say(cb, `${e.name} is Frozen.`); } } },
-  arcane_blast: { play: (cb, t, p) => D_(cb, t, 16 + 6 * ((p.turn.played || []).filter(c => C[c.key].type === 'Skill' && C[c.key].dtype === 'Arcane').length), 'Arcane Blast') },
+  arcane_blast: { play: (cb, t, p) => D_(cb, t, 8 + Math.min(18, 6 * ((p.turn.played || []).filter(c => C[c.key].type === 'Skill' && C[c.key].dtype === 'Arcane').length)), 'Arcane Blast') },
   counterspell: { play: (cb, t) => { const e = tgtOf(cb, t); if (e) { e.counter = 1; say(cb, `${e.name}'s next card will have no effect.`); } } },
   silence: { play: (cb, t) => { const e = tgtOf(cb, t); if (e) { e.silenced = 1; cb.planEnemy(e, true); say(cb, `${e.name} is Silenced: Attacks only next turn.`); } } },
   spellsteal: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (e) cb.stealBuff(p, e); } },
@@ -960,7 +960,7 @@ class Combat {
       const picked = []; let cap = null;
       (tl.picks || []).forEach((j, i) => { if (j == null || j < 0 || j > 2) return; if (i < 9) { const t = tr.rows[i] && tr.rows[i][j]; if (t) picked.push(t); } else if (i === 9) cap = tr.cap[j]; });
       for (const t of picked) for (const f of t.fx) if (f[0] === 'statFrom') p[f[1]] = (p[f[1]] || 0) + Math.round((f[2] === 'stamina' ? g.stamina : p[f[2]] || 0) * f[3] / 100);
-      for (const t of picked) for (const f of t.fx) if (f[0] === 'convert') { const v = Math.round((p[f[1]] || 0) * f[3] / 100); p[f[1]] -= v; p[f[2]] = (p[f[2]] || 0) + v; } // Nov 2: talents that turn one stat into another
+      for (const t of picked) for (const f of t.fx) if (f[0] === 'convert') { const v = Math.round((p[f[1]] || 0) * f[3] / 100); p[f[2]] = (p[f[2]] || 0) + v; } // Nov 2: talents that give a bonus stat from another (the source stat is kept)
       for (const t of picked) for (const f of t.fx) if (f[0] === 'stat') { if (f[1] === 'resistAll') { for (const el of ELEMENTS) p.resist[el] = Math.min(75, (p.resist[el] || 0) + f[2]); } else if (f[1].startsWith('resist:')) { const el = f[1].slice(7); p.resist[el] = Math.min(75, (p.resist[el] || 0) + f[2]); } else p[f[1]] = (p[f[1]] || 0) + f[2]; }
       if (picked.length || cap) { const label = CODEX_BY_KEY[tl.codex].name + ' talents';
         p.powers.push({ key: 'talents', name: label, text: picked.map(t => t.n).concat(cap && C[cap] ? [C[cap].name + ' (capstone)'] : []).join(', '), talent: true, def: talentDef(picked, cap, label) }); }
@@ -982,6 +982,7 @@ class Combat {
 
   makeEnemy(key, i) {
     const en = this.makeEnemy0(key, i);
+    if (!this.raid && !this.duel) { const T = en.tier === 'Boss' ? [0.9, 0.9] : en.tier === 'Elite' ? [1.15, 1.05] : [1.1, 1.1]; en.maxHp = en.hp = Math.max(1, Math.round(en.hp * T[0])); en.dmgTune *= T[1]; } // Nov 2: move the wall off the boss: monsters +10% HP and damage, elites +15% HP and +5% damage, bosses -10% both
     if (this.opts.firstBoss && en.tier === 'Boss') { en.maxHp = en.hp = Math.round(en.hp * 0.85); en.firstBoss = true; } // Nov 1: a map's boss has 15% less HP until you first beat it
     if (this.opts.enraged && en.tier === 'Elite') { en.maxHp = en.hp = Math.round(en.hp * 1.5); en.dmgTune *= 1.5; en.name = 'Enraged ' + en.name; en.enraged = true; } // 10% of maps: +50% HP and damage, double loot
     if (this.raid) {
@@ -2104,6 +2105,7 @@ function talentDef(list, cap, label) {
     else if (k === 'start') D.start.push([a, b, c]); else if (k === 'turn') D.turn.push([a, b, c, d2]); else if (k === 'kill') D.kill.push([a, b, c]);
     else if (k === 'hitBy') D.hit.push([a, b, c]); else if (k === 'full') D.full.push([a, b, c]); else if (k === 'lowhp') D.low = [a, b]; else if (k === 'cheat') D.cheat = [a, b];
     else if (k === 'party') (D.party = D.party || []).push([a, b]);
+    else if (k === 'arcRegen') D.arcRegen = a;
     else if (k === 'dealtBleed') (D.db = D.db || []).push([a, b || {}]);
     else if (k === 'every') D.every.push([a, b, c, d2, e2]); else if (k === 'cost') D.cost.push([a, b]); else if (k === 'firstCost') D.first.push([a, b]); else if (k === 'aura') D.aura.push(...a);
   }
@@ -2171,6 +2173,7 @@ function talentDef(list, cap, label) {
     D.first.forEach(([n, f], i) => { if (tcard(d, f)) p.turn['tf' + i] = true; });
   };
   if (D.cost.length || D.first.length) P.costLess = (cb, p, d) => D.cost.reduce((s, [n, f]) => s + (tcard(d, f) ? n : 0), 0) + D.first.reduce((s, [n, f], i) => s + (tcard(d, f) && !p.turn['tf' + i] ? n : 0), 0);
+  if (D.arcRegen) { const prev = P.cardPlayed; P.cardPlayed = (cb, p, d, pw) => { if (prev) prev(cb, p, d, pw); if (d.type === 'Skill' && d.dtype === 'Arcane' && !pw.arcRegen) { pw.arcRegen = true; p.regen += D.arcRegen; cb.say('player', `${label}: +${D.arcRegen} mana regeneration for the fight.`); } }; }
   return P;
 }
 
@@ -2361,6 +2364,7 @@ if (C.mend_wounds) Object.assign(C.mend_wounds, { target: 'ally', text: 'Heal an
 if (C.lay_on_hands) Object.assign(C.lay_on_hands, { target: 'ally', text: 'Heal an ally (or yourself) for 30% of their total HP. Exhaust.', play: (cb, t) => { const a = t && t.isPlayer && t.hp > 0 ? t : cb.player; cb.heal(a, Math.round(a.maxHp * 0.3), 'Lay on Hands'); } }); // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
 // Nov 1: no reminder text in parentheses on cards (hold Alt over a keyword for its glossary entry); rules that were in brackets are now plain sentences
 const TEXT_FIX = {
+"arcane_blast": "Deal 8 Arcane damage, plus 6 for each Arcane Skill you played before it this turn (at most 18 more).",
 "expose_opening": "When you fully Parry an attack, apply 40 Vulnerable to the attacker.",
 "unnerving_guard": "Gain 15 Parry. Each attack you fully parry before your next turn adds a Stun to the attacker's draw pile.",
 "bait": "Gain 12 Parry. The next time you parry an attack, the attacker gains 20 Vulnerable and discards 1 card.",
@@ -2421,6 +2425,7 @@ const TEXT_FIX = {
 "vengeful_wound": "Deal 8 damage. Apply Bleed equal to 25% of your stored Blood Debt, without spending it."
 };
 for (const [k, t] of Object.entries(TEXT_FIX)) if (C[k]) C[k].text = t;
+if (C.pilfer) C.pilfer.cost = 20; // Nov 2
 POWERS.codex_soulbinder.dotDealt = POWERS.codex_soulbinder.dealt;
 CARDS_READY = true; if (DATA && DATA.gear) namedLoot(DATA);
 const API = { staffShieldOk, legalGear, CODEX_NEEDS, codexNeed, weaponSetup, CODEX_TOKEN_CHANCE, bossCodexPct, GROUPS, groupData, itemRules, rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };

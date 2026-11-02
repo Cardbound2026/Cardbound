@@ -2,6 +2,12 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Balance', 'Monsters have 10% more HP and hit 10% harder; elites have 15% more HP and hit 5% harder; map bosses have 10% less HP and hit 10% softer.'],
+      ['Change', 'Some codexes need the right weapons: Riposte and Colossus a two-handed weapon; Bulwark and Bastion of Faith a one-handed weapon and a shield; Nightstalker a dagger in the main hand; Phantom, Bloodletter and Venomancer a weapon in each hand; Barrier Savant a staff. Without them the passive is off (talents still work).'],
+      ['Change', 'Stealth lasts until you attack out of it (or something hits everyone), not just until your next turn.'],
+      ['Feature', 'New weapon: the two-handed Scythe, with Shadow damage built in. New Mage cards: Runic Ward and Spiked Ward. New debuff: Magic Vulnerability.'],
+      ['Balance', 'Codex and talent changes for Blightcaller, Spellstorm, Colossus, Riposte, Bulwark, Archmage, Phantom, Righteous Crusader, Heart of Winter, Sunderer, Shadow Knight, Nightstalker, Entropy, Bloodmancer and Barrier Savant. Card changes: Battle Fever, Expose Opening, Unnerving Guard, Bait, Arcane Blast, Pilfer.'],
+      ['Change', 'Warriors and Paladins say Block with a shield and Parry without one. Titles sit before or after your name ("Veteran Brann", "Brann the Blooded").'],
       ['Change', 'Trades, Bazaar sales and Arena wagers are now confirmed by the server before anything changes hands. If one fails, nothing moves and you are told why.'],
       ['Change', 'The Hall of Records is written by the server from your saved heroes, so every name on the board earned its place.'],
       ['Change', 'Cleaner look: the old classic UI and battlefield toggles are gone, and the top bar says where you are.'],
