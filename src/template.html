@@ -1262,6 +1262,18 @@ body.aiming { cursor: grabbing; user-select: none; }
     [...sh.querySelectorAll(SCROLLERS)].forEach((el, i) => { if (lists[i]) el.scrollTop = lists[i]; });
   }
   function toast(t) { modal(`<p>${esc(t)}</p><div class="row"><button class="btn primary" id="mClose">OK</button></div>`); $('mClose').onclick = closeModal; }
+  // ---------- every scroll bar keeps its place (Nov 1): salvaging, feeding/upgrading cards, inking, buying... re-draw their lists, which used to
+  // jump back to the top. Before any click we note every scrolled box (by its place in the page), and after the click's re-draw we put back
+  // any box that came back at the top, as long as it's still about the same list (similar size), so opening something new still starts at the top.
+  const scKey = (el) => { const parts = []; let e = el; while (e && e !== document.body && parts.length < 7) { if (e.id) { parts.unshift('#' + e.id); break; } const pa = e.parentElement, cls = typeof e.className === 'string' ? e.className.replace(/\b(on|open|sel|active|hit|miss)\b/g, '').trim() : '';
+    parts.unshift(e.tagName + '.' + cls + ':' + (pa ? [...pa.children].filter(x => x.tagName === e.tagName).indexOf(e) : 0)); e = pa; } return parts.join('>'); };
+  const scrollables = () => [...document.querySelectorAll('#sheet, #sheet *, #modal, #modal *, #scrMap *, #scrStart *')].filter(el => el.scrollHeight > el.clientHeight + 4 && !el.matches('.mapscroll, #chatLog, .chatlog, textarea'));
+  let scSaved = null;
+  document.addEventListener('pointerdown', () => { scSaved = scrollables().filter(el => el.scrollTop > 0).map(el => ({ k: scKey(el), top: el.scrollTop, h: el.scrollHeight, n: el.childElementCount })); }, true);
+  const scRestore = () => { if (!scSaved || !scSaved.length) return; const now = new Map(scrollables().map(el => [scKey(el), el]));
+    for (const s of scSaved) { const el = now.get(s.k); if (!el || el.scrollTop > 0) continue; const ratio = el.scrollHeight / s.h; if (ratio < 0.3 || ratio > 3) continue;
+      el.scrollTop = Math.min(s.top, el.scrollHeight - el.clientHeight); } };
+  document.addEventListener('click', () => { if (!scSaved) return; requestAnimationFrame(scRestore); setTimeout(scRestore, 150); setTimeout(() => { scRestore(); scSaved = null; }, 500); });
 
   // ---------- deck tab
   const sortCards = (a, b) => RAR_ORDER[CARDS[a.key].rarity] - RAR_ORDER[CARDS[b.key].rarity] || CARDS[a.key].name.localeCompare(CARDS[b.key].name) || (b.rank || 0) - (a.rank || 0);
@@ -1361,7 +1373,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     setW(UB, (t.xp || 0) / (need(r0) || 1), false); setW(UG, (t.xp || 0) / (need(r0) || 1), false); label(r0, t.xp || 0, 0);
     $('modalBox').querySelector('.feedlist').addEventListener('change', prev);
     $('mClose').onclick = closeModal;
-    $('mFeed').onclick = () => { const ids = [...$('modalBox').querySelectorAll('input:checked')].map(i => i.value); const fr = CBHub.feed(profile, heroKey, t.id, ids); if (!fr.ok) return toast(fr.why); save(); closeModal(); renderHub(); };
+    $('mFeed').onclick = () => { const ids = [...$('modalBox').querySelectorAll('input:checked')].map(i => i.value); const fr = CBHub.feed(profile, heroKey, t.id, ids); if (!fr.ok) return toast(fr.why); save(); renderHub(); upgradeModal(t.id); }; // stay open (and keep the list's place) so you can keep feeding
   }
 
   // ---------- history tab

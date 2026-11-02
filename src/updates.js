@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Fix', 'Scroll bars keep their place everywhere: salvaging, feeding cards, buying with Ink, buying from shops and the like no longer jump the list back to the top. Feeding cards also keeps the upgrade window open so you can keep going.'],
       ['Feature', 'Hall of Records > Map records: each map now also has a "Most kills" leaderboard for its boss (kills at any level), under the highest clears. Kills from before today are counted from your run history.'],
       ['Change', 'Hall of Records now ranks completed maps, not maps you only entered: Progress is 15 points per level of each map you\'ve beaten, plus the furthest row on the next level up, and "Best clear" shows your highest completed map. Map records list who cleared each road at the highest level first.'],
       ['Fix', 'Boss kills weren\'t being saved since the Hall of Records arrived, so raids didn\'t unlock and the first-kill boss discount never ended. Fixed, and your past boss kills were rebuilt from your map records and run history.'],
