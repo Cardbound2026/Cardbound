@@ -959,7 +959,7 @@ class Combat {
     if (tr) {
       const picked = []; let cap = null;
       (tl.picks || []).forEach((j, i) => { if (j == null || j < 0 || j > 2) return; if (i < 9) { const t = tr.rows[i] && tr.rows[i][j]; if (t) picked.push(t); } else if (i === 9) cap = tr.cap[j]; });
-      for (const t of picked) for (const f of t.fx) if (f[0] === 'statFrom') p[f[1]] = (p[f[1]] || 0) + Math.round((f[2] === 'stamina' ? g.stamina : p[f[2]] || 0) * f[3] / 100);
+      for (const t of picked) for (const f of t.fx) if (f[0] === 'statFrom') { const src = f[2] === 'stamina' ? g.stamina : f[2].startsWith('gear:') ? (g[f[2].slice(5)] || 0) : p[f[2]] || 0, v = Math.round(src * f[3] / 100); if (f[1] === 'stamina') { p.maxHp += v; p.hp += v; } else p[f[1]] = (p[f[1]] || 0) + v; }
       for (const t of picked) for (const f of t.fx) if (f[0] === 'convert') { const v = Math.round((p[f[1]] || 0) * f[3] / 100); p[f[2]] = (p[f[2]] || 0) + v; } // Nov 2: talents that give a bonus stat from another (the source stat is kept)
       for (const t of picked) for (const f of t.fx) if (f[0] === 'stat') { if (f[1] === 'resistAll') { for (const el of ELEMENTS) p.resist[el] = Math.min(75, (p.resist[el] || 0) + f[2]); } else if (f[1].startsWith('resist:')) { const el = f[1].slice(7); p.resist[el] = Math.min(75, (p.resist[el] || 0) + f[2]); } else p[f[1]] = (p[f[1]] || 0) + f[2]; }
       if (picked.length || cap) { const label = CODEX_BY_KEY[tl.codex].name + ' talents';
@@ -1382,7 +1382,7 @@ class Combat {
     a.firstTurn = false;
     if (a.isPlayer) {
       this.say('player', `${this.partySize > 1 ? a.name + "'s" : 'Your'} turn. Mana ${before} + ${gain}${extra ? ' (incl. Mana Spring)' : ''} = ${a.mana} / ${a.maxMana}.`);
-      a.manaNext = 0; a.locked = false; a.negateDebuff = false; this.wardCheck(a); // Nov 2: Stealth no longer ends at the start of your turn, only when you attack out of it
+      a.manaNext = 0; a.locked = false; a.negateDebuff = false; this.wardCheck(a); a.parriedLast = !!a.parryFlag; a.parryFlag = false; // Nov 2: 'if you parried last turn' // Nov 2: Stealth no longer ends at the start of your turn, only when you attack out of it
       if (this.has(a, 'codex_bloodmancer') && a.mana > 0) { const m = a.mana; a.mana = 0; this.say('player', `Bloodmancer: ${m} mana turns into healing.`); this.heal(a, Math.floor(m / 3), 'Blood Magic'); }
       a.disarmed = a.disarmNext; a.disarmNext = false;
       if (a.disarmed) this.say('enemy', 'You are Disarmed: you cannot play Attacks this turn.');
@@ -1626,7 +1626,7 @@ class Combat {
     if (p.hp <= 0) { this.onDeath(p); return r.lost; }
     if (dmgIn > 0) { const na = p.timed.find(t => t.key === 'netherArmor'); if (na) { const n = na.n || 6; p.block += n; this.say('player', `Nether Armor: ${p.name} gains ${n} Absorb.`); } }
     if (r.absorbed > 0 && p.parryNext && p.parryNext.length && e.hp > 0) for (const f of p.parryNext.splice(0)) f(this, p, e); // Nov 2: Bait waits for your next parry
-    if (r.absorbed > 0) { p.lastParried = this.round; if (p.until.backDmg && e.hp > 0) { this.applyHit(p, e, p.until.backDmg, { label: 'Counter' }); this.say('player', `${p.name} strikes back: ${e.name} takes ${p.until.backDmg}.`); if (e.hp <= 0) this.onDeath(e); } }
+    if (r.absorbed > 0) { p.lastParried = this.round; p.parryFlag = true; if (p.until.backDmg && e.hp > 0) { this.applyHit(p, e, p.until.backDmg, { label: 'Counter' }); this.say('player', `${p.name} strikes back: ${e.name} takes ${p.until.backDmg}.`); if (e.hp <= 0) this.onDeath(e); } }
     if (r.absorbed > 0 && (r.lost === 0 || this.has(p, 'partial_guard'))) { for (const f of (p.until.onFull || [])) if (!this.over) f(this, p, e); }
     if (p.powers.length && !this.over) { if (r.absorbed > 0 && (r.lost === 0 || this.has(p, 'partial_guard'))) this.fire(p, 'fullBlock', e); this.fire(p, 'hitBy', e, r); }
     if (p.thorns && e.hp > 0) { const t = this.applyHit(p, e, p.thorns, { defer: true, label: 'Thorns' }); this.wardCheck(p); this.say('player', `Thorns: ${e.name} takes ${p.thorns}` + (t.absorbed ? ` (${t.absorbed} blocked)` : '') + '.'); if (e.hp <= 0) this.onDeath(e); }
@@ -1697,12 +1697,15 @@ class Combat {
     if (echo) { if (echo.chance == null) echo.chance = echo.upN ? echo.upN[0] : 10; if (this.rng() * 100 < echo.chance) { times++; echo.chance = 0; this.say('crit', `Divine Echo! ${d.name} repeats.`); } }
     const storm = d.key === 'shuriken' && this.has(p, 'shuriken_storm');
     const endless = d.key === 'shuriken' && this.hasTimed(p, 'endless') ? 2 : 1; times *= endless;
+    if (d.type === 'Attack' && p.powers.length) { const xs = this.pwSum(p, 'extraStrike', d); if (xs > 0) { times += xs; this.say('crit', `${d.name} strikes an extra time.`); } } // Nov 2 talents
+    const xTgt = d.type === 'Attack' && d.target === 'enemy' && p.powers.length ? this.pwSum(p, 'extraTarget', d) : 0;
     const twin = T.twin && d.type === 'Attack' && (d.dtype || 'Physical') === 'Physical'; if (twin) { T.twin = false; times++; }
     if (p.isPlayer) { const q = this.animQ = this.animQ || []; if (q.length < 20) q.push({ id: p.id, card: d.key, cost: d.cost || 0, type: d.type, dtype: d.dtype || (d.type === 'Attack' ? 'Physical' : null), aoe: d.target === 'all' || !!d.tags.aoe, dmg: !!d.tags.dmg, def: !!d.tags.def, heal: !!d.tags.heal, tgt: tgt ? tgt.id : null }); } // the fight screen's animations (src/forge.js)
     for (let i = 0; i < times && !this.over; i++) {
       if (storm) { for (const e of this.alive()) if (!this.over) d.play(this, e); continue; }
       if (tgt && tgt.hp <= 0 && d.target !== 'ally') tgt = this.alive()[0]; if (d.target === 'enemy' && !tgt) break;
       if (twin && i === times - 1) { const was = this._playing; this._playing = Object.assign(Object.create(d), { dtype: 'Holy' }); d.play(this, tgt); this._playing = was; } else d.play(this, tgt);
+      if (xTgt > 0 && i === 0) { for (const o2 of this.alive().filter(x => x !== tgt && x.hp > 0 && !x.stealth).slice(0, xTgt)) if (!this.over) { this.say('player', `${d.name} also hits ${o2.name}.`); d.play(this, o2); } }
       if (T.sweep > 0 && d.type === 'Attack' && d.target === 'enemy' && i === 0) { const os = this.alive().filter(x => x !== tgt).slice(0, T.sweepN || 1); if (os.length) { T.sweep--; for (const o2 of os) if (!this.over && o2.hp > 0) { this.say('player', `Sweeping Strikes: ${d.name} also hits ${o2.name}.`); d.play(this, o2); } } }
     }
     if (T.cascade && !this.over) this.drawCards(p, 1);
@@ -2106,6 +2109,7 @@ function talentDef(list, cap, label) {
     else if (k === 'hitBy') D.hit.push([a, b, c]); else if (k === 'full') D.full.push([a, b, c]); else if (k === 'lowhp') D.low = [a, b]; else if (k === 'cheat') D.cheat = [a, b];
     else if (k === 'party') (D.party = D.party || []).push([a, b]);
     else if (k === 'arcRegen') D.arcRegen = a;
+    else if (k === 'parryFirst') D.pf = (D.pf || 0) + a; else if (k === 'parryExtra') D.px = true; else if (k === 'extraTarget') (D.xt = D.xt || []).push([a, b || {}]); else if (k === 'extraStrike') (D.xs = D.xs || []).push([a, b || {}]);
     else if (k === 'dealtBleed') (D.db = D.db || []).push([a, b || {}]);
     else if (k === 'every') D.every.push([a, b, c, d2, e2]); else if (k === 'cost') D.cost.push([a, b]); else if (k === 'firstCost') D.first.push([a, b]); else if (k === 'aura') D.aura.push(...a);
   }
@@ -2173,6 +2177,9 @@ function talentDef(list, cap, label) {
     D.first.forEach(([n, f], i) => { if (tcard(d, f)) p.turn['tf' + i] = true; });
   };
   if (D.cost.length || D.first.length) P.costLess = (cb, p, d) => D.cost.reduce((s, [n, f]) => s + (tcard(d, f) ? n : 0), 0) + D.first.reduce((s, [n, f], i) => s + (tcard(d, f) && !p.turn['tf' + i] ? n : 0), 0);
+  if (D.pf) { const prev = P.hitMult; P.hitMult = (cb, p, e, ctx, pw) => (prev ? prev(cb, p, e, ctx, pw) : 1) * (ctx.kind === 'Attack' && p.parriedLast && p.turnAttacks === 0 ? 1 + D.pf / 100 : 1); }
+  if (D.px || D.xt) P.extraTarget = (cb, p, d) => (D.px && p.parriedLast && p.turnAttacks === 0 ? 1 : 0) + (D.xt || []).reduce((s, [pct, f]) => s + (tcard(d, f) && cb.rng() * 100 < pct ? 1 : 0), 0);
+  if (D.xs) P.extraStrike = (cb, p, d) => (D.xs || []).reduce((s, [pct, f]) => s + (tcard(d, f) && cb.rng() * 100 < pct ? 1 : 0), 0);
   if (D.arcRegen) { const prev = P.cardPlayed; P.cardPlayed = (cb, p, d, pw) => { if (prev) prev(cb, p, d, pw); if (d.type === 'Skill' && d.dtype === 'Arcane' && !pw.arcRegen) { pw.arcRegen = true; p.regen += D.arcRegen; cb.say('player', `${label}: +${D.arcRegen} mana regeneration for the fight.`); } }; }
   return P;
 }

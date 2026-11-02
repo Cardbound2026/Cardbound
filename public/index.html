@@ -1008,7 +1008,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.
         flat('Rampart Slam', 15, { type: 'Attack' }), dmg('Crushing Weight', 15, { type: 'Attack', self: 'block' }), flat('Steel Tide', 10, { type: 'Attack' }), dmg('Juggernaut', 25, { type: 'Attack', self: 'block:40' }), flat('Tower of Steel', 30, { type: 'Attack' })],
       d: { 3: back('Spiked Plate', 4) }, s: {} },
     riposte: { party: party('Killer Instinct', 'critMult'), cls: 'Warrior', cap: ['expose_opening', 'partial_guard', 'second_lung'],
-      off: [X(T('Duelist\'s Poise', 'Gain bonus Dexterity equal to 100% of your Strength (more Parry).', ['convert', 'strength', 'dexterity', 100])), back('Counter Edge', 3), dmg('Read the Opening', 10, { type: 'Attack', vs: 'vulnerable' }), back('Barbed Guard', 6),
+      off: [X(T('Duelist\'s Poise', 'Gain bonus Dexterity equal to 100% of your Strength (more Parry).', ['convert', 'strength', 'dexterity', 100])), X(T('Opening Strike', 'If you parried last turn, your first Attack of the turn deals 33% more damage.', ['parryFirst', 33])), dmg('Read the Opening', 10, { type: 'Attack', vs: 'vulnerable' }), X(T('Sweeping Riposte', 'If you parried last turn, your first Attack of the turn also hits another enemy.', ['parryExtra'])),
         T('Punishing Parry', 'When you fully Parry an attack, the attacker takes 15 damage.', ['full', 'back', 15]), dmg('Riposte Mastery', 15, { type: 'Attack', vs: 'vulnerable' }), back('Sharpened Guard', 10),
         dmg('Exploit', 25, { type: 'Attack', vs: 'vulnerable:20' }), T('Blade Dancer', 'When you fully Parry an attack, draw 1 card and gain 10 mana.', ['full', 'draw', 1], ['full', 'mana', 10])],
       d: { 7: T('Counterweight', 'When you fully Parry an attack, the attacker gains 10 Vulnerable.', ['full', 'debuff', 10, 'vulnerable']) }, s: {} },
@@ -1017,8 +1017,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.
         spread('Exsanguinator', 'bleed'), dmg('Red Frenzy', 15, { type: 'Attack', vs: 'bleed' }), every('Crimson Tide', 3, { type: 'Attack' }, 'bleed', 6), per('Bloodletting Edge', 'bleed', 10, 5, 25, { type: 'Attack' }), dotX('Blood Moon', 'bleed', 50)],
       d: { 8: healTurn('Transfusion', 3, 'any:bleed') }, s: { 9: rally('Blood Brothers', 15, 'bleed') } },
     colossus: { party: party('War Cry', 'strength'), cls: 'Warrior', cap: ['unstoppable_force', 'iron_will', 'deep_reserves'],
-      off: [X(T('Rattled Giant', '+50% damage to enemies that have a Stun in their hand.', ['dmg', 50, { vs: 'stunHand' }])), T('Brute Force', 'Start each fight with +10 Strength.', ['start', 'str', 10]), dmg('Titan Grip', 12, { type: 'Attack', minCost: 30 }), firstCost('Thunderous', 5, { type: 'Attack' }),
-        dmg('Colossal Blow', 25, { type: 'Attack', minCost: 30 }), dmg('Unstoppable', 15, { type: 'Attack' }), cost('Titan\'s Hunger', 5, { type: 'Attack', minCost: 20 }), T('Avalanche', 'Start each fight with +30 Strength.', ['start', 'str', 30]), dmg('World Breaker', 40, { type: 'Attack', minCost: 30 })],
+      off: [X(T('Rattled Giant', '+50% damage to enemies that have a Stun in their hand.', ['dmg', 50, { vs: 'stunHand' }])), X(T('Brute Force', 'Gain bonus Strength equal to 33% of the Strength on your gear.', ['statFrom', 'strength', 'gear:strength', 33])), dmg('Titan Grip', 12, { type: 'Attack', minCost: 30 }), X(T('Thunderous', 'Attacks that cost 20 or more mana have a 50% chance to hit an additional target.', ['extraTarget', 50, { type: 'Attack', minCost: 20 }])),
+        dmg('Colossal Blow', 25, { type: 'Attack', minCost: 30 }), dmg('Unstoppable', 15, { type: 'Attack' }), X(T('Titan\'s Hunger', 'Attacks that cost 20 or more mana have a 20% chance to strike an additional time.', ['extraStrike', 20, { type: 'Attack', minCost: 20 }])), T('Avalanche', 'Start each fight with +30 Strength.', ['start', 'str', 30]), dmg('World Breaker', 40, { type: 'Attack', minCost: 30 })],
       d: {}, s: { 6: turnMana('Bottomless', 10) } },
     sunderer: { party: party('Rally Cry', 'dmg'), cls: 'Warrior', cap: ['open_wounds', 'thorned_bulwark', 'momentum'],
       off: [dmg('Weak Points', 5, { vs: 'vulnerable' }), startDot('Expose', 'vulnerable', 10), dmg('Armor Splitter', 10, { type: 'Attack', vs: 'vulnerable' }), dmg('Shatterpoint', 12, { type: 'Attack', vs: 'vulnerable:20' }),
@@ -1092,10 +1092,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.
         T('Divine Purge', 'At the start of each of your turns, all enemies gain 10 Weak and you remove 1 debuff from yourself.', ['turn', 'debuff', 10, 'weak'], ['turn', 'cleanse', 1])],
       d: {}, s: {} },
     righteous_crusader: { party: party('Rally Cry', 'dmg'), cls: 'Paladin', cap: ['sacred_momentum', 'shield_of_the_crusade', 'crusader_aura'],
-      off: [dmg('Rhythm', 5), dmg('Crusader Training', 10, { type: 'Attack', self: 'prevSkill' }), dmg('Tempo', 10, { type: 'Attack' }), def('Balanced Blade', 15, 'prevAttack'),
+      off: [dmg('Rhythm', 5), X(T('Crusader Training', 'Gain bonus Strength equal to 25% of the Stamina on your gear.', ['statFrom', 'strength', 'gear:stamina', 25])), dmg('Tempo', 10, { type: 'Attack' }), def('Balanced Blade', 15, 'prevAttack'),
         dmg('Crusade March', 25, { type: 'Attack', self: 'prevSkill' }), dmg('Steady Hand', 15, { type: 'Attack' }), T('Iron Rhythm', 'Every 3rd Attack you play in a turn gives 10 Block.', ['every', 3, { type: 'Attack' }, 'block', 10]),
         dmg('Holy Tempo', 30, { type: 'Attack', self: 'prevSkill' }), T('Champion', '+25% Attack damage and +15% crit chance right after a Skill.', ['dmg', 25, { type: 'Attack', self: 'prevSkill' }], ['crit', 15, { type: 'Attack', self: 'prevSkill' }])],
-      d: {}, s: { 1: X(T('Swift Justice', 'Gain bonus Initiative equal to 50% of your Strength.', ['convert', 'strength', 'baseInit', 50])) } },
+      d: { 3: X(T('Steel Faith', 'Gain bonus Stamina (max HP) equal to 25% of the Strength on your gear.', ['statFrom', 'stamina', 'gear:strength', 25])) }, s: { 1: X(T('Swift Justice', 'Gain bonus Initiative equal to 50% of your Strength.', ['convert', 'strength', 'baseInit', 50])) } },
     sacred_flame: { party: party('Blessing of Spirit', 'spirit'), cls: 'Paladin', cap: ['brand_the_wicked', 'aegis_of_light', 'burning_wisdom'],
       off: [dotPlus('Kindled Faith', 'burn', 1), dmg('Holy Embers', 8, { dtype: 'Holy', vs: 'burn' }), startDot('Sacred Pyre', 'burn', 5), dotX('Purifying Flames', 'burn', 20),
         spread('Wildfire of Faith', 'burn'), dmg('Zeal', 15, { dtype: 'Holy', vs: 'burn' }), every('Flame Rhythm', 3, { type: 'Attack' }, 'burn', 6), per('Inquisitor', 'burn', 10, 5, 25, { dtype: 'Holy' }), dotX('Purgatory', 'burn', 50)],
@@ -2376,7 +2376,7 @@ class Combat {
     if (tr) {
       const picked = []; let cap = null;
       (tl.picks || []).forEach((j, i) => { if (j == null || j < 0 || j > 2) return; if (i < 9) { const t = tr.rows[i] && tr.rows[i][j]; if (t) picked.push(t); } else if (i === 9) cap = tr.cap[j]; });
-      for (const t of picked) for (const f of t.fx) if (f[0] === 'statFrom') p[f[1]] = (p[f[1]] || 0) + Math.round((f[2] === 'stamina' ? g.stamina : p[f[2]] || 0) * f[3] / 100);
+      for (const t of picked) for (const f of t.fx) if (f[0] === 'statFrom') { const src = f[2] === 'stamina' ? g.stamina : f[2].startsWith('gear:') ? (g[f[2].slice(5)] || 0) : p[f[2]] || 0, v = Math.round(src * f[3] / 100); if (f[1] === 'stamina') { p.maxHp += v; p.hp += v; } else p[f[1]] = (p[f[1]] || 0) + v; }
       for (const t of picked) for (const f of t.fx) if (f[0] === 'convert') { const v = Math.round((p[f[1]] || 0) * f[3] / 100); p[f[2]] = (p[f[2]] || 0) + v; } // Nov 2: talents that give a bonus stat from another (the source stat is kept)
       for (const t of picked) for (const f of t.fx) if (f[0] === 'stat') { if (f[1] === 'resistAll') { for (const el of ELEMENTS) p.resist[el] = Math.min(75, (p.resist[el] || 0) + f[2]); } else if (f[1].startsWith('resist:')) { const el = f[1].slice(7); p.resist[el] = Math.min(75, (p.resist[el] || 0) + f[2]); } else p[f[1]] = (p[f[1]] || 0) + f[2]; }
       if (picked.length || cap) { const label = CODEX_BY_KEY[tl.codex].name + ' talents';
@@ -2799,7 +2799,7 @@ class Combat {
     a.firstTurn = false;
     if (a.isPlayer) {
       this.say('player', `${this.partySize > 1 ? a.name + "'s" : 'Your'} turn. Mana ${before} + ${gain}${extra ? ' (incl. Mana Spring)' : ''} = ${a.mana} / ${a.maxMana}.`);
-      a.manaNext = 0; a.locked = false; a.negateDebuff = false; this.wardCheck(a); // Nov 2: Stealth no longer ends at the start of your turn, only when you attack out of it
+      a.manaNext = 0; a.locked = false; a.negateDebuff = false; this.wardCheck(a); a.parriedLast = !!a.parryFlag; a.parryFlag = false; // Nov 2: 'if you parried last turn' // Nov 2: Stealth no longer ends at the start of your turn, only when you attack out of it
       if (this.has(a, 'codex_bloodmancer') && a.mana > 0) { const m = a.mana; a.mana = 0; this.say('player', `Bloodmancer: ${m} mana turns into healing.`); this.heal(a, Math.floor(m / 3), 'Blood Magic'); }
       a.disarmed = a.disarmNext; a.disarmNext = false;
       if (a.disarmed) this.say('enemy', 'You are Disarmed: you cannot play Attacks this turn.');
@@ -3043,7 +3043,7 @@ class Combat {
     if (p.hp <= 0) { this.onDeath(p); return r.lost; }
     if (dmgIn > 0) { const na = p.timed.find(t => t.key === 'netherArmor'); if (na) { const n = na.n || 6; p.block += n; this.say('player', `Nether Armor: ${p.name} gains ${n} Absorb.`); } }
     if (r.absorbed > 0 && p.parryNext && p.parryNext.length && e.hp > 0) for (const f of p.parryNext.splice(0)) f(this, p, e); // Nov 2: Bait waits for your next parry
-    if (r.absorbed > 0) { p.lastParried = this.round; if (p.until.backDmg && e.hp > 0) { this.applyHit(p, e, p.until.backDmg, { label: 'Counter' }); this.say('player', `${p.name} strikes back: ${e.name} takes ${p.until.backDmg}.`); if (e.hp <= 0) this.onDeath(e); } }
+    if (r.absorbed > 0) { p.lastParried = this.round; p.parryFlag = true; if (p.until.backDmg && e.hp > 0) { this.applyHit(p, e, p.until.backDmg, { label: 'Counter' }); this.say('player', `${p.name} strikes back: ${e.name} takes ${p.until.backDmg}.`); if (e.hp <= 0) this.onDeath(e); } }
     if (r.absorbed > 0 && (r.lost === 0 || this.has(p, 'partial_guard'))) { for (const f of (p.until.onFull || [])) if (!this.over) f(this, p, e); }
     if (p.powers.length && !this.over) { if (r.absorbed > 0 && (r.lost === 0 || this.has(p, 'partial_guard'))) this.fire(p, 'fullBlock', e); this.fire(p, 'hitBy', e, r); }
     if (p.thorns && e.hp > 0) { const t = this.applyHit(p, e, p.thorns, { defer: true, label: 'Thorns' }); this.wardCheck(p); this.say('player', `Thorns: ${e.name} takes ${p.thorns}` + (t.absorbed ? ` (${t.absorbed} blocked)` : '') + '.'); if (e.hp <= 0) this.onDeath(e); }
@@ -3114,12 +3114,15 @@ class Combat {
     if (echo) { if (echo.chance == null) echo.chance = echo.upN ? echo.upN[0] : 10; if (this.rng() * 100 < echo.chance) { times++; echo.chance = 0; this.say('crit', `Divine Echo! ${d.name} repeats.`); } }
     const storm = d.key === 'shuriken' && this.has(p, 'shuriken_storm');
     const endless = d.key === 'shuriken' && this.hasTimed(p, 'endless') ? 2 : 1; times *= endless;
+    if (d.type === 'Attack' && p.powers.length) { const xs = this.pwSum(p, 'extraStrike', d); if (xs > 0) { times += xs; this.say('crit', `${d.name} strikes an extra time.`); } } // Nov 2 talents
+    const xTgt = d.type === 'Attack' && d.target === 'enemy' && p.powers.length ? this.pwSum(p, 'extraTarget', d) : 0;
     const twin = T.twin && d.type === 'Attack' && (d.dtype || 'Physical') === 'Physical'; if (twin) { T.twin = false; times++; }
     if (p.isPlayer) { const q = this.animQ = this.animQ || []; if (q.length < 20) q.push({ id: p.id, card: d.key, cost: d.cost || 0, type: d.type, dtype: d.dtype || (d.type === 'Attack' ? 'Physical' : null), aoe: d.target === 'all' || !!d.tags.aoe, dmg: !!d.tags.dmg, def: !!d.tags.def, heal: !!d.tags.heal, tgt: tgt ? tgt.id : null }); } // the fight screen's animations (src/forge.js)
     for (let i = 0; i < times && !this.over; i++) {
       if (storm) { for (const e of this.alive()) if (!this.over) d.play(this, e); continue; }
       if (tgt && tgt.hp <= 0 && d.target !== 'ally') tgt = this.alive()[0]; if (d.target === 'enemy' && !tgt) break;
       if (twin && i === times - 1) { const was = this._playing; this._playing = Object.assign(Object.create(d), { dtype: 'Holy' }); d.play(this, tgt); this._playing = was; } else d.play(this, tgt);
+      if (xTgt > 0 && i === 0) { for (const o2 of this.alive().filter(x => x !== tgt && x.hp > 0 && !x.stealth).slice(0, xTgt)) if (!this.over) { this.say('player', `${d.name} also hits ${o2.name}.`); d.play(this, o2); } }
       if (T.sweep > 0 && d.type === 'Attack' && d.target === 'enemy' && i === 0) { const os = this.alive().filter(x => x !== tgt).slice(0, T.sweepN || 1); if (os.length) { T.sweep--; for (const o2 of os) if (!this.over && o2.hp > 0) { this.say('player', `Sweeping Strikes: ${d.name} also hits ${o2.name}.`); d.play(this, o2); } } }
     }
     if (T.cascade && !this.over) this.drawCards(p, 1);
@@ -3523,6 +3526,7 @@ function talentDef(list, cap, label) {
     else if (k === 'hitBy') D.hit.push([a, b, c]); else if (k === 'full') D.full.push([a, b, c]); else if (k === 'lowhp') D.low = [a, b]; else if (k === 'cheat') D.cheat = [a, b];
     else if (k === 'party') (D.party = D.party || []).push([a, b]);
     else if (k === 'arcRegen') D.arcRegen = a;
+    else if (k === 'parryFirst') D.pf = (D.pf || 0) + a; else if (k === 'parryExtra') D.px = true; else if (k === 'extraTarget') (D.xt = D.xt || []).push([a, b || {}]); else if (k === 'extraStrike') (D.xs = D.xs || []).push([a, b || {}]);
     else if (k === 'dealtBleed') (D.db = D.db || []).push([a, b || {}]);
     else if (k === 'every') D.every.push([a, b, c, d2, e2]); else if (k === 'cost') D.cost.push([a, b]); else if (k === 'firstCost') D.first.push([a, b]); else if (k === 'aura') D.aura.push(...a);
   }
@@ -3590,6 +3594,9 @@ function talentDef(list, cap, label) {
     D.first.forEach(([n, f], i) => { if (tcard(d, f)) p.turn['tf' + i] = true; });
   };
   if (D.cost.length || D.first.length) P.costLess = (cb, p, d) => D.cost.reduce((s, [n, f]) => s + (tcard(d, f) ? n : 0), 0) + D.first.reduce((s, [n, f], i) => s + (tcard(d, f) && !p.turn['tf' + i] ? n : 0), 0);
+  if (D.pf) { const prev = P.hitMult; P.hitMult = (cb, p, e, ctx, pw) => (prev ? prev(cb, p, e, ctx, pw) : 1) * (ctx.kind === 'Attack' && p.parriedLast && p.turnAttacks === 0 ? 1 + D.pf / 100 : 1); }
+  if (D.px || D.xt) P.extraTarget = (cb, p, d) => (D.px && p.parriedLast && p.turnAttacks === 0 ? 1 : 0) + (D.xt || []).reduce((s, [pct, f]) => s + (tcard(d, f) && cb.rng() * 100 < pct ? 1 : 0), 0);
+  if (D.xs) P.extraStrike = (cb, p, d) => (D.xs || []).reduce((s, [pct, f]) => s + (tcard(d, f) && cb.rng() * 100 < pct ? 1 : 0), 0);
   if (D.arcRegen) { const prev = P.cardPlayed; P.cardPlayed = (cb, p, d, pw) => { if (prev) prev(cb, p, d, pw); if (d.type === 'Skill' && d.dtype === 'Arcane' && !pw.arcRegen) { pw.arcRegen = true; p.regen += D.arcRegen; cb.say('player', `${label}: +${D.arcRegen} mana regeneration for the fight.`); } }; }
   return P;
 }
@@ -6676,8 +6683,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793662151635';
-  const CB_BUILD = '8887a56755'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793662663020';
+  const CB_BUILD = '76560b3542'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
