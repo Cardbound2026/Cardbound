@@ -4411,7 +4411,7 @@ function slotOptions(item) { if (item.slot === 'Ring' || /^Ring/.test(item.slot)
 let OUT_CHECK = () => false; // set by the page: true while the hero is out on a run (its gear is a copy that comes home when the run ends)
 function setOutCheck(f) { OUT_CHECK = f; }
 function arenaLock(p, cls) { if (OUT_CHECK(cls)) return 'You\'re out on a run: gear and deck changes wait until you\'re back in town.'; return p.arena && p.arena.hero === cls ? 'Locked: this hero has a wager at the Arena. Settle or withdraw it first.' : null; }
-// Nov 2: hardcore heroes have their own stash, gold and Ink. p.stash, p.gold and p.ink are always the ones of the hero you're playing
+// Nov 2: hardcore heroes have their own stash, gold, Ink and Reroll Tokens. p.stash, p.gold and p.ink are always the ones of the hero you're playing
 // (p.stashMode says which); the other set waits in p.stashOther, p.goldOther and p.inkOther. useStash() swaps them when you switch
 // between a normal and a hardcore hero.
 const stashMode = (c) => c && c.hardcore ? 'hc' : 'normal';
@@ -4419,7 +4419,7 @@ function useStash(p, key) {
   if (!p) return; p.stashMode = p.stashMode || 'normal'; p.stashOther = p.stashOther || []; p.stash = p.stash || [];
   const want = stashMode(p.chars[key]); if (!p.chars[key] || p.stashMode === want) return;
   const t = p.stash; p.stash = p.stashOther; p.stashOther = t; p.stashMode = want;
-  const g = p.gold || 0; p.gold = p.goldOther || 0; p.goldOther = g; const k = p.ink || 0; p.ink = p.inkOther || 0; p.inkOther = k;
+  const g = p.gold || 0; p.gold = p.goldOther || 0; p.goldOther = g; const k = p.ink || 0; p.ink = p.inkOther || 0; p.inkOther = k; const r = p.rerollTokens || 0; p.rerollTokens = p.tokensOther || 0; p.tokensOther = r;
 }
 function stashFor(p, c) { p.stashMode = p.stashMode || 'normal'; p.stashOther = p.stashOther || []; return stashMode(c) === p.stashMode ? p.stash : p.stashOther; }
 function equip(p, cls, itemId, slotWanted) {
@@ -4667,7 +4667,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   const newWid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   // what counts as progress (not the shop restocking or which hero you looked at last)
   function progFp(p) {
-    try { return JSON.stringify([p.gold || 0, p.ink || 0, p.rerollTokens || 0, (p.stash || []).map(x => x.id).sort().join(','), (p.history || []).length,
+    try { const hc = p.stashMode === 'hc', W = (a, o) => hc ? [o, a] : [a, o]; // normal and hardcore wallets in a fixed order, whichever hero is active
+      const ids = (L) => (L || []).map(x => x.id).sort().join(',');
+      return JSON.stringify([W(p.gold || 0, p.goldOther || 0), W(p.ink || 0, p.inkOther || 0), W(p.rerollTokens || 0, p.tokensOther || 0), W(ids(p.stash), ids(p.stashOther)), (p.history || []).length,
       Object.keys(p.chars || {}).sort().map(k => { const c = p.chars[k]; return [k, c.name, c.runs || 0, c.bossKills || 0, (c.deck || []).map(x => x.id + ':' + (x.rank || 0) + ':' + (x.xp || 0)).sort().join(','), (c.cards || []).map(x => x.id).sort().join(','), (c.gear || []).map(g => g.id || g.name).sort().join(','), Math.round(Object.values(c.codexes || {}).reduce((t, x) => t + (x.xp || 0), 0)), JSON.stringify(c.mapBest || {}), JSON.stringify(c.codexes ? Object.entries(c.codexes).map(([k2, x]) => [k2, x.picks]) : [])]; })]); } catch (e) { return ''; }
   }
   const SY = { cloud: false, ready: false, busy: null, conflict: null, checkAt: 0, err: null };
@@ -6352,8 +6354,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793636792817';
-  const CB_BUILD = 'cf19cb1c4e'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793636999167';
+  const CB_BUILD = '36d04dfc87'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -7440,7 +7442,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     { date: '2026-11-02', items: [
       ['Feature', 'Achievements and titles: 35 achievements (bosses by level, class and road, Hardcore, raids, duels, the Bazaar, and feats like The Unburned and Frozen). Each one unlocks a title for all your heroes: pick it on your character sheet (C). Titles show over your head in town and on the Hall of Records. Menu > Achievements and titles lists them all.'],
       ['Feature', 'Mounts: press M in town to ride a horse, 25% faster. Everyone in town sees you ride. More mounts to come.'],
-      ['Change', 'Hardcore is its own world: Hardcore heroes have their own stash, gold and Ink (shared only with your other Hardcore heroes), and can only party, raid, trade, buy at the Bazaar and wager with other Hardcore heroes. Normal heroes keep the normal stash, gold and Ink.'],
+      ['Change', 'Hardcore is its own world: Hardcore heroes have their own stash, gold, Ink and Reroll Tokens (shared only with your other Hardcore heroes), and can only party, raid, trade, buy at the Bazaar and wager with other Hardcore heroes. Normal heroes keep the normal stash, gold and Ink.'],
       ['Change', 'Wagoneer Arisha explains runs and fights the first time a new hero talks to her, and any time after with "How do runs and fights work?".'],
       ['Balance', 'Rot: every Rot card applies 15% more Rot, and its upgrades grow 15% faster.'],
       ['Fix', 'Monsters are drawn the moment a fight starts (their art now loads while you are in town and on the map).'],
@@ -11577,7 +11579,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     { t: 'The Training Dummy', at: 'dummy', open: ['Practice on it', () => startDummy()],
       x: `<p>99,999 HP and it never hits back. Try a new deck or combo here before you risk a run.</p>` },
     { t: 'Captain Ilsa: your heroes', at: 'captain', open: ['Heroes', () => openSheet('heroes')],
-      x: `<p>Make more heroes (any class, up to 20) and switch between them here. They share the <b>stash</b>, the <b>gold</b> and the Ink, so an alt can use what your main finds.</p><p><b>Hardcore</b> heroes have one life, their own leaderboard, their own stash, gold and Ink, and only group and trade with other Hardcore heroes.</p>` },
+      x: `<p>Make more heroes (any class, up to 20) and switch between them here. They share the <b>stash</b>, the <b>gold</b> and the Ink, so an alt can use what your main finds.</p><p><b>Hardcore</b> heroes have one life, their own leaderboard, their own stash, gold, Ink and Reroll Tokens, and only group and trade with other Hardcore heroes.</p>` },
     { t: 'Chronicler Osk', at: 'chron', open: ['Run history', () => openSheet('log')],
       x: `<p>Every run you've played: where it ended, what you brought home, and a damage meter of every fight.</p>` },
     { t: 'The Hall of Records', at: { x: 16, y: 12, solid: true }, open: ['Read the records', () => openSheet('records')],

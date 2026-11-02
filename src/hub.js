@@ -203,7 +203,7 @@ function slotOptions(item) { if (item.slot === 'Ring' || /^Ring/.test(item.slot)
 let OUT_CHECK = () => false; // set by the page: true while the hero is out on a run (its gear is a copy that comes home when the run ends)
 function setOutCheck(f) { OUT_CHECK = f; }
 function arenaLock(p, cls) { if (OUT_CHECK(cls)) return 'You\'re out on a run: gear and deck changes wait until you\'re back in town.'; return p.arena && p.arena.hero === cls ? 'Locked: this hero has a wager at the Arena. Settle or withdraw it first.' : null; }
-// Nov 2: hardcore heroes have their own stash, gold and Ink. p.stash, p.gold and p.ink are always the ones of the hero you're playing
+// Nov 2: hardcore heroes have their own stash, gold, Ink and Reroll Tokens. p.stash, p.gold and p.ink are always the ones of the hero you're playing
 // (p.stashMode says which); the other set waits in p.stashOther, p.goldOther and p.inkOther. useStash() swaps them when you switch
 // between a normal and a hardcore hero.
 const stashMode = (c) => c && c.hardcore ? 'hc' : 'normal';
@@ -211,7 +211,7 @@ function useStash(p, key) {
   if (!p) return; p.stashMode = p.stashMode || 'normal'; p.stashOther = p.stashOther || []; p.stash = p.stash || [];
   const want = stashMode(p.chars[key]); if (!p.chars[key] || p.stashMode === want) return;
   const t = p.stash; p.stash = p.stashOther; p.stashOther = t; p.stashMode = want;
-  const g = p.gold || 0; p.gold = p.goldOther || 0; p.goldOther = g; const k = p.ink || 0; p.ink = p.inkOther || 0; p.inkOther = k;
+  const g = p.gold || 0; p.gold = p.goldOther || 0; p.goldOther = g; const k = p.ink || 0; p.ink = p.inkOther || 0; p.inkOther = k; const r = p.rerollTokens || 0; p.rerollTokens = p.tokensOther || 0; p.tokensOther = r;
 }
 function stashFor(p, c) { p.stashMode = p.stashMode || 'normal'; p.stashOther = p.stashOther || []; return stashMode(c) === p.stashMode ? p.stash : p.stashOther; }
 function equip(p, cls, itemId, slotWanted) {

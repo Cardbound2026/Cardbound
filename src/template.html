@@ -948,7 +948,9 @@ body.aiming { cursor: grabbing; user-select: none; }
   const newWid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   // what counts as progress (not the shop restocking or which hero you looked at last)
   function progFp(p) {
-    try { return JSON.stringify([p.gold || 0, p.ink || 0, p.rerollTokens || 0, (p.stash || []).map(x => x.id).sort().join(','), (p.history || []).length,
+    try { const hc = p.stashMode === 'hc', W = (a, o) => hc ? [o, a] : [a, o]; // normal and hardcore wallets in a fixed order, whichever hero is active
+      const ids = (L) => (L || []).map(x => x.id).sort().join(',');
+      return JSON.stringify([W(p.gold || 0, p.goldOther || 0), W(p.ink || 0, p.inkOther || 0), W(p.rerollTokens || 0, p.tokensOther || 0), W(ids(p.stash), ids(p.stashOther)), (p.history || []).length,
       Object.keys(p.chars || {}).sort().map(k => { const c = p.chars[k]; return [k, c.name, c.runs || 0, c.bossKills || 0, (c.deck || []).map(x => x.id + ':' + (x.rank || 0) + ':' + (x.xp || 0)).sort().join(','), (c.cards || []).map(x => x.id).sort().join(','), (c.gear || []).map(g => g.id || g.name).sort().join(','), Math.round(Object.values(c.codexes || {}).reduce((t, x) => t + (x.xp || 0), 0)), JSON.stringify(c.mapBest || {}), JSON.stringify(c.codexes ? Object.entries(c.codexes).map(([k2, x]) => [k2, x.picks]) : [])]; })]); } catch (e) { return ''; }
   }
   const SY = { cloud: false, ready: false, busy: null, conflict: null, checkAt: 0, err: null };
