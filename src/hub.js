@@ -73,6 +73,57 @@ const clsOf = (p, key) => (p.chars[key] && p.chars[key].cls) || (CLASSES[key] ? 
 // ---------- gear
 function gearScore(c) { return Math.round(SLOTS.reduce((s, sl) => { const it = c.gear.find(g => g.slot === sl); return s + (it ? it.ilvl || 0 : 0); }, 0) / SLOTS.length); }
 function powerLevel(c) { return Math.round((gearScore(c) + deckLevel(c.deck)) / 2); }
+// ---------- Gear power (Nov 2): what an item is worth to THIS hero, for the codex it plays and the gear it already wears.
+// Stat weights come from simulation (tools/statvalue.js -> src/statweights.js): for every codex, how much one point of each stat
+// moves its fight strength (rounds-to-die / rounds-to-kill, in log units). An item's power is the change in the hero's whole-gear
+// value when it goes on, so stats past a cap (75% resistance, the Max Mana cap) add nothing, resistances only count for the map
+// you're playing, and stats your codex doesn't use count for nothing. 1 power = 0.1% fight strength.
+const STATW = (typeof module !== 'undefined' && module.exports) ? require('./statweights.js') : (root.CB_STATW || {});
+const LINEAR = ['strength', 'intelligence', 'dexterity', 'spirit', 'crit', 'critDmg', 'init', 'maxMana', 'regen', 'draw', 'multiHit', 'multiplay', 'multicast', 'bleedChance', 'lifesteal', 'thorns', 'recovery', 'weaponDmg'];
+const LUCK_W = 0.002; // Luck only helps loot: a small flat value so it breaks ties
+const profileCache = {};
+function avgWeights(keys) { const o = {}; for (const k of keys) for (const [s, v] of Object.entries(STATW[k] || {})) o[s] = (o[s] || 0) + v / keys.length; return o; }
+// the codex whose weights value this hero's gear: the one worn, else the class codex whose test decks share the most cards with the deck
+function gearProfile(c) {
+  const worn = (c.gear || []).find(g => g && g.slot === 'Codex' && g.codex && STATW[g.codex]); if (worn) return { codex: worn.codex, w: STATW[worn.codex] };
+  const TD = root.CB_TESTDECKS || [], cls = c.cls, mine = {}; for (const x of c.deck || []) mine[x.key] = (mine[x.key] || 0) + 1;
+  const sig = cls + ':' + Object.keys(mine).sort().join(','); if (profileCache[sig]) return profileCache[sig];
+  const by = {}; for (const d of TD) if (d.cls === cls && STATW[d.codex]) { let ov = 0; for (const [k, n] of d.cards) ov += Math.min(n, mine[k] || 0); by[d.codex] = Math.max(by[d.codex] || 0, ov); }
+  const best = Object.entries(by).sort((a, b) => b[1] - a[1])[0];
+  const pick = best && best[1] > 0 ? { codex: best[0], w: STATW[best[0]], guess: true }
+    : { codex: null, w: avgWeights(Object.keys(STATW).filter(k => CB.CODEX_BY_KEY[k] && CB.CODEX_BY_KEY[k].cls === cls)), guess: true };
+  return (profileCache[sig] = pick);
+}
+const mapElement = (mk) => { const M = root.CB_DATA && root.CB_DATA.maps && root.CB_DATA.maps[mk]; return M ? M.element : mk ? mk[0].toUpperCase() + mk.slice(1) : 'Physical'; };
+// value of a whole set of gear (log fight strength, up to a constant)
+function gearValue(c, gear, mk) {
+  const w = gearProfile(c).w, t = CB.sumGear(gear), el = mapElement(mk || 'physical');
+  let v = Math.log(Math.max(1, t.maxHp)) * (w.hp || 1) + 0.5 * Math.log(1 + (t.healthRegen || 0) / Math.max(1, t.maxHp)); // Health Regen: heals between fights
+  for (const k of LINEAR) v += (w[k] || 0) * (k === 'critDmg' ? t.critDmg : t[k] || 0);
+  v += (w.resist || 0) * Math.min(75, (t.resist || {})[el] || 0);
+  for (const [e, n] of Object.entries(t.elem || {})) v += (w['elem:' + e] || 0) * n;
+  return v + LUCK_W * (t.luck || 0);
+}
+const is2H = (it) => !!(it && it.hands && it.hands.startsWith('2H'));
+// gear with `it` put in `slot`, pushing out what equip() would push out
+function swapIn(gear, it, slot) {
+  const main = gear.find(g => g.slot === 'Weapon');
+  const out = (g) => g.slot === slot || (is2H(it) && g.slot === 'Off-hand') || (slot === 'Off-hand' && g.slot === 'Weapon' && is2H(main));
+  return gear.filter(g => !out(g)).concat([Object.assign({}, it, { slot })]);
+}
+const pw = (x) => Math.round(x * 1000);
+// item power: what the item adds over an empty slot (its best slot), for this hero and map
+function itemPower(c, it, mk) {
+  if (!it || it.kind === 'card') return 0;
+  const gear = (c.gear || []).filter(g => g.id == null || g.id !== it.id);
+  return Math.max(...slotOptions(it).map(sl => { const without = gear.filter(g => !(g.slot === sl || (is2H(it) && g.slot === 'Off-hand'))); return pw(gearValue(c, without.concat([Object.assign({}, it, { slot: sl })]), mk) - gearValue(c, without, mk)); }));
+}
+// how much better the hero gets by equipping it (best slot): { d, slot, vs }
+function upgradeDelta(c, it, mk) {
+  const gear = c.gear || [], base = gearValue(c, gear, mk); let best = null;
+  for (const sl of slotOptions(it)) { const d = pw(gearValue(c, swapIn(gear, it, sl), mk) - base); if (!best || d > best.d) best = { d, slot: sl, vs: gear.find(g => g.slot === sl) || null }; }
+  return best || { d: 0, slot: null, vs: null };
+}
 // one-handed weapons go in either hand (dual wielding); starter weapons predate the 'hands' field, so they are listed by name
 const STARTER_1H = ['Arming Sword', 'Dirk', 'Ashwood Wand', 'Flanged Mace'];
 const isOneHand = (item) => (item.slot === 'Weapon' || item.slot === 'Off-hand') && (/^1H/.test(item.hands || '') || STARTER_1H.includes(item.name));
@@ -263,6 +314,6 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk };
 }
 
-const API = { shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);

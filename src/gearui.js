@@ -11,36 +11,29 @@
   const slotKey = (sl) => /^Ring/.test(sl) ? 'Ring' : sl;
   const slotIcon = (sl) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="${SLOT_PATH[slotKey(sl)] || SLOT_PATH.Chest}"/></svg>`;
 
-  // item power: every stat weighted the way item generation values it (the same point costs), with stats your class barely uses counted at a quarter
-  // elemental damage only helps cards of that element: Warriors are all Physical, Rogues have one Nature card, Paladins hit Holy, Mages Fire/Frost/Arcane
-  const ELEM_USE = { Warrior: [], Rogue: ['Nature'], Paladin: ['Holy'], Mage: ['Fire', 'Frost', 'Arcane'], Warlock: ['Shadow'] };
-  const OFF_STAT = { Warrior: ['Intelligence', 'Multicast Chance'], Mage: ['Strength', 'Multi-hit Chance', 'Multiplay Chance', 'Bleed Chance'], Rogue: ['Multicast Chance'], Paladin: [], Warlock: ['Bleed Chance', 'Multiplay Chance'] };
-  const isOff = (k, cls) => { const base = k.replace(/:.*$/, ''); if (base === 'Elemental/Holy Damage') return !(ELEM_USE[cls] || []).includes(k.split(':')[1]); return (OFF_STAT[cls] || []).includes(base); };
-  function statPts(k) {
-    const G = DATA.gear.stats, base = k.replace(/:.*$/, '');
-    if (k === 'Draw') return 3; if (k === 'Regen') return 0.3;
-    if (base === 'Resistance') return k === 'Resistance:Fire' ? 1 : 0.8;
-    return G[base] ? G[base].pts : 1;
-  }
-  function itemPower(it, cls) {
-    let p = 0; cls = cls || hcls();
-    for (const src of [it.stats || {}, it.imp2 || {}]) for (const [k, v] of Object.entries(src)) p += v * statPts(k) * (isOff(k, cls) ? 0.25 : 1);
-    return Math.round(p);
-  }
-  // is an item better than what this hero wears? compares item power with the weaker of the slots it can go in
+  // item power (Nov 2): what the item is worth to the hero you're playing, for its codex and the gear it already wears (CBHub.itemPower).
+  // Stats your codex doesn't use, resistances past the 75% cap and resistances to other maps' elements add nothing. 1 power = 0.1% fight strength.
+  const powerMap = () => (run && run.mapKey) || (profile.last && profile.last.map) || 'physical';
+  function powerHero(gear, cls) { const c = profile.chars[heroKey] || { cls: cls || hcls(), deck: [], gear: [] }; return { cls: cls || c.cls, deck: c.deck, gear: gear || c.gear }; }
+  function itemPower(it, cls, gear) { return CBHub.itemPower(powerHero(gear || wornGear(), cls), it, powerMap()); }
+  function powerBasis(gear) { const g = CBHub.gearProfile(powerHero(gear || wornGear())); const cx = g.codex && CB.CODEX_BY_KEY[g.codex]; return cx ? `${cx.name}${g.guess ? ' (closest to your deck)' : ''}` : 'your class'; }
+  // is an item better than what this hero wears? the change in the hero's whole-gear value if it goes on (best slot)
   function upgradeInfo(it, gear, cls) {
     if (!it || it.kind === 'card' || !gear) return null;
     if (it.slot === 'Codex' && it.cls && it.cls !== (cls || hcls())) return { kind: 'other', cls: it.cls };
     const cur = CBHub.slotOptions(it).map(sl => gear.find(g => g.slot === sl));
     if (cur.some(x => !x)) return { kind: 'empty' };
-    const mine = itemPower(it, cls), worst = cur.reduce((a, b) => itemPower(a, cls) <= itemPower(b, cls) ? a : b), d = mine - itemPower(worst, cls);
-    return { kind: d > 0 ? 'up' : d < 0 ? 'down' : 'same', d, vs: worst, p: mine };
+    const worn = gear.find(g => g.slot === 'Codex');
+    if (it.slot === 'Codex' && it.codex && worn && worn.codex !== it.codex) return { kind: 'swap', vs: worn };
+    const h = powerHero(gear, cls), u = CBHub.upgradeDelta(h, it, powerMap());
+    return { kind: u.d > 0 ? 'up' : u.d < 0 ? 'down' : 'same', d: u.d, vs: u.vs || cur[0], p: CBHub.itemPower(h, it, powerMap()), h };
   }
   function upBadge(it, gear, cls) {
     const u = upgradeInfo(it, gear, cls); if (!u) return '';
     if (u.kind === 'empty') return `<span class="upb up" title="You have nothing in this slot">&#9650; Fills an empty slot</span>`;
     if (u.kind === 'other') return `<span class="upb same">${u.cls} only</span>`;
-    const why = `Item power ${u.p} vs ${itemPower(u.vs, cls)} for your ${esc(u.vs.name)}. Power adds up every stat by its value; stats your class barely uses count for a quarter.`;
+    if (u.kind === 'swap') return `<span class="upb same" title="A different codex changes how your deck plays, so power can't compare it with your ${esc(u.vs.name)}.">Different codex</span>`;
+    const why = `Power for ${esc(powerBasis(gear))} on ${esc((DATA.maps[powerMap()] || {}).name || 'this map')}: this ${u.p}, your ${esc(u.vs.name)} ${CBHub.itemPower(u.h, u.vs, powerMap())}. Power counts only the stats your codex uses; resistance past 75% or for another map's element counts for nothing. 10 power = 1% fight strength.`;
     return u.kind === 'up' ? `<span class="upb up" title="${why}">&#9650; Upgrade +${u.d} power</span>`
       : u.kind === 'down' ? `<span class="upb down" title="${why}">&#9660; ${u.d} power</span>`
       : `<span class="upb same" title="${why}">= Even</span>`;
@@ -60,7 +53,7 @@
     const a = itemStats(it), b = cur ? itemStats(cur) : {}, keys = [...new Set([...Object.keys(a), ...Object.keys(b)])];
     keys.sort((x, y) => Math.abs((a[y] || 0) - (b[y] || 0)) - Math.abs((a[x] || 0) - (b[x] || 0)));
     const rows = keys.map(k => { const d = (a[k] || 0) - (b[k] || 0), u = statPct(k); return `<tr><td>${esc(statName(k))}</td><td>${a[k] != null ? a[k] + u : '-'}</td><td>${b[k] != null ? b[k] + u : '-'}</td><td class="${d > 0 ? 'up' : d < 0 ? 'down' : 'muted'}">${d > 0 ? '+' : ''}${d ? d + u : '='}</td></tr>`; }).join('');
-    const pd = itemPower(it) - (cur ? itemPower(cur) : 0);
+    const pd = itemPower(it) - (cur ? itemPower(cur) : 0); // each item's power over an empty slot, for the hero you're playing
     return `<table class="cmptab"><thead><tr><th>Stat</th><th>This</th><th>${cur ? 'Worn' : 'Empty'}</th><th>+ / -</th></tr></thead><tbody>${rows}<tr class="cmppow"><td>Item power</td><td>${itemPower(it)}</td><td>${cur ? itemPower(cur) : 0}</td><td class="${pd > 0 ? 'up' : pd < 0 ? 'down' : 'muted'}">${pd > 0 ? '+' : ''}${pd || '='}</td></tr></tbody></table>`;
   }
   function itemFromEl(el) {
