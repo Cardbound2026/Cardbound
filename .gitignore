@@ -4,3 +4,4 @@ tools/sim_results.json
 __pycache__/
 *.pyc
 ~$*.xlsx
+public/_t.html

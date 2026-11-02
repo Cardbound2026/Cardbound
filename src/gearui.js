@@ -190,10 +190,11 @@
     if (ok && inv && inv.hc != null && !!inv.hc !== myHc()) { toast(inv.hc ? `${inv.name} is playing a Hardcore hero. Hardcore heroes can only trade with other Hardcore heroes.` : 'Your hero is Hardcore: Hardcore heroes can only trade with other Hardcore heroes.'); ok = false; }
     if (ok && (run || cb || NET.s || TR.s)) { toast('You can only trade from Emberwatch, one trade at a time.'); ok = false; }
     if (ok && hcBlock(from, 'trade')) ok = false;
-    netSend('tr-ans', { to: from, ok });
-    if (ok) openTrade(from);
+    const n = Math.random().toString(36).slice(2, 10); // each trade gets its own id on the server's ledger
+    netSend('tr-ans', { to: from, ok, n });
+    if (ok) openTrade(from, n);
   }
-  function openTrade(uid) { TR.s = { tid: [SOC.me, uid].sort().join('-'), with: uid, name: nameOfUid(uid), mine: [], myGold: 0, theirs: [], theirGold: 0, myAcc: null, theirAcc: null }; renderTrade(); }
+  function openTrade(uid, n) { TR.s = { tid: [SOC.me, uid].sort().join('-') + '-' + (n || ''), with: uid, name: nameOfUid(uid), mine: [], myGold: 0, theirs: [], theirGold: 0, myAcc: null, theirAcc: null }; renderTrade(); }
   function sendOffer() { const S = TR.s; S.myAcc = null; S.theirAcc = null; netSend('tr-offer', { to: S.with, items: myOffer(), gold: S.myGold }); renderTrade(); }
   function tradeAccept() {
     const S = TR.s; if (!S) return;
@@ -202,13 +203,29 @@
     S.myAcc = tradeHash(); netSend('tr-acc', { to: S.with, hash: S.myAcc });
     if (S.theirAcc === S.myAcc) doTrade(); else renderTrade();
   }
-  function doTrade() {
+  // Nov 2: both games first register the trade with the server, which checks each side owns what it hands over (in its saved
+  // stash) and writes it to the ledger. Only when the server says both sides agreed does either game move anything.
+  async function doTrade() {
     const S = TR.s; if (!S || S.done) return; S.done = true;
     const mine = myOffer(), ids = new Set(mine.map(x => x.id));
+    renderTrade(); const st = document.querySelector('#modalBox .trst'); if (st) st.textContent = 'Confirming the trade with the server...';
+    await savedNow();
+    let res = 'error';
+    for (let i = 0; i < 16; i++) {
+      res = await trustRpc('trade_submit', { p_tid: S.tid, p_partner: S.with, p_give: mine, p_gold: S.myGold || 0, p_get: S.theirs, p_get_gold: S.theirGold || 0 });
+      if (res !== 'waiting') break; await new Promise(r => setTimeout(r, 1200));
+      if (TR.s !== S) break; // cancelled while waiting
+    }
+    if (res === 'waiting') res = await trustRpc('trade_cancel', { p_tid: S.tid }); // gave up: take our side back, unless the other game confirmed just now
+    if (res !== 'done' && res !== 'skip') {
+      const why = { cancelled: `${S.name}'s game didn't confirm in time`, 'not saved': 'your items or gold haven\'t reached your online save yet; try again in a moment', blocked: 'one of these accounts is under review', mismatch: 'the two offers didn\'t match', 'not enough gold': 'not enough gold in your online save' }[res] || 'the server could not be reached';
+      if (TR.s === S) { netSend('tr-cancel', { to: S.with }); TR.s = null; closeModal(); toast(`Trade cancelled: ${why}. Nothing changed hands.`); } return;
+    }
+    if (TR.s !== S && res === 'skip') return;
     profile.stash = profile.stash.filter(x => !ids.has(x.id));
     profile.gold = Math.max(0, profile.gold - (S.myGold || 0)) + (S.theirGold || 0);
     for (const it of S.theirs) profile.stash.unshift(Object.assign({}, it, { id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8) }));
-    save(); TR.s = null; closeModal(); renderHub();
+    save(); if (TR.s === S) { TR.s = null; closeModal(); } renderHub();
     const got = S.theirs.length + (S.theirGold ? 1 : 0), gave = mine.length + (S.myGold ? 1 : 0);
     sysChat(`Trade with ${S.name} complete: you gave ${mine.length} item${mine.length === 1 ? '' : 's'}${S.myGold ? ' and ' + S.myGold + ' gold' : ''}, and got ${S.theirs.length} item${S.theirs.length === 1 ? '' : 's'}${S.theirGold ? ' and ' + S.theirGold + ' gold' : ''}.`);
     toast(`Trade complete. ${got || gave ? 'New items are in your stash.' : ''}`);
@@ -252,10 +269,10 @@
       case 'insp-req': { const ch = inspectCard(); if (ch) netSend('insp', { to: p.from, ch }); return; }
       case 'insp': { if (INS.waiting !== p.from) return; INS.waiting = null; showInspect(p.ch); return; }
       case 'tr-ask': { if (TR.inv.some(i => i.from === p.from)) return; TR.inv.push({ from: p.from, name: p.name, hc: p.hc }); sysChat(`${p.name} wants to trade with you.`); renderSocial(); return; }
-      case 'tr-ans': { if (TR.asked !== p.from) return; TR.asked = null; if (!p.ok) { sysChat(`${nameOfUid(p.from)} declined the trade.`); return; } if (TR.s || run || cb) { netSend('tr-cancel', { to: p.from }); return; } openTrade(p.from); return; }
+      case 'tr-ans': { if (TR.asked !== p.from) return; TR.asked = null; if (!p.ok) { sysChat(`${nameOfUid(p.from)} declined the trade.`); return; } if (TR.s || run || cb) { netSend('tr-cancel', { to: p.from }); return; } openTrade(p.from, p.n); return; }
       case 'tr-offer': { const S = TR.s; if (!S || S.with !== p.from) return; S.theirs = (p.items || []).slice(0, 12); S.theirGold = Math.max(0, Math.floor(p.gold || 0)); S.myAcc = null; S.theirAcc = null; renderTrade(); return; }
       case 'tr-acc': { const S = TR.s; if (!S || S.with !== p.from) return; S.theirAcc = p.hash; if (S.myAcc && S.myAcc === p.hash) doTrade(); else renderTrade(); return; }
-      case 'tr-cancel': { if (TR.s && TR.s.with === p.from) { TR.s = null; closeModal(); sysChat(`${nameOfUid(p.from)} cancelled the trade.`); } TR.inv = TR.inv.filter(i => i.from !== p.from); renderSocial(); return; }
+      case 'tr-cancel': { if (TR.s && TR.s.with === p.from && !TR.s.done) { TR.s = null; closeModal(); sysChat(`${nameOfUid(p.from)} cancelled the trade.`); } TR.inv = TR.inv.filter(i => i.from !== p.from); renderSocial(); return; }
     }
   }
 

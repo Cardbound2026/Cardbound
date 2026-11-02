@@ -784,7 +784,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 
 <div class="wrap">
   <header class="top">
-    <div class="brand"><h1>Cardbound</h1><span id="brandLine">prototype v5 &middot; town</span></div>
+    <div class="brand"><h1>Cardbound</h1><span id="brandLine">Emberwatch</span></div>
     <span id="topInfo" class="muted"></span>
     <button class="btn" id="btnMenu" title="Menu (Esc)">Menu</button>
   </header>
@@ -935,7 +935,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   let supa = null, supaUser = null;
   const hcls = () => CBHub.clsOf(profile, heroKey);
   const heroKeys = () => Object.keys(profile.chars).sort((a, b) => (profile.chars[a].created || 0) - (profile.chars[b].created || 0)); // class of the current hero (heroes are keyed by id; several can share a class)
-  let heroKey = 'Warrior', storeKind = 'local', dbRef = null, saving = Promise.resolve(), saveQueued = false, hubTab = 'hGear';
+  let heroKey = 'Warrior', storeKind = 'local', saving = Promise.resolve(), hubTab = 'hGear';
   const RAR_ORDER = { Gold: 0, Blue: 1, Green: 2, White: 3 };
   const rarName = r => r === 'Purple (Epic)' ? 'Purple' : r;
 
@@ -963,10 +963,6 @@ body.aiming { cursor: grabbing; user-select: none; }
     profile.savedAt = Date.now(); profile.wid = newWid(); profile.dev = DEV;
     writeLocal();
     if (supa) { if (supaUser && SY.ready && !SY.conflict) cloudPush(); renderSaveNote(); return; }
-    if (dbRef && !saveQueued) {
-      saveQueued = true;
-      saving = saving.then(async () => { saveQueued = false; try { await dbRef.set({ json: JSON.stringify(profile), savedAt: profile.savedAt }); storeKind = supaUser ? 'cloud' : 'account'; } catch (e) { storeKind = 'local'; } renderSaveNote(); });
-    }
     renderSaveNote();
   }
   function loadLocal() { let p = null; try { p = JSON.parse(localStorage.getItem(LS) || 'null'); } catch (e) {} profile = CBHub.fix(p); heroKey = profile.last.cls || 'Warrior'; }
@@ -995,6 +991,17 @@ body.aiming { cursor: grabbing; user-select: none; }
   // ----- cloud sync
   let pushQ = false;
   function cloudPush() { if (pushQ) return; pushQ = true; saving = saving.then(async () => { pushQ = false; await pushNow(); }); }
+  // Nov 2 trust layer (supabase/trust.sql): trades, Bazaar sales, wagers and the Hall of Records go through the server, which
+  // checks them against the account's saved copy. savedNow() makes sure that copy is current first.
+  async function savedNow() { if (supa && supaUser && SY.ready && !SY.conflict) { if (profile.wid !== profile.base) cloudPush(); await saving; } }
+  // returns the server's answer, 'skip' when the server checks aren't installed (the game then works as before), or 'error'
+  async function trustRpc(fn, args) {
+    if (!supa || !supaUser) return 'skip';
+    try { const { data, error } = await supa.rpc(fn, args);
+      if (error) return /function|does not exist|schema cache|not found/i.test(error.message || '') ? 'skip' : 'error';
+      return data == null ? 'skip' : data;
+    } catch (e) { return 'error'; }
+  }
   async function pushNow() {
     if (!supa || !supaUser || SY.conflict || !SY.ready) return;
     const snap = JSON.parse(JSON.stringify(profile)), base = profile.base, id = supaUser.id, at = new Date(snap.savedAt || Date.now()).toISOString();
@@ -1085,13 +1092,14 @@ body.aiming { cursor: grabbing; user-select: none; }
     window.addEventListener('focus', renew); window.addEventListener('online', renew); setInterval(renew, 10 * 60 * 1000);
     supa.auth.onAuthStateChange((ev, session) => {
       if (session && (!supaUser || supaUser.id !== session.user.id)) attachSupaUser(session.user);
-      if (!session && supaUser) { socStop(); supaUser = null; dbRef = null; storeKind = 'local'; SY.ready = false; SY.cloud = false; SY.conflict = null; renderAccount(); renderSaveNote(); }
+      if (!session && supaUser) { socStop(); setAdmin(false); supaUser = null; storeKind = 'local'; SY.ready = false; SY.cloud = false; SY.conflict = null; renderAccount(); renderSaveNote(); }
     });
     const { data } = await supa.auth.getSession();
     if (data && data.session) await attachSupaUser(data.session.user); else { renderAccount(); renderSaveNote(); }
   }
   async function attachSupaUser(u) {
     supaUser = u; renderAccount(); SY.ready = false; SY.conflict = null;
+    supa.from('admins').select('user_id').eq('user_id', u.id).maybeSingle().then(({ data }) => setAdmin(!!data), () => {}); // Tinker Pip is for admins only
     await cloudCheck('sign-in');
     if (SY.err && !SY.ready) toast('Signed in, but your online save could not be reached (' + SY.err + '). Progress keeps saving in this browser.');
     else if (SY.ready) storeKind = 'cloud';
@@ -1136,20 +1144,8 @@ body.aiming { cursor: grabbing; user-select: none; }
     };
     $('siSend').onclick = send; $('siEmail').onkeydown = (e) => { if (e.key === 'Enter') send(); };
   }
-  async function connectAccount() {
-    try {
-      if (window.CB_CONFIG && window.supabase && window.supabase.createClient) return await connectSupabase();
-      if (!window.claude || !window.claude.use) return;
-      const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
-      if (!db || !user) return;
-      const id = await user.id(); if (!id) return;
-      const ref = db.doc('data/users/' + id + '/profile');
-      const snap = await Promise.race([ref.get(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))]);
-      dbRef = ref; storeKind = 'account';
-      if (snap.exists) { const d = snap.data(); const remote = CBHub.fix(JSON.parse(d.json)); if ((remote.savedAt || 0) > (profile.savedAt || 0)) { profile = remote; heroKey = profile.last.cls || heroKey; } }
-      if (!run) { renderHub(); if (!$('scrTitle').hidden) renderTitle(); }
-      save();
-    } catch (e) { dbRef = null; storeKind = 'local'; renderSaveNote(); }
+  async function connectAccount() { // accounts and cloud saves live in Supabase (src/social.js)
+    try { if (window.CB_CONFIG && window.supabase && window.supabase.createClient) return await connectSupabase(); } catch (e) { storeKind = 'local'; renderSaveNote(); }
   }
 
   function heroTabs() {
@@ -1530,6 +1526,10 @@ body.aiming { cursor: grabbing; user-select: none; }
   for (const n of NPCS) { const q = CITY_NPC[n.id]; if (q) { n.x = q[0]; n.y = q[1]; n.dir = q[2]; } }
   for (const n of NPCS) n.pal.ink = 'npc_' + (/^dummy/.test(n.id) ? 'dummy' : n.id); // town art pack key (src/inkart.js)
   for (const n of NPCS) { n.home = n.dir; solid.add(K(n.x, n.y)); }
+  // Nov 2: Tinker Pip (free test goods) only stands in town for admins (supabase/trust.sql: add your user id to public.admins)
+  const TINKER = NPCS.find(n => n.id === 'tinker');
+  function setAdmin(on) { if (!TINKER) return; const i = NPCS.indexOf(TINKER); if (on && i < 0) { NPCS.push(TINKER); solid.add(K(TINKER.x, TINKER.y)); } else if (!on && i >= 0) { NPCS.splice(i, 1); solid.delete(K(TINKER.x, TINKER.y)); } }
+  setAdmin(false);
 
 
   // ---------- drawing helpers
@@ -1539,45 +1539,6 @@ body.aiming { cursor: grabbing; user-select: none; }
   function poly(g, pts, fill, w) { g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) g.lineTo(p[0], p[1]); g.closePath(); g.fillStyle = fill; g.fill(); if (w) line(g, w); }
   function rrect(g, x, y, w, h, r, fill, lw) { g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, r) : g.rect(x, y, w, h); g.fillStyle = fill; g.fill(); if (lw) line(g, lw); }
   function circ(g, x, y, r, fill, lw) { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fillStyle = fill; g.fill(); if (lw) line(g, lw); }
-
-  function buildGround() {
-    if (window.CB_INK && CB_INK.ground) return CB_INK.ground({ MW, MH, TS: TOWN.TS, dpr: TOWN.dpr, ground }); // Gothic Ink art pack (src/inkart.js)
-    const TS = TOWN.TS, d = TOWN.dpr, c = document.createElement('canvas');
-    c.width = MW * TS * d; c.height = MH * TS * d; const g = c.getContext('2d'); g.scale(d, d);
-    const R = rng32(77);
-    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
-      const v = R();
-      g.fillStyle = v < 0.33 ? '#1c2117' : v < 0.66 ? '#1f2519' : '#1a1f15'; g.fillRect(x * TS, y * TS, TS, TS);
-      for (let i = 0; i < 6; i++) { g.fillStyle = R() < 0.5 ? '#273021' : '#14180f'; const bx = x * TS + R() * TS, by = y * TS + R() * TS; g.fillRect(bx, by, 2, 3 + R() * 4); }
-    }
-    // dirt: overlapping blobs give soft edges
-    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'p') { circ(g, x * TS + TS / 2 + (R() - 0.5) * TS * 0.3, y * TS + TS / 2 + (R() - 0.5) * TS * 0.3, TS * (0.58 + R() * 0.14), '#2f261c'); }
-    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'p') {
-      circ(g, x * TS + TS / 2 + (R() - 0.5) * TS * 0.25, y * TS + TS / 2 + (R() - 0.5) * TS * 0.25, TS * (0.5 + R() * 0.1), '#3a2f22');
-      for (let i = 0; i < 4; i++) circ(g, x * TS + R() * TS, y * TS + R() * TS, 1.5 + R() * 2, R() < 0.5 ? '#4a3c2b' : '#2a2219');
-    }
-    // bazaar cobbles
-    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'b') {
-      g.fillStyle = '#2c2925'; g.fillRect(x * TS, y * TS, TS, TS);
-      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { const v = R(); rrect(g, x * TS + i * TS / 3 + 1.5 + (j % 2) * 3, y * TS + j * TS / 3 + 1.5, TS / 3 - 3, TS / 3 - 3, 3, v < 0.33 ? '#45403a' : v < 0.66 ? '#3d3833' : '#4a443d'); }
-    }
-    // arena sand
-    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'a') { g.fillStyle = (x + y) % 2 ? '#4a3b28' : '#463826'; g.fillRect(x * TS, y * TS, TS, TS); for (let i = 0; i < 5; i++) circ(g, x * TS + R() * TS, y * TS + R() * TS, 1 + R() * 1.5, R() < .5 ? '#5a4932' : '#36291b'); }
-    // water
-    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === '~') { rrect(g, x * TS - 3, y * TS - 3, TS + 6, TS + 6, 10, '#101c25'); }
-    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === '~') { g.fillStyle = '#16293a'; g.fillRect(x * TS, y * TS, TS, TS); g.strokeStyle = 'rgba(140,180,210,.18)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x * TS + 8, y * TS + 16); g.lineTo(x * TS + 24, y * TS + 16); g.moveTo(x * TS + 20, y * TS + 32); g.lineTo(x * TS + 38, y * TS + 32); g.stroke(); }
-    // palisade
-    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'w') {
-      const px = x * TS, py = y * TS;
-      for (let i = 0; i < 3; i++) { const sx = px + i * TS / 3 + 1, w = TS / 3 - 2, top = py - 10 + (R() * 6 | 0); poly(g, [[sx, py + TS], [sx, top + 8], [sx + w / 2, top], [sx + w, top + 8], [sx + w, py + TS]], R() < 0.5 ? '#4a3524' : '#40301f', 1.6); g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(sx + w * 0.62, top + 8, w * 0.3, py + TS - top - 8); }
-      g.fillStyle = '#2b1f15'; g.fillRect(px, py + TS * 0.55, TS, 4);
-    }
-    // gate posts and road out
-    for (const gx of [11, 14]) { rrect(g, gx * TS + TS * 0.25, -6, TS * 0.5, TS + 6, 3, '#5a4029', 2); }
-    g.fillStyle = '#3a2f22'; g.fillRect(12 * TS, 0, TS * 2, TS);
-    g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(12 * TS, 0, TS * 2, TS * 0.35);
-    return c;
-  }
 
   // ---------- props (each draws itself relative to its footprint; base y = bottom of footprint)
   function drawProp(g, p, TS, t) {
@@ -1863,7 +1824,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     gx.globalCompositeOperation = 'source-over';
     if (typeof tutDraw === 'function') tutDraw(gx, TS, t); // the tutorial's arrow
     // the district name, for a few seconds after you walk into one
-    { const a = (t - TOWN.districtAt) / 3200; if (TOWN.district && a < 1) { gx.setTransform(d, 0, 0, d, 0, 0); const al = a < .15 ? a / .15 : a > .7 ? (1 - a) / .3 : 1; gx.globalAlpha = Math.max(0, al); gx.textAlign = 'center'; gx.font = `700 ${Math.round(26 * Math.max(.8, s))}px "Cinzel", "Barlow Semi Condensed", serif`; const w2 = gx.measureText(TOWN.district).width + 40; gx.fillStyle = 'rgba(14,10,7,.82)'; gx.fillRect(TOWN.vw / 2 - w2 / 2, 54, w2, 42); gx.strokeStyle = '#d6a14a'; gx.lineWidth = 1.5; gx.strokeRect(TOWN.vw / 2 - w2 / 2 + 4, 58, w2 - 8, 34); gx.fillStyle = '#e4c27a'; gx.fillText(TOWN.district, TOWN.vw / 2, 84); gx.globalAlpha = 1; gx.setTransform(d, 0, 0, d, -cam.x * d, -cam.y * d); } }
+    { const a = (t - TOWN.districtAt) / 3200; if (TOWN.district && a < 1) { gx.setTransform(d, 0, 0, d, 0, 0); const al = a < .15 ? a / .15 : a > .7 ? (1 - a) / .3 : 1; gx.globalAlpha = Math.max(0, al); gx.textAlign = 'center'; gx.font = `400 ${Math.round(28 * Math.max(.8, s))}px "Pirata One", Georgia, serif`; const w2 = gx.measureText(TOWN.district).width + 40; gx.fillStyle = 'rgba(14,10,7,.82)'; gx.fillRect(TOWN.vw / 2 - w2 / 2, 54, w2, 42); gx.strokeStyle = '#d6a14a'; gx.lineWidth = 1.5; gx.strokeRect(TOWN.vw / 2 - w2 / 2 + 4, 58, w2 - 8, 34); gx.fillStyle = '#e4c27a'; gx.fillText(TOWN.district, TOWN.vw / 2, 84); gx.globalAlpha = 1; gx.setTransform(d, 0, 0, d, -cam.x * d, -cam.y * d); } }
     // click marker
     drawMini(t);
     if (P.target) { const k = (t % 900) / 900; gx.strokeStyle = `rgba(214,161,74,${1 - k})`; gx.lineWidth = 2; gx.beginPath(); gx.ellipse(P.target.x * TS + TS / 2, P.target.y * TS + TS * 0.8, TS * 0.3 * (0.6 + k * 0.5), TS * 0.12 * (0.6 + k * 0.5), 0, 0, Math.PI * 2); gx.stroke(); }
@@ -2237,8 +2198,6 @@ body.aiming { cursor: grabbing; user-select: none; }
       ${typeof socOn === 'function' && socOn() ? `<button class="btn" id="mnNet">Connection details (co-op)</button>` : ''}
       <h3 style="font-size:20px;margin-top:6px">Settings</h3>
       <label class="toggle"><input type="checkbox" id="setFast" ${settings.fast ? 'checked' : ''}> Fast enemy turns</label>
-      ${window.CB_UI ? `<label class="toggle"><input type="checkbox" id="setInkUi" ${CB_UI.on() ? 'checked' : ''}> Gothic Ink interface (off = classic look)</label>` : ''}
-      ${window.CB_BF ? `<label class="toggle"><input type="checkbox" id="setBf" ${CB_BF.on ? 'checked' : ''}> Battlefield view in fights (off = classic side-by-side)</label>` : ''}
     </div>`);
     $('mClose').onclick = closeModal;
     $('mnGloss').onclick = () => openGlossary();
@@ -2246,8 +2205,6 @@ body.aiming { cursor: grabbing; user-select: none; }
     if ($('mnAch')) $('mnAch').onclick = () => openAchievements();
     if ($('mnTut')) $('mnTut').onclick = () => { closeModal(); tutStart(); };
     $('setFast').onchange = (e) => { settings.fast = e.target.checked; saveSettings(); };
-    if ($('setInkUi')) $('setInkUi').onchange = (e) => CB_UI.set(e.target.checked);
-    if ($('setBf')) $('setBf').onchange = (e) => { CB_BF.set(e.target.checked); if (cb) render(); };
     if ($('mnLeave')) $('mnLeave').onclick = () => {
       modal(`<h2 class="loss">Leave this run?</h2><p>You go back to Emberwatch now. Everything in your loot sack (items, cards and gold found this run) is lost. Gear you are wearing, your deck and any merchant orders are kept.</p><div class="row"><button class="btn" id="mnConfirm">Leave and lose the sack</button><button class="btn primary" id="mClose">Keep playing</button></div>`);
       $('mClose').onclick = closeModal; $('mnConfirm').onclick = leaveRun;
@@ -2292,7 +2249,9 @@ body.aiming { cursor: grabbing; user-select: none; }
     slot.hidden = !inFight; $('scrCombat').classList.toggle('withchat', inFight);
     if (typeof renderChat === 'function') renderChat();
   }
-  function show(which) { if (which !== 'start' && typeof BZ !== 'undefined' && BZ.open) closeShop(true); placeChat(which); if (typeof retrack === 'function') setTimeout(() => { try { retrack(); } catch (e) {} }, 0); hidePeeks(); $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); retrack(true); }
+  // Nov 2: the line under the logo says where you are
+  function brandLine(which) { const el = $('brandLine'); if (!el) return; el.textContent = which === 'title' ? 'Choose your hero' : which === 'start' ? 'Emberwatch' : run ? `${run.mapName || 'The roads'} +${run.level || 0}` : cb && cb.duel ? 'The Colosseum' : cb && cb.raid ? 'Raid' : cb && cb.practice ? 'Training yard' : 'Emberwatch'; }
+  function show(which) { try { brandLine(which); } catch (e) {} if (which !== 'start' && typeof BZ !== 'undefined' && BZ.open) closeShop(true); placeChat(which); if (typeof retrack === 'function') setTimeout(() => { try { retrack(); } catch (e) {} }, 0); hidePeeks(); $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); retrack(true); }
 
   // ---------- map
   const RH = 58, CW = 78, PADX = 40, PADY = 34;
@@ -2481,7 +2440,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       <p><b>Item bases it drops</b> (one picked per roll; stats roll at map +${lvl}):</p><div class="cardlist">${e.pool.map(b => { const bb = G.bases.find(x => x.name === b); return `<div class="cardrow" style="--rc:var(--line)"><span class="n"></span><b>${esc(b)}</b><span class="cst">${esc(bb ? bb.label : '')}</span></div>`; }).join('')}</div>` : '';
     const cards = (e.loot || []).filter(x => x.type === 'Card' || x.type === 'Codex');
     const cardHtml = cards.length ? `<p><b>Cards and codexes</b> (each rolls on its own; Gold cards only drop here):</p><div class="cardlist">${cards.map(x => `<div class="cardrow" style="--rc:${RC[x.rarity] || 'var(--line)'}"><span class="n">${x.type === 'Codex' ? +CB.bossCodexPct(e).toFixed(1) : x.pct}%</span><b>${esc(x.item)} <span class="muted">${esc(x.cls)} ${esc(x.rarity)} ${x.type === 'Codex' ? 'codex' : ''}</span></b><span class="cst"></span><span class="tx">${esc(x.note || '')}</span></div>`).join('')}</div>` : '';
-    modal(`<h2>${esc(e.name)}: loot</h2><p><b>Gold:</b> ${Math.round(e.gold[0] * gm)} to ${Math.round(e.gold[1] * gm)} per kill.</p>${gear}${cardHtml}<p><b>Prototype card drops:</b> ${{ 1: '30% per kill (mostly White)', 2: '40% per kill', 3: '50% per kill', Elite: 'always 1 card, Green or better (10% Gold)', Boss: '2 cards, Blue or Gold' }[e.tier]}, from your class's implemented cards. The named cards above come from the Map 1 design and arrive when more cards are built.</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
+    modal(`<h2>${esc(e.name)}: loot</h2><p><b>Gold:</b> ${Math.round(e.gold[0] * gm)} to ${Math.round(e.gold[1] * gm)} per kill.</p>${gear}${cardHtml}<p><b>Card drops:</b> ${{ 1: '30% per kill (mostly White)', 2: '40% per kill', 3: '50% per kill', Elite: 'always 1 card, Green or better (10% Gold)', Boss: '2 cards, Blue or Gold' }[e.tier]}, from your class's implemented cards. The named cards above come from the Map 1 design and arrive when more cards are built.</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     $('mClose').onclick = closeModal;
   }
   function deckModal(key) {

@@ -18,8 +18,12 @@
     if (!force && Date.now() - (REC.pubAt[key] || 0) < 60000) return; REC.pubAt[key] = Date.now();
     const row = { user_id: supaUser.id, hero_key: key, hero_name: c.name, hero_class: c.cls, guild_name: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null,
       progress: CBHub.progressScore(c), power: CBHub.powerLevel(c), maps: recMapsOf(c), snapshot: heroSnapshot(c), updated_at: new Date().toISOString(), season: CBHub.SEASON }; // Nov 2: one row per hero per season
+    // Nov 2: the server writes the record from the account's saved hero (supabase/trust.sql), so the page can't claim progress it doesn't have
+    await savedNow();
+    const r = await trustRpc('submit_hero_record', { p_hero_key: key, p_snapshot: row.snapshot, p_guild: row.guild_name, p_power: row.power });
+    if (r !== 'skip') return; // 'ok', 'hidden' (account under review), 'later' (throttled) or a network error
     const { error } = await supa.from('hero_records').upsert(row);
-    if (error) { if (recSetupErr(error)) REC.err = 'setup'; else console.warn('hero_records', error); }
+    if (error) { if (recSetupErr(error)) REC.err = 'setup'; else if (!/row-level security/i.test(error.message || '')) console.warn('hero_records', error); }
   }
   async function publishAllHeroes(force) { for (const k of Object.keys(profile.chars || {})) await publishHero(k, force); await pruneHeroes(); }
   // Nov 2: take down the records of heroes this account no longer has (deleted heroes stayed on the board forever)

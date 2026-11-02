@@ -179,7 +179,7 @@ function draw(canvas,options={}){
 
 // which painting and tint each map uses
 const MAPLOOK = { physical: [0, null], fire: [3, ['#b2502a', .32]], frost: [4, ['#5b86a8', .3]], nature: [1, ['#5f8a3c', .22]], arcane: [2, ['#7a4fb0', .3]], shadow: [2, ['#4a3a5a', .35]] };
-const BF = { on: (() => { try { return localStorage.getItem('cb-bf') !== 'off'; } catch (e) { return true; } })(), key: '', w: 0, h: 0 };
+const BF = { on: true, key: '', w: 0, h: 0 }; // Nov 2: the side-by-side classic stage is retired
 function sceneFor(stage, map) {
   let cv = stage.querySelector('#bfScene'); if (!cv) { cv = document.createElement('canvas'); cv.id = 'bfScene'; cv.setAttribute('aria-hidden', 'true'); stage.prepend(cv); }
   const w = stage.clientWidth, h = stage.clientHeight, key = map + ':' + w + 'x' + h;

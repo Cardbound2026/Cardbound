@@ -122,7 +122,7 @@
   `;
   document.head.appendChild(css);
   const KEY = 'cb-ui';
-  const isOn = () => { try { return localStorage.getItem(KEY) !== 'classic'; } catch (e) { return true; } };
+  const isOn = () => true; // Nov 2: the classic look is retired; the Gothic Ink interface is the game's look
   const apply = () => document.body.classList.toggle('inkui', isOn());
   window.CB_UI = { on: isOn, set(on) { try { localStorage.setItem(KEY, on ? 'ink' : 'classic'); } catch (e) {} apply(); } };
   if (document.body) apply(); else document.addEventListener('DOMContentLoaded', apply);

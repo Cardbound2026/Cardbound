@@ -1,7 +1,7 @@
   // ---------- the Bazaar (east of the main street): stand in the round market, set up shop, list stash items at your price.
   // While your shop is open you stay put and others can click you to browse and buy. Sales go player to player:
   // the buyer's gold is held, the seller hands over the item and takes the gold (sellers must be online to sell).
-  const BZ = { open: false, view: null, pend: {}, done: {}, refunded: {}, MAX: 12 };
+  const BZ = { open: false, view: null, pend: {}, done: {}, refunded: {}, busy: {}, MAX: 12 };
   const bzState = () => (profile.bazaar = profile.bazaar || { title: '', items: [] });
   const bzSlim = (it) => { const o = JSON.parse(JSON.stringify(it)); for (const k of ['id', 'price', 'sold', 'test']) delete o[k]; return o; };
   const bzSend = (payload) => { if (socOn()) SOC.ch.send({ type: 'broadcast', event: 'bazaar', payload: Object.assign({ from: SOC.me }, payload) }); };
@@ -118,7 +118,15 @@
       else if (p.hc != null && !!p.hc !== myHc()) res = { kind: 'res', to: p.from, rid: p.rid, ok: false, why: 'Hardcore heroes only trade with Hardcore heroes' };
       else if (i < 0) res = { kind: 'res', to: p.from, rid: p.rid, ok: false, why: 'it was already sold' };
       else if (B.items[i].price !== p.price) res = { kind: 'res', to: p.from, rid: p.rid, ok: false, why: 'the price changed' };
-      else {
+      else if (!p.trusted) { // Nov 2: register the sale with the server first (it checks the item is in this account's saved shop), then hand it over
+        const l0 = B.items[i]; if (BZ.busy[l0.lid]) return; BZ.busy[l0.lid] = true;
+        (async () => {
+          await savedNow(); const r = await trustRpc('market_sale', { p_ref: p.rid, p_buyer: p.from, p_item: l0.it, p_price: l0.price }); delete BZ.busy[l0.lid];
+          if (r === 'done' || r === 'skip') bazaarIn(Object.assign({}, p, { trusted: true }));
+          else { const res2 = { kind: 'res', to: p.from, rid: p.rid, ok: false, why: r === 'blocked' ? 'one of these accounts is under review' : 'the sale could not be confirmed with the server' }; BZ.done[p.rid] = res2; bzSend(res2); }
+        })();
+        return;
+      } else {
         const l = B.items.splice(i, 1)[0]; profile.gold += l.price; CBHub.bump(profile, 'bazaarSales'); profile.stats.bazaarBest = Math.max(profile.stats.bazaarBest || 0, l.price); save(); renderTownBar(); // achievements: Merchant, Businessman
         res = { kind: 'res', to: p.from, rid: p.rid, ok: true, it: l.it, price: l.price };
         sysChat(`${String(p.name || nameOfUid(p.from)).slice(0, 24)} bought ${l.it.name} for ${l.price} gold.`);
@@ -133,7 +141,7 @@
       delete BZ.pend[p.rid]; delete BZ.refunded[p.rid];
       if (p.ok && p.it) {
         if (late) profile.gold = Math.max(0, profile.gold - (p.price || late.price)); // the answer came after we gave the gold back
-        profile.stash.unshift(Object.assign({ id: 'g' + Math.random().toString(36).slice(2, 10) }, p.it, { slot: /^Ring/.test(p.it.slot) ? 'Ring' : p.it.slot }));
+        profile.stash.unshift(Object.assign({}, p.it, { id: 'g' + Math.random().toString(36).slice(2, 10), slot: /^Ring/.test(p.it.slot) ? 'Ring' : p.it.slot }));
         save(); renderTownBar(); sysChat(`You bought ${p.it.name} for ${p.price || (pend || late).price} gold. It is in your stash.`);
         if (BZ.view && BZ.view.uid === p.from) browseShop(p.from);
       } else if (pend) { profile.gold += pend.price; save(); renderTownBar(); toast(`Couldn't buy ${pend.name}: ${p.why || 'the sale failed'}. Your gold is back.`); if (BZ.view && BZ.view.uid === p.from) browseShop(p.from); }

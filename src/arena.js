@@ -24,7 +24,11 @@
     profile.gold -= gold; return { stake: { gold, items } };
   }
   function giveBack(st) { if (!st) return; profile.gold += st.gold || 0; for (const it of st.items || []) profile.stash.unshift(it); }
-  function clearArena(how) { const a = arMe(); if (!a) return; if (how !== 'forfeit') giveBack(a.stake); profile.arena = null; AR.offers = {}; save(); if (typeof retrack === 'function') retrack(true); renderTownBar(); }
+  // Nov 2: a lost stake goes on the server's ledger (wager_concede) before this game lets go of it, so the winner's gain checks out
+  const concede = (a) => a && a.deal && a.deal.foe ? trustRpc('wager_concede', { p_winner: a.deal.foe, p_pid: a.pid }).catch(() => {}) : Promise.resolve();
+  function clearArena(how) { const a = arMe(); if (!a) return;
+    if (how === 'forfeit') { a.status = 'settling'; AR.offers = {}; concede(a).then(() => { if (profile.arena === a) { profile.arena = null; save(); if (typeof retrack === 'function') retrack(true); renderTownBar(); } }); return; }
+    giveBack(a.stake); profile.arena = null; AR.offers = {}; save(); if (typeof retrack === 'function') retrack(true); renderTownBar(); }
 
   // what other players see on the board (on presence)
   function arenaPresence() {
@@ -61,7 +65,7 @@
     sysChat(`${reviseOf ? 'Revised offer' : 'Offer'} sent to ${post.who}: ${stakeTxt(r.stake)}.`); renderArena();
   }
   function withdraw() {
-    const a = arMe(); if (!a || a.role !== 'offer' || a.status === 'dueling') return;
+    const a = arMe(); if (!a || a.role !== 'offer' || (a.status === 'dueling' || a.status === 'settling')) return;
     arSend('ar-withdraw', { to: a.to, pid: a.pid, oid: a.oid }); clearArena(); sysChat('Offer withdrawn. Your stake is back in your stash.'); renderArena();
   }
   // ----- the poster answers
@@ -95,7 +99,7 @@
       }
       case 'ar-withdraw': { if (a && a.role === 'post' && a.pid === p.pid && AR.offers[p.oid]) { sysChat(`${AR.offers[p.oid].name} withdrew their offer.`); delete AR.offers[p.oid]; if (a.status === 'accepted' && a.deal && a.deal.oid === p.oid) { a.status = 'open'; a.deal = null; save(); } retrack(true); renderArena(); } return; }
       case 'ar-decline': case 'ar-closed': {
-        if (!a || a.role !== 'offer' || a.pid !== p.pid || (p.oid && p.oid !== a.oid) || a.status === 'dueling') return;
+        if (!a || a.role !== 'offer' || a.pid !== p.pid || (p.oid && p.oid !== a.oid) || (a.status === 'dueling' || a.status === 'settling')) return;
         sysChat(`Your offer to ${a.post.who} was ${p.type === 'ar-closed' ? 'closed: they took the wager down' : 'declined' + (p.why && p.why !== 'declined' ? ` (${p.why})` : '')}. Your stake is back in your stash.`);
         clearArena(); renderArena(); return;
       }
@@ -127,11 +131,11 @@
   function arenaSettle(foe, how) {
     const a = arMe(); if (!a || a.status !== 'dueling' || !a.deal || !foe || foe.uid !== a.deal.foe) return null;
     const theirs = a.deal.foeStake, mine = a.stake, foeName = a.deal.foeName;
-    if (how === 'won') { giveBack(mine); profile.gold += theirs.gold || 0; for (const it of theirs.items || []) profile.stash.unshift(Object.assign({ id: 'g' + Math.random().toString(36).slice(2, 10) }, it)); profile.arena = null; }
-    else if (how === 'lost') profile.arena = null;
-    else { giveBack(mine); profile.arena = null; }
-    AR.offers = {}; save(); retrack(true);
     const c = profile.chars[heroKey]; if (c) { c.wagers = c.wagers || { w: 0, l: 0 }; if (how === 'won') c.wagers.w++; else if (how === 'lost') c.wagers.l++; }
+    if (how === 'won') { const pid = a.pid, foeUid = a.deal.foe; giveBack(mine); profile.gold += theirs.gold || 0; for (const it of theirs.items || []) profile.stash.unshift(Object.assign({}, it, { id: 'g' + Math.random().toString(36).slice(2, 10) })); profile.arena = null;
+      AR.offers = {}; retrack(true); trustRpc('wager_claim', { p_loser: foeUid, p_pid: pid }).catch(() => {}).then(() => save()); } // the ledger first, then the save that holds the winnings
+    else if (how === 'lost') { a.status = 'settling'; AR.offers = {}; concede(a).then(() => { if (profile.arena === a) { profile.arena = null; save(); retrack(true); } }); }
+    else { giveBack(mine); profile.arena = null; AR.offers = {}; save(); retrack(true); }
     sysChat(how === 'won' ? `You won the wager against ${foeName}: ${stakeTxt(theirs)} is yours.` : how === 'lost' ? `You lost the wager to ${foeName}: ${stakeTxt(mine)} is theirs.` : `The wager against ${foeName} is a draw: both stakes go back.`);
     return `<div class="arsettle ${how}"><b>${how === 'won' ? 'Wager won' : how === 'lost' ? 'Wager lost' : 'Wager drawn'}</b><p>${how === 'won' ? `You take <b>${esc(stakeTxt(theirs))}</b> and keep your own stake. Items went to your stash.` : how === 'lost' ? `${esc(foeName)} takes <b>${esc(stakeTxt(mine))}</b>.` : 'Both stakes go back to their owners.'}</p></div>`;
   }
@@ -140,11 +144,11 @@
     const a = arMe(); if (!a) return;
     if (a.status === 'dueling' && !cb) { sysChat('You left a wager duel before it ended: your stake is forfeit.'); clearArena('forfeit'); return; }
     if (!socOn()) return;
-    if (a.role === 'offer' && a.status !== 'dueling') { const st = SOC.online.get(a.to); if (!st || !st.arena || st.arena.pid !== a.pid) { if (a.status === 'accepted') return; AR.gone[a.pid] = (AR.gone[a.pid] || 0) + 1; if (AR.gone[a.pid] >= 3) { sysChat(`${a.post.who}'s wager is gone from the board. Your stake is back in your stash.`); clearArena(); renderArena(); } } else AR.gone[a.pid] = 0; }
+    if (a.role === 'offer' && a.status !== 'dueling' && a.status !== 'settling') { const st = SOC.online.get(a.to); if (!st || !st.arena || st.arena.pid !== a.pid) { if (a.status === 'accepted') return; AR.gone[a.pid] = (AR.gone[a.pid] || 0) + 1; if (AR.gone[a.pid] >= 3) { sysChat(`${a.post.who}'s wager is gone from the board. Your stake is back in your stash.`); clearArena(); renderArena(); } } else AR.gone[a.pid] = 0; }
     if (a.role === 'post') { let ch = false; for (const o of Object.values(AR.offers)) if (!SOC.online.has(o.from)) { delete AR.offers[o.oid]; ch = true; } if (ch) { retrack(true); renderArena(); } }
   }, 10000);
   // a wager from a session that ended (closed tab) can't still be open: give the stake back, unless the duel had started
-  setTimeout(() => { const a = arMe(); if (!a) return; if (a.status === 'dueling') { profile.arena = null; save(); sysChat('A wager duel was left unfinished: its stake is forfeit.'); } else if (Date.now() - (a.at || 0) > 5000) { giveBack(a.stake); profile.arena = null; save(); sysChat('Your Arena wager from last time was closed. The stake is back in your stash.'); } }, 1500);
+  setTimeout(() => { const a = arMe(); if (!a) return; if (a.status === 'dueling' || a.status === 'settling') { concede(a).then(() => { profile.arena = null; save(); }); sysChat('A wager duel was left unfinished: its stake is forfeit.'); } else if (Date.now() - (a.at || 0) > 5000) { giveBack(a.stake); profile.arena = null; save(); sysChat('Your Arena wager from last time was closed. The stake is back in your stash.'); } }, 1500);
 
   // ----- the board
   function stakeHtml(st, label) {

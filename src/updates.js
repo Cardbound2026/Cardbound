@@ -2,6 +2,9 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Change', 'Trades, Bazaar sales and Arena wagers are now confirmed by the server before anything changes hands. If one fails, nothing moves and you are told why.'],
+      ['Change', 'The Hall of Records is written by the server from your saved heroes, so every name on the board earned its place.'],
+      ['Change', 'Cleaner look: the old classic UI and battlefield toggles are gone, and the top bar says where you are.'],
       ['Feature', 'Emberwatch is a city now: a walled city with Ember Square and its eternal flame in the middle, Market Row, the Old Market, the Grand Bazaar, a Colosseum five times the size of the old ring, the Wagon Yard at the South Gate, the Barracks and training yard (six dummies), Guild Row, the Scholars\' Quarter, the Keep, the Cathedral and the River Ash. Every townsperson has moved into their own building. You log in at Ember Square.'],
       ['Feature', 'The Bank: Banker Hollis on Market Row keeps a vault of 120 more item slots for your heroes (Hardcore heroes have their own).'],
       ['Feature', 'City map in the corner: see where everyone is, and click anywhere on it to walk there.'],

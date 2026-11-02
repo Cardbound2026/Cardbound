@@ -791,7 +791,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 
 <div class="wrap">
   <header class="top">
-    <div class="brand"><h1>Cardbound</h1><span id="brandLine">prototype v5 &middot; town</span></div>
+    <div class="brand"><h1>Cardbound</h1><span id="brandLine">Emberwatch</span></div>
     <span id="topInfo" class="muted"></span>
     <button class="btn" id="btnMenu" title="Menu (Esc)">Menu</button>
   </header>
@@ -4659,7 +4659,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   let supa = null, supaUser = null;
   const hcls = () => CBHub.clsOf(profile, heroKey);
   const heroKeys = () => Object.keys(profile.chars).sort((a, b) => (profile.chars[a].created || 0) - (profile.chars[b].created || 0)); // class of the current hero (heroes are keyed by id; several can share a class)
-  let heroKey = 'Warrior', storeKind = 'local', dbRef = null, saving = Promise.resolve(), saveQueued = false, hubTab = 'hGear';
+  let heroKey = 'Warrior', storeKind = 'local', saving = Promise.resolve(), hubTab = 'hGear';
   const RAR_ORDER = { Gold: 0, Blue: 1, Green: 2, White: 3 };
   const rarName = r => r === 'Purple (Epic)' ? 'Purple' : r;
 
@@ -4687,10 +4687,6 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     profile.savedAt = Date.now(); profile.wid = newWid(); profile.dev = DEV;
     writeLocal();
     if (supa) { if (supaUser && SY.ready && !SY.conflict) cloudPush(); renderSaveNote(); return; }
-    if (dbRef && !saveQueued) {
-      saveQueued = true;
-      saving = saving.then(async () => { saveQueued = false; try { await dbRef.set({ json: JSON.stringify(profile), savedAt: profile.savedAt }); storeKind = supaUser ? 'cloud' : 'account'; } catch (e) { storeKind = 'local'; } renderSaveNote(); });
-    }
     renderSaveNote();
   }
   function loadLocal() { let p = null; try { p = JSON.parse(localStorage.getItem(LS) || 'null'); } catch (e) {} profile = CBHub.fix(p); heroKey = profile.last.cls || 'Warrior'; }
@@ -4719,6 +4715,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // ----- cloud sync
   let pushQ = false;
   function cloudPush() { if (pushQ) return; pushQ = true; saving = saving.then(async () => { pushQ = false; await pushNow(); }); }
+  // Nov 2 trust layer (supabase/trust.sql): trades, Bazaar sales, wagers and the Hall of Records go through the server, which
+  // checks them against the account's saved copy. savedNow() makes sure that copy is current first.
+  async function savedNow() { if (supa && supaUser && SY.ready && !SY.conflict) { if (profile.wid !== profile.base) cloudPush(); await saving; } }
+  // returns the server's answer, 'skip' when the server checks aren't installed (the game then works as before), or 'error'
+  async function trustRpc(fn, args) {
+    if (!supa || !supaUser) return 'skip';
+    try { const { data, error } = await supa.rpc(fn, args);
+      if (error) return /function|does not exist|schema cache|not found/i.test(error.message || '') ? 'skip' : 'error';
+      return data == null ? 'skip' : data;
+    } catch (e) { return 'error'; }
+  }
   async function pushNow() {
     if (!supa || !supaUser || SY.conflict || !SY.ready) return;
     const snap = JSON.parse(JSON.stringify(profile)), base = profile.base, id = supaUser.id, at = new Date(snap.savedAt || Date.now()).toISOString();
@@ -4809,13 +4816,14 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     window.addEventListener('focus', renew); window.addEventListener('online', renew); setInterval(renew, 10 * 60 * 1000);
     supa.auth.onAuthStateChange((ev, session) => {
       if (session && (!supaUser || supaUser.id !== session.user.id)) attachSupaUser(session.user);
-      if (!session && supaUser) { socStop(); supaUser = null; dbRef = null; storeKind = 'local'; SY.ready = false; SY.cloud = false; SY.conflict = null; renderAccount(); renderSaveNote(); }
+      if (!session && supaUser) { socStop(); setAdmin(false); supaUser = null; storeKind = 'local'; SY.ready = false; SY.cloud = false; SY.conflict = null; renderAccount(); renderSaveNote(); }
     });
     const { data } = await supa.auth.getSession();
     if (data && data.session) await attachSupaUser(data.session.user); else { renderAccount(); renderSaveNote(); }
   }
   async function attachSupaUser(u) {
     supaUser = u; renderAccount(); SY.ready = false; SY.conflict = null;
+    supa.from('admins').select('user_id').eq('user_id', u.id).maybeSingle().then(({ data }) => setAdmin(!!data), () => {}); // Tinker Pip is for admins only
     await cloudCheck('sign-in');
     if (SY.err && !SY.ready) toast('Signed in, but your online save could not be reached (' + SY.err + '). Progress keeps saving in this browser.');
     else if (SY.ready) storeKind = 'cloud';
@@ -4860,20 +4868,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     };
     $('siSend').onclick = send; $('siEmail').onkeydown = (e) => { if (e.key === 'Enter') send(); };
   }
-  async function connectAccount() {
-    try {
-      if (window.CB_CONFIG && window.supabase && window.supabase.createClient) return await connectSupabase();
-      if (!window.claude || !window.claude.use) return;
-      const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
-      if (!db || !user) return;
-      const id = await user.id(); if (!id) return;
-      const ref = db.doc('data/users/' + id + '/profile');
-      const snap = await Promise.race([ref.get(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))]);
-      dbRef = ref; storeKind = 'account';
-      if (snap.exists) { const d = snap.data(); const remote = CBHub.fix(JSON.parse(d.json)); if ((remote.savedAt || 0) > (profile.savedAt || 0)) { profile = remote; heroKey = profile.last.cls || heroKey; } }
-      if (!run) { renderHub(); if (!$('scrTitle').hidden) renderTitle(); }
-      save();
-    } catch (e) { dbRef = null; storeKind = 'local'; renderSaveNote(); }
+  async function connectAccount() { // accounts and cloud saves live in Supabase (src/social.js)
+    try { if (window.CB_CONFIG && window.supabase && window.supabase.createClient) return await connectSupabase(); } catch (e) { storeKind = 'local'; renderSaveNote(); }
   }
 
   function heroTabs() {
@@ -5585,6 +5581,10 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   for (const n of NPCS) { const q = CITY_NPC[n.id]; if (q) { n.x = q[0]; n.y = q[1]; n.dir = q[2]; } }
   for (const n of NPCS) n.pal.ink = 'npc_' + (/^dummy/.test(n.id) ? 'dummy' : n.id); // town art pack key (src/inkart.js)
   for (const n of NPCS) { n.home = n.dir; solid.add(K(n.x, n.y)); }
+  // Nov 2: Tinker Pip (free test goods) only stands in town for admins (supabase/trust.sql: add your user id to public.admins)
+  const TINKER = NPCS.find(n => n.id === 'tinker');
+  function setAdmin(on) { if (!TINKER) return; const i = NPCS.indexOf(TINKER); if (on && i < 0) { NPCS.push(TINKER); solid.add(K(TINKER.x, TINKER.y)); } else if (!on && i >= 0) { NPCS.splice(i, 1); solid.delete(K(TINKER.x, TINKER.y)); } }
+  setAdmin(false);
 
 
   // ---------- drawing helpers
@@ -5594,45 +5594,6 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   function poly(g, pts, fill, w) { g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) g.lineTo(p[0], p[1]); g.closePath(); g.fillStyle = fill; g.fill(); if (w) line(g, w); }
   function rrect(g, x, y, w, h, r, fill, lw) { g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, r) : g.rect(x, y, w, h); g.fillStyle = fill; g.fill(); if (lw) line(g, lw); }
   function circ(g, x, y, r, fill, lw) { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fillStyle = fill; g.fill(); if (lw) line(g, lw); }
-
-  function buildGround() {
-    if (window.CB_INK && CB_INK.ground) return CB_INK.ground({ MW, MH, TS: TOWN.TS, dpr: TOWN.dpr, ground }); // Gothic Ink art pack (src/inkart.js)
-    const TS = TOWN.TS, d = TOWN.dpr, c = document.createElement('canvas');
-    c.width = MW * TS * d; c.height = MH * TS * d; const g = c.getContext('2d'); g.scale(d, d);
-    const R = rng32(77);
-    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
-      const v = R();
-      g.fillStyle = v < 0.33 ? '#1c2117' : v < 0.66 ? '#1f2519' : '#1a1f15'; g.fillRect(x * TS, y * TS, TS, TS);
-      for (let i = 0; i < 6; i++) { g.fillStyle = R() < 0.5 ? '#273021' : '#14180f'; const bx = x * TS + R() * TS, by = y * TS + R() * TS; g.fillRect(bx, by, 2, 3 + R() * 4); }
-    }
-    // dirt: overlapping blobs give soft edges
-    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'p') { circ(g, x * TS + TS / 2 + (R() - 0.5) * TS * 0.3, y * TS + TS / 2 + (R() - 0.5) * TS * 0.3, TS * (0.58 + R() * 0.14), '#2f261c'); }
-    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'p') {
-      circ(g, x * TS + TS / 2 + (R() - 0.5) * TS * 0.25, y * TS + TS / 2 + (R() - 0.5) * TS * 0.25, TS * (0.5 + R() * 0.1), '#3a2f22');
-      for (let i = 0; i < 4; i++) circ(g, x * TS + R() * TS, y * TS + R() * TS, 1.5 + R() * 2, R() < 0.5 ? '#4a3c2b' : '#2a2219');
-    }
-    // bazaar cobbles
-    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'b') {
-      g.fillStyle = '#2c2925'; g.fillRect(x * TS, y * TS, TS, TS);
-      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { const v = R(); rrect(g, x * TS + i * TS / 3 + 1.5 + (j % 2) * 3, y * TS + j * TS / 3 + 1.5, TS / 3 - 3, TS / 3 - 3, 3, v < 0.33 ? '#45403a' : v < 0.66 ? '#3d3833' : '#4a443d'); }
-    }
-    // arena sand
-    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'a') { g.fillStyle = (x + y) % 2 ? '#4a3b28' : '#463826'; g.fillRect(x * TS, y * TS, TS, TS); for (let i = 0; i < 5; i++) circ(g, x * TS + R() * TS, y * TS + R() * TS, 1 + R() * 1.5, R() < .5 ? '#5a4932' : '#36291b'); }
-    // water
-    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === '~') { rrect(g, x * TS - 3, y * TS - 3, TS + 6, TS + 6, 10, '#101c25'); }
-    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === '~') { g.fillStyle = '#16293a'; g.fillRect(x * TS, y * TS, TS, TS); g.strokeStyle = 'rgba(140,180,210,.18)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x * TS + 8, y * TS + 16); g.lineTo(x * TS + 24, y * TS + 16); g.moveTo(x * TS + 20, y * TS + 32); g.lineTo(x * TS + 38, y * TS + 32); g.stroke(); }
-    // palisade
-    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'w') {
-      const px = x * TS, py = y * TS;
-      for (let i = 0; i < 3; i++) { const sx = px + i * TS / 3 + 1, w = TS / 3 - 2, top = py - 10 + (R() * 6 | 0); poly(g, [[sx, py + TS], [sx, top + 8], [sx + w / 2, top], [sx + w, top + 8], [sx + w, py + TS]], R() < 0.5 ? '#4a3524' : '#40301f', 1.6); g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(sx + w * 0.62, top + 8, w * 0.3, py + TS - top - 8); }
-      g.fillStyle = '#2b1f15'; g.fillRect(px, py + TS * 0.55, TS, 4);
-    }
-    // gate posts and road out
-    for (const gx of [11, 14]) { rrect(g, gx * TS + TS * 0.25, -6, TS * 0.5, TS + 6, 3, '#5a4029', 2); }
-    g.fillStyle = '#3a2f22'; g.fillRect(12 * TS, 0, TS * 2, TS);
-    g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(12 * TS, 0, TS * 2, TS * 0.35);
-    return c;
-  }
 
   // ---------- props (each draws itself relative to its footprint; base y = bottom of footprint)
   function drawProp(g, p, TS, t) {
@@ -5918,7 +5879,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     gx.globalCompositeOperation = 'source-over';
     if (typeof tutDraw === 'function') tutDraw(gx, TS, t); // the tutorial's arrow
     // the district name, for a few seconds after you walk into one
-    { const a = (t - TOWN.districtAt) / 3200; if (TOWN.district && a < 1) { gx.setTransform(d, 0, 0, d, 0, 0); const al = a < .15 ? a / .15 : a > .7 ? (1 - a) / .3 : 1; gx.globalAlpha = Math.max(0, al); gx.textAlign = 'center'; gx.font = `700 ${Math.round(26 * Math.max(.8, s))}px "Cinzel", "Barlow Semi Condensed", serif`; const w2 = gx.measureText(TOWN.district).width + 40; gx.fillStyle = 'rgba(14,10,7,.82)'; gx.fillRect(TOWN.vw / 2 - w2 / 2, 54, w2, 42); gx.strokeStyle = '#d6a14a'; gx.lineWidth = 1.5; gx.strokeRect(TOWN.vw / 2 - w2 / 2 + 4, 58, w2 - 8, 34); gx.fillStyle = '#e4c27a'; gx.fillText(TOWN.district, TOWN.vw / 2, 84); gx.globalAlpha = 1; gx.setTransform(d, 0, 0, d, -cam.x * d, -cam.y * d); } }
+    { const a = (t - TOWN.districtAt) / 3200; if (TOWN.district && a < 1) { gx.setTransform(d, 0, 0, d, 0, 0); const al = a < .15 ? a / .15 : a > .7 ? (1 - a) / .3 : 1; gx.globalAlpha = Math.max(0, al); gx.textAlign = 'center'; gx.font = `400 ${Math.round(28 * Math.max(.8, s))}px "Pirata One", Georgia, serif`; const w2 = gx.measureText(TOWN.district).width + 40; gx.fillStyle = 'rgba(14,10,7,.82)'; gx.fillRect(TOWN.vw / 2 - w2 / 2, 54, w2, 42); gx.strokeStyle = '#d6a14a'; gx.lineWidth = 1.5; gx.strokeRect(TOWN.vw / 2 - w2 / 2 + 4, 58, w2 - 8, 34); gx.fillStyle = '#e4c27a'; gx.fillText(TOWN.district, TOWN.vw / 2, 84); gx.globalAlpha = 1; gx.setTransform(d, 0, 0, d, -cam.x * d, -cam.y * d); } }
     // click marker
     drawMini(t);
     if (P.target) { const k = (t % 900) / 900; gx.strokeStyle = `rgba(214,161,74,${1 - k})`; gx.lineWidth = 2; gx.beginPath(); gx.ellipse(P.target.x * TS + TS / 2, P.target.y * TS + TS * 0.8, TS * 0.3 * (0.6 + k * 0.5), TS * 0.12 * (0.6 + k * 0.5), 0, 0, Math.PI * 2); gx.stroke(); }
@@ -6645,8 +6606,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793639929430';
-  const CB_BUILD = '64094c4e68'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793641746292';
+  const CB_BUILD = '8a09731093'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -7222,8 +7183,12 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     if (!force && Date.now() - (REC.pubAt[key] || 0) < 60000) return; REC.pubAt[key] = Date.now();
     const row = { user_id: supaUser.id, hero_key: key, hero_name: c.name, hero_class: c.cls, guild_name: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null,
       progress: CBHub.progressScore(c), power: CBHub.powerLevel(c), maps: recMapsOf(c), snapshot: heroSnapshot(c), updated_at: new Date().toISOString(), season: CBHub.SEASON }; // Nov 2: one row per hero per season
+    // Nov 2: the server writes the record from the account's saved hero (supabase/trust.sql), so the page can't claim progress it doesn't have
+    await savedNow();
+    const r = await trustRpc('submit_hero_record', { p_hero_key: key, p_snapshot: row.snapshot, p_guild: row.guild_name, p_power: row.power });
+    if (r !== 'skip') return; // 'ok', 'hidden' (account under review), 'later' (throttled) or a network error
     const { error } = await supa.from('hero_records').upsert(row);
-    if (error) { if (recSetupErr(error)) REC.err = 'setup'; else console.warn('hero_records', error); }
+    if (error) { if (recSetupErr(error)) REC.err = 'setup'; else if (!/row-level security/i.test(error.message || '')) console.warn('hero_records', error); }
   }
   async function publishAllHeroes(force) { for (const k of Object.keys(profile.chars || {})) await publishHero(k, force); await pruneHeroes(); }
   // Nov 2: take down the records of heroes this account no longer has (deleted heroes stayed on the board forever)
@@ -7369,7 +7334,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // ---------- the Bazaar (east of the main street): stand in the round market, set up shop, list stash items at your price.
   // While your shop is open you stay put and others can click you to browse and buy. Sales go player to player:
   // the buyer's gold is held, the seller hands over the item and takes the gold (sellers must be online to sell).
-  const BZ = { open: false, view: null, pend: {}, done: {}, refunded: {}, MAX: 12 };
+  const BZ = { open: false, view: null, pend: {}, done: {}, refunded: {}, busy: {}, MAX: 12 };
   const bzState = () => (profile.bazaar = profile.bazaar || { title: '', items: [] });
   const bzSlim = (it) => { const o = JSON.parse(JSON.stringify(it)); for (const k of ['id', 'price', 'sold', 'test']) delete o[k]; return o; };
   const bzSend = (payload) => { if (socOn()) SOC.ch.send({ type: 'broadcast', event: 'bazaar', payload: Object.assign({ from: SOC.me }, payload) }); };
@@ -7486,7 +7451,15 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       else if (p.hc != null && !!p.hc !== myHc()) res = { kind: 'res', to: p.from, rid: p.rid, ok: false, why: 'Hardcore heroes only trade with Hardcore heroes' };
       else if (i < 0) res = { kind: 'res', to: p.from, rid: p.rid, ok: false, why: 'it was already sold' };
       else if (B.items[i].price !== p.price) res = { kind: 'res', to: p.from, rid: p.rid, ok: false, why: 'the price changed' };
-      else {
+      else if (!p.trusted) { // Nov 2: register the sale with the server first (it checks the item is in this account's saved shop), then hand it over
+        const l0 = B.items[i]; if (BZ.busy[l0.lid]) return; BZ.busy[l0.lid] = true;
+        (async () => {
+          await savedNow(); const r = await trustRpc('market_sale', { p_ref: p.rid, p_buyer: p.from, p_item: l0.it, p_price: l0.price }); delete BZ.busy[l0.lid];
+          if (r === 'done' || r === 'skip') bazaarIn(Object.assign({}, p, { trusted: true }));
+          else { const res2 = { kind: 'res', to: p.from, rid: p.rid, ok: false, why: r === 'blocked' ? 'one of these accounts is under review' : 'the sale could not be confirmed with the server' }; BZ.done[p.rid] = res2; bzSend(res2); }
+        })();
+        return;
+      } else {
         const l = B.items.splice(i, 1)[0]; profile.gold += l.price; CBHub.bump(profile, 'bazaarSales'); profile.stats.bazaarBest = Math.max(profile.stats.bazaarBest || 0, l.price); save(); renderTownBar(); // achievements: Merchant, Businessman
         res = { kind: 'res', to: p.from, rid: p.rid, ok: true, it: l.it, price: l.price };
         sysChat(`${String(p.name || nameOfUid(p.from)).slice(0, 24)} bought ${l.it.name} for ${l.price} gold.`);
@@ -7501,7 +7474,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       delete BZ.pend[p.rid]; delete BZ.refunded[p.rid];
       if (p.ok && p.it) {
         if (late) profile.gold = Math.max(0, profile.gold - (p.price || late.price)); // the answer came after we gave the gold back
-        profile.stash.unshift(Object.assign({ id: 'g' + Math.random().toString(36).slice(2, 10) }, p.it, { slot: /^Ring/.test(p.it.slot) ? 'Ring' : p.it.slot }));
+        profile.stash.unshift(Object.assign({}, p.it, { id: 'g' + Math.random().toString(36).slice(2, 10), slot: /^Ring/.test(p.it.slot) ? 'Ring' : p.it.slot }));
         save(); renderTownBar(); sysChat(`You bought ${p.it.name} for ${p.price || (pend || late).price} gold. It is in your stash.`);
         if (BZ.view && BZ.view.uid === p.from) browseShop(p.from);
       } else if (pend) { profile.gold += pend.price; save(); renderTownBar(); toast(`Couldn't buy ${pend.name}: ${p.why || 'the sale failed'}. Your gold is back.`); if (BZ.view && BZ.view.uid === p.from) browseShop(p.from); }
@@ -7536,7 +7509,11 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     profile.gold -= gold; return { stake: { gold, items } };
   }
   function giveBack(st) { if (!st) return; profile.gold += st.gold || 0; for (const it of st.items || []) profile.stash.unshift(it); }
-  function clearArena(how) { const a = arMe(); if (!a) return; if (how !== 'forfeit') giveBack(a.stake); profile.arena = null; AR.offers = {}; save(); if (typeof retrack === 'function') retrack(true); renderTownBar(); }
+  // Nov 2: a lost stake goes on the server's ledger (wager_concede) before this game lets go of it, so the winner's gain checks out
+  const concede = (a) => a && a.deal && a.deal.foe ? trustRpc('wager_concede', { p_winner: a.deal.foe, p_pid: a.pid }).catch(() => {}) : Promise.resolve();
+  function clearArena(how) { const a = arMe(); if (!a) return;
+    if (how === 'forfeit') { a.status = 'settling'; AR.offers = {}; concede(a).then(() => { if (profile.arena === a) { profile.arena = null; save(); if (typeof retrack === 'function') retrack(true); renderTownBar(); } }); return; }
+    giveBack(a.stake); profile.arena = null; AR.offers = {}; save(); if (typeof retrack === 'function') retrack(true); renderTownBar(); }
 
   // what other players see on the board (on presence)
   function arenaPresence() {
@@ -7573,7 +7550,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     sysChat(`${reviseOf ? 'Revised offer' : 'Offer'} sent to ${post.who}: ${stakeTxt(r.stake)}.`); renderArena();
   }
   function withdraw() {
-    const a = arMe(); if (!a || a.role !== 'offer' || a.status === 'dueling') return;
+    const a = arMe(); if (!a || a.role !== 'offer' || (a.status === 'dueling' || a.status === 'settling')) return;
     arSend('ar-withdraw', { to: a.to, pid: a.pid, oid: a.oid }); clearArena(); sysChat('Offer withdrawn. Your stake is back in your stash.'); renderArena();
   }
   // ----- the poster answers
@@ -7607,7 +7584,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       }
       case 'ar-withdraw': { if (a && a.role === 'post' && a.pid === p.pid && AR.offers[p.oid]) { sysChat(`${AR.offers[p.oid].name} withdrew their offer.`); delete AR.offers[p.oid]; if (a.status === 'accepted' && a.deal && a.deal.oid === p.oid) { a.status = 'open'; a.deal = null; save(); } retrack(true); renderArena(); } return; }
       case 'ar-decline': case 'ar-closed': {
-        if (!a || a.role !== 'offer' || a.pid !== p.pid || (p.oid && p.oid !== a.oid) || a.status === 'dueling') return;
+        if (!a || a.role !== 'offer' || a.pid !== p.pid || (p.oid && p.oid !== a.oid) || (a.status === 'dueling' || a.status === 'settling')) return;
         sysChat(`Your offer to ${a.post.who} was ${p.type === 'ar-closed' ? 'closed: they took the wager down' : 'declined' + (p.why && p.why !== 'declined' ? ` (${p.why})` : '')}. Your stake is back in your stash.`);
         clearArena(); renderArena(); return;
       }
@@ -7639,11 +7616,11 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   function arenaSettle(foe, how) {
     const a = arMe(); if (!a || a.status !== 'dueling' || !a.deal || !foe || foe.uid !== a.deal.foe) return null;
     const theirs = a.deal.foeStake, mine = a.stake, foeName = a.deal.foeName;
-    if (how === 'won') { giveBack(mine); profile.gold += theirs.gold || 0; for (const it of theirs.items || []) profile.stash.unshift(Object.assign({ id: 'g' + Math.random().toString(36).slice(2, 10) }, it)); profile.arena = null; }
-    else if (how === 'lost') profile.arena = null;
-    else { giveBack(mine); profile.arena = null; }
-    AR.offers = {}; save(); retrack(true);
     const c = profile.chars[heroKey]; if (c) { c.wagers = c.wagers || { w: 0, l: 0 }; if (how === 'won') c.wagers.w++; else if (how === 'lost') c.wagers.l++; }
+    if (how === 'won') { const pid = a.pid, foeUid = a.deal.foe; giveBack(mine); profile.gold += theirs.gold || 0; for (const it of theirs.items || []) profile.stash.unshift(Object.assign({}, it, { id: 'g' + Math.random().toString(36).slice(2, 10) })); profile.arena = null;
+      AR.offers = {}; retrack(true); trustRpc('wager_claim', { p_loser: foeUid, p_pid: pid }).catch(() => {}).then(() => save()); } // the ledger first, then the save that holds the winnings
+    else if (how === 'lost') { a.status = 'settling'; AR.offers = {}; concede(a).then(() => { if (profile.arena === a) { profile.arena = null; save(); retrack(true); } }); }
+    else { giveBack(mine); profile.arena = null; AR.offers = {}; save(); retrack(true); }
     sysChat(how === 'won' ? `You won the wager against ${foeName}: ${stakeTxt(theirs)} is yours.` : how === 'lost' ? `You lost the wager to ${foeName}: ${stakeTxt(mine)} is theirs.` : `The wager against ${foeName} is a draw: both stakes go back.`);
     return `<div class="arsettle ${how}"><b>${how === 'won' ? 'Wager won' : how === 'lost' ? 'Wager lost' : 'Wager drawn'}</b><p>${how === 'won' ? `You take <b>${esc(stakeTxt(theirs))}</b> and keep your own stake. Items went to your stash.` : how === 'lost' ? `${esc(foeName)} takes <b>${esc(stakeTxt(mine))}</b>.` : 'Both stakes go back to their owners.'}</p></div>`;
   }
@@ -7652,11 +7629,11 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     const a = arMe(); if (!a) return;
     if (a.status === 'dueling' && !cb) { sysChat('You left a wager duel before it ended: your stake is forfeit.'); clearArena('forfeit'); return; }
     if (!socOn()) return;
-    if (a.role === 'offer' && a.status !== 'dueling') { const st = SOC.online.get(a.to); if (!st || !st.arena || st.arena.pid !== a.pid) { if (a.status === 'accepted') return; AR.gone[a.pid] = (AR.gone[a.pid] || 0) + 1; if (AR.gone[a.pid] >= 3) { sysChat(`${a.post.who}'s wager is gone from the board. Your stake is back in your stash.`); clearArena(); renderArena(); } } else AR.gone[a.pid] = 0; }
+    if (a.role === 'offer' && a.status !== 'dueling' && a.status !== 'settling') { const st = SOC.online.get(a.to); if (!st || !st.arena || st.arena.pid !== a.pid) { if (a.status === 'accepted') return; AR.gone[a.pid] = (AR.gone[a.pid] || 0) + 1; if (AR.gone[a.pid] >= 3) { sysChat(`${a.post.who}'s wager is gone from the board. Your stake is back in your stash.`); clearArena(); renderArena(); } } else AR.gone[a.pid] = 0; }
     if (a.role === 'post') { let ch = false; for (const o of Object.values(AR.offers)) if (!SOC.online.has(o.from)) { delete AR.offers[o.oid]; ch = true; } if (ch) { retrack(true); renderArena(); } }
   }, 10000);
   // a wager from a session that ended (closed tab) can't still be open: give the stake back, unless the duel had started
-  setTimeout(() => { const a = arMe(); if (!a) return; if (a.status === 'dueling') { profile.arena = null; save(); sysChat('A wager duel was left unfinished: its stake is forfeit.'); } else if (Date.now() - (a.at || 0) > 5000) { giveBack(a.stake); profile.arena = null; save(); sysChat('Your Arena wager from last time was closed. The stake is back in your stash.'); } }, 1500);
+  setTimeout(() => { const a = arMe(); if (!a) return; if (a.status === 'dueling' || a.status === 'settling') { concede(a).then(() => { profile.arena = null; save(); }); sysChat('A wager duel was left unfinished: its stake is forfeit.'); } else if (Date.now() - (a.at || 0) > 5000) { giveBack(a.stake); profile.arena = null; save(); sysChat('Your Arena wager from last time was closed. The stake is back in your stash.'); } }, 1500);
 
   // ----- the board
   function stakeHtml(st, label) {
@@ -7731,6 +7708,9 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Change', 'Trades, Bazaar sales and Arena wagers are now confirmed by the server before anything changes hands. If one fails, nothing moves and you are told why.'],
+      ['Change', 'The Hall of Records is written by the server from your saved heroes, so every name on the board earned its place.'],
+      ['Change', 'Cleaner look: the old classic UI and battlefield toggles are gone, and the top bar says where you are.'],
       ['Feature', 'Emberwatch is a city now: a walled city with Ember Square and its eternal flame in the middle, Market Row, the Old Market, the Grand Bazaar, a Colosseum five times the size of the old ring, the Wagon Yard at the South Gate, the Barracks and training yard (six dummies), Guild Row, the Scholars\' Quarter, the Keep, the Cathedral and the River Ash. Every townsperson has moved into their own building. You log in at Ember Square.'],
       ['Feature', 'The Bank: Banker Hollis on Market Row keeps a vault of 120 more item slots for your heroes (Hardcore heroes have their own).'],
       ['Feature', 'City map in the corner: see where everyone is, and click anywhere on it to walk there.'],
@@ -10690,7 +10670,7 @@ async function exportTravelPack(){
   `;
   document.head.appendChild(css);
   const KEY = 'cb-ui';
-  const isOn = () => { try { return localStorage.getItem(KEY) !== 'classic'; } catch (e) { return true; } };
+  const isOn = () => true; // Nov 2: the classic look is retired; the Gothic Ink interface is the game's look
   const apply = () => document.body.classList.toggle('inkui', isOn());
   window.CB_UI = { on: isOn, set(on) { try { localStorage.setItem(KEY, on ? 'ink' : 'classic'); } catch (e) {} apply(); } };
   if (document.body) apply(); else document.addEventListener('DOMContentLoaded', apply);
@@ -10877,7 +10857,7 @@ function draw(canvas,options={}){
 
 // which painting and tint each map uses
 const MAPLOOK = { physical: [0, null], fire: [3, ['#b2502a', .32]], frost: [4, ['#5b86a8', .3]], nature: [1, ['#5f8a3c', .22]], arcane: [2, ['#7a4fb0', .3]], shadow: [2, ['#4a3a5a', .35]] };
-const BF = { on: (() => { try { return localStorage.getItem('cb-bf') !== 'off'; } catch (e) { return true; } })(), key: '', w: 0, h: 0 };
+const BF = { on: true, key: '', w: 0, h: 0 }; // Nov 2: the side-by-side classic stage is retired
 function sceneFor(stage, map) {
   let cv = stage.querySelector('#bfScene'); if (!cv) { cv = document.createElement('canvas'); cv.id = 'bfScene'; cv.setAttribute('aria-hidden', 'true'); stage.prepend(cv); }
   const w = stage.clientWidth, h = stage.clientHeight, key = map + ':' + w + 'x' + h;
@@ -11316,10 +11296,11 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if (ok && inv && inv.hc != null && !!inv.hc !== myHc()) { toast(inv.hc ? `${inv.name} is playing a Hardcore hero. Hardcore heroes can only trade with other Hardcore heroes.` : 'Your hero is Hardcore: Hardcore heroes can only trade with other Hardcore heroes.'); ok = false; }
     if (ok && (run || cb || NET.s || TR.s)) { toast('You can only trade from Emberwatch, one trade at a time.'); ok = false; }
     if (ok && hcBlock(from, 'trade')) ok = false;
-    netSend('tr-ans', { to: from, ok });
-    if (ok) openTrade(from);
+    const n = Math.random().toString(36).slice(2, 10); // each trade gets its own id on the server's ledger
+    netSend('tr-ans', { to: from, ok, n });
+    if (ok) openTrade(from, n);
   }
-  function openTrade(uid) { TR.s = { tid: [SOC.me, uid].sort().join('-'), with: uid, name: nameOfUid(uid), mine: [], myGold: 0, theirs: [], theirGold: 0, myAcc: null, theirAcc: null }; renderTrade(); }
+  function openTrade(uid, n) { TR.s = { tid: [SOC.me, uid].sort().join('-') + '-' + (n || ''), with: uid, name: nameOfUid(uid), mine: [], myGold: 0, theirs: [], theirGold: 0, myAcc: null, theirAcc: null }; renderTrade(); }
   function sendOffer() { const S = TR.s; S.myAcc = null; S.theirAcc = null; netSend('tr-offer', { to: S.with, items: myOffer(), gold: S.myGold }); renderTrade(); }
   function tradeAccept() {
     const S = TR.s; if (!S) return;
@@ -11328,13 +11309,29 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     S.myAcc = tradeHash(); netSend('tr-acc', { to: S.with, hash: S.myAcc });
     if (S.theirAcc === S.myAcc) doTrade(); else renderTrade();
   }
-  function doTrade() {
+  // Nov 2: both games first register the trade with the server, which checks each side owns what it hands over (in its saved
+  // stash) and writes it to the ledger. Only when the server says both sides agreed does either game move anything.
+  async function doTrade() {
     const S = TR.s; if (!S || S.done) return; S.done = true;
     const mine = myOffer(), ids = new Set(mine.map(x => x.id));
+    renderTrade(); const st = document.querySelector('#modalBox .trst'); if (st) st.textContent = 'Confirming the trade with the server...';
+    await savedNow();
+    let res = 'error';
+    for (let i = 0; i < 16; i++) {
+      res = await trustRpc('trade_submit', { p_tid: S.tid, p_partner: S.with, p_give: mine, p_gold: S.myGold || 0, p_get: S.theirs, p_get_gold: S.theirGold || 0 });
+      if (res !== 'waiting') break; await new Promise(r => setTimeout(r, 1200));
+      if (TR.s !== S) break; // cancelled while waiting
+    }
+    if (res === 'waiting') res = await trustRpc('trade_cancel', { p_tid: S.tid }); // gave up: take our side back, unless the other game confirmed just now
+    if (res !== 'done' && res !== 'skip') {
+      const why = { cancelled: `${S.name}'s game didn't confirm in time`, 'not saved': 'your items or gold haven\'t reached your online save yet; try again in a moment', blocked: 'one of these accounts is under review', mismatch: 'the two offers didn\'t match', 'not enough gold': 'not enough gold in your online save' }[res] || 'the server could not be reached';
+      if (TR.s === S) { netSend('tr-cancel', { to: S.with }); TR.s = null; closeModal(); toast(`Trade cancelled: ${why}. Nothing changed hands.`); } return;
+    }
+    if (TR.s !== S && res === 'skip') return;
     profile.stash = profile.stash.filter(x => !ids.has(x.id));
     profile.gold = Math.max(0, profile.gold - (S.myGold || 0)) + (S.theirGold || 0);
     for (const it of S.theirs) profile.stash.unshift(Object.assign({}, it, { id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8) }));
-    save(); TR.s = null; closeModal(); renderHub();
+    save(); if (TR.s === S) { TR.s = null; closeModal(); } renderHub();
     const got = S.theirs.length + (S.theirGold ? 1 : 0), gave = mine.length + (S.myGold ? 1 : 0);
     sysChat(`Trade with ${S.name} complete: you gave ${mine.length} item${mine.length === 1 ? '' : 's'}${S.myGold ? ' and ' + S.myGold + ' gold' : ''}, and got ${S.theirs.length} item${S.theirs.length === 1 ? '' : 's'}${S.theirGold ? ' and ' + S.theirGold + ' gold' : ''}.`);
     toast(`Trade complete. ${got || gave ? 'New items are in your stash.' : ''}`);
@@ -11378,10 +11375,10 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       case 'insp-req': { const ch = inspectCard(); if (ch) netSend('insp', { to: p.from, ch }); return; }
       case 'insp': { if (INS.waiting !== p.from) return; INS.waiting = null; showInspect(p.ch); return; }
       case 'tr-ask': { if (TR.inv.some(i => i.from === p.from)) return; TR.inv.push({ from: p.from, name: p.name, hc: p.hc }); sysChat(`${p.name} wants to trade with you.`); renderSocial(); return; }
-      case 'tr-ans': { if (TR.asked !== p.from) return; TR.asked = null; if (!p.ok) { sysChat(`${nameOfUid(p.from)} declined the trade.`); return; } if (TR.s || run || cb) { netSend('tr-cancel', { to: p.from }); return; } openTrade(p.from); return; }
+      case 'tr-ans': { if (TR.asked !== p.from) return; TR.asked = null; if (!p.ok) { sysChat(`${nameOfUid(p.from)} declined the trade.`); return; } if (TR.s || run || cb) { netSend('tr-cancel', { to: p.from }); return; } openTrade(p.from, p.n); return; }
       case 'tr-offer': { const S = TR.s; if (!S || S.with !== p.from) return; S.theirs = (p.items || []).slice(0, 12); S.theirGold = Math.max(0, Math.floor(p.gold || 0)); S.myAcc = null; S.theirAcc = null; renderTrade(); return; }
       case 'tr-acc': { const S = TR.s; if (!S || S.with !== p.from) return; S.theirAcc = p.hash; if (S.myAcc && S.myAcc === p.hash) doTrade(); else renderTrade(); return; }
-      case 'tr-cancel': { if (TR.s && TR.s.with === p.from) { TR.s = null; closeModal(); sysChat(`${nameOfUid(p.from)} cancelled the trade.`); } TR.inv = TR.inv.filter(i => i.from !== p.from); renderSocial(); return; }
+      case 'tr-cancel': { if (TR.s && TR.s.with === p.from && !TR.s.done) { TR.s = null; closeModal(); sysChat(`${nameOfUid(p.from)} cancelled the trade.`); } TR.inv = TR.inv.filter(i => i.from !== p.from); renderSocial(); return; }
     }
   }
 
@@ -12219,8 +12216,6 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       ${typeof socOn === 'function' && socOn() ? `<button class="btn" id="mnNet">Connection details (co-op)</button>` : ''}
       <h3 style="font-size:20px;margin-top:6px">Settings</h3>
       <label class="toggle"><input type="checkbox" id="setFast" ${settings.fast ? 'checked' : ''}> Fast enemy turns</label>
-      ${window.CB_UI ? `<label class="toggle"><input type="checkbox" id="setInkUi" ${CB_UI.on() ? 'checked' : ''}> Gothic Ink interface (off = classic look)</label>` : ''}
-      ${window.CB_BF ? `<label class="toggle"><input type="checkbox" id="setBf" ${CB_BF.on ? 'checked' : ''}> Battlefield view in fights (off = classic side-by-side)</label>` : ''}
     </div>`);
     $('mClose').onclick = closeModal;
     $('mnGloss').onclick = () => openGlossary();
@@ -12228,8 +12223,6 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if ($('mnAch')) $('mnAch').onclick = () => openAchievements();
     if ($('mnTut')) $('mnTut').onclick = () => { closeModal(); tutStart(); };
     $('setFast').onchange = (e) => { settings.fast = e.target.checked; saveSettings(); };
-    if ($('setInkUi')) $('setInkUi').onchange = (e) => CB_UI.set(e.target.checked);
-    if ($('setBf')) $('setBf').onchange = (e) => { CB_BF.set(e.target.checked); if (cb) render(); };
     if ($('mnLeave')) $('mnLeave').onclick = () => {
       modal(`<h2 class="loss">Leave this run?</h2><p>You go back to Emberwatch now. Everything in your loot sack (items, cards and gold found this run) is lost. Gear you are wearing, your deck and any merchant orders are kept.</p><div class="row"><button class="btn" id="mnConfirm">Leave and lose the sack</button><button class="btn primary" id="mClose">Keep playing</button></div>`);
       $('mClose').onclick = closeModal; $('mnConfirm').onclick = leaveRun;
@@ -12274,7 +12267,9 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     slot.hidden = !inFight; $('scrCombat').classList.toggle('withchat', inFight);
     if (typeof renderChat === 'function') renderChat();
   }
-  function show(which) { if (which !== 'start' && typeof BZ !== 'undefined' && BZ.open) closeShop(true); placeChat(which); if (typeof retrack === 'function') setTimeout(() => { try { retrack(); } catch (e) {} }, 0); hidePeeks(); $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); retrack(true); }
+  // Nov 2: the line under the logo says where you are
+  function brandLine(which) { const el = $('brandLine'); if (!el) return; el.textContent = which === 'title' ? 'Choose your hero' : which === 'start' ? 'Emberwatch' : run ? `${run.mapName || 'The roads'} +${run.level || 0}` : cb && cb.duel ? 'The Colosseum' : cb && cb.raid ? 'Raid' : cb && cb.practice ? 'Training yard' : 'Emberwatch'; }
+  function show(which) { try { brandLine(which); } catch (e) {} if (which !== 'start' && typeof BZ !== 'undefined' && BZ.open) closeShop(true); placeChat(which); if (typeof retrack === 'function') setTimeout(() => { try { retrack(); } catch (e) {} }, 0); hidePeeks(); $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); retrack(true); }
 
   // ---------- map
   const RH = 58, CW = 78, PADX = 40, PADY = 34;
@@ -12463,7 +12458,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       <p><b>Item bases it drops</b> (one picked per roll; stats roll at map +${lvl}):</p><div class="cardlist">${e.pool.map(b => { const bb = G.bases.find(x => x.name === b); return `<div class="cardrow" style="--rc:var(--line)"><span class="n"></span><b>${esc(b)}</b><span class="cst">${esc(bb ? bb.label : '')}</span></div>`; }).join('')}</div>` : '';
     const cards = (e.loot || []).filter(x => x.type === 'Card' || x.type === 'Codex');
     const cardHtml = cards.length ? `<p><b>Cards and codexes</b> (each rolls on its own; Gold cards only drop here):</p><div class="cardlist">${cards.map(x => `<div class="cardrow" style="--rc:${RC[x.rarity] || 'var(--line)'}"><span class="n">${x.type === 'Codex' ? +CB.bossCodexPct(e).toFixed(1) : x.pct}%</span><b>${esc(x.item)} <span class="muted">${esc(x.cls)} ${esc(x.rarity)} ${x.type === 'Codex' ? 'codex' : ''}</span></b><span class="cst"></span><span class="tx">${esc(x.note || '')}</span></div>`).join('')}</div>` : '';
-    modal(`<h2>${esc(e.name)}: loot</h2><p><b>Gold:</b> ${Math.round(e.gold[0] * gm)} to ${Math.round(e.gold[1] * gm)} per kill.</p>${gear}${cardHtml}<p><b>Prototype card drops:</b> ${{ 1: '30% per kill (mostly White)', 2: '40% per kill', 3: '50% per kill', Elite: 'always 1 card, Green or better (10% Gold)', Boss: '2 cards, Blue or Gold' }[e.tier]}, from your class's implemented cards. The named cards above come from the Map 1 design and arrive when more cards are built.</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
+    modal(`<h2>${esc(e.name)}: loot</h2><p><b>Gold:</b> ${Math.round(e.gold[0] * gm)} to ${Math.round(e.gold[1] * gm)} per kill.</p>${gear}${cardHtml}<p><b>Card drops:</b> ${{ 1: '30% per kill (mostly White)', 2: '40% per kill', 3: '50% per kill', Elite: 'always 1 card, Green or better (10% Gold)', Boss: '2 cards, Blue or Gold' }[e.tier]}, from your class's implemented cards. The named cards above come from the Map 1 design and arrive when more cards are built.</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     $('mClose').onclick = closeModal;
   }
   function deckModal(key) {
