@@ -1069,7 +1069,7 @@ class Combat {
     let cost = d.cost + (p.turn.costDelta || 0) + (d.type === 'Attack' ? p.turn.costAttack || 0 : 0) + (d.type === 'Skill' ? p.turn.costSkill || 0 : 0) + (p.turn.nextCost || 0);
     const tw = p.turn.twice; if (tw && (tw.type === 'any' || tw.type === d.type)) cost += tw.extra || 0;
     if (p.powers && p.powers.length) cost -= this.pwSum(p, 'costLess', d);
-    cost = cost * (p.turn.costX || 1) * (p.costX || 1) * (1 + 0.05 * (p.exposure || 0));
+    cost = cost * (p.turn.costX || 1) * (p.costX || 1) * (1 + 0.05 * Math.min(10, p.exposure || 0)); // Nov 2: Exposure tops out at +50%
     return Math.max(0, Math.round(cost));
   }
   // take mana from an enemy: what it holds now, then what it would regenerate for its next turn (its mana can go below 0 until then)
@@ -1112,7 +1112,7 @@ class Combat {
     n += this.rkCount();
     if (e.isPlayer) { let k = 0; for (; k < n && e.hand.length; k++) { const [c] = e.hand.splice(Math.floor(this.rng() * e.hand.length), 1); e.exhaust.push(c); this.say('player', `${e.name}'s ${C[c.key].name} is exhausted.`); } e.lostRound = (e.lostRound || 0) + k; e.exhaustedTotal = (e.exhaustedTotal || 0) + k; return k; } let k = 0; for (; k < n && e.hand.length; k++) { const [c] = e.hand.splice(Math.floor(this.rng() * e.hand.length), 1); this.say('player', `${e.name}'s ${c.name} is exhausted.`); } e.lostRound = (e.lostRound || 0) + k; e.exhaustedTotal = (e.exhaustedTotal || 0) + k; if (k) { this.saboteur(e); this.planEnemy(e, true); } return k; }
   saboteur(e) { const q = this.player; if (!q || !q.isPlayer || e.isPlayer || !this.has(q, 'codex_saboteur') || q.sabRound === this.round) return; q.sabRound = this.round; this.eStatus(e, 'dazed', 1, 'discard'); }
-  eCost(e, c) { if (c.cost >= 999) return 999; return Math.round(c.cost * (1 + (e.exposure || 0) * 0.05) * (e.costX || 1)) + (e.costUp || 0); }
+  eCost(e, c) { if (c.cost >= 999) return 999; return Math.round(c.cost * (1 + Math.min(10, e.exposure || 0) * 0.05) * (e.costX || 1)) + (e.costUp || 0); } // Nov 2: Exposure tops out at +50%
   eBuffKeys(e) { return ['strength', 'strTurn', 'thorns', 'parryBack', 'nextBonus'].filter(k => (e[k] || 0) > 0); }
   removeBuffs(e, n) { const ks = this.eBuffKeys(e).sort((a, b) => e[b] - e[a]).slice(0, n); for (const k of ks) e[k] = 0; if (ks.length) this.say('player', `${e.name} loses ${ks.length} buff${ks.length > 1 ? 's' : ''}.`); return ks.length; }
   stealBuff(p, e) { const k = this.eBuffKeys(e).sort((a, b) => e[b] - e[a])[0]; if (!k) { this.say('player', `${e.name} has no buffs to take.`); return 0; } const v = e[k]; e[k] = 0; if (k === 'strength' || k === 'strTurn') p.strCombat += v; else if (k === 'thorns') p.thorns += v; else this.gainDef(v); this.say('player', `${this.who(p)} steal${this.partySize > 1 ? 's' : ''} ${e.name}'s ${k === 'strTurn' ? 'Strength' : k} (${v}).`); return 1; }
@@ -1225,7 +1225,7 @@ class Combat {
     let defM = 1 + (p.dexterity || 0) / 100; if (T.defX || this.hasTimed(p, 'defX')) defM *= 2;
     if (pow) { try { defM *= this.pwProd(p, 'defMult') * this.pwProd(p, 'defMultFn'); } catch (x) {} }
     for (const [st, W] of [['poison', 'Poison'], ['bleed', 'Bleed'], ['dread', 'Dread'], ['rot', 'Rot']]) if (new RegExp(W).test(t)) {
-      let pm = (1 + (st === 'dread' || st === 'rot' ? p.intelligence + (p.intTurn || 0) : p.strength + p.strTurn + p.strCombat) / 100) * (1 + (p.spirit || 0) / 100), pp = 0;
+      let pm = (1 + (st === 'dread' || st === 'rot' ? p.intelligence + (p.intTurn || 0) : p.strength + p.strTurn + p.strCombat) / 100), pp = 0; // Nov 2: Spirit no longer boosts damage over time
       if (pow) { try { pm *= this.pwKey(p, 'dotMult', st); pp = this.pwKey(p, 'dotPlus', st, 'sum') || 0; } catch (x) {} }
       if (st === 'bleed' && p.bleedX) pm *= p.bleedX;
       t = t.replace(new RegExp('\\b(\\d+) ' + W + '\\b', 'g'), (m, n) => `${mark(+n, Math.round(+n * pm) + pp)} ${W}`);
@@ -1451,7 +1451,7 @@ class Combat {
   applyDot(e, key, n) {
     if (!e || e.hp <= 0) return;
     const q = this.player, strMult = (key === 'poison' || key === 'bleed') && q.isPlayer ? 1 + (q.strength + q.strTurn + q.strCombat) / 100 : (key === 'dread' || key === 'rot') && q.isPlayer ? 1 + (q.intelligence + (q.intTurn || 0)) / 100 : 1; // Nov 1: Poison and Bleed scale with Strength (50 Strength: 10 Bleed becomes 15); the Warlock's Dread and Rot with Intelligence
-    const v = Math.round(n * strMult * (1 + this.player.spirit / 100) * this.pwKey(this.player, 'dotMult', key) * (key === 'bleed' && this.player.bleedX ? this.player.bleedX : 1)) + this.pwKey(this.player, 'dotPlus', key, 'sum');
+    const v = Math.round(n * strMult * this.pwKey(this.player, 'dotMult', key) * (key === 'bleed' && this.player.bleedX ? this.player.bleedX : 1)) + this.pwKey(this.player, 'dotPlus', key, 'sum');
     if (key === 'rot') { this.fxPush({ t: 'apply', d: e.id, key: 'rot' }); const before = e.rot || 0, w = Math.round(v * this.rkm('rot')); this.addRot(e, w, 4, this.player); if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, w, before); this.say('player', `${e.name} gains ${w} Rot over 4 turns (Rot ${e.rot}).`); return; }
     const before = e[key] || 0; e[key] = before + v; e[key + 'By'] = this.player.id; this.fxPush({ t: 'apply', d: e.id, key });
     if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, v, before);
@@ -1645,7 +1645,7 @@ class Combat {
     const W = this.partySize > 1 ? p.name : 'You', is = this.partySize > 1 ? 'is' : 'are', gain = this.partySize > 1 ? 'gains' : 'gain';
     const txt = { weak: `${W} ${is} Weak ${p.weak}: ${p.weak}% less damage dealt.`, vulnerable: `${W} ${is} Vulnerable ${p.vulnerable}: ${p.vulnerable}% more damage taken.`, bleed: `${W} ${gain} ${n} Bleed (now ${p.bleed}).`, slow: `${W} ${is} Slowed ${p.slow}.`,
       burn: `${W} ${gain} ${n} Burn (now ${p.burn}).`, poison: `${W} ${gain} ${n} Poison (now ${p.poison}).`, chill: `${W} ${is} Chilled ${p.chill} (Freezes at 10).`,
-      unwarded: `${W} ${is} Unwarded ${p.unwarded}: +${p.unwarded}% magic damage taken.`, exposure: `${W} ${gain} ${n} Exposure: cards cost ${p.exposure * 5}% more.` };
+      unwarded: `${W} ${is} Unwarded ${p.unwarded}: +${p.unwarded}% magic damage taken.`, exposure: `${W} ${gain} ${n} Exposure: cards cost ${Math.min(10, p.exposure) * 5}% more.` };
     this.say('enemy', txt[key]);
   }
 

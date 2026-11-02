@@ -67,7 +67,7 @@
   function gHasCodex(key) { return profile.stash.some(it => it.slot === 'Codex' && it.codex === key) || Object.values(profile.chars).some(c => (c.gear || []).some(g => g.slot === 'Codex' && g.codex === key)); }
   // gear stats to look for, read from the build's cards (and the codex passive)
   const G_WHY = { Strength: 'your Attacks hit harder', Intelligence: 'your damaging Skills hit harder', Dexterity: 'more Block/Barrier/Dodge/Absorb from every card', 'Defense Gain': 'more defense from everything',
-    Spirit: 'bigger heals and bigger damage-over-time stacks', 'Bleed Chance': 'free Bleed on your Attacks', Thorns: 'attackers take damage back', 'Crit Chance': 'more crits', 'Crit Damage': 'harder crits',
+    Spirit: 'bigger heals', 'Bleed Chance': 'free Bleed on your Attacks', Thorns: 'attackers take damage back', 'Crit Chance': 'more crits', 'Crit Damage': 'harder crits',
     'Multi-hit Chance': 'cheap Attacks hit twice', 'Multicast Chance': 'Skills cast again for free', Stamina: 'more HP to spend', Lifesteal: 'heal from your hits', Initiative: 'act before the enemy' };
   function gStats(d) {
     const w = {}, el = {}; const add = (k, v) => { w[k] = (w[k] || 0) + v; };
@@ -75,9 +75,8 @@
       if (tg.dmg && c.type === 'Attack') add('Strength', n); if (tg.dmg && c.type === 'Skill') add('Intelligence', n);
       if (tg.def || /\bgain \d+ (block|barrier|dodge|parry|absorb)/i.test(t)) add('Dexterity', n);
       if (tg.heal || /\bheal/i.test(t)) add('Spirit', 0.6 * n);
-      if (/(apply|applies) \d+ (poison|bleed|burn|dread|rot)|\b(poison|bleed|dread|rot)\b/i.test(t)) add('Spirit', 0.7 * n);
       if (/bleed/i.test(t) && c.type === 'Attack') add('Bleed Chance', 0.6 * n);
-      if (/\b(dread|rot)\b/i.test(t)) add('Intelligence', 0.7 * n); // Dread and Rot scale with Intelligence (and Spirit)
+      if (/\b(dread|rot)\b/i.test(t)) add('Intelligence', 0.7 * n); // Dread and Rot scale with Intelligence
       if (/thorns|retaliat/i.test(t)) add('Thorns', n);
       if (/\bcrit/i.test(t)) { add('Crit Chance', n); add('Crit Damage', 0.8 * n); }
       if (c.type === 'Attack' && (c.cost || 0) <= 10 && tg.dmg) add('Multi-hit Chance', 0.35 * n);
@@ -87,7 +86,7 @@
     }
     const cx = CB.CODEX_BY_KEY[d.codex] || {}; const ct = cx.text || '';
     if (/crit/i.test(ct)) { add('Crit Chance', 4); add('Crit Damage', 3); } if (/Block you gain|Barrier you gain/i.test(ct)) add('Defense Gain', 4);
-    if (/Dread|Poison|Bleed/i.test(ct)) add('Spirit', 3); if (/heal/i.test(ct)) add('Spirit', 2);
+    if (/heal/i.test(ct)) add('Spirit', 2);
     if (w.Dexterity >= 8) add('Defense Gain', w.Dexterity * 0.35);
     delete w.Stamina; // always listed at the end
     const top = Object.entries(w).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k]) => k);
