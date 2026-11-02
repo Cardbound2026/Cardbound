@@ -1,6 +1,10 @@
   // ---------- What's new: the changelog (button bottom-right) and the new-version warning
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
+    { date: '2026-11-02', items: [
+      ['Feature', 'Heroes wear their gear: your hero is now drawn from what you have equipped, in fights, in town and on the character sheet. Every helm, chest, shoulder, glove, belt, leg, boot, cloak, weapon and off-hand shows, each map\'s gear has its own look and colours, and rarity shows on the trim.'],
+      ['Feature', 'Animations in fights: heroes swing their weapon when you play an Attack, spin when an Attack hits every enemy, cast spells and heals, brace for Block cards and flinch when hit.'],
+    ] },
     { date: '2026-11-01', items: [
       ['Change', 'Merchant Dace in town now stocks gear from the map and level of the last boss you killed, not the last map you entered. Stock rolled from a map you never beat was replaced.'],
       ['Change', 'Merchants on the run map only appear from row 5 on (the first tier 2 row).'],

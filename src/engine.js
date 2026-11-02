@@ -945,6 +945,7 @@ class Combat {
       else deck.push({ uid: 'c' + (this._uid++), key: x.key, rank: x.rank || 0 });
     }
     p.drawPile = shuffle(deck, this.rng);
+    p.look = (spec.gear || STARTER_GEAR[spec.cls] || []).filter(Boolean).map(g => ({ slot: g.slot, name: g.name, arch: g.arch, rarity: g.rarity })); // what the hero wears, for the Forge sprite
     // Blood Debt only matters for the Bloodbound codex and the cards that spend or grow it
     p.debtUser = !!(cxItem && cxItem.codex === 'bloodbound') || deck.some(c => DEBT_CARDS.includes(c.key));
     return p;
@@ -1657,6 +1658,7 @@ class Combat {
     const storm = d.key === 'shuriken' && this.has(p, 'shuriken_storm');
     const endless = d.key === 'shuriken' && this.hasTimed(p, 'endless') ? 2 : 1; times *= endless;
     const twin = T.twin && d.type === 'Attack' && (d.dtype || 'Physical') === 'Physical'; if (twin) { T.twin = false; times++; }
+    if (p.isPlayer) { const q = this.animQ = this.animQ || []; if (q.length < 20) q.push({ id: p.id, card: d.key, type: d.type, dtype: d.dtype || (d.type === 'Attack' ? 'Physical' : null), aoe: d.target === 'all' || !!d.tags.aoe, dmg: !!d.tags.dmg, def: !!d.tags.def, heal: !!d.tags.heal, tgt: tgt ? tgt.id : null }); } // the fight screen's animations (src/forge.js)
     for (let i = 0; i < times && !this.over; i++) {
       if (storm) { for (const e of this.alive()) if (!this.over) d.play(this, e); continue; }
       if (tgt && tgt.hp <= 0 && d.target !== 'ally') tgt = this.alive()[0]; if (d.target === 'enemy' && !tgt) break;

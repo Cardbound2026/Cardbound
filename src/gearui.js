@@ -121,7 +121,7 @@
     const s = CB.sumGear(ch.gear), res = Object.entries(s.resist || {}).filter(x => x[1]).map(([k, v]) => `${k} ${v}%`).join(', ') || 'none';
     return `<div class="doll">
       <div class="dcol">${DOLL_L.map(slot).join('')}</div>
-      <div class="dmid"><canvas class="dportrait" width="220" height="250" data-cls="${cls}" data-rc="${esc(JSON.stringify(rcOf(ch)))}"></canvas>
+      <div class="dmid"><canvas class="dportrait" width="220" height="250" data-cls="${cls}" data-rc="${esc(JSON.stringify(rcOf(ch)))}" data-gear="${esc(JSON.stringify((ch.gear || []).map(g => ({ slot: g.slot, name: g.name, arch: g.arch, rarity: g.rarity }))))}"></canvas>
         <div class="dname" style="color:${CC[cls]}">${esc(ch.name || cls)}</div><div class="muted" style="font-size:13px">${cls}${o.acct ? ' &middot; ' + esc(o.acct) : ''}</div>
         <div class="dpow"><span><b>${CBHub.powerLevel(ch)}</b>Power</span><span><b>${CBHub.gearScore(ch)}</b>Gear</span><span><b>${CB.deckLevel(ch.deck)}</b>Deck</span></div></div>
       <div class="dcol">${DOLL_R.map(slot).join('')}</div>
@@ -131,12 +131,14 @@
         <dt>Initiative</dt><dd>${s.init}</dd><dt>Resist</dt><dd>${res}</dd>${s.luck ? `<dt>Luck</dt><dd>${s.luck}</dd>` : ''}${ch.duels ? `<dt>Duels</dt><dd>${ch.duels.w} won, ${ch.duels.l} lost</dd>` : ''}</dl>
     </div>`;
   }
+  window.addEventListener('forge-ready', () => paintPortraits()); // a Forge sprite finished drawing: repaint the dolls with it
   function paintPortraits(root) {
     (root || document).querySelectorAll('canvas.dportrait').forEach(cv => {
       const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height);
       const bg = g.createRadialGradient(110, 120, 10, 110, 130, 140); bg.addColorStop(0, '#3a2c1e'); bg.addColorStop(1, '#120e0b'); g.fillStyle = bg; g.fillRect(0, 0, cv.width, cv.height);
       let rc = {}; try { rc = JSON.parse(cv.dataset.rc); } catch (e) {}
-      drawChar(g, 110, 232, 'down', 0, palFor(cv.dataset.cls, rc), 4.2, 0);
+      let gear = null; try { gear = JSON.parse(cv.dataset.gear || 'null'); } catch (e) {}
+      drawChar(g, 110, 232, 'down', 0, Object.assign(palFor(cv.dataset.cls, rc), gear ? { forge: { cls: cv.dataset.cls, gear, who: 'doll' } } : {}), 4.2, 0);
     });
   }
   // own sheet: click a slot to see the item (and unequip) or, if empty, to equip something from the stash

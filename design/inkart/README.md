@@ -36,3 +36,15 @@ The fight scene: a painted road and ruined gate (the PAPERFORGE v0.5 "Hollow Mar
 map), heroes on the left diagonal, foes on the right, nameplates outside and intents over heads. Players can turn it off in
 Menu > Settings ("Battlefield view"). To remove it: delete `src/battlefield.js` (the build skips it); optionally remove the
 `/*BATTLEFIELD*/` line in src/template.html, its `.replace` in build.js, the `CB_BF.layout` call in render() and the `setBf` checkbox.
+
+## The Forge (live hero sprites, src/forge.js + src/forge_engine.js)
+Heroes are no longer still pictures: they are drawn live from the gear they wear, with PAPERFORGE's body rig and animation clips.
+- `src/forge_engine.js` is GENERATED: PAPERFORGE's drawing core without its editor. Rebuild it after changing paperforge.html:
+  `node design/inkart/build_forge.js` (then `node build.js`).
+- `src/forge.js` is the game side: `CLASS_LOOK` (face, hair per class), `BASE` (the plain clothes worn in an empty slot), `ARCH`
+  (every game item archetype -> a sprite piece per map, Broken March to Hollow Crypts), colours (map tint for metal / cloth, rarity on the trim),
+  frame drawing and caching (once per gear set, spread over idle time), the fight-screen player (idle, attack, twirl, cast, guard, hit),
+  and the town walker / character-sheet doll.
+- Fights: the engine queues one entry per card a hero plays (`cb.animQ`); the screen turns it into a clip (Attack: swing, or twirl if it
+  hits every enemy; damaging or healing Skill: cast; Block Skill: guard). Losing HP plays the flinch.
+- To remove: delete both files; heroes fall back to the ink pictures.
