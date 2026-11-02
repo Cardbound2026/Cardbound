@@ -1,7 +1,7 @@
   // ---------- Hall of Records (Nov 1): the notice board in town (and Menu). Tables: hero_records, raid_kills (supabase/records.sql)
   // Every hero publishes a small public snapshot (progress per map, gear, deck, codex talents) when they come home from a run.
   // Raid leaders record each raid boss kill with their guild, level and number of rounds.
-  const REC = { tab: 'heroes', sort: 'progress', cls: 'All', heroes: null, kills: null, err: null, at: 0, busy: false, pubAt: {} };
+  const REC = { season: CBHub.SEASON, tab: 'heroes', sort: 'progress', cls: 'All', heroes: null, kills: null, err: null, at: 0, busy: false, pubAt: {} };
   const recSetupErr = (e) => e && /relation|does not exist|schema cache|column/i.test(e.message || '');
   const ROWTXT = (r) => r >= 15 ? 'boss killed' : `row ${r}`;
   function heroSnapshot(c) {
@@ -17,7 +17,7 @@
     const c = profile.chars[key]; if (!c) return;
     if (!force && Date.now() - (REC.pubAt[key] || 0) < 60000) return; REC.pubAt[key] = Date.now();
     const row = { user_id: supaUser.id, hero_key: key, hero_name: c.name, hero_class: c.cls, guild_name: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null,
-      progress: CBHub.progressScore(c), power: CBHub.powerLevel(c), maps: recMapsOf(c), snapshot: heroSnapshot(c), updated_at: new Date().toISOString() };
+      progress: CBHub.progressScore(c), power: CBHub.powerLevel(c), maps: recMapsOf(c), snapshot: heroSnapshot(c), updated_at: new Date().toISOString(), season: CBHub.SEASON }; // Nov 2: one row per hero per season
     const { error } = await supa.from('hero_records').upsert(row);
     if (error) { if (recSetupErr(error)) REC.err = 'setup'; else console.warn('hero_records', error); }
   }
@@ -27,9 +27,9 @@
     if (!supa || !supaUser || !SY.ready || SY.conflict) return; // only with a save that matches the account, so a stale copy can't remove real heroes
     try {
     const keys = Object.keys(profile.chars || {}); if (!keys.length) return; // an empty roster is more likely a load problem than a real wipe: leave the board alone
-    const { data, error } = await supa.from('hero_records').select('hero_key').eq('user_id', supaUser.id); if (error || !data) return;
+    const { data, error } = await supa.from('hero_records').select('hero_key').eq('user_id', supaUser.id).eq('season', CBHub.SEASON); if (error || !data) return; // past seasons stay as they were
     const gone = data.map(r => r.hero_key).filter(k => !keys.includes(k));
-    if (gone.length) { const { error: e2 } = await supa.from('hero_records').delete().eq('user_id', supaUser.id).in('hero_key', gone); if (e2) console.warn('hero_records prune', e2); }
+    if (gone.length) { const { error: e2 } = await supa.from('hero_records').delete().eq('user_id', supaUser.id).eq('season', CBHub.SEASON).in('hero_key', gone); if (e2) console.warn('hero_records prune', e2); }
     } catch (e) { console.warn('hero_records prune', e); }
   }
   // the raid leader records a kill (once per fight)
@@ -37,7 +37,7 @@
     if (!supa || !supaUser || !cbx || cbx._recKill) return; cbx._recKill = true;
     const G = typeof GUILD !== 'undefined' ? GUILD.me : null;
     const row = { created_by: supaUser.id, map: cbx.raidMap, level: cbx.level || 0, rounds: cbx.round, guild_id: G ? G.id : null, guild_name: G ? G.name : null,
-      heroes: cbx.players.map(p => ({ name: p.name, cls: p.cls, alive: p.hp > 0 })) };
+      heroes: cbx.players.map(p => ({ name: p.name, cls: p.cls, alive: p.hp > 0 })), season: CBHub.SEASON };
     const { error } = await supa.from('raid_kills').insert(row);
     if (error && !recSetupErr(error)) console.warn('raid_kills', error);
   }
@@ -46,8 +46,8 @@
     if (REC.busy || (!force && REC.heroes && Date.now() - REC.at < 30000)) { renderRecords(); return; }
     REC.busy = true; renderRecords();
     try {
-      await publishAllHeroes(true);
-      const [h, k] = await Promise.all([supa.from('hero_records').select('*').order('progress', { ascending: false }).limit(500), supa.from('raid_kills').select('*').order('killed_at', { ascending: true }).limit(2000)]);
+      if (REC.season === CBHub.SEASON) await publishAllHeroes(true);
+      const [h, k] = await Promise.all([supa.from('hero_records').select('*').eq('season', REC.season).order('progress', { ascending: false }).limit(500), supa.from('raid_kills').select('*').eq('season', REC.season).order('killed_at', { ascending: true }).limit(2000)]);
       if (h.error || k.error) { const e = h.error || k.error; REC.err = recSetupErr(e) ? 'setup' : (e.message || 'error'); }
       else { REC.err = null; REC.heroes = h.data || []; REC.kills = k.data || []; REC.at = Date.now(); }
     } catch (e) { REC.err = String(e.message || e); }
@@ -65,20 +65,21 @@
     const tabs = [['heroes', 'Heroes'], ['hardcore', 'Hardcore'], ['maps', 'Map records'], ['raids', 'Raid records']].map(([k, n]) => `<button role="tab" data-rectab="${k}" aria-selected="${REC.tab === k}">${n}</button>`).join('');
     let body = '';
     if (REC.err === 'offline') body = '<p class="muted">Sign in to see the Hall of Records: it lists every player\'s heroes.</p>';
-    else if (REC.err === 'setup') body = '<p class="down">The Hall of Records needs a one-time database update: run supabase/records.sql in the Supabase SQL editor.</p>';
+    else if (REC.err === 'setup') body = '<p class="down">The Hall of Records needs a one-time database update: run supabase/records.sql, then supabase/seasons.sql, in the Supabase SQL editor.</p>';
     else if (REC.err) body = `<p class="down">Could not load the records: ${esc(REC.err)}</p>`;
     else if (!REC.heroes) body = '<p class="muted">Reading the records...</p>';
     else if (REC.tab === 'heroes') body = recHeroes();
     else if (REC.tab === 'hardcore') body = recHardcore();
     else if (REC.tab === 'maps') body = recMaps();
     else body = recRaids();
-    el.innerHTML = `<div class="rechead"><div class="tabs" role="tablist">${tabs}</div><span class="muted">${REC.busy ? 'Updating...' : REC.at ? 'Updated ' + new Date(REC.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ''}</span><button class="btn" id="recRefresh">Refresh</button></div>${body}`;
+    const seas = CBHub.SEASONS.slice().reverse().map(S => `<button class="chip ${REC.season === S.id ? 'on' : ''}" data-recseason="${S.id}">${esc(S.name)}${S.id === CBHub.SEASON ? ' (now)' : ''}</button>`).join('');
+    el.innerHTML = `<div class="recfilt recseason"><span class="muted">Season</span>${seas}${REC.season !== CBHub.SEASON ? '<span class="muted" style="margin-left:8px">Final standings of a past season.</span>' : ''}</div><div class="rechead"><div class="tabs" role="tablist">${tabs}</div><span class="muted">${REC.busy ? 'Updating...' : REC.at ? 'Updated ' + new Date(REC.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ''}</span><button class="btn" id="recRefresh">Refresh</button></div>${body}`;
   }
   function recHeroes() {
     let list = REC.heroes.filter(h => REC.cls === 'All' || h.hero_class === REC.cls);
     list = list.slice().sort((a, b) => REC.sort === 'power' ? b.power - a.power || b.progress - a.progress : b.progress - a.progress || b.power - a.power);
     const filt = `<div class="recfilt"><span class="muted">Sort</span>${[['progress', 'Progress'], ['power', 'Power']].map(([k, n]) => `<button class="chip ${REC.sort === k ? 'on' : ''}" data-recsort="${k}">${n}</button>`).join('')}<span class="muted" style="margin-left:10px">Class</span>${['All', 'Warrior', 'Rogue', 'Mage', 'Paladin', 'Warlock'].map(k => `<button class="chip ${REC.cls === k ? 'on' : ''}" data-reccls="${k}">${k}</button>`).join('')}</div>
-      <p class="savenote" style="margin:0 0 6px">Progress counts completed maps: 15 points for every level of a map you've beaten (beating +2 means +0, +1 and +2 count), plus the furthest row on the next level up. Best clear is the highest map level the hero has completed. Click a hero to see their gear, deck and talents.</p>`;
+      <p class="savenote" style="margin:0 0 6px">Records count from the start of the season (heroes keep their unlocks; their old records are kept with the past season). Progress counts completed maps: 15 points for every level of a map you've beaten (beating +2 means +0, +1 and +2 count), plus the furthest row on the next level up. Best clear is the highest map level the hero has completed. Click a hero to see their gear, deck and talents.</p>`;
     if (!list.length) return filt + '<p class="muted">No heroes yet.</p>';
     const rows = list.slice(0, 100).map((h, i) => { const bm = bestMapOf(h), cx = h.snapshot && h.snapshot.codex, cxn = cx && CB.CODEX_BY_KEY[cx.key] ? CB.CODEX_BY_KEY[cx.key].name : '';
       return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td><b style="color:${CC[h.hero_class] || 'var(--text)'}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num">${h.progress}</td><td class="num">${h.power}</td><td>${bm ? `Map ${bm.M.num} ${esc(bm.M.name)} +${bm.d}` : '<span class="muted">no map completed yet</span>'}</td><td class="muted">${cxn ? `${esc(cxn)} Lv ${cx.level}` : ''}</td></tr>`; }).join('');
@@ -151,6 +152,7 @@
   });
   $('hpRec').addEventListener('click', (ev) => {
     const t = ev.target.closest('[data-rectab]'); if (t) { REC.tab = t.dataset.rectab; return renderRecords(); }
+    const se = ev.target.closest('[data-recseason]'); if (se) { if (REC.season !== se.dataset.recseason) { REC.season = se.dataset.recseason; REC.heroes = null; REC.kills = null; loadRecords(true); } return; }
     const so = ev.target.closest('[data-recsort]'); if (so) { REC.sort = so.dataset.recsort; return renderRecords(); }
     const cl = ev.target.closest('[data-reccls]'); if (cl) { REC.cls = cl.dataset.reccls; return renderRecords(); }
     if (ev.target.closest('#recRefresh')) return loadRecords(true);

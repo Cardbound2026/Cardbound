@@ -5,6 +5,9 @@ const CB = (typeof module !== 'undefined' && module.exports) ? require('./engine
 const { CARDS, CLASSES, STARTER_GEAR, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, deckLevel } = CB;
 const SLOTS = ['Weapon', 'Off-hand', 'Helm', 'Shoulders', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves', 'Belt', 'Pants', 'Boots', 'Ring 1', 'Ring 2'];
 const STASH_MAX = 60;
+// Hall of Records seasons (Nov 2): the board shows one season at a time. To start a new season, add it here and set SEASON.
+const SEASONS = [{ id: '0.01', name: 'Season 0.01' }, { id: '0.02', name: 'Season 0.02' }];
+const SEASON = '0.02';
 const VERSION = 1;
 
 let uidN = 0;
@@ -16,7 +19,7 @@ function newChar(cls, name, deckKey, amuletKey) {
   const gear = STARTER_GEAR[cls].map(g => Object.assign({ id: uid('g') }, g));
   if (amuletKey) { const i = gear.findIndex(g => g.slot === 'Amulet'); if (i >= 0) gear[i] = Object.assign({ id: uid('g') }, CB.starterAmulet(cls, amuletKey)); }
   const seen = {}; for (const k of deck) seen[k.key] = 1;
-  return { cls, name: name || cls, created: Date.now(), gear, deck, cards: [], seen, runs: 0, best: 0, bossKills: 0, gotOffense1: true, starter: (sd && sd[0]) || 'balanced' };
+  return { season: SEASON, sKills: {}, cls, name: name || cls, created: Date.now(), gear, deck, cards: [], seen, runs: 0, best: 0, bossKills: 0, gotOffense1: true, starter: (sd && sd[0]) || 'balanced' };
 }
 function newProfile() { return { v: VERSION, gold: 0, ink: 0, rerollTokens: 0, stash: [], chars: {}, last: { cls: 'Warrior', level: 0 }, history: [] }; }
 function fix(p) { // tolerate older or partial saves
@@ -47,6 +50,18 @@ function fix(p) { // tolerate older or partial saves
   p.rerollTokens = p.rerollTokens || 0;
   for (const it of (p.shop && p.shop.items) || []) if (!it.px2) { if (it.price) it.price *= 2; it.px2 = 1; } // Nov 2: merchant prices doubled, stock already on the shelf too
   for (const it of [...p.stash, ...Object.values(p.chars).flatMap(c => c.gear)]) if (it && it.rerolls == null) it.rerolls = CB.rerollPotential(it);
+  // Nov 2: seasons. The Hall of Records ranks the current season only. A hero's record fields (map records, clears, boss kill counts)
+  // are seasonal: when a new season starts they go into c.seasons and start over. mapKills stays lifetime (first-kill boss, map unlocks).
+  for (const c of Object.values(p.chars)) {
+    if (!c.season) { c.season = SEASONS[0].id; c.sKills = Object.assign({}, c.mapKills || {}); } // heroes from before seasons: everything so far was season 0.01
+    if (c.season !== SEASON) {
+      (c.seasons = c.seasons || []).unshift({ id: c.season, progress: progressScore(c), sKills: c.sKills || {}, mapBest: c.mapBest || {}, bossKillsBy: c.bossKillsBy || {} });
+      c.seasons = c.seasons.slice(0, 12);
+      c.season = SEASON; c.sKills = {}; c.mapBest = {}; c.mapRows = {}; c.mapKillAt = {}; c.bossKillsBy = {};
+    }
+  }
+  // Nov 2: gold wipe for the start of season 0.02 (once per save)
+  if (!p.goldWipe1) { p.gold = 0; p.goldWipe1 = 1; }
   return p;
 }
 // character creation: one hero per class for now, each with a name the player picks
@@ -261,7 +276,7 @@ function noteMapBest(c, mk, lvl, row) { const R = ((c.mapRows = c.mapRows || {})
 // progress score for the leaderboard: every map counts its best level x 15 + furthest row (so +1 row 1 beats +0 boss)
 // Nov 1: progress counts maps you COMPLETED: 15 points per level of a map you've beaten (+0 counts), plus the furthest row on the next level up.
 // Entering a high level without clearing the ones below gives nothing until you beat it.
-function mapCleared(c, mk) { return c && c.mapKills && c.mapKills[mk] != null ? c.mapKills[mk] : -1; }
+function mapCleared(c, mk) { return c && c.sKills && c.sKills[mk] != null ? c.sKills[mk] : -1; } // this season's highest clear (Nov 2)
 function progressScore(c) { let s = 0; const keys = new Set([...Object.keys(c.mapBest || {}), ...Object.keys(c.mapKills || {})]);
   for (const mk of keys) { const cl = mapCleared(c, mk), b = (c.mapBest || {})[mk], nr = ((c.mapRows || {})[mk] || {})[cl + 1] || (b && b.lvl === cl + 1 ? b.row : 0); s += (cl + 1) * 15 + Math.min(14, nr || 0); } return s; }
 function beatMap(c, mk) { return !!(c && c.mapKills && c.mapKills[mk] != null); }
@@ -303,10 +318,10 @@ function absorbRun(p, run, mi) {
   const xpGain = {}; { const bonus = 1 + 0.1 * maxedCodexes(c); for (const [cx, v] of Object.entries(mem.cxp || {})) { if (!CB.CODEX_BY_KEY[cx]) continue; const st = codexState(c, cx), before = CB.codexLevel(st.xp).level, g = Math.round(v * bonus); st.xp += g; xpGain[cx] = { xp: g, from: before, to: CB.codexLevel(st.xp).level }; } }
   c.runs++; const row = run.currentRow(); c.best = Math.max(c.best, row);
   noteMapBest(c, run.mapKey || 'physical', run.level || 0, run.over === 'victory' ? 15 : row); // Hall of Records: furthest level and row per map
-  if (run.over === 'victory') { const mk0 = run.mapKey || 'physical', had = c.mapKills && c.mapKills[mk0] != null ? c.mapKills[mk0] : -1; if ((run.level || 0) > had) (c.mapKillAt = c.mapKillAt || {})[mk0] = Date.now(); }
+  if (run.over === 'victory') { const mk0 = run.mapKey || 'physical', had = mapCleared(c, mk0); if ((run.level || 0) > had) (c.mapKillAt = c.mapKillAt || {})[mk0] = Date.now(); }
   if (run.over === 'victory') p.lastBoss = { map: run.mapKey || 'physical', level: run.level || 0, at: Date.now() }; // the town merchant stocks gear from your last boss kill
   if (run.over === 'victory') { const bk = (c.bossKillsBy = c.bossKillsBy || {}); bk[run.mapKey || 'physical'] = (bk[run.mapKey || 'physical'] || 0) + 1; } // Nov 1: boss kills per map (Hall of Records)
-  if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); }
+  if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); c.sKills = c.sKills || {}; c.sKills[mk] = Math.max(mapCleared(c, mk), run.level || 0); }
   // the run's damage meter, kept so the Chronicler can show it later (numbers rounded to keep saves small)
   const meter = Object.values(run.meter || {}).map(m => { const r = (o) => Object.fromEntries(Object.entries(o || {}).filter(x => x[1] > 0).map(([k, v]) => [k, Math.round(v)])); return { id: m.id, name: m.name, isPlayer: m.isPlayer, cls: m.cls, dealt: r(m.dealt), healed: r(m.healed), taken: r(m.taken), absorbed: Math.round(m.absorbed || 0) }; });
   p.history.unshift({ meter: meter.length ? meter : undefined, map: run.mapKey, fights: run.fightsWon, cls: mem.cls, name: mem.name, party: run.members && run.members.length > 1 ? run.members.map(m => m.cls) : undefined, level: run.level, result: run.over, row, items, cards, gold: kept.gold, ordered, at: Date.now() });
@@ -315,6 +330,6 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk };
 }
 
-const API = { gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);

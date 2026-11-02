@@ -4191,6 +4191,9 @@ const CB = (typeof module !== 'undefined' && module.exports) ? require('./engine
 const { CARDS, CLASSES, STARTER_GEAR, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, deckLevel } = CB;
 const SLOTS = ['Weapon', 'Off-hand', 'Helm', 'Shoulders', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves', 'Belt', 'Pants', 'Boots', 'Ring 1', 'Ring 2'];
 const STASH_MAX = 60;
+// Hall of Records seasons (Nov 2): the board shows one season at a time. To start a new season, add it here and set SEASON.
+const SEASONS = [{ id: '0.01', name: 'Season 0.01' }, { id: '0.02', name: 'Season 0.02' }];
+const SEASON = '0.02';
 const VERSION = 1;
 
 let uidN = 0;
@@ -4202,7 +4205,7 @@ function newChar(cls, name, deckKey, amuletKey) {
   const gear = STARTER_GEAR[cls].map(g => Object.assign({ id: uid('g') }, g));
   if (amuletKey) { const i = gear.findIndex(g => g.slot === 'Amulet'); if (i >= 0) gear[i] = Object.assign({ id: uid('g') }, CB.starterAmulet(cls, amuletKey)); }
   const seen = {}; for (const k of deck) seen[k.key] = 1;
-  return { cls, name: name || cls, created: Date.now(), gear, deck, cards: [], seen, runs: 0, best: 0, bossKills: 0, gotOffense1: true, starter: (sd && sd[0]) || 'balanced' };
+  return { season: SEASON, sKills: {}, cls, name: name || cls, created: Date.now(), gear, deck, cards: [], seen, runs: 0, best: 0, bossKills: 0, gotOffense1: true, starter: (sd && sd[0]) || 'balanced' };
 }
 function newProfile() { return { v: VERSION, gold: 0, ink: 0, rerollTokens: 0, stash: [], chars: {}, last: { cls: 'Warrior', level: 0 }, history: [] }; }
 function fix(p) { // tolerate older or partial saves
@@ -4233,6 +4236,18 @@ function fix(p) { // tolerate older or partial saves
   p.rerollTokens = p.rerollTokens || 0;
   for (const it of (p.shop && p.shop.items) || []) if (!it.px2) { if (it.price) it.price *= 2; it.px2 = 1; } // Nov 2: merchant prices doubled, stock already on the shelf too
   for (const it of [...p.stash, ...Object.values(p.chars).flatMap(c => c.gear)]) if (it && it.rerolls == null) it.rerolls = CB.rerollPotential(it);
+  // Nov 2: seasons. The Hall of Records ranks the current season only. A hero's record fields (map records, clears, boss kill counts)
+  // are seasonal: when a new season starts they go into c.seasons and start over. mapKills stays lifetime (first-kill boss, map unlocks).
+  for (const c of Object.values(p.chars)) {
+    if (!c.season) { c.season = SEASONS[0].id; c.sKills = Object.assign({}, c.mapKills || {}); } // heroes from before seasons: everything so far was season 0.01
+    if (c.season !== SEASON) {
+      (c.seasons = c.seasons || []).unshift({ id: c.season, progress: progressScore(c), sKills: c.sKills || {}, mapBest: c.mapBest || {}, bossKillsBy: c.bossKillsBy || {} });
+      c.seasons = c.seasons.slice(0, 12);
+      c.season = SEASON; c.sKills = {}; c.mapBest = {}; c.mapRows = {}; c.mapKillAt = {}; c.bossKillsBy = {};
+    }
+  }
+  // Nov 2: gold wipe for the start of season 0.02 (once per save)
+  if (!p.goldWipe1) { p.gold = 0; p.goldWipe1 = 1; }
   return p;
 }
 // character creation: one hero per class for now, each with a name the player picks
@@ -4447,7 +4462,7 @@ function noteMapBest(c, mk, lvl, row) { const R = ((c.mapRows = c.mapRows || {})
 // progress score for the leaderboard: every map counts its best level x 15 + furthest row (so +1 row 1 beats +0 boss)
 // Nov 1: progress counts maps you COMPLETED: 15 points per level of a map you've beaten (+0 counts), plus the furthest row on the next level up.
 // Entering a high level without clearing the ones below gives nothing until you beat it.
-function mapCleared(c, mk) { return c && c.mapKills && c.mapKills[mk] != null ? c.mapKills[mk] : -1; }
+function mapCleared(c, mk) { return c && c.sKills && c.sKills[mk] != null ? c.sKills[mk] : -1; } // this season's highest clear (Nov 2)
 function progressScore(c) { let s = 0; const keys = new Set([...Object.keys(c.mapBest || {}), ...Object.keys(c.mapKills || {})]);
   for (const mk of keys) { const cl = mapCleared(c, mk), b = (c.mapBest || {})[mk], nr = ((c.mapRows || {})[mk] || {})[cl + 1] || (b && b.lvl === cl + 1 ? b.row : 0); s += (cl + 1) * 15 + Math.min(14, nr || 0); } return s; }
 function beatMap(c, mk) { return !!(c && c.mapKills && c.mapKills[mk] != null); }
@@ -4489,10 +4504,10 @@ function absorbRun(p, run, mi) {
   const xpGain = {}; { const bonus = 1 + 0.1 * maxedCodexes(c); for (const [cx, v] of Object.entries(mem.cxp || {})) { if (!CB.CODEX_BY_KEY[cx]) continue; const st = codexState(c, cx), before = CB.codexLevel(st.xp).level, g = Math.round(v * bonus); st.xp += g; xpGain[cx] = { xp: g, from: before, to: CB.codexLevel(st.xp).level }; } }
   c.runs++; const row = run.currentRow(); c.best = Math.max(c.best, row);
   noteMapBest(c, run.mapKey || 'physical', run.level || 0, run.over === 'victory' ? 15 : row); // Hall of Records: furthest level and row per map
-  if (run.over === 'victory') { const mk0 = run.mapKey || 'physical', had = c.mapKills && c.mapKills[mk0] != null ? c.mapKills[mk0] : -1; if ((run.level || 0) > had) (c.mapKillAt = c.mapKillAt || {})[mk0] = Date.now(); }
+  if (run.over === 'victory') { const mk0 = run.mapKey || 'physical', had = mapCleared(c, mk0); if ((run.level || 0) > had) (c.mapKillAt = c.mapKillAt || {})[mk0] = Date.now(); }
   if (run.over === 'victory') p.lastBoss = { map: run.mapKey || 'physical', level: run.level || 0, at: Date.now() }; // the town merchant stocks gear from your last boss kill
   if (run.over === 'victory') { const bk = (c.bossKillsBy = c.bossKillsBy || {}); bk[run.mapKey || 'physical'] = (bk[run.mapKey || 'physical'] || 0) + 1; } // Nov 1: boss kills per map (Hall of Records)
-  if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); }
+  if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); c.sKills = c.sKills || {}; c.sKills[mk] = Math.max(mapCleared(c, mk), run.level || 0); }
   // the run's damage meter, kept so the Chronicler can show it later (numbers rounded to keep saves small)
   const meter = Object.values(run.meter || {}).map(m => { const r = (o) => Object.fromEntries(Object.entries(o || {}).filter(x => x[1] > 0).map(([k, v]) => [k, Math.round(v)])); return { id: m.id, name: m.name, isPlayer: m.isPlayer, cls: m.cls, dealt: r(m.dealt), healed: r(m.healed), taken: r(m.taken), absorbed: Math.round(m.absorbed || 0) }; });
   p.history.unshift({ meter: meter.length ? meter : undefined, map: run.mapKey, fights: run.fightsWon, cls: mem.cls, name: mem.name, party: run.members && run.members.length > 1 ? run.members.map(m => m.cls) : undefined, level: run.level, result: run.over, row, items, cards, gold: kept.gold, ordered, at: Date.now() });
@@ -4501,7 +4516,7 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk };
 }
 
-const API = { gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -6221,8 +6236,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793633230439';
-  const CB_BUILD = '497abe4165'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793633585542';
+  const CB_BUILD = '0a340b1eed'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -6780,7 +6795,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // ---------- Hall of Records (Nov 1): the notice board in town (and Menu). Tables: hero_records, raid_kills (supabase/records.sql)
   // Every hero publishes a small public snapshot (progress per map, gear, deck, codex talents) when they come home from a run.
   // Raid leaders record each raid boss kill with their guild, level and number of rounds.
-  const REC = { tab: 'heroes', sort: 'progress', cls: 'All', heroes: null, kills: null, err: null, at: 0, busy: false, pubAt: {} };
+  const REC = { season: CBHub.SEASON, tab: 'heroes', sort: 'progress', cls: 'All', heroes: null, kills: null, err: null, at: 0, busy: false, pubAt: {} };
   const recSetupErr = (e) => e && /relation|does not exist|schema cache|column/i.test(e.message || '');
   const ROWTXT = (r) => r >= 15 ? 'boss killed' : `row ${r}`;
   function heroSnapshot(c) {
@@ -6796,7 +6811,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const c = profile.chars[key]; if (!c) return;
     if (!force && Date.now() - (REC.pubAt[key] || 0) < 60000) return; REC.pubAt[key] = Date.now();
     const row = { user_id: supaUser.id, hero_key: key, hero_name: c.name, hero_class: c.cls, guild_name: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null,
-      progress: CBHub.progressScore(c), power: CBHub.powerLevel(c), maps: recMapsOf(c), snapshot: heroSnapshot(c), updated_at: new Date().toISOString() };
+      progress: CBHub.progressScore(c), power: CBHub.powerLevel(c), maps: recMapsOf(c), snapshot: heroSnapshot(c), updated_at: new Date().toISOString(), season: CBHub.SEASON }; // Nov 2: one row per hero per season
     const { error } = await supa.from('hero_records').upsert(row);
     if (error) { if (recSetupErr(error)) REC.err = 'setup'; else console.warn('hero_records', error); }
   }
@@ -6806,9 +6821,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (!supa || !supaUser || !SY.ready || SY.conflict) return; // only with a save that matches the account, so a stale copy can't remove real heroes
     try {
     const keys = Object.keys(profile.chars || {}); if (!keys.length) return; // an empty roster is more likely a load problem than a real wipe: leave the board alone
-    const { data, error } = await supa.from('hero_records').select('hero_key').eq('user_id', supaUser.id); if (error || !data) return;
+    const { data, error } = await supa.from('hero_records').select('hero_key').eq('user_id', supaUser.id).eq('season', CBHub.SEASON); if (error || !data) return; // past seasons stay as they were
     const gone = data.map(r => r.hero_key).filter(k => !keys.includes(k));
-    if (gone.length) { const { error: e2 } = await supa.from('hero_records').delete().eq('user_id', supaUser.id).in('hero_key', gone); if (e2) console.warn('hero_records prune', e2); }
+    if (gone.length) { const { error: e2 } = await supa.from('hero_records').delete().eq('user_id', supaUser.id).eq('season', CBHub.SEASON).in('hero_key', gone); if (e2) console.warn('hero_records prune', e2); }
     } catch (e) { console.warn('hero_records prune', e); }
   }
   // the raid leader records a kill (once per fight)
@@ -6816,7 +6831,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (!supa || !supaUser || !cbx || cbx._recKill) return; cbx._recKill = true;
     const G = typeof GUILD !== 'undefined' ? GUILD.me : null;
     const row = { created_by: supaUser.id, map: cbx.raidMap, level: cbx.level || 0, rounds: cbx.round, guild_id: G ? G.id : null, guild_name: G ? G.name : null,
-      heroes: cbx.players.map(p => ({ name: p.name, cls: p.cls, alive: p.hp > 0 })) };
+      heroes: cbx.players.map(p => ({ name: p.name, cls: p.cls, alive: p.hp > 0 })), season: CBHub.SEASON };
     const { error } = await supa.from('raid_kills').insert(row);
     if (error && !recSetupErr(error)) console.warn('raid_kills', error);
   }
@@ -6825,8 +6840,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (REC.busy || (!force && REC.heroes && Date.now() - REC.at < 30000)) { renderRecords(); return; }
     REC.busy = true; renderRecords();
     try {
-      await publishAllHeroes(true);
-      const [h, k] = await Promise.all([supa.from('hero_records').select('*').order('progress', { ascending: false }).limit(500), supa.from('raid_kills').select('*').order('killed_at', { ascending: true }).limit(2000)]);
+      if (REC.season === CBHub.SEASON) await publishAllHeroes(true);
+      const [h, k] = await Promise.all([supa.from('hero_records').select('*').eq('season', REC.season).order('progress', { ascending: false }).limit(500), supa.from('raid_kills').select('*').eq('season', REC.season).order('killed_at', { ascending: true }).limit(2000)]);
       if (h.error || k.error) { const e = h.error || k.error; REC.err = recSetupErr(e) ? 'setup' : (e.message || 'error'); }
       else { REC.err = null; REC.heroes = h.data || []; REC.kills = k.data || []; REC.at = Date.now(); }
     } catch (e) { REC.err = String(e.message || e); }
@@ -6844,20 +6859,21 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const tabs = [['heroes', 'Heroes'], ['hardcore', 'Hardcore'], ['maps', 'Map records'], ['raids', 'Raid records']].map(([k, n]) => `<button role="tab" data-rectab="${k}" aria-selected="${REC.tab === k}">${n}</button>`).join('');
     let body = '';
     if (REC.err === 'offline') body = '<p class="muted">Sign in to see the Hall of Records: it lists every player\'s heroes.</p>';
-    else if (REC.err === 'setup') body = '<p class="down">The Hall of Records needs a one-time database update: run supabase/records.sql in the Supabase SQL editor.</p>';
+    else if (REC.err === 'setup') body = '<p class="down">The Hall of Records needs a one-time database update: run supabase/records.sql, then supabase/seasons.sql, in the Supabase SQL editor.</p>';
     else if (REC.err) body = `<p class="down">Could not load the records: ${esc(REC.err)}</p>`;
     else if (!REC.heroes) body = '<p class="muted">Reading the records...</p>';
     else if (REC.tab === 'heroes') body = recHeroes();
     else if (REC.tab === 'hardcore') body = recHardcore();
     else if (REC.tab === 'maps') body = recMaps();
     else body = recRaids();
-    el.innerHTML = `<div class="rechead"><div class="tabs" role="tablist">${tabs}</div><span class="muted">${REC.busy ? 'Updating...' : REC.at ? 'Updated ' + new Date(REC.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ''}</span><button class="btn" id="recRefresh">Refresh</button></div>${body}`;
+    const seas = CBHub.SEASONS.slice().reverse().map(S => `<button class="chip ${REC.season === S.id ? 'on' : ''}" data-recseason="${S.id}">${esc(S.name)}${S.id === CBHub.SEASON ? ' (now)' : ''}</button>`).join('');
+    el.innerHTML = `<div class="recfilt recseason"><span class="muted">Season</span>${seas}${REC.season !== CBHub.SEASON ? '<span class="muted" style="margin-left:8px">Final standings of a past season.</span>' : ''}</div><div class="rechead"><div class="tabs" role="tablist">${tabs}</div><span class="muted">${REC.busy ? 'Updating...' : REC.at ? 'Updated ' + new Date(REC.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ''}</span><button class="btn" id="recRefresh">Refresh</button></div>${body}`;
   }
   function recHeroes() {
     let list = REC.heroes.filter(h => REC.cls === 'All' || h.hero_class === REC.cls);
     list = list.slice().sort((a, b) => REC.sort === 'power' ? b.power - a.power || b.progress - a.progress : b.progress - a.progress || b.power - a.power);
     const filt = `<div class="recfilt"><span class="muted">Sort</span>${[['progress', 'Progress'], ['power', 'Power']].map(([k, n]) => `<button class="chip ${REC.sort === k ? 'on' : ''}" data-recsort="${k}">${n}</button>`).join('')}<span class="muted" style="margin-left:10px">Class</span>${['All', 'Warrior', 'Rogue', 'Mage', 'Paladin', 'Warlock'].map(k => `<button class="chip ${REC.cls === k ? 'on' : ''}" data-reccls="${k}">${k}</button>`).join('')}</div>
-      <p class="savenote" style="margin:0 0 6px">Progress counts completed maps: 15 points for every level of a map you've beaten (beating +2 means +0, +1 and +2 count), plus the furthest row on the next level up. Best clear is the highest map level the hero has completed. Click a hero to see their gear, deck and talents.</p>`;
+      <p class="savenote" style="margin:0 0 6px">Records count from the start of the season (heroes keep their unlocks; their old records are kept with the past season). Progress counts completed maps: 15 points for every level of a map you've beaten (beating +2 means +0, +1 and +2 count), plus the furthest row on the next level up. Best clear is the highest map level the hero has completed. Click a hero to see their gear, deck and talents.</p>`;
     if (!list.length) return filt + '<p class="muted">No heroes yet.</p>';
     const rows = list.slice(0, 100).map((h, i) => { const bm = bestMapOf(h), cx = h.snapshot && h.snapshot.codex, cxn = cx && CB.CODEX_BY_KEY[cx.key] ? CB.CODEX_BY_KEY[cx.key].name : '';
       return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td><b style="color:${CC[h.hero_class] || 'var(--text)'}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num">${h.progress}</td><td class="num">${h.power}</td><td>${bm ? `Map ${bm.M.num} ${esc(bm.M.name)} +${bm.d}` : '<span class="muted">no map completed yet</span>'}</td><td class="muted">${cxn ? `${esc(cxn)} Lv ${cx.level}` : ''}</td></tr>`; }).join('');
@@ -6930,6 +6946,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   });
   $('hpRec').addEventListener('click', (ev) => {
     const t = ev.target.closest('[data-rectab]'); if (t) { REC.tab = t.dataset.rectab; return renderRecords(); }
+    const se = ev.target.closest('[data-recseason]'); if (se) { if (REC.season !== se.dataset.recseason) { REC.season = se.dataset.recseason; REC.heroes = null; REC.kills = null; loadRecords(true); } return; }
     const so = ev.target.closest('[data-recsort]'); if (so) { REC.sort = so.dataset.recsort; return renderRecords(); }
     const cl = ev.target.closest('[data-reccls]'); if (cl) { REC.cls = cl.dataset.reccls; return renderRecords(); }
     if (ev.target.closest('#recRefresh')) return loadRecords(true);
@@ -7302,6 +7319,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Feature', 'Seasons: the Hall of Records now ranks one season at a time. Season 0.02 starts today with a clean board. Everything before it is Season 0.01, and you can still look at its final standings. Heroes keep their gear, cards, codexes and map unlocks; their map records and boss kill counts start over for the new season.'],
+      ['Balance', 'New season, new economy: everyone\'s gold has been reset to 0.'],
       ['Fix', 'Hall of Records: deleted heroes are taken off the board (the next time their owner is online).'],
       ['Change', 'Reroll Tokens are now rare: breaking down a codex gives 1 token by chance, 10% for a +0 codex and 5% more for every map level it dropped on (certain from +18).'],
       ['Balance', 'Gold: monsters drop half as much gold, and gold grows 5% per map level instead of 50%. Salvaging gear follows the same 5% curve. Merchants (in runs and in town) charge double.'],
