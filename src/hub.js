@@ -126,7 +126,8 @@ function removeFromDeck(p, cls, cardId) {
 }
 function findCard(c, id) { return c.deck.find(x => x.id === id) || c.cards.find(x => x.id === id); }
 function feedXp(target, fodder) { return (CARD_XP[CARDS[fodder.key].rarity] || 1) * (fodder.key === target.key ? 2 : 1) * (1 + (fodder.rank || 0)); }
-function rankCost(card) { const n = (card.rank || 0) + 1, b = RANK_BASE[CARDS[card.key].rarity]; return { xp: n * b, gold: n * b * 5 }; }
+const RANK_XP_MULT = 2; // Nov 1: ranking cards takes twice the XP (gold cost unchanged)
+function rankCost(card) { const n = (card.rank || 0) + 1, b = RANK_BASE[CARDS[card.key].rarity]; return { xp: n * b * RANK_XP_MULT, gold: n * b * 5 }; }
 // Feed collection cards (never deck cards) into a target. XP banks on the card; each rank-up also costs gold, paid automatically while you can afford it.
 function feed(p, cls, targetId, fodderIds) {
   { const lk = arenaLock(p, cls); if (lk && char(p, cls).deck.some(x => x.id === targetId)) return { ok: false, why: lk }; }

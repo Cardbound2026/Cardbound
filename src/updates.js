@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Balance', 'Ranking up cards takes twice as much XP at every rank (the gold cost is unchanged). XP already banked on your cards still counts.'],
       ['Feature', 'Map search: type a card, item, monster, shrine or node type above the run map and every node that has it lights up, with a list of what matched (click one to jump to it). If it isn\'t on this map, it tells you which map has it.'],
       ['Fix', 'Damage over time now counts as damage you deal: Rot, Dread, Poison, Bleed and Burn ticks trigger the Soulbinder Codex\'s party heal, your Lifesteal and Soul Beacon.'],
       ['Balance', 'Gear now resists its own map\'s element (Cinder Reach gear: Fire Resistance, and so on), so you can farm protection for the map you\'re stuck on. Gear you already own was moved over. Starter gear and codexes keep their Fire Resistance.'],

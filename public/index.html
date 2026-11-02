@@ -4219,7 +4219,8 @@ function removeFromDeck(p, cls, cardId) {
 }
 function findCard(c, id) { return c.deck.find(x => x.id === id) || c.cards.find(x => x.id === id); }
 function feedXp(target, fodder) { return (CARD_XP[CARDS[fodder.key].rarity] || 1) * (fodder.key === target.key ? 2 : 1) * (1 + (fodder.rank || 0)); }
-function rankCost(card) { const n = (card.rank || 0) + 1, b = RANK_BASE[CARDS[card.key].rarity]; return { xp: n * b, gold: n * b * 5 }; }
+const RANK_XP_MULT = 2; // Nov 1: ranking cards takes twice the XP (gold cost unchanged)
+function rankCost(card) { const n = (card.rank || 0) + 1, b = RANK_BASE[CARDS[card.key].rarity]; return { xp: n * b * RANK_XP_MULT, gold: n * b * 5 }; }
 // Feed collection cards (never deck cards) into a target. XP banks on the card; each rank-up also costs gold, paid automatically while you can afford it.
 function feed(p, cls, targetId, fodderIds) {
   { const lk = arenaLock(p, cls); if (lk && char(p, cls).deck.some(x => x.id === targetId)) return { ok: false, why: lk }; }
@@ -4750,7 +4751,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const deck = c.deck.slice().sort(sortCards).map(k => cardHtml(k, `<button class="btn" data-up="${k.id}">Upgrade</button><button class="btn" data-remove="${k.id}" ${c.deck.length <= CB.DECK_MIN ? 'disabled' : ''}>Remove</button>`)).join('');
     const coll = c.cards.slice().sort(sortCards).map(k => { const a = CBHub.canAdd(c, k.id); return cardHtml(k, `<button class="btn" data-add="${k.id}" ${a.ok ? '' : `disabled title="${esc(a.why)}"`}>Add to deck</button><button class="btn" data-up="${k.id}">Upgrade</button><button class="btn" data-ink="${k.id}" title="Break this card down for Ink">Ink +${CBHub.inkValue(k)}</button>`); }).join('');
     const spare = c.cards.filter(k => c.deck.some(d => d.key === k.key && (d.rank || 0) < CB.MAX_RANK)).length;
-    $('hpDeck').innerHTML = `<p class="savenote" style="margin:0 0 8px">Deck rules: ${CB.DECK_MIN} to ${CB.DECK_MAX} cards, at most 2 Gold, 4 Blue and 6 Green. Feed spare cards into a card to rank it up (to +${CB.MAX_RANK}). Each card gives White 1, Green 3, Blue 9, Gold 27 XP, doubled when it's a copy of the same card. Reaching rank N costs N x 2/4/8/16 XP (by rarity) plus 5x that in gold.</p>
+    $('hpDeck').innerHTML = `<p class="savenote" style="margin:0 0 8px">Deck rules: ${CB.DECK_MIN} to ${CB.DECK_MAX} cards, at most 2 Gold, 4 Blue and 6 Green. Feed spare cards into a card to rank it up (to +${CB.MAX_RANK}). Each card gives White 1, Green 3, Blue 9, Gold 27 XP, doubled when it's a copy of the same card. Reaching rank N costs N x 4/8/16/32 XP (by rarity) plus N x 10/20/40/80 gold.</p>
       <div class="inkbar"><b>Ink ${profile.ink || 0}</b><span class="muted">Break spare cards down for Ink (White ${CBHub.INK_GET.White}, Green ${CBHub.INK_GET.Green}, Blue ${CBHub.INK_GET.Blue}, Gold ${CBHub.INK_GET.Gold}; more for ranked cards), then buy cards: normal price for ones you have owned before, ${CBHub.INK_UNSEEN}x for ones you haven't found yet.</span><button class="btn primary" id="btnInkShop">Buy cards with Ink</button></div>
       <div class="two"><div><h3><span>Deck ${c.deck.length}</span><span>${n.Gold}/2 Gold &middot; ${n.Blue}/4 Blue &middot; ${n.Green}/6 Green &middot; ${n.White} White</span></h3>
         ${chk.ok ? '' : `<p class="down" style="margin:0 0 6px;font-size:13px">Deck ${chk.problems.join(', ')}.</p>`}<div class="list tall cardgrid">${deck}</div></div>
@@ -6036,8 +6037,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793585780921';
-  const CB_BUILD = '5df91ab582'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793586047003';
+  const CB_BUILD = '7d07774e9f'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -7096,6 +7097,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-01', items: [
+      ['Balance', 'Ranking up cards takes twice as much XP at every rank (the gold cost is unchanged). XP already banked on your cards still counts.'],
       ['Feature', 'Map search: type a card, item, monster, shrine or node type above the run map and every node that has it lights up, with a list of what matched (click one to jump to it). If it isn\'t on this map, it tells you which map has it.'],
       ['Fix', 'Damage over time now counts as damage you deal: Rot, Dread, Poison, Bleed and Burn ticks trigger the Soulbinder Codex\'s party heal, your Lifesteal and Soul Beacon.'],
       ['Balance', 'Gear now resists its own map\'s element (Cinder Reach gear: Fire Resistance, and so on), so you can farm protection for the map you\'re stuck on. Gear you already own was moved over. Starter gear and codexes keep their Fire Resistance.'],
