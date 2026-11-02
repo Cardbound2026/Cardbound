@@ -18,10 +18,17 @@
     } catch (e) {}
     return 'Online';
   }
+  // the gear other players see on your hero in town (Nov 2): slot, item name and rarity for every slot that shows on the sprite
+  const LOOK_SLOTS = ['Helm', 'Chest', 'Shoulders', 'Gloves', 'Bracers', 'Belt', 'Pants', 'Boots', 'Cloak', 'Weapon', 'Off-hand'];
+  function lookList(c) { return c ? (c.gear || []).filter(g => g && LOOK_SLOTS.includes(g.slot)).map(g => [g.slot, g.name, (g.rarity || 'White')[0]]) : null; }
+  const RAR_OF = { W: 'White', G: 'Green', B: 'Blue', P: 'Purple (Epic)', C: 'Codex' };
+  function lookGear(lk) { return (lk || []).map(([slot, name, r]) => ({ slot, name, rarity: RAR_OF[r] || 'White' })); }
+  let lookSent = '';
+  setInterval(() => { if (typeof socOn !== 'function' || !socOn() || !profile) return; const sig = JSON.stringify(lookList(profile.chars[heroKey])); if (sig !== lookSent) { lookSent = sig; retrack(); } }, 3000); // gear changed: let the town see it
   function myPresence() {
     const c = profile.chars[heroKey];
     const place = !$('scrStart').hidden ? 'town' : run ? 'run' : cb && cb.duel ? 'duel' : 'menu';
-    return { uid: SOC.me, guild: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), shop: typeof BZ !== 'undefined' && BZ.open ? { t: shopTitle(), n: bzState().items.length } : null, arena: typeof arenaPresence === 'function' ? arenaPresence() : null, x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
+    return { lk: lookList(c), uid: SOC.me, guild: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), shop: typeof BZ !== 'undefined' && BZ.open ? { t: shopTitle(), n: bzState().items.length } : null, arena: typeof arenaPresence === 'function' ? arenaPresence() : null, x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
   }
 
   async function socStart() {
@@ -93,8 +100,8 @@
     for (const [uid, st] of SOC.online) {
       if (uid === SOC.me || st.place !== 'town' || !st.cls) { SOC.others.delete(uid); continue; }
       const o = SOC.others.get(uid);
-      if (!o) SOC.others.set(uid, { uid, x: st.x, y: st.y, fx: st.x, fy: st.y, t: 1, dir: st.dir || 'down', step: 0, name: st.name, guild: st.guild || null, cls: st.cls, rc: st.rc || {}, party: st.party, shop: st.shop || null });
-      else Object.assign(o, { guild: st.guild || null, name: st.name, cls: st.cls, rc: st.rc || {}, party: st.party, shop: st.shop || null });
+      if (!o) SOC.others.set(uid, { uid, x: st.x, y: st.y, fx: st.x, fy: st.y, t: 1, dir: st.dir || 'down', step: 0, name: st.name, guild: st.guild || null, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, party: st.party, shop: st.shop || null });
+      else Object.assign(o, { guild: st.guild || null, name: st.name, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, party: st.party, shop: st.shop || null });
     }
     for (const uid of [...SOC.others.keys()]) if (!SOC.online.has(uid)) SOC.others.delete(uid);
   }
@@ -109,7 +116,7 @@
     const out = [];
     for (const o of SOC.others.values()) {
       const p = otherPos(o), moving = o.t < 1;
-      const pal = palFor(o.cls, o.rc || {});
+      const pal = Object.assign(palFor(o.cls, o.rc || {}), o.lk ? { forge: { cls: o.cls, gear: lookGear(o.lk), who: o.uid } } : {}); // their real gear (src/forge.js)
       out.push({ y: p.y + 0.5, f: () => {
         drawChar(gx, p.x * TS + TS / 2, p.y * TS + TS * 0.92, o.dir, moving ? ((o.step + (o.t > 0.5 ? 1 : 0)) % 2 ? 1 : 2) : 0, pal, s, t);
         const tx = p.x * TS + TS / 2, ty = townTag(gx, tx, p.y * TS + TS * 0.92, o.name, SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0', o.guild, s);

@@ -1107,6 +1107,7 @@ class Combat {
     if (e.beacon && e.hp > 0) { const by = this.actorById(e.beacon.by); e.beacon.acc = (e.beacon.acc || 0) + lost * e.beacon.pct / 100 * (by && by.isPlayer && by.powers.length ? this.pwProd(by, 'beaconX') : 1); const n = Math.floor(e.beacon.acc);
       if (n > 0) { e.beacon.acc -= n; const was = this.player; if (by && by.isPlayer) this.player = by; for (const a of this.allies()) this.heal(a, n, 'Soul Beacon', true); this.player = was; } }
   }
+  fxPush(x) { const q = this.fxQ = this.fxQ || []; if (q.length < 120) q.push(x); } // hits, heals, Block and debuffs for the fight screen's effects (src/fx.js)
   fire(p, hook, ...args) { if (!p || !p.isPlayer || !p.powers.length) return; for (const [pw, def] of this.pws(p)) if (def[hook] && !this.over) { const was = this.player; this.player = p; this.rkPw(pw, () => def[hook](this, p, ...args, pw)); this.player = was; } }
   pwProd(p, field, ...args) { let m = 1; for (const [pw, def] of this.pws(p)) { const v = def[field]; if (v == null) continue; let x = typeof v === 'function' ? this.rkPw(pw, () => v(this, p, ...args, pw)) : v; if (pw.rkMain && typeof x === 'number' && x !== 1) x = Math.max(0, 1 + (x - 1) * pw.rkMain); m *= x; } return m; }
   pwSum(p, field, ...args) { let m = 0; for (const [pw, def] of this.pws(p)) { const v = def[field]; if (v == null) continue; let x = typeof v === 'function' ? this.rkPw(pw, () => v(this, p, ...args, pw)) : v; if (pw.rkMain && typeof x === 'number' && x) x = Number.isInteger(x) ? Math.round(x * pw.rkMain) : x * pw.rkMain; m += x; } return m; }
@@ -1391,6 +1392,7 @@ class Combat {
     if (p.isPlayer && this.has(p, 'mana_shell')) { const v = Math.round(n * (1 + p.dexterity / 100)); p.mana += v; this.say('player', `Mana Shell: +${v} mana instead of ${p.defName}.`); return v; }
     const mult = 1 + p.dexterity / 100; const v = Math.round(n * mult);
     p.block += v;
+    if (v > 0) this.fxPush({ t: 'block', d: p.id, n: v });
     this.say('player', `${this.partySize > 1 ? p.name + ' gains' : 'You gain'} ${v} ${p.defName}` + (p.dexterity ? ` (${n} x ${mult.toFixed(2)} Dexterity)` : '') + (label === 'delayed' ? ' from last turn' : '') + `. ${p.defName} ${p.block}.`);
     return v;
   }
@@ -1409,6 +1411,7 @@ class Combat {
     if (want > h && !flowed && a.isPlayer && a.cls === 'Warlock' && a.hp > 0) { const x = want - h; a.block += x; this.say('heal', `${this.partySize > 1 ? a.name + "'s" : 'Your'} overhealing becomes ${x} Absorb (${a.block}).`); }
     a.hp += h; if (a.isPlayer) this.stats.healed += h;
     if (h > 0 && caster.isPlayer) this.fire(caster, 'onHeal', a, h);
+    if (h > 0 && !quiet) this.fxPush({ t: 'heal', d: a.id, n: h });
     if (h > 0) { const m = this.mtr(caster).healed, k = (label || 'Heal') + (caster !== a ? ' on ' + a.name : ''); m[k] = (m[k] || 0) + h; }
     if (h > 0 || !quiet) this.say('heal', `${a.isPlayer ? (this.partySize > 1 ? a.name + ' heals' : 'You heal') : a.name + ' heals'} ${h}${label ? ' (' + label + ')' : ''}. HP ${a.hp}/${a.maxHp}.`);
     return h;
@@ -1417,8 +1420,8 @@ class Combat {
     if (!e || e.hp <= 0) return;
     const q = this.player, strMult = (key === 'poison' || key === 'bleed') && q.isPlayer ? 1 + (q.strength + q.strTurn + q.strCombat) / 100 : (key === 'dread' || key === 'rot') && q.isPlayer ? 1 + (q.intelligence + (q.intTurn || 0)) / 100 : 1; // Nov 1: Poison and Bleed scale with Strength (50 Strength: 10 Bleed becomes 15); the Warlock's Dread and Rot with Intelligence
     const v = Math.round(n * strMult * (1 + this.player.spirit / 100) * this.pwKey(this.player, 'dotMult', key) * (key === 'bleed' && this.player.bleedX ? this.player.bleedX : 1)) + this.pwKey(this.player, 'dotPlus', key, 'sum');
-    if (key === 'rot') { const before = e.rot || 0, w = Math.round(v * this.rkm('rot')); this.addRot(e, w, 4, this.player); if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, w, before); this.say('player', `${e.name} gains ${w} Rot over 4 turns (Rot ${e.rot}).`); return; }
-    const before = e[key] || 0; e[key] = before + v; e[key + 'By'] = this.player.id;
+    if (key === 'rot') { this.fxPush({ t: 'apply', d: e.id, key: 'rot' }); const before = e.rot || 0, w = Math.round(v * this.rkm('rot')); this.addRot(e, w, 4, this.player); if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, w, before); this.say('player', `${e.name} gains ${w} Rot over 4 turns (Rot ${e.rot}).`); return; }
+    const before = e[key] || 0; e[key] = before + v; e[key + 'By'] = this.player.id; this.fxPush({ t: 'apply', d: e.id, key });
     if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, v, before);
     this.say('player', `${e.name} gains ${v} ${key[0].toUpperCase() + key.slice(1)} (now ${e[key]}).`);
   }
@@ -1444,7 +1447,9 @@ class Combat {
     if (src) { const m = this.mtr(src).dealt; m[label] = (m[label] || 0) + real; }
     { const t = this.mtr(tgt); const k = src ? src.name : label; t.taken[k] = (t.taken[k] || 0) + real; t.absorbed += absorbed; }
     if (tgt.isPlayer) { this.stats.taken += dmg; this.stats.blocked += absorbed; } else this.stats.dealt += dmg;
-    if (o.isDot && src && src.isPlayer && src.hp > 0 && !tgt.isPlayer && real > 0) this.dotHeal(src, tgt, real); // Nov 1: damage over time counts as damage you deal (Soulbinder, Lifesteal, Soul Beacon)
+    if (o.isDot && src && src.isPlayer && src.hp > 0 && !tgt.isPlayer && real > 0) this.dotHeal(src, tgt, real);
+    if (o.crit || (o.label && /crit!/.test(o.label))) tgt.critN = (tgt.critN || 0) + 1; // the screen shows this hit's number in red
+    this.fxPush({ t: 'hit', s: src ? src.id : null, d: tgt.id, dot: o.isDot ? (String(o.label || '').match(/Bleed|Poison|Burn|Dread|Rot|Chill/) || [''])[0].toLowerCase() || 'dot' : null, dtype: o.dtype || null, kind: o.kind || null, card: o.card || null, crit: !!(o.crit || (o.label && /crit!/.test(o.label))), lost: real, abs: absorbed, lbl: o.label || '' }); // Nov 1: damage over time counts as damage you deal (Soulbinder, Lifesteal, Soul Beacon)
     if (o.isDot) this.say('dot', `${tgt.isPlayer ? 'You take' : tgt.name + ' takes'} ${amount} ${o.label}` + (absorbed ? ` (${absorbed} absorbed)` : '') + `. HP ${tgt.hp}/${tgt.maxHp}.`);
     if (tgt.hp <= 0 && !o.defer) this.onDeath(tgt);
     return { lost: dmg, absorbed };
@@ -1524,7 +1529,7 @@ class Combat {
     if (pvp !== 1) parts.push(`x ${pvp.toFixed(2)} resist/Pressure`);
     if (pm !== 1) parts.push(`x ${pm.toFixed(2)} Powers`);
     const ign = (kind === 'Skill' && p.turn && p.turn.pierce) ? e.block : kind === 'Attack' && pow ? Math.floor(e.block * Math.min(1, Math.max(0, ...this.pws(p).map(([pw, d]) => d.ignoreBlock ? (pw.upN ? pw.upN[0] / 100 : d.ignoreBlock) : 0)))) : 0; e.block -= ign;
-    const r = this.applyHit(p, e, dmg, { defer: true, label }); e.block += ign;
+    const r = this.applyHit(p, e, dmg, { defer: true, label, crit, dtype, kind, card: cd && cd.key }); e.block += ign;
     if (pow) this.fire(p, 'dealt', { e, lost: r.lost, absorbed: r.absorbed, kind, dtype, d: cd, crit });
     if (e.beacon && r.lost > 0 && !e.isPlayer) { const by = this.actorById(e.beacon.by), n = Math.round(r.lost * e.beacon.pct / 100 * (by && by.powers.length ? this.pwProd(by, 'beaconX') : 1)); if (n > 0) for (const a of this.allies()) this.heal(a, n, 'Soul Beacon', true); }
     this._lastLost = r.lost;
@@ -1583,7 +1588,7 @@ class Combat {
     }
     const g = this.alivePlayers().find(q => q !== p && this.has(q, 'guardian_s_oath'));
     if (g && dmgIn > 0) { const part = Math.round(dmgIn * this.upN(g, 'guardian_s_oath', 0, 50) / 100); dmgIn -= part; this.applyHit(e, g, part, { defer: true, label }); this.say('player', `Guardian's Oath: ${g.name} takes ${part} of the hit for ${p.name}. HP ${g.hp}/${g.maxHp}.`); if (g.hp <= 0) this.onDeath(g); }
-    const r = this.applyHit(e, p, dmgIn, { defer: true, label });
+    const r = this.applyHit(e, p, dmgIn, { defer: true, label, dtype, kind: 'Attack' });
     this.say('enemy', `${e.name}'s ${label} hits ${this.partySize > 1 ? p.name : 'you'}${dtype !== 'Physical' ? ' (' + dtype + ')' : ''}: ${parts.join(' ')} = ${dmg}` + (r.absorbed ? `, ${r.absorbed} absorbed` : '') + `. HP ${p.hp}/${p.maxHp}.`);
     if (p.hp <= 0) { this.onDeath(p); return r.lost; }
     if (dmgIn > 0) { const na = p.timed.find(t => t.key === 'netherArmor'); if (na) { const n = na.n || 6; p.block += n; this.say('player', `Nether Armor: ${p.name} gains ${n} Absorb.`); } }
@@ -1658,7 +1663,7 @@ class Combat {
     const storm = d.key === 'shuriken' && this.has(p, 'shuriken_storm');
     const endless = d.key === 'shuriken' && this.hasTimed(p, 'endless') ? 2 : 1; times *= endless;
     const twin = T.twin && d.type === 'Attack' && (d.dtype || 'Physical') === 'Physical'; if (twin) { T.twin = false; times++; }
-    if (p.isPlayer) { const q = this.animQ = this.animQ || []; if (q.length < 20) q.push({ id: p.id, card: d.key, type: d.type, dtype: d.dtype || (d.type === 'Attack' ? 'Physical' : null), aoe: d.target === 'all' || !!d.tags.aoe, dmg: !!d.tags.dmg, def: !!d.tags.def, heal: !!d.tags.heal, tgt: tgt ? tgt.id : null }); } // the fight screen's animations (src/forge.js)
+    if (p.isPlayer) { const q = this.animQ = this.animQ || []; if (q.length < 20) q.push({ id: p.id, card: d.key, cost: d.cost || 0, type: d.type, dtype: d.dtype || (d.type === 'Attack' ? 'Physical' : null), aoe: d.target === 'all' || !!d.tags.aoe, dmg: !!d.tags.dmg, def: !!d.tags.def, heal: !!d.tags.heal, tgt: tgt ? tgt.id : null }); } // the fight screen's animations (src/forge.js)
     for (let i = 0; i < times && !this.over; i++) {
       if (storm) { for (const e of this.alive()) if (!this.over) d.play(this, e); continue; }
       if (tgt && tgt.hp <= 0 && d.target !== 'ally') tgt = this.alive()[0]; if (d.target === 'enemy' && !tgt) break;

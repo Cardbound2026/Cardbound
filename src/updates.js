@@ -2,6 +2,10 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Feature', 'Your hero in town shows your gear to everyone: other players see exactly what you\'re wearing (and you see theirs). It updates a few seconds after you change gear.'],
+      ['Feature', 'Hit effects: slashes, stabs, smashes and claw marks by weapon, element bursts (fire, frost, shadow, holy, arcane, nature), bleed drops, poison bubbles, burn, dread and rot ticks, heals, Block shields, parry sparks, dodges, and a red burst with a screen shake on crits. Spells fly from the caster to the target.'],
+      ['Feature', 'More hero moves: two-handed heroes leap in and slam big Attacks, daggers lunge, multi-hit Attacks strike twice, Powers rise into a glow, Rogues sidestep dodged hits, Warriors parry, Stealth makes your hero see-through, big hits knock you back, and fallen heroes slump. Monsters lunge when they attack and shake when hit.'],
+      ['Change', 'Damage and heal numbers are inked: heavy black outline, blocky letters; crits are big and red.'],
       ['Feature', 'Heroes wear their gear: your hero is now drawn from what you have equipped, in fights, in town and on the character sheet. Every helm, chest, shoulder, glove, belt, leg, boot, cloak, weapon and off-hand shows, each map\'s gear has its own look and colours, and rarity shows on the trim.'],
       ['Feature', 'Animations in fights: heroes swing their weapon when you play an Attack, spin when an Attack hits every enemy, cast spells and heals, brace for Block cards and flinch when hit.'],
     ] },

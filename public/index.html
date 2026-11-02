@@ -224,7 +224,11 @@ svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
 .intent.skip { opacity: .45; text-decoration: line-through; }
 .intent svg { width: 13px; height: 13px; }
 .pop { position: absolute; left: 50%; top: 30px; transform: translateX(-50%); font-family: var(--f-display); font-size: 30px; pointer-events: none; animation: pop 1.1s ease-out forwards; text-shadow: 0 2px 4px #000; }
-.pop.dmg { color: #ff7b5c; } .pop.blk { color: var(--block); } .pop.heal { color: var(--good); }
+.pop.dmg { color: #f4ecdc; } .pop.blk { color: #9fc4ff; } .pop.heal { color: #8fdc6a; }
+/* Nov 2: ink-style numbers: heavy black outline, straight blocky letters, a hard drop shadow; crits are red and bigger */
+.pop { font-family: "Barlow Semi Condensed", "Arial Narrow", sans-serif; font-weight: 800; font-style: normal; letter-spacing: .02em; -webkit-text-stroke: 7px #121918; paint-order: stroke fill; text-shadow: 3px 3px 0 #121918; line-height: 1; }
+.pop.dmg.crit { color: #ff3a2a; font-size: 42px; animation-name: popcrit; } .pop.blk::before { content: '\25C6 '; font-size: .7em; }
+@keyframes popcrit { 0% { opacity: 0; transform: translate(-50%, 6px) scale(.5) rotate(-6deg); } 15% { opacity: 1; transform: translate(-50%, -6px) scale(1.25) rotate(-6deg); } 30% { transform: translate(-50%, -12px) scale(1) rotate(-4deg); } 100% { opacity: 0; transform: translate(-50%, -46px) scale(1) rotate(-4deg); } }
 @keyframes pop { from { opacity: 1; transform: translate(-50%, 0) scale(1.15); } to { opacity: 0; transform: translate(-50%, -38px) scale(.9); } }
 @media (prefers-reduced-motion: reduce) { .pop { animation: none; opacity: 0; } }
 .hud { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px 18px; }
@@ -2485,6 +2489,7 @@ class Combat {
     if (e.beacon && e.hp > 0) { const by = this.actorById(e.beacon.by); e.beacon.acc = (e.beacon.acc || 0) + lost * e.beacon.pct / 100 * (by && by.isPlayer && by.powers.length ? this.pwProd(by, 'beaconX') : 1); const n = Math.floor(e.beacon.acc);
       if (n > 0) { e.beacon.acc -= n; const was = this.player; if (by && by.isPlayer) this.player = by; for (const a of this.allies()) this.heal(a, n, 'Soul Beacon', true); this.player = was; } }
   }
+  fxPush(x) { const q = this.fxQ = this.fxQ || []; if (q.length < 120) q.push(x); } // hits, heals, Block and debuffs for the fight screen's effects (src/fx.js)
   fire(p, hook, ...args) { if (!p || !p.isPlayer || !p.powers.length) return; for (const [pw, def] of this.pws(p)) if (def[hook] && !this.over) { const was = this.player; this.player = p; this.rkPw(pw, () => def[hook](this, p, ...args, pw)); this.player = was; } }
   pwProd(p, field, ...args) { let m = 1; for (const [pw, def] of this.pws(p)) { const v = def[field]; if (v == null) continue; let x = typeof v === 'function' ? this.rkPw(pw, () => v(this, p, ...args, pw)) : v; if (pw.rkMain && typeof x === 'number' && x !== 1) x = Math.max(0, 1 + (x - 1) * pw.rkMain); m *= x; } return m; }
   pwSum(p, field, ...args) { let m = 0; for (const [pw, def] of this.pws(p)) { const v = def[field]; if (v == null) continue; let x = typeof v === 'function' ? this.rkPw(pw, () => v(this, p, ...args, pw)) : v; if (pw.rkMain && typeof x === 'number' && x) x = Number.isInteger(x) ? Math.round(x * pw.rkMain) : x * pw.rkMain; m += x; } return m; }
@@ -2769,6 +2774,7 @@ class Combat {
     if (p.isPlayer && this.has(p, 'mana_shell')) { const v = Math.round(n * (1 + p.dexterity / 100)); p.mana += v; this.say('player', `Mana Shell: +${v} mana instead of ${p.defName}.`); return v; }
     const mult = 1 + p.dexterity / 100; const v = Math.round(n * mult);
     p.block += v;
+    if (v > 0) this.fxPush({ t: 'block', d: p.id, n: v });
     this.say('player', `${this.partySize > 1 ? p.name + ' gains' : 'You gain'} ${v} ${p.defName}` + (p.dexterity ? ` (${n} x ${mult.toFixed(2)} Dexterity)` : '') + (label === 'delayed' ? ' from last turn' : '') + `. ${p.defName} ${p.block}.`);
     return v;
   }
@@ -2787,6 +2793,7 @@ class Combat {
     if (want > h && !flowed && a.isPlayer && a.cls === 'Warlock' && a.hp > 0) { const x = want - h; a.block += x; this.say('heal', `${this.partySize > 1 ? a.name + "'s" : 'Your'} overhealing becomes ${x} Absorb (${a.block}).`); }
     a.hp += h; if (a.isPlayer) this.stats.healed += h;
     if (h > 0 && caster.isPlayer) this.fire(caster, 'onHeal', a, h);
+    if (h > 0 && !quiet) this.fxPush({ t: 'heal', d: a.id, n: h });
     if (h > 0) { const m = this.mtr(caster).healed, k = (label || 'Heal') + (caster !== a ? ' on ' + a.name : ''); m[k] = (m[k] || 0) + h; }
     if (h > 0 || !quiet) this.say('heal', `${a.isPlayer ? (this.partySize > 1 ? a.name + ' heals' : 'You heal') : a.name + ' heals'} ${h}${label ? ' (' + label + ')' : ''}. HP ${a.hp}/${a.maxHp}.`);
     return h;
@@ -2795,8 +2802,8 @@ class Combat {
     if (!e || e.hp <= 0) return;
     const q = this.player, strMult = (key === 'poison' || key === 'bleed') && q.isPlayer ? 1 + (q.strength + q.strTurn + q.strCombat) / 100 : (key === 'dread' || key === 'rot') && q.isPlayer ? 1 + (q.intelligence + (q.intTurn || 0)) / 100 : 1; // Nov 1: Poison and Bleed scale with Strength (50 Strength: 10 Bleed becomes 15); the Warlock's Dread and Rot with Intelligence
     const v = Math.round(n * strMult * (1 + this.player.spirit / 100) * this.pwKey(this.player, 'dotMult', key) * (key === 'bleed' && this.player.bleedX ? this.player.bleedX : 1)) + this.pwKey(this.player, 'dotPlus', key, 'sum');
-    if (key === 'rot') { const before = e.rot || 0, w = Math.round(v * this.rkm('rot')); this.addRot(e, w, 4, this.player); if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, w, before); this.say('player', `${e.name} gains ${w} Rot over 4 turns (Rot ${e.rot}).`); return; }
-    const before = e[key] || 0; e[key] = before + v; e[key + 'By'] = this.player.id;
+    if (key === 'rot') { this.fxPush({ t: 'apply', d: e.id, key: 'rot' }); const before = e.rot || 0, w = Math.round(v * this.rkm('rot')); this.addRot(e, w, 4, this.player); if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, w, before); this.say('player', `${e.name} gains ${w} Rot over 4 turns (Rot ${e.rot}).`); return; }
+    const before = e[key] || 0; e[key] = before + v; e[key + 'By'] = this.player.id; this.fxPush({ t: 'apply', d: e.id, key });
     if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, v, before);
     this.say('player', `${e.name} gains ${v} ${key[0].toUpperCase() + key.slice(1)} (now ${e[key]}).`);
   }
@@ -2822,7 +2829,9 @@ class Combat {
     if (src) { const m = this.mtr(src).dealt; m[label] = (m[label] || 0) + real; }
     { const t = this.mtr(tgt); const k = src ? src.name : label; t.taken[k] = (t.taken[k] || 0) + real; t.absorbed += absorbed; }
     if (tgt.isPlayer) { this.stats.taken += dmg; this.stats.blocked += absorbed; } else this.stats.dealt += dmg;
-    if (o.isDot && src && src.isPlayer && src.hp > 0 && !tgt.isPlayer && real > 0) this.dotHeal(src, tgt, real); // Nov 1: damage over time counts as damage you deal (Soulbinder, Lifesteal, Soul Beacon)
+    if (o.isDot && src && src.isPlayer && src.hp > 0 && !tgt.isPlayer && real > 0) this.dotHeal(src, tgt, real);
+    if (o.crit || (o.label && /crit!/.test(o.label))) tgt.critN = (tgt.critN || 0) + 1; // the screen shows this hit's number in red
+    this.fxPush({ t: 'hit', s: src ? src.id : null, d: tgt.id, dot: o.isDot ? (String(o.label || '').match(/Bleed|Poison|Burn|Dread|Rot|Chill/) || [''])[0].toLowerCase() || 'dot' : null, dtype: o.dtype || null, kind: o.kind || null, card: o.card || null, crit: !!(o.crit || (o.label && /crit!/.test(o.label))), lost: real, abs: absorbed, lbl: o.label || '' }); // Nov 1: damage over time counts as damage you deal (Soulbinder, Lifesteal, Soul Beacon)
     if (o.isDot) this.say('dot', `${tgt.isPlayer ? 'You take' : tgt.name + ' takes'} ${amount} ${o.label}` + (absorbed ? ` (${absorbed} absorbed)` : '') + `. HP ${tgt.hp}/${tgt.maxHp}.`);
     if (tgt.hp <= 0 && !o.defer) this.onDeath(tgt);
     return { lost: dmg, absorbed };
@@ -2902,7 +2911,7 @@ class Combat {
     if (pvp !== 1) parts.push(`x ${pvp.toFixed(2)} resist/Pressure`);
     if (pm !== 1) parts.push(`x ${pm.toFixed(2)} Powers`);
     const ign = (kind === 'Skill' && p.turn && p.turn.pierce) ? e.block : kind === 'Attack' && pow ? Math.floor(e.block * Math.min(1, Math.max(0, ...this.pws(p).map(([pw, d]) => d.ignoreBlock ? (pw.upN ? pw.upN[0] / 100 : d.ignoreBlock) : 0)))) : 0; e.block -= ign;
-    const r = this.applyHit(p, e, dmg, { defer: true, label }); e.block += ign;
+    const r = this.applyHit(p, e, dmg, { defer: true, label, crit, dtype, kind, card: cd && cd.key }); e.block += ign;
     if (pow) this.fire(p, 'dealt', { e, lost: r.lost, absorbed: r.absorbed, kind, dtype, d: cd, crit });
     if (e.beacon && r.lost > 0 && !e.isPlayer) { const by = this.actorById(e.beacon.by), n = Math.round(r.lost * e.beacon.pct / 100 * (by && by.powers.length ? this.pwProd(by, 'beaconX') : 1)); if (n > 0) for (const a of this.allies()) this.heal(a, n, 'Soul Beacon', true); }
     this._lastLost = r.lost;
@@ -2961,7 +2970,7 @@ class Combat {
     }
     const g = this.alivePlayers().find(q => q !== p && this.has(q, 'guardian_s_oath'));
     if (g && dmgIn > 0) { const part = Math.round(dmgIn * this.upN(g, 'guardian_s_oath', 0, 50) / 100); dmgIn -= part; this.applyHit(e, g, part, { defer: true, label }); this.say('player', `Guardian's Oath: ${g.name} takes ${part} of the hit for ${p.name}. HP ${g.hp}/${g.maxHp}.`); if (g.hp <= 0) this.onDeath(g); }
-    const r = this.applyHit(e, p, dmgIn, { defer: true, label });
+    const r = this.applyHit(e, p, dmgIn, { defer: true, label, dtype, kind: 'Attack' });
     this.say('enemy', `${e.name}'s ${label} hits ${this.partySize > 1 ? p.name : 'you'}${dtype !== 'Physical' ? ' (' + dtype + ')' : ''}: ${parts.join(' ')} = ${dmg}` + (r.absorbed ? `, ${r.absorbed} absorbed` : '') + `. HP ${p.hp}/${p.maxHp}.`);
     if (p.hp <= 0) { this.onDeath(p); return r.lost; }
     if (dmgIn > 0) { const na = p.timed.find(t => t.key === 'netherArmor'); if (na) { const n = na.n || 6; p.block += n; this.say('player', `Nether Armor: ${p.name} gains ${n} Absorb.`); } }
@@ -3036,7 +3045,7 @@ class Combat {
     const storm = d.key === 'shuriken' && this.has(p, 'shuriken_storm');
     const endless = d.key === 'shuriken' && this.hasTimed(p, 'endless') ? 2 : 1; times *= endless;
     const twin = T.twin && d.type === 'Attack' && (d.dtype || 'Physical') === 'Physical'; if (twin) { T.twin = false; times++; }
-    if (p.isPlayer) { const q = this.animQ = this.animQ || []; if (q.length < 20) q.push({ id: p.id, card: d.key, type: d.type, dtype: d.dtype || (d.type === 'Attack' ? 'Physical' : null), aoe: d.target === 'all' || !!d.tags.aoe, dmg: !!d.tags.dmg, def: !!d.tags.def, heal: !!d.tags.heal, tgt: tgt ? tgt.id : null }); } // the fight screen's animations (src/forge.js)
+    if (p.isPlayer) { const q = this.animQ = this.animQ || []; if (q.length < 20) q.push({ id: p.id, card: d.key, cost: d.cost || 0, type: d.type, dtype: d.dtype || (d.type === 'Attack' ? 'Physical' : null), aoe: d.target === 'all' || !!d.tags.aoe, dmg: !!d.tags.dmg, def: !!d.tags.def, heal: !!d.tags.heal, tgt: tgt ? tgt.id : null }); } // the fight screen's animations (src/forge.js)
     for (let i = 0; i < times && !this.over; i++) {
       if (storm) { for (const e of this.alive()) if (!this.over) d.play(this, e); continue; }
       if (tgt && tgt.hp <= 0 && d.target !== 'ally') tgt = this.alive()[0]; if (d.target === 'enemy' && !tgt) break;
@@ -5635,10 +5644,17 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     } catch (e) {}
     return 'Online';
   }
+  // the gear other players see on your hero in town (Nov 2): slot, item name and rarity for every slot that shows on the sprite
+  const LOOK_SLOTS = ['Helm', 'Chest', 'Shoulders', 'Gloves', 'Bracers', 'Belt', 'Pants', 'Boots', 'Cloak', 'Weapon', 'Off-hand'];
+  function lookList(c) { return c ? (c.gear || []).filter(g => g && LOOK_SLOTS.includes(g.slot)).map(g => [g.slot, g.name, (g.rarity || 'White')[0]]) : null; }
+  const RAR_OF = { W: 'White', G: 'Green', B: 'Blue', P: 'Purple (Epic)', C: 'Codex' };
+  function lookGear(lk) { return (lk || []).map(([slot, name, r]) => ({ slot, name, rarity: RAR_OF[r] || 'White' })); }
+  let lookSent = '';
+  setInterval(() => { if (typeof socOn !== 'function' || !socOn() || !profile) return; const sig = JSON.stringify(lookList(profile.chars[heroKey])); if (sig !== lookSent) { lookSent = sig; retrack(); } }, 3000); // gear changed: let the town see it
   function myPresence() {
     const c = profile.chars[heroKey];
     const place = !$('scrStart').hidden ? 'town' : run ? 'run' : cb && cb.duel ? 'duel' : 'menu';
-    return { uid: SOC.me, guild: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), shop: typeof BZ !== 'undefined' && BZ.open ? { t: shopTitle(), n: bzState().items.length } : null, arena: typeof arenaPresence === 'function' ? arenaPresence() : null, x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
+    return { lk: lookList(c), uid: SOC.me, guild: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), shop: typeof BZ !== 'undefined' && BZ.open ? { t: shopTitle(), n: bzState().items.length } : null, arena: typeof arenaPresence === 'function' ? arenaPresence() : null, x: P.x, y: P.y, dir: P.dir, party: SOC.party ? SOC.party.id : null };
   }
 
   async function socStart() {
@@ -5710,8 +5726,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     for (const [uid, st] of SOC.online) {
       if (uid === SOC.me || st.place !== 'town' || !st.cls) { SOC.others.delete(uid); continue; }
       const o = SOC.others.get(uid);
-      if (!o) SOC.others.set(uid, { uid, x: st.x, y: st.y, fx: st.x, fy: st.y, t: 1, dir: st.dir || 'down', step: 0, name: st.name, guild: st.guild || null, cls: st.cls, rc: st.rc || {}, party: st.party, shop: st.shop || null });
-      else Object.assign(o, { guild: st.guild || null, name: st.name, cls: st.cls, rc: st.rc || {}, party: st.party, shop: st.shop || null });
+      if (!o) SOC.others.set(uid, { uid, x: st.x, y: st.y, fx: st.x, fy: st.y, t: 1, dir: st.dir || 'down', step: 0, name: st.name, guild: st.guild || null, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, party: st.party, shop: st.shop || null });
+      else Object.assign(o, { guild: st.guild || null, name: st.name, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, party: st.party, shop: st.shop || null });
     }
     for (const uid of [...SOC.others.keys()]) if (!SOC.online.has(uid)) SOC.others.delete(uid);
   }
@@ -5726,7 +5742,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const out = [];
     for (const o of SOC.others.values()) {
       const p = otherPos(o), moving = o.t < 1;
-      const pal = palFor(o.cls, o.rc || {});
+      const pal = Object.assign(palFor(o.cls, o.rc || {}), o.lk ? { forge: { cls: o.cls, gear: lookGear(o.lk), who: o.uid } } : {}); // their real gear (src/forge.js)
       out.push({ y: p.y + 0.5, f: () => {
         drawChar(gx, p.x * TS + TS / 2, p.y * TS + TS * 0.92, o.dir, moving ? ((o.step + (o.t > 0.5 ? 1 : 0)) % 2 ? 1 : 2) : 0, pal, s, t);
         const tx = p.x * TS + TS / 2, ty = townTag(gx, tx, p.y * TS + TS * 0.92, o.name, SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0', o.guild, s);
@@ -6139,8 +6155,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793594141227';
-  const CB_BUILD = '17c9e47e6d'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793595156371';
+  const CB_BUILD = '8c374b9cd0'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -7210,6 +7226,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Feature', 'Your hero in town shows your gear to everyone: other players see exactly what you\'re wearing (and you see theirs). It updates a few seconds after you change gear.'],
+      ['Feature', 'Hit effects: slashes, stabs, smashes and claw marks by weapon, element bursts (fire, frost, shadow, holy, arcane, nature), bleed drops, poison bubbles, burn, dread and rot ticks, heals, Block shields, parry sparks, dodges, and a red burst with a screen shake on crits. Spells fly from the caster to the target.'],
+      ['Feature', 'More hero moves: two-handed heroes leap in and slam big Attacks, daggers lunge, multi-hit Attacks strike twice, Powers rise into a glow, Rogues sidestep dodged hits, Warriors parry, Stealth makes your hero see-through, big hits knock you back, and fallen heroes slump. Monsters lunge when they attack and shake when hit.'],
+      ['Change', 'Damage and heal numbers are inked: heavy black outline, blocky letters; crits are big and red.'],
       ['Feature', 'Heroes wear their gear: your hero is now drawn from what you have equipped, in fights, in town and on the character sheet. Every helm, chest, shoulder, glove, belt, leg, boot, cloak, weapon and off-hand shows, each map\'s gear has its own look and colours, and rarity shows on the trim.'],
       ['Feature', 'Animations in fights: heroes swing their weapon when you play an Attack, spin when an Attack hits every enemy, cast spells and heals, brace for Block cards and flinch when hit.'],
     ] },
@@ -9333,8 +9353,8 @@ async function exportTravelPack(){
     const keyOf = (L) => JSON.stringify([L.face, L.hair, L.items, L.dyes]);
     // ---------- frames: drawn once per look, cropped, cached
     const RW = 240; // drawing width (the motion canvas is wider than the figure: room for the swing)
-    const CLIPN = { idle: 8, attack: 9, cast: 9, guard: 6, hit: 5, ready: 1 };
-    const ORDER = ['idle', 'hit', 'attack', 'cast', 'guard', 'ready'];
+    const CLIPN = { idle: 8, attack: 9, cast: 9, guard: 6, hit: 5, ready: 1, jump: 6 };
+    const ORDER = ['idle', 'hit', 'attack', 'cast', 'guard', 'ready', 'jump'];
     const cache = new Map(), queue = [];
     function crop(cv) {
       const c = cv.getContext('2d'), w = cv.width, h = cv.height, d = c.getImageData(0, 0, w, h).data; let x0 = w, y0 = h, x1 = -1, y1 = -1;
@@ -9347,10 +9367,11 @@ async function exportTravelPack(){
       const k = keyOf(L); let S = cache.get(k); if (S) return S;
       S = { key: k, look: L, s: stateFor(L), clips: {}, ms: {}, box: null, W: 0, H: 0, ready: false };
       for (const c of ORDER) { S.clips[c] = new Array(CLIPN[c]).fill(null); S.ms[c] = c === 'ready' ? 0 : (P.clipInfo(S.s, c) || {}).ms || 1000; }
-      cache.set(k, S); for (const c of ORDER) for (let i = 0; i < CLIPN[c]; i++) queue.push([S, c, i]); pump();
-      if (cache.size > 24) { const old = cache.keys().next().value; cache.delete(old); } // a handful of looks at a time is plenty
+      cache.set(k, S);
+      if (cache.size > 48) { const old = cache.keys().next().value; cache.delete(old); } // a town's worth of looks at a time is plenty
       return S;
     }
+    function fightFrames(S) { if (S.fightQ) return S; S.fightQ = true; for (const c of ORDER) for (let i = 0; i < CLIPN[c]; i++) queue.push([S, c, i]); pump(); return S; } // only fighters need these
     let pumping = false;
     function pump() { if (pumping) return; pumping = true; setTimeout(step, 0); }
     function step() {
@@ -9387,51 +9408,275 @@ async function exportTravelPack(){
       g.translate(cx, 0); if (left) g.scale(-1, 1); g.imageSmoothingQuality = 'high'; g.drawImage(fr.cv, dx, top, fr.w * k, fr.h * k); g.restore();
       return true;
     }
-    // ---------- animation state per fighter (by actor id), and the fight-screen player
-    const anim = {}; // id -> { clip, t0, fx }
-    function play(id, clip, fx) { anim[id] = { clip, t0: performance.now(), fx: fx || null }; }
-    const TWIRL_MS = 620;
+    // ---------- moves: drawn frames plus body motion over time. x/y are fractions of the figure's height (x > 0 = toward the enemy)
+    const bell = (t, a, b, c) => t <= a || t >= c ? 0 : t < b ? Math.sin((t - a) / (b - a) * Math.PI / 2) : Math.cos((t - b) / (c - b) * Math.PI / 2);
+    const ease = (t) => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
+    const seq = (S, clip, u) => { const F = S.clips[clip]; if (!F || !F.every(Boolean)) return null; return F[Math.min(F.length - 1, Math.max(0, Math.floor(u * F.length)))]; };
+    const MOVES = {
+      attack: { ms: (S) => S.ms.attack, f: (S, u) => ({ fr: seq(S, 'attack', u), x: 0.16 * bell(u, 0.2, 0.48, 0.9) }) },                     // a forward step into the swing
+      heavy: { ms: (S) => S.ms.attack * 1.15, f: (S, u) => ({ fr: seq(S, 'attack', u), x: 0.1 * bell(u, 0.25, 0.5, 0.95), y: 0.02 * bell(u, 0.45, 0.52, 0.7) }) },
+      leap: { ms: () => 1000, f: (S, u) => u < 0.42 ? { fr: seq(S, 'jump', u / 0.42), x: 0.42 * ease(u / 0.42), y: -0.5 * Math.sin(u / 0.42 * Math.PI) }          // 2H: leap in...
+        : { fr: seq(S, 'attack', 0.25 + (u - 0.42) / 0.58 * 0.75), x: 0.42 * (1 - ease((u - 0.42) / 0.58)), y: 0.03 * bell(u, 0.45, 0.5, 0.62), ev: 'land' } }, // ...and slam down
+      lunge: { ms: (S) => S.ms.attack * 0.85, f: (S, u) => ({ fr: seq(S, 'attack', u), x: 0.3 * bell(u, 0.15, 0.45, 0.95) }) },            // daggers and thrusts: a long dash in and out
+      double: { ms: (S) => S.ms.attack * 1.5, f: (S, u) => { const v = u < 0.5 ? u * 2 : (u - 0.5) * 2; return { fr: seq(S, 'attack', 0.15 + v * 0.85), x: 0.14 * bell(v, 0.1, 0.45, 0.95) }; } },
+      cast: { ms: (S) => S.ms.cast, f: (S, u) => ({ fr: seq(S, 'cast', u) }) },
+      empower: { ms: (S) => S.ms.cast * 1.1, f: (S, u) => ({ fr: seq(S, 'cast', u), y: -0.05 * bell(u, 0.2, 0.55, 1) }) },                  // Powers: rise into a glow
+      guard: { ms: (S) => S.ms.guard, f: (S, u) => ({ fr: seq(S, 'guard', u), x: -0.03 * bell(u, 0.2, 0.45, 1) }) },
+      guard2: { ms: (S) => S.ms.guard * 1.5, f: (S, u) => { const v = u < 0.5 ? u * 2 : (u - 0.5) * 2; return { fr: seq(S, 'guard', 0.2 + v * 0.8), x: -0.04 * bell(v, 0.2, 0.45, 1) }; } }, // more than one Block in a card
+      hit: { ms: (S) => S.ms.hit, f: (S, u) => ({ fr: seq(S, 'hit', u), x: -0.07 * bell(u, 0, 0.2, 1) }) },
+      knock: { ms: (S) => S.ms.hit * 1.3, f: (S, u) => ({ fr: seq(S, 'hit', u), x: -0.2 * bell(u, 0, 0.18, 1), rot: -6 * bell(u, 0, 0.2, 1) }) }, // a big hit
+      dodge: { ms: () => 420, f: (S, u) => ({ fr: seq(S, 'guard', 0.3), x: -0.34 * bell(u, 0, 0.35, 1), alpha: 1 - 0.45 * bell(u, 0, 0.35, 1) }) },
+      parry: { ms: (S) => S.ms.guard, f: (S, u) => ({ fr: seq(S, 'guard', 0.5 + u * 0.5), x: 0.05 * bell(u, 0, 0.15, 0.6) }) },
+      vanish: { ms: () => 500, f: (S, u) => ({ fr: S.clips.idle[0], alpha: 1 - 0.62 * ease(u), y: 0.02 * ease(u) }) },
+      twirl: { ms: () => 620, f: (S, u) => ({ fr: S.clips.ready[0] || S.clips.idle[0], spin: u }) },
+    };
+    const anim = {}; // id -> { move, t0, until }
+    function play(id, move, o) { if (!MOVES[move] && !EMOVES[move]) return; anim[id] = Object.assign({ move, t0: performance.now() }, o || {}); }
+    // monsters are still pictures: they lunge at you and shake when hit
+    const EMOVES = { elunge: { ms: 520, f: (u) => ({ x: 0.22 * bell(u, 0.1, 0.4, 1) }) }, ehit: { ms: 360, f: (u) => ({ x: -0.05 * Math.sin(u * Math.PI * 5) * (1 - u), rot: 3 * Math.sin(u * Math.PI * 4) * (1 - u) }) },
+      eknock: { ms: 520, f: (u) => ({ x: -0.14 * bell(u, 0, 0.2, 1), rot: 7 * bell(u, 0, 0.2, 1) }) } };
     function figureHtml(a, fallback) {
-      const L = lookFor(a.cls, a.look), S = sprite(L), ar = S.box ? S.box.w / S.box.h : 0.62;
+      const L = lookFor(a.cls, a.look), S = fightFrames(sprite(L)), ar = S.box ? S.box.w / S.box.h : 0.62;
       return `<span class="forgefig${S.ready ? ' on' : ''}" data-fg="${a.id}" data-fk="${encodeURIComponent(S.key)}" style="--s:1.12;--ar:${ar.toFixed(3)}"><canvas></canvas>${fallback || ''}</span>`;
     }
     const byKey = (k) => cache.get(decodeURIComponent(k));
-    function frameFor(S, st, now) {
-      let clip = st ? st.clip : 'idle', t = st ? now - st.t0 : now;
-      if (clip === 'twirl') { if (t > TWIRL_MS) { clip = 'idle'; t = now; } else return { f: S.clips.ready[0] || S.clips.idle[0], spin: t / TWIRL_MS }; }
-      const fr = S.clips[clip], ms = S.ms[clip] || 1000;
-      if (clip !== 'idle' && (t > ms || !fr || !fr.every(Boolean))) { clip = 'idle'; t = now; }
-      const F = S.clips[clip], n = F.length, i = clip === 'idle' ? Math.floor((t % S.ms.idle) / S.ms.idle * n) : Math.min(n - 1, Math.floor(t / (S.ms[clip] || 1000) * n));
-      return { f: F[i] || S.clips.idle[0], spin: null };
+    const states = {}; // id -> { stealth, dead } (set by the fight screen every render)
+    function setStates(m) { for (const k in states) delete states[k]; Object.assign(states, m); }
+    const events = []; // move events the effects layer listens for (e.g. a leap landing)
+    function frameFor(S, id, now) {
+      const st = anim[id], M = st && MOVES[st.move], sx = states[id] || {};
+      if (sx.dead) return { fr: seq(S, 'hit', 0.99) || S.clips.idle[0], rot: -80, y: 0.08, dead: true };
+      if (M) { const ms = M.ms(S), u = (now - st.t0) / ms; if (u < 1) { const r = M.f(S, u); if (r.fr) { if (r.ev && !st.fired) { st.fired = true; events.push({ id, ev: r.ev }); } if (sx.stealth && r.alpha == null) r.alpha = 0.4; return r; } } delete anim[id]; }
+      const F = S.clips.idle, i = Math.floor((now % S.ms.idle) / S.ms.idle * F.length);
+      return { fr: F[i] || F[0], alpha: sx.stealth ? 0.38 : 1, y: sx.stealth ? 0.025 : 0 };
     }
     function draw(now) {
       for (const el of document.querySelectorAll('.forgefig')) {
         const S = byKey(el.dataset.fk); if (!S || !S.ready) continue;
         const cv = el.firstElementChild; if (!el.classList.contains('on')) { el.classList.add('on'); el.style.setProperty('--ar', (S.box.w / S.box.h).toFixed(3)); }
         if (cv.width !== S.W) { cv.width = S.W; cv.height = S.H; }
-        const h = el.clientHeight; if (h && cv.dataset.h !== String(h)) { const k = h / S.box.h; cv.style.width = S.W * k + 'px'; cv.style.height = S.H * k + 'px'; cv.style.left = -S.box.x * k + 'px'; cv.style.top = -S.box.y * k + 'px'; cv.dataset.h = h; }
-        const r = frameFor(S, anim[el.dataset.fg], now); if (!r.f || !r.f.cv) continue;
-        const sig = r.f.x + ':' + r.f.y + ':' + r.f.w + ':' + (r.spin == null ? '' : Math.round(r.spin * 40)) + ':' + (r.f.cv && r.f.cv.width);
+        const h = el.clientHeight, k = h / S.box.h;
+        if (h && cv.dataset.h !== String(h)) { cv.style.width = S.W * k + 'px'; cv.style.height = S.H * k + 'px'; cv.style.left = -S.box.x * k + 'px'; cv.style.top = -S.box.y * k + 'px'; cv.style.transformOrigin = `${(S.box.x + S.box.w / 2) * k}px ${(S.box.y + S.box.h) * k}px`; cv.dataset.h = h; }
+        const id = el.dataset.fg, r = frameFor(S, id, now); if (!r.fr || !r.fr.cv) continue;
+        const flip = el.closest('#foes') ? -1 : 1; // a hero on the right (duels) faces left
+        const tf = `translate(${((r.x || 0) * flip * h).toFixed(1)}px, ${((r.y || 0) * h).toFixed(1)}px) rotate(${((r.rot || 0) * flip).toFixed(1)}deg)${flip < 0 ? ' scaleX(-1)' : ''}`;
+        if (cv._tf !== tf) { cv.style.transform = tf; cv._tf = tf; }
+        const al = r.alpha == null ? 1 : r.alpha; if (cv._al !== al) { cv.style.opacity = al; cv._al = al; }
+        const sig = r.fr.x + ':' + r.fr.y + ':' + r.fr.w + ':' + (r.spin == null ? '' : Math.round(r.spin * 40)) + ':' + r.fr.cv.width;
         if (cv._sig === sig && r.spin == null) continue; cv._sig = sig;
         const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height);
-        if (r.spin != null) { // twirl: a cut-paper spin (the figure turns edge-on and back) with an ink swoosh around it
-          const cx = S.box.x + S.box.w / 2, sx = Math.cos(r.spin * Math.PI * 2);
-          const sc = Math.sign(sx || 1) * Math.max(0.22, Math.pow(Math.abs(sx), 0.45)); // eased so the figure stays readable through most of the spin
-          g.save(); g.translate(cx, 0); g.scale(sc, 1); g.translate(-cx, 0); g.drawImage(r.f.cv, r.f.x, r.f.y); g.restore();
+        if (r.spin != null) { // twirl: a cut-paper spin with an ink swoosh around it
+          const cx = S.box.x + S.box.w / 2, sx = Math.cos(r.spin * Math.PI * 2), sc = Math.sign(sx || 1) * Math.max(0.22, Math.pow(Math.abs(sx), 0.45));
+          g.save(); g.translate(cx, 0); g.scale(sc, 1); g.translate(-cx, 0); g.drawImage(r.fr.cv, r.fr.x, r.fr.y); g.restore();
           const cy = S.box.y + S.box.h * 0.55, rx = S.box.w * 0.95, ry = S.box.h * 0.16, a0 = r.spin * Math.PI * 4;
           g.save(); g.globalAlpha = Math.sin(r.spin * Math.PI) * 0.85; g.lineCap = 'round';
           for (const [w, col] of [[7, '#121918'], [3.5, '#e8d6a8']]) { g.lineWidth = w; g.strokeStyle = col; g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, a0, a0 + Math.PI * 1.3); g.stroke(); }
           g.restore();
-        } else g.drawImage(r.f.cv, r.f.x, r.f.y);
+        } else g.drawImage(r.fr.cv, r.fr.x, r.fr.y);
+      }
+      for (const id in anim) { // monster pictures
+        const st = anim[id], M = EMOVES[st.move]; if (!M) continue;
+        const img = document.querySelector(`.unit[data-id="${id}"] .figure > img, .unit[data-id="${id}"] .figure > svg`); const u = (now - st.t0) / M.ms;
+        if (u >= 1) { delete anim[id]; if (img) img.style.transform = ''; continue; }
+        if (!img) continue; const h = img.clientHeight || 100, r = M.f(u), flip = img.closest('#foes') ? -1 : 1;
+        img.style.transformOrigin = '50% 100%'; img.style.transform = `translate(${((r.x || 0) * flip * h).toFixed(1)}px, ${((r.y || 0) * h).toFixed(1)}px) rotate(${((r.rot || 0) * flip).toFixed(1)}deg)`;
       }
       requestAnimationFrame(draw);
     }
     requestAnimationFrame(draw);
-    // ---------- what a played card looks like
-    function clipForCard(q) { if (q.type === 'Attack') return q.aoe ? 'twirl' : 'attack'; if (q.type === 'Skill') return q.dmg || q.heal ? 'cast' : q.def ? 'guard' : 'cast'; return 'cast'; }
-    function consume(cb) { const Q = cb && cb.animQ; if (!Q || !Q.length) return; for (const q of Q.splice(0)) play(q.id, clipForCard(q), q); }
-    function warm(cls, gear) { return sprite(lookFor(cls, gear)); } // start drawing a hero before the fight opens
-    return { town, lookFor, stateFor, sprite, figureHtml, play, consume, warm, clipForCard, cache, ARCH, CLASS_LOOK };
+    // ---------- the hero's weapon, so the effects layer can pick a slash, a stab or a smash
+    function weaponKind(a) { const id = lookFor(a.cls, a.look).items.weapon || 'none_0'; return /^(dagger|polearm)/.test(id) ? 'pierce' : /^(mace|hammer|staff|wand|none|fist)/.test(id) ? (/^fist/.test(id) ? 'claw' : 'blunt') : 'slash'; }
+    function twoHanded(a) { return /^(greatsword|greataxe|hammer|polearm|staff)/.test(lookFor(a.cls, a.look).items.weapon || ''); }
+    function warm(cls, gear) { return fightFrames(sprite(lookFor(cls, gear))); } // start drawing a hero before the fight opens
+    return { town, lookFor, stateFor, sprite, figureHtml, play, setStates, events, weaponKind, twoHanded, warm, cache, ARCH, CLASS_LOOK, MOVES, EMOVES, frameFor, fightFrames };
+  })();
+
+  // ---------- Fight effects (Nov 2): ink-style hit effects, spell projectiles and the move each hero makes, all driven by the engine's events.
+  // cb.animQ: one entry per card a hero plays (who, card type, element, target). cb.fxQ: every hit (with element, crit, Block absorbed,
+  // damage-over-time type), debuff applied, heal and Block gained. consume(cb) runs after each render: it picks the hero's move (swing, leap,
+  // lunge, double strike, twirl, cast, empower, guard, dodge, parry, vanish...) and queues effects (slashes, stabs, smashes, claw marks,
+  // fire, frost, shadow, holy, arcane, nature, poison, bleed, heals, Block, sparks...) drawn on one overlay canvas above the battlefield.
+  // Every effect is drawn in code (no images): a heavy black outline under a coloured fill, cut-paper angles.
+  // TO REMOVE: delete this file; render() skips it when window.CB_FX is missing.
+  window.CB_FX = (function () {
+    const INK = '#121918';
+    const EL = { Physical: ['#f4ecdc', '#ffffff'], Fire: ['#ff7a1a', '#ffd23a'], Frost: ['#7fd3ff', '#e8fbff'], Shadow: ['#8a5cc8', '#2a1838'], Holy: ['#ffd86a', '#fff6c8'],
+      Arcane: ['#c48bff', '#f0dcff'], Nature: ['#7fd36a', '#d9f7b0'] };
+    const cv = document.createElement('canvas'); cv.id = 'fxLayer'; cv.setAttribute('aria-hidden', 'true'); document.body.appendChild(cv);
+    const css = document.createElement('style'); css.textContent = `#fxLayer { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 40; }
+      .fxshake { animation: fxshake .26s linear; } @keyframes fxshake { 0%,100% { transform: none; } 20% { transform: translate(-5px, 2px); } 40% { transform: translate(4px, -3px); } 60% { transform: translate(-3px, -1px); } 80% { transform: translate(2px, 2px); } }
+      @media (prefers-reduced-motion: reduce) { #fxLayer { display: none; } .fxshake { animation: none; } }`;
+    document.head.appendChild(css);
+    const g = cv.getContext('2d'); let dpr = 1;
+    function fit() { dpr = Math.min(2, window.devicePixelRatio || 1); cv.width = Math.round(innerWidth * dpr); cv.height = Math.round(innerHeight * dpr); }
+    fit(); addEventListener('resize', fit);
+    const live = []; // { kind, id | from/to, t0, ms, o }
+    const now = () => performance.now();
+    function add(kind, o, delay) { live.push({ kind, o: o || {}, t0: now() + (delay || 0), ms: (DRAW[kind] && DRAW[kind].ms) || 500 }); if (live.length > 140) live.splice(0, live.length - 140); }
+    // where a fighter is on screen: centre of the figure, plus a size factor (1 = a 110 px tall figure)
+    function spot(id, at) {
+      const f = document.querySelector(`.unit[data-id="${id}"] .figure`); if (!f) return null; const r = f.getBoundingClientRect(); if (!r.width) return null;
+      const side = f.closest('#foes') ? -1 : 1; return { x: r.left + r.width / 2, y: r.top + r.height * (at == null ? 0.48 : at), s: Math.max(0.55, Math.min(1.5, r.height / 110)), side, w: r.width, h: r.height, feet: r.bottom };
+    }
+    // ---------- ink drawing helpers
+    const P2 = (pts) => { const p = new Path2D(); pts.forEach(([x, y], i) => i ? p.lineTo(x, y) : p.moveTo(x, y)); p.closePath(); return p; };
+    function ink(path, fill, w, a) { g.save(); if (a != null) g.globalAlpha *= a; g.lineJoin = 'round'; g.lineCap = 'round'; g.lineWidth = w || 5; g.strokeStyle = INK; g.stroke(path); if (fill) { g.fillStyle = fill; g.fill(path); } g.restore(); }
+    function inkLine(pts, col, w) { const p = new Path2D(); pts.forEach(([x, y], i) => i ? p.lineTo(x, y) : p.moveTo(x, y)); g.save(); g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = INK; g.lineWidth = w + 4; g.stroke(p); g.strokeStyle = col; g.lineWidth = w; g.stroke(p); g.restore(); }
+    const fade = (u, a, b) => u < a ? 1 : u > b ? 0 : 1 - (u - a) / (b - a);
+    const rnd = (seed) => { let r = seed >>> 0 || 1; return () => (r = (Math.imul(r, 1664525) + 1013904223) >>> 0) / 4294967296; };
+    function crescent(x, y, R, ang, sweep, reveal, w, col) { // a tapered slash arc
+      const n = 16, outer = [], inner = []; const end = Math.max(0.05, reveal);
+      for (let i = 0; i <= n; i++) { const t = i / n * end, a = ang + sweep * t, th = Math.sin(Math.PI * Math.min(1, t / end)) * w; outer.push([x + Math.cos(a) * R, y + Math.sin(a) * R]); inner.push([x + Math.cos(a) * (R - th), y + Math.sin(a) * (R - th)]); }
+      return P2(outer.concat(inner.reverse()));
+    }
+    function star(x, y, n, r0, r1, rot) { const pts = []; for (let i = 0; i < n * 2; i++) { const a = rot + i * Math.PI / n, r = i % 2 ? r0 : r1; pts.push([x + Math.cos(a) * r, y + Math.sin(a) * r]); } return P2(pts); }
+    function flame(x, y, h, w, lean) { const p = new Path2D(); p.moveTo(x - w, y); p.quadraticCurveTo(x - w * 1.1, y - h * 0.45, x + lean, y - h); p.quadraticCurveTo(x + w * 0.9, y - h * 0.5, x + w, y); p.closePath(); return p; }
+    function drop(x, y, r) { const p = new Path2D(); p.moveTo(x, y - r * 1.9); p.quadraticCurveTo(x + r * 1.1, y - r * 0.4, x + r, y + r * 0.2); p.arc(x, y + r * 0.2, r, 0, Math.PI); p.quadraticCurveTo(x - r * 1.1, y - r * 0.4, x, y - r * 1.9); return p; }
+    const circ = (x, y, r) => { const p = new Path2D(); p.arc(x, y, Math.max(0.1, r), 0, Math.PI * 2); return p; };
+    // ---------- the effects. Each: ms, and d(u 0..1, x, y, s, o) drawn at a fighter (or from/to for projectiles)
+    const DRAW = {
+      slash: { ms: 380, d(u, x, y, s, o) { const R = 46 * s, a = (o.ang || -2.4); g.globalAlpha = fade(u, 0.45, 1); ink(crescent(x + 6 * s, y + 4 * s, R, a, 2.1, Math.min(1, u * 2.6), 13 * s * (o.big ? 1.4 : 1), 0), o.col || '#f4ecdc', 5); } },
+      claw: { ms: 380, d(u, x, y, s, o) { g.globalAlpha = fade(u, 0.45, 1); for (let i = -1; i <= 1; i++) ink(crescent(x + i * 13 * s, y + i * 4 * s, 38 * s, -2.1, 1.5, Math.min(1, u * 2.8 - (i + 1) * 0.12), 7 * s, 0), o.col || '#f4ecdc', 4); } },
+      pierce: { ms: 320, d(u, x, y, s, o) { const L = 70 * s, k = Math.min(1, u * 3), dx = -L * 0.8 + L * 1.2 * k, a = 1 - fade(u, 0, 0.15) * 0 ; g.globalAlpha = fade(u, 0.5, 1);
+        const sd = o.side || 1; ink(P2([[x - sd * (L - dx) , y - 3 * s], [x + sd * dx, y], [x - sd * (L - dx), y + 3 * s]]), o.col || '#f4ecdc', 4); if (k > 0.8) ink(star(x + sd * 8 * s, y, 4, 4 * s, 15 * s * (1 + u), 0.3), '#ffffff', 4); } },
+      blunt: { ms: 360, d(u, x, y, s, o) { const k = Math.min(1, u * 4); g.globalAlpha = fade(u, 0.4, 1); ink(star(x, y, 8, 10 * s * k, 30 * s * k * (o.big ? 1.3 : 1), 0.2), o.col || '#f4ecdc', 5); ink(star(x, y, 6, 5 * s * k, 13 * s * k, 0.7), '#ffd86a', 3);
+        g.save(); g.globalAlpha *= 0.8; g.lineWidth = 3; g.strokeStyle = INK; g.beginPath(); g.ellipse(x, y, 40 * s * u, 14 * s * u, 0, 0, Math.PI * 2); g.stroke(); g.restore(); } },
+      crit: { ms: 420, d(u, x, y, s) { const k = Math.min(1, u * 3); g.globalAlpha = fade(u, 0.3, 1) * 0.95; ink(star(x, y, 12, 18 * s * k, 58 * s * k, u * 0.6), '#d8261c', 4); } },
+      fire: { ms: 600, d(u, x, y, s, o) { const R = rnd(o.seed || 7), k = Math.min(1, u * 3); g.globalAlpha = fade(u, 0.5, 1);
+        for (let i = 0; i < 7; i++) { const a = R() * Math.PI * 2, d = (8 + R() * 18) * s * k, fx = x + Math.cos(a) * d, fy = y + Math.sin(a) * d * 0.6 + 14 * s; const h = (24 + R() * 22) * s * k * (1 - u * 0.4);
+          ink(flame(fx, fy, h, 7 * s, (R() - 0.5) * 10 * s), i % 2 ? '#ff7a1a' : '#ffb21a', 4); ink(flame(fx, fy, h * 0.55, 3.5 * s, 0), '#ffe27a', 3); }
+        for (let i = 0; i < 6; i++) { const a = R() * Math.PI * 2, d = 30 * s * u + R() * 10 * s; ink(P2([[x + Math.cos(a) * d, y - 20 * s * u + Math.sin(a) * d], [x + Math.cos(a) * d + 3 * s, y - 20 * s * u + Math.sin(a) * d], [x + Math.cos(a) * d + 3 * s, y - 20 * s * u + Math.sin(a) * d + 3 * s]]), '#ffd23a', 2); } } },
+      frost: { ms: 560, d(u, x, y, s) { const k = Math.min(1, u * 3.5); g.globalAlpha = fade(u, 0.5, 1);
+        for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2 + 0.3, L = (20 + (i % 3) * 9) * s * k; ink(P2([[x, y], [x + Math.cos(a + 0.18) * L * 0.4, y + Math.sin(a + 0.18) * L * 0.4], [x + Math.cos(a) * L, y + Math.sin(a) * L], [x + Math.cos(a - 0.18) * L * 0.4, y + Math.sin(a - 0.18) * L * 0.4]]), i % 2 ? '#bfe9ff' : '#7fd3ff', 3.5); }
+        ink(star(x, y, 6, 5 * s, 11 * s, 0), '#e8fbff', 3); } },
+      shadow: { ms: 620, d(u, x, y, s, o) { const R = rnd(o.seed || 3), k = Math.min(1, u * 2.5); g.globalAlpha = fade(u, 0.45, 1);
+        ink(circ(x, y, 14 * s * k), '#2a1838', 4);
+        for (let i = 0; i < 5; i++) { const a = R() * Math.PI * 2, L = 36 * s * k, c = a + (R() - 0.5) * 1.6; inkLine([[x, y], [x + Math.cos(c) * L * 0.55 + Math.cos(a + 1.4) * 8 * s, y + Math.sin(c) * L * 0.55 + Math.sin(a + 1.4) * 8 * s], [x + Math.cos(a) * L, y + Math.sin(a) * L]], '#8a5cc8', 4 * s * (1 - u * 0.6)); } } },
+      holy: { ms: 620, d(u, x, y, s) { const k = Math.min(1, u * 3); g.globalAlpha = fade(u, 0.5, 1);
+        ink(P2([[x - 9 * s, y - 140 * s], [x + 9 * s, y - 140 * s], [x + 13 * s * k, y + 12 * s], [x - 13 * s * k, y + 12 * s]]), '#fff1b0', 4, 0.85);
+        ink(star(x, y, 8, 9 * s * k, 34 * s * k, 0.2), '#ffd86a', 4); ink(P2([[x - 3 * s, y - 15 * s], [x + 3 * s, y - 15 * s], [x + 3 * s, y - 3 * s], [x + 13 * s, y - 3 * s], [x + 13 * s, y + 3 * s], [x + 3 * s, y + 3 * s], [x + 3 * s, y + 17 * s], [x - 3 * s, y + 17 * s], [x - 3 * s, y + 3 * s], [x - 13 * s, y + 3 * s], [x - 13 * s, y - 3 * s], [x - 3 * s, y - 3 * s]]), '#fff6c8', 3); } },
+      arcane: { ms: 600, d(u, x, y, s) { const k = Math.min(1, u * 3), R = 26 * s * k; g.globalAlpha = fade(u, 0.5, 1);
+        g.save(); g.lineWidth = 8; g.strokeStyle = INK; g.beginPath(); g.arc(x, y, R, 0, Math.PI * 2); g.stroke(); g.lineWidth = 3.5; g.strokeStyle = '#c48bff'; g.stroke(); g.restore();
+        for (let i = 0; i < 6; i++) { const a = u * 3 + i * Math.PI / 3; ink(P2([[x + Math.cos(a) * R, y + Math.sin(a) * R - 5 * s], [x + Math.cos(a) * R + 4 * s, y + Math.sin(a) * R], [x + Math.cos(a) * R, y + Math.sin(a) * R + 5 * s], [x + Math.cos(a) * R - 4 * s, y + Math.sin(a) * R]]), '#f0dcff', 2.5); }
+        ink(star(x, y, 4, 4 * s * k, 16 * s * k, u * 2), '#f0dcff', 3); } },
+      nature: { ms: 560, d(u, x, y, s, o) { const R = rnd(o.seed || 5), k = Math.min(1, u * 3); g.globalAlpha = fade(u, 0.5, 1);
+        for (let i = 0; i < 7; i++) { const a = R() * Math.PI * 2, L = (22 + R() * 14) * s * k; ink(P2([[x + Math.cos(a + 0.4) * 5 * s, y + Math.sin(a + 0.4) * 5 * s], [x + Math.cos(a) * L, y + Math.sin(a) * L], [x + Math.cos(a - 0.4) * 5 * s, y + Math.sin(a - 0.4) * 5 * s]]), i % 2 ? '#7fd36a' : '#4f8f3a', 3.5); }
+        for (let i = 0; i < 3; i++) { const a = R() * Math.PI * 2, d = 30 * s * u; const lx = x + Math.cos(a) * d, ly = y + Math.sin(a) * d - 10 * s * u; const p = new Path2D(); p.ellipse(lx, ly, 6 * s, 3 * s, a, 0, Math.PI * 2); ink(p, '#a8e07a', 2.5); } } },
+      bleed: { ms: 760, d(u, x, y, s, o) { const R = rnd(o.seed || 11); g.globalAlpha = fade(u, 0.6, 1); for (let i = 0; i < (o.n || 5); i++) { const ox = (R() - 0.5) * 34 * s, vy = (0.4 + R() * 0.6), t = Math.min(1, u * 1.4);
+        ink(drop(x + ox, y - 6 * s + t * t * 46 * s * vy, (3 + R() * 2.5) * s), i % 2 ? '#c0262a' : '#e0383a', 3); } } },
+      poison: { ms: 760, d(u, x, y, s, o) { const R = rnd(o.seed || 13); g.globalAlpha = fade(u, 0.55, 1); for (let i = 0; i < 6; i++) { const ox = (R() - 0.5) * 36 * s, sp = 0.5 + R() * 0.7, r = (3 + R() * 4) * s * (0.6 + u * 0.6);
+        ink(circ(x + ox + Math.sin(u * 8 + i) * 3 * s, y + 14 * s - u * 46 * s * sp, r), i % 2 ? '#8fdc3a' : '#b9f06a', 3); } } },
+      burn: { ms: 600, d(u, x, y, s, o) { const R = rnd(o.seed || 17); g.globalAlpha = fade(u, 0.5, 1); for (let i = 0; i < 4; i++) { const fx = x + (R() - 0.5) * 30 * s, h = (14 + R() * 12) * s * Math.min(1, u * 3) * (1 - u * 0.5);
+        ink(flame(fx, y + 16 * s, h, 5 * s, (R() - 0.5) * 6 * s), '#ff7a1a', 3); ink(flame(fx, y + 16 * s, h * 0.5, 2.5 * s, 0), '#ffe27a', 2); } } },
+      chill: { ms: 600, d(u, x, y, s) { g.globalAlpha = fade(u, 0.5, 1); const k = Math.min(1, u * 3); for (let i = 0; i < 3; i++) { const a = i * Math.PI / 3; inkLine([[x - Math.cos(a) * 14 * s * k, y - Math.sin(a) * 14 * s * k], [x + Math.cos(a) * 14 * s * k, y + Math.sin(a) * 14 * s * k]], '#bfe9ff', 3); } } },
+      dread: { ms: 820, d(u, x, y, s) { g.globalAlpha = fade(u, 0.55, 1) * Math.min(1, u * 4); const yy = y - u * 40 * s, p = new Path2D();
+        p.moveTo(x - 12 * s, yy + 14 * s); p.quadraticCurveTo(x - 14 * s, yy - 12 * s, x, yy - 14 * s); p.quadraticCurveTo(x + 14 * s, yy - 12 * s, x + 12 * s, yy + 14 * s); p.lineTo(x + 6 * s, yy + 8 * s); p.lineTo(x, yy + 14 * s); p.lineTo(x - 6 * s, yy + 8 * s); p.closePath();
+        ink(p, '#5a3a86', 4); ink(circ(x - 5 * s, yy - 2 * s, 2.6 * s), '#e8d6ff', 2); ink(circ(x + 5 * s, yy - 2 * s, 2.6 * s), '#e8d6ff', 2); } },
+      rot: { ms: 760, d(u, x, y, s, o) { const R = rnd(o.seed || 19); g.globalAlpha = fade(u, 0.55, 1); for (let i = 0; i < 5; i++) { const ox = (R() - 0.5) * 30 * s, t = Math.min(1, u * 1.3);
+        ink(drop(x + ox, y - 10 * s + t * t * 36 * s, (2.5 + R() * 2) * s), i % 2 ? '#4a5a2a' : '#6b7a33', 3); } ink(circ(x, y - 6 * s, 9 * s * Math.min(1, u * 3)), '#3a4520', 3, 0.7); } },
+      heal: { ms: 820, d(u, x, y, s, o) { const R = rnd(o.seed || 23); g.globalAlpha = fade(u, 0.55, 1); for (let i = 0; i < 5; i++) { const ox = (R() - 0.5) * 44 * s, yy = y + 18 * s - u * (36 + R() * 24) * s, c = (4 + R() * 2) * s;
+        ink(P2([[ox + x - c * 0.35, yy - c], [ox + x + c * 0.35, yy - c], [ox + x + c * 0.35, yy - c * 0.35], [ox + x + c, yy - c * 0.35], [ox + x + c, yy + c * 0.35], [ox + x + c * 0.35, yy + c * 0.35], [ox + x + c * 0.35, yy + c], [ox + x - c * 0.35, yy + c], [ox + x - c * 0.35, yy + c * 0.35], [ox + x - c, yy + c * 0.35], [ox + x - c, yy - c * 0.35], [ox + x - c * 0.35, yy - c * 0.35]]), '#8fdc6a', 2.5); }
+        g.save(); g.globalAlpha *= 0.6; g.lineWidth = 3; g.strokeStyle = '#8fdc6a'; g.beginPath(); g.ellipse(x, y + 30 * s, 34 * s * (0.6 + u * 0.5), 9 * s * (0.6 + u * 0.5), 0, 0, Math.PI * 2); g.stroke(); g.restore(); } },
+      block: { ms: 560, d(u, x, y, s, o) { const k = 0.6 + Math.min(1, u * 3) * 0.5, r = 30 * s * k; g.globalAlpha = fade(u, 0.45, 1); const pts = []; for (let i = 0; i < 6; i++) { const a = -Math.PI / 2 + i * Math.PI / 3; pts.push([x + Math.cos(a) * r, y + Math.sin(a) * r * 1.15]); }
+        g.save(); const p = P2(pts); g.lineJoin = 'round'; g.lineWidth = 9; g.strokeStyle = INK; g.stroke(p); g.lineWidth = 4; g.strokeStyle = o.col || '#9fc4ff'; g.stroke(p); g.globalAlpha *= 0.2; g.fillStyle = o.col || '#9fc4ff'; g.fill(p); g.restore(); } },
+      clank: { ms: 340, d(u, x, y, s, o) { g.globalAlpha = fade(u, 0.4, 1); const k = Math.min(1, u * 4), sd = o.side || 1; for (let i = 0; i < 6; i++) { const a = (sd > 0 ? Math.PI : 0) + (i - 2.5) * 0.35; inkLine([[x + Math.cos(a) * 10 * s * k, y + Math.sin(a) * 10 * s * k], [x + Math.cos(a) * 32 * s * k, y + Math.sin(a) * 32 * s * k]], '#fff6c8', 2.5); }
+        ink(star(x, y, 4, 4 * s, 14 * s * k, 0.4), '#ffffff', 3); } },
+      whoosh: { ms: 380, d(u, x, y, s, o) { g.globalAlpha = fade(u, 0.3, 1) * 0.9; const sd = o.side || 1; for (let i = 0; i < 3; i++) { const yy = y - 18 * s + i * 16 * s, L = 40 * s * Math.min(1, u * 3); inkLine([[x + sd * 10 * s, yy], [x + sd * (10 * s + L), yy]], '#e8dcc6', 2.5); } } },
+      shimmer: { ms: 520, d(u, x, y, s, o) { g.globalAlpha = fade(u, 0.4, 1); g.save(); g.lineWidth = 8; g.strokeStyle = INK; g.beginPath(); g.ellipse(x, y, 34 * s * (0.8 + u * 0.4), 46 * s * (0.8 + u * 0.4), 0, 0, Math.PI * 2); g.stroke(); g.lineWidth = 3.5; g.strokeStyle = o.col || '#c48bff'; g.stroke(); g.restore(); } },
+      dust: { ms: 520, d(u, x, y, s) { const R = rnd(29); g.globalAlpha = fade(u, 0.35, 1); g.save(); g.lineWidth = 7; g.strokeStyle = INK; g.beginPath(); g.ellipse(x, y, 60 * s * Math.min(1, u * 2.5), 12 * s * Math.min(1, u * 2.5), 0, 0, Math.PI * 2); g.stroke(); g.lineWidth = 3; g.strokeStyle = '#c9b48a'; g.stroke(); g.restore();
+        for (let i = 0; i < 6; i++) { const a = Math.PI + R() * Math.PI, d = 50 * s * u; ink(P2([[x + Math.cos(a) * d, y + Math.sin(a) * d * 0.5 - 12 * s * Math.sin(u * Math.PI)], [x + Math.cos(a) * d + 5 * s, y + Math.sin(a) * d * 0.5 - 12 * s * Math.sin(u * Math.PI)], [x + Math.cos(a) * d + 2 * s, y + Math.sin(a) * d * 0.5 - 12 * s * Math.sin(u * Math.PI) - 5 * s]]), '#8a7a5a', 2); } } },
+      aura: { ms: 760, d(u, x, y, s, o) { g.globalAlpha = fade(u, 0.5, 1); const c = o.col || '#ffd86a'; for (let i = 0; i < 2; i++) { const v = Math.min(1, u * 1.6 - i * 0.25); if (v <= 0) continue; g.save(); g.lineWidth = 7; g.strokeStyle = INK; g.beginPath(); g.ellipse(x, y + 34 * s - v * 50 * s, 34 * s, 9 * s, 0, 0, Math.PI * 2); g.stroke(); g.lineWidth = 3; g.strokeStyle = c; g.stroke(); g.restore(); }
+        const R = rnd(31); for (let i = 0; i < 5; i++) ink(star(x + (R() - 0.5) * 50 * s, y + 20 * s - u * (40 + R() * 30) * s, 4, 2 * s, 7 * s, u * 3), c, 2.5); } },
+      smoke: { ms: 620, d(u, x, y, s) { const R = rnd(37); g.globalAlpha = fade(u, 0.3, 1) * 0.9; for (let i = 0; i < 6; i++) { const a = R() * Math.PI * 2, d = 22 * s * u + R() * 8 * s; ink(circ(x + Math.cos(a) * d, y + 10 * s + Math.sin(a) * d * 0.6, (8 + R() * 8) * s * (0.5 + u * 0.7)), i % 2 ? '#5a5650' : '#7a766e', 3); } } },
+      // projectiles: o.from / o.to are fighter ids; drawn along the line, then the impact effect takes over
+      bolt: { ms: 240, d(u, x, y, s, o) { const a = spot(o.from, 0.4), b = spot(o.to); if (!a || !b) return; const sx = a.x + a.side * a.w * 0.35, px = sx + (b.x - sx) * u, py = a.y + (b.y - a.y) * u - Math.sin(u * Math.PI) * 24 * a.s, ss = a.s;
+        const ang = Math.atan2(b.y - a.y, b.x - sx), back = (k) => [px - Math.cos(ang) * k * ss, py - Math.sin(ang) * k * ss], col = EL[o.el] || EL.Physical;
+        if (o.el === 'Fire') { for (let i = 3; i >= 1; i--) ink(circ(...back(i * 9), (9 - i * 2) * ss), i % 2 ? '#ff7a1a' : '#ffb21a', 3, 0.9); ink(circ(px, py, 11 * ss), '#ff7a1a', 4); ink(circ(px + 2 * ss, py - 2 * ss, 5.5 * ss), '#ffe27a', 2); }
+        else if (o.el === 'Frost') { const L = 30 * ss; ink(P2([[px + Math.cos(ang) * L * 0.5, py + Math.sin(ang) * L * 0.5], [px + Math.cos(ang + 2.6) * 8 * ss, py + Math.sin(ang + 2.6) * 8 * ss], [...back(L * 0.9 / ss)], [px + Math.cos(ang - 2.6) * 8 * ss, py + Math.sin(ang - 2.6) * 8 * ss]]), '#bfe9ff', 4); }
+        else if (o.el === 'Shadow') { for (let i = 1; i <= 3; i++) inkLine([back(i * 10 - 6), back(i * 10 + 4)], '#8a5cc8', 3); ink(circ(px, py, 10 * ss), '#2a1838', 4); ink(circ(px, py, 4 * ss), '#c9a6ff', 2); }
+        else if (o.el === 'Holy') { inkLine([back(34), [px, py]], '#ffd86a', 6 * ss); ink(star(px, py, 4, 4 * ss, 13 * ss, 0.4), '#fff6c8', 3); }
+        else if (o.el === 'Arcane') { ink(star(px, py, 5, 5 * ss, 13 * ss, u * 9), '#c48bff', 3.5); for (let i = 1; i <= 3; i++) ink(star(...back(i * 11), 4, 1.5 * ss, 5 * ss, u * 5 + i), '#f0dcff', 2); }
+        else if (o.el === 'Nature') { ink(P2([[px + Math.cos(ang) * 14 * ss, py + Math.sin(ang) * 14 * ss], [px + Math.cos(ang + 2.2) * 7 * ss, py + Math.sin(ang + 2.2) * 7 * ss], [...back(16)], [px + Math.cos(ang - 2.2) * 7 * ss, py + Math.sin(ang - 2.2) * 7 * ss]]), '#7fd36a', 3.5); }
+        else if (o.star) { ink(star(px, py, 4, 3.5 * ss, 12 * ss, u * 14), '#c9c2b2', 3); }
+        else ink(circ(px, py, 7 * ss), col[0], 3.5); } },
+    };
+    // ---------- what the engine's events look like
+    const ELEM = (d) => d === 'Fire' ? 'fire' : d === 'Frost' ? 'frost' : d === 'Shadow' ? 'shadow' : d === 'Holy' ? 'holy' : d === 'Arcane' ? 'arcane' : d === 'Nature' ? 'nature' : null;
+    const DOT = { bleed: 'bleed', poison: 'poison', burn: 'burn', dread: 'dread', rot: 'rot', chill: 'chill' };
+    const DEF_FX = { Rogue: 'dodge', Warrior: 'parry', Paladin: 'block', Mage: 'barrier', Warlock: 'absorb' };
+    let lastStealth = {};
+    function consume(cb) {
+      if (!cb) return; const F = window.CB_FORGE;
+      // persistent looks: Stealth (see-through) and fallen heroes
+      if (F) { const st = {}; for (const a of cb.players) st[a.id] = { stealth: !!a.stealth && a.hp > 0, dead: a.hp <= 0 }; F.setStates(st); }
+      const cards = (cb.animQ || []).splice(0), evs = (cb.fxQ || []).splice(0);
+      const hitsBy = {}; for (const e of evs) if (e.t === 'hit' && !e.dot && e.s) hitsBy[e.s] = (hitsBy[e.s] || 0) + 1;
+      const blocksBy = {}; for (const e of evs) if (e.t === 'block') blocksBy[e.d] = (blocksBy[e.d] || 0) + 1;
+      const proj = {}; // the caster's projectile flight, so impacts wait for it
+      for (const q of cards) {
+        const a = cb.actorById(q.id); if (!a) continue; let move;
+        if (q.type === 'Attack') {
+          const two = F && F.twoHanded(a), wk = F ? F.weaponKind(a) : 'slash';
+          move = q.aoe ? 'twirl' : (hitsBy[q.id] || 0) >= 2 && !two ? 'double' : two && q.cost >= 20 ? 'leap' : wk === 'pierce' ? 'lunge' : two ? 'heavy' : 'attack';
+          if (q.aoe) add('slash', { id: q.id, ang: -0.6, big: true, col: '#e8d6a8', at: 0.55, self: true }, 120);
+        } else if (q.type === 'Power') { move = 'empower'; add('aura', { id: q.id, col: (EL[q.dtype] || EL.Holy)[0] }); }
+        else if (a.stealth && !lastStealth[a.id]) { move = 'vanish'; add('smoke', { id: q.id }); }
+        else if (q.dmg || q.heal) {
+          move = 'cast'; const el = q.dtype || 'Physical';
+          if (q.dmg && q.tgt && !q.aoe && cb.actorById(q.tgt) && !cb.actorById(q.tgt).isPlayer) { add('bolt', { from: q.id, to: q.tgt, el, star: /shuriken|star|knife/.test(q.card || '') }, 160); proj[q.id] = 400; }
+          else if (q.dmg && q.aoe) proj[q.id] = 200;
+        } else if (q.def) move = (blocksBy[q.id] || 0) >= 2 ? 'guard2' : 'guard';
+        else move = 'cast';
+        if (F && move) F.play(q.id, move);
+      }
+      for (const a of cb.players) lastStealth[a.id] = !!a.stealth;
+      // the hits, heals, Block and debuffs
+      const nth = {}, lunged = {};
+      for (const e of evs) {
+        if (e.t === 'hit') {
+          const src = e.s && cb.actorById(e.s), tgt = cb.actorById(e.d); if (!tgt) continue;
+          if (e.dot) { add(DOT[e.dot] || 'bleed', { id: e.d, seed: Math.random() * 1e9 }); continue; }
+          const k = (e.s || '') + '>' + e.d, i = nth[k] = (nth[k] || 0) + 1, delay = (proj[e.s] || (src && src.isPlayer ? 130 : 160)) + (i - 1) * 150;
+          if (src && !src.isPlayer && F && !lunged[src.id]) { lunged[src.id] = true; F.play(src.id, 'elunge'); }
+          const side = tgt.isPlayer ? -1 : 1;
+          if (!(e.lost > 0) && e.abs > 0) { // fully stopped: dodge, parry, block, barrier or absorb
+            const how = tgt.isPlayer ? DEF_FX[tgt.cls] : 'block';
+            if (how === 'dodge') { if (F) F.play(e.d, 'dodge'); add('whoosh', { id: e.d, side: -side }, delay); }
+            else if (how === 'barrier' || how === 'absorb') { add('shimmer', { id: e.d, col: how === 'barrier' ? '#9fc4ff' : '#8a5cc8' }, delay); if (F) F.play(e.d, 'guard'); }
+            else { add('clank', { id: e.d, side }, delay); if (F && tgt.isPlayer) F.play(e.d, how === 'parry' ? 'parry' : 'guard'); else if (F) F.play(e.d, 'ehit'); }
+            continue;
+          }
+          // the impact: by element, else by the weapon (heroes) or the creature (monsters)
+          let fx = ELEM(e.dtype);
+          if (!fx) { if (src && src.isPlayer) fx = e.kind === 'Skill' ? 'blunt' : (F ? F.weaponKind(src) : 'slash'); else fx = src && /beast|Beast/.test(src.creature || '') ? 'claw' : 'slash'; }
+          const big = !!e.crit || e.lost >= tgt.maxHp * 0.2;
+          add(fx, { id: e.d, ang: -2.4 + (i - 1) * 0.9 * (i % 2 ? 1 : -1), big, side, seed: Math.random() * 1e9 }, delay);
+          if (e.crit) { add('crit', { id: e.d }, delay); setTimeout(() => { const st = document.querySelector('#scrCombat .stage') || document.getElementById('scrCombat'); if (st) { st.classList.remove('fxshake'); void st.offsetWidth; st.classList.add('fxshake'); } }, delay); }
+          if (F) setTimeout(() => F.play(e.d, tgt.isPlayer ? (big ? 'knock' : 'hit') : (big ? 'eknock' : 'ehit')), delay);
+        } else if (e.t === 'apply') { add(DOT[e.key] || 'bleed', { id: e.d, n: 4, seed: Math.random() * 1e9 }, 260); }
+        else if (e.t === 'heal') add('heal', { id: e.d, seed: Math.random() * 1e9 });
+        else if (e.t === 'block') add('block', { id: e.d, col: (cb.actorById(e.d) || {}).cls === 'Mage' ? '#bcd8ff' : (cb.actorById(e.d) || {}).cls === 'Warlock' ? '#b49ae0' : '#9fc4ff' });
+      }
+      // a leap landing kicks up dust
+      if (F) for (const v of F.events.splice(0)) if (v.ev === 'land') add('dust', { id: v.id, feet: true });
+    }
+    // ---------- the overlay loop
+    function frame(t) {
+      requestAnimationFrame(frame);
+      if (!live.length) { if (cv._dirty) { g.clearRect(0, 0, cv.width, cv.height); cv._dirty = false; } return; }
+      if (window.CB_FORGE) for (const v of CB_FORGE.events.splice(0)) if (v.ev === 'land') add('dust', { id: v.id, feet: true });
+      g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); g.setTransform(dpr, 0, 0, dpr, 0, 0); cv._dirty = true;
+      for (let i = live.length - 1; i >= 0; i--) {
+        const L = live[i], u = (t - L.t0) / L.ms; if (u < 0) continue; if (u >= 1) { live.splice(i, 1); if (L.kind === 'bolt' && L.o.then) add(L.o.then.kind, L.o.then.o); continue; }
+        const D = DRAW[L.kind]; if (!D) { live.splice(i, 1); continue; }
+        let x = 0, y = 0, s = 1;
+        if (L.kind !== 'bolt') { const p = spot(L.o.id, L.o.at); if (!p) continue; x = p.x; y = L.o.feet ? p.feet - 4 : p.y; s = p.s; if (L.o.self) x += p.side * p.w * 0.15; }
+        g.save(); g.globalAlpha = 1; try { D.d(u, x, y, s, L.o); } catch (err) { live.splice(i, 1); } g.restore();
+      }
+    }
+    requestAnimationFrame(frame);
+    function clear() { live.length = 0; lastStealth = {}; }
+    return { consume, add, clear, DRAW, spot };
   })();
 
 // ---------- Gothic Ink figures (Nov 1): an art pack for the fight screen, built to be swapped out.
@@ -11655,7 +11900,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     cb.practice = true; $('sheet').hidden = true; startCombatUI();
   }
   function leaveDummy() { closeModal(); cb = null; townReturn = true; show('start'); renderHub(); }
-  function startCombatUI() { closeModal(); applyLedgerSize(); $('scrCombat').dataset.map = run && run.mapKey ? run.mapKey : cb.raidMap || 'physical'; if (run && run.online) cb.myMi = run.myMi; viewHero = null; selected = null; busy = false; lastHp = {}; lastBlock = {}; show('combat'); snapshot(); render(); pump(); }
+  function startCombatUI() { closeModal(); applyLedgerSize(); $('scrCombat').dataset.map = run && run.mapKey ? run.mapKey : cb.raidMap || 'physical'; if (run && run.online) cb.myMi = run.myMi; viewHero = null; selected = null; busy = false; lastHp = {}; lastBlock = {}; if (window.CB_FX) CB_FX.clear(); if (cb) { cb.animQ = []; cb.fxQ = []; } show('combat'); snapshot(); render(); pump(); }
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
   async function pump() {
     if (busy) return; busy = true; const me = cb; // a pump belongs to one fight: if the fight is replaced or left mid-turn (training dummy reset/leave), it stops
@@ -11665,7 +11910,8 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if (cb && cb.over) combatOver();
     if (netOn()) netDrain();
   }
-  function snapshot() { for (const a of [...cb.players, ...cb.enemies]) { lastHp[a.id] = a.hp; lastBlock[a.id] = a.block; } }
+  const lastCrit = {};
+  function snapshot() { for (const a of [...cb.players, ...cb.enemies]) { lastHp[a.id] = a.hp; lastBlock[a.id] = a.block; lastCrit[a.id] = a.critN || 0; } }
   function figure(a, unit) {
     if (unit && a.isPlayer && window.CB_FORGE && a.look) return CB_FORGE.figureHtml(a, window.CB_INK ? CB_INK.figure(a) || '' : ''); // live sprite from the gear the hero wears (src/forge.js)
     if (window.CB_INK) { const ink = CB_INK.figure(a); if (ink) return ink; } // Gothic Ink art pack (src/inkart.js); without it, the drawn figures below
@@ -11784,8 +12030,8 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       const el = document.querySelector(`.unit[data-id="${a.id}"]`); if (!el) continue;
       const dh = a.hp - (lastHp[a.id] ?? a.hp), db = a.block - (lastBlock[a.id] ?? a.block);
       const add = (cls, txt) => { const s = document.createElement('div'); s.className = 'pop ' + cls; s.textContent = txt; el.appendChild(s); setTimeout(() => s.remove(), 1200); };
-      if (dh < 0) add('dmg', dh); else if (dh > 0) add('heal', '+' + dh);
-      if (dh < 0 && a.isPlayer && window.CB_FORGE) CB_FORGE.play(a.id, 'hit');
+      const crit = (a.critN || 0) > (lastCrit[a.id] || 0);
+      if (dh < 0) add(crit ? 'dmg crit' : 'dmg', crit ? dh + '!' : dh); else if (dh > 0) add('heal', '+' + dh);
       if (db > 0) add('blk', '+' + db);
     }
     snapshot();
@@ -11827,7 +12073,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     $('foes').innerHTML = foes.map(unitHtml).join('');
     if (window.CB_BF) CB_BF.layout(cb, { map: $('scrCombat').dataset.map, left: cb.duel ? 'You' : cb.raid ? 'The raid' : cb.partySize > 1 ? 'Your party' : esc(hero().name), right: cb.duel ? 'Your rival' : (DATA.maps[$('scrCombat').dataset.map] || {}).name || 'The enemy' });
     if (withPops) popups(); else snapshot();
-    if (window.CB_FORGE) CB_FORGE.consume(cb);
+    if (window.CB_FX) CB_FX.consume(cb); // hero moves, hit effects and spell projectiles (src/fx.js, src/forge.js)
     $('orb').textContent = p.mana;
     $('manaSub').textContent = `max ${p.maxMana} · +${p.regen} per turn`;
     const fat = [...p.drawPile, ...p.hand, ...p.discard].filter(c => CARDS[c.key].type === 'Status').length;
