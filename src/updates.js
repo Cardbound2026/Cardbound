@@ -1,6 +1,10 @@
   // ---------- What's new: the changelog (button bottom-right) and the new-version warning
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
+    { date: '2026-11-03', items: [
+      ['Change', 'Raid bosses can\'t be controlled or slowed: no Stun, Fear, Freeze, Disarm, Silence, Slow, Chill, counters, cost increases or draw loss.'],
+      ['Change', 'Raid bosses always play their attacks: burning their mana or putting Stun cards in their hand doesn\'t stop them (they draw past Stun cards).'],
+    ] },
     { date: '2026-11-02', items: [
       ['Fix', 'Shadow Dance: enter Stealth, and your next Attack doesn\'t break it.'],
       ['Change', 'Shadow Ambush now Stuns (the target loses its next turn, bosses included) instead of Fearing. The same enemy can\'t be ambush-stunned two rounds in a row.'],

@@ -1028,6 +1028,7 @@ class Combat {
   breakFear(e) { if (!e || e.isPlayer || !e.feared || e.hp <= 0) return; e.feared = 0; if (e.fearDisarm) e.disarmed = 0; e.fearDisarm = false; this.planEnemy(e, true); this.say('enemy', `${e.name} is hit and shakes off the Fear.`); }
   control(e, kind) {
     if (!e || e.hp <= 0) return false;
+    if (this.raidBoss(e)) { this.say('player', `${e.name} is a raid boss: it can't be ${kind === 'stun' ? 'Stunned' : 'Feared'}.`); return false; }
     if (e.isPlayer) { if (kind === 'stun') { e.frozen = true; this.say('crit', `${e.name} is Stunned and will lose the next turn.`); } else { e.disarmNext = true; this.say('player', `${e.name} is Feared: no Attacks next turn.`); } return true; }
     if ((e.ccUntil || 0) > this.round) { this.say('player', `${e.name} resists the ${kind === 'stun' ? 'Stun' : 'Fear'} (controlled too recently).`); return false; }
     const boss = e.tier === 'Boss';
@@ -1241,7 +1242,7 @@ class Combat {
   statusCount() { const p = this.player; return [...p.drawPile, ...p.hand, ...p.discard].filter(c => C[c.key].type === 'Status').length; }
 
   drawCards(a, n) {
-    if (a) a._skips = 0;
+    if (a) { a._skips = 0; a._rbExtra = 0; }
     if (this._rkCard && !this._inPw && this._playing === this._rkCard && a === this.player) this._rkDraw += n;
     if (a.isPlayer && a.turn && a.turn.noDraw && this.phase === 'player' && this.current === a) { if (n > 0) this.say('sys', 'No more draws this turn.'); return; }
     for (let i = 0; i < n; i++) {
@@ -1253,7 +1254,7 @@ class Combat {
       const c = a.drawPile.pop();
       if (a.isPlayer && a.statusSkip && C[c.key].type === 'Status' && (a._skips || 0) < 5 && this.rng() * 100 < a.statusSkip) { a._skips = (a._skips || 0) + 1; a.discard.push(c); this.say('player', `${a.name} tosses aside ${C[c.key].name} and draws again.`); i--; continue; }
       if (a.hand.length >= 10) { a.discard.push(c); if (a.isPlayer) { this.say('sys', `Hand full: ${C[c.key].name} went to the discard pile.`); this.fire(a, 'handFull'); } }
-      else { a.hand.push(c); if (!a.isPlayer && c.status) this.eDrawn(a, c); if (a.isPlayer && C[c.key].type === 'Status') this.fire(a, 'drawStatus'); if (a.isPlayer && C[c.key].onDraw) { const was = this.player, od = this.card(c); this.player = a; this.say('player', `${od.name} is drawn.`); this.rkRun(od.rk, () => { runOps(this, null, C[c.key].onDraw, C[c.key].name); if (od.ms && od.ms.draw) this.drawCards(a, od.ms.draw); }); this.player = was; } }
+      else { a.hand.push(c); if (!a.isPlayer && c.status) { this.eDrawn(a, c); if (this.raidBoss(a) && (a._rbExtra = (a._rbExtra || 0) + 1) <= 10) n++; } /* a raid boss draws past Stun cards */ if (a.isPlayer && C[c.key].type === 'Status') this.fire(a, 'drawStatus'); if (a.isPlayer && C[c.key].onDraw) { const was = this.player, od = this.card(c); this.player = a; this.say('player', `${od.name} is drawn.`); this.rkRun(od.rk, () => { runOps(this, null, C[c.key].onDraw, C[c.key].name); if (od.ms && od.ms.draw) this.drawCards(a, od.ms.draw); }); this.player = was; } }
     }
   }
 
@@ -1293,15 +1294,21 @@ class Combat {
     const w = seen.map(q => q.id === (avoid || e.lastMark) ? 1 : 2), tot = w.reduce((a, b) => a + b, 0);
     let r = this.rng() * tot; for (let i = 0; i < seen.length; i++) { if (r < w[i]) return seen[i]; r -= w[i]; } return seen[seen.length - 1];
   }
+  // Nov 3: raid bosses can't be controlled or slowed. No Stun, Fear, Freeze, Disarm, Silence, Slow, Chill, Counterspell, draw loss or cost increases.
+  // Mana can be burned, and Stun cards can sit in their hand, but they still play their attacks every turn.
+  raidBoss(e) { return !!(this.raid && e && !e.isPlayer); }
+  raidShrug(e) { if (!this.raidBoss(e)) return; e.frozen = false; e.disarmed = 0; e.silenced = 0; e.feared = 0; e.stunned = 0; e.slow = 0; e.chill = 0; e.counter = 0; e.costUp = 0; e.drawLess = 0; e.drawLessTurns = 0; e.exposure = 0; e.initNext = 0; }
   planEnemy(e, keepMarks) {
     if (e.isPlayer) return;
+    const rb = this.raidBoss(e); if (rb) this.raidShrug(e);
     let mana = Math.min(e.maxMana, e.mana + this.effRegen(e) * (e.firstTurn ? 2 : 1));
     if (this.current === e && this.phase === 'enemy') mana = e.mana;
     e.plan = [];
     const allowed = (c) => c.cost < 999 && !(e.silenced && CB_intent(c) !== 'attack') && !(e.disarmed && CB_intent(c) === 'attack');
     const gm = c => c.ops.some(o => o.op === 'gainMana') ? 1 : 0;
     const order = [...e.hand].sort((a, b) => gm(b) - gm(a));
-    for (const c of order) if (allowed(c) && this.eCost(e, c) <= mana) { mana -= this.eCost(e, c); e.plan.push(c.uid); const g = c.ops.find(o => o.op === 'gainMana'); if (g) mana += g.n; }
+    for (const c of order) if (rb && c.cost < 999 && CB_intent(c) === 'attack') { mana = Math.max(0, mana - this.eCost(e, c)); e.plan.push(c.uid); } // a raid boss always plays its attacks
+    else if (allowed(c) && this.eCost(e, c) <= mana) { mana -= this.eCost(e, c); e.plan.push(c.uid); const g = c.ops.find(o => o.op === 'gainMana'); if (g) mana += g.n; }
     const tq = this.taunting(); if (tq) { for (const uid of e.plan) { const c = e.hand.find(x => x.uid === uid); if (c && this.isTargeted(c)) c.mark = tq.id; } return; }
     if (keepMarks) { for (const uid of e.plan) { const c = e.hand.find(x => x.uid === uid); if (c && c.mark && !this.actorById(c.mark)) c.mark = null; } if (e.plan.every(uid => { const c = e.hand.find(x => x.uid === uid); return !c || !this.isTargeted(c) || c.mark; })) return; }
     if (this.partySize > 1) { let last = e.lastMark; for (const uid of e.plan) { const c = e.hand.find(x => x.uid === uid); if (c && this.isTargeted(c)) { const m = this.pickMark(e, last); c.mark = m ? m.id : null; last = c.mark; } } }
@@ -1367,6 +1374,7 @@ class Combat {
     if (this.over) return;
     if (a.hp <= 0) { this.nextTurn(); return; }
     if (a.isPlayer && a.frozen) { a.frozen = false; this.say('crit', `${a.name} is Frozen and loses the turn.`); a.discard.push(...a.hand.splice(0)); if (a.chill) a.chill = 0; this.nextTurn(); return; }
+    if (!a.isPlayer && a.frozen && this.raidBoss(a)) { a.frozen = false; this.say('enemy', `${a.name} shrugs off the Freeze: raid bosses can't be stopped.`); }
     if (!a.isPlayer && a.frozen) { a.frozen = false; this.say('enemy', `${a.name} is Frozen and loses its turn.`); a.plan = []; a.discard.push(...a.hand.splice(0)); this.drawCards(a, a.draw); this.planEnemy(a); this.nextTurn(); return; }
     this.phase = a.isPlayer ? 'player' : 'enemy';
   }
@@ -1722,7 +1730,7 @@ class Combat {
     this._cmult = 1;
     if (d.rank && !this.over) this.rkMilestones(p, d, dn0, tgt);
     this.rkEnd(); this._rk = null; this._rkCard = null; this._rkHits = this._rkTimed = this._rkAdded = null;
-    if (stAtk && tgt && !tgt.isPlayer && tgt.hp > 0 && this.has(p, 'shadow_ambush')) { if ((tgt.ambushUntil || 0) > this.round) this.say('player', `${tgt.name} is still reeling: Shadow Ambush can't Stun it again until next round.`); else { tgt.frozen = true; tgt.ambushUntil = this.round + 2; this.say('crit', `Shadow Ambush: ${tgt.name} is Stunned and loses its next turn.`); } } // Nov 2: a real Stun, bosses too
+    if (stAtk && tgt && !tgt.isPlayer && tgt.hp > 0 && this.has(p, 'shadow_ambush')) { if (this.raidBoss(tgt)) this.say('player', `${tgt.name} is a raid boss: Shadow Ambush can't Stun it.`); else if ((tgt.ambushUntil || 0) > this.round) this.say('player', `${tgt.name} is still reeling: Shadow Ambush can't Stun it again until next round.`); else { tgt.frozen = true; tgt.ambushUntil = this.round + 2; this.say('crit', `Shadow Ambush: ${tgt.name} is Stunned and loses its next turn.`); } } // Nov 2: a real Stun, bosses too
     if (stAtk && p.stealth === 'atk' && p.stealthKeep > 0) { p.stealthKeep--; p.stealth = true; this.say('player', 'Shadow Dance: you strike and stay in Stealth.'); }
     if (stAtk && p.stealth === 'atk') { p.stealth = false; this.say('player', `${this.partySize > 1 ? p.name + ' attacks' : 'You attack'} out of Stealth.`); }
     if (p.powers.length && !this.over) this.fire(p, 'cardPlayed', d);
@@ -1765,8 +1773,9 @@ class Combat {
     if (i < 0) return true;
     const c = e.hand[i];
     const ec = this.eCost(e, c);
-    if (ec > e.mana) { this.say('enemy', `${e.name} can't afford ${c.name}.`); return true; }
-    e.mana -= ec; e.hand.splice(i, 1); e.discard.push(c); if (e.costUp) e.costUp = 0;
+    const rbAtk = this.raidBoss(e) && CB_intent(c) === 'attack'; if (this.raidBoss(e)) this.raidShrug(e);
+    if (ec > e.mana && !rbAtk) { this.say('enemy', `${e.name} can't afford ${c.name}.`); return true; }
+    e.mana = Math.max(0, e.mana - ec); e.hand.splice(i, 1); e.discard.push(c); if (e.costUp) e.costUp = 0;
     if (e.counter > 0) { e.counter--; this.say('player', `${e.name} plays ${c.name}, but it is countered: no effect.`); return true; }
     this.say('enemy', `${e.name} plays ${c.name}: ${c.text}`);
     const aoe = c.ops.some(o => o.all || o.op === 'shredAll') || /every player|each of their/.test(c.text);
@@ -1858,7 +1867,7 @@ class Combat {
   endEnemyTurn(e) {
     if (e.hand.length) e.discard.push(...e.hand.splice(0).filter(c => !c.exhaust));
     e.silenced = 0; e.disarmed = 0; e.feared = 0; e.stunned = 0;
-    const less = e.drawLess || 0; e.drawLess = 0; if (e.drawLessTurns > 0) { e.drawLessTurns--; if (e.drawLessTurns > 0) e.drawLess = 1; }
+    this.raidShrug(e); const less = e.drawLess || 0; e.drawLess = 0; if (e.drawLessTurns > 0) { e.drawLessTurns--; if (e.drawLessTurns > 0) e.drawLess = 1; }
     if (e.hp > 0) { this.drawCards(e, Math.max(0, (e.d.tier === 'Boss' && e.phase === 1 && e.hp <= e.maxHp / 2 && e.d.draw2 ? e.d.draw2 + (e.drawPlus || 0) : e.draw) - less)); if (less) this.say('player', `${e.name} draws ${less} fewer.`); this.planEnemy(e); }
     e.weak = Math.floor(e.weak / 2); e.vulnerable = Math.floor(e.vulnerable * (this.players.some(q => this.has(q, 'codex_sunderer')) ? 0.9 : 0.5)); if (e.chill) e.chill = Math.max(0, e.chill - 1); // Nov 2: Sunderer keeps Vulnerable up (-10% a turn)
     e.condemn = Math.floor((e.condemn || 0) / 2); e.unwarded = Math.floor((e.unwarded || 0) / 2); e.magicVuln = Math.floor((e.magicVuln || 0) * 0.9);

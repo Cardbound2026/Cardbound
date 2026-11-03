@@ -62,6 +62,7 @@
       ['Exposure', 'Its cards cost 5% more mana per stack, up to +50% (10 stacks).'],
       ['Magic Vulnerability', 'Takes +1% magic (non-Physical) damage per stack, up to +50%. Loses 10% of its stacks after each enemy turn.'],
       ['Freeze', 'A Frozen enemy loses its next turn, like a Stun.'],
+      ['Raid bosses', 'Can\'t be controlled or slowed: no Stun, Fear, Freeze, Disarm, Silence, Slow, Chill, counters, cost increases or draw loss. Mana burn works and Stun cards can go in their hand, but they still play all their attacks every turn.'],
       ['Cannot heal / Grievous', 'Cannot heal until your next turn / healing received is halved for 2 turns.'],
       ['Draws fewer', 'The enemy draws that many fewer cards for its next turn.'],
       ['Mana drain', 'Stealing or burning an enemy\'s mana takes what it has, then what it would regenerate next turn, so it plans fewer cards.'],

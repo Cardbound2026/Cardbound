@@ -28,6 +28,7 @@
         <li><b>2 to 10 heroes.</b> The boss gets more HP for each hero (and a little more mana from 3 on). Each extra hero adds one more piece of loot.</li>
         <li><b>Everyone plays at once.</b> No turn order: all heroes play their hands, and the boss acts once everyone has ended their turn.</li>
         <li><b>Every boss attack hits the whole raid.</b> Its debuffs land on everyone too.</li>
+        <li><b>Unstoppable.</b> Raid bosses can never be Stunned, Feared, Frozen, Disarmed, Silenced, Slowed, Chilled or countered, and card cost increases and draw loss don't work on them. You can burn their mana and put Stun cards in their hand, but they still play every attack, every turn.</li>
         <li><b>Debuff resistant.</b> Only one hero a round can land non-damaging debuffs on it (Weak, Vulnerable, Slow, Chill, mana burn, discards...). The first hero to debuff it each round claims that round. Damage always lands, but raid bosses shrug off 25% of damage over time (Bleed, Poison, Burn).</li>
         <li><b>Weekly lockout.</b> Killing a raid boss locks that hero out of that raid for 7 days. Wiping costs nothing (no gear or gold lost): try as often as you like.</li>
         <li><b>Loot is rolled.</b> Everyone picks Need, Greed or Pass on each item. Everyone who wants it rolls 1-100 (shown on the loot screen and in chat); the highest Need wins, or the highest Greed if nobody needs it.</li>
