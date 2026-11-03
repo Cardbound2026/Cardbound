@@ -255,7 +255,7 @@ const CUSTOM = {
   adrenaline_surge: { play: (cb, t, p) => { p.strCombat += 60; cb.timed(p, 'adrenaline', 6, { each: (c, q) => { q.strCombat -= 10; } }); say(cb, '+60 Strength, fading by 10 each turn.'); } },
   bully: { play: (cb, t, p) => { const e = tgtOf(cb, t); D_(cb, e, 16 + (e && p.hp > e.hp ? 16 : 0), 'Bully'); } },
   fortify: { play: (cb, t, p) => { cb.timed(p, 'fortify', 5, { each: (c) => c.gainDef(10) }); say(cb, 'Gain 10 Block at the start of each of your next 5 turns.'); } },
-  shield_strike: { play: (cb, t, p) => blockToDmg(cb, t, p, 0.25, 'Shield Strike', true, false, false, 5) },
+  shield_strike: { play: (cb, t, p) => blockToDmg(cb, t, p, 0.25, 'Shield Strike', true, false, false, 10) },
   thunderclap: { play: (cb, t, p) => DA(cb, 14 * p.hp / p.maxHp, 'Thunderclap') },
   indomitable: { play: (cb, t, p) => { cb.timed(p, 'keepBlock', 3); say(cb, 'For 3 turns, enemy effects cannot reduce your Block.'); } },
   riposte: { play: (cb, t, p) => { cb.gainDef(6); (p.until.onFull = p.until.onFull || []).push((c, q, e) => { if (e.hp > 0 && !q.until.riposted) { q.until.riposted = true; c.applyHit(q, e, 8, { label: 'Riposte' }); c.say('player', `Riposte: ${e.name} takes 8.`); if (e.hp <= 0) c.onDeath(e); } }); } },
@@ -718,7 +718,8 @@ const CLASSES = {
   Paladin: { defense: 'Block', blurb: 'Holy warrior: Block, Holy damage that ignores resistance, and heals.', deck: [['lay_on_hands', 1], ['ardent_defense', 1], ['holy_nova', 1], ['divine_shield', 1], ['divine_storm', 1], ['healing_light', 1], ['crusader_strike', 6], ['raise_shield', 2], ['righteous_blow', 2], ['sacred_ward', 1], ['smite', 3]] },
   Warlock: { defense: 'Absorb', blurb: 'Shadow caster: Dread and Rot, curses, demons and Absorb (overhealing a Warlock becomes Absorb).', deck: [['soul_beacon', 1], ['shadow_armor', 1], ['soul_shroud', 1], ['shadow_volley', 1], ['curse_of_frailty', 1], ['drain_life', 1], ['summon_gloom_imp', 1], ['shadow_bolt', 5], ['dark_ward', 4], ['dread_touch', 2], ['rotting_grasp', 1], ['siphon_soul', 1]] },
 };
-const it = (slot, base, stats, imp2) => ({ slot, name: base, rarity: 'White', ilvl: 1, stats: Object.assign({ 'Resistance:Fire': 3 }, stats), imp2: imp2 || {}, r2: 1, r3: 1, r4: 1 }); // starter gear keeps Fire (it isn't Map 1 loot; Physical here would make Map 1 trivial)
+const boost = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, /Crit Chance|Resistance/.test(k) ? v : Math.round(v * 4 / 3)])); // Nov 3: starter gear is a third stronger
+const it = (slot, base, stats, imp2) => ({ slot, name: base, rarity: 'White', ilvl: 1, stats: Object.assign({ 'Resistance:Fire': 3 }, boost(stats)), imp2: imp2 || {}, r2: 1, r3: 1, r4: 1 }); // starter gear keeps Fire (it isn't Map 1 loot; Physical here would make Map 1 trivial)
 const STARTER_GEAR = {
   Warrior: [it('Weapon', 'Arming Sword', { Strength: 3 }, { 'Multi-hit Chance': 3 }), it('Off-hand', 'Kite Shield', { Dexterity: 3 }, { Thorns: 2 }), it('Helm', 'Warband Helm', { Stamina: 6 }), it('Shoulders', 'Warband Pauldrons', { Stamina: 4 }),
     it('Amulet', "Soldier's Pendant", { Strength: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Brigandine', { 'Crit Chance': 1 }),
@@ -740,6 +741,41 @@ const STARTER_GEAR = {
     it('Amulet', "Soldier's Pendant", { Intelligence: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Camp Robe', { Stamina: 6 }),
     it('Bracers', 'Linen Wraps', { Intelligence: 3 }), it('Gloves', "Scribe's Handwraps", { 'Crit Chance': 1 }), it('Belt', "Officer's Sash", { Stamina: 6 }), it('Pants', 'Quilted Leggings', { Stamina: 6 }),
     it('Boots', 'Pilgrim Slippers', { Dexterity: 3 }, { Initiative: 3 }), it('Ring 1', 'Ember-Warded Ring', { Stamina: 6 }), it('Ring 2', "Soldier's Signet", { Spirit: 3 })],
+};
+
+// Nov 3: each starting playstyle swaps two starter pieces for Greens that help that style get going (no affix lines, so they can't be rerolled)
+const gk = (slot, base, stats, imp2) => ({ slot, name: base, rarity: 'Green', ilvl: 1, stats: Object.assign({ 'Resistance:Fire': 3 }, stats), imp2: imp2 || {}, r2: 1, r3: 1, r4: 1, label: 'Starter kit' });
+const STARTER_KITS = {
+  Warrior: {
+    balanced: [gk('Chest', 'Brigandine', { Stamina: 12, Strength: 4 }), gk('Gloves', 'Leather Gauntlets', { Strength: 6, 'Crit Chance': 2 })],
+    berserker: [gk('Pants', 'Legguards', { Stamina: 18, Strength: 3 }), gk('Chest', 'Brigandine', { 'Max Mana': 25, Strength: 4 })],
+    bleeder: [gk('Gloves', 'Leather Gauntlets', { Strength: 6, 'Crit Chance': 3 }), gk('Pants', 'Legguards', { Stamina: 16 })],
+    shieldbearer: [gk('Off-hand', 'Kite Shield', { Dexterity: 4, Stamina: 6 }, { Thorns: 8, 'Defense Gain': 8 }), gk('Chest', 'Brigandine', { Stamina: 16 })],
+  },
+  Rogue: {
+    balanced: [gk('Weapon', 'Dirk', { Strength: 6 }, { 'Crit Damage': 12 }), gk('Chest', 'Brigandine', { Stamina: 14 })],
+    assassin: [gk('Weapon', 'Dirk', { Strength: 5, 'Crit Chance': 3 }, { 'Crit Damage': 15 }), gk('Gloves', 'Leather Gauntlets', { 'Crit Chance': 3, Stamina: 6 })],
+    poisoner: [gk('Helm', "Scout's Cap", { Strength: 7, Stamina: 6 }), gk('Pants', 'Riding Breeches', { Stamina: 14, Dexterity: 3 })],
+    starthrower: [gk('Gloves', 'Leather Gauntlets', { Strength: 6, 'Crit Chance': 2 }), gk('Chest', 'Brigandine', { Stamina: 14 })],
+  },
+  Mage: {
+    balanced: [gk('Chest', 'Camp Robe', { 'Max Mana': 25, Intelligence: 4 }), gk('Pants', 'Quilted Leggings', { Stamina: 16 })],
+    pyromancer: [gk('Weapon', 'Ashwood Wand', { Intelligence: 6 }, { 'Elemental/Holy Damage:Fire': 12 }), gk('Pants', 'Quilted Leggings', { Stamina: 16 })],
+    cryomancer: [gk('Chest', 'Camp Robe', { 'Max Mana': 30, Intelligence: 4 }), gk('Off-hand', 'Battle Focus', { Intelligence: 5 }, { 'Elemental/Holy Damage:Frost': 12 })],
+    arcanist: [gk('Chest', 'Camp Robe', { 'Max Mana': 25, Intelligence: 4 }), gk('Helm', 'Hedge-Mage Hood', { Intelligence: 6, Stamina: 8 })],
+  },
+  Paladin: {
+    balanced: [gk('Weapon', 'Flanged Mace', { Strength: 5 }, { 'Elemental/Holy Damage:Holy': 12 }), gk('Chest', 'Iron Cuirass', { Stamina: 16 })],
+    templar: [gk('Weapon', 'Flanged Mace', { Strength: 6 }, { 'Elemental/Holy Damage:Holy': 12 }), gk('Chest', 'Iron Cuirass', { Stamina: 14, 'Max Mana': 10 })],
+    guardian: [gk('Off-hand', 'Pavise', { Dexterity: 4, Stamina: 6 }, { 'Defense Gain': 12, Thorns: 6 }), gk('Chest', 'Iron Cuirass', { Stamina: 16 })],
+    lightbringer: [gk('Weapon', 'Flanged Mace', { Intelligence: 5, Spirit: 4 }, { 'Elemental/Holy Damage:Holy': 12 }), gk('Chest', 'Iron Cuirass', { Stamina: 12, 'Max Mana': 15 })],
+  },
+  Warlock: {
+    balanced: [gk('Weapon', 'Ashwood Wand', { Intelligence: 6 }, { 'Elemental/Holy Damage:Shadow': 12 }), gk('Chest', 'Camp Robe', { Stamina: 16 })],
+    soulbinder: [gk('Off-hand', 'Battle Focus', { Spirit: 6 }, { 'Elemental/Holy Damage:Shadow': 12 }), gk('Chest', 'Camp Robe', { Stamina: 16 })],
+    demonologist: [gk('Weapon', 'Ashwood Wand', { Intelligence: 6 }, { 'Elemental/Holy Damage:Shadow': 12 }), gk('Chest', 'Camp Robe', { Stamina: 14, 'Max Mana': 10 })],
+    shadowknight: [gk('Bracers', 'Linen Wraps', { Strength: 6, Stamina: 6 }), gk('Chest', 'Camp Robe', { Stamina: 16 })],
+  },
 };
 
 // Gear presets for testing progression: the starter set's stats scaled to the average Green or Blue item (more affixes, higher rolls).
@@ -1443,6 +1479,7 @@ class Combat {
   heal(a, n, label, quiet) {
     if (n <= 0) return 0;
     if (a.isPlayer && !['Bloodthirst', 'Lifesteal'].includes(label)) { const m = this.rkm('heal'); if (m !== 1) n = Math.round(n * m); }
+    if (a.isPlayer && this._playing && !this._inPw && HEAL_FLAT[this._playing.key] && !['Bloodthirst', 'Lifesteal'].includes(label)) n += HEAL_FLAT[this._playing.key]; // Nov 3: flat early-game heal boost
     if (a.isPlayer && a.healIn) n = Math.round(n * (1 + a.healIn / 100)); // talent: healing received
     const caster = a.isPlayer && this._playing && this.player && this.player.isPlayer ? this.player : a;
     const mult = a.isPlayer ? 1 + (a.spirit || 0) / 100 : 1; // Nov 3: Spirit is healing RECEIVED, from every source (yours, allies', Recovery, Lifesteal...)
@@ -1535,6 +1572,7 @@ class Combat {
     if (!e || e.hp <= 0) return 0;
     if (this._rkHits && !this._inPw && cd === this._rkCard) this._rkHits.push([e, base, label]);
     { const m = this.rkm('dmg'); if (m !== 1) base = Math.round(base * m); }
+    if (p.isPlayer && cd && !cd.isPower && !this._inPw && CARD_FLAT[cd.key]) base += CARD_FLAT[cd.key]; // Nov 3: flat early-game boost on slow decks' cards
     const kind = cd ? cd.type : 'Attack'; let dtype = (cd && cd.dtype) || 'Physical';
     const pow = p.isPlayer && p.powers.length > 0, ctx = { kind, dtype, d: cd };
     if (pow) {
@@ -2395,9 +2433,16 @@ if (DATA) dropRemovedLoot(DATA);
 if (C.mend_wounds) Object.assign(C.mend_wounds, { target: 'ally', text: 'Heal an ally (or yourself) for 8 HP.', play: (cb, t) => cb.heal(t && t.isPlayer && t.hp > 0 ? t : cb.player, 8, 'Mend Wounds') });
 if (C.lay_on_hands) Object.assign(C.lay_on_hands, { target: 'ally', text: 'Heal an ally (or yourself) for 30% of their total HP. Exhaust.', play: (cb, t) => { const a = t && t.isPlayer && t.hp > 0 ? t : cb.player; cb.heal(a, Math.round(a.maxHp * 0.3), 'Lay on Hands'); } }); // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
 // Nov 1: no reminder text in parentheses on cards (hold Alt over a keyword for its glossary entry); rules that were in brackets are now plain sentences
+// Nov 3: flat damage (per hit, per target) on the key cards of slow-starting decks. It doesn't grow with upgrades, level or gear, so it is a big help early and fades in importance later.
+const CARD_FLAT = { shield_slam: 6, shield_bash: 3, crushing_bastion: 10, armor_nova: 4,
+  glacial_spike: 8, frostbolt: 4, ice_bolt: 4, ice_lance: 4, flash_freeze: 5, cone_of_cold: 5, blizzard: 4, falling_star: 10,
+  arcane_blast: 5, arcane_bolt: 4, arcane_missiles: 4, arcane_barrage: 2, spark: 3,
+  shield_of_righteousness: 6, hammer_of_wrath: 4, divine_storm: 4, holy_nova: 4,
+  pilfer: 3, kick_while_down: 3, lighten_their_purse: 3, cut_purse: 3 };
+const HEAL_FLAT = { healing_light: 5, overflowing_light: 4 };
 const TEXT_FIX = {
 "shadow_dance": "Enter Stealth. Your next Attack doesn't break it.",
-"shield_strike": "Deal damage equal to 25% of your Block, plus 5. Your Block is not spent.",
+"shield_strike": "Deal damage equal to 25% of your Block, plus 10. Your Block is not spent.",
 "arcane_blast": "Deal 8 Arcane damage, plus 6 for each Arcane Skill you played before it this turn (at most 18 more).",
 "expose_opening": "When you fully Parry an attack, apply 40 Vulnerable to the attacker.",
 "unnerving_guard": "Gain 15 Parry. Each attack you fully parry before your next turn adds a Stun to the attacker's draw pile.",
@@ -2459,9 +2504,11 @@ const TEXT_FIX = {
 "vengeful_wound": "Deal 8 damage. Apply Bleed equal to 25% of your stored Blood Debt, without spending it."
 };
 for (const [k, t] of Object.entries(TEXT_FIX)) if (C[k]) C[k].text = t;
+for (const [k, f] of Object.entries(CARD_FLAT)) if (C[k]) C[k].text += ` +${f} damage${/ times\./.test(C[k].text) ? ' per hit' : C[k].target === 'all' ? ' to each enemy' : ''} (flat).`;
+for (const [k, f] of Object.entries(HEAL_FLAT)) if (C[k]) C[k].text += ` +${f} healing (flat).`;
 if (C.pilfer) C.pilfer.cost = 20; // Nov 2
 POWERS.codex_soulbinder.dotDealt = POWERS.codex_soulbinder.dealt;
 CARDS_READY = true; if (DATA && DATA.gear) namedLoot(DATA);
-const API = { staffShieldOk, legalGear, CODEX_NEEDS, codexNeed, weaponSetup, CODEX_TOKEN_CHANCE, bossCodexPct, GROUPS, groupData, itemRules, rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { STARTER_KITS, staffShieldOk, legalGear, CODEX_NEEDS, codexNeed, weaponSetup, CODEX_TOKEN_CHANCE, bossCodexPct, GROUPS, groupData, itemRules, rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);

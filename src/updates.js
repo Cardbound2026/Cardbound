@@ -2,6 +2,20 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-03', items: [
+      ['Change', 'Starter gear is a third stronger (main stats; Crit Chance and resistances unchanged).'],
+      ['Change', 'New heroes get two Green starter pieces chosen for their starting playstyle.'],
+      ['Change', 'Warrior Shieldbearer starts with a Green Kite Shield (+8 Thorns, +8% Defense Gain) and a Green Brigandine (+16 Stamina).'],
+      ['Change', 'Warrior Berserker starts with Green Legguards (+18 Stamina) and a Green Brigandine (+25 Max Mana).'],
+      ['Change', 'Mage Cryomancer starts with a Green Camp Robe (+30 Max Mana) and a Green Battle Focus (+12% Frost damage).'],
+      ['Change', 'Every other playstyle gets its own pair of Greens (Stamina, Max Mana, main stat, Crit or element damage, to suit the style).'],
+      ['Change', 'Shield Strike now deals 10 flat damage on top of its Block damage (was 5).'],
+      ['Change', 'Flat damage on Bulwark cards: Shield Slam +6, Shield Bash +3, Crushing Bastion +10, Armor Nova +4 to each enemy.'],
+      ['Change', 'Flat damage on Frost cards: Glacial Spike +8, Falling Star +10, Flash Freeze +5, Cone of Cold +5 to each enemy, Blizzard +4 to each enemy, Frostbolt, Ice Bolt and Ice Lance +4.'],
+      ['Change', 'Flat damage on Arcane cards: Arcane Blast +5, Arcane Bolt +4, Arcane Missiles +4, Arcane Barrage +2 per hit, Spark +3.'],
+      ['Change', 'Flat damage on Paladin cards: Shield of Righteousness +6, Hammer of Wrath +4, Divine Storm +4 to each enemy, Holy Nova +4 to each enemy.'],
+      ['Change', 'Flat healing on Paladin heals: Healing Light +5, Overflowing Light +4.'],
+      ['Change', 'Flat damage on Saboteur cards: Pilfer, Kick While Down, Lighten Their Purse and Cut Purse +3.'],
+      ['Change', 'Flat card bonuses don\'t grow with upgrades, level or gear: a big help on your first maps, a small one later.'],
       ['Change', 'Spirit now boosts the healing you receive, from every source: your heals, allies\' heals, Recovery, Lifesteal, Health Regen between fights and resting at a campfire (+1% per point).'],
       ['Change', 'Raid bosses can\'t be controlled or slowed: no Stun, Fear, Freeze, Disarm, Silence, Slow, Chill, counters, cost increases or draw loss.'],
       ['Change', 'Raid bosses always play their attacks: burning their mana or putting Stun cards in their hand doesn\'t stop them (they draw past Stun cards).'],

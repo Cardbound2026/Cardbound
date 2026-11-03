@@ -17,6 +17,7 @@ function newChar(cls, name, deckKey, amuletKey) {
   const deck = [], sd = (CB.STARTER_DECKS[cls] || []).find(x => x[0] === deckKey), list = (sd && sd[3]) || CLASSES[cls].deck;
   for (const [key, n] of list) for (let i = 0; i < n; i++) deck.push({ id: uid('k'), key, rank: 0 });
   const gear = STARTER_GEAR[cls].map(g => Object.assign({ id: uid('g') }, g));
+  for (const k of ((CB.STARTER_KITS || {})[cls] || {})[(sd && sd[0]) || 'balanced'] || []) { const i = gear.findIndex(g => g.slot === k.slot); const g = Object.assign({ id: uid('g') }, JSON.parse(JSON.stringify(k))); if (i >= 0) gear[i] = g; else gear.push(g); } // Nov 3: playstyle starter Greens
   if (amuletKey) { const i = gear.findIndex(g => g.slot === 'Amulet'); if (i >= 0) gear[i] = Object.assign({ id: uid('g') }, CB.starterAmulet(cls, amuletKey)); }
   const seen = {}; for (const k of deck) seen[k.key] = 1;
   return { season: SEASON, sKills: {}, cls, name: name || cls, created: Date.now(), gear, deck, cards: [], seen, runs: 0, best: 0, bossKills: 0, gotOffense1: true, starter: (sd && sd[0]) || 'balanced' };
