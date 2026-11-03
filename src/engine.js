@@ -1207,7 +1207,7 @@ class Combat {
       let m = (1 + stat / 100) * (1 + (p.elem[dtype] || 0) / 100) * (1 - Math.min(p.weak, 90) / 100) * setup * (T.nextMult || 1);
       if (pow) { try { m *= this.pwProd(p, 'cardMult', d); } catch (x) {} }
       if (e && e.hp > 0) { // aimed at a target: its weakness/resistance, Vulnerable, Condemnation and Unwarded too
-        m *= this.typeMod(e, dtype) * (1 + Math.min(0.5, (e.vulnerable || 0) / 100 * (pow ? Math.max(1, ...this.pws(p).map(([, q]) => q.vulnX || 1)) : 1))); // Nov 2: Vulnerable caps at +50%
+        m *= this.typeMod(e, dtype) * (1 + (dtype !== 'Physical' ? 0 : 1) * Math.min(0.5, (e.vulnerable || 0) / 100 * (pow ? Math.max(1, ...this.pws(p).map(([, q]) => q.vulnX || 1)) : 1))); // Nov 2: Vulnerable caps at +50%
         m *= (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? (1 + (e.unwarded || 0) / 100) * (1 + Math.min(50, e.magicVuln || 0) / 100) : 1); // Magic Vulnerability caps at +50%
         if (e.isPlayer) m *= (1 - Math.min(75, e.resist[dtype] || 0) / 100) * (1 + this.pressure());
       }
@@ -1543,7 +1543,7 @@ class Combat {
     const elem = p.elem[dtype] || 0;
     const crit = this.rng() * 100 < p.crit + (pow ? this.pwSum(p, 'crit', cd) : 0) + (p.turn && p.turn.critPlus || 0); this._lastCrit = crit;
     const tm = this.typeMod(e, dtype);
-    const weakMod = 1 - Math.min(p.weak, 90) / 100, vulnMod = 1 + Math.min(0.5, e.vulnerable / 100 * (pow ? Math.max(1, ...this.pws(p).map(([, d]) => d.vulnX || 1)) : 1)); // Nov 2: Vulnerable caps at +50%
+    const weakMod = 1 - Math.min(p.weak, 90) / 100, vulnMod = 1 + (dtype !== 'Physical' ? 0 : 1) * Math.min(0.5, e.vulnerable / 100 * (pow ? Math.max(1, ...this.pws(p).map(([, d]) => d.vulnX || 1)) : 1)); // Nov 2: Vulnerable caps at +50%
     const holyUp = dtype === 'Holy' && p.nextHolyMult > 1 ? p.nextHolyMult : 1; if (holyUp > 1) p.nextHolyMult = 1;
     const curse = (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? (1 + (e.unwarded || 0) / 100) * (1 + Math.min(50, e.magicVuln || 0) / 100) : 1); // Magic Vulnerability caps at +50%
     const pm = (pow ? this.pwProd(p, 'hitMult', e, ctx) : 1) * (this._cmult || 1) * holyUp * curse * (crit && p.turn && p.turn.killingBlow ? (p.turn.killingBlow === true ? 2 : p.turn.killingBlow) : 1), cmx = pow ? this.pwProd(p, 'critMultX') : 1;
@@ -1558,7 +1558,7 @@ class Combat {
     if (p.weak) parts.push(`x ${weakMod.toFixed(2)} Weak`);
     if (crit) parts.push(`x ${p.critMult.toFixed(2)} CRIT`);
     if (tm !== 1) parts.push(`x ${tm.toFixed(2)} ${tm > 1 ? dtype + ' weakness' : dtype + ' resist'}`);
-    if (e.vulnerable) parts.push(`x ${vulnMod.toFixed(2)} Vulnerable`);
+    if (e.vulnerable && vulnMod > 1) parts.push(`x ${vulnMod.toFixed(2)} Vulnerable`);
     if (pvp !== 1) parts.push(`x ${pvp.toFixed(2)} resist/Pressure`);
     if (pm !== 1) parts.push(`x ${pm.toFixed(2)} Powers`);
     const ign = (kind === 'Skill' && p.turn && p.turn.pierce) ? e.block : kind === 'Attack' && pow ? Math.floor(e.block * Math.min(1, Math.max(0, ...this.pws(p).map(([pw, d]) => d.ignoreBlock ? (pw.upN ? pw.upN[0] / 100 : d.ignoreBlock) : 0)))) : 0; e.block -= ign;
@@ -1602,14 +1602,14 @@ class Combat {
     const str = e.strength + e.strTurn, press = this.pressure();
     const res = Math.min(75, p.resist[dtype] || 0) / 100;
     const bonus = extra || 0;
-    const dmg = Math.max(0, Math.round((base + bonus) * this.dmgMult * e.dmgTune * (1 + str / 100) * (1 - Math.min(e.weak, 90) / 100) * (1 + press) * (1 - res) * (1 + Math.min(50, p.vulnerable) / 100) * (e.weakNext ? 1 - (e.weakNext === 1 || e.weakNext === true ? 0.3 : e.weakNext) : 1) * (p.until.lessDmg ? 1 - p.until.lessDmg : 1) * (dtype !== 'Physical' ? 1 + (p.unwarded || 0) / 100 : 1)));
+    const dmg = Math.max(0, Math.round((base + bonus) * this.dmgMult * e.dmgTune * (1 + str / 100) * (1 - Math.min(e.weak, 90) / 100) * (1 + press) * (1 - res) * (1 + (dtype === 'Physical' ? Math.min(50, p.vulnerable) : 0) / 100) * (e.weakNext ? 1 - (e.weakNext === 1 || e.weakNext === true ? 0.3 : e.weakNext) : 1) * (p.until.lessDmg ? 1 - p.until.lessDmg : 1) * (dtype !== 'Physical' ? 1 + (p.unwarded || 0) / 100 : 1)));
     const parts = [`${base}${bonus ? ' + ' + bonus : ''}`];
     if (this.dmgMult !== 1) parts.push(`x ${this.dmgMult.toFixed(2)} map level`);
     if (str) parts.push(`x ${(1 + str / 100).toFixed(2)} Strength`);
     if (e.weak) parts.push(`x ${(1 - e.weak / 100).toFixed(2)} Weak`);
     if (press) parts.push(`x ${(1 + press).toFixed(2)} Pressure`);
     if (res) parts.push(`x ${(1 - res).toFixed(2)} ${dtype} resist`);
-    if (p.vulnerable) parts.push(`x ${(1 + Math.min(50, p.vulnerable) / 100).toFixed(2)} Vulnerable`);
+    if (p.vulnerable && dtype === 'Physical') parts.push(`x ${(1 + Math.min(50, p.vulnerable) / 100).toFixed(2)} Vulnerable`);
     if (!this._aoeHit && !this.taunting()) { const tk = this.demonTaunt(); if (tk) { this.hurtDemon(tk[0], tk[1], dmg, `${e.name}'s ${label}`); return 0; } } // the Bulwark Fiend takes single-target hits
     if (this._aoeHit && p.demons && p.demons.length) for (const dm of p.demons.slice()) this.hurtDemon(p, dm, dmg, `${e.name}'s ${label}`); // area attacks also hit demons
     p.attackedThisRound = true;
@@ -1644,7 +1644,7 @@ class Combat {
     p[key] = (p[key] || 0) + n; if (['bleed', 'burn', 'poison'].includes(key)) p[key + 'By'] = e && e.id;
     if (key === 'chill' && p.chill >= 10) { p.chill = 0; p.frozen = true; this.say('crit', `${this.who(p)} ${this.partySize > 1 ? 'is' : 'are'} Frozen and will lose the next turn!`); return; }
     const W = this.partySize > 1 ? p.name : 'You', is = this.partySize > 1 ? 'is' : 'are', gain = this.partySize > 1 ? 'gains' : 'gain';
-    const txt = { weak: `${W} ${is} Weak ${p.weak}: ${p.weak}% less damage dealt.`, vulnerable: `${W} ${is} Vulnerable ${p.vulnerable}: ${Math.min(50, p.vulnerable)}% more damage taken.`, bleed: `${W} ${gain} ${n} Bleed (now ${p.bleed}).`, slow: `${W} ${is} Slowed ${p.slow}.`,
+    const txt = { weak: `${W} ${is} Weak ${p.weak}: ${p.weak}% less damage dealt.`, vulnerable: `${W} ${is} Vulnerable ${p.vulnerable}: ${Math.min(50, p.vulnerable)}% more Physical damage taken.`, bleed: `${W} ${gain} ${n} Bleed (now ${p.bleed}).`, slow: `${W} ${is} Slowed ${p.slow}.`,
       burn: `${W} ${gain} ${n} Burn (now ${p.burn}).`, poison: `${W} ${gain} ${n} Poison (now ${p.poison}).`, chill: `${W} ${is} Chilled ${p.chill} (Freezes at 10).`,
       unwarded: `${W} ${is} Unwarded ${p.unwarded}: +${p.unwarded}% magic damage taken.`, exposure: `${W} ${gain} ${n} Exposure: cards cost ${Math.min(10, p.exposure) * 5}% more.` };
     this.say('enemy', txt[key]);

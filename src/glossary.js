@@ -43,7 +43,7 @@
     ]],
     ['Debuffs', [
       ['Weak', 'Deals that % less damage. Halves at the end of each turn.'],
-      ['Vulnerable', 'Takes that % more damage, up to +50%. Halves at the end of each turn.'],
+      ['Vulnerable', 'Takes that % more Physical damage, up to +50%. Halves at the end of each turn. (Magic damage has Magic Vulnerability.)'],
       ['Bleed', 'Takes damage equal to its stacks at the start of its turn (Block absorbs it), then loses 1 stack.'],
       ['Poison', 'Like Bleed, but ignores Block.'],
       ['Burn', 'Like Bleed: damage each turn equal to its stacks, then -1.'],

@@ -4,6 +4,7 @@
     { date: '2026-11-02', items: [
       ['Balance', 'Dread: cards and powers apply 10% less Dread.'],
       ['Balance', 'Dread now loses 2 stacks a turn (was 1).'],
+      ['Balance', 'Vulnerable now only increases Physical damage.'],
       ['Balance', 'Vulnerable can raise damage taken by at most +50%, however many stacks there are.'],
       ['Balance', 'Magic Vulnerability can raise magic damage taken by at most +50%.'],
       ['Balance', 'Spirit now only boosts healing. It no longer makes Poison, Bleed, Burn, Dread or Rot stronger.'],
