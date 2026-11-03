@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Balance', 'Divine Wrath Codex: every 5 Devotion you spend heals you for 10% of your max HP.'],
       ['Fix', 'With a two-handed weapon, the off-hand slot shows the weapon instead of looking empty, and off-hand items no longer say they fill an empty slot.'],
       ['Balance', 'Creeping Doom: your Dread deals 50% more damage (was: Dread ticks twice).'],
       ['Balance', 'Entropy Codex: every point of mana drained applies 2 Exposure (was 3).'],
