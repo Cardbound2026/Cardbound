@@ -1774,7 +1774,7 @@ class Combat {
     // pick who this card hits: area cards hit every standing hero; single-target cards pick a random hero who isn't in Stealth
     const standing = this.alivePlayers();
     let mark = null;
-    if (aoe) { for (const q of standing) if (q.stealth) { q.stealth = false; this.say('enemy', `${c.name} hits everyone: ${this.partySize > 1 ? q.name + "'s" : 'your'} Stealth is broken.`); } }
+    if (aoe) { for (const q of standing) if (q.stealth) q.stealthAoe = 'pending'; } // Nov 2: an area hit only breaks Stealth if it gets through (a full Dodge keeps you hidden)
     else if (targeted) {
       const seen = standing.filter(q => !q.stealth);
       if (!seen.length) { this.say('player', `${e.name} can't find ${this.partySize > 1 ? 'anyone' : 'you'} in Stealth: ${c.name} misses.`); return true; }
@@ -1797,6 +1797,7 @@ class Combat {
           const extra = op.perStatus ? op.perStatus * this.statusCount() : 0;
           for (let k = 0; k < times && !this.over && e.hp > 0; k++) {
             const lost = this.enemyHit(e, op.n + extra, c.name, c.dtype, bonus); bonus = 0;
+            if (p.stealthAoe) { if (lost > 0 && p.stealth) { p.stealth = false; p.stealthAoe = 'broken'; this.say('enemy', `${c.name} hits everyone: ${this.partySize > 1 ? p.name + "'s" : 'your'} Stealth is broken.`); } else if (p.stealthAoe === 'pending') p.stealthAoe = 'dodged'; }
             if (op.dotPerHit && !this.over) this.debuffPlayer(op.dotPerHit.key, op.dotPerHit.n, e);
             if (op.lifesteal && lost) this.heal(e, Math.round(lost * op.lifesteal), c.name);
           }
@@ -1839,6 +1840,7 @@ class Combat {
       }
     }
     this._aoeHit = false;
+    for (const q of this.players) if (q.stealthAoe) { if (q.stealthAoe === 'pending' && q.stealth) { q.stealth = false; this.say('enemy', `${c.name} hits everyone: ${this.partySize > 1 ? q.name + "'s" : 'your'} Stealth is broken.`); } else if (q.stealthAoe === 'dodged' && q.stealth) this.say('player', `${this.partySize > 1 ? q.name + ' dodges' : 'You dodge'} it all and stay${this.partySize > 1 ? 's' : ''} in Stealth.`); q.stealthAoe = null; }
     e.weakNextUsed = e.weakNextUsed || (e.weakNext && c.ops.some(o => o.op === 'damage' || o.op === 'execute')); if (e.weakNextUsed) { e.weakNext = 0; e.weakNextUsed = false; }
     if (!this.over && e.d.tier === 'Boss' && e.phase === 1 && e.hp > 0 && e.hp <= e.maxHp / 2) this.phaseTwo(e);
     return !this.over;
@@ -2281,6 +2283,7 @@ function rankedCard(key, rank) {
   if (u.fr && MILESTONE(rank)) { ms.draw = MILESTONE(rank); v.msFree = true; txt += ` Draw ${ms.draw} card.`; }
   if (u.r) { rk.all = 1 + u.r * rank / 100; txt += ` (Upgrade: +${u.r * rank}% to its amount.)`; }
   if (u.c && d.cost != null) v.cost = Math.max(0, d.cost - Math.floor(rank / u.c));
+  if (u.cs && d.cost != null) v.cost = Math.max(0, d.cost - u.cs * rank); // Nov 2: -cs mana per level (Shadow Ambush: -2)
   v.rk = rk; v.ms = ms; v.rkMain = main || rk.all || 1; v.text = upgPlural(txt);
   if (u.x) { // hand-made: the play is rebuilt from the token values, so nothing else scales it
     const N = toks.slice().sort((x, y) => x[0] - y[0]).map(tval); v.rkAll = rk.all || 1; v.rk = {}; v.ms = {};

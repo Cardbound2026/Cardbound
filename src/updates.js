@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Change', 'Stealth: fully Dodging an enemy attack that hits everyone keeps you in Stealth. Only damage that gets through breaks it.'],
+      ['Balance', 'Shadow Ambush costs 2 less mana per upgrade level (20 at +0, 10 at +5, free at +10).'],
       ['Balance', 'Entropy Codex: only your first drain each turn applies Exposure and Magic Vulnerability.'],
       ['Balance', 'Sacred Flame Codex: Holy damage applies Burn equal to 35% of the damage (was 20%).'],
       ['Feature', 'New Rogue card: Fade Out (Blue, 0 mana): enter Stealth. Exhaust.'],

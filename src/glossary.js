@@ -36,7 +36,7 @@
       ['Demons (Warlock)', 'Summoned helpers, up to 3 at once. Each acts at the end of your turn and stays 2 turns. Single-target enemy attacks can\'t hit them (a Bulwark Fiend taunts and takes them instead); area attacks hit them too.'],
       ['Soul Beacon (Warlock)', 'A mark on one enemy: damage any hero deals to it heals every hero for a share of that damage, until it dies.'],
       ['Full parry', 'An enemy hit fully absorbed by your defense. Some cards and Powers trigger on it.'],
-      ['Stealth', 'Single-target enemy cards can\'t pick you. It lasts until you attack out of it (after that Attack resolves), play a card that hits all enemies, or an enemy hits everyone.'],
+      ['Stealth', 'Single-target enemy cards can\'t pick you. It lasts until you attack out of it (after that Attack resolves), play a card that hits all enemies, or an enemy area attack gets through (fully Dodging it keeps you hidden).'],
       ['Taunt', 'Enemies must attack this hero until their next turn.'],
       ['Untouchable / Immune', 'No damage (or no damage of a named type) until your next turn.'],
       ['Reflect', 'The next debuff on you goes back to the enemy that applied it.'],
