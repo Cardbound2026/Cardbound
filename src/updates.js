@@ -2,6 +2,22 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-03', items: [
+      ['Balance', "Entropy Codex: the first drain each turn now applies a flat 3 Exposure and 5 Magic Vulnerability (was 2 Exposure and 1 Magic Vulnerability per point of mana drained)."],
+      ['Balance', "Blightcaller talent Abyssal Dread: Dread you apply +6% (was +10%)."],
+      ['Balance', "Sunder Armor: 8 damage and 12 Vulnerable (was 5 and 10)."],
+      ['Balance', "Crack Armor: 20 Vulnerable (was 15)."],
+      ['Balance', "Sundering Blow: 5 damage per hit (was 4)."],
+      ['Balance', "Righteous Blow: 10 damage and 10 Block (was 8 and 8)."],
+      ['Balance', "Sword and Board: 9 damage (was 7)."],
+      ['Balance', "Shield of Righteousness: Holy damage equal to 60% of your Block (was 50%)."],
+      ['Balance', "Divine Storm: 14 Holy damage to all enemies (was 12)."],
+      ['Balance', "Judgment Hammer: 26 damage (was 22)."],
+      ['Balance', "Guarded Advance: 9 Block (was 7)."],
+      ['Balance', "Raise Shield: 12 Block (was 10)."],
+      ['Balance', "Crusader Strike: 14 damage (was 12)."],
+      ['Balance', "Searing Light: 7 Holy damage and 4 Burn (was 5 and 3)."],
+      ['Balance', "Holy Fire: 8 Holy damage (was 6)."],
+      ['Balance', "Condemn: 5 Holy damage (was 3)."],
       ['Change', 'Starter gear is a third stronger (main stats; Crit Chance and resistances unchanged).'],
       ['Change', 'New heroes get two Green starter pieces chosen for their starting playstyle.'],
       ['Change', 'Warrior Shieldbearer starts with a Green Kite Shield (+8 Thorns, +8% Defense Gain) and a Green Brigandine (+16 Stamina).'],

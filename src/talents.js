@@ -188,7 +188,7 @@
       d: {}, s: { 9: shelter('Spirit Shelter', 15) } },
     blightcaller: { party: party('Blessing of Spirit', 'spirit'), cls: 'Warlock', cap: ['creeping_doom', 'blighted_skin', 'plague_of_dread'],
       off: [X(dmg('Dark Whispers', 2, { dtype: 'Shadow' })), dmg('Dread Sense', 8, { vs: 'dread' }), startDot('Haunting', 'dread', 6), X(dotX('Deeper Dread', 'dread', 5)),
-        spread('Contagion', 'dread'), dmg('Terror', 15, { vs: 'dread' }), every('Nightmare', 3, { type: 'Skill' }, 'dread', 5), per('Paralysing Fear', 'dread', 10, 5, 25), X(dotX('Abyssal Dread', 'dread', 10))],
+        spread('Contagion', 'dread'), dmg('Terror', 15, { vs: 'dread' }), every('Nightmare', 3, { type: 'Skill' }, 'dread', 5), per('Paralysing Fear', 'dread', 10, 5, 25), X(dotX('Abyssal Dread', 'dread', 6))],
       d: { 3: hitDot('Haunted Skin', 'dread', 3) }, s: { 9: rally('Dread Choir', 15, 'dread') } },
     shadow_knight: { party: party('War Cry', 'strength'), cls: 'Warlock', cap: ['unholy_might', 'bone_armor', 'death_pact'],
       off: [dmg('Dark Edge', 5, { type: 'Attack' }), X(T('Grave Strength', 'Gain bonus Strength equal to 10% of your Stamina.', ['statFrom', 'strength', 'stamina', 10])), dmg('Umbral Blade', 10, { type: 'Attack', dtype: 'Shadow' }), crit('Reaper', 5, { type: 'Attack' }),

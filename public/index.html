@@ -1121,7 +1121,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.
       d: {}, s: { 9: shelter('Spirit Shelter', 15) } },
     blightcaller: { party: party('Blessing of Spirit', 'spirit'), cls: 'Warlock', cap: ['creeping_doom', 'blighted_skin', 'plague_of_dread'],
       off: [X(dmg('Dark Whispers', 2, { dtype: 'Shadow' })), dmg('Dread Sense', 8, { vs: 'dread' }), startDot('Haunting', 'dread', 6), X(dotX('Deeper Dread', 'dread', 5)),
-        spread('Contagion', 'dread'), dmg('Terror', 15, { vs: 'dread' }), every('Nightmare', 3, { type: 'Skill' }, 'dread', 5), per('Paralysing Fear', 'dread', 10, 5, 25), X(dotX('Abyssal Dread', 'dread', 10))],
+        spread('Contagion', 'dread'), dmg('Terror', 15, { vs: 'dread' }), every('Nightmare', 3, { type: 'Skill' }, 'dread', 5), per('Paralysing Fear', 'dread', 10, 5, 25), X(dotX('Abyssal Dread', 'dread', 6))],
       d: { 3: hitDot('Haunted Skin', 'dread', 3) }, s: { 9: rally('Dread Choir', 15, 'dread') } },
     shadow_knight: { party: party('War Cry', 'strength'), cls: 'Warlock', cap: ['unholy_might', 'bone_armor', 'death_pact'],
       off: [dmg('Dark Edge', 5, { type: 'Attack' }), X(T('Grave Strength', 'Gain bonus Strength equal to 10% of your Stamina.', ['statFrom', 'strength', 'stamina', 10])), dmg('Umbral Blade', 10, { type: 'Attack', dtype: 'Shadow' }), crit('Reaper', 5, { type: 'Attack' }),
@@ -1691,7 +1691,7 @@ const CUSTOM = {
   transfusion: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (e) { e.bleed += p.bleed; e.bleedBy = p.id; say(cb, `${p.bleed} Bleed moves to ${e.name}.`); p.bleed = 0; } } },
   seismic_slam: { play: (cb, t, p) => DA(cb, p.mana * 0.5, 'Seismic Slam') },
   wind_up: { retain: true, play: (cb, t, p) => { p.windUp = true; say(cb, 'Your next Attack deals +1 damage per 5 mana it costs.'); } },
-  sundering_blow: { play: (cb, t, p) => { const e = tgtOf(cb, t); for (let i = 0; i < 3 && e && e.hp > 0 && !cb.over; i++) { e.block = Math.max(0, e.block - 3); cb.hit(e, 4, 'Sundering Blow'); } } },
+  sundering_blow: { play: (cb, t, p) => { const e = tgtOf(cb, t); for (let i = 0; i < 3 && e && e.hp > 0 && !cb.over; i++) { e.block = Math.max(0, e.block - 3); cb.hit(e, 5, 'Sundering Blow'); } } },
   mark_for_death: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; e.vulnerable += 20; e.markDraw = cb.round; say(cb, `${e.name} gains 20 Vulnerable; each ally's first Attack on it this round draws a card.`); } },
   relentless_assault: { play: (cb, t, p) => { cb.timed(p, 'relentless', 2); say(cb, 'For 2 turns, unblocked hits apply 1 Vulnerable.'); } },
   reclaim_ground: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const v = e.vulnerable; e.vulnerable = 0; if (v) cb.gainDef(v); } },
@@ -1878,13 +1878,13 @@ const CUSTOM = {
   quiet_prayer: { play: (cb, t, p) => { cb.gainDef(6); devote(cb, p, 2); } },
   morning_prayer: { play: (cb, t, p) => devote(cb, p, 3) },
   purify: { play: (cb, t, p) => { const a = cb.pickAlly(p, true); const ks = cb.debuffKeys(a, false).slice(0, 2); for (const k of ks) a[k] = 0; say(cb, `${a.name}: ${ks.length} debuff${ks.length === 1 ? '' : 's'} removed.`); } },
-  condemn: { play: (cb, t) => { const e = D_(cb, t, 3, 'Condemn'); if (e) condemn(cb, e, 6); } },
+  condemn: { play: (cb, t) => { const e = D_(cb, t, 5, 'Condemn'); if (e) condemn(cb, e, 6); } },
   blessing_of_might: { play: (cb, t, p) => { const a = cb.pickAlly(p, true); a.strTurn += 20; cb.drawCards(a, 1); say(cb, `${a.name} gains 20 Strength this turn.`); } },
   guarding_light: { play: (cb, t, p) => cb.defFor(cb.pickAlly(p, false), 10) },
   devout_strike: { play: (cb, t, p) => { D_(cb, t, 6, 'Devout Strike'); devote(cb, p, 2); } },
   cleansing_breath: { play: (cb, t, p) => { cb.exhaustStatus(p, 1); cb.gainDef(4); } },
-  sword_and_board: { play: (cb, t, p) => { const was = p.prevType; D_(cb, t, 7, 'Sword and Board'); if (was === 'Skill') cb.gainDef(6); } },
-  guarded_advance: { play: (cb, t, p) => cb.gainDef(7 + (p.prevType === 'Attack' ? 5 : 0)) },
+  sword_and_board: { play: (cb, t, p) => { const was = p.prevType; D_(cb, t, 9, 'Sword and Board'); if (was === 'Skill') cb.gainDef(6); } },
+  guarded_advance: { play: (cb, t, p) => cb.gainDef(9 + (p.prevType === 'Attack' ? 5 : 0)) },
   soothing_light: { play: (cb, t, p) => { const a = cb.pickAlly(p, true); const full = a.hp >= a.maxHp; cb.heal(a, 6, 'Soothing Light'); if (full) cb.drawCards(p, 1); } },
   vow_of_penance: { play: (cb, t, p) => { const e = tgtOf(cb, t); D_(cb, e, 6 + (e && p.hp < e.hp ? 6 : 0), 'Vow of Penance'); } },
   fervent_prayer: { play: (cb, t, p) => { devote(cb, p, 5); cb.gainDef(6); } },
@@ -1897,7 +1897,7 @@ const CUSTOM = {
   hand_of_freedom: { play: (cb, t, p) => { const a = cb.allies().slice().sort((x, y) => (y.slow + y.chill) - (x.slow + x.chill))[0] || p; a.slow = 0; a.chill = 0; a.initNext = (a.initNext || 0) + 4; say(cb, `${a.name} is freed: +4 Initiative next turn.`); } },
   avenging_strike: { play: (cb, t, p) => D_(cb, t, 7 + ([...(cb.allyLost || [])].some(id => id !== p.id) ? 7 : 0), 'Avenging Strike') },
   mending_prayer: { play: (cb, t, p) => { cb.heal(p, 5, 'Mending Prayer'); devote(cb, p, 2); } },
-  shield_of_righteousness: { play: (cb, t, p) => blockToDmg(cb, t, p, 0.5, 'Shield of Righteousness', true, false, true) },
+  shield_of_righteousness: { play: (cb, t, p) => blockToDmg(cb, t, p, 0.6, 'Shield of Righteousness', true, false, true) },
   blessed_weapon: { play: (cb, t, p) => { p.turn.attackDtype = 'Holy'; say(cb, 'Your Attacks deal Holy damage this turn.'); cb.drawCards(p, 1); } },
   aegis: { play: (cb, t, p) => { cb.gainDef(8); (p.until.immuneTypes = p.until.immuneTypes || []).push('Shadow'); } },
   hammer_of_wrath: { play: (cb, t) => { const e = tgtOf(cb, t); D_(cb, e, e && e.hp < e.maxHp / 2 ? 12 : 6, 'Hammer of Wrath'); } },
@@ -1972,7 +1972,7 @@ const CODEXES = {
     ['saboteur', 'Saboteur', 'The first card you make an enemy discard each round also adds a Dazed to its discard pile.'], ['phantom', 'Phantom', 'Needs a weapon in each hand. Dodge you gain is increased by 20%. Every time you Dodge 20 damage, your next Attack deals 35% more damage. Stacks.']],
   Mage: [['heart_of_winter', 'Heart of Winter', 'Frost Skills that cost 20 or more deal 30% more damage. Frost damage to Chilled targets is 25% higher and has a 10% chance to Freeze them (they lose their next turn).'], ['spellstorm', 'Spellstorm', 'Each Arcane Skill you play makes your next card cost 5 less; every third one draws a card (at most 3 draws a turn).'],
     ['conflagration', 'Conflagration', 'Applying Burn to a target that is already Burning also deals that much Fire damage at once.'], ['barrier_savant', 'Barrier Savant', 'Needs a staff. Only 20% of your Barrier fades between turns (not half). Barrier you gain is increased by 25%, and cards that spend Barrier hit 25% harder.'],
-    ['entropy', 'Entropy', 'Mana you drain or burn from enemies is increased by 50%. The first drain each turn also applies 2 Exposure and 1 Magic Vulnerability per point of mana drained.'], ['archmage', 'Archmage', 'Skills of a different element from your previous two (this turn or earlier) deal 50% more damage.']],
+    ['entropy', 'Entropy', 'Mana you drain or burn from enemies is increased by 50%. The first drain each turn also applies 3 Exposure and 5 Magic Vulnerability.'], ['archmage', 'Archmage', 'Skills of a different element from your previous two (this turn or earlier) deal 50% more damage.']],
   Paladin: [['bastion_of_faith', 'Bastion of Faith', 'Needs a one-handed weapon and a shield. Your damage becomes Holy, and every damaging card also gives 4 Block.'], ['purifier', 'Purifier', 'Removing debuffs (from yourself or an enemy) deals 2 Holy damage per stack removed to an enemy.'],
     ['righteous_crusader', 'Righteous Crusader', 'An Attack makes your next Block card 45% stronger; a Block card makes your next Attack 45% stronger. Your Attacks deal bonus damage equal to 10% of your Block.'], ['sacred_flame', 'Sacred Flame', 'Holy damage also applies Burn equal to 35% of the damage dealt.'],
     ['divine_wrath', 'Divine Wrath', 'Prayer cards give 1 more Devotion. Your Attacks also spend Devotion, for 3 bonus damage per stack. Every 5 Devotion you spend heals you for 10% of your max HP.'], ['equilibrium', 'Equilibrium', 'You cannot gain Block. Your healing is 30% stronger, and healing you do also deals that much Holy damage to an enemy.']],
@@ -2534,7 +2534,7 @@ class Combat {
   }
   // take mana from an enemy: what it holds now, then what it would regenerate for its next turn (its mana can go below 0 until then)
   drainMana(e, n) { if (!e || n <= 0) return 0; const q = this.player, ent = q && q.isPlayer && this.has(q, 'codex_entropy'); if (ent) n = Math.round(n * 1.5); const pool = Math.max(0, e.mana) + (e.isPlayer ? e.regen : this.effRegen(e)); const s = Math.min(n, pool); e.mana -= s;
-    if (ent && s > 0 && q.turn && !q.turn.entropyHit) { q.turn.entropyHit = true; e.exposure = (e.exposure || 0) + 2 * s; e.magicVuln = (e.magicVuln || 0) + s; this.say('player', `Entropy: ${e.name} gains ${2 * s} Exposure and ${s} Magic Vulnerability.`); } // Nov 2: per point drained
+    if (ent && s > 0 && q.turn && !q.turn.entropyHit) { q.turn.entropyHit = true; e.exposure = (e.exposure || 0) + 3; e.magicVuln = (e.magicVuln || 0) + 5; this.say('player', `Entropy: ${e.name} gains 3 Exposure and 5 Magic Vulnerability.`); } // Nov 3: flat per drain (was per point drained)
     if (!e.isPlayer) this.planEnemy(e, true); return s; }
   pickAlly(p, self) { const pool = this.allies().filter(a => self || a !== p); if (!pool.length) return p; return pool.slice().sort((x, y) => x.hp / x.maxHp - y.hp / y.maxHp)[0]; }
   defFor(a, n) { const was = this.player; this.player = a; const v = this.gainDef(n); this.player = was; return v; }
@@ -3923,6 +3923,14 @@ const TEXT_FIX = {
 "vengeful_wound": "Deal 8 damage. Apply Bleed equal to 25% of your stored Blood Debt, without spending it."
 };
 for (const [k, t] of Object.entries(TEXT_FIX)) if (C[k]) C[k].text = t;
+// Nov 3: card buffs. retune(key, token index, new base) changes the card text, its upgrade token and its effect list together
+function retune(key, ti, nv) { const u = UPG[key], d = C[key]; if (!u || !u.t || !d) return; const tk = u.t[ti], old = tk[2], s0 = d.text.slice(tk[0], tk[1]); if (s0 !== String(old)) { if (typeof console !== 'undefined') console.warn('retune mismatch', key, s0, old); return; }
+  const dl = String(nv).length - s0.length; d.text = d.text.slice(0, tk[0]) + nv + d.text.slice(tk[1]); for (const o of u.t) if (o !== tk && o[0] >= tk[1]) { o[0] += dl; o[1] += dl; } tk[1] += dl; tk[2] = nv;
+  const ops = GEN_OPS[key]; if (ops) { const want = { dmg: 'dmg', def: 'def', vulnerable: 'debuff', burn: 'dot' }[tk[3]]; const o = ops.find(x => x.op === want && x.n === old && (!x.key || x.key === tk[3])); if (o) { o.n = nv; d.tags = genTags(ops); } } }
+[['sunder_armor', 0, 8], ['sunder_armor', 1, 12], ['crack_armor', 0, 20], ['sundering_blow', 0, 5], // Sunderer
+ ['righteous_blow', 0, 10], ['righteous_blow', 1, 10], ['sword_and_board', 0, 9], ['shield_of_righteousness', 0, 60], ['divine_storm', 0, 14], // Bastion of Faith
+ ['judgment_hammer', 0, 26], ['guarded_advance', 0, 9], ['raise_shield', 0, 12], ['crusader_strike', 0, 14], // Righteous Crusader
+ ['searing_light', 0, 7], ['searing_light', 1, 4], ['holy_fire', 0, 8], ['condemn', 0, 5]].forEach(([k, i, n]) => retune(k, i, n)); // Purifier
 for (const [k, f] of Object.entries(CARD_FLAT)) if (C[k]) C[k].text += ` +${f} damage${/ times\./.test(C[k].text) ? ' per hit' : C[k].target === 'all' ? ' to each enemy' : ''} (flat).`;
 for (const [k, f] of Object.entries(HEAL_FLAT)) if (C[k]) C[k].text += ` +${f} healing (flat).`;
 if (C.pilfer) C.pilfer.cost = 20; // Nov 2
@@ -6767,8 +6775,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793716723337';
-  const CB_BUILD = 'c01c9f9f5b'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793716964594';
+  const CB_BUILD = '565a8dfaa5'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -7872,6 +7880,22 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-03', items: [
+      ['Balance', "Entropy Codex: the first drain each turn now applies a flat 3 Exposure and 5 Magic Vulnerability (was 2 Exposure and 1 Magic Vulnerability per point of mana drained)."],
+      ['Balance', "Blightcaller talent Abyssal Dread: Dread you apply +6% (was +10%)."],
+      ['Balance', "Sunder Armor: 8 damage and 12 Vulnerable (was 5 and 10)."],
+      ['Balance', "Crack Armor: 20 Vulnerable (was 15)."],
+      ['Balance', "Sundering Blow: 5 damage per hit (was 4)."],
+      ['Balance', "Righteous Blow: 10 damage and 10 Block (was 8 and 8)."],
+      ['Balance', "Sword and Board: 9 damage (was 7)."],
+      ['Balance', "Shield of Righteousness: Holy damage equal to 60% of your Block (was 50%)."],
+      ['Balance', "Divine Storm: 14 Holy damage to all enemies (was 12)."],
+      ['Balance', "Judgment Hammer: 26 damage (was 22)."],
+      ['Balance', "Guarded Advance: 9 Block (was 7)."],
+      ['Balance', "Raise Shield: 12 Block (was 10)."],
+      ['Balance', "Crusader Strike: 14 damage (was 12)."],
+      ['Balance', "Searing Light: 7 Holy damage and 4 Burn (was 5 and 3)."],
+      ['Balance', "Holy Fire: 8 Holy damage (was 6)."],
+      ['Balance', "Condemn: 5 Holy damage (was 3)."],
       ['Change', 'Starter gear is a third stronger (main stats; Crit Chance and resistances unchanged).'],
       ['Change', 'New heroes get two Green starter pieces chosen for their starting playstyle.'],
       ['Change', 'Warrior Shieldbearer starts with a Green Kite Shield (+8 Thorns, +8% Defense Gain) and a Green Brigandine (+16 Stamina).'],
