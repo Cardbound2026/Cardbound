@@ -2,6 +2,14 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Feature', 'New Rogue card: Fade Out (Blue, 0 mana): enter Stealth. Exhaust.'],
+      ['Feature', 'New Rogue card: Shadow Ambush (Blue Power): when you attack out of Stealth, the target is Stunned and loses its next turn (bosses are Feared instead).'],
+      ['Balance', 'Assassinate costs 0 mana (was 20). Its upgrades add 10% more damage per level.'],
+      ['Balance', 'Shield Strike deals 5 more damage.'],
+      ['Balance', 'Bulwark Codex: only 20% of your Block fades between turns (not half).'],
+      ['Balance', 'Riposte Codex: only 20% of your Parry fades between turns (not half).'],
+      ['Balance', 'Barrier Savant Codex: only 20% of your Barrier fades between turns (not half).'],
+      ['Fix', 'Hide\'s text now says Stealth lasts until you attack.'],
       ['Change', 'Feeding cards: hover a card in the list to see it.'],
       ['Change', 'The party frame sits on the right edge, halfway down, so the city map no longer covers it.'],
       ['Balance', 'Divine Wrath Codex: every 5 Devotion you spend heals you for 10% of your max HP.'],

@@ -1460,11 +1460,11 @@ card('throwing_stars', { cls: 'Rogue', name: 'Throwing Stars', rarity: 'White', 
 card('shuriken', { cls: 'Rogue', name: 'Shuriken', rarity: 'Token', type: 'Attack', cost: 0, target: 'enemy', dtype: 'Physical', exhaust: true, text: 'Deal 4 damage. Exhaust.', play: (cb, t) => cb.hit(t, 4, 'Shuriken'), tags: { dmg: 4 } });
 card('garrote', { cls: 'Rogue', name: 'Garrote', rarity: 'Green', type: 'Attack', cost: 10, target: 'enemy', dtype: 'Physical', text: 'Deal 6 damage and apply 8 Bleed.', play: (cb, t) => { cb.hit(t, 6, 'Garrote'); cb.applyDot(t, 'bleed', 8); }, tags: { dmg: 6, dot: 36 } });
 card('blur', { cls: 'Rogue', name: 'Blur', rarity: 'Green', type: 'Skill', cost: 10, target: 'self', text: 'Gain 10 Dodge. Next turn, gain 5 Dodge.', play: (cb) => { cb.gainDef(10); cb.player.defNext += 5; }, tags: { def: 13 } });
-card('hide', { cls: 'Rogue', name: 'Hide', rarity: 'Green', type: 'Skill', cost: 10, target: 'self', text: "Enter Stealth: single-target enemy cards can't find you until your next turn. Only 0-cost cards for the rest of this turn.",
+card('hide', { cls: 'Rogue', name: 'Hide', rarity: 'Green', type: 'Skill', cost: 10, target: 'self', text: "Enter Stealth: single-target enemy cards can't find you until you attack. Only 0-cost cards for the rest of this turn.",
   play: (cb) => { cb.player.stealth = true; cb.player.locked = true; cb.say('player', 'You slip into Stealth.'); }, tags: { hide: 1 } });
 card('evasion', { cls: 'Rogue', name: 'Evasion', rarity: 'Blue', type: 'Skill', cost: 20, target: 'self', text: 'Gain 40 Dodge.', play: (cb) => cb.gainDef(40), tags: { def: 40 } });
 card('coup_de_grace', { cls: 'Rogue', name: 'Coup de Grace', rarity: 'Blue', type: 'Attack', cost: 10, target: 'enemy', dtype: 'Physical', text: 'Deal 10 damage. If the target is below 30% HP, deal 30 instead.', play: (cb, t) => cb.hit(t, t.hp < t.maxHp * 0.3 ? 30 : 10, 'Coup de Grace'), tags: { dmg: 10, execute: 30 } });
-card('assassinate', { cls: 'Rogue', name: 'Assassinate', rarity: 'Gold', type: 'Skill', cost: 20, target: 'self', text: 'Your next Attack deals double damage.', play: (cb) => { cb.player.nextAttackMult = 2; cb.say('player', 'Your next Attack deals double damage.'); }, tags: { setup: 'attack' } });
+card('assassinate', { cls: 'Rogue', name: 'Assassinate', rarity: 'Gold', type: 'Skill', cost: 0, target: 'self', text: 'Your next Attack deals double damage. Playing it keeps you in Stealth.', play: (cb) => { cb.player.nextAttackMult = 2; cb.say('player', 'Your next Attack deals double damage.'); }, tags: { setup: 'attack' } });
 
 // --- Mage
 card('fireball', { cls: 'Mage', name: 'Fireball', rarity: 'White', type: 'Skill', cost: 10, target: 'enemy', dtype: 'Fire', text: 'Deal 7 Fire damage and apply 3 Burn.', play: (cb, t) => { cb.hit(t, 7, 'Fireball'); cb.applyDot(t, 'burn', 3); }, tags: { dmg: 7, dot: 6 } });
@@ -1473,6 +1473,9 @@ card('frostbolt', { cls: 'Mage', name: 'Frostbolt', rarity: 'White', type: 'Skil
 card('runic_ward', { cls: 'Mage', name: 'Runic Ward', rarity: 'Green', type: 'Skill', cost: 10, target: 'self', text: 'Gain 20 Barrier.', play: (cb) => cb.gainDef(20), tags: { def: 20 } });
 card('spiked_ward', { cls: 'Mage', name: 'Spiked Ward', rarity: 'Blue', type: 'Skill', cost: 0, target: 'self', text: 'Gain Thorns equal to half the Barrier you gained this turn. For the rest of this turn, Barrier you gain adds Thorns too. The Thorns last until your Barrier runs out.',
   play: (cb) => { const p = cb.player; p.turn.spikedWard = true; const n = Math.round((p.turn.defGained || 0) * 0.5); if (n > 0) cb.wardThorns(p, n); else cb.say('player', 'Spiked Ward: Barrier you gain this turn adds Thorns.'); }, tags: {} });
+// Nov 2: Rogue Stealth cards
+card('fade_out', { cls: 'Rogue', name: 'Fade Out', rarity: 'Blue', type: 'Skill', cost: 0, target: 'self', exhaust: true, text: 'Enter Stealth. Exhaust.', play: (cb) => { cb.player.stealth = true; cb.say('player', `${cb.partySize > 1 ? cb.player.name + ' fades' : 'You fade'} into Stealth.`); }, tags: {} });
+card('shadow_ambush', { cls: 'Rogue', name: 'Shadow Ambush', rarity: 'Blue', type: 'Power', cost: 20, target: 'self', exhaust: true, text: 'Power: when you attack out of Stealth, the target is Stunned and loses its next turn.', play: (cb) => cb.addPower(cb.player, 'shadow_ambush', 'Shadow Ambush', 'When you attack out of Stealth, the target is Stunned.'), tags: { power: 1 } });
 card('arcane_missiles', { cls: 'Mage', name: 'Arcane Missiles', rarity: 'White', type: 'Skill', cost: 10, target: 'enemy', dtype: 'Arcane', text: 'Deal 5 Arcane damage. Steal 5 mana from the target.', play: (cb, t) => { cb.hit(t, 5, 'Arcane Missiles'); const s = cb.drainMana(t, 5); cb.player.mana += s; cb.say('player', s ? `${cb.who(cb.player)} steal${cb.partySize > 1 ? 's' : ''} ${s} mana from ${t.name}${t.mana < 0 ? ' (it will have less next turn)' : ''}.` : `${t.name} has no mana to steal.`); }, tags: { dmg: 5 } });
 card('ice_bolt', { cls: 'Mage', name: 'Ice Bolt', rarity: 'White', type: 'Skill', cost: 10, target: 'enemy', dtype: 'Frost', text: 'Deal 5 Frost damage and apply 4 Chill.', play: (cb, t) => { cb.hit(t, 5, 'Ice Bolt'); cb.applyChill(t, 4); }, tags: { dmg: 5, chill: 4 } });
 card('mana_spring', { cls: 'Mage', name: 'Mana Spring', rarity: 'White', type: 'Skill', cost: 10, target: 'self', text: 'At the start of your next turn, gain 20 mana.', play: (cb) => { cb.player.manaNext += 20; cb.say('player', '+20 mana next turn.'); }, tags: { mana: 10 } });
@@ -1511,6 +1514,7 @@ card('stun', { name: 'Stun', rarity: 'Status', type: 'Status', cost: null, targe
 //   cardMult(cb,p,d,pw) once per card (x damage); hitMult(cb,p,e,ctx,pw) per hit; crit / critMultX / vulnX / ignoreBlock / dotTicks / dotMult / dotPlus / incoming / initPlus / statPlus
 const P_ = (fn) => fn; const shurikenDmg = 4;
 const POWERS = {
+  shadow_ambush: {},
   // --- Warrior
   thorned_bulwark: { hitBy: (cb, p, e, r, ...a) => { const back = Math.round(r.absorbed * PN(a, 0, 25) / 100); if (back > 0 && e.hp > 0) { cb.applyHit(p, e, back, { label: 'Thorned Bulwark' }); cb.say('player', `Thorned Bulwark: ${e.name} takes ${back}.`); if (e.hp <= 0) cb.onDeath(e); } } },
   guardian_s_oath: { guard: 0.5 },
@@ -1596,7 +1600,7 @@ const D_ = (cb, t, n, l) => { const e = tgtOf(cb, t); if (e && !cb.over) cb.hit(
 const DA = (cb, n, l) => { for (const e of cb.alive()) if (!cb.over) cb.hit(e, Math.max(0, Math.round(n)), l); };
 const say = (cb, s) => cb.say('player', s);
 const retainMana = (cb, p) => { p.mana += 10; say(cb, `${p.name} keeps a card in hand: +10 mana.`); };
-const blockToDmg = (cb, t, p, pct, l, keep, all, holy) => { const n = Math.round(p.block * pct * cb.pwProd(p, 'spendMult')); if (!keep) p.block = 0; const was = cb._playing; if (holy) cb._playing = Object.assign(Object.create(was), { dtype: 'Holy' }); if (all) DA(cb, n, l); else D_(cb, t, n, l); cb._playing = was; };
+const blockToDmg = (cb, t, p, pct, l, keep, all, holy, flat) => { const n = Math.round(p.block * pct * cb.pwProd(p, 'spendMult')) + (flat || 0); if (!keep) p.block = 0; const was = cb._playing; if (holy) cb._playing = Object.assign(Object.create(was), { dtype: 'Holy' }); if (all) DA(cb, n, l); else D_(cb, t, n, l); cb._playing = was; };
 const debuffMove = (cb, from, to, keys) => { let n = 0; for (const k of keys) if (from[k] > 0) { to[k] = (to[k] || 0) + from[k]; n += from[k]; from[k] = 0; } return n; };
 const CUSTOM = {
   // ===== Warrior
@@ -1670,7 +1674,7 @@ const CUSTOM = {
   adrenaline_surge: { play: (cb, t, p) => { p.strCombat += 60; cb.timed(p, 'adrenaline', 6, { each: (c, q) => { q.strCombat -= 10; } }); say(cb, '+60 Strength, fading by 10 each turn.'); } },
   bully: { play: (cb, t, p) => { const e = tgtOf(cb, t); D_(cb, e, 16 + (e && p.hp > e.hp ? 16 : 0), 'Bully'); } },
   fortify: { play: (cb, t, p) => { cb.timed(p, 'fortify', 5, { each: (c) => c.gainDef(10) }); say(cb, 'Gain 10 Block at the start of each of your next 5 turns.'); } },
-  shield_strike: { play: (cb, t, p) => blockToDmg(cb, t, p, 0.25, 'Shield Strike', true) },
+  shield_strike: { play: (cb, t, p) => blockToDmg(cb, t, p, 0.25, 'Shield Strike', true, false, false, 5) },
   thunderclap: { play: (cb, t, p) => DA(cb, 14 * p.hp / p.maxHp, 'Thunderclap') },
   indomitable: { play: (cb, t, p) => { cb.timed(p, 'keepBlock', 3); say(cb, 'For 3 turns, enemy effects cannot reduce your Block.'); } },
   riposte: { play: (cb, t, p) => { cb.gainDef(6); (p.until.onFull = p.until.onFull || []).push((c, q, e) => { if (e.hp > 0 && !q.until.riposted) { q.until.riposted = true; c.applyHit(q, e, 8, { label: 'Riposte' }); c.say('player', `Riposte: ${e.name} takes 8.`); if (e.hp <= 0) c.onDeath(e); } }); } },
@@ -1960,14 +1964,14 @@ Object.assign(POWERS, {
 // A codex is a class-locked gear slot: random affixes like gear plus one fixed passive that boosts a playstyle (it never limits your cards).
 // Six per class; each map's boss drops four (one per class). Passives below are level 1 (codex levels 2-5 come from higher map levels later).
 const CODEXES = {
-  Warrior: [['bulwark', 'Bulwark', 'Needs a one-handed weapon and a shield. Block you gain is increased by 25%. When you are hit, the attacker takes Thorns damage equal to 25% of your Block (Strength boosts it like an Attack).'], ['riposte', 'Riposte', 'Needs a two-handed weapon. When an attack is fully stopped by your Parry, deal 75% of the damage it would have done back to the attacker. Strength boosts it like an Attack.'],
+  Warrior: [['bulwark', 'Bulwark', 'Needs a one-handed weapon and a shield. Block you gain is increased by 25%, and only 20% of it fades between turns (not half). When you are hit, the attacker takes Thorns damage equal to 25% of your Block (Strength boosts it like an Attack).'], ['riposte', 'Riposte', 'Needs a two-handed weapon. Only 20% of your Parry fades between turns (not half). When an attack is fully stopped by your Parry, deal 75% of the damage it would have done back to the attacker. Strength boosts it like an Attack.'],
     ['bloodbound', 'Bloodbound', 'Bleed you apply to enemies is also applied to you. Each Attack heals you for 10% of your stored Blood Debt (and spends it).'], ['colossus', 'Colossus', 'Needs a two-handed weapon. Every 30 mana you spend on Attacks adds a Stun to the target\'s draw pile.'],
     ['sunderer', 'Sunderer', 'Your Attacks also apply 3 Vulnerable. Vulnerable on enemies wears off 10% a turn instead of half.'], ['hemorrhage', 'Hemorrhage', '+10% Crit Chance. Your crits apply Bleed equal to 30% of the damage they deal.']],
   Rogue: [['nightstalker', 'Nightstalker', 'Needs a dagger in your main hand. Attacks you play while in Stealth deal 50% more damage, have +25% crit chance and +50% crit damage.'], ['venomancer', 'Venomancer', 'Needs a weapon in each hand. Poison you apply is increased by 2.'],
     ['bloodletter', 'Bloodletter', 'Needs a weapon in each hand. Bleed you apply is increased by 50%.'], ['ninja', 'Ninja', 'Shurikens deal 4 more damage. Start each turn with a Shuriken in hand.'],
     ['saboteur', 'Saboteur', 'The first card you make an enemy discard each round also adds a Dazed to its discard pile.'], ['phantom', 'Phantom', 'Needs a weapon in each hand. Dodge you gain is increased by 20%. Every time you Dodge 20 damage, your next Attack deals 35% more damage. Stacks.']],
   Mage: [['heart_of_winter', 'Heart of Winter', 'Frost Skills that cost 20 or more deal 30% more damage. Frost damage to Chilled targets is 25% higher and has a 10% chance to Freeze them (they lose their next turn).'], ['spellstorm', 'Spellstorm', 'Each Arcane Skill you play makes your next card cost 5 less; every third one draws a card (at most 3 draws a turn).'],
-    ['conflagration', 'Conflagration', 'Applying Burn to a target that is already Burning also deals that much Fire damage at once.'], ['barrier_savant', 'Barrier Savant', 'Needs a staff. Barrier you gain is increased by 25%, and cards that spend Barrier hit 25% harder.'],
+    ['conflagration', 'Conflagration', 'Applying Burn to a target that is already Burning also deals that much Fire damage at once.'], ['barrier_savant', 'Barrier Savant', 'Needs a staff. Only 20% of your Barrier fades between turns (not half). Barrier you gain is increased by 25%, and cards that spend Barrier hit 25% harder.'],
     ['entropy', 'Entropy', 'Mana you drain or burn from enemies is increased by 50%. Every point of mana drained applies 2 Exposure and 1 Magic Vulnerability.'], ['archmage', 'Archmage', 'Skills of a different element from your previous two (this turn or earlier) deal 50% more damage.']],
   Paladin: [['bastion_of_faith', 'Bastion of Faith', 'Needs a one-handed weapon and a shield. Your damage becomes Holy, and every damaging card also gives 4 Block.'], ['purifier', 'Purifier', 'Removing debuffs (from yourself or an enemy) deals 2 Holy damage per stack removed to an enemy.'],
     ['righteous_crusader', 'Righteous Crusader', 'An Attack makes your next Block card 45% stronger; a Block card makes your next Attack 45% stronger. Your Attacks deal bonus damage equal to 10% of your Block.'], ['sacred_flame', 'Sacred Flame', 'Holy damage also applies Burn equal to 20% of the damage dealt.'],
@@ -2789,7 +2793,7 @@ class Combat {
   beginTurn(a) {
     if (!a.isPlayer && this.opts.blockReset !== 'none' && a.block) { a.block = 0; a.parryBack = 0; }
     if (a.isPlayer && this.opts.blockReset === 'all' && a.block) { this.say('player', `Your ${a.block} ${a.defName} fades.`); a.block = 0; }
-    if (a.isPlayer && this.opts.blockReset === 'decay' && a.block && !(a.until.keepBlock || this.hasTimed(a, 'keepBlock'))) { const kept = Math.floor(a.block / 2); this.say('player', `${this.partySize > 1 ? 'Half of ' + a.name + "'s" : 'Half your'} ${a.defName} fades: ${a.block} -> ${kept}.`); a.block = kept; }
+    if (a.isPlayer && this.opts.blockReset === 'decay' && a.block && !(a.until.keepBlock || this.hasTimed(a, 'keepBlock'))) { const hold = this.has(a, 'codex_bulwark') || this.has(a, 'codex_riposte') || this.has(a, 'codex_barrier_savant'); const kept = Math.floor(a.block * (hold ? 0.8 : 0.5)); this.say('player', `${hold ? '20% of ' + (this.partySize > 1 ? a.name + "'s" : 'your') : this.partySize > 1 ? 'Half of ' + a.name + "'s" : 'Half your'} ${a.defName} fades: ${a.block} -> ${kept}.`); a.block = kept; } // Nov 2: Bulwark, Riposte and Barrier Savant keep 80%
     if (a.isPlayer && a.regenDown.length) { for (const r of a.regenDown) r.turns--; }
     const regen = a.isPlayer ? Math.max(0, a.regen - a.regenDown.reduce((s, x) => s + x.n, 0)) : this.effRegen(a);
     if (a.isPlayer) a.regenDown = a.regenDown.filter(r => r.turns > 0);
@@ -3137,6 +3141,7 @@ class Combat {
     this._cmult = 1;
     if (d.rank && !this.over) this.rkMilestones(p, d, dn0, tgt);
     this.rkEnd(); this._rk = null; this._rkCard = null; this._rkHits = this._rkTimed = this._rkAdded = null;
+    if (stAtk && tgt && !tgt.isPlayer && tgt.hp > 0 && this.has(p, 'shadow_ambush')) this.control(tgt, 'stun'); // Nov 2: Shadow Ambush
     if (stAtk && p.stealth === 'atk') { p.stealth = false; this.say('player', `${this.partySize > 1 ? p.name + ' attacks' : 'You attack'} out of Stealth.`); }
     if (p.powers.length && !this.over) this.fire(p, 'cardPlayed', d);
     if (d.type === 'Skill' && d.tags.dmg && this.has(p, 'elemental_memory')) {
@@ -3797,6 +3802,7 @@ if (C.mend_wounds) Object.assign(C.mend_wounds, { target: 'ally', text: 'Heal an
 if (C.lay_on_hands) Object.assign(C.lay_on_hands, { target: 'ally', text: 'Heal an ally (or yourself) for 30% of their total HP. Exhaust.', play: (cb, t) => { const a = t && t.isPlayer && t.hp > 0 ? t : cb.player; cb.heal(a, Math.round(a.maxHp * 0.3), 'Lay on Hands'); } }); // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
 // Nov 1: no reminder text in parentheses on cards (hold Alt over a keyword for its glossary entry); rules that were in brackets are now plain sentences
 const TEXT_FIX = {
+"shield_strike": "Deal damage equal to 25% of your Block, plus 5. Your Block is not spent.",
 "arcane_blast": "Deal 8 Arcane damage, plus 6 for each Arcane Skill you played before it this turn (at most 18 more).",
 "expose_opening": "When you fully Parry an attack, apply 40 Vulnerable to the attacker.",
 "unnerving_guard": "Gain 15 Parry. Each attack you fully parry before your next turn adds a Stun to the attacker's draw pile.",
@@ -6699,8 +6705,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793667614471';
-  const CB_BUILD = 'c7d11aabbd'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793669477788';
+  const CB_BUILD = '627ea00f79'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -7803,6 +7809,14 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Feature', 'New Rogue card: Fade Out (Blue, 0 mana): enter Stealth. Exhaust.'],
+      ['Feature', 'New Rogue card: Shadow Ambush (Blue Power): when you attack out of Stealth, the target is Stunned and loses its next turn (bosses are Feared instead).'],
+      ['Balance', 'Assassinate costs 0 mana (was 20). Its upgrades add 10% more damage per level.'],
+      ['Balance', 'Shield Strike deals 5 more damage.'],
+      ['Balance', 'Bulwark Codex: only 20% of your Block fades between turns (not half).'],
+      ['Balance', 'Riposte Codex: only 20% of your Parry fades between turns (not half).'],
+      ['Balance', 'Barrier Savant Codex: only 20% of your Barrier fades between turns (not half).'],
+      ['Fix', 'Hide\'s text now says Stealth lasts until you attack.'],
       ['Change', 'Feeding cards: hover a card in the list to see it.'],
       ['Change', 'The party frame sits on the right edge, halfway down, so the city map no longer covers it.'],
       ['Balance', 'Divine Wrath Codex: every 5 Devotion you spend heals you for 10% of your max HP.'],
