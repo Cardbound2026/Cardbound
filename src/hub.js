@@ -236,6 +236,7 @@ function equip(p, cls, itemId, slotWanted) {
   useStash(p, cls);
   { const lk = arenaLock(p, cls); if (lk) return { ok: false, why: lk }; }
   const c = char(p, cls), i = p.stash.findIndex(x => x.id === itemId); if (i < 0) return { ok: false, why: 'Not in stash' };
+  if ((c.cls === 'Warrior' || c.cls === 'Paladin') && /Staff/.test(p.stash[i].arch || p.stash[i].label || '')) return { ok: false, why: `${c.cls}s can't use staffs.` }; // Nov 2
   if (p.stash[i].slot === 'Codex' && p.stash[i].cls && p.stash[i].cls !== c.cls) return { ok: false, why: `Only a ${p.stash[i].cls} can use the ${p.stash[i].name}.` };
   const item = p.stash[i], opts = slotOptions(item);
   let slot = slotWanted && opts.includes(slotWanted) ? slotWanted : opts[0];

@@ -580,7 +580,7 @@ function weaponSetup(gear, data) {
 }
 // a shield beside a staff only counts with Barrier Savant's 'Staff and Shield' talent (defense, row 1)
 const staffShieldOk = (spec) => { const cx = (spec.gear || []).find(g => g && g.slot === 'Codex'); return !!(cx && cx.codex === 'barrier_savant' && spec.talents && spec.talents.codex === 'barrier_savant' && (spec.talents.picks || [])[0] === 1); };
-function legalGear(spec, data) { const gear = spec.gear || STARTER_GEAR[spec.cls]; const G = (data || DATA || {}).gear || {}; const archOf = (it) => it && (it.arch || (((G.bases || []).find(b => b.name === it.name) || {}).arch) || ''); const w = gear.find(g => g && g.slot === 'Weapon'), o = gear.find(g => g && g.slot === 'Off-hand'); if (w && o && /Staff/.test(archOf(w)) && !staffShieldOk(spec)) return gear.filter(g => g !== o); return gear; }
+function legalGear(spec, data) { let gear = spec.gear || STARTER_GEAR[spec.cls]; if (spec.cls === 'Warrior' || spec.cls === 'Paladin') { const G0 = (data || DATA || {}).gear || {}; gear = gear.filter(g => !(g && g.slot === 'Weapon' && /Staff/.test(g.arch || (((G0.bases || []).find(b => b.name === g.name) || {}).arch) || ''))); } /* Nov 2: no staffs for Warriors and Paladins */ const G = (data || DATA || {}).gear || {}; const archOf = (it) => it && (it.arch || (((G.bases || []).find(b => b.name === it.name) || {}).arch) || ''); const w = gear.find(g => g && g.slot === 'Weapon'), o = gear.find(g => g && g.slot === 'Off-hand'); if (w && o && /Staff/.test(archOf(w)) && !staffShieldOk(spec)) return gear.filter(g => g !== o); return gear; }
 function codexNeed(key, gear, data) { const n = CODEX_NEEDS[key]; if (!n) return null; return weaponSetup(gear || [], data)[n] ? null : NEED_TXT[n]; }
 const atkOnce = (p, key) => p.turn && p.turn[key];
 Object.assign(POWERS, {
@@ -1564,6 +1564,7 @@ class Combat {
     const ign = (kind === 'Skill' && p.turn && p.turn.pierce) ? e.block : kind === 'Attack' && pow ? Math.floor(e.block * Math.min(1, Math.max(0, ...this.pws(p).map(([pw, d]) => d.ignoreBlock ? (pw.upN ? pw.upN[0] / 100 : d.ignoreBlock) : 0)))) : 0; e.block -= ign;
     const r = this.applyHit(p, e, dmg, { defer: true, label, crit, dtype, kind, card: cd && cd.key }); e.block += ign;
     if (pow) this.fire(p, 'dealt', { e, lost: r.lost, absorbed: r.absorbed, kind, dtype, d: cd, crit });
+    if (pow && !e.isPlayer) { const dd = this.pwSum(p, 'dealtDef'); if (dd > 0) { const n = Math.round((r.lost + r.absorbed) * dd / 100); if (n > 0) { p.block += n; this.say('player', `+${n} ${p.defName} from the hit.`); } } } // Nov 2: Colossus Iron Momentum
     if (e.beacon && r.lost > 0 && !e.isPlayer) { const by = this.actorById(e.beacon.by), n = Math.round(r.lost * e.beacon.pct / 100 * (by && by.powers.length ? this.pwProd(by, 'beaconX') : 1)); if (n > 0) for (const a of this.allies()) this.heal(a, n, 'Soul Beacon', true); }
     this._lastLost = r.lost;
     if (p.isPlayer && p.turn && r.lost > 0) {
@@ -2108,7 +2109,7 @@ function talentDef(list, cap, label) {
     else if (k === 'start') D.start.push([a, b, c]); else if (k === 'turn') D.turn.push([a, b, c, d2]); else if (k === 'kill') D.kill.push([a, b, c]);
     else if (k === 'hitBy') D.hit.push([a, b, c]); else if (k === 'full') D.full.push([a, b, c]); else if (k === 'lowhp') D.low = [a, b]; else if (k === 'cheat') D.cheat = [a, b];
     else if (k === 'party') (D.party = D.party || []).push([a, b]);
-    else if (k === 'arcRegen') D.arcRegen = a;
+    else if (k === 'arcRegen') D.arcRegen = a; else if (k === 'dealtDef') D.dd = (D.dd || 0) + a;
     else if (k === 'parryFirst') D.pf = (D.pf || 0) + a; else if (k === 'parryExtra') D.px = true; else if (k === 'extraTarget') (D.xt = D.xt || []).push([a, b || {}]); else if (k === 'extraStrike') (D.xs = D.xs || []).push([a, b || {}]);
     else if (k === 'dealtBleed') (D.db = D.db || []).push([a, b || {}]);
     else if (k === 'every') D.every.push([a, b, c, d2, e2]); else if (k === 'cost') D.cost.push([a, b]); else if (k === 'firstCost') D.first.push([a, b]); else if (k === 'aura') D.aura.push(...a);
@@ -2171,6 +2172,7 @@ function talentDef(list, cap, label) {
   if (D.full.length) P.fullBlock = (cb, p, e) => { for (const [w, n, key] of D.full) {
     if (w === 'back') { if (e.hp > 0) { cb.applyHit(p, e, n, { label }); if (e.hp <= 0) cb.onDeath(e); } } else if (w === 'debuff') { if (e.hp > 0) e[key] = (e[key] || 0) + n; } else if (w === 'mana') p.mana += n; else act(cb, p, w, n, key, label); } };
   if (D.cheat) P.cheat = D.cheat;
+  if (D.dd) P.dealtDef = D.dd;
   if (D.db) P.dealt = (cb, p, h) => { if (!h.e || h.e.hp <= 0 || h.e.isPlayer === p.isPlayer) return; for (const [pct, f] of D.db) { if (f.type && h.kind !== f.type) continue; if (f.dtype && (h.dtype || 'Physical') !== f.dtype) continue; const n = Math.round(((h.lost || 0) + (h.absorbed || 0)) * pct / 100); if (n > 0) { cb.applyDot(h.e, 'bleed', n); h.e.bleedBy = p.id; } } };
   if (D.every.length || D.first.length) P.cardPlayed = (cb, p, d) => {
     D.every.forEach(([N, f, w, n, key], i) => { if (!tcard(d, f)) return; const k = 'te' + i; p.turn[k] = (p.turn[k] || 0) + 1; if (p.turn[k] % N === 0) { act(cb, p, w, n, key, label); cb.say('player', `${label}: every ${N}${N === 3 ? 'rd' : 'th'} card bonus.`); } });

@@ -1017,9 +1017,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.
         spread('Exsanguinator', 'bleed'), dmg('Red Frenzy', 15, { type: 'Attack', vs: 'bleed' }), every('Crimson Tide', 3, { type: 'Attack' }, 'bleed', 6), per('Bloodletting Edge', 'bleed', 10, 5, 25, { type: 'Attack' }), dotX('Blood Moon', 'bleed', 50)],
       d: { 8: healTurn('Transfusion', 3, 'any:bleed') }, s: { 9: rally('Blood Brothers', 15, 'bleed') } },
     colossus: { party: party('War Cry', 'strength'), cls: 'Warrior', cap: ['unstoppable_force', 'iron_will', 'deep_reserves'],
-      off: [X(T('Rattled Giant', '+50% damage to enemies that have a Stun in their hand.', ['dmg', 50, { vs: 'stunHand' }])), X(T('Brute Force', 'Gain bonus Strength equal to 33% of the Strength on your gear.', ['statFrom', 'strength', 'gear:strength', 33])), dmg('Titan Grip', 12, { type: 'Attack', minCost: 30 }), X(T('Thunderous', 'Attacks that cost 20 or more mana have a 50% chance to hit an additional target.', ['extraTarget', 50, { type: 'Attack', minCost: 20 }])),
+      off: [X(dmg('Heavy Hands', 3)), X(T('Rattled Giant', '+50% damage to enemies that have a Stun in their hand.', ['dmg', 50, { vs: 'stunHand' }])), X(T('Brute Force', 'Gain bonus Strength equal to 33% of the Strength on your gear.', ['statFrom', 'strength', 'gear:strength', 33])), X(T('Thunderous', 'Attacks that cost 20 or more mana have a 50% chance to hit an additional target.', ['extraTarget', 50, { type: 'Attack', minCost: 20 }])),
         dmg('Colossal Blow', 25, { type: 'Attack', minCost: 30 }), dmg('Unstoppable', 15, { type: 'Attack' }), X(T('Titan\'s Hunger', 'Attacks that cost 20 or more mana have a 20% chance to strike an additional time.', ['extraStrike', 20, { type: 'Attack', minCost: 20 }])), T('Avalanche', 'Start each fight with +30 Strength.', ['start', 'str', 30]), dmg('World Breaker', 40, { type: 'Attack', minCost: 30 })],
-      d: {}, s: { 6: turnMana('Bottomless', 10) } },
+      d: { 1: X(T('Iron Momentum', '20% of the damage you deal is added to your {D}.', ['dealtDef', 20])) }, s: { 6: turnMana('Bottomless', 10) } },
     sunderer: { party: party('Rally Cry', 'dmg'), cls: 'Warrior', cap: ['open_wounds', 'thorned_bulwark', 'momentum'],
       off: [dmg('Weak Points', 5, { vs: 'vulnerable' }), startDot('Expose', 'vulnerable', 10), dmg('Armor Splitter', 10, { type: 'Attack', vs: 'vulnerable' }), dmg('Shatterpoint', 12, { type: 'Attack', vs: 'vulnerable:20' }),
         every('Sundering Wave', 3, { type: 'Attack' }, 'vulnerable', 10), dmg('Executioner', 15, { type: 'Attack', vs: 'vulnerable' }), dmg('Rend Armor', 20, { type: 'Attack', vs: 'vulnerable:40' }), turnDot('Open Season', 'vulnerable', 5), per('Total Collapse', 'vulnerable', 10, 5, 40)],
@@ -1997,7 +1997,7 @@ function weaponSetup(gear, data) {
 }
 // a shield beside a staff only counts with Barrier Savant's 'Staff and Shield' talent (defense, row 1)
 const staffShieldOk = (spec) => { const cx = (spec.gear || []).find(g => g && g.slot === 'Codex'); return !!(cx && cx.codex === 'barrier_savant' && spec.talents && spec.talents.codex === 'barrier_savant' && (spec.talents.picks || [])[0] === 1); };
-function legalGear(spec, data) { const gear = spec.gear || STARTER_GEAR[spec.cls]; const G = (data || DATA || {}).gear || {}; const archOf = (it) => it && (it.arch || (((G.bases || []).find(b => b.name === it.name) || {}).arch) || ''); const w = gear.find(g => g && g.slot === 'Weapon'), o = gear.find(g => g && g.slot === 'Off-hand'); if (w && o && /Staff/.test(archOf(w)) && !staffShieldOk(spec)) return gear.filter(g => g !== o); return gear; }
+function legalGear(spec, data) { let gear = spec.gear || STARTER_GEAR[spec.cls]; if (spec.cls === 'Warrior' || spec.cls === 'Paladin') { const G0 = (data || DATA || {}).gear || {}; gear = gear.filter(g => !(g && g.slot === 'Weapon' && /Staff/.test(g.arch || (((G0.bases || []).find(b => b.name === g.name) || {}).arch) || ''))); } /* Nov 2: no staffs for Warriors and Paladins */ const G = (data || DATA || {}).gear || {}; const archOf = (it) => it && (it.arch || (((G.bases || []).find(b => b.name === it.name) || {}).arch) || ''); const w = gear.find(g => g && g.slot === 'Weapon'), o = gear.find(g => g && g.slot === 'Off-hand'); if (w && o && /Staff/.test(archOf(w)) && !staffShieldOk(spec)) return gear.filter(g => g !== o); return gear; }
 function codexNeed(key, gear, data) { const n = CODEX_NEEDS[key]; if (!n) return null; return weaponSetup(gear || [], data)[n] ? null : NEED_TXT[n]; }
 const atkOnce = (p, key) => p.turn && p.turn[key];
 Object.assign(POWERS, {
@@ -2981,6 +2981,7 @@ class Combat {
     const ign = (kind === 'Skill' && p.turn && p.turn.pierce) ? e.block : kind === 'Attack' && pow ? Math.floor(e.block * Math.min(1, Math.max(0, ...this.pws(p).map(([pw, d]) => d.ignoreBlock ? (pw.upN ? pw.upN[0] / 100 : d.ignoreBlock) : 0)))) : 0; e.block -= ign;
     const r = this.applyHit(p, e, dmg, { defer: true, label, crit, dtype, kind, card: cd && cd.key }); e.block += ign;
     if (pow) this.fire(p, 'dealt', { e, lost: r.lost, absorbed: r.absorbed, kind, dtype, d: cd, crit });
+    if (pow && !e.isPlayer) { const dd = this.pwSum(p, 'dealtDef'); if (dd > 0) { const n = Math.round((r.lost + r.absorbed) * dd / 100); if (n > 0) { p.block += n; this.say('player', `+${n} ${p.defName} from the hit.`); } } } // Nov 2: Colossus Iron Momentum
     if (e.beacon && r.lost > 0 && !e.isPlayer) { const by = this.actorById(e.beacon.by), n = Math.round(r.lost * e.beacon.pct / 100 * (by && by.powers.length ? this.pwProd(by, 'beaconX') : 1)); if (n > 0) for (const a of this.allies()) this.heal(a, n, 'Soul Beacon', true); }
     this._lastLost = r.lost;
     if (p.isPlayer && p.turn && r.lost > 0) {
@@ -3525,7 +3526,7 @@ function talentDef(list, cap, label) {
     else if (k === 'start') D.start.push([a, b, c]); else if (k === 'turn') D.turn.push([a, b, c, d2]); else if (k === 'kill') D.kill.push([a, b, c]);
     else if (k === 'hitBy') D.hit.push([a, b, c]); else if (k === 'full') D.full.push([a, b, c]); else if (k === 'lowhp') D.low = [a, b]; else if (k === 'cheat') D.cheat = [a, b];
     else if (k === 'party') (D.party = D.party || []).push([a, b]);
-    else if (k === 'arcRegen') D.arcRegen = a;
+    else if (k === 'arcRegen') D.arcRegen = a; else if (k === 'dealtDef') D.dd = (D.dd || 0) + a;
     else if (k === 'parryFirst') D.pf = (D.pf || 0) + a; else if (k === 'parryExtra') D.px = true; else if (k === 'extraTarget') (D.xt = D.xt || []).push([a, b || {}]); else if (k === 'extraStrike') (D.xs = D.xs || []).push([a, b || {}]);
     else if (k === 'dealtBleed') (D.db = D.db || []).push([a, b || {}]);
     else if (k === 'every') D.every.push([a, b, c, d2, e2]); else if (k === 'cost') D.cost.push([a, b]); else if (k === 'firstCost') D.first.push([a, b]); else if (k === 'aura') D.aura.push(...a);
@@ -3588,6 +3589,7 @@ function talentDef(list, cap, label) {
   if (D.full.length) P.fullBlock = (cb, p, e) => { for (const [w, n, key] of D.full) {
     if (w === 'back') { if (e.hp > 0) { cb.applyHit(p, e, n, { label }); if (e.hp <= 0) cb.onDeath(e); } } else if (w === 'debuff') { if (e.hp > 0) e[key] = (e[key] || 0) + n; } else if (w === 'mana') p.mana += n; else act(cb, p, w, n, key, label); } };
   if (D.cheat) P.cheat = D.cheat;
+  if (D.dd) P.dealtDef = D.dd;
   if (D.db) P.dealt = (cb, p, h) => { if (!h.e || h.e.hp <= 0 || h.e.isPlayer === p.isPlayer) return; for (const [pct, f] of D.db) { if (f.type && h.kind !== f.type) continue; if (f.dtype && (h.dtype || 'Physical') !== f.dtype) continue; const n = Math.round(((h.lost || 0) + (h.absorbed || 0)) * pct / 100); if (n > 0) { cb.applyDot(h.e, 'bleed', n); h.e.bleedBy = p.id; } } };
   if (D.every.length || D.first.length) P.cardPlayed = (cb, p, d) => {
     D.every.forEach(([N, f, w, n, key], i) => { if (!tcard(d, f)) return; const k = 'te' + i; p.turn[k] = (p.turn[k] || 0) + 1; if (p.turn[k] % N === 0) { act(cb, p, w, n, key, label); cb.say('player', `${label}: every ${N}${N === 3 ? 'rd' : 'th'} card bonus.`); } });
@@ -4502,6 +4504,7 @@ function equip(p, cls, itemId, slotWanted) {
   useStash(p, cls);
   { const lk = arenaLock(p, cls); if (lk) return { ok: false, why: lk }; }
   const c = char(p, cls), i = p.stash.findIndex(x => x.id === itemId); if (i < 0) return { ok: false, why: 'Not in stash' };
+  if ((c.cls === 'Warrior' || c.cls === 'Paladin') && /Staff/.test(p.stash[i].arch || p.stash[i].label || '')) return { ok: false, why: `${c.cls}s can't use staffs.` }; // Nov 2
   if (p.stash[i].slot === 'Codex' && p.stash[i].cls && p.stash[i].cls !== c.cls) return { ok: false, why: `Only a ${p.stash[i].cls} can use the ${p.stash[i].name}.` };
   const item = p.stash[i], opts = slotOptions(item);
   let slot = slotWanted && opts.includes(slotWanted) ? slotWanted : opts[0];
@@ -6683,8 +6686,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793663075268';
-  const CB_BUILD = 'df223d014d'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793664378091';
+  const CB_BUILD = 'a1dc3a9380'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -7795,7 +7798,10 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       ['Balance', 'Exposure can raise an enemy\'s card costs by at most +50% (10 stacks).'],
       ['Balance', 'Riposte talents: Lv 4 Opening Strike: if you parried last turn, your first Attack of the turn deals 33% more damage.'],
       ['Balance', 'Riposte talents: Lv 8 Sweeping Riposte: if you parried last turn, your first Attack of the turn also hits another enemy.'],
-      ['Balance', 'Colossus talents: Lv 4 Brute Force gives bonus Strength equal to 33% of the Strength on your gear.'],
+      ['Balance', 'Colossus talents: Lv 2 Heavy Hands is +3% damage.'],
+      ['Balance', 'Colossus talents: Lv 2 defense, Iron Momentum: 20% of the damage you deal is added to your Parry or Block.'],
+      ['Balance', 'Colossus talents: Lv 6 Brute Force gives bonus Strength equal to 33% of the Strength on your gear.'],
+      ['Change', 'Warriors and Paladins can\'t use staffs.'],
       ['Balance', 'Colossus talents: Lv 8 Thunderous: Attacks that cost 20+ mana have a 50% chance to hit an extra target.'],
       ['Balance', 'Colossus talents: Lv 14 Titan\'s Hunger: Attacks that cost 20+ mana have a 20% chance to strike again.'],
       ['Balance', 'Righteous Crusader talents: Lv 4 offense gives bonus Strength equal to 25% of the Stamina on your gear.'],
@@ -7824,7 +7830,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       ['Balance', 'Spellstorm talents: Lv 8 is +5% Multicast.'],
       ['Balance', 'Spellstorm talents: Lv 10 gives +5 mana regeneration for the fight after your first Arcane Skill.'],
       ['Balance', 'Colossus Codex: a Stun for every 30 mana spent on Attacks (was 50).'],
-      ['Balance', 'Colossus talents: Lv 2 Rattled Giant: +50% damage to enemies with a Stun in hand.'],
+      ['Balance', 'Colossus talents: Lv 4 Rattled Giant: +50% damage to enemies with a Stun in hand.'],
       ['Balance', 'Riposte Codex: 75% of a fully parried hit goes back to the attacker (was 50%).'],
       ['Balance', 'Riposte talents: Lv 2 Duelist\'s Poise gives bonus Dexterity equal to your Strength.'],
       ['Balance', 'Bulwark Codex: when you are hit, the attacker takes Thorns damage equal to 25% of your Block.'],
