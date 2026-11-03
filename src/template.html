@@ -542,7 +542,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 .chatbox input { background: rgba(20,16,12,.85); border: 1px solid var(--line); border-radius: 5px; padding: 6px 8px; color: var(--text); font: inherit; font-size: 14px; }
 .chatbox input:focus { border-color: var(--accent); outline: none; }
 .prompt { left: 50% !important; transform: translateX(-50%); bottom: auto !important; top: 10px; }
-.partypanel { position: absolute; right: 10px; top: 10px; width: min(280px, calc(100% - 20px)); background: rgba(16,12,9,.88); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: grid; gap: 4px; font-size: 14px; z-index: 3; }
+.partypanel { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: min(280px, calc(100% - 20px)); background: rgba(16,12,9,.88); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: grid; gap: 4px; font-size: 14px; z-index: 3; }
 .partypanel .pph { display: flex; justify-content: space-between; align-items: center; }
 .partypanel .ppm { display: flex; align-items: center; gap: 6px; }
 .partypanel .ppinv { display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 6px; }
@@ -622,6 +622,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 .tutpick { border-color: #6a5422; background: #1a150b; } .tutpick input { accent-color: var(--accent); }
 .tutbox { position: fixed; left: 50%; transform: translateX(-50%); bottom: 25vh; z-index: 40; width: min(440px, calc(100vw - 32px)); max-height: calc(75vh - 16px); overflow: auto; background: #15110d; border: 2px solid #d6a14a; border-radius: 8px; padding: 10px 14px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.6); font-size: 15px; line-height: 1.45; }
 .camphp { display: grid; grid-template-columns: minmax(70px, auto) 1fr; gap: 8px; align-items: center; margin: 6px 0; } .camphp .bar { position: relative; margin: 0; } .camphp .bar em { position: absolute; top: 0; bottom: 0; background: rgba(120, 200, 110, .35); }
+.feedpeek { position: fixed; z-index: 60; pointer-events: none; filter: drop-shadow(0 6px 14px rgba(0,0,0,.6)); }
 .tutbox h3 { margin: 2px 0 6px; color: var(--accent); font-size: 19px; } .tutbox p { margin: 0 0 8px; } .tutbox .row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .tutbox .tuthead { display: flex; justify-content: space-between; align-items: center; font-size: 13px; } .tutbox .tutx { background: none; border: 1px solid var(--line); color: var(--text); border-radius: 4px; cursor: pointer; padding: 0 8px; }
 .tutbox .tutskip { margin-left: auto; opacity: .75; } .tutbox.min { width: auto; padding: 0; border-width: 1px; left: auto; right: 16px; bottom: 16px; transform: none; } .tutbox .tutpill { background: #15110d; color: var(--accent); border: 0; padding: 8px 12px; cursor: pointer; font: inherit; font-size: 14px; }
@@ -1382,10 +1383,16 @@ body.aiming { cursor: grabbing; user-select: none; }
     if ((t.rank || 0) >= CB.MAX_RANK) return toast('That card is already at +' + CB.MAX_RANK + '.');
     modal(`<h2>Upgrade</h2><div style="display:flex;gap:14px;align-items:center">${cardBox(CB.rankedCard(t.key, t.rank || 0), 150)}<div style="flex:1">${cardHtml(t)}</div></div>
       <p>Feed cards from your collection. Deck cards can't be fed.</p>
-      <div class="feedlist">${fod.map(k => { const v = CB.rankedCard(k.key, k.rank || 0); return `<label style="--rc:${RC[CARDS[k.key].rarity]}"><input type="checkbox" value="${k.id}"><span>${esc(v.name)} <span class="muted">${CARDS[k.key].rarity}</span></span><span class="muted">+${CBHub.feedXp(t, k)} XP</span></label>`; }).join('') || '<span class="muted">No spare cards in your collection.</span>'}</div>
+      <div class="feedlist">${fod.map(k => { const v = CB.rankedCard(k.key, k.rank || 0); return `<label style="--rc:${RC[CARDS[k.key].rarity]}" data-feedpeek="${k.key}|${k.rank || 0}"><input type="checkbox" value="${k.id}"><span>${esc(v.name)} <span class="muted">${CARDS[k.key].rarity}</span></span><span class="muted">+${CBHub.feedXp(t, k)} XP</span></label>`; }).join('') || '<span class="muted">No spare cards in your collection.</span>'}</div>
       <div class="upbar"><div class="uplbl"><b id="upRank">+${t.rank || 0}</b><span id="upXp"></span></div><div class="uptrack"><i class="ug"></i><i class="ub"></i></div></div>
       <p id="upPrev" class="muted"></p>
       <div class="row"><button class="btn primary" id="mFeed" disabled>Feed</button><button class="btn" id="mClose">Close</button></div>`);
+    // Nov 2: hover a card in the feed list to see it
+    { const pk = document.createElement('div'); pk.className = 'feedpeek'; pk.hidden = true; $('modalBox').appendChild(pk);
+      const L = $('modalBox').querySelector('.feedlist');
+      if (L) { L.addEventListener('mouseover', (ev) => { const l = ev.target.closest('[data-feedpeek]'); if (!l) return; const [k, r] = l.dataset.feedpeek.split('|'); if (pk.dataset.k !== l.dataset.feedpeek) { pk.innerHTML = cardBox(CB.rankedCard(k, +r), 170); pk.dataset.k = l.dataset.feedpeek; if (typeof fitCards === 'function') fitCards(pk); } pk.hidden = false;
+          const b = l.getBoundingClientRect(), right = b.right + 200 < innerWidth; pk.style.left = Math.max(4, right ? b.right + 10 : b.left - 190) + 'px'; pk.style.top = Math.max(4, Math.min(b.top - 60, innerHeight - 260)) + 'px'; });
+        L.addEventListener('mouseleave', () => { pk.hidden = true; }); } }
     const prev = () => {
       const ids = [...$('modalBox').querySelectorAll('input:checked')].map(i => i.value);
       const gain = ids.reduce((s, id) => s + CBHub.feedXp(t, c.cards.find(x => x.id === id)), 0);

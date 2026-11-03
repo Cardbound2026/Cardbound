@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Change', 'Feeding cards: hover a card in the list to see it.'],
+      ['Change', 'The party frame sits on the right edge, halfway down, so the city map no longer covers it.'],
       ['Balance', 'Divine Wrath Codex: every 5 Devotion you spend heals you for 10% of your max HP.'],
       ['Fix', 'With a two-handed weapon, the off-hand slot shows the weapon instead of looking empty, and off-hand items no longer say they fill an empty slot.'],
       ['Balance', 'Creeping Doom: your Dread deals 50% more damage (was: Dread ticks twice).'],
