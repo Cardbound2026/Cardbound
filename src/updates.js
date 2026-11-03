@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-03', items: [
+      ['Change', 'Spirit now boosts the healing you receive, from every source: your heals, allies\' heals, Recovery, Lifesteal, Health Regen between fights and resting at a campfire (+1% per point).'],
       ['Change', 'Raid bosses can\'t be controlled or slowed: no Stun, Fear, Freeze, Disarm, Silence, Slow, Chill, counters, cost increases or draw loss.'],
       ['Change', 'Raid bosses always play their attacks: burning their mana or putting Stun cards in their hand doesn\'t stop them (they draw past Stun cards).'],
     ] },

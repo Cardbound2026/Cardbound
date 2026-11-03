@@ -2673,7 +2673,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (p.type === 'rest') {
       const sackN = run.sack.length, party = run.members.length > 1;
       modal(`<h2>Rest site</h2><p>The fire is warm. Rest, search the camp for loot, or pack up and leave the road with what you carry.</p>
-        ${run.members.map(m => campHp(m, run.solo ? p.heal : Math.round(((m.stats && m.stats.maxHp) || 0) * 0.3))).join('')}
+        ${run.members.map((m, i) => campHp(m, p.heals ? p.heals[i] : p.heal)).join('')}
         <div class="row campbtns"><button class="btn primary" id="mRest">${run.solo ? `Rest: heal ${p.heal} HP` : 'Rest: everyone heals 30%'}</button>
           <button class="btn" id="mRummage" title="Roll the loot of one normal monster from this part of the map">Rummage: ${party ? 'each hero finds' : 'find'} one monster's loot</button>
           ${party ? '<button class="btn" id="mMend">Mend: everyone heals 10%</button>' : ''}

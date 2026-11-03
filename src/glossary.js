@@ -10,7 +10,7 @@
       ['Strength', '+1% damage from Attack cards per point.'],
       ['Intelligence', '+1% damage from Skill (spell) cards per point.'],
       ['Dexterity', '+1% to the Block, Barrier or Dodge your cards give per point.'],
-      ['Spirit', '+1% to your healing, per point.'],
+      ['Spirit', '+1% healing received per point, from every source: your heals, allies\' heals, Recovery, Lifesteal, Health Regen between fights and resting.'],
       ['Crit Chance', 'Chance for a hit to critically strike.'],
       ['Crit Damage', 'How hard a critical strike hits: shown as a multiplier, x1.5 by default.'],
       ['Initiative', 'Turn order: highest acts first each round (ties are random). Slow and Chill lower it.'],

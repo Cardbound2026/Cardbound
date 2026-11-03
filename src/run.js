@@ -263,7 +263,7 @@ class Run {
       const party = this.members.map(m => ({ cls: m.cls, name: m.name, gear: m.gear, deck: m.deck || undefined, hp: m.hp, mana: m.mana, buffs, talents: m.talents || undefined }));
       this.combat = new Combat({ party, enemies: n.enemies, enraged: !!n.enraged, firstBoss: n.type === 'boss' && !!this.opts.firstBoss, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : this.opts.partyStep, mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * (this.members.length - 1) : 1 });
       this.note(`Row ${n.row}: ${n.type === 'boss' ? 'the boss' : n.type === 'elite' ? 'an elite' : 'a fight'} against ${n.enemies.map(k => this.data.enemies[k].name).join(', ')}.`);
-    } else if (n.type === 'rest') { this.pending = { type: 'rest', heals: this.members.map(m => Math.min(m.stats.maxHp - m.hp, Math.round(m.stats.maxHp * 0.3))), keep: n.campfire ? 0.75 : 0.5 }; this.pending.heal = this.pending.heals[0]; }
+    } else if (n.type === 'rest') { this.pending = { type: 'rest', heals: this.members.map(m => Math.min(m.stats.maxHp - m.hp, Math.round(m.stats.maxHp * 0.3 * (1 + (m.stats.spirit || 0) / 100)))), keep: n.campfire ? 0.75 : 0.5 }; this.pending.heal = this.pending.heals[0]; }
     else if (n.type === 'shrine') { const s = SHRINES.find(x => x.key === n.shrine); this.buffs.push({ key: s.key, name: s.name, buff: s.buff, fights: 2 }); this.pending = { type: 'shrine', shrine: s }; this.note(`Row ${n.row}: ${s.name}. ${s.text}`); }
     else if (n.type === 'merchant') { this.pending = { type: 'merchant', stock: this.merchantStock() }; if (this.online && this.members.length > 1) this.pending.stocks = this.members.map(() => this.merchantStock(5)); // online parties: every hero gets their own stock (Oct 31)
       this.note(`Row ${n.row}: a merchant.`); }
@@ -302,7 +302,7 @@ class Run {
         m.sack = []; m.gold = 0; m.hp = Math.ceil(m.stats.maxHp / 2); m.mana = 0;
       } else { m.hp = Math.min(pl.hp, m.stats.maxHp); m.mana = pl.mana; } // talent max-HP buffs last for the fight only
       { const F = m.feat = m.feat || { lost: 0 }; F.lost += pl.fxLost || 0; if (n.type === 'boss') { F.bossClean = !(pl.fxHealed > 0) && !(pl.fxDef > 0); F.bossLost = pl.fxLost || 0; } } // Nov 2: for achievements (HP lost all run; the boss fight with no healing or defense)
-      const regen = m.stats.healthRegen + this.partyTalent('partyHealthRegen'); if (regen && !fell) m.hp = Math.min(m.stats.maxHp, m.hp + regen);
+      const regen = Math.round((m.stats.healthRegen + this.partyTalent('partyHealthRegen')) * (1 + (m.stats.spirit || 0) / 100)); if (regen && !fell) m.hp = Math.min(m.stats.maxHp, m.hp + regen); // Spirit boosts healing received
       const drops = []; let gold = 0;
       for (const e of cb.enemies) {  // every hero rolls their own loot
         if (e.noLoot) continue; // the rest of a group: the group's first body rolls its loot
@@ -336,7 +336,7 @@ class Run {
     const heal = this.members.map(() => 0), out = this.members.map(() => ({ drops: [], gold: 0, heal: 0 }));
     const menders = this.members.filter((m, i) => choices[i] === 'mend');
     this.members.forEach((m, i) => { if ((choices[i] || 'rest') === 'rest') heal[i] += this.pending.heals[i]; });
-    for (const md of menders) { this.members.forEach((m, i) => { heal[i] += Math.round(m.stats.maxHp * 0.1); }); this.note(`${this.solo ? 'You mend' : md.name + ' mends the party'}: everyone heals 10%.`); }
+    for (const md of menders) { this.members.forEach((m, i) => { heal[i] += Math.round(m.stats.maxHp * 0.1 * (1 + (m.stats.spirit || 0) / 100)); }); this.note(`${this.solo ? 'You mend' : md.name + ' mends the party'}: everyone heals 10%.`); }
     this.members.forEach((m, i) => {
       if (choices[i] === 'rummage') {
         const row = this.currentRow(), tier = row <= 4 ? '1' : row <= 9 ? '2' : '3';

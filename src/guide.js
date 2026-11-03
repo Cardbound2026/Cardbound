@@ -67,7 +67,7 @@
   function gHasCodex(key) { return profile.stash.some(it => it.slot === 'Codex' && it.codex === key) || Object.values(profile.chars).some(c => (c.gear || []).some(g => g.slot === 'Codex' && g.codex === key)); }
   // gear stats to look for, read from the build's cards (and the codex passive)
   const G_WHY = { Strength: 'your Attacks hit harder', Intelligence: 'your damaging Skills hit harder', Dexterity: 'more Block/Barrier/Dodge/Absorb from every card', 'Defense Gain': 'more defense from everything',
-    Spirit: 'bigger heals', 'Bleed Chance': 'free Bleed on your Attacks', Thorns: 'attackers take damage back', 'Crit Chance': 'more crits', 'Crit Damage': 'harder crits',
+    Spirit: 'more healing received', 'Bleed Chance': 'free Bleed on your Attacks', Thorns: 'attackers take damage back', 'Crit Chance': 'more crits', 'Crit Damage': 'harder crits',
     'Multi-hit Chance': 'cheap Attacks hit twice', 'Multicast Chance': 'Skills cast again for free', Stamina: 'more HP to spend', Lifesteal: 'heal from your hits', Initiative: 'act before the enemy' };
   function gStats(d) {
     const w = {}, el = {}; const add = (k, v) => { w[k] = (w[k] || 0) + v; };

@@ -1445,7 +1445,7 @@ class Combat {
     if (a.isPlayer && !['Bloodthirst', 'Lifesteal'].includes(label)) { const m = this.rkm('heal'); if (m !== 1) n = Math.round(n * m); }
     if (a.isPlayer && a.healIn) n = Math.round(n * (1 + a.healIn / 100)); // talent: healing received
     const caster = a.isPlayer && this._playing && this.player && this.player.isPlayer ? this.player : a;
-    const mult = a.isPlayer && !['Bloodthirst', 'Lifesteal'].includes(label) ? 1 + caster.spirit / 100 : 1;
+    const mult = a.isPlayer ? 1 + (a.spirit || 0) / 100 : 1; // Nov 3: Spirit is healing RECEIVED, from every source (yours, allies', Recovery, Lifesteal...)
     if (!a.isPlayer && a.noHealRound >= this.round) { this.say('player', `${a.name} cannot heal.`); return 0; }
     if (!a.isPlayer && a.grievous > 0) n = Math.round(n * 0.5);
     if (caster.isPlayer && caster.powers && caster.powers.length) n = Math.round(n * this.pwProd(caster, 'healMult'));

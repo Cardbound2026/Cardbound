@@ -981,7 +981,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.
 
   // mini capstone (row 5) Support: a buff for you and every ally, a different one per codex
   const PS = { dmg: ['+10% damage'], crit: ['+10% crit chance'], critMult: ['+10% crit damage'], dexterity: ['+10 Dexterity (+10% Block, Dodge and Barrier gained)'], strength: ['+10 Strength (+10% Attack damage)'],
-    intelligence: ['+10 Intelligence (+10% Skill damage)'], spirit: ['+10 Spirit (+10% healing)'], lifesteal: ['5% lifesteal'], maxHpPct: ['+10% max HP'], maxManaPct: ['+10% max mana'],
+    intelligence: ['+10 Intelligence (+10% Skill damage)'], spirit: ['+10 Spirit (+10% healing received)'], lifesteal: ['5% lifesteal'], maxHpPct: ['+10% max HP'], maxManaPct: ['+10% max mana'],
     regenPct: ['+10% mana regeneration'], luck: ['+10 Luck (better loot)'], resistAll: ['+10% resistance to every element'], multiHit: ['+10% Multi-hit chance'], multicast: ['+10% Multicast chance'],
     multiplay: ['+10% Multiplay chance'], initPct: ['+10% Initiative'], heal: ['+10% healing'], bleedChance: ['+10% chance for Attacks to apply 3 Bleed'], thorns: ['+5 Thorns (attackers take 5 damage)'], recovery: ['+5 Recovery (heal 5 HP at the start of each turn)'] };
   const PV = { lifesteal: 5, thorns: 5, recovery: 5 };
@@ -1165,7 +1165,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.
     partyRecovery: F(['Mending Song', 'Field Medic', 'Restoring Aura', 'Font of Life'], [1, 2, 3, 4], (n, v) => T(n, `You and your allies heal ${v} HP at the start of each turn.`, ['party', 'recovery', v])),
     partyHealthRegen: F(['Bandages', 'Camp Cook', 'Herbalist', 'Field Surgeon'], [2, 4, 6, 8], (n, v) => T(n, `After each fight, you and your allies heal ${v} HP.`, ['run', 'partyHealthRegen', v])),
     reflect: F(['Mirror Glint', 'Deflection', 'Reflective Guard', 'Perfect Mirror'], [3, 5, 7, 10], (n, v) => T(n, `${v}% chance to reflect an enemy attack: it hits the attacker instead of you.`, ['stat', 'reflect', v])),
-    spirit: F(['Calm Spirit', 'Inner Light', 'Kindred Spirit', 'Radiant Soul'], [3, 5, 8, 12], (n, v) => T(n, `+${v} Spirit (stronger healing).`, ['stat', 'spirit', v])),
+    spirit: F(['Calm Spirit', 'Inner Light', 'Kindred Spirit', 'Radiant Soul'], [3, 5, 8, 12], (n, v) => T(n, `+${v} Spirit (more healing received).`, ['stat', 'spirit', v])),
     slow: F(['Tripping Strikes', 'Hamper', 'Crippling Blows', 'Leaden Limbs'], [5, 8, 12, 15], (n, v) => T(n, `${v}% chance when you hit an enemy to apply 2 Slow.`, ['stat', 'slowChance', v])),
     statusSkip: F(['Clear Thoughts', 'Shake It Off', 'Focused Mind', 'Unclouded'], [15, 25, 35, 50], (n, v) => T(n, `${v}% chance, when you draw a status card, to discard it and draw again.`, ['stat', 'statusSkip', v])),
     extract: F(['Light Pack', 'Well Packed', 'Escape Artist', 'Smuggler'], [5, 8, 12, 15], (n, v) => T(n, `When you extract, ${v}% more of your sack survives.`, ['run', 'extract', v])),
@@ -2864,7 +2864,7 @@ class Combat {
     if (a.isPlayer && !['Bloodthirst', 'Lifesteal'].includes(label)) { const m = this.rkm('heal'); if (m !== 1) n = Math.round(n * m); }
     if (a.isPlayer && a.healIn) n = Math.round(n * (1 + a.healIn / 100)); // talent: healing received
     const caster = a.isPlayer && this._playing && this.player && this.player.isPlayer ? this.player : a;
-    const mult = a.isPlayer && !['Bloodthirst', 'Lifesteal'].includes(label) ? 1 + caster.spirit / 100 : 1;
+    const mult = a.isPlayer ? 1 + (a.spirit || 0) / 100 : 1; // Nov 3: Spirit is healing RECEIVED, from every source (yours, allies', Recovery, Lifesteal...)
     if (!a.isPlayer && a.noHealRound >= this.round) { this.say('player', `${a.name} cannot heal.`); return 0; }
     if (!a.isPlayer && a.grievous > 0) n = Math.round(n * 0.5);
     if (caster.isPlayer && caster.powers && caster.powers.length) n = Math.round(n * this.pwProd(caster, 'healMult'));
@@ -4152,7 +4152,7 @@ class Run {
       const party = this.members.map(m => ({ cls: m.cls, name: m.name, gear: m.gear, deck: m.deck || undefined, hp: m.hp, mana: m.mana, buffs, talents: m.talents || undefined }));
       this.combat = new Combat({ party, enemies: n.enemies, enraged: !!n.enraged, firstBoss: n.type === 'boss' && !!this.opts.firstBoss, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : this.opts.partyStep, mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * (this.members.length - 1) : 1 });
       this.note(`Row ${n.row}: ${n.type === 'boss' ? 'the boss' : n.type === 'elite' ? 'an elite' : 'a fight'} against ${n.enemies.map(k => this.data.enemies[k].name).join(', ')}.`);
-    } else if (n.type === 'rest') { this.pending = { type: 'rest', heals: this.members.map(m => Math.min(m.stats.maxHp - m.hp, Math.round(m.stats.maxHp * 0.3))), keep: n.campfire ? 0.75 : 0.5 }; this.pending.heal = this.pending.heals[0]; }
+    } else if (n.type === 'rest') { this.pending = { type: 'rest', heals: this.members.map(m => Math.min(m.stats.maxHp - m.hp, Math.round(m.stats.maxHp * 0.3 * (1 + (m.stats.spirit || 0) / 100)))), keep: n.campfire ? 0.75 : 0.5 }; this.pending.heal = this.pending.heals[0]; }
     else if (n.type === 'shrine') { const s = SHRINES.find(x => x.key === n.shrine); this.buffs.push({ key: s.key, name: s.name, buff: s.buff, fights: 2 }); this.pending = { type: 'shrine', shrine: s }; this.note(`Row ${n.row}: ${s.name}. ${s.text}`); }
     else if (n.type === 'merchant') { this.pending = { type: 'merchant', stock: this.merchantStock() }; if (this.online && this.members.length > 1) this.pending.stocks = this.members.map(() => this.merchantStock(5)); // online parties: every hero gets their own stock (Oct 31)
       this.note(`Row ${n.row}: a merchant.`); }
@@ -4191,7 +4191,7 @@ class Run {
         m.sack = []; m.gold = 0; m.hp = Math.ceil(m.stats.maxHp / 2); m.mana = 0;
       } else { m.hp = Math.min(pl.hp, m.stats.maxHp); m.mana = pl.mana; } // talent max-HP buffs last for the fight only
       { const F = m.feat = m.feat || { lost: 0 }; F.lost += pl.fxLost || 0; if (n.type === 'boss') { F.bossClean = !(pl.fxHealed > 0) && !(pl.fxDef > 0); F.bossLost = pl.fxLost || 0; } } // Nov 2: for achievements (HP lost all run; the boss fight with no healing or defense)
-      const regen = m.stats.healthRegen + this.partyTalent('partyHealthRegen'); if (regen && !fell) m.hp = Math.min(m.stats.maxHp, m.hp + regen);
+      const regen = Math.round((m.stats.healthRegen + this.partyTalent('partyHealthRegen')) * (1 + (m.stats.spirit || 0) / 100)); if (regen && !fell) m.hp = Math.min(m.stats.maxHp, m.hp + regen); // Spirit boosts healing received
       const drops = []; let gold = 0;
       for (const e of cb.enemies) {  // every hero rolls their own loot
         if (e.noLoot) continue; // the rest of a group: the group's first body rolls its loot
@@ -4225,7 +4225,7 @@ class Run {
     const heal = this.members.map(() => 0), out = this.members.map(() => ({ drops: [], gold: 0, heal: 0 }));
     const menders = this.members.filter((m, i) => choices[i] === 'mend');
     this.members.forEach((m, i) => { if ((choices[i] || 'rest') === 'rest') heal[i] += this.pending.heals[i]; });
-    for (const md of menders) { this.members.forEach((m, i) => { heal[i] += Math.round(m.stats.maxHp * 0.1); }); this.note(`${this.solo ? 'You mend' : md.name + ' mends the party'}: everyone heals 10%.`); }
+    for (const md of menders) { this.members.forEach((m, i) => { heal[i] += Math.round(m.stats.maxHp * 0.1 * (1 + (m.stats.spirit || 0) / 100)); }); this.note(`${this.solo ? 'You mend' : md.name + ' mends the party'}: everyone heals 10%.`); }
     this.members.forEach((m, i) => {
       if (choices[i] === 'rummage') {
         const row = this.currentRow(), tier = row <= 4 ? '1' : row <= 9 ? '2' : '3';
@@ -6719,8 +6719,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793714731476';
-  const CB_BUILD = '07da200d78'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793714941222';
+  const CB_BUILD = '3171e54e16'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -7824,6 +7824,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-03', items: [
+      ['Change', 'Spirit now boosts the healing you receive, from every source: your heals, allies\' heals, Recovery, Lifesteal, Health Regen between fights and resting at a campfire (+1% per point).'],
       ['Change', 'Raid bosses can\'t be controlled or slowed: no Stun, Fear, Freeze, Disarm, Silence, Slow, Chill, counters, cost increases or draw loss.'],
       ['Change', 'Raid bosses always play their attacks: burning their mana or putting Stun cards in their hand doesn\'t stop them (they draw past Stun cards).'],
     ] },
@@ -11640,7 +11641,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       ['Strength', '+1% damage from Attack cards per point.'],
       ['Intelligence', '+1% damage from Skill (spell) cards per point.'],
       ['Dexterity', '+1% to the Block, Barrier or Dodge your cards give per point.'],
-      ['Spirit', '+1% to your healing, per point.'],
+      ['Spirit', '+1% healing received per point, from every source: your heals, allies\' heals, Recovery, Lifesteal, Health Regen between fights and resting.'],
       ['Crit Chance', 'Chance for a hit to critically strike.'],
       ['Crit Damage', 'How hard a critical strike hits: shown as a multiplier, x1.5 by default.'],
       ['Initiative', 'Turn order: highest acts first each round (ties are random). Slow and Chill lower it.'],
@@ -11949,7 +11950,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   function gHasCodex(key) { return profile.stash.some(it => it.slot === 'Codex' && it.codex === key) || Object.values(profile.chars).some(c => (c.gear || []).some(g => g.slot === 'Codex' && g.codex === key)); }
   // gear stats to look for, read from the build's cards (and the codex passive)
   const G_WHY = { Strength: 'your Attacks hit harder', Intelligence: 'your damaging Skills hit harder', Dexterity: 'more Block/Barrier/Dodge/Absorb from every card', 'Defense Gain': 'more defense from everything',
-    Spirit: 'bigger heals', 'Bleed Chance': 'free Bleed on your Attacks', Thorns: 'attackers take damage back', 'Crit Chance': 'more crits', 'Crit Damage': 'harder crits',
+    Spirit: 'more healing received', 'Bleed Chance': 'free Bleed on your Attacks', Thorns: 'attackers take damage back', 'Crit Chance': 'more crits', 'Crit Damage': 'harder crits',
     'Multi-hit Chance': 'cheap Attacks hit twice', 'Multicast Chance': 'Skills cast again for free', Stamina: 'more HP to spend', Lifesteal: 'heal from your hits', Initiative: 'act before the enemy' };
   function gStats(d) {
     const w = {}, el = {}; const add = (k, v) => { w[k] = (w[k] || 0) + v; };
@@ -12912,7 +12913,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if (p.type === 'rest') {
       const sackN = run.sack.length, party = run.members.length > 1;
       modal(`<h2>Rest site</h2><p>The fire is warm. Rest, search the camp for loot, or pack up and leave the road with what you carry.</p>
-        ${run.members.map(m => campHp(m, run.solo ? p.heal : Math.round(((m.stats && m.stats.maxHp) || 0) * 0.3))).join('')}
+        ${run.members.map((m, i) => campHp(m, p.heals ? p.heals[i] : p.heal)).join('')}
         <div class="row campbtns"><button class="btn primary" id="mRest">${run.solo ? `Rest: heal ${p.heal} HP` : 'Rest: everyone heals 30%'}</button>
           <button class="btn" id="mRummage" title="Roll the loot of one normal monster from this part of the map">Rummage: ${party ? 'each hero finds' : 'find'} one monster's loot</button>
           ${party ? '<button class="btn" id="mMend">Mend: everyone heals 10%</button>' : ''}

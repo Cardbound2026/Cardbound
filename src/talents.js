@@ -48,7 +48,7 @@
 
   // mini capstone (row 5) Support: a buff for you and every ally, a different one per codex
   const PS = { dmg: ['+10% damage'], crit: ['+10% crit chance'], critMult: ['+10% crit damage'], dexterity: ['+10 Dexterity (+10% Block, Dodge and Barrier gained)'], strength: ['+10 Strength (+10% Attack damage)'],
-    intelligence: ['+10 Intelligence (+10% Skill damage)'], spirit: ['+10 Spirit (+10% healing)'], lifesteal: ['5% lifesteal'], maxHpPct: ['+10% max HP'], maxManaPct: ['+10% max mana'],
+    intelligence: ['+10 Intelligence (+10% Skill damage)'], spirit: ['+10 Spirit (+10% healing received)'], lifesteal: ['5% lifesteal'], maxHpPct: ['+10% max HP'], maxManaPct: ['+10% max mana'],
     regenPct: ['+10% mana regeneration'], luck: ['+10 Luck (better loot)'], resistAll: ['+10% resistance to every element'], multiHit: ['+10% Multi-hit chance'], multicast: ['+10% Multicast chance'],
     multiplay: ['+10% Multiplay chance'], initPct: ['+10% Initiative'], heal: ['+10% healing'], bleedChance: ['+10% chance for Attacks to apply 3 Bleed'], thorns: ['+5 Thorns (attackers take 5 damage)'], recovery: ['+5 Recovery (heal 5 HP at the start of each turn)'] };
   const PV = { lifesteal: 5, thorns: 5, recovery: 5 };
@@ -232,7 +232,7 @@
     partyRecovery: F(['Mending Song', 'Field Medic', 'Restoring Aura', 'Font of Life'], [1, 2, 3, 4], (n, v) => T(n, `You and your allies heal ${v} HP at the start of each turn.`, ['party', 'recovery', v])),
     partyHealthRegen: F(['Bandages', 'Camp Cook', 'Herbalist', 'Field Surgeon'], [2, 4, 6, 8], (n, v) => T(n, `After each fight, you and your allies heal ${v} HP.`, ['run', 'partyHealthRegen', v])),
     reflect: F(['Mirror Glint', 'Deflection', 'Reflective Guard', 'Perfect Mirror'], [3, 5, 7, 10], (n, v) => T(n, `${v}% chance to reflect an enemy attack: it hits the attacker instead of you.`, ['stat', 'reflect', v])),
-    spirit: F(['Calm Spirit', 'Inner Light', 'Kindred Spirit', 'Radiant Soul'], [3, 5, 8, 12], (n, v) => T(n, `+${v} Spirit (stronger healing).`, ['stat', 'spirit', v])),
+    spirit: F(['Calm Spirit', 'Inner Light', 'Kindred Spirit', 'Radiant Soul'], [3, 5, 8, 12], (n, v) => T(n, `+${v} Spirit (more healing received).`, ['stat', 'spirit', v])),
     slow: F(['Tripping Strikes', 'Hamper', 'Crippling Blows', 'Leaden Limbs'], [5, 8, 12, 15], (n, v) => T(n, `${v}% chance when you hit an enemy to apply 2 Slow.`, ['stat', 'slowChance', v])),
     statusSkip: F(['Clear Thoughts', 'Shake It Off', 'Focused Mind', 'Unclouded'], [15, 25, 35, 50], (n, v) => T(n, `${v}% chance, when you draw a status card, to discard it and draw again.`, ['stat', 'statusSkip', v])),
     extract: F(['Light Pack', 'Well Packed', 'Escape Artist', 'Smuggler'], [5, 8, 12, 15], (n, v) => T(n, `When you extract, ${v}% more of your sack survives.`, ['run', 'extract', v])),
