@@ -620,11 +620,11 @@ body.aiming { cursor: grabbing; user-select: none; }
 .minibtn { position: absolute; right: 10px; top: 10px; z-index: 4; font: 600 12px "Barlow Semi Condensed", sans-serif; background: #15110d; color: #e4c27a; border: 1px solid #6a5422; border-radius: 3px; padding: 1px 8px; cursor: pointer; }
 @media (max-width: 760px) { .minimap { width: 120px !important; height: auto !important; } }
 .tutpick { border-color: #6a5422; background: #1a150b; } .tutpick input { accent-color: var(--accent); }
-.tutbox { position: fixed; right: 16px; bottom: 16px; z-index: 40; width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; background: #15110d; border: 2px solid #d6a14a; border-radius: 8px; padding: 10px 14px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.6); font-size: 15px; line-height: 1.45; }
+.tutbox { position: fixed; left: 50%; transform: translateX(-50%); bottom: 25vh; z-index: 40; width: min(440px, calc(100vw - 32px)); max-height: calc(75vh - 16px); overflow: auto; background: #15110d; border: 2px solid #d6a14a; border-radius: 8px; padding: 10px 14px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.6); font-size: 15px; line-height: 1.45; }
 .tutbox h3 { margin: 2px 0 6px; color: var(--accent); font-size: 19px; } .tutbox p { margin: 0 0 8px; } .tutbox .row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .tutbox .tuthead { display: flex; justify-content: space-between; align-items: center; font-size: 13px; } .tutbox .tutx { background: none; border: 1px solid var(--line); color: var(--text); border-radius: 4px; cursor: pointer; padding: 0 8px; }
-.tutbox .tutskip { margin-left: auto; opacity: .75; } .tutbox.min { width: auto; padding: 0; border-width: 1px; } .tutbox .tutpill { background: #15110d; color: var(--accent); border: 0; padding: 8px 12px; cursor: pointer; font: inherit; font-size: 14px; }
-@media (max-width: 760px) { .tutbox { right: 8px; left: 8px; bottom: 8px; width: auto; font-size: 14px; max-height: 55vh; } .tutbox.min { left: auto; } }
+.tutbox .tutskip { margin-left: auto; opacity: .75; } .tutbox.min { width: auto; padding: 0; border-width: 1px; left: auto; right: 16px; bottom: 16px; transform: none; } .tutbox .tutpill { background: #15110d; color: var(--accent); border: 0; padding: 8px 12px; cursor: pointer; font: inherit; font-size: 14px; }
+@media (max-width: 760px) { .tutbox { right: 8px; left: 8px; bottom: 25vh; transform: none; width: auto; font-size: 14px; max-height: 55vh; } .tutbox.min { left: auto; bottom: 8px; } }
 .hcpick { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid #6a2a22; border-radius: 6px; background: #1c0f0c; cursor: pointer; align-self: end; } .hcpick small { color: var(--muted); } .hcpick input { accent-color: #c9472f; }
 .arbox, .aroffer, .arpost { background: #15110d; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 0 0 10px; display: grid; gap: 6px; }
 .arbox.mine { border-color: #7a3a2a; box-shadow: inset 3px 0 0 #c9472f; } .arpost.on { border-color: var(--accent); }
@@ -1099,7 +1099,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   }
   async function attachSupaUser(u) {
     supaUser = u; renderAccount(); SY.ready = false; SY.conflict = null;
-    supa.from('admins').select('user_id').eq('user_id', u.id).maybeSingle().then(({ data }) => setAdmin(!!data), () => {}); // Tinker Pip is for admins only
+    supa.from('admins').select('user_id').eq('user_id', u.id).maybeSingle().then(({ data, error }) => setAdmin(!!data || !!(error && /relation|does not exist|schema cache/i.test(error.message || ''))), () => {}); // Tinker Pip is for admins only (everyone, until supabase/trust.sql is installed)
     await cloudCheck('sign-in');
     if (SY.err && !SY.ready) toast('Signed in, but your online save could not be reached (' + SY.err + '). Progress keeps saving in this browser.');
     else if (SY.ready) storeKind = 'cloud';

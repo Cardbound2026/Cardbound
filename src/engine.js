@@ -2267,6 +2267,7 @@ function rankedCard(key, rank) {
     txt = txt.slice(0, i) + val + txt.slice(j);
   }
   if (u.dw && MILESTONE(rank)) { ms.draw = MILESTONE(rank); txt = txt.replace(/([Dd])raw a card/, (m, D) => `${D}raw ${1 + ms.draw} cards`); }
+  if (u.d35 && rank >= 3) { ms.draw = (rank >= 3 ? 1 : 0) + (rank >= 5 ? 1 : 0); txt = txt.replace(/([Dd])raw 1 card/, (m, D) => `${D}raw ${1 + ms.draw} cards`); } // Nov 2: +1 card at +3, +2 at +5 (Battle Shout)
   if (u.tw && MILESTONE(rank)) { ms.hits = MILESTONE(rank); txt = txt.replace(/\btwice\b/, `${2 + ms.hits} times`); }
   if (u.fr && MILESTONE(rank)) { ms.draw = MILESTONE(rank); v.msFree = true; txt += ` Draw ${ms.draw} card.`; }
   if (u.r) { rk.all = 1 + u.r * rank / 100; txt += ` (Upgrade: +${u.r * rank}% to its amount.)`; }
