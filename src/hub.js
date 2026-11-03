@@ -202,7 +202,7 @@ const titleAfter = (t) => /^(the|of) /i.test(t || '');
 const titled = (name, t) => !t ? name : titleAfter(t) ? `${name} ${t}` : `${t} ${name}`;
 // Nov 2: Warriors and Paladins call their defense Block with a shield in hand and Parry without one
 function defWord(c) { if (!c) return null; const cls = CLASSES[c.cls]; if (!cls) return null; if (c.cls !== 'Warrior' && c.cls !== 'Paladin') return cls.defense;
-  const o = (c.gear || []).find(g => g && g.slot === 'Off-hand'); return o && (/Shield/.test(o.arch || o.label || '') || ['Kite Shield', 'Pavise'].includes(o.name)) ? 'Block' : 'Parry'; }
+  const o = (c.gear || []).find(g => g && g.slot === 'Off-hand'); return o && /Shield|Pavise|Buckler/.test((o.arch || '') + ' ' + (o.label || '') + ' ' + (o.name || '')) ? 'Block' : 'Parry'; }
 function defText(c, cls, text) { const w = defWord(c); if (!w || !text || (cls !== 'Warrior' && cls !== 'Paladin') || c.cls !== cls) return text;
   const lo = w.toLowerCase(), ed = w === 'Block' ? 'Blocked' : 'Parried';
   return text.replace(/\b(Block|Parry)\b/g, w).replace(/\b(block|parry)\b/g, lo).replace(/\b(Blocked|Parried)\b/g, ed).replace(/\b(blocked|parried)\b/g, ed.toLowerCase()); }

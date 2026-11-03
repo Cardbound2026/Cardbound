@@ -2,6 +2,9 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Fix', 'Shadow Dance: enter Stealth, and your next Attack doesn\'t break it.'],
+      ['Change', 'Shadow Ambush now Stuns (the target loses its next turn, bosses included) instead of Fearing. The same enemy can\'t be ambush-stunned two rounds in a row.'],
+      ['Fix', 'Warrior and Paladin cards that say Block or Parry (like Guarded Stance) could show without their art and couldn\'t be played. Fixed, and every shield now counts for the Block wording.'],
       ['Change', 'Stealth: fully Dodging an enemy attack that hits everyone keeps you in Stealth. Only damage that gets through breaks it.'],
       ['Balance', 'Shadow Ambush costs 2 less mana per upgrade level (20 at +0, 10 at +5, free at +10).'],
       ['Balance', 'Entropy Codex: only your first drain each turn applies Exposure and Magic Vulnerability.'],

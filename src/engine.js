@@ -334,7 +334,7 @@ const CUSTOM = {
   expose_weakness: { play: (cb, t) => { const e = tgtOf(cb, t); if (!e) return; e.vulnerable += 15; e.markDraw = cb.round; } },
   cripple: { play: (cb, t) => { const e = D_(cb, t, 7, 'Cripple'); if (e) e.weakNext = 1; } },
   ready_the_blades: { play: (cb, t, p) => { p.nextAttackFlat += 5; say(cb, 'Your next Attack deals 5 more damage per hit.'); } },
-  shadow_dance: { play: (cb, t, p) => { p.stealth = true; say(cb, `${p.name} slips into Stealth.`); } },
+  shadow_dance: { play: (cb, t, p) => { p.stealth = true; p.stealthKeep = (p.stealthKeep || 0) + 1; say(cb, `${p.name} slips into Stealth. Your next Attack won't break it.`); } },
   vanish: { play: (cb, t, p) => { cb.cleanseAll(p, true); p.stealth = true; } },
   eviscerate: { play: (cb, t, p) => { const st = p.stealth; const e = D_(cb, t, 24, 'Eviscerate'); if (st && e && e.hp > 0) cb.applyDot(e, 'bleed', 10); } },
   wound_poison: { play: (cb, t) => { const e = tgtOf(cb, t); if (!e) return; cb.applyDot(e, 'poison', 6); e.noHealRound = cb.round + 1; } },
@@ -1722,7 +1722,8 @@ class Combat {
     this._cmult = 1;
     if (d.rank && !this.over) this.rkMilestones(p, d, dn0, tgt);
     this.rkEnd(); this._rk = null; this._rkCard = null; this._rkHits = this._rkTimed = this._rkAdded = null;
-    if (stAtk && tgt && !tgt.isPlayer && tgt.hp > 0 && this.has(p, 'shadow_ambush')) this.control(tgt, 'stun'); // Nov 2: Shadow Ambush
+    if (stAtk && tgt && !tgt.isPlayer && tgt.hp > 0 && this.has(p, 'shadow_ambush')) { if ((tgt.ambushUntil || 0) > this.round) this.say('player', `${tgt.name} is still reeling: Shadow Ambush can't Stun it again until next round.`); else { tgt.frozen = true; tgt.ambushUntil = this.round + 2; this.say('crit', `Shadow Ambush: ${tgt.name} is Stunned and loses its next turn.`); } } // Nov 2: a real Stun, bosses too
+    if (stAtk && p.stealth === 'atk' && p.stealthKeep > 0) { p.stealthKeep--; p.stealth = true; this.say('player', 'Shadow Dance: you strike and stay in Stealth.'); }
     if (stAtk && p.stealth === 'atk') { p.stealth = false; this.say('player', `${this.partySize > 1 ? p.name + ' attacks' : 'You attack'} out of Stealth.`); }
     if (p.powers.length && !this.over) this.fire(p, 'cardPlayed', d);
     if (d.type === 'Skill' && d.tags.dmg && this.has(p, 'elemental_memory')) {
@@ -2386,6 +2387,7 @@ if (C.mend_wounds) Object.assign(C.mend_wounds, { target: 'ally', text: 'Heal an
 if (C.lay_on_hands) Object.assign(C.lay_on_hands, { target: 'ally', text: 'Heal an ally (or yourself) for 30% of their total HP. Exhaust.', play: (cb, t) => { const a = t && t.isPlayer && t.hp > 0 ? t : cb.player; cb.heal(a, Math.round(a.maxHp * 0.3), 'Lay on Hands'); } }); // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
 // Nov 1: no reminder text in parentheses on cards (hold Alt over a keyword for its glossary entry); rules that were in brackets are now plain sentences
 const TEXT_FIX = {
+"shadow_dance": "Enter Stealth. Your next Attack doesn't break it.",
 "shield_strike": "Deal damage equal to 25% of your Block, plus 5. Your Block is not spent.",
 "arcane_blast": "Deal 8 Arcane damage, plus 6 for each Arcane Skill you played before it this turn (at most 18 more).",
 "expose_opening": "When you fully Parry an attack, apply 40 Vulnerable to the attacker.",

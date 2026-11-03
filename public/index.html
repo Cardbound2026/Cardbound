@@ -1753,7 +1753,7 @@ const CUSTOM = {
   expose_weakness: { play: (cb, t) => { const e = tgtOf(cb, t); if (!e) return; e.vulnerable += 15; e.markDraw = cb.round; } },
   cripple: { play: (cb, t) => { const e = D_(cb, t, 7, 'Cripple'); if (e) e.weakNext = 1; } },
   ready_the_blades: { play: (cb, t, p) => { p.nextAttackFlat += 5; say(cb, 'Your next Attack deals 5 more damage per hit.'); } },
-  shadow_dance: { play: (cb, t, p) => { p.stealth = true; say(cb, `${p.name} slips into Stealth.`); } },
+  shadow_dance: { play: (cb, t, p) => { p.stealth = true; p.stealthKeep = (p.stealthKeep || 0) + 1; say(cb, `${p.name} slips into Stealth. Your next Attack won't break it.`); } },
   vanish: { play: (cb, t, p) => { cb.cleanseAll(p, true); p.stealth = true; } },
   eviscerate: { play: (cb, t, p) => { const st = p.stealth; const e = D_(cb, t, 24, 'Eviscerate'); if (st && e && e.hp > 0) cb.applyDot(e, 'bleed', 10); } },
   wound_poison: { play: (cb, t) => { const e = tgtOf(cb, t); if (!e) return; cb.applyDot(e, 'poison', 6); e.noHealRound = cb.round + 1; } },
@@ -3141,7 +3141,8 @@ class Combat {
     this._cmult = 1;
     if (d.rank && !this.over) this.rkMilestones(p, d, dn0, tgt);
     this.rkEnd(); this._rk = null; this._rkCard = null; this._rkHits = this._rkTimed = this._rkAdded = null;
-    if (stAtk && tgt && !tgt.isPlayer && tgt.hp > 0 && this.has(p, 'shadow_ambush')) this.control(tgt, 'stun'); // Nov 2: Shadow Ambush
+    if (stAtk && tgt && !tgt.isPlayer && tgt.hp > 0 && this.has(p, 'shadow_ambush')) { if ((tgt.ambushUntil || 0) > this.round) this.say('player', `${tgt.name} is still reeling: Shadow Ambush can't Stun it again until next round.`); else { tgt.frozen = true; tgt.ambushUntil = this.round + 2; this.say('crit', `Shadow Ambush: ${tgt.name} is Stunned and loses its next turn.`); } } // Nov 2: a real Stun, bosses too
+    if (stAtk && p.stealth === 'atk' && p.stealthKeep > 0) { p.stealthKeep--; p.stealth = true; this.say('player', 'Shadow Dance: you strike and stay in Stealth.'); }
     if (stAtk && p.stealth === 'atk') { p.stealth = false; this.say('player', `${this.partySize > 1 ? p.name + ' attacks' : 'You attack'} out of Stealth.`); }
     if (p.powers.length && !this.over) this.fire(p, 'cardPlayed', d);
     if (d.type === 'Skill' && d.tags.dmg && this.has(p, 'elemental_memory')) {
@@ -3805,6 +3806,7 @@ if (C.mend_wounds) Object.assign(C.mend_wounds, { target: 'ally', text: 'Heal an
 if (C.lay_on_hands) Object.assign(C.lay_on_hands, { target: 'ally', text: 'Heal an ally (or yourself) for 30% of their total HP. Exhaust.', play: (cb, t) => { const a = t && t.isPlayer && t.hp > 0 ? t : cb.player; cb.heal(a, Math.round(a.maxHp * 0.3), 'Lay on Hands'); } }); // Oct 31: at 10 mana nobody played it (it is meant to sit in hand); free now so you can play it if you need the hand space
 // Nov 1: no reminder text in parentheses on cards (hold Alt over a keyword for its glossary entry); rules that were in brackets are now plain sentences
 const TEXT_FIX = {
+"shadow_dance": "Enter Stealth. Your next Attack doesn't break it.",
 "shield_strike": "Deal damage equal to 25% of your Block, plus 5. Your Block is not spent.",
 "arcane_blast": "Deal 8 Arcane damage, plus 6 for each Arcane Skill you played before it this turn (at most 18 more).",
 "expose_opening": "When you fully Parry an attack, apply 40 Vulnerable to the attacker.",
@@ -4486,7 +4488,7 @@ const titleAfter = (t) => /^(the|of) /i.test(t || '');
 const titled = (name, t) => !t ? name : titleAfter(t) ? `${name} ${t}` : `${t} ${name}`;
 // Nov 2: Warriors and Paladins call their defense Block with a shield in hand and Parry without one
 function defWord(c) { if (!c) return null; const cls = CLASSES[c.cls]; if (!cls) return null; if (c.cls !== 'Warrior' && c.cls !== 'Paladin') return cls.defense;
-  const o = (c.gear || []).find(g => g && g.slot === 'Off-hand'); return o && (/Shield/.test(o.arch || o.label || '') || ['Kite Shield', 'Pavise'].includes(o.name)) ? 'Block' : 'Parry'; }
+  const o = (c.gear || []).find(g => g && g.slot === 'Off-hand'); return o && /Shield|Pavise|Buckler/.test((o.arch || '') + ' ' + (o.label || '') + ' ' + (o.name || '')) ? 'Block' : 'Parry'; }
 function defText(c, cls, text) { const w = defWord(c); if (!w || !text || (cls !== 'Warrior' && cls !== 'Paladin') || c.cls !== cls) return text;
   const lo = w.toLowerCase(), ed = w === 'Block' ? 'Blocked' : 'Parried';
   return text.replace(/\b(Block|Parry)\b/g, w).replace(/\b(block|parry)\b/g, lo).replace(/\b(Blocked|Parried)\b/g, ed).replace(/\b(blocked|parried)\b/g, ed.toLowerCase()); }
@@ -6708,8 +6710,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793674068612';
-  const CB_BUILD = '701f285499'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793675815180';
+  const CB_BUILD = '6c72818da7'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -7812,6 +7814,9 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Fix', 'Shadow Dance: enter Stealth, and your next Attack doesn\'t break it.'],
+      ['Change', 'Shadow Ambush now Stuns (the target loses its next turn, bosses included) instead of Fearing. The same enemy can\'t be ambush-stunned two rounds in a row.'],
+      ['Fix', 'Warrior and Paladin cards that say Block or Parry (like Guarded Stance) could show without their art and couldn\'t be played. Fixed, and every shield now counts for the Block wording.'],
       ['Change', 'Stealth: fully Dodging an enemy attack that hits everyone keeps you in Stealth. Only damage that gets through breaks it.'],
       ['Balance', 'Shadow Ambush costs 2 less mana per upgrade level (20 at +0, 10 at +5, free at +10).'],
       ['Balance', 'Entropy Codex: only your first drain each turn applies Exposure and Magic Vulnerability.'],
@@ -12697,7 +12702,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   const GEMC = { Enemy: '#a3402c', White: '#d8d2c4', Green: '#4fae4a', Blue: '#3f7fe0', Gold: '#e6a52c', Token: '#9a8f82', Status: '#6c6258' };
   function cardIcon(d) { if (d.ekind === 'status' || d.type === 'Status') return ICON.debuff || ICON.buff; if (d.ekind) return ICON[d.ekind]; return d.type === 'Attack' ? ICON.attack : d.tags && (d.tags.def || d.tags.heal) ? ICON.defend : ICON.buff; }
   function cardFace(d, o) {
-    if (d && (d.cls === 'Warrior' || d.cls === 'Paladin') && typeof profile !== 'undefined' && profile && profile.chars) { const hc = profile.chars[heroKey]; const t2 = CBHub.defText(hc, d.cls, d.text); if (t2 !== d.text) d = Object.assign({}, d, { text: t2 }); } // Nov 2: Block with a shield, Parry without
+    if (d && (d.cls === 'Warrior' || d.cls === 'Paladin') && typeof profile !== 'undefined' && profile && profile.chars) { const hc = profile.chars[heroKey]; const t2 = CBHub.defText(hc, d.cls, d.text); if (t2 !== d.text) { const o2 = Object.create(d); o2.text = t2; d = o2; } } // Nov 2: Block with a shield, Parry without
     o = o || {}; const F = (window.CB_FRAMES || {})[d.cls] || (d.type === 'Status' || d.ekind === 'status' ? (window.CB_FRAMES || {})['S:junk'] : null); if (!F) return null;
     const pct = (v) => (v * 100).toFixed(2) + '%';
     const L = (r) => `left:${pct(r[0])};top:${pct(r[1])};width:${pct(r[2])};height:${pct(r[3])}`;

@@ -2478,7 +2478,7 @@ body.aiming { cursor: grabbing; user-select: none; }
   const GEMC = { Enemy: '#a3402c', White: '#d8d2c4', Green: '#4fae4a', Blue: '#3f7fe0', Gold: '#e6a52c', Token: '#9a8f82', Status: '#6c6258' };
   function cardIcon(d) { if (d.ekind === 'status' || d.type === 'Status') return ICON.debuff || ICON.buff; if (d.ekind) return ICON[d.ekind]; return d.type === 'Attack' ? ICON.attack : d.tags && (d.tags.def || d.tags.heal) ? ICON.defend : ICON.buff; }
   function cardFace(d, o) {
-    if (d && (d.cls === 'Warrior' || d.cls === 'Paladin') && typeof profile !== 'undefined' && profile && profile.chars) { const hc = profile.chars[heroKey]; const t2 = CBHub.defText(hc, d.cls, d.text); if (t2 !== d.text) d = Object.assign({}, d, { text: t2 }); } // Nov 2: Block with a shield, Parry without
+    if (d && (d.cls === 'Warrior' || d.cls === 'Paladin') && typeof profile !== 'undefined' && profile && profile.chars) { const hc = profile.chars[heroKey]; const t2 = CBHub.defText(hc, d.cls, d.text); if (t2 !== d.text) { const o2 = Object.create(d); o2.text = t2; d = o2; } } // Nov 2: Block with a shield, Parry without
     o = o || {}; const F = (window.CB_FRAMES || {})[d.cls] || (d.type === 'Status' || d.ekind === 'status' ? (window.CB_FRAMES || {})['S:junk'] : null); if (!F) return null;
     const pct = (v) => (v * 100).toFixed(2) + '%';
     const L = (r) => `left:${pct(r[0])};top:${pct(r[1])};width:${pct(r[2])};height:${pct(r[3])}`;
