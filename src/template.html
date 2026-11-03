@@ -621,6 +621,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 @media (max-width: 760px) { .minimap { width: 120px !important; height: auto !important; } }
 .tutpick { border-color: #6a5422; background: #1a150b; } .tutpick input { accent-color: var(--accent); }
 .tutbox { position: fixed; left: 50%; transform: translateX(-50%); bottom: 25vh; z-index: 40; width: min(440px, calc(100vw - 32px)); max-height: calc(75vh - 16px); overflow: auto; background: #15110d; border: 2px solid #d6a14a; border-radius: 8px; padding: 10px 14px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.6); font-size: 15px; line-height: 1.45; }
+.camphp { display: grid; grid-template-columns: minmax(70px, auto) 1fr; gap: 8px; align-items: center; margin: 6px 0; } .camphp .bar { position: relative; margin: 0; } .camphp .bar em { position: absolute; top: 0; bottom: 0; background: rgba(120, 200, 110, .35); }
 .tutbox h3 { margin: 2px 0 6px; color: var(--accent); font-size: 19px; } .tutbox p { margin: 0 0 8px; } .tutbox .row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .tutbox .tuthead { display: flex; justify-content: space-between; align-items: center; font-size: 13px; } .tutbox .tutx { background: none; border: 1px solid var(--line); color: var(--text); border-radius: 4px; cursor: pointer; padding: 0 8px; }
 .tutbox .tutskip { margin-left: auto; opacity: .75; } .tutbox.min { width: auto; padding: 0; border-width: 1px; left: auto; right: 16px; bottom: 16px; transform: none; } .tutbox .tutpill { background: #15110d; color: var(--accent); border: 0; padding: 8px 12px; cursor: pointer; font: inherit; font-size: 14px; }
@@ -2646,13 +2647,17 @@ body.aiming { cursor: grabbing; user-select: none; }
     // what you would be carrying out: the sack, newest first
     const campSack = (sack, gold, m) => `<h3 class="camph">${m ? `<span style="color:${CC[m.cls]}">${esc(m.name)}'s</span> sack` : 'Your sack'} <span class="muted">${sack.length} item${sack.length === 1 ? '' : 's'} &middot; ${gold} gold</span></h3>
       <div class="list stashgrid campsack">${sack.slice().reverse().map(it => itemHtml(it)).join('') || '<span class="muted">Empty so far.</span>'}</div>`;
+    // Nov 2: your health at the fire (the faint part of the bar is what Rest would heal)
+    const campHp = (m, heal) => { const max = (m.stats && m.stats.maxHp) || m.maxHp || 1, hp = Math.max(0, m.hp), h = Math.max(0, Math.min(max - hp, heal || 0));
+      return `<div class="camphp"><b style="color:${CC[m.cls]}">${esc(m.name)}</b><div class="bar"><i style="width:${Math.round(100 * hp / max)}%"></i>${h ? `<em style="left:${100 * hp / max}%;width:${100 * h / max}%"></em>` : ''}<span>${hp} / ${max} HP${h ? ` (+${h} if you rest)` : ''}</span></div></div>`; };
     const CAMP = { rest: 'rest (heal 30%)', rummage: 'rummage for loot', mend: 'mend the party (+10% each)', extract: 'extract' };
     if (run.online && p.type === 'rest') {
       const S = NET.s, me = run.members[run.myMi];
       const votes = run.members.map((m, i) => S && !S.gone[i] ? `<b style="color:${CC[m.cls]}">${esc(m.name)}</b>: ${S.camp[i] ? CAMP[S.camp[i]] : '<span class="muted">deciding</span>'}` : '').filter(Boolean).join('<br>');
       const mine = S && S.camp[S.mi], btn = (k, label) => `<button class="btn ${mine === k ? 'primary' : ''}" id="mC_${k}">${label}${mine === k ? ' (picked)' : ''}</button>`;
       modal(`<h2>Rest site</h2><p>Everyone picks what they do at the fire. <b>Extract</b> is a vote: if most of the party votes for it, everyone leaves together and keeps ${p.keep > 0.5 ? '75%' : 'half'} of their own sack (a tie is a coin flip). Otherwise each hero does what they picked.</p>
-        <p class="muted">Your sack: ${me.sack.length} item${me.sack.length === 1 ? '' : 's'} and ${me.gold} gold. HP ${me.hp}/${me.stats.maxHp}.</p>
+        ${run.members.map((m, i) => S && S.gone[i] ? '' : campHp(m, p.heals && p.heals[i])).join('')}
+        <p class="muted">Your sack: ${me.sack.length} item${me.sack.length === 1 ? '' : 's'} and ${me.gold} gold.</p>
         <div class="row campbtns">${btn('rest', `Rest: heal ${p.heals[run.myMi]}`)}${btn('rummage', 'Rummage: one monster\'s loot')}${btn('mend', 'Mend: everyone +10%')}${btn('extract', 'Vote extract')}</div>
         <p style="margin-top:8px">${votes}</p>${campSack(me.sack, me.gold)}`); $('modalBox').classList.add('wide');
       for (const k of ['rest', 'rummage', 'mend', 'extract']) $('mC_' + k).onclick = () => netAct({ t: 'camp', choice: k });
@@ -2661,6 +2666,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (p.type === 'rest') {
       const sackN = run.sack.length, party = run.members.length > 1;
       modal(`<h2>Rest site</h2><p>The fire is warm. Rest, search the camp for loot, or pack up and leave the road with what you carry.</p>
+        ${run.members.map(m => campHp(m, run.solo ? p.heal : Math.round(((m.stats && m.stats.maxHp) || 0) * 0.3))).join('')}
         <div class="row campbtns"><button class="btn primary" id="mRest">${run.solo ? `Rest: heal ${p.heal} HP` : 'Rest: everyone heals 30%'}</button>
           <button class="btn" id="mRummage" title="Roll the loot of one normal monster from this part of the map">Rummage: ${party ? 'each hero finds' : 'find'} one monster's loot</button>
           ${party ? '<button class="btn" id="mMend">Mend: everyone heals 10%</button>' : ''}

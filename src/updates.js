@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Change', 'Rest sites show your health bar, and how much Rest would heal.'],
       ['Balance', 'Dread: cards and powers apply 10% less Dread.'],
       ['Balance', 'Dread now loses 2 stacks a turn (was 1).'],
       ['Balance', 'Vulnerable now only increases Physical damage.'],
