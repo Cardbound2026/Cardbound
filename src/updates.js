@@ -2,6 +2,18 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Fix', 'With a two-handed weapon, the off-hand slot shows the weapon instead of looking empty, and off-hand items no longer say they fill an empty slot.'],
+      ['Balance', 'Creeping Doom: your Dread deals 50% more damage (was: Dread ticks twice).'],
+      ['Balance', 'Entropy Codex: every point of mana drained applies 2 Exposure (was 3).'],
+      ['Balance', 'Entropy Codex: every point of mana drained applies 1 Magic Vulnerability (was 2).'],
+      ['Balance', 'Hemorrhage Codex: crits apply Bleed equal to 30% of the damage (was 50%).'],
+      ['Balance', 'Saboteur Codex: only discards add a Dazed, not exhausts.'],
+      ['Balance', 'Riposte Codex: the damage sent back is boosted by your Strength, like an Attack.'],
+      ['Balance', 'Bulwark Codex: its Thorns damage is boosted by your Strength, like an Attack.'],
+      ['Balance', 'Phantom Codex: each stack gives +35% damage (was +25%).'],
+      ['Balance', 'Righteous Crusader Codex: your Attacks deal bonus damage equal to 10% of your Block.'],
+      ['Balance', 'Colossus talents: Titan\'s Hunger extra-strike chance is 30% (was 20%).'],
+      ['Balance', 'Sunderer talents: Lv 6 Armor Splitter makes Vulnerable 50% more effective for you, past the usual +50% cap.'],
       ['Change', 'Rest sites show your health bar, and how much Rest would heal.'],
       ['Balance', 'Dread: cards and powers apply 10% less Dread.'],
       ['Balance', 'Dread now loses 2 stacks a turn (was 1).'],

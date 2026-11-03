@@ -21,7 +21,8 @@
   function upgradeInfo(it, gear, cls) {
     if (!it || it.kind === 'card' || !gear) return null;
     if (it.slot === 'Codex' && it.cls && it.cls !== (cls || hcls())) return { kind: 'other', cls: it.cls };
-    const cur = CBHub.slotOptions(it).map(sl => gear.find(g => g.slot === sl));
+    const main = gear.find(g => g.slot === 'Weapon'), twoH = main && /^2H/.test(main.hands || '') && !(CBHub.staffShield && CBHub.staffShield({ cls: cls || hcls(), gear, codexes: (profile.chars[heroKey] || {}).codexes }) && /Staff/.test(main.arch || ''));
+    const cur = CBHub.slotOptions(it).map(sl => gear.find(g => g.slot === sl) || (sl === 'Off-hand' && twoH ? main : null)); // Nov 2: a two-hander fills the off-hand too
     if (cur.some(x => !x)) return { kind: 'empty' };
     const worn = gear.find(g => g.slot === 'Codex');
     if (it.slot === 'Codex' && it.codex && worn && worn.codex !== it.codex) return { kind: 'swap', vs: worn };
@@ -108,6 +109,8 @@
     o = o || {};
     const slot = (sl) => {
       const it = ch.gear.find(g => g.slot === sl);
+      const w2 = sl === 'Off-hand' && !it && ch.gear.find(g => g.slot === 'Weapon' && /^2H/.test(g.hands || ''));
+      if (w2) return `<div class="dslot twoh" style="--rc:${RC[w2.rarity] || 'var(--line)'};opacity:.55" ${o.own ? `data-dslot="${sl}" role="button"` : ''} tabindex="0" title="Your two-handed ${esc(w2.label || 'weapon')} takes both hands"><span class="dic">${slotIcon(sl)}</span><span class="dtx"><b>${esc(w2.name)}</b><small>Two-handed</small></span></div>`; // Nov 2
       if (!it) return `<div class="dslot empty" ${o.own ? `data-dslot="${sl}" role="button" tabindex="0"` : ''} title="${sl}: empty${o.own ? ' (click to equip something)' : ''}"><span class="dic">${slotIcon(sl)}</span><span class="dtx"><b>${sl}</b><small>empty</small></span></div>`;
       return `<div class="dslot" style="--rc:${RC[it.rarity] || 'var(--line)'}" data-tip="${tipKey(it, o.cmp)}" ${o.own ? `data-dslot="${sl}" role="button"` : ''} tabindex="0"><span class="dic">${slotIcon(sl)}</span><span class="dtx"><b>${esc(it.name)}</b><small>${sl} &middot; ilvl ${it.ilvl}</small></span></div>`;
     };

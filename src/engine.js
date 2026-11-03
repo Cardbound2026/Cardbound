@@ -541,17 +541,17 @@ Object.assign(POWERS, {
 // A codex is a class-locked gear slot: random affixes like gear plus one fixed passive that boosts a playstyle (it never limits your cards).
 // Six per class; each map's boss drops four (one per class). Passives below are level 1 (codex levels 2-5 come from higher map levels later).
 const CODEXES = {
-  Warrior: [['bulwark', 'Bulwark', 'Needs a one-handed weapon and a shield. Block you gain is increased by 25%. When you are hit, the attacker takes Thorns damage equal to 25% of your Block.'], ['riposte', 'Riposte', 'Needs a two-handed weapon. When an attack is fully stopped by your Parry, deal 75% of the damage it would have done back to the attacker.'],
+  Warrior: [['bulwark', 'Bulwark', 'Needs a one-handed weapon and a shield. Block you gain is increased by 25%. When you are hit, the attacker takes Thorns damage equal to 25% of your Block (Strength boosts it like an Attack).'], ['riposte', 'Riposte', 'Needs a two-handed weapon. When an attack is fully stopped by your Parry, deal 75% of the damage it would have done back to the attacker. Strength boosts it like an Attack.'],
     ['bloodbound', 'Bloodbound', 'Bleed you apply to enemies is also applied to you. Each Attack heals you for 10% of your stored Blood Debt (and spends it).'], ['colossus', 'Colossus', 'Needs a two-handed weapon. Every 30 mana you spend on Attacks adds a Stun to the target\'s draw pile.'],
-    ['sunderer', 'Sunderer', 'Your Attacks also apply 3 Vulnerable. Vulnerable on enemies wears off 10% a turn instead of half.'], ['hemorrhage', 'Hemorrhage', '+10% Crit Chance. Your crits apply Bleed equal to 50% of the damage they deal.']],
+    ['sunderer', 'Sunderer', 'Your Attacks also apply 3 Vulnerable. Vulnerable on enemies wears off 10% a turn instead of half.'], ['hemorrhage', 'Hemorrhage', '+10% Crit Chance. Your crits apply Bleed equal to 30% of the damage they deal.']],
   Rogue: [['nightstalker', 'Nightstalker', 'Needs a dagger in your main hand. Attacks you play while in Stealth deal 50% more damage, have +25% crit chance and +50% crit damage.'], ['venomancer', 'Venomancer', 'Needs a weapon in each hand. Poison you apply is increased by 2.'],
     ['bloodletter', 'Bloodletter', 'Needs a weapon in each hand. Bleed you apply is increased by 50%.'], ['ninja', 'Ninja', 'Shurikens deal 4 more damage. Start each turn with a Shuriken in hand.'],
-    ['saboteur', 'Saboteur', 'The first enemy card you make an enemy discard or exhaust each round also adds a Dazed to its discard pile.'], ['phantom', 'Phantom', 'Needs a weapon in each hand. Dodge you gain is increased by 20%. Every time you Dodge 20 damage, your next Attack deals 25% more damage. Stacks.']],
+    ['saboteur', 'Saboteur', 'The first card you make an enemy discard each round also adds a Dazed to its discard pile.'], ['phantom', 'Phantom', 'Needs a weapon in each hand. Dodge you gain is increased by 20%. Every time you Dodge 20 damage, your next Attack deals 35% more damage. Stacks.']],
   Mage: [['heart_of_winter', 'Heart of Winter', 'Frost Skills that cost 20 or more deal 30% more damage. Frost damage to Chilled targets is 25% higher and has a 10% chance to Freeze them (they lose their next turn).'], ['spellstorm', 'Spellstorm', 'Each Arcane Skill you play makes your next card cost 5 less; every third one draws a card (at most 3 draws a turn).'],
     ['conflagration', 'Conflagration', 'Applying Burn to a target that is already Burning also deals that much Fire damage at once.'], ['barrier_savant', 'Barrier Savant', 'Needs a staff. Barrier you gain is increased by 25%, and cards that spend Barrier hit 25% harder.'],
-    ['entropy', 'Entropy', 'Mana you drain or burn from enemies is increased by 50%. Every point of mana drained applies 3 Exposure and 2 Magic Vulnerability.'], ['archmage', 'Archmage', 'Skills of a different element from your previous two (this turn or earlier) deal 50% more damage.']],
+    ['entropy', 'Entropy', 'Mana you drain or burn from enemies is increased by 50%. Every point of mana drained applies 2 Exposure and 1 Magic Vulnerability.'], ['archmage', 'Archmage', 'Skills of a different element from your previous two (this turn or earlier) deal 50% more damage.']],
   Paladin: [['bastion_of_faith', 'Bastion of Faith', 'Needs a one-handed weapon and a shield. Your damage becomes Holy, and every damaging card also gives 4 Block.'], ['purifier', 'Purifier', 'Removing debuffs (from yourself or an enemy) deals 2 Holy damage per stack removed to an enemy.'],
-    ['righteous_crusader', 'Righteous Crusader', 'An Attack makes your next Block card 45% stronger; a Block card makes your next Attack 45% stronger.'], ['sacred_flame', 'Sacred Flame', 'Holy damage also applies Burn equal to 20% of the damage dealt.'],
+    ['righteous_crusader', 'Righteous Crusader', 'An Attack makes your next Block card 45% stronger; a Block card makes your next Attack 45% stronger. Your Attacks deal bonus damage equal to 10% of your Block.'], ['sacred_flame', 'Sacred Flame', 'Holy damage also applies Burn equal to 20% of the damage dealt.'],
     ['divine_wrath', 'Divine Wrath', 'Prayer cards give 1 more Devotion. Your Attacks also spend Devotion, for 3 bonus damage per stack.'], ['equilibrium', 'Equilibrium', 'You cannot gain Block. Your healing is 30% stronger, and healing you do also deals that much Holy damage to an enemy.']],
   Warlock: [['soulbinder', 'Soulbinder', 'Your Shadow damage is 10% higher. 5% of the damage you deal heals every hero in the party, and your Soul Beacon heals 50% more.'], ['blightcaller', 'Blightcaller', 'Dread you apply is increased by 25%.'],
     ['shadow_knight', 'Shadow Knight', 'You get 20% more Strength from gear. Your Physical damage becomes Shadow. Your Shadow Attacks heal you for 5% of the damage they deal.'], ['demonologist', 'Demonologist', 'Your demons stay 1 turn longer.'],
@@ -584,19 +584,19 @@ function legalGear(spec, data) { let gear = spec.gear || STARTER_GEAR[spec.cls];
 function codexNeed(key, gear, data) { const n = CODEX_NEEDS[key]; if (!n) return null; return weaponSetup(gear || [], data)[n] ? null : NEED_TXT[n]; }
 const atkOnce = (p, key) => p.turn && p.turn[key];
 Object.assign(POWERS, {
-  codex_bulwark: { defMult: 1.25, hitBy: (cb, p, e, r) => { const n = Math.round(((p.block || 0) + (r.absorbed || 0)) * 0.25); if (n > 0 && e.hp > 0) { cb.applyHit(p, e, n, { label: 'Bulwark Thorns' }); cb.say('player', `Bulwark: ${e.name} takes ${n} Thorns damage.`); if (e.hp <= 0) cb.onDeath(e); } } }, // Nov 2: 25% of Block as Thorns
-  codex_riposte: { hitBy: (cb, p, e, r) => { if (r.lost === 0 && r.absorbed > 0 && e.hp > 0) { const n = Math.round(r.absorbed * 0.75); cb.applyHit(p, e, n, { label: 'Riposte Codex' }); cb.say('player', `Riposte: ${e.name} takes ${n} back.`); if (e.hp <= 0) cb.onDeath(e); } } },
+  codex_bulwark: { defMult: 1.25, hitBy: (cb, p, e, r) => { const n = Math.round(((p.block || 0) + (r.absorbed || 0)) * 0.25 * (1 + (p.strength + p.strTurn + p.strCombat) / 100)); if (n > 0 && e.hp > 0) { cb.applyHit(p, e, n, { label: 'Bulwark Thorns' }); cb.say('player', `Bulwark: ${e.name} takes ${n} Thorns damage.`); if (e.hp <= 0) cb.onDeath(e); } } }, // Nov 2: 25% of Block as Thorns
+  codex_riposte: { hitBy: (cb, p, e, r) => { if (r.lost === 0 && r.absorbed > 0 && e.hp > 0) { const n = Math.round(r.absorbed * 0.75 * (1 + (p.strength + p.strTurn + p.strCombat) / 100)); cb.applyHit(p, e, n, { label: 'Riposte Codex' }); cb.say('player', `Riposte: ${e.name} takes ${n} back.`); if (e.hp <= 0) cb.onDeath(e); } } },
   codex_bloodbound: { applyDot: (cb, p, e, key, v) => { if (key === 'bleed' && !e.isPlayer) { p.bleed += v; cb.say('player', `Bloodbound: ${p.name} also gains ${v} Bleed.`); } },
     cardPlayed: (cb, p, d) => { if (d.type === 'Attack' && p.bloodDebt > 0) { const n = Math.max(1, Math.round(p.bloodDebt * 0.1)); p.bloodDebt -= n; cb.heal(p, n, 'Bloodbound'); } } },
   codex_colossus: { cardPlayed: (cb, p, d, pw) => { if (d.type !== 'Attack') return; pw.spent = (pw.spent || 0) + (cb._paid || 0); while (pw.spent >= 30) { pw.spent -= 30; const e = cb._lastTarget && cb._lastTarget.hp > 0 ? cb._lastTarget : cb.alive()[0]; if (e) cb.eStatus(e, 'stun', 1); } } },
   codex_sunderer: { dealt: (cb, p, h) => { if (h.kind === 'Attack' && h.e.hp > 0) h.e.vulnerable += 3; } },
-  codex_hemorrhage: { crit: () => 10, dealt: (cb, p, h) => { if (h.crit && h.e.hp > 0 && h.lost + h.absorbed > 0) { const n = Math.max(1, Math.round((h.lost + h.absorbed) * 0.5)); h.e.bleed += n; h.e.bleedBy = p.id; cb.say('crit', `Hemorrhage: ${h.e.name} gains ${n} Bleed.`); } } },
+  codex_hemorrhage: { crit: () => 10, dealt: (cb, p, h) => { if (h.crit && h.e.hp > 0 && h.lost + h.absorbed > 0) { const n = Math.max(1, Math.round((h.lost + h.absorbed) * 0.3)); h.e.bleed += n; h.e.bleedBy = p.id; cb.say('crit', `Hemorrhage: ${h.e.name} gains ${n} Bleed.`); } } },
   codex_nightstalker: { cardMult: (cb, p, d) => d.type === 'Attack' && p.stealth ? 1.5 : 1, crit: (cb, p, d) => d && d.type === 'Attack' && p.stealth ? 25 : 0, critMultX: (cb, p) => p.stealth ? 1.5 : 1 },
   codex_venomancer: { dotPlus: { poison: 2 } },
   codex_bloodletter: { dotMult: { bleed: 1.5 } },
   codex_ninja: { shurikenPlus: 4, turnStart: (cb, p) => { if (!p.hand.some(c => c.key === 'shuriken')) cb.addToHand('shuriken'); } },
   codex_saboteur: {},
-  codex_phantom: { defMult: 1.2, hitBy: (cb, p, e, r, pw) => { pw.acc = (pw.acc || 0) + r.absorbed; while (pw.acc >= 20) { pw.acc -= 20; pw.stacks = (pw.stacks || 0) + 1; } }, cardMult: (cb, p, d, pw) => { if (d.type === 'Attack' && pw.stacks) { const m = 1 + 0.25 * pw.stacks; cb.say('player', `Phantom: +${pw.stacks * 25}% on this Attack.`); pw.stacks = 0; return m; } return 1; } },
+  codex_phantom: { defMult: 1.2, hitBy: (cb, p, e, r, pw) => { pw.acc = (pw.acc || 0) + r.absorbed; while (pw.acc >= 20) { pw.acc -= 20; pw.stacks = (pw.stacks || 0) + 1; } }, cardMult: (cb, p, d, pw) => { if (d.type === 'Attack' && pw.stacks) { const m = 1 + 0.35 * pw.stacks; cb.say('player', `Phantom: +${pw.stacks * 35}% on this Attack.`); pw.stacks = 0; return m; } return 1; } },
   codex_heart_of_winter: { hitMult: (cb, p, e, c) => (c.kind === 'Skill' && c.dtype === 'Frost' && c.d && (c.d.cost || 0) >= 20 ? 1.3 : 1) * (c.dtype === 'Frost' && e && e.chill > 0 ? 1.25 : 1),
     dealt: (cb, p, h) => { if (h.dtype === 'Frost' && h.e && !h.e.isPlayer && h.e.hp > 0 && h.e.chill > 0 && !h.e.frozen && cb.rng() < 0.1) { h.e.frozen = true; cb.say('crit', `Heart of Winter: ${h.e.name} is Frozen and will lose its next turn!`); } } },
   codex_spellstorm: { cardPlayed: (cb, p, d, pw) => { if (d.type === 'Skill' && d.dtype === 'Arcane') { p.turn.nextCost = (p.turn.nextCost || 0) - 5; pw.n = (pw.n || 0) + 1; if (pw.dr !== cb.round) { pw.dr = cb.round; pw.dn = 0; } if (pw.n % 3 === 0 && pw.dn < 3) { pw.dn++; cb.say('player', 'Spellstorm: draw 1.'); cb.drawCards(p, 1); } } } },
@@ -609,7 +609,7 @@ Object.assign(POWERS, {
   codex_bastion_of_faith_off: {},
   codex_off: {}, // a codex without the weapons it needs
   codex_purifier: { onCleanse: (cb, p, n) => { const e = cb.foes()[0] || cb.alive()[0]; if (n > 0 && e) cb.powerHit(p, e, 2 * n, 'Purifier', 'Holy', 'Skill'); } },
-  codex_righteous_crusader: { cardMult: (cb, p, d, pw) => { if (d.type === 'Attack' && pw.atkUp) { pw.atkUp = false; return 1.45; } return 1; },
+  codex_righteous_crusader: { flat: (cb, p, d) => d && d.type === 'Attack' ? Math.round((p.block || 0) * 0.1) : 0, cardMult: (cb, p, d, pw) => { if (d.type === 'Attack' && pw.atkUp) { pw.atkUp = false; return 1.45; } return 1; },
     cardPlayed: (cb, p, d, pw) => { if (d.type === 'Attack') pw.defUp = true; else if (d.tags && d.tags.def) pw.atkUp = true; }, defMultFn: (cb, p, pw) => { if (pw.defUp && cb._playing && !cb._playing.isPower && cb._playing.type !== 'Attack') { pw.defUp = false; return 1.45; } return 1; } },
   codex_sacred_flame: { dealt: (cb, p, h) => { if (h.dtype === 'Holy' && h.lost > 0 && h.e.hp > 0) { const n = Math.max(1, Math.round(h.lost * 0.2)); h.e.burn += n; h.e.burnBy = p.id; } } },
   codex_divine_wrath: { devotionPlus: 1 },
@@ -1074,7 +1074,7 @@ class Combat {
   }
   // take mana from an enemy: what it holds now, then what it would regenerate for its next turn (its mana can go below 0 until then)
   drainMana(e, n) { if (!e || n <= 0) return 0; const q = this.player, ent = q && q.isPlayer && this.has(q, 'codex_entropy'); if (ent) n = Math.round(n * 1.5); const pool = Math.max(0, e.mana) + (e.isPlayer ? e.regen : this.effRegen(e)); const s = Math.min(n, pool); e.mana -= s;
-    if (ent && s > 0) { e.exposure = (e.exposure || 0) + 3 * s; e.magicVuln = (e.magicVuln || 0) + 2 * s; this.say('player', `Entropy: ${e.name} gains ${3 * s} Exposure and ${2 * s} Magic Vulnerability.`); } // Nov 2: per point drained
+    if (ent && s > 0) { e.exposure = (e.exposure || 0) + 2 * s; e.magicVuln = (e.magicVuln || 0) + s; this.say('player', `Entropy: ${e.name} gains ${2 * s} Exposure and ${s} Magic Vulnerability.`); } // Nov 2: per point drained
     if (!e.isPlayer) this.planEnemy(e, true); return s; }
   pickAlly(p, self) { const pool = this.allies().filter(a => self || a !== p); if (!pool.length) return p; return pool.slice().sort((x, y) => x.hp / x.maxHp - y.hp / y.maxHp)[0]; }
   defFor(a, n) { const was = this.player; this.player = a; const v = this.gainDef(n); this.player = was; return v; }
@@ -1110,7 +1110,7 @@ class Combat {
     if (e.isPlayer) { let k = 0; for (; k < n && e.hand.length; k++) { const [c] = e.hand.splice(Math.floor(this.rng() * e.hand.length), 1); e.discard.push(c); this.say('player', `${e.name} discards ${C[c.key].name}.`); } e.lostRound = (e.lostRound || 0) + k; this._forced = (this._forced || 0) + k; return k; } let k = 0; for (; k < n && e.hand.length; k++) { const i = how === 'highest' ? e.hand.reduce((bi, c, j) => (c.cost < 999 && c.cost > (e.hand[bi].cost < 999 ? e.hand[bi].cost : -1)) ? j : bi, 0) : Math.floor(this.rng() * e.hand.length); const [c] = e.hand.splice(i, 1); e.discard.push(c); this.say('player', `${e.name} discards ${c.name}.`); } e.lostRound = (e.lostRound || 0) + k; this._forced = (this._forced || 0) + k; if (k) { this.saboteur(e); this.planEnemy(e, true); } return k; }
   eExhaust(e, n) {
     n += this.rkCount();
-    if (e.isPlayer) { let k = 0; for (; k < n && e.hand.length; k++) { const [c] = e.hand.splice(Math.floor(this.rng() * e.hand.length), 1); e.exhaust.push(c); this.say('player', `${e.name}'s ${C[c.key].name} is exhausted.`); } e.lostRound = (e.lostRound || 0) + k; e.exhaustedTotal = (e.exhaustedTotal || 0) + k; return k; } let k = 0; for (; k < n && e.hand.length; k++) { const [c] = e.hand.splice(Math.floor(this.rng() * e.hand.length), 1); this.say('player', `${e.name}'s ${c.name} is exhausted.`); } e.lostRound = (e.lostRound || 0) + k; e.exhaustedTotal = (e.exhaustedTotal || 0) + k; if (k) { this.saboteur(e); this.planEnemy(e, true); } return k; }
+    if (e.isPlayer) { let k = 0; for (; k < n && e.hand.length; k++) { const [c] = e.hand.splice(Math.floor(this.rng() * e.hand.length), 1); e.exhaust.push(c); this.say('player', `${e.name}'s ${C[c.key].name} is exhausted.`); } e.lostRound = (e.lostRound || 0) + k; e.exhaustedTotal = (e.exhaustedTotal || 0) + k; return k; } let k = 0; for (; k < n && e.hand.length; k++) { const [c] = e.hand.splice(Math.floor(this.rng() * e.hand.length), 1); this.say('player', `${e.name}'s ${c.name} is exhausted.`); } e.lostRound = (e.lostRound || 0) + k; e.exhaustedTotal = (e.exhaustedTotal || 0) + k; if (k) { this.planEnemy(e, true); } return k; }
   saboteur(e) { const q = this.player; if (!q || !q.isPlayer || e.isPlayer || !this.has(q, 'codex_saboteur') || q.sabRound === this.round) return; q.sabRound = this.round; this.eStatus(e, 'dazed', 1, 'discard'); }
   eCost(e, c) { if (c.cost >= 999) return 999; return Math.round(c.cost * (1 + Math.min(10, e.exposure || 0) * 0.05) * (e.costX || 1)) + (e.costUp || 0); } // Nov 2: Exposure tops out at +50%
   eBuffKeys(e) { return ['strength', 'strTurn', 'thorns', 'parryBack', 'nextBonus'].filter(k => (e[k] || 0) > 0); }
@@ -1207,7 +1207,7 @@ class Combat {
       let m = (1 + stat / 100) * (1 + (p.elem[dtype] || 0) / 100) * (1 - Math.min(p.weak, 90) / 100) * setup * (T.nextMult || 1);
       if (pow) { try { m *= this.pwProd(p, 'cardMult', d); } catch (x) {} }
       if (e && e.hp > 0) { // aimed at a target: its weakness/resistance, Vulnerable, Condemnation and Unwarded too
-        m *= this.typeMod(e, dtype) * (1 + (dtype !== 'Physical' ? 0 : 1) * Math.min(0.5, (e.vulnerable || 0) / 100 * (pow ? Math.max(1, ...this.pws(p).map(([, q]) => q.vulnX || 1)) : 1))); // Nov 2: Vulnerable caps at +50%
+        m *= this.typeMod(e, dtype) * (1 + (dtype !== 'Physical' ? 0 : 1) * Math.min(0.5, (e.vulnerable || 0) / 100) * (pow ? Math.max(1, ...this.pws(p).map(([, q]) => q.vulnX || 1)) : 1)); // the cap is shared; vulnX (Sunderer's talent, cards) multiplies after it // Nov 2: Vulnerable caps at +50%
         m *= (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? (1 + (e.unwarded || 0) / 100) * (1 + Math.min(50, e.magicVuln || 0) / 100) : 1); // Magic Vulnerability caps at +50%
         if (e.isPlayer) m *= (1 - Math.min(75, e.resist[dtype] || 0) / 100) * (1 + this.pressure());
       }
@@ -1404,7 +1404,7 @@ class Combat {
       const src = this.actorById(a[key + 'By']), ticks = src && src.isPlayer ? this.pwKey(src, 'dotTicks', key) : 1;
       const immune = a.isPlayer && ((key === 'bleed' && this.hasTimed(a, 'noBleed')) || (a.until.immuneTypes && a.until.immuneTypes.includes(key === 'burn' ? 'Fire' : key === 'poison' ? 'Poison' : key === 'dread' ? 'Shadow' : 'Bleed')) || a.until.immune);
       const blockable = key === 'poison' && a.isPlayer && this.hasTimed(a, 'poisonBlock');
-      for (let k = 0; k < ticks; k++) if (a[key] > 0 && a.hp > 0 && !this.over) { if (immune) this.say('player', `${a.name} ignores the ${label}.`); else { const dc = this.dotCritRoll(src, key, a[key]); this.applyHit(src || (a.isPlayer ? null : this.player), a, dc.n, { isDot: true, label: label + (k ? ' (again)' : '') + (dc.crit ? ' (crit!)' : ''), ignoreBlock: ignoresBlock && !blockable }); } a[key] = Math.max(0, a[key] - (key === 'dread' ? 2 : 1)); } // Nov 2: Dread fades 2 stacks a turn
+      for (let k = 0; k < ticks; k++) if (a[key] > 0 && a.hp > 0 && !this.over) { if (immune) this.say('player', `${a.name} ignores the ${label}.`); else { const dc = this.dotCritRoll(src, key, key === 'dread' && src && src.isPlayer ? Math.round(a[key] * this.pwProd(src, 'dreadTickX')) : a[key]); this.applyHit(src || (a.isPlayer ? null : this.player), a, dc.n, { isDot: true, label: label + (k ? ' (again)' : '') + (dc.crit ? ' (crit!)' : ''), ignoreBlock: ignoresBlock && !blockable }); } a[key] = Math.max(0, a[key] - (key === 'dread' ? 2 : 1)); } // Nov 2: Dread fades 2 stacks a turn
     }
     if (a.rotQ && a.rotQ.length && a.hp > 0 && !this.over) { // Rot: every application deals its share this turn
       let n = 0; for (const r of a.rotQ) { const t = Math.round(r.left / r.turns); n += t; r.left -= t; r.turns--; }
@@ -1543,7 +1543,7 @@ class Combat {
     const elem = p.elem[dtype] || 0;
     const crit = this.rng() * 100 < p.crit + (pow ? this.pwSum(p, 'crit', cd) : 0) + (p.turn && p.turn.critPlus || 0); this._lastCrit = crit;
     const tm = this.typeMod(e, dtype);
-    const weakMod = 1 - Math.min(p.weak, 90) / 100, vulnMod = 1 + (dtype !== 'Physical' ? 0 : 1) * Math.min(0.5, e.vulnerable / 100 * (pow ? Math.max(1, ...this.pws(p).map(([, d]) => d.vulnX || 1)) : 1)); // Nov 2: Vulnerable caps at +50%
+    const weakMod = 1 - Math.min(p.weak, 90) / 100, vulnMod = 1 + (dtype !== 'Physical' ? 0 : 1) * Math.min(0.5, e.vulnerable / 100) * (pow ? Math.max(1, ...this.pws(p).map(([, d]) => d.vulnX || 1)) : 1); // Nov 2: Vulnerable caps at +50%
     const holyUp = dtype === 'Holy' && p.nextHolyMult > 1 ? p.nextHolyMult : 1; if (holyUp > 1) p.nextHolyMult = 1;
     const curse = (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? (1 + (e.unwarded || 0) / 100) * (1 + Math.min(50, e.magicVuln || 0) / 100) : 1); // Magic Vulnerability caps at +50%
     const pm = (pow ? this.pwProd(p, 'hitMult', e, ctx) : 1) * (this._cmult || 1) * holyUp * curse * (crit && p.turn && p.turn.killingBlow ? (p.turn.killingBlow === true ? 2 : p.turn.killingBlow) : 1), cmx = pow ? this.pwProd(p, 'critMultX') : 1;
@@ -2109,6 +2109,7 @@ function talentDef(list, cap, label) {
     else if (k === 'start') D.start.push([a, b, c]); else if (k === 'turn') D.turn.push([a, b, c, d2]); else if (k === 'kill') D.kill.push([a, b, c]);
     else if (k === 'hitBy') D.hit.push([a, b, c]); else if (k === 'full') D.full.push([a, b, c]); else if (k === 'lowhp') D.low = [a, b]; else if (k === 'cheat') D.cheat = [a, b];
     else if (k === 'party') (D.party = D.party || []).push([a, b]);
+    else if (k === 'vulnX') D.vx = Math.max(D.vx || 1, a);
     else if (k === 'arcRegen') D.arcRegen = a; else if (k === 'dealtDef') D.dd = (D.dd || 0) + a;
     else if (k === 'parryFirst') D.pf = (D.pf || 0) + a; else if (k === 'parryExtra') D.px = true; else if (k === 'extraTarget') (D.xt = D.xt || []).push([a, b || {}]); else if (k === 'extraStrike') (D.xs = D.xs || []).push([a, b || {}]);
     else if (k === 'dealtBleed') (D.db = D.db || []).push([a, b || {}]);
@@ -2173,6 +2174,7 @@ function talentDef(list, cap, label) {
     if (w === 'back') { if (e.hp > 0) { cb.applyHit(p, e, n, { label }); if (e.hp <= 0) cb.onDeath(e); } } else if (w === 'debuff') { if (e.hp > 0) e[key] = (e[key] || 0) + n; } else if (w === 'mana') p.mana += n; else act(cb, p, w, n, key, label); } };
   if (D.cheat) P.cheat = D.cheat;
   if (D.dd) P.dealtDef = D.dd;
+  if (D.vx) P.vulnX = D.vx;
   if (D.db) P.dealt = (cb, p, h) => { if (!h.e || h.e.hp <= 0 || h.e.isPlayer === p.isPlayer) return; for (const [pct, f] of D.db) { if (f.type && h.kind !== f.type) continue; if (f.dtype && (h.dtype || 'Physical') !== f.dtype) continue; const n = Math.round(((h.lost || 0) + (h.absorbed || 0)) * pct / 100); if (n > 0) { cb.applyDot(h.e, 'bleed', n); h.e.bleedBy = p.id; } } };
   if (D.every.length || D.first.length) P.cardPlayed = (cb, p, d) => {
     D.every.forEach(([N, f, w, n, key], i) => { if (!tcard(d, f)) return; const k = 'te' + i; p.turn[k] = (p.turn[k] || 0) + 1; if (p.turn[k] % N === 0) { act(cb, p, w, n, key, label); cb.say('player', `${label}: every ${N}${N === 3 ? 'rd' : 'th'} card bonus.`); } });

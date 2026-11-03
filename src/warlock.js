@@ -145,7 +145,7 @@ function install(K) {
   POW('spirit_ward', 'Spirit Ward', 'Gold', 20, 'Power: at the start of each of your turns, gain Absorb equal to 6% of your max HP.', { turnStart: (cb, p) => { p.block += Math.round(p.maxHp * 0.06); say(cb, `Spirit Ward: ${p.name} gains ${Math.round(p.maxHp * 0.06)} Absorb.`); } });
   POW('circle_of_souls', 'Circle of Souls', 'Gold', 20, 'Power: at the start of each of your turns, every hero heals 3% of their max HP.', { turnStart: (cb, p) => { for (const a of cb.allies()) cb.heal(a, Math.max(1, Math.round(a.maxHp * 0.03)), 'Circle of Souls', true); } });
   // Blightcaller
-  POW('creeping_doom', 'Creeping Doom', 'Gold', 20, 'Power: Dread you apply ticks twice each turn.', { dotTicks: { dread: 2 } });
+  POW('creeping_doom', 'Creeping Doom', 'Gold', 20, 'Power: your Dread deals 50% more damage.', { dreadTickX: 1.5 }); // Nov 2: was 'ticks twice'
   POW('blighted_skin', 'Blighted Skin', 'Gold', 20, 'Power: enemies that hit you gain 4 Dread.', { hitBy: (cb, p, e) => { if (e && e.hp > 0) cb.applyDot(e, 'dread', 4); } });
   POW('plague_of_dread', 'Plague of Dread', 'Gold', 20, 'Power: at the start of each of your turns, apply 2 Dread to all enemies.', { turnStart: (cb, p) => { for (const e of cb.foes()) cb.applyDot(e, 'dread', 2); } });
   // Shadow Knight
