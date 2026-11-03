@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Balance', 'Entropy Codex: only your first drain each turn applies Exposure and Magic Vulnerability.'],
+      ['Balance', 'Sacred Flame Codex: Holy damage applies Burn equal to 35% of the damage (was 20%).'],
       ['Feature', 'New Rogue card: Fade Out (Blue, 0 mana): enter Stealth. Exhaust.'],
       ['Feature', 'New Rogue card: Shadow Ambush (Blue Power): when you attack out of Stealth, the target is Stunned and loses its next turn (bosses are Feared instead).'],
       ['Balance', 'Assassinate costs 0 mana (was 20). Its upgrades add 10% more damage per level.'],
@@ -14,7 +16,7 @@
       ['Change', 'The party frame sits on the right edge, halfway down, so the city map no longer covers it.'],
       ['Balance', 'Divine Wrath Codex: every 5 Devotion you spend heals you for 10% of your max HP.'],
       ['Fix', 'With a two-handed weapon, the off-hand slot shows the weapon instead of looking empty, and off-hand items no longer say they fill an empty slot.'],
-      ['Balance', 'Creeping Doom: your Dread deals 50% more damage (was: Dread ticks twice).'],
+      ['Balance', 'Creeping Doom: your Dread deals 25% more damage (was: Dread ticks twice).'],
       ['Balance', 'Entropy Codex: every point of mana drained applies 2 Exposure (was 3).'],
       ['Balance', 'Entropy Codex: every point of mana drained applies 1 Magic Vulnerability (was 2).'],
       ['Balance', 'Hemorrhage Codex: crits apply Bleed equal to 30% of the damage (was 50%).'],

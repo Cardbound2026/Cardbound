@@ -1389,7 +1389,7 @@ function install(K) {
   POW('spirit_ward', 'Spirit Ward', 'Gold', 20, 'Power: at the start of each of your turns, gain Absorb equal to 6% of your max HP.', { turnStart: (cb, p) => { p.block += Math.round(p.maxHp * 0.06); say(cb, `Spirit Ward: ${p.name} gains ${Math.round(p.maxHp * 0.06)} Absorb.`); } });
   POW('circle_of_souls', 'Circle of Souls', 'Gold', 20, 'Power: at the start of each of your turns, every hero heals 3% of their max HP.', { turnStart: (cb, p) => { for (const a of cb.allies()) cb.heal(a, Math.max(1, Math.round(a.maxHp * 0.03)), 'Circle of Souls', true); } });
   // Blightcaller
-  POW('creeping_doom', 'Creeping Doom', 'Gold', 20, 'Power: your Dread deals 50% more damage.', { dreadTickX: 1.5 }); // Nov 2: was 'ticks twice'
+  POW('creeping_doom', 'Creeping Doom', 'Gold', 20, 'Power: your Dread deals 25% more damage.', { dreadTickX: 1.25 }); // Nov 2: was 'ticks twice'
   POW('blighted_skin', 'Blighted Skin', 'Gold', 20, 'Power: enemies that hit you gain 4 Dread.', { hitBy: (cb, p, e) => { if (e && e.hp > 0) cb.applyDot(e, 'dread', 4); } });
   POW('plague_of_dread', 'Plague of Dread', 'Gold', 20, 'Power: at the start of each of your turns, apply 2 Dread to all enemies.', { turnStart: (cb, p) => { for (const e of cb.foes()) cb.applyDot(e, 'dread', 2); } });
   // Shadow Knight
@@ -1972,9 +1972,9 @@ const CODEXES = {
     ['saboteur', 'Saboteur', 'The first card you make an enemy discard each round also adds a Dazed to its discard pile.'], ['phantom', 'Phantom', 'Needs a weapon in each hand. Dodge you gain is increased by 20%. Every time you Dodge 20 damage, your next Attack deals 35% more damage. Stacks.']],
   Mage: [['heart_of_winter', 'Heart of Winter', 'Frost Skills that cost 20 or more deal 30% more damage. Frost damage to Chilled targets is 25% higher and has a 10% chance to Freeze them (they lose their next turn).'], ['spellstorm', 'Spellstorm', 'Each Arcane Skill you play makes your next card cost 5 less; every third one draws a card (at most 3 draws a turn).'],
     ['conflagration', 'Conflagration', 'Applying Burn to a target that is already Burning also deals that much Fire damage at once.'], ['barrier_savant', 'Barrier Savant', 'Needs a staff. Only 20% of your Barrier fades between turns (not half). Barrier you gain is increased by 25%, and cards that spend Barrier hit 25% harder.'],
-    ['entropy', 'Entropy', 'Mana you drain or burn from enemies is increased by 50%. Every point of mana drained applies 2 Exposure and 1 Magic Vulnerability.'], ['archmage', 'Archmage', 'Skills of a different element from your previous two (this turn or earlier) deal 50% more damage.']],
+    ['entropy', 'Entropy', 'Mana you drain or burn from enemies is increased by 50%. The first drain each turn also applies 2 Exposure and 1 Magic Vulnerability per point of mana drained.'], ['archmage', 'Archmage', 'Skills of a different element from your previous two (this turn or earlier) deal 50% more damage.']],
   Paladin: [['bastion_of_faith', 'Bastion of Faith', 'Needs a one-handed weapon and a shield. Your damage becomes Holy, and every damaging card also gives 4 Block.'], ['purifier', 'Purifier', 'Removing debuffs (from yourself or an enemy) deals 2 Holy damage per stack removed to an enemy.'],
-    ['righteous_crusader', 'Righteous Crusader', 'An Attack makes your next Block card 45% stronger; a Block card makes your next Attack 45% stronger. Your Attacks deal bonus damage equal to 10% of your Block.'], ['sacred_flame', 'Sacred Flame', 'Holy damage also applies Burn equal to 20% of the damage dealt.'],
+    ['righteous_crusader', 'Righteous Crusader', 'An Attack makes your next Block card 45% stronger; a Block card makes your next Attack 45% stronger. Your Attacks deal bonus damage equal to 10% of your Block.'], ['sacred_flame', 'Sacred Flame', 'Holy damage also applies Burn equal to 35% of the damage dealt.'],
     ['divine_wrath', 'Divine Wrath', 'Prayer cards give 1 more Devotion. Your Attacks also spend Devotion, for 3 bonus damage per stack. Every 5 Devotion you spend heals you for 10% of your max HP.'], ['equilibrium', 'Equilibrium', 'You cannot gain Block. Your healing is 30% stronger, and healing you do also deals that much Holy damage to an enemy.']],
   Warlock: [['soulbinder', 'Soulbinder', 'Your Shadow damage is 10% higher. 5% of the damage you deal heals every hero in the party, and your Soul Beacon heals 50% more.'], ['blightcaller', 'Blightcaller', 'Dread you apply is increased by 25%.'],
     ['shadow_knight', 'Shadow Knight', 'You get 20% more Strength from gear. Your Physical damage becomes Shadow. Your Shadow Attacks heal you for 5% of the damage they deal.'], ['demonologist', 'Demonologist', 'Your demons stay 1 turn longer.'],
@@ -2034,7 +2034,7 @@ Object.assign(POWERS, {
   codex_purifier: { onCleanse: (cb, p, n) => { const e = cb.foes()[0] || cb.alive()[0]; if (n > 0 && e) cb.powerHit(p, e, 2 * n, 'Purifier', 'Holy', 'Skill'); } },
   codex_righteous_crusader: { flat: (cb, p, d) => d && d.type === 'Attack' ? Math.round((p.block || 0) * 0.1) : 0, cardMult: (cb, p, d, pw) => { if (d.type === 'Attack' && pw.atkUp) { pw.atkUp = false; return 1.45; } return 1; },
     cardPlayed: (cb, p, d, pw) => { if (d.type === 'Attack') pw.defUp = true; else if (d.tags && d.tags.def) pw.atkUp = true; }, defMultFn: (cb, p, pw) => { if (pw.defUp && cb._playing && !cb._playing.isPower && cb._playing.type !== 'Attack') { pw.defUp = false; return 1.45; } return 1; } },
-  codex_sacred_flame: { dealt: (cb, p, h) => { if (h.dtype === 'Holy' && h.lost > 0 && h.e.hp > 0) { const n = Math.max(1, Math.round(h.lost * 0.2)); h.e.burn += n; h.e.burnBy = p.id; } } },
+  codex_sacred_flame: { dealt: (cb, p, h) => { if (h.dtype === 'Holy' && h.lost > 0 && h.e.hp > 0) { const n = Math.max(1, Math.round(h.lost * 0.35)); h.e.burn += n; h.e.burnBy = p.id; } } },
   codex_divine_wrath: { devotionPlus: 1 },
   codex_soulbinder: { beaconX: 1.5, hitMult: (cb, p, e, c) => c.dtype === 'Shadow' ? 1.1 : 1, dealt: (cb, p, h, pw) => { if (!(h.lost > 0)) return; pw.acc = (pw.acc || 0) + h.lost * 0.05; const n = Math.floor(pw.acc); if (n > 0) { pw.acc -= n; for (const a of cb.allies()) cb.heal(a, n, 'Soulbinder', true); } } },
   // (dotDealt: the same 5% party heal from damage-over-time ticks, see Combat.dotHeal)
@@ -2497,7 +2497,7 @@ class Combat {
   }
   // take mana from an enemy: what it holds now, then what it would regenerate for its next turn (its mana can go below 0 until then)
   drainMana(e, n) { if (!e || n <= 0) return 0; const q = this.player, ent = q && q.isPlayer && this.has(q, 'codex_entropy'); if (ent) n = Math.round(n * 1.5); const pool = Math.max(0, e.mana) + (e.isPlayer ? e.regen : this.effRegen(e)); const s = Math.min(n, pool); e.mana -= s;
-    if (ent && s > 0) { e.exposure = (e.exposure || 0) + 2 * s; e.magicVuln = (e.magicVuln || 0) + s; this.say('player', `Entropy: ${e.name} gains ${2 * s} Exposure and ${s} Magic Vulnerability.`); } // Nov 2: per point drained
+    if (ent && s > 0 && q.turn && !q.turn.entropyHit) { q.turn.entropyHit = true; e.exposure = (e.exposure || 0) + 2 * s; e.magicVuln = (e.magicVuln || 0) + s; this.say('player', `Entropy: ${e.name} gains ${2 * s} Exposure and ${s} Magic Vulnerability.`); } // Nov 2: per point drained
     if (!e.isPlayer) this.planEnemy(e, true); return s; }
   pickAlly(p, self) { const pool = this.allies().filter(a => self || a !== p); if (!pool.length) return p; return pool.slice().sort((x, y) => x.hp / x.maxHp - y.hp / y.maxHp)[0]; }
   defFor(a, n) { const was = this.player; this.player = a; const v = this.gainDef(n); this.player = was; return v; }
@@ -6705,8 +6705,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793669477788';
-  const CB_BUILD = '627ea00f79'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793670736210';
+  const CB_BUILD = 'c503879df3'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -7809,6 +7809,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-02', items: [
+      ['Balance', 'Entropy Codex: only your first drain each turn applies Exposure and Magic Vulnerability.'],
+      ['Balance', 'Sacred Flame Codex: Holy damage applies Burn equal to 35% of the damage (was 20%).'],
       ['Feature', 'New Rogue card: Fade Out (Blue, 0 mana): enter Stealth. Exhaust.'],
       ['Feature', 'New Rogue card: Shadow Ambush (Blue Power): when you attack out of Stealth, the target is Stunned and loses its next turn (bosses are Feared instead).'],
       ['Balance', 'Assassinate costs 0 mana (was 20). Its upgrades add 10% more damage per level.'],
@@ -7821,7 +7823,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       ['Change', 'The party frame sits on the right edge, halfway down, so the city map no longer covers it.'],
       ['Balance', 'Divine Wrath Codex: every 5 Devotion you spend heals you for 10% of your max HP.'],
       ['Fix', 'With a two-handed weapon, the off-hand slot shows the weapon instead of looking empty, and off-hand items no longer say they fill an empty slot.'],
-      ['Balance', 'Creeping Doom: your Dread deals 50% more damage (was: Dread ticks twice).'],
+      ['Balance', 'Creeping Doom: your Dread deals 25% more damage (was: Dread ticks twice).'],
       ['Balance', 'Entropy Codex: every point of mana drained applies 2 Exposure (was 3).'],
       ['Balance', 'Entropy Codex: every point of mana drained applies 1 Magic Vulnerability (was 2).'],
       ['Balance', 'Hemorrhage Codex: crits apply Bleed equal to 30% of the damage (was 50%).'],
