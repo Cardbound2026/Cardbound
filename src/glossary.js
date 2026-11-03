@@ -47,7 +47,7 @@
       ['Bleed', 'Takes damage equal to its stacks at the start of its turn (Block absorbs it), then loses 1 stack.'],
       ['Poison', 'Like Bleed, but ignores Block.'],
       ['Burn', 'Like Bleed: damage each turn equal to its stacks, then -1.'],
-      ['Dread', 'Warlock. Like Poison: ignores Block, deals its stacks at the start of the target\'s turn, then loses 2. Scales with Intelligence.'],
+      ['Dread', 'Warlock. Like Poison: ignores Block, deals its stacks at the start of the target\'s turn, then loses 2 stacks or 20%, whichever is more. Scales with Intelligence.'],
       ['Rot', 'Warlock. Each application deals its amount over 4 turns (12 Rot: 3 a turn) and ignores Block; every application keeps its own timer. Scales with Intelligence.'],
       ['Fear', 'The enemy skips its attacks on its next turn. Monsters resist Fear 25% of the time (bosses 50%), and direct damage that lands on a Feared monster has a 75% chance to snap it out (damage over time: 10% per tick). After a Fear or Stun lands, that enemy can\'t be Feared or Stunned for 2 rounds (3 for bosses).'],
       ['Stunned', 'The enemy loses its whole next turn. Bosses are only Feared by it.'],

@@ -75,7 +75,7 @@ function install(K) {
   W('death_coil', 'Death Coil', 'Green', 'Skill', 20, 'enemy', 'Shadow', 'Deal 10 Shadow damage and Fear the target. Heal 6 HP.', (cb, t, p) => { const e = D_(cb, t, 10, 'Death Coil'); if (e && e.hp > 0) cb.fear(e); cb.heal(p, 6, 'Death Coil'); }, { dmg: 10, heal: 6, control: 1 });
   W('curse_of_agony', 'Curse of Agony', 'Green', 'Skill', 10, 'enemy', 'Shadow', 'Curse: apply 30 Rot.', (cb, t) => dot(cb, tgtOf(cb, t), 'rot', 30), { dot: 30, curse: 1 });
   W('creeping_dread', 'Creeping Dread', 'Green', 'Skill', 20, 'all', 'Shadow', 'Apply 4 Dread to all enemies. Breaks Stealth.', (cb) => { for (const e of cb.alive()) dot(cb, e, 'dread', 4); }, { dot: 10, aoe: 1 });
-  W('dread_pulse', 'Dread Pulse', 'Green', 'Skill', 10, 'enemy', 'Shadow', 'Deal Shadow damage equal to the target\'s Dread, plus 4.', (cb, t) => { const e = tgtOf(cb, t); if (e) cb.hit(e, (e.dread || 0) + 4, 'Dread Pulse'); }, { dmg: 4 });
+  W('dread_pulse', 'Dread Pulse', 'Green', 'Skill', 10, 'enemy', 'Shadow', 'Deal Shadow damage equal to half the target\'s Dread, plus 4.', (cb, t) => { const e = tgtOf(cb, t); if (e) cb.hit(e, Math.round((e.dread || 0) * 0.5) + 4, 'Dread Pulse'); }, { dmg: 4 });
   W('wither', 'Wither', 'Green', 'Skill', 10, 'enemy', 'Shadow', 'Apply 4 Dread. If the target already had Dread, apply 4 more.', (cb, t) => { const e = tgtOf(cb, t); if (!e) return; const had = e.dread > 0; dot(cb, e, 'dread', 4); if (had) dot(cb, e, 'dread', 4); }, { dot: 20 });
   W('unstable_rot', 'Unstable Rot', 'Green', 'Skill', 20, 'enemy', 'Shadow', 'Apply 44 Rot.', (cb, t) => dot(cb, tgtOf(cb, t), 'rot', 44), { dot: 44 });
   W('nether_shield', 'Nether Shield', 'Green', 'Skill', 10, 'self', null, 'Gain 14 Absorb.', (cb) => cb.gainDef(14), { def: 14 });
