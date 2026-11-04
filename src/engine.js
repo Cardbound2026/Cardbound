@@ -103,14 +103,14 @@ const POWERS = {
   blood_clock: { dotTicks: { bleed: 2 } },
   crimson_covenant: { dotMult: { bleed: 2 } },
   open_wounds: { vulnX: 2 },
-  follow_through: { cardMult: (cb, p, d) => d.type === 'Attack' && p.turnAttacks === 1 ? 1.3 : 1 },
+  follow_through: { cardMult: (cb, p, d) => d.type === 'Attack' && p.turnAttacks === 1 ? 1.5 : 1 },
   mortal_precision: { critMultX: 1.3 },
   grit: { turnStart: (cb) => cb.gainDef(3) },
   blood_pact: { loseHp: (cb, p, ...a) => { const n = PN(a, 0, 10); p.strCombat += n; cb.say('player', `Blood Pact: +${n} Strength for the fight.`); } },
   iron_will: { drawStatus: (cb, p, ...a) => { cb.gainDef(PN(a, 0, 10)); p.mana += PN(a, 1, 5); cb.say('player', `Iron Will: +${PN(a, 1, 5)} mana.`); } },
-  unstoppable_force: { ignoreBlock: 0.5 },
+  unstoppable_force: { ignoreBlock: 0.3 },
   conditioning: { onPlay: (cb, p) => { p.maxMana += 10; p.regen += 5; } },
-  marathon: { turnStart: (cb, p) => { p.regen += 5; cb.say('player', `Marathon: regeneration rises to ${p.regen}.`); } },
+  marathon: { turnStart: (cb, p) => { p.regen += 3; cb.say('player', `Marathon: regeneration rises to ${p.regen}.`); } },
   momentum: { cardPlayed: (cb, p, d, ...a) => { if (d.type === 'Attack' && p.turnAttacks === 3) { const n = PN(a, 0, 1); cb.say('player', `Momentum: draw ${n}.`); cb.drawCards(p, n); } } },
   blood_ritual: { turnStart: (cb, p, ...a) => { cb.drawCards(p, PN(a, 0, 1)); cb.loseHp(p, 5, 'Blood Ritual'); } },
   reckless_fury: { onPlay: (cb, p) => { p.strCombat += 50; }, turnStart: (cb, p, pw) => { pw.n = (pw.n || 0) + 1; cb.loseHp(p, pw.n, 'Reckless Fury'); } },
@@ -150,10 +150,10 @@ const POWERS = {
   malediction_mirror: { turnStart: (cb, p) => { const t = cb.foes()[0] || cb.alive()[0]; if (!t) return; let moved = 0; for (const k of ['weak', 'vulnerable', 'slow', 'bleed', 'poison', 'burn']) if (p[k] > 0) { t[k] = (t[k] || 0) + p[k]; moved += p[k]; p[k] = 0; } if (moved) cb.say('player', `Malediction Mirror: debuffs move to ${t.name}.`); } },
   // --- Paladin
   consecrated_arms: { dtype: { Physical: 'Holy' } },
-  retribution_aura: { hitBy: (cb, p, e) => { if (e.hp > 0) cb.powerHit(p, e, 3, 'Retribution Aura', 'Holy', 'Skill'); } },
+  retribution_aura: { hitBy: (cb, p, e) => { if (e.hp > 0) cb.powerHit(p, e, 8, 'Retribution Aura', 'Holy', 'Skill'); } },
   crusader_s_zeal: { hitMult: (cb, p, e, c) => c.kind === 'Attack' ? 1.3 : 1 },
-  cleansing_light: { turnStart: (cb, p) => cb.cleanse(p, 1) },
-  purifying_grace: { onCleanse: (cb, p, n) => { if (n) cb.heal(p, 2 * n, 'Purifying Grace'); } },
+  cleansing_light: { turnStart: (cb, p) => { cb.cleanse(p, 1); const e = cb.foes().find(x => cb.debuffKeys(x, true).length); if (!e) return; const k = cb.debuffKeys(e, true).sort((x, y) => e[y] - e[x])[0], n = e[k]; e[k] = 0; if (k === 'rot') e.rotQ = []; cb.say('player', `Cleansing Light strips ${n} ${k} from ${e.name}.`); cb.fire(p, 'onCleanse', n); } }, // Nov 3: also strips the biggest enemy debuff
+  purifying_grace: { onCleanse: (cb, p, n) => { if (!n) return; cb.heal(p, 2 * n, 'Purifying Grace'); const e = cb.foes()[0]; if (e) cb.powerHit(p, e, 3 * n, 'Purifying Grace', 'Holy', 'Skill'); } }, // Nov 3: also 3 Holy damage per stack
   delayed_judgment: { dealt: (cb, p, h, ...a) => { if (h.dtype === 'Holy' && h.lost > 0) cb.later.push({ round: cb.round + 2, src: p.id, e: h.e.id, n: Math.round(h.lost * PN(a, 0, 30) / 100) }); } },
   shield_of_the_crusade: { dealt: (cb, p, h) => { if (h.dtype === 'Physical' && h.lost > 0) cb.gainDef(Math.max(1, Math.round(h.lost * 0.2))); } },
   sacred_momentum: { dealt: (cb, p, h, ...a) => { if (h.dtype === 'Physical' && h.lost > 0) p.nextHolyMult = 1 + PN(a, 0, 25) / 100; } },
@@ -357,7 +357,7 @@ const CUSTOM = {
   corrosive_toxin: { play: (cb, t) => { const e = tgtOf(cb, t); if (!e) return; cb.removeBuffs(e, 1); cb.applyDot(e, 'poison', 4); } },
   grievous_shiv: { play: (cb, t) => { const e = D_(cb, t, 3, 'Grievous Shiv'); if (e) e.grievous = 2; } },
   tourniquet: { play: (cb, t, p) => { const n = p.bleed; p.bleed = 0; if (n) cb.gainDef(2 * n); } },
-  bankrupt: { play: (cb, t) => { const e = tgtOf(cb, t); D_(cb, e, 5 * (e ? e.exhaustedTotal || 0 : 0), 'Bankrupt'); } },
+  bankrupt: { play: (cb, t) => { const e = tgtOf(cb, t); D_(cb, e, 3 * (e ? e.exhaustedTotal || 0 : 0), 'Bankrupt'); } },
   misdirection: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (e) e.drawLess = (e.drawLess || 0) + 1; p.drawPile.splice(Math.floor(cb.rng() * (p.drawPile.length + 1)), 0, { uid: 'c' + (cb._uid++), key: 'dazed' }); } },
   cut_the_strings: { play: (cb, t, p) => { const n = Math.min(3, Math.floor(cb.spendAll(p) / 20)); const e = tgtOf(cb, t); if (e) { e.drawLess = (e.drawLess || 0) + n; say(cb, `${e.name} draws ${n} fewer next turn.`); } } },
   pick_the_lock: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const had = e.block > 0; e.block = Math.max(0, e.block - 12); if (!had) cb.drawCards(p, 1); } },
@@ -376,11 +376,11 @@ const CUSTOM = {
   arcane_cascade: { play: (cb, t, p) => { p.turn.cascade = true; say(cb, 'Every card you play this turn draws a card.'); } },
   open_the_floodgates: { play: (cb, t, p) => { p.turn.freeAll = true; p.turn.noDraw = true; say(cb, 'Everything is free this turn. No more draws.'); } },
   purge_the_static: { play: (cb, t, p) => { const n = cb.exhaustStatus(p, 10); for (let i = 0; i < n && !cb.over; i++) D_(cb, t, 10, 'Purge the Static'); } },
-  fan_the_flames: { play: (cb, t) => { const e = tgtOf(cb, t); if (e) { e.burn = Math.round(e.burn * 1.5); say(cb, `${e.name}'s Burn rises to ${e.burn}.`); } } },
+  fan_the_flames: { play: (cb, t) => { const e = tgtOf(cb, t); if (e) { e.burn = Math.round(e.burn * 1.25); say(cb, `${e.name}'s Burn rises to ${e.burn}.`); } } },
   cauterized_ward: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const n = e.burn; e.burn = 0; if (n) cb.gainDef(n); } },
-  ashen_drain: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const b = e.burn; e.burn = 0; cb.drainMana(e, b); cb.eStatus(e, 'fatigue', Math.floor(b / 10), 'discard'); say(cb, `${e.name} loses ${b} mana.`); } },
+  ashen_drain: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const b = e.burn; e.burn = 0; cb.drainMana(e, Math.round(b / 2)); cb.eStatus(e, 'fatigue', Math.floor(b / 20), 'discard'); say(cb, `${e.name} loses ${Math.round(b / 2)} mana.`); } }, // Nov 3: half the Burn, 1 Fatigue per 20
   stored_impact: { play: (cb, t, p) => { p.until.storing = true; say(cb, 'Damage you take until your next turn comes back as Barrier.'); } },
-  mirror_barrier: { play: (cb, t, p) => { p.block *= 2; say(cb, `Barrier doubled to ${p.block}.`); } },
+  mirror_barrier: { play: (cb, t, p) => { p.block = Math.round(p.block * 1.5); say(cb, `Barrier raised by half, to ${p.block}.`); } },
   barrier_burst: { play: (cb, t, p) => blockToDmg(cb, t, p, 1, 'Barrier Burst') },
   shared_refuge: { play: (cb, t, p) => { const n = p.dmgRound; if (!n) return say(cb, 'You have not taken damage this round.'); for (const a of cb.allies()) cb.defFor(a, n); } },
   mana_scorch: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const x = Math.min(p.mana, e.maxMana); p.mana -= x; const s = cb.drainMana(e, x); say(cb, `${e.name} loses ${s} mana.`); } },
@@ -445,7 +445,7 @@ const CUSTOM = {
   arcane_brand: { play: (cb, t) => { const e = D_(cb, t, 4, 'Arcane Brand'); if (e) { e.unwarded += 10; say(cb, `${e.name} gains 10 Unwarded.`); } } },
   shatter_wards: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (e) { e.unwarded += 20; say(cb, `${e.name} gains 20 Unwarded.`); } cb.drawCards(p, 1); } },
   // ===== Paladin
-  divine_detonation: { play: (cb, t, p) => { const n = Math.round(p.block * 0.2); p.block = 0; DA(cb, n, 'Divine Detonation'); } },
+  divine_detonation: { play: (cb, t, p) => { const n = Math.round(p.block * 0.3); p.block = 0; DA(cb, n, 'Divine Detonation'); } },
   martyr_s_reprisal: { play: (cb, t, p) => { const n = Math.round(p.dmgRound * 0.3); if (!n) return say(cb, 'You have not taken damage this round.'); cb.heal(p, n, "Martyr's Reprisal"); DA(cb, n, "Martyr's Reprisal"); } },
   mass_condemnation: { play: (cb, t) => { const e = tgtOf(cb, t); if (!e) return; for (const o of cb.alive()) if (o !== e) for (const k of cb.debuffKeys(e, true)) o[k] = (o[k] || 0) + e[k]; say(cb, `${e.name}'s debuffs spread to every enemy.`); } },
   benediction: { play: (cb, t, p) => { for (const a of cb.allies()) if (a !== p) { a.strTurn += p.strTurn; a.strCombat += p.strCombat; a.block += Math.round(p.block / 2); } say(cb, 'Your blessings spread to the party.'); } },
@@ -470,8 +470,8 @@ const CUSTOM = {
   vow_of_penance: { play: (cb, t, p) => { const e = tgtOf(cb, t); D_(cb, e, 6 + (e && p.hp < e.hp ? 6 : 0), 'Vow of Penance'); } },
   fervent_prayer: { play: (cb, t, p) => { devote(cb, p, 5); cb.gainDef(6); } },
   purging_flame: { play: (cb, t) => { const e = tgtOf(cb, t); if (!e) return; const n = e.burn; e.burn = 0; D_(cb, e, 2 * n, 'Purging Flame'); } },
-  condemning_mark: { play: (cb, t) => { const e = tgtOf(cb, t); if (e) condemn(cb, e, 12); } },
-  purge_the_wicked: { play: (cb, t) => { const e = tgtOf(cb, t); if (!e) return; let n = 0; for (const k of cb.debuffKeys(e, true)) { n += e[k]; e[k] = 0; } D_(cb, e, 2 * n, 'Purge the Wicked'); } },
+  condemning_mark: { play: (cb, t) => { const e = tgtOf(cb, t); if (e) condemn(cb, e, 18); } },
+  purge_the_wicked: { play: (cb, t) => { const e = tgtOf(cb, t); if (!e) return; let n = 0; for (const k of cb.debuffKeys(e, true)) { n += e[k]; e[k] = 0; } D_(cb, e, 3 * n, 'Purge the Wicked'); } },
   cleanse: { play: (cb, t, p) => { const a = cb.pickAlly(p, true); cb.cleanseAll(a, false); } },
   stanch_the_wound: { play: (cb, t, p) => { const a = cb.allies().slice().sort((x, y) => y.bleed - x.bleed)[0] || p; const n = a.bleed; a.bleed = 0; cb.heal(a, n, 'Stanch the Wound'); } },
   blessing_of_kings: { play: (cb, t, p) => CUSTOM.rally.play(cb, t, p) },
@@ -495,7 +495,7 @@ const CUSTOM = {
   final_verdict: { devotionPer: 4, play: (cb, t) => D_(cb, t, 12, 'Final Verdict') },
   divine_intervention: { play: (cb, t, p) => { const a = cb.pickAlly(p, true); a.until.noDie = true; say(cb, `${a.name} cannot drop below 1 HP until ${p.name}'s next turn.`); if (a !== p) cb.timed(p, 'diLink', 1, { end: () => { a.until.noDie = false; } }); } },
   mass_dispel: { play: (cb) => { for (const a of cb.allies()) cb.cleanseAll(a, false); } },
-  repentance: { play: (cb, t) => { const e = tgtOf(cb, t); if (!e) return; cb.eDiscard(e, 1); condemn(cb, e, 10); } },
+  repentance: { play: (cb, t) => { const e = tgtOf(cb, t); if (!e) return; cb.eDiscard(e, 1); condemn(cb, e, 15); } },
   prism_of_faith: { play: (cb, t, p) => { const el = ['Fire', 'Frost', 'Nature', 'Arcane', 'Shadow'].sort((a, b) => (p.resist[b] || 0) - (p.resist[a] || 0))[0]; p.until.convert = el; say(cb, `Damage you take until your next turn is ${el}.`); } },
   hand_of_retribution: { play: (cb, t, p) => { p.until.reflect = true; } },
   reward_of_the_righteous: { play: (cb, t, p) => { p.turn.killMana = 30; } },
@@ -547,17 +547,17 @@ Object.assign(POWERS, {
 const CODEXES = {
   Warrior: [['bulwark', 'Bulwark', 'Needs a one-handed weapon and a shield. Block you gain is increased by 25%, and only 20% of it fades between turns (not half). When you are hit, the attacker takes Thorns damage equal to 25% of your Block (Strength boosts it like an Attack).'], ['riposte', 'Riposte', 'Needs a two-handed weapon. Only 20% of your Parry fades between turns (not half). When an attack is fully stopped by your Parry, deal 75% of the damage it would have done back to the attacker. Strength boosts it like an Attack.'],
     ['bloodbound', 'Bloodbound', 'Bleed you apply to enemies is also applied to you. Each Attack heals you for 10% of your stored Blood Debt (and spends it).'], ['colossus', 'Colossus', 'Needs a two-handed weapon. Every 30 mana you spend on Attacks adds a Stun to the target\'s draw pile.'],
-    ['sunderer', 'Sunderer', 'Your Attacks also apply 5 Vulnerable, and you deal 10% more damage to Vulnerable targets. Vulnerable is 50% more effective for you (up to +75% damage). Vulnerable on enemies wears off 10% a turn instead of half.'], ['hemorrhage', 'Hemorrhage', '+10% Crit Chance. Your crits apply Bleed equal to 30% of the damage they deal.']],
+    ['sunderer', 'Sunderer', 'Your Attacks also apply 5 Vulnerable, and you deal 20% more damage to Vulnerable targets. Vulnerable is 50% more effective for you (up to +75% damage). Vulnerable on enemies wears off 10% a turn instead of half.'], ['hemorrhage', 'Hemorrhage', '+10% Crit Chance. Your crits apply Bleed equal to 30% of the damage they deal.']],
   Rogue: [['nightstalker', 'Nightstalker', 'Needs a dagger in your main hand. Attacks you play while in Stealth deal 50% more damage, have +25% crit chance and +50% crit damage.'], ['venomancer', 'Venomancer', 'Needs a weapon in each hand. Poison you apply is increased by 2.'],
     ['bloodletter', 'Bloodletter', 'Needs a weapon in each hand. Bleed you apply is increased by 50%.'], ['ninja', 'Ninja', 'Shurikens deal 4 more damage. Start each turn with a Shuriken in hand.'],
     ['saboteur', 'Saboteur', 'The first card you make an enemy discard each round also adds a Dazed to its discard pile.'], ['phantom', 'Phantom', 'Needs a weapon in each hand. Dodge you gain is increased by 20%. Every time you Dodge 20 damage, your next Attack deals 35% more damage. Stacks.']],
   Mage: [['heart_of_winter', 'Heart of Winter', 'Frost Skills that cost 20 or more deal 30% more damage. Frost damage to Chilled targets is 25% higher and has a 10% chance to Freeze them (they lose their next turn).'], ['spellstorm', 'Spellstorm', 'Each Arcane Skill you play makes your next card cost 5 less; every third one draws a card (at most 3 draws a turn).'],
     ['conflagration', 'Conflagration', 'Applying Burn to a target that is already Burning also deals that much Fire damage at once.'], ['barrier_savant', 'Barrier Savant', 'Needs a staff. Only 20% of your Barrier fades between turns (not half). Barrier you gain is increased by 25%, and cards that spend Barrier hit 25% harder.'],
-    ['entropy', 'Entropy', 'Mana you drain or burn from enemies is increased by 20%. The first drain each turn also applies 3 Exposure and 5 Magic Vulnerability.'], ['archmage', 'Archmage', 'Skills of a different element from your previous two (this turn or earlier) deal 50% more damage.']],
-  Paladin: [['bastion_of_faith', 'Bastion of Faith', 'Needs a one-handed weapon and a shield. Your damage becomes Holy and is 10% higher, and every damaging card also gives 6 Block.'], ['purifier', 'Purifier', 'Removing debuffs (from yourself or an enemy) deals 2 Holy damage per stack removed to an enemy.'],
+    ['entropy', 'Entropy', 'Mana you drain or burn from enemies is increased by 20%. The first drain each turn also applies 3 Exposure and 5 Magic Vulnerability.'], ['archmage', 'Archmage', 'Skills of a different element from your previous two (this turn or earlier) deal 70% more damage.']],
+  Paladin: [['bastion_of_faith', 'Bastion of Faith', 'Needs a one-handed weapon and a shield. Your damage becomes Holy and is 25% higher, and every damaging card also gives 8 Block.'], ['purifier', 'Purifier', 'Removing debuffs (from yourself or an enemy) deals 4 Holy damage per stack removed to an enemy.'],
     ['righteous_crusader', 'Righteous Crusader', 'An Attack makes your next Block card 45% stronger; a Block card makes your next Attack 45% stronger. Your Attacks deal bonus damage equal to 10% of your Block.'], ['sacred_flame', 'Sacred Flame', 'Holy damage also applies Burn equal to 20% of the damage dealt.'],
     ['divine_wrath', 'Divine Wrath', 'Prayer cards give 1 more Devotion. Your Attacks also spend Devotion, for 3 bonus damage per stack. Every 5 Devotion you spend heals you for 10% of your max HP.'], ['equilibrium', 'Equilibrium', 'You cannot gain Block. Your healing is 15% stronger, and healing you do also deals that much Holy damage to an enemy.']],
-  Warlock: [['soulbinder', 'Soulbinder', 'Your Shadow damage is 10% higher. 5% of the damage you deal heals every hero in the party, and your Soul Beacon heals 50% more.'], ['blightcaller', 'Blightcaller', 'Dread you apply is increased by 15%.'],
+  Warlock: [['soulbinder', 'Soulbinder', 'Your Shadow damage is 20% higher. 5% of the damage you deal heals every hero in the party, and your Soul Beacon heals 50% more.'], ['blightcaller', 'Blightcaller', 'Dread you apply is increased by 15%.'],
     ['shadow_knight', 'Shadow Knight', 'You get 20% more Strength from gear. Your Physical damage becomes Shadow. Your Shadow Attacks heal you for 5% of the damage they deal.'], ['demonologist', 'Demonologist', 'Your demons stay 1 turn longer.'],
     ['bloodmancer', 'Bloodmancer', 'Physical Skills deal 20% more damage. Your cards cost HP instead of mana (1 HP per 2 mana, up to 15 HP a turn). At the start of your turn your mana turns into healing (1 HP per 3 mana).'], ['umbral_ruin', 'Umbral Ruin', '+10% crit chance. 30% of the damage your crits deal is applied again as Rot over 3 turns.']],
 };
@@ -593,7 +593,7 @@ Object.assign(POWERS, {
   codex_bloodbound: { applyDot: (cb, p, e, key, v) => { if (key === 'bleed' && !e.isPlayer) { p.bleed += v; cb.say('player', `Bloodbound: ${p.name} also gains ${v} Bleed.`); } },
     cardPlayed: (cb, p, d) => { if (d.type === 'Attack' && p.bloodDebt > 0) { const n = Math.max(1, Math.round(p.bloodDebt * 0.1)); p.bloodDebt -= n; cb.heal(p, n, 'Bloodbound'); } } },
   codex_colossus: { cardPlayed: (cb, p, d, pw) => { if (d.type !== 'Attack') return; pw.spent = (pw.spent || 0) + (cb._paid || 0); while (pw.spent >= 30) { pw.spent -= 30; const e = cb._lastTarget && cb._lastTarget.hp > 0 ? cb._lastTarget : cb.alive()[0]; if (e) cb.eStatus(e, 'stun', 1); } } },
-  codex_sunderer: { vulnX: 1.5, hitMult: (cb, p, e) => e && e.vulnerable > 0 ? 1.1 : 1, dealt: (cb, p, h) => { if (h.kind === 'Attack' && h.e.hp > 0) h.e.vulnerable += 5; } }, // Nov 3: 3 -> 5 Vulnerable, +10% vs Vulnerable
+  codex_sunderer: { vulnX: 1.5, hitMult: (cb, p, e) => e && e.vulnerable > 0 ? 1.2 : 1, dealt: (cb, p, h) => { if (h.kind === 'Attack' && h.e.hp > 0) h.e.vulnerable += 5; } }, // Nov 3: 3 -> 5 Vulnerable, +10% vs Vulnerable
   codex_hemorrhage: { crit: () => 10, dealt: (cb, p, h) => { if (h.crit && h.e.hp > 0 && h.lost + h.absorbed > 0) { const n = Math.max(1, Math.round((h.lost + h.absorbed) * 0.3)); h.e.bleed += n; h.e.bleedBy = p.id; cb.say('crit', `Hemorrhage: ${h.e.name} gains ${n} Bleed.`); } } },
   codex_nightstalker: { cardMult: (cb, p, d) => d.type === 'Attack' && p.stealth ? 1.5 : 1, crit: (cb, p, d) => d && d.type === 'Attack' && p.stealth ? 25 : 0, critMultX: (cb, p) => p.stealth ? 1.5 : 1 },
   codex_venomancer: { dotPlus: { poison: 2 } },
@@ -607,17 +607,17 @@ Object.assign(POWERS, {
   codex_conflagration: { applyDot: (cb, p, e, key, v, before) => { if (key === 'burn' && before > 0 && e.hp > 0) cb.powerHit(p, e, v, 'Conflagration', 'Fire', 'Skill'); } },
   codex_barrier_savant: { defMult: 1.25, spendMult: 1.25 },
   codex_entropy: { drainMult: 1.2 }, // Nov 3: +50% -> +20%
-  codex_archmage: { cardMult: (cb, p, d) => d.type === 'Skill' && d.tags.dmg && d.dtype && (p.lastElems || []).length && !(p.lastElems || []).includes(d.dtype) ? 1.5 : 1,
+  codex_archmage: { cardMult: (cb, p, d) => d.type === 'Skill' && d.tags.dmg && d.dtype && (p.lastElems || []).length && !(p.lastElems || []).includes(d.dtype) ? 1.7 : 1,
     cardPlayed: (cb, p, d) => { if (d.type === 'Skill' && d.tags.dmg && d.dtype) p.lastElems = [d.dtype, ...(p.lastElems || [])].slice(0, 2); } },
-  codex_bastion_of_faith: { dtype: { Physical: 'Holy' }, hitMult: () => 1.1, cardPlayed: (cb, p, d) => { if (d.tags && d.tags.dmg) cb.gainDef(6); } }, // Nov 3: 4 -> 6 Block, +10% damage
+  codex_bastion_of_faith: { dtype: { Physical: 'Holy' }, hitMult: () => 1.25, cardPlayed: (cb, p, d) => { if (d.tags && d.tags.dmg) cb.gainDef(8); } }, // Nov 3: 4 -> 8 Block, +10% damage
   codex_bastion_of_faith_off: {},
   codex_off: {}, // a codex without the weapons it needs
-  codex_purifier: { onCleanse: (cb, p, n) => { const e = cb.foes()[0] || cb.alive()[0]; if (n > 0 && e) cb.powerHit(p, e, 2 * n, 'Purifier', 'Holy', 'Skill'); } },
+  codex_purifier: { onCleanse: (cb, p, n) => { const e = cb.foes()[0] || cb.alive()[0]; if (n > 0 && e) cb.powerHit(p, e, 4 * n, 'Purifier', 'Holy', 'Skill'); } },
   codex_righteous_crusader: { flat: (cb, p, d) => d && d.type === 'Attack' ? Math.round((p.block || 0) * 0.1) : 0, cardMult: (cb, p, d, pw) => { if (d.type === 'Attack' && pw.atkUp) { pw.atkUp = false; return 1.45; } return 1; },
     cardPlayed: (cb, p, d, pw) => { if (d.type === 'Attack') pw.defUp = true; else if (d.tags && d.tags.def) pw.atkUp = true; }, defMultFn: (cb, p, pw) => { if (pw.defUp && cb._playing && !cb._playing.isPower && cb._playing.type !== 'Attack') { pw.defUp = false; return 1.45; } return 1; } },
   codex_sacred_flame: { dealt: (cb, p, h) => { if (h.dtype === 'Holy' && h.lost > 0 && h.e.hp > 0) { const n = Math.max(1, Math.round(h.lost * 0.2)); h.e.burn += n; h.e.burnBy = p.id; } } },
   codex_divine_wrath: { devotionPlus: 1 },
-  codex_soulbinder: { beaconX: 1.5, hitMult: (cb, p, e, c) => c.dtype === 'Shadow' ? 1.1 : 1, dealt: (cb, p, h, pw) => { if (!(h.lost > 0)) return; pw.acc = (pw.acc || 0) + h.lost * 0.05; const n = Math.floor(pw.acc); if (n > 0) { pw.acc -= n; for (const a of cb.allies()) cb.heal(a, n, 'Soulbinder', true); } } },
+  codex_soulbinder: { beaconX: 1.5, hitMult: (cb, p, e, c) => c.dtype === 'Shadow' ? 1.2 : 1, dealt: (cb, p, h, pw) => { if (!(h.lost > 0)) return; pw.acc = (pw.acc || 0) + h.lost * 0.05; const n = Math.floor(pw.acc); if (n > 0) { pw.acc -= n; for (const a of cb.allies()) cb.heal(a, n, 'Soulbinder', true); } } },
   // (dotDealt: the same 5% party heal from damage-over-time ticks, see Combat.dotHeal)
   codex_blightcaller: { dotMult: { dread: 1.15 } },
   codex_shadow_knight: { dtype: { Physical: 'Shadow' }, dealt: (cb, p, h) => { if (h.kind === 'Attack' && h.dtype === 'Shadow' && h.lost > 0) { const n = Math.round(h.lost * 0.05); if (n > 0) cb.heal(p, n, 'Lifesteal', true); } } },
@@ -1452,7 +1452,9 @@ class Combat {
       const src = this.actorById(a[key + 'By']), ticks = src && src.isPlayer ? this.pwKey(src, 'dotTicks', key) : 1;
       const immune = a.isPlayer && ((key === 'bleed' && this.hasTimed(a, 'noBleed')) || (a.until.immuneTypes && a.until.immuneTypes.includes(key === 'burn' ? 'Fire' : key === 'poison' ? 'Poison' : key === 'dread' ? 'Shadow' : 'Bleed')) || a.until.immune);
       const blockable = key === 'poison' && a.isPlayer && this.hasTimed(a, 'poisonBlock');
-      for (let k = 0; k < ticks; k++) if (a[key] > 0 && a.hp > 0 && !this.over) { if (immune) this.say('player', `${a.name} ignores the ${label}.`); else { const dc = this.dotCritRoll(src, key, key === 'dread' && src && src.isPlayer ? Math.round(a[key] * this.pwProd(src, 'dreadTickX')) : a[key]); this.applyHit(src || (a.isPlayer ? null : this.player), a, dc.n, { isDot: true, label: label + (k ? ' (again)' : '') + (dc.crit ? ' (crit!)' : ''), ignoreBlock: ignoresBlock && !blockable }); } a[key] = Math.max(0, a[key] - (key === 'dread' ? Math.max(2, Math.ceil(a[key] * 0.2)) : 1)); } // Nov 3: Dread fades 2 stacks or 20% a turn, whichever is more
+      for (let k = 0; k < ticks; k++) if (a[key] > 0 && a.hp > 0 && !this.over) { if (immune) this.say('player', `${a.name} ignores the ${label}.`); else { const dc = this.dotCritRoll(src, key, key === 'dread' && src && src.isPlayer ? Math.round(a[key] * this.pwProd(src, 'dreadTickX')) : a[key]); this.applyHit(src || (a.isPlayer ? null : this.player), a, dc.n, { isDot: true, label: label + (k ? ' (again)' : '') + (dc.crit ? ' (crit!)' : ''), ignoreBlock: ignoresBlock && !blockable }); } if (key === 'burn') a[key] = Math.max(0, a[key] - 1); }
+      // Nov 3: Bleed, Poison and Dread lose 10% of their stacks (at least 1) once a turn, after ticking, so they can't stack without limit
+      if (key !== 'burn' && a[key] > 0) a[key] = Math.max(0, a[key] - Math.max(1, Math.ceil(a[key] * 0.1)));
     }
     if (a.rotQ && a.rotQ.length && a.hp > 0 && !this.over) { // Rot: every application deals its share this turn
       let n = 0; for (const r of a.rotQ) { const t = Math.round(r.left / r.turns); n += t; r.left -= t; r.turns--; }
@@ -1500,7 +1502,7 @@ class Combat {
   applyDot(e, key, n) {
     if (!e || e.hp <= 0) return;
     const q = this.player, strMult = (key === 'poison' || key === 'bleed') && q.isPlayer ? 1 + (q.strength + q.strTurn + q.strCombat) / 100 : (key === 'dread' || key === 'rot') && q.isPlayer ? 1 + (q.intelligence + (q.intTurn || 0)) / 100 : 1; // Nov 1: Poison and Bleed scale with Strength (50 Strength: 10 Bleed becomes 15); the Warlock's Dread and Rot with Intelligence
-    const v = Math.round(n * strMult * (key === 'dread' ? 0.9 : 1) * this.pwKey(this.player, 'dotMult', key) * (key === 'bleed' && this.player.bleedX ? this.player.bleedX : 1)) + this.pwKey(this.player, 'dotPlus', key, 'sum');
+    const v = Math.round(n * strMult * (key === 'dread' ? 0.7 : 1) * this.pwKey(this.player, 'dotMult', key) * (key === 'bleed' && this.player.bleedX ? this.player.bleedX : 1)) + this.pwKey(this.player, 'dotPlus', key, 'sum');
     if (key === 'rot') { this.fxPush({ t: 'apply', d: e.id, key: 'rot' }); const before = e.rot || 0, w = Math.round(v * this.rkm('rot')); this.addRot(e, w, 4, this.player); if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, w, before); this.say('player', `${e.name} gains ${w} Rot over 4 turns (Rot ${e.rot}).`); return; }
     const before = e[key] || 0; e[key] = before + v; e[key + 'By'] = this.player.id; this.fxPush({ t: 'apply', d: e.id, key });
     if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, v, before);
@@ -2441,6 +2443,16 @@ const CARD_FLAT = { shield_slam: 6, shield_bash: 3, crushing_bastion: 10, armor_
   pilfer: 3, kick_while_down: 3, lighten_their_purse: 3, cut_purse: 3 };
 const HEAL_FLAT = { healing_light: 5, overflowing_light: 4 };
 const TEXT_FIX = {
+"purifying_grace": "Cleansing a debuff heals you for 2 HP and deals 3 Holy damage to an enemy per stack removed.",
+"cleansing_light": "At the start of your turn, cleanse one debuff from yourself and strip the biggest debuff from an enemy.",
+"dread_touch": "Deal 4 Shadow damage and apply 5 Dread. (Dread ignores Absorb and Block, deals its stacks each turn, then loses 10%.)",
+"retribution_aura": "Hits for 8 holy damage to all enemies that hit you.",
+"divine_detonation": "Expend your Block and Barrier, dealing Holy damage equal to 30% of the total to all enemies.",
+"wither": "Apply 4 Dread. If the target already had Dread, apply 3 more.",
+"fan_the_flames": "Increases the amount of burn on the target by 25%.",
+"ashen_drain": "Exhaust the Burn on the target, destroy half that much of its mana, and add 1 Fatigue to its discard pile per 20 Burn.",
+"marathon": "At the start of each turn, your mana regeneration increases by 3 for the rest of combat.",
+"mirror_barrier": "Increase your current Barrier by 50%.",
 "void_lance": "Deal 10 Arcane damage, plus 1 for every 3 mana the target is missing from its maximum.",
 "aegis_of_light": "Holy damage you deal also gives you Block equal to 10% of it.",
 "shadow_dance": "Enter Stealth. Your next Attack doesn't break it.",
@@ -2514,7 +2526,9 @@ function retune(key, ti, nv) { const u = UPG[key], d = C[key]; if (!u || !u.t ||
  ['righteous_blow', 0, 10], ['righteous_blow', 1, 10], ['sword_and_board', 0, 9], ['shield_of_righteousness', 0, 60], ['divine_storm', 0, 14], // Bastion of Faith
  ['judgment_hammer', 0, 26], ['guarded_advance', 0, 9], ['raise_shield', 0, 12], ['crusader_strike', 0, 14], // Righteous Crusader
  ['searing_light', 0, 7], ['searing_light', 1, 4], ['holy_fire', 0, 8], ['condemn', 0, 5], // Purifier
- ['sanctuary', 0, 20]].forEach(([k, i, n]) => retune(k, i, n)); // Equilibrium capstone nerf
+ ['sanctuary', 0, 20], // Equilibrium capstone nerf
+ // Nov 3 mega sim: deck fixes
+ ['wither', 0, 3], ['dread_touch', 1, 4], ['lingering_dread', 0, 6], ['creeping_dread', 0, 3], ['nightfall_wl', 0, 1], ['follow_through', 0, 50], ['hold_the_line', 0, 16], ['unstoppable_force', 0, 30], ['bankrupt', 0, 3], ['condemning_mark', 0, 18], ['mark_of_guilt', 0, 6], ['repentance', 1, 15], ['purge_the_wicked', 0, 3]].forEach(([k, i, n]) => retune(k, i, n));
 for (const [k, f] of Object.entries(CARD_FLAT)) if (C[k]) C[k].text += ` +${f} damage${/ times\./.test(C[k].text) ? ' per hit' : C[k].target === 'all' ? ' to each enemy' : ''} (flat).`;
 for (const [k, f] of Object.entries(HEAL_FLAT)) if (C[k]) C[k].text += ` +${f} healing (flat).`;
 if (C.pilfer) C.pilfer.cost = 20; // Nov 2

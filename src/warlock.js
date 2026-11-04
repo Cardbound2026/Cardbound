@@ -42,7 +42,7 @@ function install(K) {
   // ================= White =================
   W('shadow_bolt', 'Shadow Bolt', 'White', 'Skill', 10, 'enemy', 'Shadow', 'Deal 9 Shadow damage.', (cb, t) => D_(cb, t, 9, 'Shadow Bolt'), { dmg: 9 });
   W('dark_ward', 'Dark Ward', 'White', 'Skill', 10, 'self', null, 'Gain 10 Absorb.', (cb) => cb.gainDef(10), { def: 10 });
-  W('dread_touch', 'Dread Touch', 'White', 'Skill', 10, 'enemy', 'Shadow', 'Deal 4 Shadow damage and apply 5 Dread. (Dread ignores Absorb and Block, deals its stacks each turn, then loses 1.)', (cb, t) => { const e = D_(cb, t, 4, 'Dread Touch'); dot(cb, e, 'dread', 5); }, { dmg: 4, dot: 15 });
+  W('dread_touch', 'Dread Touch', 'White', 'Skill', 10, 'enemy', 'Shadow', 'Deal 4 Shadow damage and apply 5 Dread. (Dread ignores Absorb and Block, deals its stacks each turn, then loses 1.)', (cb, t) => { const e = D_(cb, t, 4, 'Dread Touch'); dot(cb, e, 'dread', 4); }, { dmg: 4, dot: 15 });
   W('rotting_grasp', 'Rotting Grasp', 'White', 'Skill', 10, 'enemy', 'Shadow', 'Apply 21 Rot. (Rot deals its amount over 4 turns and ignores Block.)', (cb, t) => dot(cb, tgtOf(cb, t), 'rot', 21), { dot: 21 });
   W('siphon_soul', 'Siphon Soul', 'White', 'Skill', 10, 'enemy', 'Shadow', 'Deal 6 Shadow damage. Heal 4 HP.', (cb, t, p) => { D_(cb, t, 6, 'Siphon Soul'); cb.heal(p, 4, 'Siphon Soul'); }, { dmg: 6, heal: 4 });
   W('nether_bolt', 'Nether Bolt', 'White', 'Skill', 10, 'enemy', 'Shadow', 'Deal 6 Shadow damage. Gain 5 Absorb.', (cb, t) => { D_(cb, t, 6, 'Nether Bolt'); cb.gainDef(5); }, { dmg: 6, def: 5 });
@@ -61,7 +61,7 @@ function install(K) {
   W('sap_mana', 'Sap Mana', 'White', 'Skill', 10, 'enemy', 'Shadow', 'Deal 5 Shadow damage. Drain 8 mana from the target and gain it.', (cb, t, p) => { const e = D_(cb, t, 5, 'Sap Mana'); if (e && e.hp > 0) { const s = cb.drainMana(e, 8); p.mana += s; say(cb, `Drained ${s} mana.`); } }, { dmg: 5 });
   W('umbral_spike', 'Umbral Spike', 'White', 'Skill', 10, 'enemy', 'Shadow', 'Deal 8 Shadow damage with +15% crit chance. If it crits, draw 1 card.', (cb, t, p) => { p.turn.critPlus = (p.turn.critPlus || 0) + 15; D_(cb, t, 8, 'Umbral Spike'); p.turn.critPlus -= 15; if (cb._lastCrit) cb.drawCards(p, 1); }, { dmg: 8 });
   W('shadow_lash', 'Shadow Lash', 'White', 'Attack', 10, 'enemy', 'Shadow', 'Deal 9 Shadow damage. (A Shadow Attack: it scales with Strength.)', (cb, t) => D_(cb, t, 9, 'Shadow Lash'), { dmg: 9 });
-  W('lingering_dread', 'Lingering Dread', 'White', 'Skill', 10, 'enemy', 'Shadow', 'Apply 8 Dread.', (cb, t) => dot(cb, tgtOf(cb, t), 'dread', 8), { dot: 21 });
+  W('lingering_dread', 'Lingering Dread', 'White', 'Skill', 10, 'enemy', 'Shadow', 'Apply 8 Dread.', (cb, t) => dot(cb, tgtOf(cb, t), 'dread', 6), { dot: 21 });
   W('dark_bargain', 'Dark Bargain', 'White', 'Skill', 10, 'self', null, 'Gain 7 Absorb. Draw 1 card.', (cb, t, p) => { cb.gainDef(7); cb.drawCards(p, 1); }, { def: 7, draw: 1 });
   W('soul_spark', 'Soul Spark', 'White', 'Skill', 0, 'enemy', 'Shadow', 'Deal 4 Shadow damage. Exhaust.', (cb, t) => D_(cb, t, 4, 'Soul Spark'), { dmg: 4 }, { exhaust: true });
 
@@ -74,9 +74,9 @@ function install(K) {
   W('terrify', 'Terrify', 'Green', 'Skill', 20, 'enemy', 'Shadow', 'Fear the target: it skips its attacks on its next turn. (An enemy can\'t be Feared or Stunned again for 2 rounds.)', (cb, t) => cb.fear(tgtOf(cb, t)), { control: 1 });
   W('death_coil', 'Death Coil', 'Green', 'Skill', 20, 'enemy', 'Shadow', 'Deal 10 Shadow damage and Fear the target. Heal 6 HP.', (cb, t, p) => { const e = D_(cb, t, 10, 'Death Coil'); if (e && e.hp > 0) cb.fear(e); cb.heal(p, 6, 'Death Coil'); }, { dmg: 10, heal: 6, control: 1 });
   W('curse_of_agony', 'Curse of Agony', 'Green', 'Skill', 10, 'enemy', 'Shadow', 'Curse: apply 30 Rot.', (cb, t) => dot(cb, tgtOf(cb, t), 'rot', 30), { dot: 30, curse: 1 });
-  W('creeping_dread', 'Creeping Dread', 'Green', 'Skill', 20, 'all', 'Shadow', 'Apply 4 Dread to all enemies. Breaks Stealth.', (cb) => { for (const e of cb.alive()) dot(cb, e, 'dread', 4); }, { dot: 10, aoe: 1 });
+  W('creeping_dread', 'Creeping Dread', 'Green', 'Skill', 20, 'all', 'Shadow', 'Apply 4 Dread to all enemies. Breaks Stealth.', (cb) => { for (const e of cb.alive()) dot(cb, e, 'dread', 3); }, { dot: 10, aoe: 1 });
   W('dread_pulse', 'Dread Pulse', 'Green', 'Skill', 10, 'enemy', 'Shadow', 'Deal Shadow damage equal to half the target\'s Dread, plus 4.', (cb, t) => { const e = tgtOf(cb, t); if (e) cb.hit(e, Math.round((e.dread || 0) * 0.5) + 4, 'Dread Pulse'); }, { dmg: 4 });
-  W('wither', 'Wither', 'Green', 'Skill', 10, 'enemy', 'Shadow', 'Apply 4 Dread. If the target already had Dread, apply 4 more.', (cb, t) => { const e = tgtOf(cb, t); if (!e) return; const had = e.dread > 0; dot(cb, e, 'dread', 4); if (had) dot(cb, e, 'dread', 4); }, { dot: 20 });
+  W('wither', 'Wither', 'Green', 'Skill', 10, 'enemy', 'Shadow', 'Apply 4 Dread. If the target already had Dread, apply 4 more.', (cb, t) => { const e = tgtOf(cb, t); if (!e) return; const had = e.dread > 0; dot(cb, e, 'dread', 3); if (had) dot(cb, e, 'dread', 3); }, { dot: 20 });
   W('unstable_rot', 'Unstable Rot', 'Green', 'Skill', 20, 'enemy', 'Shadow', 'Apply 44 Rot.', (cb, t) => dot(cb, tgtOf(cb, t), 'rot', 44), { dot: 44 });
   W('nether_shield', 'Nether Shield', 'Green', 'Skill', 10, 'self', null, 'Gain 14 Absorb.', (cb) => cb.gainDef(14), { def: 14 });
   W('soul_link', 'Soul Link', 'Green', 'Skill', 10, 'self', 'Shadow', 'Heal every hero 7 HP.', (cb) => healAll(cb, 7, 'Soul Link'), { heal: 7 });
@@ -130,7 +130,7 @@ function install(K) {
   W('chaos_bolt', 'Chaos Bolt', 'Gold', 'Skill', 30, 'enemy', 'Shadow', 'Deal 38 Shadow damage with +50% crit chance.', (cb, t, p) => { p.turn.critPlus = (p.turn.critPlus || 0) + 50; D_(cb, t, 38, 'Chaos Bolt'); p.turn.critPlus -= 50; }, { dmg: 38 });
   W('doom', 'Doom', 'Gold', 'Skill', 20, 'enemy', 'Shadow', 'Curse: in 2 rounds, the target takes 55 Shadow damage (Intelligence counts when you cast it). Exhaust.', (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const n = Math.round(55 * cb.rkm('dmg') * (1 + (p.intelligence + (p.intTurn || 0)) / 100)); cb.later.push({ round: cb.round + 2, src: p.id, e: e.id, n, label: 'Doom' }); say(cb, `Doom gathers over ${e.name}: ${n} Shadow damage in 2 rounds.`); }, { curse: 1, dmg: 55 }, { exhaust: true });
   W('death_and_decay', 'Death and Decay', 'Gold', 'Skill', 20, 'all', 'Shadow', 'Deal 7 Shadow damage to all enemies and apply 14 Rot to each. Breaks Stealth.', (cb) => { for (const e of cb.alive()) { if (cb.over) break; cb.hit(e, 7, 'Death and Decay'); dot(cb, e, 'rot', 14); } }, { dmg: 7, aoe: 1, dot: 14 });
-  W('dark_harvest', 'Dark Harvest', 'Gold', 'Skill', 20, 'all', 'Shadow', 'Every enemy\'s Dread and Rot deal their damage once now. Heal for 25% of it.', (cb, t, p) => { let tot = 0; for (const e of cb.alive()) { if (cb.over) break; const rotNow = (e.rotQ || []).reduce((s, r) => s + Math.round(r.left / r.turns), 0), n = (e.dread || 0) + rotNow; if (n > 0) tot += cb.applyHit(p, e, n, { isDot: true, label: 'Dark Harvest', ignoreBlock: true }).lost; } cb.heal(p, Math.round(tot * 0.25), 'Dark Harvest'); }, { burst: 1, aoe: 1 });
+  W('dark_harvest', 'Dark Harvest', 'Gold', 'Skill', 20, 'all', 'Shadow', 'Every enemy\'s Dread and Rot deal their damage once now. Heal for 10% of it.', (cb, t, p) => { let tot = 0; for (const e of cb.alive()) { if (cb.over) break; const rotNow = (e.rotQ || []).reduce((s, r) => s + Math.round(r.left / r.turns), 0), n = (e.dread || 0) + rotNow; if (n > 0) tot += cb.applyHit(p, e, n, { isDot: true, label: 'Dark Harvest', ignoreBlock: true }).lost; } cb.heal(p, Math.round(tot * 0.1), 'Dark Harvest'); }, { burst: 1, aoe: 1 });
   W('soul_shatter', 'Soul Shatter', 'Gold', 'Skill', 20, 'self', null, 'Gain Absorb equal to 40% of your max HP. Exhaust.', (cb, t, p) => cb.gainDef(Math.round(p.maxHp * 0.4)), { def: 40 }, { exhaust: true });
   W('dread_lord', 'Dread Lord\'s Blow', 'Gold', 'Attack', 30, 'enemy', 'Physical', 'Deal 32 damage. Heal for 30% of the damage dealt.', (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const lost = cb.hit(e, 32, 'Dread Lord\'s Blow'); cb.heal(p, Math.round(lost * 0.3), 'Dread Lord\'s Blow'); }, { dmg: 32, heal: 10 });
   W('blood_moon_rite', 'Blood Moon Rite', 'Gold', 'Skill', 0, 'enemy', 'Physical', 'Lose 12 HP. Deal 44 Physical damage.', (cb, t, p) => { cb.loseHp(p, 12, 'Blood Moon Rite'); D_(cb, t, 44, 'Blood Moon Rite'); }, { dmg: 44 });
@@ -145,7 +145,7 @@ function install(K) {
   POW('spirit_ward', 'Spirit Ward', 'Gold', 20, 'Power: at the start of each of your turns, gain Absorb equal to 6% of your max HP.', { turnStart: (cb, p) => { p.block += Math.round(p.maxHp * 0.06); say(cb, `Spirit Ward: ${p.name} gains ${Math.round(p.maxHp * 0.06)} Absorb.`); } });
   POW('circle_of_souls', 'Circle of Souls', 'Gold', 20, 'Power: at the start of each of your turns, every hero heals 3% of their max HP.', { turnStart: (cb, p) => { for (const a of cb.allies()) cb.heal(a, Math.max(1, Math.round(a.maxHp * 0.03)), 'Circle of Souls', true); } });
   // Blightcaller
-  POW('creeping_doom', 'Creeping Doom', 'Gold', 20, 'Power: your Dread deals 25% more damage.', { dreadTickX: 1.25 }); // Nov 2: was 'ticks twice'
+  POW('creeping_doom', 'Creeping Doom', 'Gold', 20, 'Power: your Dread deals 10% more damage.', { dreadTickX: 1.1 }); // Nov 2: was 'ticks twice'
   POW('blighted_skin', 'Blighted Skin', 'Gold', 20, 'Power: enemies that hit you gain 4 Dread.', { hitBy: (cb, p, e) => { if (e && e.hp > 0) cb.applyDot(e, 'dread', 4); } });
   POW('plague_of_dread', 'Plague of Dread', 'Gold', 20, 'Power: at the start of each of your turns, apply 2 Dread to all enemies.', { turnStart: (cb, p) => { for (const e of cb.foes()) cb.applyDot(e, 'dread', 2); } });
   // Shadow Knight
@@ -166,7 +166,7 @@ function install(K) {
   POW('dark_insight', 'Dark Insight', 'Gold', 20, 'Power: whenever you crit, draw 1 card (up to 2 a turn).', { dealt: (cb, p, h, pw) => { if (!h.crit || cb.phase !== 'player' || cb.current !== p && !cb.raid) return; if ((p.turn.insight || 0) >= 2) return; p.turn.insight = (p.turn.insight || 0) + 1; cb.drawCards(p, 1); } });
   // more Powers
   POW('vampiric_embrace', 'Vampiric Embrace', 'Blue', 20, 'Power: your damaging Skills heal you for 10% of the damage they deal.', { dealt: (cb, p, h) => { if (h.kind === 'Skill' && h.d && !h.d.isPower && h.lost > 0) { const n = Math.round(h.lost * 0.1); if (n > 0) cb.heal(p, n, 'Lifesteal', true); } } });
-  POW('nightfall_wl', 'Nightfall', 'Blue', 10, 'Power: whenever you apply Dread or Rot, gain 2 Absorb.', { applyDot: (cb, p, e, key) => { if (key === 'dread' || key === 'rot') p.block += 2; } });
+  POW('nightfall_wl', 'Nightfall', 'Blue', 10, 'Power: whenever you apply Dread or Rot, gain 2 Absorb.', { applyDot: (cb, p, e, key) => { if (key === 'dread' || key === 'rot') p.block += 1; } });
   POW('soul_fire', 'Soulfire', 'Green', 10, 'Power: your Shadow damage is increased by 10%.', { hitMult: (cb, p, e, c) => c.dtype === 'Shadow' ? 1.1 : 1 });
 }
 const API = { install };
