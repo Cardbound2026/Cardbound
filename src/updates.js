@@ -2,6 +2,18 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-03', items: [
+      ['Fix', "Devotion is now only spent by Holy damage cards. Physical cards no longer spend it, even when a codex turns their damage Holy."],
+      ['Change', "Divine Wrath Codex: your Holy cards spend Devotion for 3 bonus damage per stack (instead of 2); Attacks no longer spend it."],
+      ['Fix', "Mana above your maximum (from Overcharge, Arcane Reservoir and similar cards) is kept at the start of your next turn instead of dropping back to your maximum."],
+      ['Change', "Torrent: every 3rd Skill you play draws a card, and the count carries over between turns."],
+      ['Change', "Open the Floodgates: draw 3 cards, then everything is free to play this turn and you cannot draw more."],
+      ['Change', "Divine Echo: when an attack repeats, the chance drops to 0% for the rest of that turn and is back to full next turn."],
+      ['Balance', "Twin Verdict: costs 15 mana (was 20)."],
+      ['Balance', "Steel Tempo: costs 0 mana (was 15)."],
+      ['Change', "Decisive Reprisal: if you parried last turn, deal 45 damage (was: if you parried this round). Costs 20 mana (was 30)."],
+      ['Feature', "Survey the Field: the top 3 cards appear on screen and you choose the one to keep; the rest go back on top of your draw pile."],
+      ['Change', "Archmage Codex: a damaging Skill of a different element from the previous one you played deals 50% more damage (was: different from the previous two, 70%)."],
+      ['Change', "Test deck Riposte Steel Tempo: one Strike swapped for Taunt."],
       ['Balance', "Shatter: against a Frozen target it deals triple damage per Chill consumed, plus 20 (the target stays Frozen)."],
       ['Balance', "Marathon: mana regeneration rises by 3 each turn (was 5)."],
       ['Balance', "Unstoppable Force: ignore 30% of the target's Block (was 50%)."],

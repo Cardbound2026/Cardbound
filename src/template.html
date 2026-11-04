@@ -623,6 +623,12 @@ body.aiming { cursor: grabbing; user-select: none; }
 .tutbox { position: fixed; left: 50%; transform: translateX(-50%); bottom: 25vh; z-index: 40; width: min(440px, calc(100vw - 32px)); max-height: calc(75vh - 16px); overflow: auto; background: #15110d; border: 2px solid #d6a14a; border-radius: 8px; padding: 10px 14px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.6); font-size: 15px; line-height: 1.45; }
 .camphp { display: grid; grid-template-columns: minmax(70px, auto) 1fr; gap: 8px; align-items: center; margin: 6px 0; } .camphp .bar { position: relative; margin: 0; } .camphp .bar em { position: absolute; top: 0; bottom: 0; background: rgba(120, 200, 110, .35); }
 .feedpeek { position: fixed; z-index: 60; pointer-events: none; filter: drop-shadow(0 6px 14px rgba(0,0,0,.6)); }
+#pickBox { position: fixed; inset: 0; z-index: 70; background: rgba(10,8,6,.72); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
+#pickBox[hidden] { display: none; }
+#pickBox h3 { margin: 0; color: #f0e2c4; font-family: inherit; letter-spacing: .02em; }
+#pickBox .pickrow { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+#pickBox .pickc { background: none; border: 0; padding: 0; cursor: pointer; transition: transform .12s; }
+#pickBox .pickc:hover, #pickBox .pickc:focus-visible { transform: translateY(-8px); outline: none; }
 .tutbox h3 { margin: 2px 0 6px; color: var(--accent); font-size: 19px; } .tutbox p { margin: 0 0 8px; } .tutbox .row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .tutbox .tuthead { display: flex; justify-content: space-between; align-items: center; font-size: 13px; } .tutbox .tutx { background: none; border: 1px solid var(--line); color: var(--text); border-radius: 4px; cursor: pointer; padding: 0 8px; }
 .tutbox .tutskip { margin-left: auto; opacity: .75; } .tutbox.min { width: auto; padding: 0; border-width: 1px; left: auto; right: 16px; bottom: 16px; transform: none; } .tutbox .tutpill { background: #15110d; color: var(--accent); border: 0; padding: 8px 12px; cursor: pointer; font: inherit; font-size: 14px; }
@@ -2907,9 +2913,22 @@ body.aiming { cursor: grabbing; user-select: none; }
     el.hidden = false; el.classList.remove('out'); fitCards(el); clearTimeout(playedTimer);
     playedTimer = setTimeout(() => { el.classList.add('out'); playedTimer = setTimeout(() => { el.hidden = true; }, 350); }, 2200);
   }
+  // Nov 3: Survey the Field: show the top cards and let the hero keep one
+  function renderPick() {
+    let box = $('pickBox'); const p = cb && hero();
+    if (!p || !p.pick || cb.over) { if (box) box.hidden = true; return; }
+    if (!box) { box = document.createElement('div'); box.id = 'pickBox'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', 'Choose a card'); document.body.append(box);
+      box.addEventListener('click', (ev) => { const b = ev.target.closest('.pickc'); if (!b || !cb) return; const h = hero(); if (!h || !h.pick) return; box.hidden = true;
+        if (cb.myMi != null) { netAct({ t: 'pick', uid: b.dataset.uid }); return; } cb.choosePick(h, b.dataset.uid); render(true); }); }
+    if (box.dataset.key === p.pick.map(c => c.uid).join() && !box.hidden) return;
+    box.dataset.key = p.pick.map(c => c.uid).join();
+    box.innerHTML = `<h3>Choose a card to keep</h3><div class="pickrow">${p.pick.slice().reverse().map(c => `<button class="pickc" data-uid="${esc(c.uid)}">${cardBox(cb.card(c))}</button>`).join('')}</div><p class="muted" style="margin:0">The others go back on top of your draw pile.</p>`;
+    box.hidden = false; fitCards(box);
+  }
   function render(withPops) {
     if (cb && !cb._pre && window.CB_INK && CB_INK.preload) { cb._pre = 1; CB_INK.preload(cb.enemies.map(e => e.key)); }
     if (!cb) return;
+    cb.manualPick = true; renderPick(); // Nov 3: Survey the Field lets you choose
     if (cb.round !== render.whereRound && typeof retrack === 'function') { render.whereRound = cb.round; try { retrack(); } catch (e) {} } // friends see the round/row we're on
     const p = hero(), party = cb.partySize > 1, wh = watchedHero(p);
     $('order').classList.toggle('raid', !!cb.raid && cb.partySize > 4); $('order').classList.toggle('many', cb.order.length > 5 && !(cb.raid && cb.partySize > 4));

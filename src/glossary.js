@@ -78,7 +78,7 @@
       ['Stun', 'Unplayable junk that stays in the deck.'],
       ['Cards in enemy decks', 'Some of your cards add cards to an enemy\'s deck: Dazed, Stun and Fatigue are wasted draws; Venom gives 3 Poison, Frostbite 3 Chill, Hex 10 Vulnerable and Living Bomb explodes for 15 Fire damage when drawn.'],
       ['Ranks (+1 to +10)', 'Feed spare cards to a card at the Scribe to rank it up: bigger numbers, or cheaper to play.'],
-      ['Devotion', 'Paladin. Each stack adds +2 to your next Holy damage, then it is spent.'],
+      ['Devotion', 'Paladin. Stacks up until you play a Holy damage card: each stack adds +2 to that card\'s damage, then all of it is spent. Physical cards never spend it.'],
       ['Blood Magic', 'Warlock (Bloodmancer codex or Crimson Rite). Pay for cards with HP instead of mana: 1 HP per 2 mana, up to 15 HP a turn.'],
       ['Blood Debt', 'Warrior. Stores the HP you lose; some cards turn it into damage or Block.'],
       ['Card rarity', 'White, Green, Blue, Gold. A deck holds 20 to 30 cards: at most 2 Gold, 4 Blue and 6 Green.'],

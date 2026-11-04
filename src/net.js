@@ -122,6 +122,7 @@
       }
       if (cb.over) return;
       const p = cb.players[mi]; if (!cb.canAct(p)) return;
+      if (a.t === 'pick') { cb.choosePick(p, a.uid); render(true); return; } // Nov 3: Survey the Field choice
       if (a.t === 'play') { if (mi === S.mi) selected = null; cb.playAs(p, a.uid, a.tgt); render(true); if (cb.over) combatOver(); else if (cb.phase === 'enemy') pump(); return; }
       if (a.t === 'end') { if (mi === S.mi) selected = null; if (a.auto) cb.say('sys', `${p.name} ran out of time.`); cb.endTurnAs(p); render(true); if (cb.over) combatOver(); else pump(); return; }
       return;
@@ -150,6 +151,7 @@
       }
       case 'buy': { if (!run || !run.pending || run.pending.type !== 'merchant') return; run.buy(a.i, mi); if (redrawShop && !$('modal').hidden) redrawShop(); renderSide(); return; }
       case 'play': { if (!cb || cb.over || cb.phase !== 'player' || cb.current !== cb.players[mi]) return; if (selected && mi === S.mi) selected = null; const who = cb.players[mi], pc = who.hand.find(c => c.uid === a.uid), tg = a.tgt && cb.actorById(a.tgt); const ok = cb.play(a.uid, a.tgt); if (ok && pc && mi !== S.mi) showPlayed(who, pc, tg); render(true); if (cb.over) combatOver(); return; }
+      case 'pick': { if (!cb || cb.over || !cb.players[mi]) return; cb.choosePick(cb.players[mi], a.uid); render(true); return; } // Nov 3: Survey the Field choice
       case 'end': { if (!cb || cb.over || cb.phase !== 'player' || cb.current !== cb.players[mi]) return; if (mi === S.mi) selected = null; if (a.auto) cb.say('sys', `${cb.current.name} ran out of time.`); cb.endPlayerTurn(); render(true); pump(); return; }
       case 'leave': {
         if (S.gone[mi]) return; S.gone[mi] = true;
