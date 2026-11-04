@@ -2,6 +2,11 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-03', items: [
+      ['Balance', "Consecration: 14 Holy damage to all enemies (was 6), in line with other 20-mana area attacks."],
+      ['Change', "Crimson Flay, Blood Boil and Hemorrhaging Hex no longer cost HP on top of their mana (Bloodmancer was paying twice)."],
+      ['Change', "Bloodmancer Codex: you can pay up to as much HP as your max mana each turn (was 15 HP)."],
+      ['Change', "Bloodmancer Codex: below 50% HP you heal for 5% of the damage you deal, and below 20% HP for 10%."],
+      ['Change', "Test deck Bloodmancer Crimson Aegis: Dark Pact (mana a Bloodmancer doesn't need) swapped for Blood Offering."],
       ['Fix', "Devotion is now only spent by Holy damage cards. Physical cards no longer spend it, even when a codex turns their damage Holy."],
       ['Change', "Divine Wrath Codex: your Holy cards spend Devotion for 3 bonus damage per stack (instead of 2); Attacks no longer spend it."],
       ['Fix', "Mana above your maximum (from Overcharge, Arcane Reservoir and similar cards) is kept at the start of your next turn instead of dropping back to your maximum."],

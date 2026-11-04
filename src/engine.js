@@ -559,7 +559,7 @@ const CODEXES = {
     ['divine_wrath', 'Divine Wrath', 'Prayer cards give 1 more Devotion. Your Holy cards spend Devotion for 3 bonus damage per stack (instead of 2). Every 5 Devotion you spend heals you for 10% of your max HP.'], ['equilibrium', 'Equilibrium', 'You cannot gain Block. Your healing is 15% stronger, and healing you do also deals that much Holy damage to an enemy.']],
   Warlock: [['soulbinder', 'Soulbinder', 'Your Shadow damage is 20% higher. 5% of the damage you deal heals every hero in the party, and your Soul Beacon heals 50% more.'], ['blightcaller', 'Blightcaller', 'Dread you apply is increased by 15%.'],
     ['shadow_knight', 'Shadow Knight', 'You get 20% more Strength from gear. Your Physical damage becomes Shadow. Your Shadow Attacks heal you for 5% of the damage they deal.'], ['demonologist', 'Demonologist', 'Your demons stay 1 turn longer.'],
-    ['bloodmancer', 'Bloodmancer', 'Physical Skills deal 20% more damage. Your cards cost HP instead of mana (1 HP per 2 mana, up to 15 HP a turn). At the start of your turn your mana turns into healing (1 HP per 3 mana).'], ['umbral_ruin', 'Umbral Ruin', '+10% crit chance. 30% of the damage your crits deal is applied again as Rot over 3 turns.']],
+    ['bloodmancer', 'Bloodmancer', 'Physical Skills deal 20% more damage. Your cards cost HP instead of mana (1 HP per 2 mana, up to as much HP as your max mana each turn). At the start of your turn your mana turns into healing (1 HP per 3 mana). Below 50% HP you heal for 5% of the damage you deal; below 20% HP, 10%.'], ['umbral_ruin', 'Umbral Ruin', '+10% crit chance. 30% of the damage your crits deal is applied again as Rot over 3 turns.']],
 };
 const CODEX_BY_KEY = {}; for (const [cls, list] of Object.entries(CODEXES)) for (const [key, name, text] of list) CODEX_BY_KEY[key] = { key, name, text, cls };
 function makeCodex(data, rng, key, level) {
@@ -622,7 +622,8 @@ Object.assign(POWERS, {
   codex_blightcaller: { dotMult: { dread: 1.15 } },
   codex_shadow_knight: { dtype: { Physical: 'Shadow' }, dealt: (cb, p, h) => { if (h.kind === 'Attack' && h.dtype === 'Shadow' && h.lost > 0) { const n = Math.round(h.lost * 0.05); if (n > 0) cb.heal(p, n, 'Lifesteal', true); } } },
   codex_demonologist: { demonTurns: 1 },
-  codex_bloodmancer: { bloodPay: true, hitMult: (cb, p, e, c) => c.kind === 'Skill' && c.dtype === 'Physical' ? 1.2 : 1 },
+  codex_bloodmancer: { bloodPay: true, bloodToMax: true, hitMult: (cb, p, e, c) => c.kind === 'Skill' && c.dtype === 'Physical' ? 1.2 : 1,
+    dealt: (cb, p, h, pw) => { if (!(h.lost > 0) || !p.isPlayer || p.hp <= 0) return; const f = p.hp / p.maxHp, pct = f < 0.2 ? 0.1 : f < 0.5 ? 0.05 : 0; if (!pct) return; pw.ls = (pw.ls || 0) + h.lost * pct; const n = Math.floor(pw.ls); if (n > 0) { pw.ls -= n; cb.heal(p, n, 'Lifesteal', true); } } }, // Nov 3: lifesteal grows as HP drops
   codex_umbral_ruin: { crit: () => 10, dealt: (cb, p, h) => { if (h.crit && h.e.hp > 0 && h.lost + h.absorbed > 0) { const n = Math.max(1, Math.round((h.lost + h.absorbed) * 0.3)); cb.addRot(h.e, n, 3, p); cb.say('crit', `Umbral Ruin: ${h.e.name} gains ${n} Rot over 3 turns.`); } } },
   codex_equilibrium: { defMult: 0, healMult: 1.15, onHeal: (cb, p, a, h) => { const e = cb.foes()[0] || cb.alive()[0]; if (e && h > 0 && !cb._eqHit) { cb._eqHit = true; cb.powerHit(p, e, h, 'Equilibrium', 'Holy', 'Skill'); cb._eqHit = false; } } },
 });
@@ -1102,7 +1103,7 @@ class Combat {
   }
   hurtDemon(p, dm, n, by) { if (!dm || n <= 0) return; dm.hp = Math.max(0, dm.hp - n); this.fxPush({ t: 'demonHit', d: p.id, u: dm.uid, dead: dm.hp <= 0 }); this.say('enemy', `${by ? by + ' hits ' : ''}${dm.name} for ${n}. ${dm.hp > 0 ? `HP ${dm.hp}/${dm.maxHp}.` : 'It is destroyed.'}`); if (dm.hp <= 0) { p.demons = p.demons.filter(d => d !== dm); if (p.powers.length) this.fire(p, 'demonDied', dm); } }
   demonTaunt() { for (const q of this.alivePlayers()) for (const dm of (q.demons || [])) if (dm.hp > 0 && DEMONS[dm.key].taunt) return [q, dm]; return null; }
-  bloodCap(p) { return BLOOD_CAP + (p.bloodCapPlus || 0) + (p.powers.length ? this.pwSum(p, 'bloodCap') : 0); } // HP a hero can pay for cards in one turn
+  bloodCap(p) { const toMax = p.powers.length && this.pws(p).some(([, d]) => d.bloodToMax); return Math.max(BLOOD_CAP, toMax ? p.maxMana : 0) + (p.bloodCapPlus || 0) + (p.powers.length ? this.pwSum(p, 'bloodCap') : 0); } // Nov 3: Bloodmancer pays up to its max mana in HP // HP a hero can pay for cards in one turn
   bloodPay(p) { return !!(p && p.isPlayer && ((p.turn && p.turn.bloodPay) || (p.powers.length && this.pws(p).some(([, d]) => d.bloodPay)))); }
   costOf(p, d, c) {
     if (d.cost == null) return null;
@@ -2539,7 +2540,7 @@ function retune(key, ti, nv) { const u = UPG[key], d = C[key]; if (!u || !u.t ||
  ['righteous_blow', 0, 10], ['righteous_blow', 1, 10], ['sword_and_board', 0, 9], ['shield_of_righteousness', 0, 60], ['divine_storm', 0, 14], // Bastion of Faith
  ['judgment_hammer', 0, 26], ['guarded_advance', 0, 9], ['raise_shield', 0, 12], ['crusader_strike', 0, 14], // Righteous Crusader
  ['searing_light', 0, 7], ['searing_light', 1, 4], ['holy_fire', 0, 8], ['condemn', 0, 5], // Purifier
- ['sanctuary', 0, 20], // Equilibrium capstone nerf
+ ['sanctuary', 0, 20], ['consecration', 0, 14], // Equilibrium capstone nerf
  // Nov 3 mega sim: deck fixes
  ['wither', 0, 3], ['dread_touch', 1, 4], ['lingering_dread', 0, 6], ['creeping_dread', 0, 3], ['nightfall_wl', 0, 1], ['follow_through', 0, 50], ['hold_the_line', 0, 16], ['unstoppable_force', 0, 30], ['bankrupt', 0, 3], ['condemning_mark', 0, 18], ['mark_of_guilt', 0, 6], ['repentance', 1, 15], ['purge_the_wicked', 0, 3]].forEach(([k, i, n]) => retune(k, i, n));
 for (const [k, f] of Object.entries(CARD_FLAT)) if (C[k]) C[k].text += ` +${f} damage${/ times\./.test(C[k].text) ? ' per hit' : C[k].target === 'all' ? ' to each enemy' : ''} (flat).`;
