@@ -399,7 +399,7 @@ const CUSTOM = {
   unstable_bolt: { play: (cb, t, p) => { const e = tgtOf(cb, t); D_(cb, e, 6 + (e && p.hp < e.hp ? 6 : 0), 'Unstable Bolt'); } },
   arm_living_bomb: { play: (cb, t) => cb.eStatus(tgtOf(cb, t), 'bomb', 1) },
   combust: { play: (cb, t) => { const e = tgtOf(cb, t); if (e) cb.extraTick(e, 'burn'); } },
-  shatter: { play: (cb, t) => { const e = tgtOf(cb, t); if (!e) return; const n = e.chill; e.chill = 0; D_(cb, e, 2 * n, 'Shatter'); } },
+  shatter: { play: (cb, t) => { const e = tgtOf(cb, t); if (!e) return; const n = e.chill, fz = !!e.frozen; e.chill = 0; if (fz) say(cb, `${e.name} is Frozen: Shatter hits for triple, plus 20.`); D_(cb, e, fz ? 6 * n + 20 : 2 * n, 'Shatter'); } }, // Nov 3: triple plus 20 vs Frozen
   frostbite_curse: { play: (cb, t) => cb.eStatus(tgtOf(cb, t), 'frostbite', 2) },
   hexing_word: { play: (cb, t) => cb.eStatus(tgtOf(cb, t), 'hex', 1) },
   lay_bare: { play: (cb, t) => { const e = tgtOf(cb, t); if (e) { e.exposure += 4; cb.planEnemy(e, true); say(cb, `${e.name} gains 4 Exposure: its cards cost 20% more.`); } } },
@@ -2443,6 +2443,7 @@ const CARD_FLAT = { shield_slam: 6, shield_bash: 3, crushing_bastion: 10, armor_
   pilfer: 3, kick_while_down: 3, lighten_their_purse: 3, cut_purse: 3 };
 const HEAL_FLAT = { healing_light: 5, overflowing_light: 4 };
 const TEXT_FIX = {
+"shatter": "Consume all Chill on the target. Deal 2 Frost damage per Chill consumed. If the target is Frozen, deal triple that, plus 20.",
 "purifying_grace": "Cleansing a debuff heals you for 2 HP and deals 3 Holy damage to an enemy per stack removed.",
 "cleansing_light": "At the start of your turn, cleanse one debuff from yourself and strip the biggest debuff from an enemy.",
 "dread_touch": "Deal 4 Shadow damage and apply 5 Dread. (Dread ignores Absorb and Block, deals its stacks each turn, then loses 10%.)",

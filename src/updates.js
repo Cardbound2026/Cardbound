@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-03', items: [
+      ['Balance', "Shatter: against a Frozen target it deals triple damage per Chill consumed, plus 20 (the target stays Frozen)."],
       ['Balance', "Marathon: mana regeneration rises by 3 each turn (was 5)."],
       ['Balance', "Unstoppable Force: ignore 30% of the target's Block (was 50%)."],
       ['Balance', "Bankrupt: 3 damage per card the target has had exhausted (was 5)."],
