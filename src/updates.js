@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-05', items: [
+      ['Change', "Test deck Soulbinder Spirit Wall: both Nether Shields swapped for 1 Shadow Volley and 1 Void Rift."],
       ['Balance', "Dazed: costs 5 mana to play and clear (was free)."],
       ['Balance', "Bastion of Faith Codex: every card you play gives Block equal to 7% of your max HP (was 8 Block per damaging card)."],
     ] },
