@@ -2540,7 +2540,9 @@ function retune(key, ti, nv) { const u = UPG[key], d = C[key]; if (!u || !u.t ||
  ['righteous_blow', 0, 10], ['righteous_blow', 1, 10], ['sword_and_board', 0, 9], ['shield_of_righteousness', 0, 60], ['divine_storm', 0, 14], // Bastion of Faith
  ['judgment_hammer', 0, 26], ['guarded_advance', 0, 9], ['raise_shield', 0, 12], ['crusader_strike', 0, 14], // Righteous Crusader
  ['searing_light', 0, 7], ['searing_light', 1, 4], ['holy_fire', 0, 8], ['condemn', 0, 5], // Purifier
- ['sanctuary', 0, 20], ['consecration', 0, 14], // Equilibrium capstone nerf
+ ['sanctuary', 0, 20], ['consecration', 0, 14],
+ // Nov 5: 20-mana area attacks with no extra effect go to 11
+ ['shadow_volley', 0, 11], ['blood_boil', 0, 11], ['cleave', 0, 11], ['whirling_blades', 0, 11], ['arcane_explosion', 0, 11], ['fan_of_knives', 0, 11], // Equilibrium capstone nerf
  // Nov 3 mega sim: deck fixes
  ['wither', 0, 3], ['dread_touch', 1, 4], ['lingering_dread', 0, 6], ['creeping_dread', 0, 3], ['nightfall_wl', 0, 1], ['follow_through', 0, 50], ['hold_the_line', 0, 16], ['unstoppable_force', 0, 30], ['bankrupt', 0, 3], ['condemning_mark', 0, 18], ['mark_of_guilt', 0, 6], ['repentance', 1, 15], ['purge_the_wicked', 0, 3]].forEach(([k, i, n]) => retune(k, i, n));
 for (const [k, f] of Object.entries(CARD_FLAT)) if (C[k]) C[k].text += ` +${f} damage${/ times\./.test(C[k].text) ? ' per hit' : C[k].target === 'all' ? ' to each enemy' : ''} (flat).`;

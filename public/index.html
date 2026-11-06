@@ -1318,7 +1318,7 @@ function install(K) {
   // ================= Green =================
   W('drain_life', 'Drain Life', 'Green', 'Skill', 20, 'enemy', 'Shadow', 'Deal 13 Shadow damage. Heal for 50% of the damage dealt.', (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const lost = cb.hit(e, 13, 'Drain Life'); cb.heal(p, Math.round(lost * 0.5), 'Drain Life'); }, { dmg: 13, heal: 6 });
   W('curse_of_frailty', 'Curse of Frailty', 'Green', 'Skill', 10, 'enemy', 'Shadow', 'Curse: apply 15 Weak and 15 Vulnerable.', (cb, t) => { const e = tgtOf(cb, t); if (!e) return; e.weak += 15; e.vulnerable += 15; say(cb, `${e.name} gains 15 Weak and 15 Vulnerable.`); }, { curse: 1 });
-  W('shadow_volley', 'Shadow Volley', 'Green', 'Skill', 20, 'all', 'Shadow', 'Deal 9 Shadow damage to all enemies. Breaks Stealth.', (cb) => DA(cb, 9, 'Shadow Volley'), { dmg: 9, aoe: 1 });
+  W('shadow_volley', 'Shadow Volley', 'Green', 'Skill', 20, 'all', 'Shadow', 'Deal 9 Shadow damage to all enemies. Breaks Stealth.', (cb) => DA(cb, 11, 'Shadow Volley'), { dmg: 11, aoe: 1 });
   W('summon_imp_swarm', 'Imp Swarm', 'Green', 'Skill', 20, 'self', 'Shadow', 'Summon 2 Gloom Imps for 2 turns: at the end of each of your turns each deals 6 Shadow damage to a random enemy.', (cb, t, p) => { cb.summon(p, 'imp'); cb.summon(p, 'imp'); }, { summon: 2 });
   W('summon_hollow_hound', 'Summon Hollow Hound', 'Green', 'Skill', 10, 'self', 'Shadow', 'Summon a Hollow Hound for 2 turns: each turn it deals 6 Shadow damage, drains 8 mana for you and strips a buff.', sum('hound'), { summon: 1 });
   W('terrify', 'Terrify', 'Green', 'Skill', 20, 'enemy', 'Shadow', 'Fear the target: it skips its attacks on its next turn. (An enemy can\'t be Feared or Stunned again for 2 rounds.)', (cb, t) => cb.fear(tgtOf(cb, t)), { control: 1 });
@@ -1333,7 +1333,7 @@ function install(K) {
   W('shadow_strike', 'Shadow Strike', 'Green', 'Attack', 10, 'enemy', 'Shadow', 'Deal 14 Shadow damage.', (cb, t) => D_(cb, t, 14, 'Shadow Strike'), { dmg: 14 });
   W('dark_cleave', 'Dark Cleave', 'Green', 'Attack', 20, 'all', 'Physical', 'Deal 11 damage to all enemies. Breaks Stealth.', (cb) => DA(cb, 11, 'Dark Cleave'), { dmg: 11, aoe: 1 });
   W('harvest_life', 'Harvest Life', 'Green', 'Attack', 20, 'enemy', 'Physical', 'Deal 15 damage. Heal for 40% of the damage dealt.', (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const lost = cb.hit(e, 15, 'Harvest Life'); cb.heal(p, Math.round(lost * 0.4), 'Harvest Life'); }, { dmg: 15, heal: 6 });
-  W('blood_boil', 'Blood Boil', 'Green', 'Skill', 20, 'all', 'Physical', 'Deal 9 Physical damage to all enemies. Breaks Stealth.', (cb, t, p) => { DA(cb, 9, 'Blood Boil'); }, { dmg: 9, aoe: 1 });
+  W('blood_boil', 'Blood Boil', 'Green', 'Skill', 20, 'all', 'Physical', 'Deal 9 Physical damage to all enemies. Breaks Stealth.', (cb, t, p) => { DA(cb, 11, 'Blood Boil'); }, { dmg: 11, aoe: 1 });
   W('hemorrhaging_hex', 'Hemorrhaging Hex', 'Green', 'Skill', 10, 'enemy', 'Physical', 'Deal 15 Physical damage.', (cb, t, p) => { D_(cb, t, 15, 'Hemorrhaging Hex'); }, { dmg: 15 });
   W('mana_leech', 'Mana Leech', 'Green', 'Skill', 10, 'enemy', 'Shadow', 'Deal 5 Shadow damage. Drain 15 mana from the target and gain it.', (cb, t, p) => { const e = D_(cb, t, 5, 'Mana Leech'); if (e && e.hp > 0) { const s = cb.drainMana(e, 15); p.mana += s; say(cb, `Drained ${s} mana.`); } }, { dmg: 5 });
   W('crimson_siphon', 'Crimson Siphon', 'Green', 'Skill', 10, 'enemy', 'Physical', 'Deal 8 Physical damage. Drain 6 mana from the target and gain it. Heal 4 HP.', (cb, t, p) => { const e = D_(cb, t, 8, 'Crimson Siphon'); if (e && e.hp > 0) { const s = cb.drainMana(e, 6); p.mana += s; } cb.heal(p, 4, 'Crimson Siphon'); }, { dmg: 8, heal: 4 });
@@ -3965,7 +3965,9 @@ function retune(key, ti, nv) { const u = UPG[key], d = C[key]; if (!u || !u.t ||
  ['righteous_blow', 0, 10], ['righteous_blow', 1, 10], ['sword_and_board', 0, 9], ['shield_of_righteousness', 0, 60], ['divine_storm', 0, 14], // Bastion of Faith
  ['judgment_hammer', 0, 26], ['guarded_advance', 0, 9], ['raise_shield', 0, 12], ['crusader_strike', 0, 14], // Righteous Crusader
  ['searing_light', 0, 7], ['searing_light', 1, 4], ['holy_fire', 0, 8], ['condemn', 0, 5], // Purifier
- ['sanctuary', 0, 20], ['consecration', 0, 14], // Equilibrium capstone nerf
+ ['sanctuary', 0, 20], ['consecration', 0, 14],
+ // Nov 5: 20-mana area attacks with no extra effect go to 11
+ ['shadow_volley', 0, 11], ['blood_boil', 0, 11], ['cleave', 0, 11], ['whirling_blades', 0, 11], ['arcane_explosion', 0, 11], ['fan_of_knives', 0, 11], // Equilibrium capstone nerf
  // Nov 3 mega sim: deck fixes
  ['wither', 0, 3], ['dread_touch', 1, 4], ['lingering_dread', 0, 6], ['creeping_dread', 0, 3], ['nightfall_wl', 0, 1], ['follow_through', 0, 50], ['hold_the_line', 0, 16], ['unstoppable_force', 0, 30], ['bankrupt', 0, 3], ['condemning_mark', 0, 18], ['mark_of_guilt', 0, 6], ['repentance', 1, 15], ['purge_the_wicked', 0, 3]].forEach(([k, i, n]) => retune(k, i, n));
 for (const [k, f] of Object.entries(CARD_FLAT)) if (C[k]) C[k].text += ` +${f} damage${/ times\./.test(C[k].text) ? ' per hit' : C[k].target === 'all' ? ' to each enemy' : ''} (flat).`;
@@ -6813,8 +6815,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793939403893';
-  const CB_BUILD = '7221907d80'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793939526206';
+  const CB_BUILD = '0aebac34ca'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -7920,6 +7922,12 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-05', items: [
+      ['Balance', "Shadow Volley: 11 Shadow damage to all enemies (was 9)."],
+      ['Balance', "Blood Boil: 11 Physical damage to all enemies (was 9)."],
+      ['Balance', "Cleave: 11 damage to all enemies (was 8)."],
+      ['Balance', "Whirling Blades: 11 damage to all enemies (was 8)."],
+      ['Balance', "Arcane Explosion: 11 Arcane damage to all enemies (was 7)."],
+      ['Balance', "Fan of Knives: 11 damage to all enemies (was 7)."],
       ['Change', "Test deck Soulbinder Spirit Wall: both Nether Shields swapped for 1 Shadow Volley and 1 Void Rift."],
       ['Balance', "Dazed: costs 5 mana to play and clear (was free)."],
       ['Balance', "Bastion of Faith Codex: every card you play gives Block equal to 7% of your max HP (was 8 Block per damaging card)."],

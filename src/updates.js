@@ -2,6 +2,12 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-05', items: [
+      ['Balance', "Shadow Volley: 11 Shadow damage to all enemies (was 9)."],
+      ['Balance', "Blood Boil: 11 Physical damage to all enemies (was 9)."],
+      ['Balance', "Cleave: 11 damage to all enemies (was 8)."],
+      ['Balance', "Whirling Blades: 11 damage to all enemies (was 8)."],
+      ['Balance', "Arcane Explosion: 11 Arcane damage to all enemies (was 7)."],
+      ['Balance', "Fan of Knives: 11 damage to all enemies (was 7)."],
       ['Change', "Test deck Soulbinder Spirit Wall: both Nether Shields swapped for 1 Shadow Volley and 1 Void Rift."],
       ['Balance', "Dazed: costs 5 mana to play and clear (was free)."],
       ['Balance', "Bastion of Faith Codex: every card you play gives Block equal to 7% of your max HP (was 8 Block per damaging card)."],
