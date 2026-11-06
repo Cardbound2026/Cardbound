@@ -1509,7 +1509,7 @@ card('lay_on_hands', { cls: 'Paladin', name: 'Lay on Hands', rarity: 'Gold', typ
 
 // --- Status cards
 card('fatigue', { name: 'Fatigue', rarity: 'Status', type: 'Status', cost: null, target: 'none', text: 'Unplayable. Added each time your deck reshuffles.' });
-card('dazed', { name: 'Dazed', rarity: 'Status', type: 'Status', cost: 0, target: 'self', exhaust: true, text: 'Does nothing. Costs 0 to play, then Exhausts.', play: (cb) => cb.say('player', 'You shake off the daze.'), tags: { clear: 1 } });
+card('dazed', { name: 'Dazed', rarity: 'Status', type: 'Status', cost: 5, target: 'self', exhaust: true, text: 'Does nothing. Costs 5 mana to play, then Exhausts.', play: (cb) => cb.say('player', 'You shake off the daze.'), tags: { clear: 1 } });
 card('stun', { name: 'Stun', rarity: 'Status', type: 'Status', cost: null, target: 'none', text: 'Unplayable. Stays in your deck for the rest of the fight.' });
 
 // ---------------- Classes ----------------
@@ -6813,8 +6813,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1793938569519';
-  const CB_BUILD = '0b05f5ef0d'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1793939247073';
+  const CB_BUILD = '671afa9b92'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -7920,6 +7920,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-05', items: [
+      ['Balance', "Dazed: costs 5 mana to play and clear (was free)."],
       ['Balance', "Bastion of Faith Codex: every card you play gives Block equal to 7% of your max HP (was 8 Block per damaging card)."],
     ] },
     { date: '2026-11-03', items: [
@@ -11900,7 +11901,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       ['Exhaust', 'Removed for the rest of the fight after it is played.'],
       ['Retain', 'Stays in your hand at the end of your turn instead of being discarded.'],
       ['Fatigue', 'Every time your deck reshuffles, a Fatigue (unplayable) is shuffled in. Long fights clog your deck.'],
-      ['Dazed', 'A junk card. Costs 0 and does nothing; playing it exhausts it.'],
+      ['Dazed', 'A junk card. Costs 5 mana and does nothing; playing it exhausts it.'],
       ['Stun', 'Unplayable junk that stays in the deck.'],
       ['Cards in enemy decks', 'Some of your cards add cards to an enemy\'s deck: Dazed, Stun and Fatigue are wasted draws; Venom gives 3 Poison, Frostbite 3 Chill, Hex 10 Vulnerable and Living Bomb explodes for 15 Fire damage when drawn.'],
       ['Ranks (+1 to +10)', 'Feed spare cards to a card at the Scribe to rank it up: bigger numbers, or cheaper to play.'],

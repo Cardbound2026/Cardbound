@@ -74,7 +74,7 @@
       ['Exhaust', 'Removed for the rest of the fight after it is played.'],
       ['Retain', 'Stays in your hand at the end of your turn instead of being discarded.'],
       ['Fatigue', 'Every time your deck reshuffles, a Fatigue (unplayable) is shuffled in. Long fights clog your deck.'],
-      ['Dazed', 'A junk card. Costs 0 and does nothing; playing it exhausts it.'],
+      ['Dazed', 'A junk card. Costs 5 mana and does nothing; playing it exhausts it.'],
       ['Stun', 'Unplayable junk that stays in the deck.'],
       ['Cards in enemy decks', 'Some of your cards add cards to an enemy\'s deck: Dazed, Stun and Fatigue are wasted draws; Venom gives 3 Poison, Frostbite 3 Chill, Hex 10 Vulnerable and Living Bomb explodes for 15 Fire damage when drawn.'],
       ['Ranks (+1 to +10)', 'Feed spare cards to a card at the Scribe to rank it up: bigger numbers, or cheaper to play.'],

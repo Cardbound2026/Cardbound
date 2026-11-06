@@ -84,7 +84,7 @@ card('lay_on_hands', { cls: 'Paladin', name: 'Lay on Hands', rarity: 'Gold', typ
 
 // --- Status cards
 card('fatigue', { name: 'Fatigue', rarity: 'Status', type: 'Status', cost: null, target: 'none', text: 'Unplayable. Added each time your deck reshuffles.' });
-card('dazed', { name: 'Dazed', rarity: 'Status', type: 'Status', cost: 0, target: 'self', exhaust: true, text: 'Does nothing. Costs 0 to play, then Exhausts.', play: (cb) => cb.say('player', 'You shake off the daze.'), tags: { clear: 1 } });
+card('dazed', { name: 'Dazed', rarity: 'Status', type: 'Status', cost: 5, target: 'self', exhaust: true, text: 'Does nothing. Costs 5 mana to play, then Exhausts.', play: (cb) => cb.say('player', 'You shake off the daze.'), tags: { clear: 1 } });
 card('stun', { name: 'Stun', rarity: 'Status', type: 'Status', cost: null, target: 'none', text: 'Unplayable. Stays in your deck for the rest of the fight.' });
 
 // ---------------- Classes ----------------
