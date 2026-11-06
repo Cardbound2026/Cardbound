@@ -1,6 +1,9 @@
   // ---------- What's new: the changelog (button bottom-right) and the new-version warning
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
+    { date: '2026-11-05', items: [
+      ['Balance', "Bastion of Faith Codex: every card you play gives Block equal to 7% of your max HP (was 8 Block per damaging card)."],
+    ] },
     { date: '2026-11-03', items: [
       ['Balance', "Consecration: 14 Holy damage to all enemies (was 6), in line with other 20-mana area attacks."],
       ['Change', "Crimson Flay, Blood Boil and Hemorrhaging Hex no longer cost HP on top of their mana (Bloodmancer was paying twice)."],
