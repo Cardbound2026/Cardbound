@@ -2797,7 +2797,8 @@ body.aiming { cursor: grabbing; user-select: none; }
     if (a.isPlayer && a.negateDebuff) t.push(`<span class="tag good">Divine Shield</span>`);
     if (a.isPlayer && a.defNext) t.push(`<span class="tag block">+${a.defNext} next turn</span>`);
     if (a.isPlayer && a.disarmed) t.push(`<span class="tag bad">Disarmed</span>`);
-    if (a.isPlayer && a.powers && a.powers.length) for (const pw of a.powers) t.push(`<span class="tag power" title="${esc(pw.name)}: ${esc(pw.text)}">&#9670; ${esc(pw.name)}</span>`);
+    if (a.isPlayer && a.powers && a.powers.length) for (const pw of a.powers) t.push(`<span class="tag power" title="${esc(pw.name)}: ${esc(pw.text)}">&#9670; ${esc(pw.name)}${pw.key === 'patient_wrath' && pw.n ? `: next Attack +${pw.n}%` : ''}</span>`);
+    if (a.isPlayer && a.sweep > 0) t.push(`<span class="tag good" title="Your next single-target Attacks also hit ${a.sweepN > 1 ? a.sweepN + ' more enemies' : 'a second enemy'}">Sweeping Strikes ${a.sweep}</span>`);
     if (a.isPlayer && a.nextAttackFlat) t.push(`<span class="tag good">Next Attack +${a.nextAttackFlat}</span>`);
     if (a.isPlayer) {
       if (a.devotion) t.push(`<span class="tag good" title="Your next Holy damage gets +2 per stack">Devotion ${a.devotion}</span>`);

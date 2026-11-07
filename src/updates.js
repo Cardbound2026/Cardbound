@@ -1,6 +1,14 @@
   // ---------- What's new: the changelog (button bottom-right) and the new-version warning
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
+    { date: '2026-11-07', items: [
+      ['Change', "New Warriors with the Berserker starting deck begin with a two-handed Bearded Greataxe (no shield), so Colossus works from the start."],
+      ['Change', "New Warlocks with the Shadow Knight starting deck begin with a Reaper's Scythe instead of the Wand and Focus."],
+      ['Change', "Sweeping Strikes is now a buff that lasts until used, across turns. It shows on your hero as Sweeping Strikes with the number of Attacks left."],
+      ['Fix', "Patient Wrath: the stored bonus was lost before your Attack landed. It now shows on the power (next Attack +X%) and is spent on your next Attack."],
+      ['Fix', "Devotion: Final Verdict and other Holy damage now add their bonus damage when they spend Devotion (it was being spent for nothing)."],
+      ['Fix', "Sanctuary and other damage reduction: the reduction was applied but the combat log showed the full hit. The log now shows the reduced damage."],
+    ] },
     { date: '2026-11-05', items: [
       ['Balance', "Shadow Volley: 11 Shadow damage to all enemies (was 9)."],
       ['Balance', "Blood Boil: 11 Physical damage to all enemies (was 9)."],

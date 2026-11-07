@@ -161,7 +161,7 @@ const POWERS = {
   brand_the_wicked: { hitMult: (cb, p, e, c) => c.dtype === 'Physical' && e.burn > 0 ? 1.3 : 1 },
   zeal_of_the_pyre: { initPlus: (cb) => Math.floor(Math.max(0, ...cb.foes().map(e => e.burn || 0)) / 5) },
   burning_wisdom: { statPlus: (cb, p, e, c) => c.kind === 'Skill' ? 10 * Math.floor((e.burn || 0) / 3) : 0 },
-  patient_wrath: { turnEnd: (cb, p, pw) => { if (!p.turnAttacks) { pw.n = (pw.n || 0) + (pw.upN ? pw.upN[0] : 10); cb.say('player', `Patient Wrath: next Attack +${pw.n}%.`); } }, cardMult: (cb, p, d, pw) => { if (d.type === 'Attack' && pw.n) { const m = 1 + pw.n / 100; pw.n = 0; return m; } return 1; } },
+  patient_wrath: { turnEnd: (cb, p, pw) => { if (!p.turnAttacks) { pw.n = (pw.n || 0) + (pw.upN ? pw.upN[0] : 10); cb.say('player', `Patient Wrath: next Attack +${pw.n}%.`); } }, cardMult: (cb, p, d, pw) => d.type === 'Attack' && pw.n ? 1 + pw.n / 100 : 1, cardPlayed: (cb, p, d, pw) => { if (d.type === 'Attack' && pw.n) pw.n = 0; } }, // Nov 7: the card preview was spending the bonus; it is now spent when an Attack is played
   divine_echo: { echo: 10, turnStart: (cb, p, pw) => { pw.chance = pw.upN ? pw.upN[0] : 10; } }, // Nov 3: back to full every turn
   grace_eternal: { onHeal: (cb, p, a, h, pw) => { const per = Math.round(h * (pw && pw.upN ? pw.upN[0] : 30) / 100 / 3); if (per > 0 && !cb._hot) (a.hot = a.hot || []).push({ n: per, turns: 3 }); } },
   sanctuary: { incoming: 0.8 }, // Nov 3: 30% -> 20%
@@ -228,7 +228,7 @@ const CUSTOM = {
   mortal_strike: { play: (cb, t, p) => { const e = D_(cb, t, 24, 'Mortal Strike'); if (e) e.noHealRound = cb.round + 1; } },
   spell_reflection: { play: (cb, t, p) => { p.until.reflect = true; say(cb, 'The next debuff on you will be reflected.'); } },
   berserker_rage: { play: (cb, t, p) => { cb.cleanseAll(p, true); p.until.debuffImmune = true; } },
-  sweeping_strikes: { play: (cb, t, p) => { p.turn.sweep = 2; say(cb, 'Your next 2 single-target Attacks also hit a second enemy.'); } },
+  sweeping_strikes: { play: (cb, t, p) => { p = cb.player; p.sweep = (p.sweep || 0) + 2; p.sweepN = Math.max(p.sweepN || 0, 1); say(cb, 'Your next 2 single-target Attacks also hit a second enemy.'); } }, // Nov 7: a buff that lasts until used
   rampage: { play: (cb, t, p) => { D_(cb, t, 8 + 5 * p.rampage, 'Rampage'); p.rampage++; } },
   last_stand: { play: (cb, t, p) => { const n = p.hand.length; p.discard.push(...p.hand.splice(0)); cb.heal(p, Math.round(p.maxHp * 0.05 * n), 'Last Stand'); } },
   imbue_weapon: { play: (cb, t, p) => { const e = tgtOf(cb, t); p.turn.attackDtype = e && e.weakTo === 'Frost' ? 'Frost' : 'Fire'; say(cb, `Your Attacks deal ${p.turn.attackDtype} damage this turn.`); cb.drawCards(p, 1); } },
@@ -749,7 +749,7 @@ const gk = (slot, base, stats, imp2) => ({ slot, name: base, rarity: 'Green', il
 const STARTER_KITS = {
   Warrior: {
     balanced: [gk('Chest', 'Brigandine', { Stamina: 12, Strength: 4 }), gk('Gloves', 'Leather Gauntlets', { Strength: 6, 'Crit Chance': 2 })],
-    berserker: [gk('Pants', 'Legguards', { Stamina: 18, Strength: 3 }), gk('Chest', 'Brigandine', { 'Max Mana': 25, Strength: 4 })],
+    berserker: [gk('Weapon', 'Bearded Greataxe', { Strength: 8, Stamina: 6 }, { 'Crit Chance': 4 }), { slot: 'Off-hand', none: true }, gk('Pants', 'Legguards', { Stamina: 18, Strength: 3 }), gk('Chest', 'Brigandine', { 'Max Mana': 25, Strength: 4 })], // Nov 7: starts two-handed (Colossus)
     bleeder: [gk('Gloves', 'Leather Gauntlets', { Strength: 6, 'Crit Chance': 3 }), gk('Pants', 'Legguards', { Stamina: 16 })],
     shieldbearer: [gk('Off-hand', 'Kite Shield', { Dexterity: 4, Stamina: 6 }, { Thorns: 8, 'Defense Gain': 8 }), gk('Chest', 'Brigandine', { Stamina: 16 })],
   },
@@ -775,7 +775,7 @@ const STARTER_KITS = {
     balanced: [gk('Weapon', 'Ashwood Wand', { Intelligence: 6 }, { 'Elemental/Holy Damage:Shadow': 12 }), gk('Chest', 'Camp Robe', { Stamina: 16 })],
     soulbinder: [gk('Off-hand', 'Battle Focus', { Spirit: 6 }, { 'Elemental/Holy Damage:Shadow': 12 }), gk('Chest', 'Camp Robe', { Stamina: 16 })],
     demonologist: [gk('Weapon', 'Ashwood Wand', { Intelligence: 6 }, { 'Elemental/Holy Damage:Shadow': 12 }), gk('Chest', 'Camp Robe', { Stamina: 14, 'Max Mana': 10 })],
-    shadowknight: [gk('Bracers', 'Linen Wraps', { Strength: 6, Stamina: 6 }), gk('Chest', 'Camp Robe', { Stamina: 16 })],
+    shadowknight: [gk('Weapon', "Reaper's Scythe", { Strength: 8, Stamina: 6 }, { 'Elemental/Holy Damage:Shadow': 12 }), { slot: 'Off-hand', none: true }, gk('Chest', 'Camp Robe', { Stamina: 16 })], // Nov 7: a Scythe instead of the Wand and Focus
   },
 };
 
@@ -1595,7 +1595,8 @@ class Combat {
       if (kind === 'Attack' && p.windUp && cd && !cd.isPower) base += Math.floor((cd.cost || 0) / 5) * (+p.windUp);
       if (kind === 'Skill' && cd && !cd.isPower && cd.tags && cd.tags.dmg && p.turn.skillFlat) base += p.turn.skillFlat;
       const dw = this.has(p, 'codex_divine_wrath');
-      if (cd && !cd.isPower && cd.dtype === 'Holy' && p.devotion > 0) { // Nov 3: only Holy cards spend Devotion const per = cd.devotionPer || (dw ? 3 : 2); base += p.devotion * per; this.say('player', `${p.devotion} Devotion: +${p.devotion * per} Holy damage.`); p._devHit = p.devotion;
+      if (cd && !cd.isPower && cd.dtype === 'Holy' && p.devotion > 0) { // Nov 3: only Holy cards spend Devotion (Nov 7: the spend code below had been commented out by mistake)
+        const per = cd.devotionPer || (dw ? 3 : 2); base += p.devotion * per; this.say('player', `${p.devotion} Devotion: +${p.devotion * per} Holy damage.`); p._devHit = p.devotion;
         if (dw) { p.devSpent = (p.devSpent || 0) + p.devotion; while (p.devSpent >= 5) { p.devSpent -= 5; this.heal(p, Math.round(p.maxHp * 0.1), 'Divine Wrath'); } } // Nov 2: every 5 Devotion spent heals 10% max HP
         p.devotion = 0; }
     }
@@ -1680,10 +1681,11 @@ class Combat {
       const sa = p.timed.find(t => t.key === 'shadowArmor'); if (sa) dmgIn = Math.round(dmgIn * (1 - (sa.pct || 25) / 100));
       const da = p.timed.find(t => t.key === 'demonArmor'); if (da && p.demons && p.demons.length) { const dm = p.demons.slice().sort((x, y) => y.hp - x.hp)[0], part = Math.min(dm.hp, Math.round(dmgIn * (da.pct || 30) / 100)); if (part > 0) { dmgIn -= part; this.say('player', `Demon Armor: ${dm.name} takes ${part} of the hit.`); this.hurtDemon(p, dm, part); } }
     }
+    const cutTo = dmgIn; // Nov 7: damage reduction (Sanctuary, talents, armors) is now shown in the hit line
     const g = this.alivePlayers().find(q => q !== p && this.has(q, 'guardian_s_oath'));
     if (g && dmgIn > 0) { const part = Math.round(dmgIn * this.upN(g, 'guardian_s_oath', 0, 50) / 100); dmgIn -= part; this.applyHit(e, g, part, { defer: true, label }); this.say('player', `Guardian's Oath: ${g.name} takes ${part} of the hit for ${p.name}. HP ${g.hp}/${g.maxHp}.`); if (g.hp <= 0) this.onDeath(g); }
     const r = this.applyHit(e, p, dmgIn, { defer: true, label, dtype, kind: 'Attack' });
-    this.say('enemy', `${e.name}'s ${label} hits ${this.partySize > 1 ? p.name : 'you'}${dtype !== 'Physical' ? ' (' + dtype + ')' : ''}: ${parts.join(' ')} = ${dmg}` + (r.absorbed ? `, ${r.absorbed} absorbed` : '') + `. HP ${p.hp}/${p.maxHp}.`);
+    this.say('enemy', `${e.name}'s ${label} hits ${this.partySize > 1 ? p.name : 'you'}${dtype !== 'Physical' ? ' (' + dtype + ')' : ''}: ${parts.join(' ')} = ${dmg}` + (cutTo < dmg ? `, reduced to ${cutTo}` : '') + (r.absorbed ? `, ${r.absorbed} absorbed` : '') + `. HP ${p.hp}/${p.maxHp}.`);
     if (p.hp <= 0) { this.onDeath(p); return r.lost; }
     if (dmgIn > 0) { const na = p.timed.find(t => t.key === 'netherArmor'); if (na) { const n = na.n || 6; p.block += n; this.say('player', `Nether Armor: ${p.name} gains ${n} Absorb.`); } }
     if (r.absorbed > 0 && p.parryNext && p.parryNext.length && e.hp > 0) for (const f of p.parryNext.splice(0)) f(this, p, e); // Nov 2: Bait waits for your next parry
@@ -1768,7 +1770,7 @@ class Combat {
       if (tgt && tgt.hp <= 0 && d.target !== 'ally') tgt = this.alive()[0]; if (d.target === 'enemy' && !tgt) break;
       if (twin && i === times - 1) { const was = this._playing; this._playing = Object.assign(Object.create(d), { dtype: 'Holy' }); d.play(this, tgt); this._playing = was; } else d.play(this, tgt);
       if (xTgt > 0 && i === 0) { for (const o2 of this.alive().filter(x => x !== tgt && x.hp > 0 && !x.stealth).slice(0, xTgt)) if (!this.over) { this.say('player', `${d.name} also hits ${o2.name}.`); d.play(this, o2); } }
-      if (T.sweep > 0 && d.type === 'Attack' && d.target === 'enemy' && i === 0) { const os = this.alive().filter(x => x !== tgt).slice(0, T.sweepN || 1); if (os.length) { T.sweep--; for (const o2 of os) if (!this.over && o2.hp > 0) { this.say('player', `Sweeping Strikes: ${d.name} also hits ${o2.name}.`); d.play(this, o2); } } }
+      if (p.sweep > 0 && d.type === 'Attack' && d.target === 'enemy' && i === 0) { const os = this.alive().filter(x => x !== tgt).slice(0, p.sweepN || 1); if (os.length) { p.sweep--; if (!p.sweep) p.sweepN = 0; for (const o2 of os) if (!this.over && o2.hp > 0) { this.say('player', `Sweeping Strikes: ${d.name} also hits ${o2.name}.`); d.play(this, o2); } } }
     }
     if (T.cascade && !this.over) this.drawCards(p, 1);
     (T.played = T.played || []).push(c);
@@ -2295,7 +2297,7 @@ const UPG_SPECIAL = { // key -> (N = token values in text order, rank, v, base c
   elemental_ward: (N, r, v, d) => ({ text: v.text + ` You also gain ${5 * r}% resistance to it.`, play: (cb, t, p) => { p = cb.player; d.play(cb, t, p); const el = p.until.convert; if (!el) return; p.resist[el] = (p.resist[el] || 0) + 5 * r; cb.timed(p, 'eward', 1, { end: (c, q) => { q.resist[el] -= 5 * r; } }); } }),
   reckless_abandon: (N, r, v) => ({ text: v.text + ` Gain ${1 + r} Strength this turn per card drawn.`, play: (cb, t, p) => { p = cb.player; const n = p.hand.length; p.discard.push(...p.hand.splice(0)); cb.drawCards(p, n + 1); p.strTurn += (n + 1) * (1 + r); say(cb, `+${(n + 1) * (1 + r)} Strength this turn.`); } }),
   all_in: (N, r, v, d) => ({ text: v.text + ` Gain ${2 * r} Dodge.`, play: (cb, t, p) => { d.play(cb, t, cb.player); cb.gainDef(2 * r); } }),
-  sweeping_strikes: (N, r, v) => { const n = 1 + (r >= 3 ? 1 : 0) + (r >= 4 ? 1 : 0), w = ['a second enemy', 'a second and third enemy', 'three more enemies'][n - 1]; return { text: v.text.replace('a second enemy', w), play: (cb, t, p) => { cb.player.turn.sweep = 2; cb.player.turn.sweepN = n; say(cb, `Your next 2 single-target Attacks also hit ${w}.`); } }; },
+  sweeping_strikes: (N, r, v) => { const n = 1 + (r >= 3 ? 1 : 0) + (r >= 4 ? 1 : 0), w = ['a second enemy', 'a second and third enemy', 'three more enemies'][n - 1]; return { text: v.text.replace('a second enemy', w), play: (cb, t, p) => { p = cb.player; p.sweep = (p.sweep || 0) + 2; p.sweepN = Math.max(p.sweepN || 0, n); say(cb, `Your next 2 single-target Attacks also hit ${w}.`); } }; },
   killing_blow: (N, r, v) => ({ text: v.text.replace('deals double damage', `deals ${100 + 10 * r}% more damage`), play: (cb, t, p) => { cb.player.turn.killingBlow = 2 + 0.1 * r; say(cb, `Your next crit this turn deals ${100 + 10 * r}% more damage.`); } }),
   manaquake: (N, r, v) => ({ text: v.text.replace('equal to the amount consumed', `equal to ${100 + 5 * r}% of the amount consumed`), play: (cb, t, p) => { p = cb.player; const m = Math.floor(p.mana / 2); p.mana -= m; DA(cb, m * (1 + 0.05 * r), 'Manaquake'); } }),
   thousand_cuts: (N, r, v) => { const per = 1 + (r >= 3 ? 1 : 0) + (r >= 4 ? 1 : 0); return { text: v.text.replace('Attack once', ['Attack once', 'Attack twice', 'Attack three times'][per - 1]), play: (cb, t, p) => { const hits = Math.floor(cb.spendAll(cb.player) / 5) * per; for (let i = 0; i < hits && !cb.over; i++) D_(cb, t, 1, 'Thousand Cuts'); } }; },
@@ -2501,6 +2503,7 @@ const TEXT_FIX = {
 "divine_communion": "Spend all your mana to heal every party member for that much. Exhaust.",
 "cleanse": "Remove all debuffs except Bleed from yourself or an ally.",
 "final_verdict": "Deal 12 Holy damage. Consume all Devotion for 4 Holy damage per stack.",
+"sweeping_strikes": "Your next 2 single-target Attacks also hit a second enemy. Lasts until used.",
 "mass_dispel": "Remove all debuffs except Bleed from you and all allies. Exhaust.",
 "prism_of_faith": "Choose an element other than Holy. Until your next turn, all damage you take is converted to that element.",
 "crusader_aura": "Whenever you alternate between Attack and Skill, gain 10 Strength after an Attack or 10 Dexterity after a Skill this turn.",
