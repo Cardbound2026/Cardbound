@@ -11,6 +11,7 @@
       ['Art', "The Cinder Reach gets its animated pixel monsters too: ash imps, lava slugs, cinder hounds, magma golems and the fire cult, six elites, and Pyrelord Vashkar, whose crown bursts into flame when he reaches half health."],
       ['Art', "Rimewatch is next: snow sprites, ice wolves, yetis, frost trolls, mammoths, a wendigo, the Queen's winter knights, six elites (the Yeti King, the Frozen Engine, the Shard Sisters and more) and Queen Sylvaine herself, who calls down the Long Winter at half health."],
       ['Art', "Tanglewild joins them: spitting toads, briar wolves, giant wasps, bog lurkers, treants, a broodmother spider, six elites (the Swamp Hag and her cauldron, the Hive Queen, the Colossal Treant and more) and the Elder Thornheart, whose chest splits open into the Wild Bloom at half health."],
+      ['Art', "The Shattered Spire is next: mana wisps, scroll thieves, ley hounds, warded golems, living tomes, a rune titan, a plain-iron Arbiter, six elites (the Mirror Twins, the Clockwork Oracle, the Bursar and more) and Archmagus Ilvar, cracked open and leaking violet light, who unbinds himself at half health."],
       ['Change', "Menu > Settings > Previous enemy art switches back to the still pictures."],
     ] },
     { date: '2026-11-07', items: [
