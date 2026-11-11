@@ -281,6 +281,7 @@ svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
 .cf { --cw: 156px; position: relative; width: var(--cw); aspect-ratio: 2 / 3; flex: 0 0 var(--cw); padding: 0; border: 0; background: none; color: inherit; text-align: center; container-type: inline-size; font-family: var(--f-ui); display: block; transition: transform .12s, filter .12s; }
 .cf .fart { position: absolute; border-radius: 7cqw; overflow: hidden; background: radial-gradient(120% 90% at 50% 20%, color-mix(in srgb, var(--cc) 55%, #2a2016), #120e0b 75%); box-shadow: inset 0 0 0 1.2cqw color-mix(in srgb, var(--rg) 55%, transparent), inset 0 0 14cqw -2cqw var(--rg); display: grid; place-items: center; }
 .cf .fart img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cf .fart img.px { image-rendering: pixelated; }
 .cf .fart svg { width: 34cqw; height: 34cqw; color: color-mix(in srgb, var(--cc) 40%, #e8d9bd); opacity: .55; filter: drop-shadow(0 1cqw 2cqw #000); }
 .cf .fimg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; user-select: none; }
 .cf .fgem { position: absolute; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 36% 30%, rgba(255,255,255,.85) 0 7%, var(--rg) 32%, color-mix(in srgb, var(--rg) 45%, #000) 100%); box-shadow: 0 0 5cqw color-mix(in srgb, var(--rg) 70%, transparent), inset 0 -1.5cqw 3cqw rgba(0,0,0,.45); font-family: var(--cf-name); font-size: 11.5cqw; line-height: 1; color: #fff; text-shadow: 0 0 1.2cqw #000, 0 0.6cqw 1.2cqw #000; }
@@ -2524,7 +2525,7 @@ body.inkui:not(.ui-classic) .sheetbox .btn, body.inkui:not(.ui-classic) .modal .
     const text = esc(d.text).replace(/(\d+)/g, '<b>$1</b>').replace(/\u0001<b>(\d+)<\/b>\u0002/g, '<b class="lup">$1</b>').replace(/\u0003<b>(\d+)<\/b>\u0004/g, '<b class="ldown">$1</b>'), len = d.text.replace(/[\u0001-\u0004]/g, '').length;
     const plaque = d.type === 'Attack' || d.dtype ? `${d.dtype || 'Physical'} ${d.type}` : d.type;
     const name = d.rank ? d.name.replace(/ \+\d+$/, '') : d.name, art = (window.CB_ART || {})[d.key];
-    return `<span class="fart" style="${box(g.art)}">${art ? `<img src="${art}" alt="" draggable="false">` : cardIcon(d)}</span><img class="fimg" src="${R.src(d.rarity)}" alt="" draggable="false">
+    return `<span class="fart" style="${box(g.art)}">${art ? `<img src="${art}" alt="" draggable="false"${art.startsWith('img/') ? ' class="px"' : ''}>` : cardIcon(d)}</span><img class="fimg" src="${R.src(d.rarity)}" alt="" draggable="false">
       ${d.cost != null && d.cost < 999 ? `<span class="forb" style="${orb(R.orbL)}" title="Mana cost">${d.cost}</span>` : ''}
       ${d.rank ? `<span class="forb flvl" style="${orb(R.orbR)}" title="Card level">${d.rank}</span>` : ''}
       <span class="fplq" style="${box(g.plaque)}">${esc(plaque)}</span>
@@ -2541,7 +2542,7 @@ body.inkui:not(.ui-classic) .sheetbox .btn, body.inkui:not(.ui-classic) .modal .
     const type = `${d.type}${d.dtype && d.dtype !== 'Physical' ? ' · ' + d.dtype : ''}`;
     const name = d.rank ? d.name.replace(/ \+\d+$/, '') : d.name;
     const art = (window.CB_ART || {})[d.key];
-    return `<span class="fart" style="${L(F.art)}">${art ? `<img src="${art}" alt="" draggable="false">` : cardIcon(d)}</span><img class="fimg" src="${F.src}" alt="" draggable="false">
+    return `<span class="fart" style="${L(F.art)}">${art ? `<img src="${art}" alt="" draggable="false"${art.startsWith('img/') ? ' class="px"' : ''}>` : cardIcon(d)}</span><img class="fimg" src="${F.src}" alt="" draggable="false">
       ${d.cost != null && d.cost < 999 ? `<span class="fgem" style="left:${pct(g[0] - gr)};top:${pct(g[1] - gr / 1.5)};width:${pct(gr * 2)};aspect-ratio:1">${d.cost}</span>` : ''}
       ${d.rank ? `<span class="frank">+${d.rank}</span>` : ''}
       <span class="fpanel" style="${L(F.panel)}"><span class="fname">${esc(name)}</span><span class="ftype">${type}</span><span class="ftext ${len > 95 ? 'vlong' : len > 62 ? 'long' : ''}">${text}</span></span>`;
