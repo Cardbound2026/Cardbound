@@ -952,7 +952,7 @@ window.CB_ART = {"strike": "data:image/webp;base64,UklGRsYPAQBXRUJQVlA4ILoPAQDQT
 // ---------- Pixel card art (Nov 11): one PixelLab painting per player card, public/img/cards/<card key>.webp (made by tools/pack_cards.py).
 // Listed keys replace the older painted art in CB_ART; cards not listed keep it (or their icon).
 // TO REMOVE: delete this file (and public/img/cards).
-(function () { const K = ["armor_nova", "battle_fever", "battle_shout", "blood_clock", "blood_reckoning", "bloodthirst", "coagulate", "colossal_reserve", "crimson_covenant", "crushing_bastion", "decisive_reprisal", "deepen_the_wound", "defend", "deferred_power", "execute", "expose_opening", "follow_through", "guardian_s_oath", "heavy_swing", "limit_break", "manaquake", "open_wounds", "pain_echo", "parry_reversal", "perfect_guard", "pommel_strike", "reckless_swing", "ruthless_conversion", "shield_bash", "shield_up", "shield_wall", "steel_tempo", "strike", "thorned_bulwark", "thousand_cuts", "unyielding_bastion", "war_engine", "whirlwind"]; const A = window.CB_ART = window.CB_ART || {}; for (const k of K) A[k] = 'img/cards/' + k + '.webp'; })();
+(function () { const K = ["armor_nova", "battle_fever", "battle_rhythm", "battle_shout", "battle_trance", "berserker_rage", "blood_clock", "blood_pact", "blood_reckoning", "bloodletting", "bloodlust", "bloodthirst", "brace", "catch_your_breath", "cauterize", "charge", "clear_head", "cleave", "coagulate", "colossal_reserve", "concussive_blow", "counter_stance", "crimson_covenant", "crushing_bastion", "crushing_blow", "decisive_reprisal", "deep_cuts", "deep_reserves", "deepen_the_wound", "defend", "deferred_power", "disarm", "double_strike", "elemental_ward", "execute", "expose_opening", "fireproof", "flurry_of_blows", "focused_fury", "follow_through", "forge_hardened", "grit", "grudge", "guarded_stance", "guardian_s_oath", "hamstring", "hardened", "heavy_swing", "hemorrhagic_strike", "hidden_reserves", "hold_the_line", "imbue_weapon", "intervene", "intimidating_shout", "iron_will", "kick_aside", "killing_blow", "last_stand", "limit_break", "mana_break", "mana_sever", "manaquake", "mortal_precision", "mortal_strike", "open_wounds", "overpower", "pain_echo", "parry_reversal", "perfect_guard", "pinning_strike", "pommel_strike", "pummel", "rally", "rampage", "rattle", "reckless_swing", "rend", "rimeguard", "ruthless_conversion", "second_wind", "shake_it_off", "sharpen", "shatter_guard", "shatter_will", "shatterplate", "shield_bash", "shield_slam", "shield_up", "shield_wall", "siphoning_strikes", "spell_reflection", "staggering_blow", "steady_pace", "steel_tempo", "strike", "sunder_armor", "sweeping_strikes", "taunt", "tempered_steel", "thorned_bulwark", "thousand_cuts", "throw_weapon", "unflinching", "unstoppable_force", "unyielding_bastion", "war_engine", "war_stomp", "warcry", "whirlwind"]; const A = window.CB_ART = window.CB_ART || {}; for (const k of K) A[k] = 'img/cards/' + k + '.webp'; })();
 
 </script>
 <script>
@@ -6849,8 +6849,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794409681499';
-  const CB_BUILD = 'eb0075ac91'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794410355069';
+  const CB_BUILD = 'cecccc8cf7'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
