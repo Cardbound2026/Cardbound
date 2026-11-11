@@ -180,10 +180,32 @@ function draw(canvas,options={}){
 // which painting and tint each map uses
 const MAPLOOK = { physical: [0, null], fire: [3, ['#b2502a', .32]], frost: [4, ['#5b86a8', .3]], nature: [1, ['#5f8a3c', .22]], arcane: [2, ['#7a4fb0', .3]], shadow: [2, ['#4a3a5a', .35]] };
 const BF = { on: true, key: '', w: 0, h: 0 }; // Nov 2: the side-by-side classic stage is retired
-function sceneFor(stage, map) {
+// Painted pixel-art backdrops (Nov 11): the Broken March has ten road scenes and a boss scene, made with PixelLab
+// (public/img/bg/physical_NN.webp). The burned castle at the end of the road gets closer the further up the map the fight is,
+// and the boss is fought at its gate. Maps without art (and fights off the map) keep the painted scenery above.
+const BGART = { physical: { n: 10, boss: 'img/bg/physical_boss.webp', at: (i) => 'img/bg/physical_' + String(i).padStart(2, '0') + '.webp' } };
+const bgImgs = {};
+function bgFor(map, row) {
+  const A = BGART[map]; if (!A || row == null) return null;
+  const src = row === 'boss' ? A.boss : A.at(Math.min(A.n, Math.max(1, Math.ceil(row * A.n / 14))));
+  return bgImgs[src] || (bgImgs[src] = Object.assign(new Image(), { decoding: 'async', src }));
+}
+function paintArt(cv, img, w, h, dpr) {
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.imageSmoothingEnabled = false;
+  const k = Math.max(w / img.naturalWidth, h / img.naturalHeight), dw = img.naturalWidth * k, dh = img.naturalHeight * k;
+  c.drawImage(img, (w - dw) / 2, (h - dh) * 0.7, dw, dh);
+  let g = c.createLinearGradient(0, h * 0.55, 0, h); g.addColorStop(0, 'rgba(8,10,10,0)'); g.addColorStop(1, 'rgba(8,10,10,.55)'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+  g = c.createRadialGradient(w / 2, h * 0.5, Math.min(w, h) * 0.4, w / 2, h * 0.5, Math.max(w, h) * 0.75); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.45)'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+}
+function sceneFor(stage, map, row) {
   let cv = stage.querySelector('#bfScene'); if (!cv) { cv = document.createElement('canvas'); cv.id = 'bfScene'; cv.setAttribute('aria-hidden', 'true'); stage.prepend(cv); }
-  const w = stage.clientWidth, h = stage.clientHeight, key = map + ':' + w + 'x' + h;
-  if (key !== BF.key && w > 50 && h > 50) { const L = MAPLOOK[map] || MAPLOOK.physical; draw(cv, { width: w, height: h, chapter: L[0], tint: L[1], dpr: Math.min(window.devicePixelRatio || 1, 1.75) }); BF.key = key; }
+  const w = stage.clientWidth, h = stage.clientHeight, img = bgFor(map, row), ready = img && img.complete && img.naturalWidth, key = map + ':' + row + ':' + !!ready + ':' + w + 'x' + h;
+  if (key !== BF.key && w > 50 && h > 50) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+    if (ready) paintArt(cv, img, w, h, dpr);
+    else { const L = MAPLOOK[map] || MAPLOOK.physical; draw(cv, { width: w, height: h, chapter: L[0], tint: L[1], dpr }); if (img && !img._wait) { img._wait = 1; img.addEventListener('load', () => { if (cv.isConnected) sceneFor(stage, map, row); }, { once: true }); } }
+    BF.key = key;
+  }
   return [w, h];
 }
 // The formation: heroes on the left diagonal, foes mirrored on the right. Each fighter stands at an anchor (its feet);
@@ -199,7 +221,7 @@ function layout(cb, opts) {
     return;
   }
   sc.classList.add('bf');
-  const [W, H] = sceneFor(stage, map); if (!W) return;
+  const [W, H] = sceneFor(stage, map, opts && opts.row); if (!W) return;
   const order = document.getElementById('order'), hud = sc.querySelector('.field-panel > .hud'), hint = document.getElementById('hint');
   if (hud && hint && hint.parentElement !== hud) hud.insertBefore(hint, hud.querySelector('.spacer'));
   if (hint) hint.title = hint.textContent;

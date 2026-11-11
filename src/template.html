@@ -2998,7 +2998,7 @@ body.inkui:not(.ui-classic) .sheetbox .btn, body.inkui:not(.ui-classic) .modal .
       const fp = st.parentElement, top = Math.round(fp.getBoundingClientRect().top + window.scrollY); if (top > 0 && top < 400) fp.style.setProperty('--fpTop', top + 'px');
     } $('playerSlot').innerHTML = mine.map(unitHtml).join('');
     $('foes').innerHTML = foes.map(unitHtml).join('');
-    if (window.CB_BF) CB_BF.layout(cb, { map: $('scrCombat').dataset.map, left: cb.duel ? 'You' : cb.raid ? 'The raid' : cb.partySize > 1 ? 'Your party' : esc(hero().name), right: cb.duel ? 'Your rival' : (DATA.maps[$('scrCombat').dataset.map] || {}).name || 'The enemy' });
+    if (window.CB_BF) CB_BF.layout(cb, { map: $('scrCombat').dataset.map, row: run && run.at && run.map && run.map.nodes[run.at] ? (run.at === 'boss' ? 'boss' : run.map.nodes[run.at].row) : null, left: cb.duel ? 'You' : cb.raid ? 'The raid' : cb.partySize > 1 ? 'Your party' : esc(hero().name), right: cb.duel ? 'Your rival' : (DATA.maps[$('scrCombat').dataset.map] || {}).name || 'The enemy' });
     if (withPops) popups(); else snapshot();
     if (window.CB_FX) CB_FX.consume(cb); // hero moves, hit effects and spell projectiles (src/fx.js, src/forge.js)
     $('orb').textContent = p.mana;
