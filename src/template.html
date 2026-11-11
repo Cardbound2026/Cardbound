@@ -2312,6 +2312,7 @@ body.inkui:not(.ui-classic) .sheetbox .btn, body.inkui:not(.ui-classic) .modal .
     if (typeof retrack === 'function') try { retrack(); } catch (e) {}
     trimPlans();
     $('mapScroll').innerHTML = mapSvg(true);
+    if (window.CB_MAPART) try { CB_MAPART.decorate($('mapScroll'), run); } catch (e) {}
     renderPlan();
     const curRow = run.currentRow(), W = PADX * 2 + (COLS - 1) * CW, H = PADY * 2 + ROWS * RH, reach = new Set(run.over ? [] : run.reachable());
     if (scroll) { const target = PADY + (ROWS + 1 - Math.max(1, curRow + 2)) * RH; const sc = $('mapScroll'); sc.scrollTop = Math.max(0, target - sc.clientHeight / 2); }
@@ -2398,7 +2399,7 @@ body.inkui:not(.ui-classic) .sheetbox .btn, body.inkui:not(.ui-classic) .modal .
       <div class="mapscroll" id="mapPeekScroll" style="max-height:60vh">${mapSvg(false)}</div>
       <div class="legend">${Object.entries(NODE).map(([k, t]) => `<span><svg width="16" height="16" viewBox="-11 -11 22 22"><path d="${t.path}" fill="${t.color}"/></svg>${t.label}</span>`).join('')}</div>
       <div class="row"><button class="btn primary" id="mClose">Back to the fight</button></div>`);
-    $('mClose').onclick = closeModal;
+    $('mClose').onclick = closeModal; if (window.CB_MAPART) try { CB_MAPART.decorate($('mapPeekScroll'), run); } catch (e) {}
     const sc = $('mapPeekScroll'), target = PADY + (ROWS + 1 - Math.max(1, curRow + 2)) * RH; sc.scrollTop = Math.max(0, target - sc.clientHeight / 2);
   }
   function nodeInfo(id) {
