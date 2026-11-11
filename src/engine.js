@@ -1829,6 +1829,7 @@ class Combat {
     if (e.counter > 0) { e.counter--; this.say('player', `${e.name} plays ${c.name}, but it is countered: no effect.`); return true; }
     this.say('enemy', `${e.name} plays ${c.name}: ${c.text}`);
     const aoe = c.ops.some(o => o.all || o.op === 'shredAll') || /every player|each of their/.test(c.text);
+    this.fxPush({ t: 'eplay', s: e.id, kind: CB_intent(c), aoe, name: c.name }); // Nov 10: lets an animated monster pick its move
     const PLAYER_OPS = ['damage', 'execute', 'damageBlock', 'debuff', 'stealMana', 'burnMana', 'drawLess', 'disarm', 'purge', 'shred', 'shredAll', 'tickBleed', 'status'];
     const targeted = !aoe && c.ops.some(o => PLAYER_OPS.includes(o.op));
     // pick who this card hits: area cards hit every standing hero; single-target cards pick a random hero who isn't in Stealth

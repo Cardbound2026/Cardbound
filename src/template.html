@@ -2069,6 +2069,7 @@ body.inkui:not(.ui-classic) .sheetbox .btn, body.inkui:not(.ui-classic) .modal .
 /*FORGE*/
 /*FX*/
 /*INKART*/
+/*MOBS*/
 /*INKUI*/
 /*BATTLEFIELD*/
 /*GEARUI*/
@@ -2245,6 +2246,7 @@ body.inkui:not(.ui-classic) .sheetbox .btn, body.inkui:not(.ui-classic) .modal .
       <h3 style="font-size:20px;margin-top:6px">Settings</h3>
       <label class="toggle"><input type="checkbox" id="setFast" ${settings.fast ? 'checked' : ''}> Fast enemy turns</label>
       <label class="toggle"><input type="checkbox" id="setClassic" ${settings.classicUi ? 'checked' : ''}> Previous interface (the stone and wood look from before the pixel art)</label>
+      <label class="toggle"><input type="checkbox" id="setClassicFoes" ${settings.classicFoes ? 'checked' : ''}> Previous enemy art (the still pictures from before the animated pixel monsters)</label>
     </div>`);
     $('mClose').onclick = closeModal;
     $('mnGloss').onclick = () => openGlossary();
@@ -2253,6 +2255,7 @@ body.inkui:not(.ui-classic) .sheetbox .btn, body.inkui:not(.ui-classic) .modal .
     if ($('mnTut')) $('mnTut').onclick = () => { closeModal(); tutStart(); };
     $('setFast').onchange = (e) => { settings.fast = e.target.checked; saveSettings(); };
     $('setClassic').onchange = (e) => { settings.classicUi = e.target.checked; saveSettings(); document.body.classList.toggle('ui-classic', !!settings.classicUi); };
+    $('setClassicFoes').onchange = (e) => { settings.classicFoes = e.target.checked; saveSettings(); if (cb && typeof render === 'function') try { render(); } catch (er) {} };
     if ($('mnLeave')) $('mnLeave').onclick = () => {
       modal(`<h2 class="loss">Leave this run?</h2><p>You go back to Emberwatch now. Everything in your loot sack (items, cards and gold found this run) is lost. Gear you are wearing, your deck and any merchant orders are kept.</p><div class="row"><button class="btn" id="mnConfirm">Leave and lose the sack</button><button class="btn primary" id="mClose">Keep playing</button></div>`);
       $('mClose').onclick = closeModal; $('mnConfirm').onclick = leaveRun;
@@ -2818,8 +2821,10 @@ body.inkui:not(.ui-classic) .sheetbox .btn, body.inkui:not(.ui-classic) .modal .
   }
   const lastCrit = {};
   function snapshot() { for (const a of [...cb.players, ...cb.enemies]) { lastHp[a.id] = a.hp; lastBlock[a.id] = a.block; lastCrit[a.id] = a.critN || 0; } }
+  window.__cbActor = (id) => (cb ? cb.actorById(id) : null); // pixel monsters check HP for a boss's phase change
   function figure(a, unit) {
     if (unit && a.isPlayer && window.CB_FORGE && a.look) return CB_FORGE.figureHtml(a, window.CB_INK ? CB_INK.figure(a) || '' : ''); // live sprite from the gear the hero wears (src/forge.js)
+    if (window.CB_MOBS && !settings.classicFoes) { const px = CB_MOBS.figure(a, unit); if (px) return px; } // Nov 10: animated pixel monsters (src/mobsprites.js)
     if (window.CB_INK) { const ink = CB_INK.figure(a); if (ink) return ink; } // Gothic Ink art pack (src/inkart.js); without it, the drawn figures below
     if (a.isPlayer) { const col = CC[a.cls]; return `<svg viewBox="0 0 80 100"><ellipse cx="40" cy="96" rx="26" ry="4" fill="#000" opacity=".4"/><path d="M28 40h24l4 34-6 22H30l-6-22z" fill="#5d5a55"/><circle cx="40" cy="26" r="13" fill="#8a847a"/><path d="M27 24h26v6H27z" fill="${col}"/><path d="M14 44l14-4 3 30-12 8-7-14z" fill="#3b3128" stroke="${col}" stroke-width="2"/><path d="M58 30l4-2 2 46-4 2z" fill="#c9c3b8"/></svg>`; }
     const c = a.creature, big = a.tier === 'Elite' || a.tier === 'Boss';
