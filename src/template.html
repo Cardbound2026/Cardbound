@@ -737,6 +737,23 @@ body.aiming { cursor: grabbing; user-select: none; }
 .endturn.btn.primary { border-width: 16px 40px; border-image-width: 16px 40px; padding: 0 12px; font-size: 24px; }
 .btn:not(.primary) { background: linear-gradient(180deg, #2d241b, #1b1611); border-color: #5e4630; color: #e8d8ba; box-shadow: inset 0 1px 0 rgba(255,220,160,.08); }
 .btn:not(.primary):hover:not(:disabled) { border-color: #a07a46; color: #fff1d6; }
+/* ===== Pixel UI (Nov 10): Gothic Cathedral pixel-art kit (made in PixelLab; files in img/ui/px; source art in Cardbound/art/ui).
+   Laid over the Gothic Ink skin (inkui.js): replaces its stone frames, wooden buttons, tabs and bars. Menu > Settings > "Previous interface" turns it off (body.ui-classic). ===== */
+body.inkui:not(.ui-classic) .sheetbox, body.inkui:not(.ui-classic) .modal .box { border: 26px solid transparent; border-image: url(img/ui/px/window.png) 40 fill / 40px / 0 repeat; image-rendering: pixelated; background: none; border-radius: 0; }
+body.inkui:not(.ui-classic) .panel, body.inkui:not(.ui-classic) .talk { border: 24px solid transparent; border-image: url(img/ui/px/panel.png) 40 fill / 40px / 0 repeat; image-rendering: pixelated; background: none; border-radius: 0; }
+body.inkui:not(.ui-classic) .btn.primary, body.inkui:not(.ui-classic) .btn:not(.primary) { border-image: url(img/ui/px/button.png) 14 22 fill / 14px 22px / 0 repeat; image-rendering: pixelated; background: none; box-shadow: none; border-radius: 0; }
+body.inkui:not(.ui-classic) .btn.primary { color: #f2dc9a; text-shadow: 0 1px 0 #060608, 0 0 3px #060608, 0 0 8px rgba(207,174,90,.3); }
+body.inkui:not(.ui-classic) .btn:not(.primary) { filter: brightness(.8) saturate(.7); color: #ddd6d2; text-shadow: 0 1px 0 #060608, 0 0 3px #060608; }
+body.inkui:not(.ui-classic) .btn:not(.primary):hover:not(:disabled), body.inkui:not(.ui-classic) .btn.primary:hover:not(:disabled) { filter: brightness(1.12); color: #f2dc9a; }
+body.inkui:not(.ui-classic) .btn:disabled { filter: grayscale(.85) brightness(.55); color: #88838c; }
+body.inkui:not(.ui-classic) .endturn.btn.primary { border-image-width: 14px 22px; }
+body.inkui:not(.ui-classic) .tabs { border-bottom: 0; gap: 4px; }
+body.inkui:not(.ui-classic) .tabs button { border: 0; border-image: url(img/ui/px/tab.png) 12 20 fill / 12px 20px / 0 repeat; image-rendering: pixelated; background: none; filter: brightness(.55) saturate(.6); color: #a39ea4; padding: 8px 12px; }
+body.inkui:not(.ui-classic) .tabs button[aria-selected="true"] { background: none; filter: none; color: #f2dc9a; }
+body.inkui:not(.ui-classic) .bar, body.inkui:not(.ui-classic) .xpbar { background: #0c0c0f; border: 2px solid #3b3942; box-shadow: inset 0 0 0 1px #060608, 0 0 0 1px #060608; border-radius: 2px; }
+body.inkui:not(.ui-classic) .bar i { background: url(img/ui/px/bar_fill.png) 0 0 / 100% 100% no-repeat; image-rendering: pixelated; box-shadow: none; }
+body.inkui:not(.ui-classic) .sheetbox *, body.inkui:not(.ui-classic) .modal .box *, body.inkui:not(.ui-classic) .panel *, body.inkui:not(.ui-classic) .talk * { image-rendering: auto; }
+body.inkui:not(.ui-classic) .sheetbox .btn, body.inkui:not(.ui-classic) .modal .box .btn, body.inkui:not(.ui-classic) .panel .btn, body.inkui:not(.ui-classic) .talk .btn, body.inkui:not(.ui-classic) .sheetbox .tabs button, body.inkui:not(.ui-classic) .modal .box .tabs button, body.inkui:not(.ui-classic) .panel .tabs button, body.inkui:not(.ui-classic) .panel .bar i, body.inkui:not(.ui-classic) .sheetbox .bar i, body.inkui:not(.ui-classic) .modal .box .bar i { image-rendering: pixelated; }
 /* battle backdrop: the map's painting behind the fight (maps without one yet get a tinted gradient) */
 #scrCombat .field-panel { position: relative; background: #0d0a08; border: 0; isolation: isolate; }
 #scrCombat .field-panel::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: 8px; background: var(--battle-bg, radial-gradient(120% 90% at 50% 0%, #2a2219 0%, #15110d 70%)) center 30% / cover no-repeat; filter: brightness(.82) saturate(1.05); }
@@ -2058,6 +2075,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 
   // ---------- settings (this browser)
   const settings = (() => { try { return Object.assign({ fast: false }, JSON.parse(localStorage.getItem('cb-settings') || '{}')); } catch (e) { return { fast: false }; } })();
+  document.body.classList.toggle('ui-classic', !!settings.classicUi); // Nov 10: pixel-art UI is the default; Settings can switch back
   // combat log: drag its left edge (width), bottom edge (height) or the corner; double-click a grip to reset; remembered per browser
   function applyLedgerSize() { const sc = $('scrCombat'); if (!sc) return; for (const [k, v] of [['--chatW', settings.chatW], ['--chatH', settings.chatH]]) { if (v) sc.style.setProperty(k, v + 'px'); else sc.style.removeProperty(k); } if (settings.ledgerW) sc.style.setProperty('--ledgerW', settings.ledgerW + 'px'); else sc.style.removeProperty('--ledgerW'); if (settings.ledgerH) sc.style.setProperty('--ledgerH', settings.ledgerH + 'px'); else sc.style.removeProperty('--ledgerH'); }
   (function () {
@@ -2219,6 +2237,7 @@ body.aiming { cursor: grabbing; user-select: none; }
       ${typeof socOn === 'function' && socOn() ? `<button class="btn" id="mnNet">Connection details (co-op)</button>` : ''}
       <h3 style="font-size:20px;margin-top:6px">Settings</h3>
       <label class="toggle"><input type="checkbox" id="setFast" ${settings.fast ? 'checked' : ''}> Fast enemy turns</label>
+      <label class="toggle"><input type="checkbox" id="setClassic" ${settings.classicUi ? 'checked' : ''}> Previous interface (the stone and wood look from before the pixel art)</label>
     </div>`);
     $('mClose').onclick = closeModal;
     $('mnGloss').onclick = () => openGlossary();
@@ -2226,6 +2245,7 @@ body.aiming { cursor: grabbing; user-select: none; }
     if ($('mnAch')) $('mnAch').onclick = () => openAchievements();
     if ($('mnTut')) $('mnTut').onclick = () => { closeModal(); tutStart(); };
     $('setFast').onchange = (e) => { settings.fast = e.target.checked; saveSettings(); };
+    $('setClassic').onchange = (e) => { settings.classicUi = e.target.checked; saveSettings(); document.body.classList.toggle('ui-classic', !!settings.classicUi); };
     if ($('mnLeave')) $('mnLeave').onclick = () => {
       modal(`<h2 class="loss">Leave this run?</h2><p>You go back to Emberwatch now. Everything in your loot sack (items, cards and gold found this run) is lost. Gear you are wearing, your deck and any merchant orders are kept.</p><div class="row"><button class="btn" id="mnConfirm">Leave and lose the sack</button><button class="btn primary" id="mClose">Keep playing</button></div>`);
       $('mClose').onclick = closeModal; $('mnConfirm').onclick = leaveRun;

@@ -1,6 +1,10 @@
   // ---------- What's new: the changelog (button bottom-right) and the new-version warning
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
+    { date: '2026-11-10', items: [
+      ['Art', "New pixel-art interface in a Gothic Cathedral style: carved stone frames with tarnished gold for windows and panels, new buttons, tabs and health bars. This is the first piece of the move to high-detail pixel art."],
+      ['Change', "Menu > Settings > Previous interface switches back to the stone and wood look if you prefer it."],
+    ] },
     { date: '2026-11-07', items: [
       ['Change', "New Warriors with the Berserker starting deck begin with a two-handed Bearded Greataxe (no shield), so Colossus works from the start."],
       ['Change', "New Warlocks with the Shadow Knight starting deck begin with a Reaper's Scythe instead of the Wand and Focus."],
