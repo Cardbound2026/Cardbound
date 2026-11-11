@@ -7,7 +7,7 @@
 (function () {
   const M = /*MOB-MANIFEST*/{};
   const REF = 96;                                    // a human-sized mob's idle height in sheet pixels, drawn as tall as the old art
-  const CAP = { '1': 1.25, '2': 1.35, '3': 1.6, Elite: 1.7, Boss: 2 }; // tallest a mob may draw, as a multiple of a human
+  const CAP = { '1': 1.2, '2': 1.3, '3': 1.45, Elite: 1.5, Boss: 1.7 }; // tallest a mob may draw, as a multiple of a human
   const css = document.createElement('style');
   css.textContent = `.figure:has(> .mobfig) { height: auto; overflow: visible; min-height: 80px; }
     .mobfig { position: relative; display: block; margin: 0 auto; pointer-events: none; }
