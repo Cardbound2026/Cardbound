@@ -188,6 +188,7 @@ body.sheetopen #btnUpdates, body.modalopen #btnUpdates { display: none; }
 .order .otile.demon .ofig { height: 38px; } .order .otile.demon .ofig .dimg { height: 38px; width: auto; } .order .otile.demon .onm { font-size: 11px; color: #f0b6ea; }
 .dimg { transform: scaleX(-1); filter: hue-rotate(250deg) saturate(1.4) brightness(.95) drop-shadow(0 0 4px #b05ad0aa); }
 svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
+.dimg.pxdemon { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); image-rendering: pixelated; }
 .demons { display: flex; align-items: flex-end; justify-content: center; gap: 4px; margin-top: -4px; pointer-events: auto; }
 .demon { display: grid; justify-items: center; gap: 1px; } .demon .dfig .dimg { height: calc(80px * var(--ds)); width: auto; display: block; }
 /* Nov 2: demons breathe while they wait, lunge at their target when they act and shake when hit */
@@ -6904,8 +6905,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794426793089';
-  const CB_BUILD = '6b9de1586a'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794427142805';
+  const CB_BUILD = '2dc148d90c'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8018,8 +8019,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       ['Art', "Your hand now lies on a card table: a worn tavern table with a crimson card mat, iron-and-bone corner brackets, a pair of bone dice, a coin purse and a skull candle."],
       ['Art', "New fight HUD: your mana sits in an iron orb that drains as you spend it, the draw, discard and exhaust piles are framed icons with their counts, and End turn is a gold plate with an hourglass that glows while it's your turn."],
       ['Art', "Sharper Broken March fight backdrops: all of them were redrawn at three to four times the detail."],
-      ['Art', "The Warrior has a new pixel-art fighter in battle (a placeholder while the full animated heroes are made). The other classes follow."],
-      ['Art', "The Broken March map has fewer, more natural clusters of wreckage along its sides."],
+      ['Art', "New pixel-art fighters for all five classes in battle, and new pixel demons for the Warlock (imp, bulwark fiend, ruin fiend, shade temptress, hollow hound). These are placeholders while the full animated versions are made."],
+      ['Art', "The Broken March map has fewer, more natural clusters of wreckage along its sides, campfires, obelisks and merchant wagons now stand on their nodes, and every node sits on a coloured ring: white for fights, red for elites (pulsing red when enraged), green for merchants, yellow for campfires and blue for obelisks."],
       ['Change', "Every card now uses the same lettering at the same size for its rules text, so cards read alike. Only the few longest cards shrink their text, just enough to fit."],
     ] },
     { date: '2026-11-10', items: [
@@ -10906,9 +10907,9 @@ window.CB_MAPART = (function () {
     .mapart > svg { position: relative; z-index: 1; }
     .mapart > canvas.mapmobs { position: absolute; top: 0; left: 50%; z-index: 2; pointer-events: none; image-rendering: pixelated; }
     .mapart .node .ring { fill-opacity: .55; }
-    .mapart .node.mobnode .ring { fill: rgba(10,8,6,.25); stroke-opacity: .55; }
-    .mapart .node.mobnode.reach .ring { stroke-opacity: 1; }
-    .mapart .node.mobnode > path { display: none; }
+    .mapart .node.artnode .ring { fill: transparent; stroke-opacity: 0; }
+    .mapart .node.artnode.reach .ring { stroke-opacity: .85; stroke-dasharray: 3 4; }
+    .mapart .node.artnode > path, .mapart .node.artnode > .enraged { display: none; }
     .mapart text { paint-order: stroke; stroke: rgba(0,0,0,.7); stroke-width: 3px; }
     .mapart svg line[stroke="#5a4a3b"] { stroke: #b39a70; stroke-opacity: .75; } .mapart svg line[stroke="#2e261f"] { stroke: #7a6a52; stroke-opacity: .5; }
     .mapart svg line { filter: drop-shadow(0 1px 0 rgba(0,0,0,.8)); }
@@ -10921,6 +10922,19 @@ window.CB_MAPART = (function () {
     if (M[k]) return k; if (d && d.art && M[d.art]) return d.art; return null;
   }
   const HT = { '1': 34, '2': 38, '3': 42, Elite: 50, Boss: 66 };     // how tall each tier stands on the map, in CSS px
+  const PROP = { rest: 'rest', shrine: 'shrine', merchant: 'merchant' };          // public/img/map/node_<name>.png
+  const props = {};
+  const propImg = (k) => props[k] || (props[k] = Object.assign(new Image(), { decoding: 'async', src: 'img/map/node_' + k + '.png' }));
+  const RING = { fight: '#f4efe4', elite: '#ff3b2f', boss: '#ff3b2f', merchant: '#4fd86a', rest: '#ffd23f', shrine: '#47a4ff' };
+  function ring(g, cx, cy, rx, col, t, enraged, dim) {
+    const pulse = enraged ? 0.5 + 0.5 * Math.sin(t / 180) : 0, ry = rx * 0.42;
+    g.save(); g.globalAlpha = (dim ? 0.35 : 1) * (enraged ? 0.55 + 0.45 * pulse : 0.9);
+    g.fillStyle = col + (enraged ? '40' : '22'); g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.fill();
+    g.shadowColor = col; g.shadowBlur = enraged ? 6 + 10 * pulse : 5; g.strokeStyle = col; g.lineWidth = enraged ? 2.5 + 1.5 * pulse : 2;
+    g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.stroke();
+    if (enraged) { g.lineWidth = 1.5; g.globalAlpha *= 0.6; g.beginPath(); g.ellipse(cx, cy, rx + 4 + 3 * pulse, ry + 2 + 1.5 * pulse, 0, 0, Math.PI * 2); g.stroke(); }
+    g.restore();
+  }
   let boxes = [];                                                     // live overlays: { cv, run, list }
   function decorate(el, run) {
     if (!el || !run) return; const svg = el.querySelector(':scope > svg'); if (!svg) return;
@@ -10929,15 +10943,18 @@ window.CB_MAPART = (function () {
     wrap.style.width = Math.max(W, a ? a.w : W) + 'px'; wrap.style.height = H + 'px';
     if (a) { wrap.style.backgroundImage = `url(${a.src})`; wrap.style.backgroundSize = `${a.w}px auto`; wrap.style.width = '100%'; wrap.style.minWidth = W + 'px'; }
     svg.style.margin = '0 auto'; el.insertBefore(wrap, svg); wrap.appendChild(svg);
-    // monsters on the fight nodes you can see
+    // every node you can see gets its model (the monsters waiting there, or a campfire, obelisk or merchant's wagon) standing on a
+    // coloured ring: white fight, red elite (pulsing when enraged), green merchant, yellow campfire, blue obelisk
     const list = [];
     for (const g of svg.querySelectorAll('.node')) {
-      const n = run.map.nodes[g.dataset.id]; if (!n || !n.enemies || !run.visible(n)) continue;
-      const ks = n.enemies.map((k) => ({ k: keyFor(k), tier: ((window.CB_DATA && CB_DATA.enemies[k]) || {}).tier || '1' })).filter((x) => x.k);
-      if (!ks.length) continue; g.classList.add('mobnode');
+      const n = run.map.nodes[g.dataset.id]; if (!n || !run.visible(n)) continue;
       const tr = /translate\(([-\d.]+),([-\d.]+)\)/.exec(g.getAttribute('transform')); if (!tr) continue;
-      list.push({ x: +tr[1], y: +tr[2], ks: ks.slice(0, 3), dim: run.visited.includes(n.id) && run.at !== n.id, boss: n.id === 'boss', ph: (n.row * 7 + n.col * 3) % 9 });
-      for (const x of ks) sheet(x.k);
+      const boss = n.id === 'boss', kind = boss ? 'boss' : n.type;
+      const e = { x: +tr[1], y: +tr[2], kind, enraged: !!n.enraged, ks: [], prop: PROP[n.type] || null, dim: run.visited.includes(n.id) && run.at !== n.id, boss, ph: (n.row * 7 + n.col * 3) % 9 };
+      if (n.enemies) { e.ks = n.enemies.map((k) => ({ k: keyFor(k), tier: ((window.CB_DATA && CB_DATA.enemies[k]) || {}).tier || '1' })).filter((x) => x.k).slice(0, 3); for (const x of e.ks) sheet(x.k); }
+      if (e.prop) propImg(e.prop);
+      if (!e.ks.length && !e.prop) continue;
+      g.classList.add('artnode'); list.push(e);
     }
     if (!list.length) return;
     const cv = document.createElement('canvas'), dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -10952,16 +10969,26 @@ window.CB_MAPART = (function () {
     const M = CB_MOBS.manifest;
     for (const b of boxes) {
       const g = b.cv.getContext('2d'); g.setTransform(b.dpr, 0, 0, b.dpr, 0, 0); g.clearRect(0, 0, b.cv.width, b.cv.height); g.imageSmoothingEnabled = false;
+      for (const s of b.list) {                                          // rings first, so every model stands on top of its own
+        const n = s.ks.length, rx = s.boss ? 30 : s.prop ? 22 : Math.max(17, (n - 1) * 8 + 14);
+        ring(g, s.x, s.y + (s.prop ? 10 : 8), rx, RING[s.kind] || RING.fight, t, s.enraged, s.dim);
+      }
       for (const s of b.list) {
+        if (s.prop) {
+          const img = propImg(s.prop); if (!img.complete || !img.naturalWidth) continue;
+          const h = 44, k = h / img.naturalHeight; g.globalAlpha = s.dim ? 0.4 : 1;
+          if (s.prop === 'rest') { const fl = 0.75 + 0.25 * Math.sin(t / 90 + s.ph); const gl = g.createRadialGradient(s.x, s.y, 0, s.x, s.y, 34); gl.addColorStop(0, `rgba(255,170,60,${0.32 * fl})`); gl.addColorStop(1, 'rgba(255,170,60,0)'); g.fillStyle = gl; g.fillRect(s.x - 40, s.y - 40, 80, 80); }
+          if (s.prop === 'shrine') { const fl = 0.6 + 0.4 * Math.sin(t / 400 + s.ph); const gl = g.createRadialGradient(s.x, s.y - 10, 0, s.x, s.y - 10, 34); gl.addColorStop(0, `rgba(90,170,255,${0.28 * fl})`); gl.addColorStop(1, 'rgba(90,170,255,0)'); g.fillStyle = gl; g.fillRect(s.x - 40, s.y - 50, 80, 80); }
+          g.drawImage(img, s.x - img.naturalWidth * k / 2, s.y + 12 - h, img.naturalWidth * k, h);
+          continue;
+        }
         const n = s.ks.length, gap = n > 1 ? 16 : 0;
         s.ks.forEach((x, j) => {
           const m = M[x.k], img = sheet(x.k); if (!m || !img.complete || !img.naturalWidth) return;
           const r = Math.max(0, m.a.findIndex((a) => a[0] === 'idle')), fn = m.a[r][1], i = (Math.floor(t / 110) + s.ph + j * 2) % fn;
           const [x0, y0, x1, y1] = m.ib, ih = y1 - y0, h = (s.boss ? HT.Boss : HT[x.tier] || 28) * (n > 1 ? 0.85 : 1), k = h / ih;
-          const cx = s.x + (j - (n - 1) / 2) * gap, foot = s.y + h * 0.42 + (j % 2) * 3;
+          const cx = s.x + (j - (n - 1) / 2) * gap, foot = s.y + 8 + (j % 2) * 3;
           g.globalAlpha = s.dim ? 0.35 : 1;
-          const gl = g.createRadialGradient(cx, foot - h * 0.35, 0, cx, foot - h * 0.35, h * 0.7); gl.addColorStop(0, 'rgba(230,190,120,.16)'); gl.addColorStop(1, 'rgba(230,190,120,0)'); g.fillStyle = gl; g.fillRect(cx - h, foot - h * 1.1, h * 2, h * 1.5);
-          g.fillStyle = 'rgba(0,0,0,.5)'; g.beginPath(); g.ellipse(cx, foot, h * 0.3, h * 0.08, 0, 0, Math.PI * 2); g.fill();
           g.save(); g.translate(cx, foot);
           g.drawImage(img, i * m.w, r * m.h, m.w, m.h, -((x0 + x1) / 2) * k, -y1 * k, m.w * k, m.h * k); g.restore();
         });
@@ -10987,7 +11014,7 @@ window.CB_MAPART = (function () {
     .inkfig.pxhero { image-rendering: pixelated; }`;
   document.head.appendChild(css);
   const imgs = {}, face = {};
-  const PXH = { Warrior: 1.12 };
+  const PXH = { Warrior: 1.12, Rogue: 1.0, Mage: 1.12, Paladin: 1.12, Warlock: 1.12 };
   window.CB_INK = {
     manifest: M,
     pxHero: (cls) => !!PXH[cls],
@@ -13720,9 +13747,11 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   }
   // Warlock demons (Nov 1): drawn beside their owner (in front, toward the enemy) and listed in the turn order after them
   const DEMON_ART = { imp: 'ash_imp', bulwark: 'obsidian_brute', ruin: 'brimstone_warden', temptress: 'shade', hound: 'hellhound_alpha' };
+  const PX_DEMONS = new Set(['imp', 'bulwark', 'ruin', 'temptress', 'hound']);
   const DEMON_SZ = { imp: .55, bulwark: .78, ruin: .72, temptress: .62, hound: .6 };
   function demonFig(dm) {
     const k = DEMON_ART[dm.key];
+    if (PX_DEMONS.has(dm.key)) return `<img class="dimg pxdemon" src="img/heroes/demon_${dm.key}.png" alt="" draggable="false">`; // placeholder pixel demons (Nov 11)
     if (window.CB_INK && k) return `<img class="dimg" src="img/ink/${k}.webp" alt="" draggable="false">`;
     return `<svg class="dimg" viewBox="0 0 60 70"><ellipse cx="30" cy="66" rx="18" ry="3" fill="#000" opacity=".4"/><path d="M14 64l4-30c2-12 22-12 24 0l4 30z" fill="#4a2a5e"/><circle cx="30" cy="22" r="11" fill="#5e3a74"/><path d="M20 14l-4-10 8 6M40 14l4-10-8 6" fill="#3a1f4a"/><circle cx="26" cy="22" r="2" fill="#f0b6ea"/><circle cx="34" cy="22" r="2" fill="#f0b6ea"/></svg>`;
   }

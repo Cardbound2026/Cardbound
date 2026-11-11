@@ -9,8 +9,8 @@
       ['Art', "Your hand now lies on a card table: a worn tavern table with a crimson card mat, iron-and-bone corner brackets, a pair of bone dice, a coin purse and a skull candle."],
       ['Art', "New fight HUD: your mana sits in an iron orb that drains as you spend it, the draw, discard and exhaust piles are framed icons with their counts, and End turn is a gold plate with an hourglass that glows while it's your turn."],
       ['Art', "Sharper Broken March fight backdrops: all of them were redrawn at three to four times the detail."],
-      ['Art', "The Warrior has a new pixel-art fighter in battle (a placeholder while the full animated heroes are made). The other classes follow."],
-      ['Art', "The Broken March map has fewer, more natural clusters of wreckage along its sides."],
+      ['Art', "New pixel-art fighters for all five classes in battle, and new pixel demons for the Warlock (imp, bulwark fiend, ruin fiend, shade temptress, hollow hound). These are placeholders while the full animated versions are made."],
+      ['Art', "The Broken March map has fewer, more natural clusters of wreckage along its sides, campfires, obelisks and merchant wagons now stand on their nodes, and every node sits on a coloured ring: white for fights, red for elites (pulsing red when enraged), green for merchants, yellow for campfires and blue for obelisks."],
       ['Change', "Every card now uses the same lettering at the same size for its rules text, so cards read alike. Only the few longest cards shrink their text, just enough to fit."],
     ] },
     { date: '2026-11-10', items: [

@@ -184,6 +184,7 @@ body.sheetopen #btnUpdates, body.modalopen #btnUpdates { display: none; }
 .order .otile.demon .ofig { height: 38px; } .order .otile.demon .ofig .dimg { height: 38px; width: auto; } .order .otile.demon .onm { font-size: 11px; color: #f0b6ea; }
 .dimg { transform: scaleX(-1); filter: hue-rotate(250deg) saturate(1.4) brightness(.95) drop-shadow(0 0 4px #b05ad0aa); }
 svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
+.dimg.pxdemon { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); image-rendering: pixelated; }
 .demons { display: flex; align-items: flex-end; justify-content: center; gap: 4px; margin-top: -4px; pointer-events: auto; }
 .demon { display: grid; justify-items: center; gap: 1px; } .demon .dfig .dimg { height: calc(80px * var(--ds)); width: auto; display: block; }
 /* Nov 2: demons breathe while they wait, lunge at their target when they act and shake when hit */
@@ -2970,9 +2971,11 @@ body #scrCombat.bf .endturn.btn.primary:disabled { filter: grayscale(.8) brightn
   }
   // Warlock demons (Nov 1): drawn beside their owner (in front, toward the enemy) and listed in the turn order after them
   const DEMON_ART = { imp: 'ash_imp', bulwark: 'obsidian_brute', ruin: 'brimstone_warden', temptress: 'shade', hound: 'hellhound_alpha' };
+  const PX_DEMONS = new Set(['imp', 'bulwark', 'ruin', 'temptress', 'hound']);
   const DEMON_SZ = { imp: .55, bulwark: .78, ruin: .72, temptress: .62, hound: .6 };
   function demonFig(dm) {
     const k = DEMON_ART[dm.key];
+    if (PX_DEMONS.has(dm.key)) return `<img class="dimg pxdemon" src="img/heroes/demon_${dm.key}.png" alt="" draggable="false">`; // placeholder pixel demons (Nov 11)
     if (window.CB_INK && k) return `<img class="dimg" src="img/ink/${k}.webp" alt="" draggable="false">`;
     return `<svg class="dimg" viewBox="0 0 60 70"><ellipse cx="30" cy="66" rx="18" ry="3" fill="#000" opacity=".4"/><path d="M14 64l4-30c2-12 22-12 24 0l4 30z" fill="#4a2a5e"/><circle cx="30" cy="22" r="11" fill="#5e3a74"/><path d="M20 14l-4-10 8 6M40 14l4-10-8 6" fill="#3a1f4a"/><circle cx="26" cy="22" r="2" fill="#f0b6ea"/><circle cx="34" cy="22" r="2" fill="#f0b6ea"/></svg>`;
   }

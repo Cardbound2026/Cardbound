@@ -13,7 +13,7 @@
     .inkfig.pxhero { image-rendering: pixelated; }`;
   document.head.appendChild(css);
   const imgs = {}, face = {};
-  const PXH = { Warrior: 1.12 };
+  const PXH = { Warrior: 1.12, Rogue: 1.0, Mage: 1.12, Paladin: 1.12, Warlock: 1.12 };
   window.CB_INK = {
     manifest: M,
     pxHero: (cls) => !!PXH[cls],
