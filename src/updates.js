@@ -1,6 +1,9 @@
   // ---------- What's new: the changelog (button bottom-right) and the new-version warning
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
+    { date: '2026-11-11', items: [
+      ['Art', "New pixel-art hit effects in fights: sword slashes, claw marks, stabs, bonks with spinning stars, critical hits, fire bursts, shattering frost, shadow bats, beams of holy light, arcane bursts, thorns, blood, poison bubbles, burning ground, frost crust, curse skulls, rot and flies, healing pluses and a shield flash when you Block. Fire, frost, arcane and shadow spells now fly as pixel bolts."],
+    ] },
     { date: '2026-11-10', items: [
       ['Art', "New pixel-art interface in a Gothic Cathedral style: carved stone frames with tarnished gold for windows and panels, new buttons, tabs and health bars. This is the first piece of the move to high-detail pixel art."],
       ['Change', "Menu > Settings > Previous interface switches back to the stone and wood look if you prefer it."],
