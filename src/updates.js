@@ -7,6 +7,10 @@
       ['Art', "New pixel-art fight backdrops for the Broken March: ten scenes along the old road, with the burned castle on the horizon drawing closer the further up the map you fight, and the boss fight at its burning gate."],
       ['Art', "Pixel-art card paintings are arriving for every player card, starting with the Warrior. The rest of the Warrior's cards and the other classes follow over the next updates."],
       ['Art', "Your hand now lies on a card table: a worn tavern table with a crimson card mat, iron-and-bone corner brackets, a pair of bone dice, a coin purse and a skull candle."],
+      ['Art', "New fight HUD: your mana sits in an iron orb that drains as you spend it, the draw, discard and exhaust piles are framed icons with their counts, and End turn is a gold plate with an hourglass that glows while it's your turn."],
+      ['Art', "Sharper Broken March fight backdrops: all of them were redrawn at three to four times the detail."],
+      ['Art', "The Warrior has a new pixel-art fighter in battle (a placeholder while the full animated heroes are made). The other classes follow."],
+      ['Art', "The Broken March map has fewer, more natural clusters of wreckage along its sides."],
       ['Change', "Every card now uses the same lettering at the same size for its rules text, so cards read alike. Only the few longest cards shrink their text, just enough to fit."],
     ] },
     { date: '2026-11-10', items: [

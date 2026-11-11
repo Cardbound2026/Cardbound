@@ -21,19 +21,32 @@ def put(im, x, y, flip=False, alpha=1.0):
 # castle behind the boss at the top centre
 c = Image.open('castle.png').convert('RGBA'); c = c.resize((c.width * 2, c.height * 2), Image.NEAREST)
 put(c, W // 2 - c.width // 2, -70)
-# props in the side bands, packed with no overlap
-rng = random.Random(7); placed = []
-big = sorted(range(21), key=lambda i: -props[i].width * props[i].height)
+# props in the side bands (Nov 11 rework): a few natural clusters per side instead of an even scatter. Each cluster is a big prop
+# with two or three smaller ones heaped around it (they may overlap a little), plus one or two strays; drawn back to front.
+rng = random.Random(11)
+area = lambda i: props[i].width * props[i].height
+big = sorted(range(21), key=lambda i: -area(i))
+heavy, light = big[:9], big[9:]
+items = []
 for side in (0, 1):
-    seq = big[:]; rng.shuffle(seq[11:]); seq = seq + [i for i in big[8:] if rng.random() < 0.5]
-    for i in seq:
-        im = props[i]; w, h = im.size
-        for _ in range(200):
-            x = rng.randint(4, 300 - w) if side == 0 else rng.randint(740, W - 4 - w)
-            y = rng.randint(130 if abs(x + w / 2 - W / 2) < 300 else 0, H - h)
-            box = (x - 6, y - 6, x + w + 6, y + h + 6)
-            if all(box[2] < b[0] or box[0] > b[2] or box[3] < b[1] or box[1] > b[3] for b in placed):
-                placed.append(box); put(im, x, y, flip=rng.random() < 0.5); break
+    hv = heavy[:]; lt = light[:]; rng.shuffle(hv); rng.shuffle(lt)
+    ys = [rng.randint(150, 260), rng.randint(430, 560), rng.randint(720, 830)]
+    if side: ys = [y + rng.randint(-60, 60) for y in ys]
+    for ci, cy in enumerate(ys):
+        cx = rng.randint(90, 230) if side == 0 else W - rng.randint(90, 230)
+        group = [hv.pop()] + [lt.pop() for _ in range(rng.choice((2, 2, 3)))]
+        for j, i in enumerate(group):
+            w, h = props[i].size
+            r = 0 if j == 0 else rng.uniform(40, 78); ang = rng.uniform(0, 6.283)
+            x = cx + r * np.cos(ang) * 1.3 - w / 2; y = cy + r * np.sin(ang) * 0.8 - h / 2
+            x = max(4, min(W - 4 - w, x)); x = min(x, 330 - w) if side == 0 else max(x, 710)
+            items.append((y + h, i, x, y))
+    for _ in range(rng.choice((1, 2))):
+        i = lt.pop(); w, h = props[i].size
+        x = rng.randint(20, 300 - w) if side == 0 else rng.randint(740, W - 20 - w); y = rng.randint(330, 660)
+        items.append((y + h, i, x, y))
+for _, i, x, y in sorted(items):
+    put(props[i], x, y, flip=rng.random() < 0.5)
 # vignette: darker to the sides and the bottom, a soft dim band under the node map so the nodes read
 v = Image.new('L', (W, H), 0); d = ImageDraw.Draw(v)
 for i in range(60):

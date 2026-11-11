@@ -1682,11 +1682,14 @@ async function exportTravelPack(){
   css.textContent = `.figure:has(> .inkfig) { height: auto; overflow: visible; min-height: 80px; }
     .inkfig { display: block; width: auto; height: calc(var(--fh, 118px) * var(--s, 1)); max-width: 100%; object-fit: contain; filter: drop-shadow(0 3px 0 rgba(0,0,0,.35)); pointer-events: none; user-select: none; }
     .order .otile .ofig .inkfig { height: 58px; width: 100%; filter: none; } .order.raid .otile .ofig .inkfig { height: 30px; }
-    .unit.dead .inkfig { filter: grayscale(1) brightness(.55); opacity: .7; }`;
+    .unit.dead .inkfig { filter: grayscale(1) brightness(.55); opacity: .7; }
+    .inkfig.pxhero { image-rendering: pixelated; }`;
   document.head.appendChild(css);
   const imgs = {}, face = {};
+  const PXH = { Warrior: 1.12 };
   window.CB_INK = {
     manifest: M,
+    pxHero: (cls) => !!PXH[cls],
     // town walker (and the character screen doll): draws and returns true, or false to use the original drawing
     // strip = 4 idle frames then 6 walk frames, facing right; left (and up, after facing left) is mirrored
     town(g, key, cx, by, dir, step, s, t) {
@@ -1715,6 +1718,8 @@ async function exportTravelPack(){
     // HTML for an actor's figure, or null to use the original art
     figure(a) {
       if (!a) return null;
+      // placeholder pixel heroes (Nov 11, PixelLab): public/img/heroes/<class>.png, standing in for the ink heroes in fights
+      if (a.isPlayer && PXH[a.cls]) return `<img class="inkfig pxhero" src="img/heroes/${a.cls.toLowerCase()}.png" style="--s:${PXH[a.cls]}" alt="" draggable="false">`;
       if (a.isPlayer) { const s = M.heroes && M.heroes[a.cls]; return s ? `<img class="inkfig" src="img/ink/hero_${a.cls.toLowerCase()}.webp" style="--s:${s}" alt="" draggable="false">` : null; }
       let k = a.key; if (M.enemies && !M.enemies[k] && window.CB_DATA) { const d = CB_DATA.enemies[k]; if (d && d.raid && d.map && CB_DATA.maps[d.map]) k = CB_DATA.maps[d.map].boss; } // raid bosses wear their map boss's art
       let sm = 1; if (M.enemies && !M.enemies[k] && window.CB_DATA && CB_DATA.enemies[k] && CB_DATA.enemies[k].art) { k = CB_DATA.enemies[k].art; sm = 0.8; } // group members wear a smaller copy of a monster's art

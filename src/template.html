@@ -780,6 +780,43 @@ body.inkui:not(.ui-classic) .sheetbox .btn, body.inkui:not(.ui-classic) .modal .
     url(img/ui/table/table.webp) center / cover no-repeat, #2a1a10;
   box-shadow: 0 -6px 18px rgba(0,0,0,.55), inset 0 0 0 2px rgba(0,0,0,.6), inset 0 0 40px rgba(0,0,0,.55); }
 #scrCombat .hand > * { image-rendering: auto; }
+/* the fight HUD (Nov 11): one carved bar along the top edge of the card table. Mana sits in an iron socket and drains as you spend it,
+   the three piles are framed icon buttons with their counts, and End turn is a big gold plate with an hourglass. */
+#scrCombat.bf .field-panel > .hud { background: linear-gradient(180deg, #2a2019 0%, #17120e 55%, #0f0c0a 100%); border-top: 2px solid #6b5636; box-shadow: inset 0 1px 0 #c9a46a55, inset 0 -1px 0 #000, 0 -10px 24px rgba(0,0,0,.55); border-radius: 10px 10px 0 0; padding: 6px 14px 6px 8px; margin: 0 12px; gap: 8px 16px; min-height: 66px; }
+#scrCombat.bf .field-panel > .hand { margin-top: 0; border-radius: 0 0 10px 10px; }
+#scrCombat .mana { gap: 10px; }
+body #scrCombat.bf .field-panel > .hud .mana .orb { position: relative; width: 74px; height: 76px; margin: -22px 0 -8px; border-radius: 0; background: none; box-shadow: none; overflow: visible; font-size: 0; }
+body #scrCombat.bf .field-panel > .hud .mana .orb::before { content: ''; position: absolute; inset: 0; background: url(img/ui/px/orb_socket.png) center / 100% 100% no-repeat; image-rendering: pixelated; }
+body #scrCombat.bf .field-panel > .hud .mana .orb .orbfill { position: absolute; inset: 11px 12px 13px 11px; border-radius: 50%; overflow: hidden; }
+body #scrCombat.bf .field-panel > .hud .mana .orb .orbfill::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--mf, 1) * 100%); background: radial-gradient(120% 90% at 40% 20%, #8fd0ff 0%, #2f7de0 35%, #173d9a 70%, #0c1d55 100%); box-shadow: inset 0 3px 0 #b8e4ff88; transition: height .35s ease-out; }
+body #scrCombat.bf .field-panel > .hud .mana .orb .orbfill::after { content: ''; position: absolute; left: 22%; top: 14%; width: 26%; height: 18%; border-radius: 50%; background: rgba(255,255,255,.35); filter: blur(1px); }
+body #scrCombat.bf .field-panel > .hud .mana .orb .orbfill { z-index: 1; }
+body #scrCombat.bf .field-panel > .hud .mana .orb > span { position: relative; z-index: 2; font: 400 26px var(--cf-name, var(--f-display)); color: #f2f8ff; text-shadow: 0 0 6px #1a4fd0, 0 2px 0 #000, 1px 0 0 #000, -1px 0 0 #000; }
+body #scrCombat.bf .field-panel > .hud .mana .orb { display: grid; place-items: center; }
+#scrCombat .mana .mtext { display: grid; line-height: 1.15; }
+#scrCombat .mana .mtext > b { font: 400 13px var(--f-display); letter-spacing: .18em; text-transform: uppercase; color: #c9a46a; }
+#scrCombat .mana small { display: grid; gap: 2px; font-size: 12px; color: #b8ab96; }
+#scrCombat .mana .mreg { color: #8fc4ff; font-weight: 700; }
+body #scrCombat.bf .field-panel > .hud .piles { gap: 10px; align-items: center; }
+body #scrCombat.bf .field-panel > .hud .pilebtn { position: relative; width: 50px; height: 50px; padding: 0; border: 0; border-radius: 0; background: url(img/ui/px/icon_button.png) center / 100% 100% no-repeat; image-rendering: pixelated; display: grid; place-items: center; color: #f2e6cf; cursor: pointer; transition: filter .12s, transform .12s; }
+body #scrCombat.bf .field-panel > .hud .pilebtn:hover { filter: brightness(1.25) drop-shadow(0 0 6px #d6a14a88); transform: translateY(-1px); }
+body #scrCombat.bf .field-panel > .hud .pilebtn > i { width: 34px; height: 34px; background: center / contain no-repeat; image-rendering: pixelated; }
+body #scrCombat.bf .field-panel > .hud .pi-draw > i { background-image: url(img/ui/hud/deck.png); } body #scrCombat.bf .field-panel > .hud .pi-discard > i { background-image: url(img/ui/hud/discard.png); } body #scrCombat.bf .field-panel > .hud .pi-exhaust > i { background-image: url(img/ui/hud/exhaust.png); }
+body #scrCombat.bf .field-panel > .hud .pilebtn > b { position: absolute; right: -4px; bottom: -4px; min-width: 22px; height: 20px; padding: 0 5px; border-radius: 10px; background: #120e0b; border: 1px solid #8a6d40; font: 700 12px var(--f-ui); line-height: 18px; color: #f6e7c4; font-variant-numeric: tabular-nums; image-rendering: auto; }
+body #scrCombat.bf .field-panel > .hud .pilebtn > em { position: absolute; left: 50%; bottom: -15px; transform: translateX(-50%); font: 600 9.5px var(--f-ui); font-style: normal; letter-spacing: .12em; text-transform: uppercase; color: #9c8d76; white-space: nowrap; pointer-events: none; }
+body #scrCombat.bf .field-panel > .hud .piles .hchip { padding: 3px 9px; border-radius: 10px; background: #0c0a08cc; border: 1px solid #3d3226; font-size: 11.5px; color: #a89b86; white-space: nowrap; }
+body #scrCombat.bf .field-panel > .hud .piles .hchip b { color: #efe2c8; }
+#scrCombat.bf .hud > .hint { color: #cdbf9f; font-style: italic; }
+body #scrCombat.bf .endturn.btn.primary { display: inline-flex; align-items: center; gap: 8px; min-width: 168px; justify-content: center; font: 400 23px var(--f-display); letter-spacing: .03em; color: #fff1cc; text-shadow: 0 2px 0 #000, 0 0 10px #d6a14a77; }
+body #scrCombat.bf .endturn .hg { width: 30px; height: 30px; margin: -6px 0; background: url(img/ui/hud/hourglass.png) center / contain no-repeat; image-rendering: pixelated; flex: none; }
+body #scrCombat.bf .endturn.btn.primary:not(:disabled) { animation: endglow 2.4s ease-in-out infinite; }
+body #scrCombat.bf .endturn.btn.primary:not(:disabled):hover { filter: brightness(1.18); }
+body #scrCombat.bf .endturn.btn.primary:disabled { filter: grayscale(.8) brightness(.65); animation: none; }
+@keyframes endglow { 0%, 100% { filter: drop-shadow(0 0 0 #d6a14a00); } 50% { filter: drop-shadow(0 0 8px #d6a14acc); } }
+@media (prefers-reduced-motion: reduce) { #scrCombat .endturn.btn.primary { animation: none !important; } }
+#scrCombat.bf .field-panel.bfmid .hud .pilebtn > em { display: none; }
+@media (max-width: 700px) { body #scrCombat.bf .field-panel > .hud .mana .orb { width: 58px; height: 60px; margin: -10px 0 -4px; } #scrCombat.bf .field-panel > .hud .mana .orb::before, body #scrCombat.bf .field-panel > .hud .mana .orb .orbfill { inset: 9px 10px 10px 9px; } #scrCombat .hud .pilebtn { width: 40px; height: 40px; } #scrCombat .hud .pilebtn > i { width: 26px; height: 26px; } #scrCombat .hud .pilebtn > em { display: none; } #scrCombat .endturn.btn.primary { min-width: 0; font-size: 18px; } }
+
 #scrCombat .hand > .hint { color: #e8d6b4; text-shadow: 0 1px 2px #000; }
 #scrCombat .hand::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 0;
   background: radial-gradient(60% 90% at 50% 55%, transparent 55%, rgba(0,0,0,.35) 100%); }
@@ -905,10 +942,10 @@ body.inkui:not(.ui-classic) .sheetbox .btn, body.inkui:not(.ui-classic) .modal .
       <div class="order" id="order"></div>
       <div class="stage"><div id="playerSlot"></div><div class="vs">vs</div><div class="foes" id="foes"></div><div class="playedpeek" id="playedPeek" hidden aria-live="polite"></div></div>
       <div class="hud">
-        <div class="mana"><div class="orb" id="orb">0</div><div><b>Mana</b><small id="manaSub"></small></div></div>
+        <div class="mana"><div class="orb" id="orb">0</div><div class="mtext"><b>Mana</b><small id="manaSub"></small></div></div>
         <div class="piles" id="piles"></div>
         <span class="spacer"></span>
-        <button class="btn primary endturn" id="btnEnd">End turn</button>
+        <button class="btn primary endturn" id="btnEnd"><i class="hg" aria-hidden="true"></i>End turn</button>
       </div>
       <div class="hint" id="hint"></div>
       <div class="hand" id="hand" aria-label="Your hand"></div>
@@ -2843,7 +2880,7 @@ body.inkui:not(.ui-classic) .sheetbox .btn, body.inkui:not(.ui-classic) .modal .
   function snapshot() { for (const a of [...cb.players, ...cb.enemies]) { lastHp[a.id] = a.hp; lastBlock[a.id] = a.block; lastCrit[a.id] = a.critN || 0; } }
   window.__cbActor = (id) => (cb ? cb.actorById(id) : null); // pixel monsters check HP for a boss's phase change
   function figure(a, unit) {
-    if (unit && a.isPlayer && window.CB_FORGE && a.look) return CB_FORGE.figureHtml(a, window.CB_INK ? CB_INK.figure(a) || '' : ''); // live sprite from the gear the hero wears (src/forge.js)
+    if (unit && a.isPlayer && window.CB_FORGE && a.look && !(window.CB_INK && CB_INK.pxHero && CB_INK.pxHero(a.cls))) return CB_FORGE.figureHtml(a, window.CB_INK ? CB_INK.figure(a) || '' : ''); // live sprite from the gear the hero wears (src/forge.js)
     if (window.CB_MOBS && !settings.classicFoes) { const px = CB_MOBS.figure(a, unit); if (px) return px; } // Nov 10: animated pixel monsters (src/mobsprites.js)
     if (window.CB_INK) { const ink = CB_INK.figure(a); if (ink) return ink; } // Gothic Ink art pack (src/inkart.js); without it, the drawn figures below
     if (a.isPlayer) { const col = CC[a.cls]; return `<svg viewBox="0 0 80 100"><ellipse cx="40" cy="96" rx="26" ry="4" fill="#000" opacity=".4"/><path d="M28 40h24l4 34-6 22H30l-6-22z" fill="#5d5a55"/><circle cx="40" cy="26" r="13" fill="#8a847a"/><path d="M27 24h26v6H27z" fill="${col}"/><path d="M14 44l14-4 3 30-12 8-7-14z" fill="#3b3128" stroke="${col}" stroke-width="2"/><path d="M58 30l4-2 2 46-4 2z" fill="#c9c3b8"/></svg>`; }
@@ -3020,10 +3057,10 @@ body.inkui:not(.ui-classic) .sheetbox .btn, body.inkui:not(.ui-classic) .modal .
     if (window.CB_BF) CB_BF.layout(cb, { map: $('scrCombat').dataset.map, row: run && run.at && run.map && run.map.nodes[run.at] ? (run.at === 'boss' ? 'boss' : run.map.nodes[run.at].row) : null, left: cb.duel ? 'You' : cb.raid ? 'The raid' : cb.partySize > 1 ? 'Your party' : esc(hero().name), right: cb.duel ? 'Your rival' : (DATA.maps[$('scrCombat').dataset.map] || {}).name || 'The enemy' });
     if (withPops) popups(); else snapshot();
     if (window.CB_FX) CB_FX.consume(cb); // hero moves, hit effects and spell projectiles (src/fx.js, src/forge.js)
-    $('orb').textContent = p.mana;
-    $('manaSub').textContent = `max ${p.maxMana} · +${p.regen} per turn`;
+    $('orb').innerHTML = `<i class="orbfill" style="--mf:${Math.max(0, Math.min(1, p.mana / Math.max(1, p.maxMana)))}"></i><span>${p.mana}</span>`;
+    $('manaSub').innerHTML = `<span class="mmax">of ${p.maxMana}</span><span class="mreg">+${p.regen} / turn</span>`;
     const fat = [...p.drawPile, ...p.hand, ...p.discard].filter(c => CARDS[c.key].type === 'Status').length;
-    $('piles').innerHTML = `<button class="pilebtn" data-pile="draw">Draw pile <b>${p.drawPile.length}</b></button><button class="pilebtn" data-pile="discard">Discard <b>${p.discard.length}</b></button><button class="pilebtn" data-pile="exhaust">Exhaust <b>${p.exhaust.length}</b></button><span>Draws <b>${p.draw}</b>/round</span>${fat ? `<span>Status cards <b>${fat}</b></span>` : ''}${cb.pressure() ? `<span>Pressure <b>+${Math.round(cb.pressure() * 100)}%</b></span>` : ''}`;
+    $('piles').innerHTML = `<button class="pilebtn pi-draw" data-pile="draw" title="Draw pile: ${p.drawPile.length} cards (you draw ${p.draw} a round)"><i></i><b>${p.drawPile.length}</b><em>Draw</em></button><button class="pilebtn pi-discard" data-pile="discard" title="Discard pile: ${p.discard.length} cards"><i></i><b>${p.discard.length}</b><em>Discard</em></button><button class="pilebtn pi-exhaust" data-pile="exhaust" title="Exhausted: ${p.exhaust.length} cards (gone for this fight)"><i></i><b>${p.exhaust.length}</b><em>Exhaust</em></button><span class="hchip">Draws <b>${p.draw}</b>/round</span>${fat ? `<span class="hchip">Status cards <b>${fat}</b></span>` : ''}${cb.pressure() ? `<span class="hchip">Pressure <b>+${Math.round(cb.pressure() * 100)}%</b></span>` : ''}`;
     const myTurn = cb.phase === 'player' && !cb.over && (cb.myMi == null || cb.canAct(p));
     $('btnEnd').disabled = !myTurn || busy;
     const hint = $('hint'); hint.classList.remove('alert');
