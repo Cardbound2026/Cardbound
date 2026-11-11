@@ -303,6 +303,17 @@ svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
 .cf.rf .fart { border-radius: 2cqw; box-shadow: none; }
 .cf .forb { position: absolute; display: grid; place-items: center; font-family: var(--cf-name, var(--f-display)); font-size: 9.5cqw; line-height: 1; color: #fff8ea; text-shadow: 0 0 .6cqw #000, 0 0 1.2cqw #000, .4cqw .6cqw 0 #000, -.4cqw -.4cqw 0 #000; pointer-events: none; }
 .cf .forb.flvl { font-size: 8.5cqw; }
+/* Nov 11: Roman numeral levels; a soft glow behind each card in its rarity colour (a jewel on the back lighting the table),
+   Legendary breathes and gets a slow sheen across its frame. Off in small pile thumbnails. */
+.cf .forb.flvl { font-family: var(--cf-text, var(--f-ui)); font-weight: 700; font-size: 7cqw; letter-spacing: .02em; }
+.cf.rf { --rglow: rgba(242,234,216,.16); filter: drop-shadow(0 0 2.6cqw var(--rglow)); }
+.cf.rf.r-Green { --rglow: rgba(79,216,106,.5); } .cf.rf.r-Blue { --rglow: rgba(74,168,255,.55); } .cf.rf.r-Gold { --rglow: rgba(255,201,74,.55); animation: rglow 3.2s ease-in-out infinite; }
+@keyframes rglow { 50% { filter: drop-shadow(0 0 4cqw rgba(255,201,74,.85)); } }
+.hand .cf.rf:hover:not(:disabled), .hand .cf.rf:focus-visible { filter: drop-shadow(0 0 4cqw var(--rglow)) drop-shadow(0 16px 24px rgba(0,0,0,.7)); animation: none; }
+.cf .fsheen { position: absolute; inset: 0; pointer-events: none; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; background: linear-gradient(115deg, transparent 35%, rgba(255,235,170,.3) 48%, transparent 60%) no-repeat; background-size: 250% 100%; animation: fsheen 3.6s ease-in-out infinite; }
+@keyframes fsheen { 0% { background-position: 130% 0; } 60%, 100% { background-position: -40% 0; } }
+.pilecard .cf.rf, .cardgrid .cf.rf { animation: none; filter: none; } .pilecard .cf .fsheen { display: none; }
+@media (prefers-reduced-motion: reduce) { .cf.rf.r-Gold, .cf .fsheen { animation: none; } }
 .cf .fplq { position: absolute; display: grid; place-items: center; font-family: var(--cf-text, var(--f-ui)); font-size: 4.4cqw; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; color: var(--rt-dark); text-shadow: 0 .4cqw .8cqw #000; pointer-events: none; }
 .cf.rf .fpanel { color: #efe4cf; padding: 3.5cqw 4cqw 2.5cqw; }
 .cf.rf .fname { color: #f6e9cf; text-shadow: 0 .5cqw 1cqw #000; }
@@ -6905,8 +6916,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794438965122';
-  const CB_BUILD = '491c8ba8e1'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794440900789';
+  const CB_BUILD = '6f17bdce89'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8015,7 +8026,9 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       ['Art', "New pixel-art hit effects in fights: sword slashes, claw marks, stabs, bonks with spinning stars, critical hits, fire bursts, shattering frost, shadow bats, beams of holy light, arcane bursts, thorns, blood, poison bubbles, burning ground, frost crust, curse skulls, rot and flies, healing pluses and a shield flash when you Block. Fire, frost, arcane and shadow spells now fly as pixel bolts."],
       ['Art', "The Broken March map is now an old battlefield seen from high above: wrecked wagons, dead horses, crows, graves and fallen banners line the sides, the burned castle waits at the top, and every fight node shows the monsters standing there, breathing, before you choose your road."],
       ['Art', "New pixel-art fight backdrops for the Broken March: ten scenes along the old road, with the burned castle on the horizon drawing closer the further up the map you fight, and the boss fight at its burning gate."],
-      ['Art', "Pixel-art card paintings are arriving for every player card, starting with the Warrior. The rest of the Warrior's cards and the other classes follow over the next updates."],
+      ['Art', "Every player card now has its own pixel-art painting: all 701 of them, across all five classes."],
+      ['Art', "New pixel-art Rogue card frames. Rarity now shows in the frame itself: Common is bare leather, Uncommon adds a dagger and a poison vial, Rare adds a ring, lockpicks and a pouch, and Legendary carries the full kit with a slow golden sheen. The gem at the bottom now matches the rarity gem at the top. The other classes get the same treatment next."],
+      ['Art', "Cards glow softly in their rarity colour, as if a jewel on the back were lighting the table, and Legendary cards breathe. Card levels now show as Roman numerals in an amber orb, so they never read as mana."],
       ['Art', "Your hand now lies on a card table: a worn tavern table with a crimson card mat, iron-and-bone corner brackets, a pair of bone dice, a coin purse and a skull candle."],
       ['Art', "New fight HUD: your mana sits in an iron orb that drains as you spend it, the draw, discard and exhaust piles are framed icons with their counts, and End turn is a gold plate with an hourglass that glows while it's your turn."],
       ['Art', "Sharper Broken March fight backdrops: all of them were redrawn at three to four times the detail."],
@@ -13350,6 +13363,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   // Nov 10: rarity frames (art from the user, green window keyed out). Cost in the top-left orb, card level in the top-right orb,
   // damage type + card type on the plaque under the art. Frame files: img/cframes/<class>_<rarity>.webp. Sizes are in the 512x768 frame's pixels.
   const CF_RAR = { Paladin: { src: (r) => 'img/cframes/paladin_' + ({ Green: 'green', Blue: 'blue', Gold: 'gold' }[r] || 'white') + '.webp', orbL: [54, 53, 27], orbR: [457, 54, 27], geo: { White: {"art": [65, 76, 447, 332], "plaque": [145, 330, 367, 357], "panel": [50, 374, 462, 682]} } }, Rogue: { src: (r) => 'img/cframes/rogue_' + ({ Green: 'green', Blue: 'blue', Gold: 'gold' }[r] || 'white') + '.webp', orbL: [57, 58, 30], orbR: [455, 58, 30], geo: { White: {"art": [72, 82, 440, 334], "plaque": [146, 328, 366, 354], "panel": [56, 374, 456, 676]} } }, Mage: { src: (r) => 'img/cframes/mage_' + ({ Green: 'green', Blue: 'blue', Gold: 'gold' }[r] || 'white') + '.webp', orbL: [57, 57, 30], orbR: [455, 57, 30], geo: { White: {"art": [72, 80, 440, 334], "plaque": [146, 328, 366, 355], "panel": [58, 374, 454, 676]} } }, Warrior: { src: (r) => 'img/cframes/warrior_' + ({ Green: 'green', Blue: 'blue', Gold: 'gold' }[r] || 'white') + '.webp', orbL: [56, 53, 26], orbR: [455, 52, 26], geo: { White: {"art": [70, 80, 442, 333], "plaque": [146, 328, 366, 355], "panel": [58, 372, 454, 676]} } }, 'E:soldier': { src: () => 'img/cframes/e_soldier.webp', orbL: [53, 51, 25], orbR: [0, 0, 0], geo: { White: {"art": [64, 76, 448, 332], "plaque": [146, 334, 368, 359], "panel": [52, 372, 460, 700]} } }, 'E:outlaw': { src: () => 'img/cframes/e_outlaw.webp', orbL: [53, 51, 25], orbR: [0, 0, 0], geo: { White: {"art": [64, 76, 448, 332], "plaque": [146, 334, 368, 359], "panel": [52, 372, 460, 700]} } }, 'E:wild': { src: () => 'img/cframes/e_wild.webp', orbL: [53, 51, 25], orbR: [0, 0, 0], geo: { White: {"art": [64, 76, 448, 332], "plaque": [146, 334, 368, 359], "panel": [52, 372, 460, 700]} } }, 'E:construct': { src: () => 'img/cframes/e_construct.webp', orbL: [53, 51, 25], orbR: [0, 0, 0], geo: { White: {"art": [64, 76, 448, 332], "plaque": [146, 334, 368, 359], "panel": [52, 372, 460, 700]} } }, 'E:brute': { src: () => 'img/cframes/e_brute.webp', orbL: [53, 51, 25], orbR: [0, 0, 0], geo: { White: {"art": [64, 76, 448, 332], "plaque": [146, 334, 368, 359], "panel": [52, 372, 460, 700]} } }, 'E:plague': { src: () => 'img/cframes/e_plague.webp', orbL: [53, 51, 25], orbR: [0, 0, 0], geo: { White: {"art": [64, 76, 448, 332], "plaque": [146, 334, 368, 359], "panel": [52, 372, 460, 700]} } }, 'E:frost': { src: () => 'img/cframes/e_frost.webp', orbL: [53, 51, 25], orbR: [0, 0, 0], geo: { White: {"art": [64, 76, 448, 332], "plaque": [146, 334, 368, 359], "panel": [52, 372, 460, 700]} } }, Warlock: { src: (r) => 'img/cframes/warlock_' + ({ Green: 'green', Blue: 'blue', Gold: 'gold' }[r] || 'white') + '.webp', orbL: [73, 69, 29], orbR: [443, 69, 29], geo: {"White": {"art": [85, 92, 431, 344], "plaque": [150, 337, 364, 371], "panel": [74, 385, 440, 690]}, "Green": {"art": [85, 97, 430, 357], "plaque": [150, 350, 364, 384], "panel": [74, 398, 440, 690]}, "Blue": {"art": [86, 92, 435, 344], "plaque": [150, 337, 364, 371], "panel": [74, 385, 440, 690]}, "Gold": {"art": [86, 98, 435, 357], "plaque": [150, 350, 364, 384], "panel": [74, 398, 440, 690]}} } };
+  const roman = (n) => { n = +n; if (!(n > 0 && n < 40)) return String(n); let o = ''; for (const [v, r] of [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']]) while (n >= v) { o += r; n -= v; } return o; };
   function cardFaceRar(d, R) {
     const g = R.geo[d.rarity] || R.geo.White, X = (v) => (v / 512 * 100).toFixed(2) + '%', Y = (v) => (v / 768 * 100).toFixed(2) + '%';
     const box = (b) => `left:${X(b[0])};top:${Y(b[1])};width:${X(b[2] - b[0])};height:${Y(b[3] - b[1])}`;
@@ -13359,7 +13373,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     const name = d.rank ? d.name.replace(/ \+\d+$/, '') : d.name, art = (window.CB_ART || {})[d.key];
     return `<span class="fart" style="${box(g.art)}">${art ? `<img src="${art}" alt="" draggable="false"${art.startsWith('img/') ? ' class="px"' : ''}>` : cardIcon(d)}</span><img class="fimg" src="${R.src(d.rarity)}" alt="" draggable="false">
       ${d.cost != null && d.cost < 999 ? `<span class="forb" style="${orb(R.orbL)}" title="Mana cost">${d.cost}</span>` : ''}
-      ${d.rank ? `<span class="forb flvl" style="${orb(R.orbR)}" title="Card level">${d.rank}</span>` : ''}
+      ${d.rank ? `<span class="forb flvl" style="${orb(R.orbR)}" title="Card level ${d.rank}">${roman(d.rank)}</span>` : ''}${d.rarity === 'Gold' ? `<span class="fsheen" style="-webkit-mask-image:url(${R.src(d.rarity)});mask-image:url(${R.src(d.rarity)})"></span>` : ''}
       <span class="fplq" style="${box(g.plaque)}">${esc(plaque)}</span>
       <span class="fpanel" style="${box(g.panel)}"><span class="fname">${esc(name)}</span><span class="ftext">${text}</span></span>`;
   }
@@ -13392,7 +13406,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   // rarity color for the type line: a darker shade on parchment and stone, a brighter one on the Warrior's dark panel
   const RT = { Enemy: ['#5e554b', '#efb79c'], White: ['#5e554b', '#ece4d4'], Green: ['#2f7a2a', '#86d873'], Blue: ['#2456a8', '#86b6ff'], Gold: ['#9a6610', '#ffcf5a'], Token: ['#5e554b', '#d8d0c0'], Status: ['#5e554b', '#d8d0c0'] };
   const cardVars = (d) => `--cc:${d.ekind ? EKIND_COL[d.ekind] : CC[d.cls] || '#888'};--rg:${GEMC[d.rarity] || '#888'};--rt-light:${(RT[d.rarity] || RT.White)[0]};--rt-dark:${(RT[d.rarity] || RT.White)[1]}`;
-  const cardCls = (d) => 'cf' + (CF_RAR[d.cls] ? ' rf' : '') + (((window.CB_FRAMES || {})[d.cls] && CB_FRAMES[d.cls].dark) || d.type === 'Status' || d.ekind === 'status' ? ' dark' : '') + (d.type === 'Status' || d.ekind === 'status' ? ' junk' : '');
+  const cardCls = (d) => 'cf' + (CF_RAR[d.cls] ? ' rf r-' + (d.rarity || 'White') : '') + (((window.CB_FRAMES || {})[d.cls] && CB_FRAMES[d.cls].dark) || d.type === 'Status' || d.ekind === 'status' ? ' dark' : '') + (d.type === 'Status' || d.ekind === 'status' ? ' junk' : '');
   // ---------- enemy cards: sixteen frames picked by the enemy's map and what it is
   const OUTLAWS = ['camp_thief', 'bandit_cutthroat', 'pit_duelist', 'the_twin_blades', 'pit_champion', 'gravel_king'];
   function eframeOf(key) {
