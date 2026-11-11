@@ -4,6 +4,7 @@
     { date: '2026-11-10', items: [
       ['Art', "New pixel-art interface in a Gothic Cathedral style: carved stone frames with tarnished gold for windows and panels, new buttons, tabs and health bars. This is the first piece of the move to high-detail pixel art."],
       ['Change', "Menu > Settings > Previous interface switches back to the stone and wood look if you prefer it."],
+      ['Art', "New Warlock card frames: the orb colour shows the card's rarity (silver, green, blue, gold), mana cost in the top-left orb, card level in the top-right orb, and a plaque under the picture naming the damage and card type (for example Shadow Skill)."],
     ] },
     { date: '2026-11-07', items: [
       ['Change', "New Warriors with the Berserker starting deck begin with a two-handed Bearded Greataxe (no shield), so Colossus works from the start."],

@@ -299,6 +299,13 @@ svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
 .cf .ftext.long { font-size: calc(7.2cqw * var(--cf-text-s, 1)); }
 .cf .ftext.vlong { font-size: calc(6.3cqw * var(--cf-text-s, 1)); }
 .cf .ftext b { color: #8a1f12; } .cf.dark .ftext b { color: #ffcf7a; }
+.cf.rf .fart { border-radius: 2cqw; box-shadow: none; }
+.cf .forb { position: absolute; display: grid; place-items: center; font-family: var(--cf-name, var(--f-display)); font-size: 9.5cqw; line-height: 1; color: #fff8ea; text-shadow: 0 0 .6cqw #000, 0 0 1.2cqw #000, .4cqw .6cqw 0 #000, -.4cqw -.4cqw 0 #000; pointer-events: none; }
+.cf .forb.flvl { font-size: 8.5cqw; }
+.cf .fplq { position: absolute; display: grid; place-items: center; font-family: var(--cf-text, var(--f-ui)); font-size: 4.4cqw; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; color: var(--rt-dark); text-shadow: 0 .4cqw .8cqw #000; pointer-events: none; }
+.cf.rf .fpanel { color: #efe4cf; padding: 3.5cqw 4cqw 2.5cqw; }
+.cf.rf .fname { color: #f6e9cf; text-shadow: 0 .5cqw 1cqw #000; }
+.cf.rf .ftext b { color: #ffcf7a; }
 .hand { --hcw: min(218px, max(150px, calc((100vh - 610px) / 1.5))); height: calc(var(--hcw) * 1.5 + 30px); box-sizing: border-box; } /* the tray keeps one height, empty or full */
 .hand > .hint { align-self: center; }
 .hand .cf { --cw: var(--hcw); margin-left: calc(var(--cw) * -1 * var(--ov, .3)); transform-origin: 50% 120%; transform: translateY(calc(var(--off, 0) * 1px)) rotate(calc(var(--rot, 0) * 1deg)); transition: transform .14s ease-out, filter .14s, margin .14s; position: relative; z-index: var(--z, 1); }
@@ -6835,8 +6842,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794365313663';
-  const CB_BUILD = '926523fb83'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794367151477';
+  const CB_BUILD = '811edc01be'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -7944,6 +7951,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     { date: '2026-11-10', items: [
       ['Art', "New pixel-art interface in a Gothic Cathedral style: carved stone frames with tarnished gold for windows and panels, new buttons, tabs and health bars. This is the first piece of the move to high-detail pixel art."],
       ['Change', "Menu > Settings > Previous interface switches back to the stone and wood look if you prefer it."],
+      ['Art', "New Warlock card frames: the orb colour shows the card's rarity (silver, green, blue, gold), mana cost in the top-left orb, card level in the top-right orb, and a plaque under the picture naming the damage and card type (for example Shadow Skill)."],
     ] },
     { date: '2026-11-07', items: [
       ['Change', "New Warriors with the Berserker starting deck begin with a two-handed Bearded Greataxe (no shield), so Colossus works from the start."],
@@ -12957,8 +12965,25 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   // ---------- framed card face (class frame art + live text)
   const GEMC = { Enemy: '#a3402c', White: '#d8d2c4', Green: '#4fae4a', Blue: '#3f7fe0', Gold: '#e6a52c', Token: '#9a8f82', Status: '#6c6258' };
   function cardIcon(d) { if (d.ekind === 'status' || d.type === 'Status') return ICON.debuff || ICON.buff; if (d.ekind) return ICON[d.ekind]; return d.type === 'Attack' ? ICON.attack : d.tags && (d.tags.def || d.tags.heal) ? ICON.defend : ICON.buff; }
+  // Nov 10: rarity frames (art from the user, green window keyed out). Cost in the top-left orb, card level in the top-right orb,
+  // damage type + card type on the plaque under the art. Frame files: img/cframes/<class>_<rarity>.webp. Sizes are in the 512x768 frame's pixels.
+  const CF_RAR = { Warlock: { src: (r) => 'img/cframes/warlock_' + ({ Green: 'green', Blue: 'blue', Gold: 'gold' }[r] || 'white') + '.webp', orbL: [73, 69, 29], orbR: [443, 69, 29], geo: {"White": {"art": [85, 92, 431, 344], "plaque": [150, 337, 364, 371], "panel": [74, 385, 440, 690]}, "Green": {"art": [85, 97, 430, 357], "plaque": [150, 350, 364, 384], "panel": [74, 398, 440, 690]}, "Blue": {"art": [86, 92, 435, 344], "plaque": [150, 337, 364, 371], "panel": [74, 385, 440, 690]}, "Gold": {"art": [86, 98, 435, 357], "plaque": [150, 350, 364, 384], "panel": [74, 398, 440, 690]}} } };
+  function cardFaceRar(d, R) {
+    const g = R.geo[d.rarity] || R.geo.White, X = (v) => (v / 512 * 100).toFixed(2) + '%', Y = (v) => (v / 768 * 100).toFixed(2) + '%';
+    const box = (b) => `left:${X(b[0])};top:${Y(b[1])};width:${X(b[2] - b[0])};height:${Y(b[3] - b[1])}`;
+    const orb = (o) => `left:${X(o[0] - o[2])};top:${Y(o[1] - o[2])};width:${X(o[2] * 2)};height:${Y(o[2] * 2)}`;
+    const text = esc(d.text).replace(/(\d+)/g, '<b>$1</b>').replace(/\u0001<b>(\d+)<\/b>\u0002/g, '<b class="lup">$1</b>').replace(/\u0003<b>(\d+)<\/b>\u0004/g, '<b class="ldown">$1</b>'), len = d.text.replace(/[\u0001-\u0004]/g, '').length;
+    const plaque = d.type === 'Attack' || d.dtype ? `${d.dtype || 'Physical'} ${d.type}` : d.type;
+    const name = d.rank ? d.name.replace(/ \+\d+$/, '') : d.name, art = (window.CB_ART || {})[d.key];
+    return `<span class="fart" style="${box(g.art)}">${art ? `<img src="${art}" alt="" draggable="false">` : cardIcon(d)}</span><img class="fimg" src="${R.src(d.rarity)}" alt="" draggable="false">
+      ${d.cost != null && d.cost < 999 ? `<span class="forb" style="${orb(R.orbL)}" title="Mana cost">${d.cost}</span>` : ''}
+      ${d.rank ? `<span class="forb flvl" style="${orb(R.orbR)}" title="Card level">${d.rank}</span>` : ''}
+      <span class="fplq" style="${box(g.plaque)}">${esc(plaque)}</span>
+      <span class="fpanel" style="${box(g.panel)}"><span class="fname">${esc(name)}</span><span class="ftext ${len > 95 ? 'vlong' : len > 62 ? 'long' : ''}">${text}</span></span>`;
+  }
   function cardFace(d, o) {
     if (d && (d.cls === 'Warrior' || d.cls === 'Paladin') && typeof profile !== 'undefined' && profile && profile.chars) { const hc = profile.chars[heroKey]; const t2 = CBHub.defText(hc, d.cls, d.text); if (t2 !== d.text) { const o2 = Object.create(d); o2.text = t2; d = o2; } } // Nov 2: Block with a shield, Parry without
+    if (d && CF_RAR[d.cls] && d.type !== 'Status') return cardFaceRar(d, CF_RAR[d.cls]);
     o = o || {}; const F = (window.CB_FRAMES || {})[d.cls] || (d.type === 'Status' || d.ekind === 'status' ? (window.CB_FRAMES || {})['S:junk'] : null); if (!F) return null;
     const pct = (v) => (v * 100).toFixed(2) + '%';
     const L = (r) => `left:${pct(r[0])};top:${pct(r[1])};width:${pct(r[2])};height:${pct(r[3])}`;
@@ -12985,7 +13010,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   // rarity color for the type line: a darker shade on parchment and stone, a brighter one on the Warrior's dark panel
   const RT = { Enemy: ['#5e554b', '#efb79c'], White: ['#5e554b', '#ece4d4'], Green: ['#2f7a2a', '#86d873'], Blue: ['#2456a8', '#86b6ff'], Gold: ['#9a6610', '#ffcf5a'], Token: ['#5e554b', '#d8d0c0'], Status: ['#5e554b', '#d8d0c0'] };
   const cardVars = (d) => `--cc:${d.ekind ? EKIND_COL[d.ekind] : CC[d.cls] || '#888'};--rg:${GEMC[d.rarity] || '#888'};--rt-light:${(RT[d.rarity] || RT.White)[0]};--rt-dark:${(RT[d.rarity] || RT.White)[1]}`;
-  const cardCls = (d) => 'cf' + (((window.CB_FRAMES || {})[d.cls] && CB_FRAMES[d.cls].dark) || d.type === 'Status' || d.ekind === 'status' ? ' dark' : '') + (d.type === 'Status' || d.ekind === 'status' ? ' junk' : '');
+  const cardCls = (d) => 'cf' + (CF_RAR[d.cls] ? ' rf' : '') + (((window.CB_FRAMES || {})[d.cls] && CB_FRAMES[d.cls].dark) || d.type === 'Status' || d.ekind === 'status' ? ' dark' : '') + (d.type === 'Status' || d.ekind === 'status' ? ' junk' : '');
   // ---------- enemy cards: sixteen frames picked by the enemy's map and what it is
   const OUTLAWS = ['camp_thief', 'bandit_cutthroat', 'pit_duelist', 'the_twin_blades', 'pit_champion', 'gravel_king'];
   function eframeOf(key) {
