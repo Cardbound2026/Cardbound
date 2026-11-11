@@ -6,6 +6,8 @@
       ['Art', "The Broken March map is now an old battlefield seen from high above: wrecked wagons, dead horses, crows, graves and fallen banners line the sides, the burned castle waits at the top, and every fight node shows the monsters standing there, breathing, before you choose your road."],
       ['Art', "New pixel-art fight backdrops for the Broken March: ten scenes along the old road, with the burned castle on the horizon drawing closer the further up the map you fight, and the boss fight at its burning gate."],
       ['Art', "Pixel-art card paintings are arriving for every player card, starting with the Warrior. The rest of the Warrior's cards and the other classes follow over the next updates."],
+      ['Art', "Your hand now lies on a card table: a worn tavern table with a crimson card mat, iron-and-bone corner brackets, a pair of bone dice, a coin purse and a skull candle."],
+      ['Change', "Every card now uses the same lettering at the same size for its rules text, so cards read alike. Only the few longest cards shrink their text, just enough to fit."],
     ] },
     { date: '2026-11-10', items: [
       ['Art', "New pixel-art interface in a Gothic Cathedral style: carved stone frames with tarnished gold for windows and panels, new buttons, tabs and health bars. This is the first piece of the move to high-detail pixel art."],

@@ -292,9 +292,8 @@ svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
 .cf.dark .fname { color: #f6e9cf; text-shadow: 0 .5cqw 1cqw #000; }
 .cf .ftype { font-family: var(--cf-text, var(--f-ui)); white-space: nowrap; font-size: 4.6cqw; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--rt-light); }
 .cf.dark .ftype { color: var(--rt-dark); text-shadow: 0 .4cqw .8cqw #000; }
-.cf .ftext { font-family: var(--cf-text, var(--f-ui)); font-size: calc(8.2cqw * var(--cf-text-s, 1)); line-height: 1.18; font-weight: var(--cf-text-w, 600); text-wrap: balance; }
-.cf .ftext.long { font-size: calc(7.2cqw * var(--cf-text-s, 1)); }
-.cf .ftext.vlong { font-size: calc(6.3cqw * var(--cf-text-s, 1)); }
+/* one rules-text size on every card (Nov 11): 7.2% of the card width fits about 96% of player cards; the few longest shrink just enough to fit (fitCards) */
+.cf .ftext { font-family: var(--cf-text, var(--f-ui)); font-size: 7.2cqw; line-height: 1.12; font-weight: var(--cf-text-w, 600); text-wrap: balance; }
 .cf .ftext b { color: #8a1f12; } .cf.dark .ftext b { color: #ffcf7a; }
 .cf.rf .fart { border-radius: 2cqw; box-shadow: none; }
 .cf .forb { position: absolute; display: grid; place-items: center; font-family: var(--cf-name, var(--f-display)); font-size: 9.5cqw; line-height: 1; color: #fff8ea; text-shadow: 0 0 .6cqw #000, 0 0 1.2cqw #000, .4cqw .6cqw 0 #000, -.4cqw -.4cqw 0 #000; pointer-events: none; }
@@ -767,6 +766,25 @@ body.inkui:not(.ui-classic) .sheetbox .btn, body.inkui:not(.ui-classic) .modal .
 #scrCombat .field-panel::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: 8px; background: var(--battle-bg, radial-gradient(120% 90% at 50% 0%, #2a2219 0%, #15110d 70%)) center 30% / cover no-repeat; filter: brightness(.82) saturate(1.05); }
 #scrCombat .field-panel::after { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: 8px; pointer-events: none; background: radial-gradient(130% 100% at 50% 40%, transparent 45%, rgba(0,0,0,.55) 100%), linear-gradient(180deg, transparent 55%, rgba(8,6,4,.85) 100%); }
 #scrCombat[data-map="physical"] { --battle-bg: url(img/ui/bg_physical.webp); }
+/* the card table (Nov 11): your hand lies on a worn tavern table with a crimson card mat, iron-and-bone corner brackets, bone dice,
+   a coin purse and a skull candle (all PixelLab pixel art in img/ui/table/). Everything is a background layer of the hand tray,
+   so re-rendering the hand never touches it; the cards keep their own smooth rendering. */
+#scrCombat .hand { position: relative; border-radius: 10px; image-rendering: pixelated;
+  --tc: clamp(64px, 7vw, 96px);
+  background:
+    url(img/ui/table/c_tl.png) left 0 top 0 / var(--tc) no-repeat, url(img/ui/table/c_tr.png) right 0 top 0 / var(--tc) no-repeat,
+    url(img/ui/table/c_bl.png) left 0 bottom 0 / var(--tc) no-repeat, url(img/ui/table/c_br.png) right 0 bottom 0 / var(--tc) no-repeat,
+    url(img/ui/table/dice.png) left calc(var(--tc) * .9) bottom calc(var(--tc) * .55) / calc(var(--tc) * .62) auto no-repeat,
+    url(img/ui/table/coins.png) left calc(var(--tc) * 1.55) bottom calc(var(--tc) * .3) / calc(var(--tc) * .72) auto no-repeat,
+    url(img/ui/table/skull.png) right calc(var(--tc) * 1.05) bottom calc(var(--tc) * .35) / calc(var(--tc) * .9) auto no-repeat,
+    url(img/ui/table/table.webp) center / cover no-repeat, #2a1a10;
+  box-shadow: 0 -6px 18px rgba(0,0,0,.55), inset 0 0 0 2px rgba(0,0,0,.6), inset 0 0 40px rgba(0,0,0,.55); }
+#scrCombat .hand > * { image-rendering: auto; }
+#scrCombat .hand > .hint { color: #e8d6b4; text-shadow: 0 1px 2px #000; }
+#scrCombat .hand::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 0;
+  background: radial-gradient(60% 90% at 50% 55%, transparent 55%, rgba(0,0,0,.35) 100%); }
+@media (max-width: 700px) { #scrCombat .hand { --tc: 48px; background-size: var(--tc), var(--tc), var(--tc), var(--tc), 0 0, 0 0, 0 0, cover, auto; } }
+
 #scrCombat[data-map="fire"] { --battle-bg: radial-gradient(120% 90% at 50% 10%, #4a1d0c 0%, #1d0d07 55%, #0b0605 100%); }
 #scrCombat[data-map="frost"] { --battle-bg: radial-gradient(120% 90% at 50% 10%, #1d3446 0%, #0e1820 55%, #070a0e 100%); }
 #scrCombat[data-map="nature"] { --battle-bg: radial-gradient(120% 90% at 50% 10%, #1e3a1a 0%, #0f1a0d 55%, #070b06 100%); }
@@ -2529,7 +2547,7 @@ body.inkui:not(.ui-classic) .sheetbox .btn, body.inkui:not(.ui-classic) .modal .
       ${d.cost != null && d.cost < 999 ? `<span class="forb" style="${orb(R.orbL)}" title="Mana cost">${d.cost}</span>` : ''}
       ${d.rank ? `<span class="forb flvl" style="${orb(R.orbR)}" title="Card level">${d.rank}</span>` : ''}
       <span class="fplq" style="${box(g.plaque)}">${esc(plaque)}</span>
-      <span class="fpanel" style="${box(g.panel)}"><span class="fname">${esc(name)}</span><span class="ftext ${len > 95 ? 'vlong' : len > 62 ? 'long' : ''}">${text}</span></span>`;
+      <span class="fpanel" style="${box(g.panel)}"><span class="fname">${esc(name)}</span><span class="ftext">${text}</span></span>`;
   }
   function cardFace(d, o) {
     if (d && (d.cls === 'Warrior' || d.cls === 'Paladin') && typeof profile !== 'undefined' && profile && profile.chars) { const hc = profile.chars[heroKey]; const t2 = CBHub.defText(hc, d.cls, d.text); if (t2 !== d.text) { const o2 = Object.create(d); o2.text = t2; d = o2; } } // Nov 2: Block with a shield, Parry without
@@ -2545,7 +2563,7 @@ body.inkui:not(.ui-classic) .sheetbox .btn, body.inkui:not(.ui-classic) .modal .
     return `<span class="fart" style="${L(F.art)}">${art ? `<img src="${art}" alt="" draggable="false"${art.startsWith('img/') ? ' class="px"' : ''}>` : cardIcon(d)}</span><img class="fimg" src="${F.src}" alt="" draggable="false">
       ${d.cost != null && d.cost < 999 ? `<span class="fgem" style="left:${pct(g[0] - gr)};top:${pct(g[1] - gr / 1.5)};width:${pct(gr * 2)};aspect-ratio:1">${d.cost}</span>` : ''}
       ${d.rank ? `<span class="frank">+${d.rank}</span>` : ''}
-      <span class="fpanel" style="${L(F.panel)}"><span class="fname">${esc(name)}</span><span class="ftype">${type}</span><span class="ftext ${len > 95 ? 'vlong' : len > 62 ? 'long' : ''}">${text}</span></span>`;
+      <span class="fpanel" style="${L(F.panel)}"><span class="fname">${esc(name)}</span><span class="ftype">${type}</span><span class="ftext">${text}</span></span>`;
   }
   // shrink rules text until it fits its panel (cards render at many sizes)
   function fitCards(root) {
