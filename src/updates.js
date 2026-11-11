@@ -9,6 +9,7 @@
       ['Art', "Enemy cards get new frames by type: rusted iron for soldiers, wood for outlaws, fur for beasts, chains for constructs, blood-stained iron for brutes, vines for the nature map and pale fur for the frost map. Other enemies keep their current frames for now."],
       ['Art', "Animated pixel-art monsters: every enemy in the Broken March now breathes, attacks, guards or rallies with the card it plays, and flinches when hit. Elites have three attacks each, and Warlord Gorrath swings a skull chain and roars when you bring him to half health. More maps are on the way."],
       ['Art', "The Cinder Reach gets its animated pixel monsters too: ash imps, lava slugs, cinder hounds, magma golems and the fire cult, six elites, and Pyrelord Vashkar, whose crown bursts into flame when he reaches half health."],
+      ['Art', "Rimewatch is next: snow sprites, ice wolves, yetis, frost trolls, mammoths, a wendigo, the Queen's winter knights, six elites (the Yeti King, the Frozen Engine, the Shard Sisters and more) and Queen Sylvaine herself, who calls down the Long Winter at half health."],
       ['Change', "Menu > Settings > Previous enemy art switches back to the still pictures."],
     ] },
     { date: '2026-11-07', items: [
