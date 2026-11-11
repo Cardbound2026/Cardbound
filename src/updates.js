@@ -12,6 +12,7 @@
       ['Art', "Rimewatch is next: snow sprites, ice wolves, yetis, frost trolls, mammoths, a wendigo, the Queen's winter knights, six elites (the Yeti King, the Frozen Engine, the Shard Sisters and more) and Queen Sylvaine herself, who calls down the Long Winter at half health."],
       ['Art', "Tanglewild joins them: spitting toads, briar wolves, giant wasps, bog lurkers, treants, a broodmother spider, six elites (the Swamp Hag and her cauldron, the Hive Queen, the Colossal Treant and more) and the Elder Thornheart, whose chest splits open into the Wild Bloom at half health."],
       ['Art', "The Shattered Spire is next: mana wisps, scroll thieves, ley hounds, warded golems, living tomes, a rune titan, a plain-iron Arbiter, six elites (the Mirror Twins, the Clockwork Oracle, the Bursar and more) and Archmagus Ilvar, cracked open and leaking violet light, who unbinds himself at half health."],
+      ['Art', "And the Hollow Crypts finish the set: crypt rats, restless skeletons, ghouls, shades, a bone golem, a death knight, a siege engine of bones, six elites (the Bell of Mourning on its bone legs, the Weeping Sisters, the Crimson Count and more) and the Hollow King, who calls the Hollow Court at half health. Every enemy in the game now has animated pixel art."],
       ['Change', "Menu > Settings > Previous enemy art switches back to the still pictures."],
     ] },
     { date: '2026-11-07', items: [
