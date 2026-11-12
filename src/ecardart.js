@@ -1,0 +1,3 @@
+// ---------- Enemy and status card art (Nov 12): one PixelLab painting per enemy card name ('e_<slug>') and per status card ('status_<key>'),
+// public/img/ecards/<key>.webp (made by tools/pack_ecards.py). cardFace looks these up by name. TO REMOVE: delete this file (and public/img/ecards).
+(function () { const K = ["e_bite", "e_charge", "e_covering_shield", "e_dirty_kick", "e_fall_back", "e_gore", "e_gut_stab", "e_hold_formation", "e_pickpocket", "e_plate_up", "e_raise_buckler", "e_rusty_slash", "e_savage_lunge", "e_serrated_cut", "e_shield_jab", "e_shiv", "e_smoke_pellet", "e_snarl", "e_wallow"]; const A = window.CB_ART = window.CB_ART || {}; for (const k of K) A[k] = 'img/ecards/' + k + '.webp'; })();

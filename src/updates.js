@@ -1,6 +1,9 @@
   // ---------- What's new: the changelog (button bottom-right) and the new-version warning
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
+    { date: '2026-11-12', items: [
+      ['Art', "Enemy cards are getting paintings: every card a monster plays gets its own pixel illustration in the same style as your cards, starting with the Broken March. More arrive through the day."],
+    ] },
     { date: '2026-11-11', items: [
       ['Art', "The rarity gem at the top of Rogue cards now glows softly in its colour (white, green, blue or gold), so you can tell a card's rarity at a glance. Card names on the new frames are coloured by rarity too, like the type line."],
       ['Art', "Every map now has painted pixel art. The Cinder Reach, Rimewatch, Tanglewild, Shattered Spire and Hollow Crypts each get a run map seen from above (with their volcano fortress, glacier keep, thorn tree, floating tower or crypt cathedral behind the boss) and their own fight backdrops: four road scenes that bring the landmark closer the further you go, and a boss scene."],
