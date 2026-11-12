@@ -920,6 +920,97 @@ body #scrCombat.bf .stage .uplate .bar span { font-size: 12px; }
   .cmppop { position: fixed; z-index: 80; width: min(560px, calc(100vw - 16px)); max-height: calc(100vh - 16px); overflow: auto; background: #15110d; border: 1px solid var(--accent); border-radius: 8px; padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.7); pointer-events: none; display: grid; gap: 8px; }
   .cmppop[hidden] { display: none; } .cmphead { font-size: 13px; } .cmpcols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .cmplab { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 2px; }
   .cmptab { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; } .cmptab th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px; border-bottom: 1px solid var(--line); } .cmptab td { padding: 2px 4px; } .cmptab td:nth-child(n+2), .cmptab th:nth-child(n+2) { text-align: right; } .cmptab .cmppow td { border-top: 1px solid var(--line); font-weight: 700; } .cmpblock + .cmpblock { border-top: 1px dashed var(--line); padding-top: 8px; }
+
+/* Nov 11 (round 3, the Darkest Dungeon layout): on a wide screen a solo fight fills the whole window. The battlefield runs edge to edge and one
+   iron-and-stone panel (img/ui/hud3/panel.png, one generated piece) holds the mana orb, the hand, the piles and End turn. --u is one pixel of that
+   panel art, so everything inside it scales with the panel; the stone ends keep their shape and only the iron middle stretches on wider screens. */
+#pframe, .hudbtns, .mtext .m3 { display: none; }
+#scrCombat.hud3 { --ph: min(calc(100vw * 146 / 605), 44vh); --u: calc(var(--ph) / 146); position: fixed !important; inset: 0 !important; margin: 0 !important; padding: 0 !important; display: block !important; max-width: none !important; width: auto !important; z-index: 2; }
+body:has(#scrCombat.hud3:not([hidden])) { background: #000 !important; overflow: hidden; }
+body:has(#scrCombat.hud3:not([hidden])) header.top { position: fixed; top: 12px; right: 14px; z-index: 30; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; width: auto; }
+body:has(#scrCombat.hud3:not([hidden])) header.top .brand, body:has(#scrCombat.hud3:not([hidden])) header.top #topInfo { display: none; }
+body:has(#scrCombat.hud3:not([hidden])) #verTag { font-size: 9.5px; right: 26px; bottom: 6px; opacity: .75; }
+body:has(#scrCombat.hud3:not([hidden])) #btnUpdates { right: 42px; bottom: 26px; padding: 3px 10px; font-size: 12px; }
+#scrCombat.hud3 .combatchat { display: none !important; }
+#scrCombat.hud3 > .field-panel { position: absolute !important; inset: 0 !important; display: block !important; padding: 0 !important; margin: 0 !important; border: 0 !important; border-radius: 0 !important; min-height: 0 !important; height: auto !important; box-shadow: none !important; }
+#scrCombat.hud3 > .field-panel::before, #scrCombat.hud3 > .field-panel::after { border-radius: 0; bottom: calc(var(--ph) - 14px); }
+#scrCombat.hud3 .stage { position: absolute !important; left: 0; right: 0; top: 0; height: calc(100vh - var(--ph) + 14px) !important; min-height: 0 !important; margin: 0 !important; border-radius: 0 !important; }
+/* the panel */
+body #scrCombat.bf.hud3 .field-panel > .hud { position: absolute !important; left: 0 !important; right: 0 !important; bottom: 0 !important; top: auto !important; height: var(--ph) !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; display: block !important; z-index: 4; box-sizing: border-box; background: none !important; border-style: solid !important; border-width: 0 !important;
+  border-image: url(img/ui/hud3/panel.png) 0 106 0 105 fill / 0 calc(var(--u) * 106) 0 calc(var(--u) * 105) / 0 stretch !important; image-rendering: pixelated; box-shadow: 0 -6px 12px rgba(0,0,0,.6) !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud > * { image-rendering: auto; }
+body #scrCombat.bf.hud3 .field-panel > .hud .mana { position: static !important; transform: none !important; display: block !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud .mana .orb { position: absolute !important; left: calc(var(--u) * 24) !important; top: calc(var(--u) * 42.5) !important; width: calc(var(--u) * 36) !important; height: calc(var(--u) * 36) !important; margin: 0 !important; border-radius: 50% !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud .mana .orb::before { display: none !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud .mana .orb .orbfill { inset: 0 !important; border-radius: 50% !important; background: radial-gradient(circle at 50% 45%, #121a2a, #05070c 75%) !important; box-shadow: inset 0 0 8px #000 !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud .mana .orb .orbfill::before { background: linear-gradient(#5a8fe0, #2a4fa0 40%, #162a5c) !important; box-shadow: inset 0 3px 0 rgba(170,205,255,.55) !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud .mana .orb > span { font-size: calc(var(--u) * 13) !important; color: #eef4ff; text-shadow: 0 2px 0 #000, 0 0 10px rgba(80,140,255,.7) !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud .mtext { position: absolute !important; left: calc(var(--u) * 4) !important; top: calc(var(--u) * 111) !important; width: calc(var(--u) * 78) !important; transform: none !important; text-align: center; display: grid !important; gap: 0; }
+body #scrCombat.bf.hud3 .field-panel > .hud .mtext > b, body #scrCombat.bf.hud3 .field-panel > .hud .mtext .mmax { display: none !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud .mtext small { display: grid !important; font-size: inherit !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud .mtext .m3 { display: block !important; font: 700 calc(var(--u) * 5.6) / 1.2 var(--f-ui) !important; letter-spacing: .08em; color: #e8dcc4 !important; text-shadow: 0 2px 0 #000, 0 0 6px #000; }
+body #scrCombat.bf.hud3 .field-panel > .hud .mtext .mreg { display: block !important; font: 700 calc(var(--u) * 4.9) / 1.2 var(--f-ui) !important; letter-spacing: .06em; color: #8fb0ff !important; text-shadow: 0 2px 0 #000, 0 0 6px #000; }
+/* piles sit in the ends of the recess */
+body #scrCombat.bf.hud3 .field-panel > .hud .piles { position: static !important; display: block !important; margin: 0 !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud .piles .hchip { display: none !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn { position: absolute !important; border-radius: 4px !important; background: repeating-linear-gradient(45deg, #1d1916 0 6px, #231e1a 6px 12px) !important; border: 2px solid #5a4128 !important; box-shadow: inset 0 0 0 2px #0c0a09, 2px 2px 0 #0c0a09, 4px 4px 0 #3a2a1c !important; transform: none; }
+body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn:hover { filter: brightness(1.3) drop-shadow(0 0 6px #d6a14a88); }
+body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn > i { display: none !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn > b { right: -9px !important; bottom: -9px !important; min-width: 26px; height: 26px; border-radius: 13px; border: 2px solid #8a653d; line-height: 22px; font-size: 14px; }
+body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn > em { display: block !important; bottom: auto !important; top: calc(100% + 9px) !important; font-size: 11px !important; color: #8f8676 !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud .pi-draw { left: calc(var(--u) * 113) !important; top: calc(var(--u) * 50) !important; width: calc(var(--u) * 34) !important; height: calc(var(--u) * 48) !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud .pi-discard { right: calc(var(--u) * 114) !important; top: calc(var(--u) * 30) !important; width: calc(var(--u) * 30) !important; height: calc(var(--u) * 42) !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud .pi-exhaust { right: calc(var(--u) * 114) !important; top: calc(var(--u) * 92) !important; width: calc(var(--u) * 22) !important; height: calc(var(--u) * 22) !important; }
+/* End turn is engraved on the iron plate of the right pillar */
+body #scrCombat.bf.hud3 .field-panel > .hud #btnEnd { position: absolute !important; right: calc(var(--u) * 13) !important; top: calc(var(--u) * 38) !important; width: calc(var(--u) * 59) !important; height: calc(var(--u) * 51) !important; min-width: 0 !important; margin: 0 !important; padding: 0 calc(var(--u) * 4) !important; border: 0 !important; border-image: none !important; background: none !important; display: grid !important; place-items: center; white-space: normal !important; text-align: center; font: 400 calc(var(--u) * 10.5) / 1 var(--cf-name, var(--f-display)) !important; color: #e0c38a !important; text-shadow: 0 2px 0 #000, 0 0 12px rgba(224,176,80,.45) !important; box-shadow: inset 0 0 18px rgba(224,176,80,.22) !important; border-radius: 3px; transform: none !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud #btnEnd .hg { display: none !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud #btnEnd:hover:not(:disabled) { color: #ffe2a6 !important; box-shadow: inset 0 0 22px rgba(224,176,80,.45) !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud #btnEnd:disabled { color: #6f6250 !important; text-shadow: 0 2px 0 #000 !important; box-shadow: none !important; }
+#scrCombat.hud3 .hudbtns { display: flex; gap: 8px; justify-content: center; position: absolute; right: calc(var(--u) * 4.5); top: calc(var(--u) * 104); width: calc(var(--u) * 76); }
+#scrCombat.hud3 .hudbtns button { width: 46px; height: 30px; padding: 0; background: linear-gradient(#211e1b, #141211); border: 2px solid #0a0908; box-shadow: inset 0 0 0 1px #5a4128, 0 3px 6px rgba(0,0,0,.6); border-radius: 3px; font: 600 11px var(--f-ui); letter-spacing: .08em; color: #b7ab97; cursor: pointer; }
+#scrCombat.hud3 .hudbtns button:hover, #scrCombat.hud3.logopen .hudbtns #btnLogC { color: #f0dfbf; box-shadow: inset 0 0 0 1px #8a653d, 0 0 8px rgba(214,161,74,.4); }
+body #scrCombat.bf.hud3 .field-panel > .hud .hint { position: absolute !important; left: calc(var(--u) * 105) !important; right: calc(var(--u) * 106) !important; top: calc(var(--u) * 6) !important; width: auto !important; height: calc(var(--u) * 13) !important; margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; display: grid !important; place-items: center; font-size: 12.5px !important; color: #b7ab97; text-shadow: 0 1px 0 #000; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* the hand lies in the recess */
+#scrCombat.hud3 .field-panel > .hand { position: absolute !important; left: calc(var(--u) * 105) !important; right: calc(var(--u) * 106) !important; bottom: calc(var(--u) * 23) !important; top: auto !important; height: calc(var(--u) * 98) !important; width: auto !important; margin: 0 !important; padding: 0 0 calc(var(--u) * 2) !important; z-index: 5; background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; --hcw: calc(var(--u) * 63); align-items: center !important; }
+#scrCombat.hud3 .field-panel > .hand::before, #scrCombat.hud3 .field-panel > .hand::after { display: none !important; }
+/* the combat log becomes a drawer on the right */
+#scrCombat.hud3 #ledger { position: fixed !important; top: 62px !important; right: 0 !important; bottom: calc(var(--ph) - 14px) !important; left: auto !important; width: min(380px, 42vw) !important; height: auto !important; max-height: none !important; z-index: 8; margin: 0 !important; transform: translateX(105%); transition: transform .2s ease-out; box-shadow: -8px 0 24px rgba(0,0,0,.7); }
+#scrCombat.hud3.logopen #ledger { transform: none; }
+/* turn order: small round portraits at the top, the round under them */
+body #scrCombat.bf.hud3 .order { position: absolute !important; top: 6px !important; left: 50% !important; transform: translateX(-50%); z-index: 6; display: flex !important; flex-wrap: wrap !important; justify-content: center; align-items: center; gap: 8px !important; width: auto !important; max-width: 64vw; margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; filter: drop-shadow(0 2px 4px rgba(0,0,0,.85)); }
+body #scrCombat.bf.hud3 .order .lbl { order: 99; flex-basis: 100%; text-align: center; font-size: 0 !important; margin: 0 !important; padding: 0 !important; background: none !important; }
+body #scrCombat.bf.hud3 .order .lbl b { display: block; font: 400 20px var(--cf-name, var(--f-display)) !important; color: #e0b050 !important; text-shadow: 0 2px 0 #000, 0 0 8px #000; }
+body #scrCombat.bf.hud3 .order .otile { flex: none !important; width: 40px !important; height: 40px !important; min-width: 0 !important; padding: 0 !important; margin: 0 !important; border-radius: 50% !important; border-image: none !important; border: 2px solid #4e6a46 !important; background: #0c0a09 !important; overflow: hidden !important; display: grid !important; place-items: center; box-shadow: none !important; }
+body #scrCombat.bf.hud3 .order .otile.foe { border-color: #7a3a30 !important; }
+body #scrCombat.bf.hud3 .order .otile.now { width: 48px !important; height: 48px !important; border-color: #e0b050 !important; box-shadow: 0 0 10px rgba(224,176,80,.6) !important; }
+body #scrCombat.bf.hud3 .order .otile.done, body #scrCombat.bf.hud3 .order .otile.dead { opacity: .5; }
+body #scrCombat.bf.hud3 .order .otile .onm, body #scrCombat.bf.hud3 .order .otile .obar, body #scrCombat.bf.hud3 .order .otile .oini, body #scrCombat.bf.hud3 .order .otile::after, body #scrCombat.bf.hud3 .order .otile::before { display: none !important; }
+body #scrCombat.bf.hud3 .order .otile .ofig { width: 100%; height: 100% !important; overflow: hidden; display: grid; place-items: center; }
+body #scrCombat.bf.hud3 .order .otile .ofig img, body #scrCombat.bf.hud3 .order .otile .ofig svg { width: 135% !important; height: 135% !important; object-fit: cover; object-position: 50% 20%; image-rendering: pixelated; }
+body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 16px; text-shadow: 0 1px 2px #000; }
+/* your frame, top left (World of Warcraft style) */
+#scrCombat.hud3 #pframe { display: flex; position: absolute; left: 12px; top: 12px; z-index: 6; gap: 12px; align-items: center; width: 340px; padding: 10px 14px 10px 10px; box-sizing: border-box; transform: scale(.96); transform-origin: 0 0; filter: drop-shadow(0 2px 3px rgba(0,0,0,.9)); }
+#pframe .pfimg { position: relative; flex: none; width: 66px; height: 66px; border-radius: 50%; overflow: hidden; background: #0c0a09; border: 2px solid #8a653d; box-shadow: 0 0 0 2px #0c0a09; }
+#pframe .pfimg img { width: 120%; height: 120%; margin: -2% 0 0 -10%; object-fit: cover; object-position: 50% 0; image-rendering: pixelated; }
+#pframe .pfr { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+#pframe .pfn { font: 400 19px var(--cf-name, var(--f-display)); color: #e8dcc4; line-height: 1; text-shadow: 0 2px 0 #000; } #pframe .pfn small { font: 500 13px var(--f-ui); color: #a99f8e; }
+#pframe .pfrow { display: flex; align-items: center; gap: 6px; }
+#pframe .pfhp { position: relative; flex: 1; height: 18px; background: #0c0a09; border: 1px solid #000; box-shadow: 0 0 0 1px #5a4128; }
+#pframe .pfhp i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(#c94a3f, #8f2a24); transition: width .3s; }
+#pframe .pfhp span { position: absolute; inset: 0; display: grid; place-items: center; font: 700 13px var(--f-ui); color: #fff; text-shadow: 0 1px 0 #000; }
+.mkshield { width: 24px; height: 26px; flex: none; background: linear-gradient(#a9b4bf, #5e6a76); clip-path: polygon(50% 0, 100% 18%, 92% 70%, 50% 100%, 8% 70%, 0 18%); display: grid; place-items: center; font: 700 12px var(--f-ui); color: #0c0a09; }
+#pframe .tags { display: flex; gap: 4px; flex-wrap: wrap; } #pframe .tags .sico.block { display: none; }
+/* compact notched HP bars over every unit; exact numbers on hover */
+#scrCombat.bf.hud3 .stage .unit > .uhead { display: none !important; }
+#scrCombat.bf.hud3 .stage .uplate { left: 50% !important; right: auto !important; bottom: calc(var(--figh, var(--fh)) + 4px) !important; transform: translateX(-50%); width: 150px !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; display: flex !important; flex-direction: column; align-items: center; gap: 5px; z-index: 4; filter: drop-shadow(0 1px 2px rgba(0,0,0,.9)); }
+#scrCombat.bf.hud3 .stage .uplate .uname, #scrCombat.bf.hud3 .stage .uplate .deckbtn, #scrCombat.bf.hud3 .stage #playerSlot .uplate .tags { display: none !important; }
+#scrCombat.bf.hud3 .stage .uplate .bar { order: 1; position: relative; width: 124px !important; height: 10px !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; background: #0c0a09 !important; border: 1px solid #000 !important; border-image: none !important; box-shadow: 0 0 0 1px #4e4741 !important; border-radius: 0 !important; }
+#scrCombat.bf.hud3 .stage .uplate .bar::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(var(--n, 12px) - 1px), rgba(0,0,0,.85) calc(var(--n, 12px) - 1px) var(--n, 12px)); pointer-events: none; }
+#scrCombat.bf.hud3 .stage .uplate .bar i { position: absolute !important; left: 0 !important; top: 0 !important; bottom: 0 !important; height: auto !important; width: var(--hpw, 100%) !important; background: linear-gradient(#c94a3f, #8f2a24) !important; border-radius: 0 !important; }
+#scrCombat.bf.hud3 .stage .uplate .bar span { display: none !important; }
+#scrCombat.bf.hud3 .stage .uplate .tags { order: 2; display: flex !important; flex-wrap: wrap; justify-content: center !important; gap: 3px !important; width: 150px; margin: 0 !important; }
+#scrCombat.bf.hud3 .stage .uplate .tags .sico { width: 22px !important; height: 22px !important; }
+#scrCombat.bf.hud3 .stage .uintent { bottom: calc(var(--figh, var(--fh)) + var(--ih, 40px) + 10px) !important; right: auto !important; left: 0; transform: translateX(-50%); }
 </style>
 </head>
 <body>
@@ -994,13 +1085,14 @@ body #scrCombat.bf .stage .uplate .bar span { font-size: 12px; }
   <section id="scrCombat" class="combatmain" hidden aria-label="Battle">
     <aside class="panel combatchat" id="combatChat" hidden aria-label="Chat"><div class="lgrip cgrip-w" data-grip="w" title="Drag to resize (double-click to reset)"></div><div class="lgrip lgrip-h" data-grip="h" title="Drag to resize (double-click to reset)"></div><div class="lgrip cgrip-c" data-grip="c" title="Drag to resize (double-click to reset)"></div></aside>
     <div class="field-panel">
-      <div class="order" id="order"></div>
+      <div class="order" id="order"></div><div id="pframe" aria-label="Your hero"></div>
       <div class="stage"><div id="playerSlot"></div><div class="vs">vs</div><div class="foes" id="foes"></div><div class="playedpeek" id="playedPeek" hidden aria-live="polite"></div></div>
       <div class="hud">
         <div class="mana"><div class="orb" id="orb">0</div><div class="mtext"><b>Mana</b><small id="manaSub"></small></div></div>
         <div class="piles" id="piles"></div>
         <div class="hint" id="hint"></div>
         <button class="btn primary endturn" id="btnEnd"><i class="hg" aria-hidden="true"></i>End turn</button>
+        <div class="hudbtns"><button type="button" id="btnLogC" title="Combat log">LOG</button><button type="button" id="btnDeckC" title="Every card in your deck this fight">DECK</button></div>
       </div>
       <div class="hand" id="hand" aria-label="Your hand"></div>
     </div>
@@ -6951,8 +7043,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794442617763';
-  const CB_BUILD = 'fcb6b179e5'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794445520843';
+  const CB_BUILD = '2f15fcedaf'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8058,6 +8150,9 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-11', items: [
+      ['UI', "New fight screen on wide screens: the battlefield fills the whole window and one iron-and-stone panel along the bottom holds everything you touch. The mana orb sits in the left pillar and drains as you spend, your hand lies in the recess with the draw pile on the left and discard and exhaust on the right, and End turn is engraved on the plate in the right pillar."],
+      ['UI', "Your hero now has a frame in the top left with portrait, exact HP, block and every buff and debuff. Every fighter on the field gets a compact notched HP bar over their head (each notch is 10 HP, hover it for exact numbers), with their statuses under it and their intent above."],
+      ['UI', "Turn order is a row of small portraits at the top with the round under it. The combat log is now a drawer: open it with the LOG button. DECK shows every card you have in the fight. Group fights, raids, duels and small screens keep the old layout for now."],
       ['Art', "New pixel-art hit effects in fights: sword slashes, claw marks, stabs, bonks with spinning stars, critical hits, fire bursts, shattering frost, shadow bats, beams of holy light, arcane bursts, thorns, blood, poison bubbles, burning ground, frost crust, curse skulls, rot and flies, healing pluses and a shield flash when you Block. Fire, frost, arcane and shadow spells now fly as pixel bolts."],
       ['Art', "The Broken March map is now an old battlefield seen from high above: wrecked wagons, dead horses, crows, graves and fallen banners line the sides, the burned castle waits at the top, and every fight node shows the monsters standing there, breathing, before you choose your road."],
       ['Art', "New pixel-art fight backdrops for the Broken March: ten scenes along the old road, with the burned castle on the horizon drawing closer the further up the map you fight, and the boss fight at its burning gate."],
@@ -11791,7 +11886,8 @@ function layout(cb, opts) {
   if (hint) hint.title = hint.textContent;
   stage.parentElement.classList.toggle('bfnarrow', W < 700); stage.parentElement.classList.toggle('bfmid', W < 900);
   const sr = stage.getBoundingClientRect(), T = (order ? Math.max(0, order.getBoundingClientRect().bottom - sr.top) + 8 : 90) + 22; // + the name tag over the back fighters' heads
-  const hudH = hud ? hud.offsetHeight : 64, B = H - hudH - 10; stage.parentElement.style.setProperty('--hudh', hudH + 'px');
+  const hudH = hud ? (sc.classList.contains('hud3') ? 14 : hud.offsetHeight) : 64, // hud3: the panel sits below the stage, overlapping it by 14px
+    B = H - hudH - 10; stage.parentElement.style.setProperty('--hudh', hudH + 'px');
   const sides = [[...document.querySelectorAll('#playerSlot > .unit')], [...document.querySelectorAll('#foes > .unit')]];
   const cmp = sides.map(us => us.length > 4), narrow = W < 760;
   stage.classList.toggle('narrow', narrow);
@@ -13844,7 +13940,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       <div class="uhead"><b style="color:${a.isPlayer ? CC[a.cls] : '#ead9c4'}">${esc(a.name)}</b>${unitGuild(a) ? `<small>&lt;${esc(unitGuild(a))}&gt;</small>` : ''}</div>
       <div class="figure">${figure(a, true)}</div>${demonsHtml(a)}
       <div class="uplate"><div class="uname"><b ${a.isPlayer ? `style="color:${CC[a.cls]}"` : ''}>${esc(a.name)}</b><small>${cb.raid && a.isPlayer && a.hp > 0 && !cb.over ? (cb.raidDone && cb.raidDone.has(a.id) ? '<span class="rdone" title="Ended their turn">&#10003; Done</span>' : cb.phase === 'player' ? '<span class="rwait">playing...</span>' : '') : sub}</small></div>
-      <div class="bar"><i style="width:${pct}%;--hpw:${pct}%"></i><span>${a.hp} / ${a.maxHp}</span></div>
+      <div class="bar" title="${esc(a.name)}: ${a.hp} / ${a.maxHp} HP${a.block ? `, ${a.isPlayer ? esc(a.defName || 'Block') : 'Block'} ${a.block}` : ''}" style="--n:${(124 * (a.maxHp <= 160 ? 10 : a.maxHp <= 800 ? 50 : 100) / Math.max(1, a.maxHp)).toFixed(2)}px"><i style="width:${pct}%;--hpw:${pct}%"></i><span>${a.hp} / ${a.maxHp}</span></div>
       ${a.isPlayer ? '' : `<button class="pilebtn deckbtn" data-enemy="${a.id}" title="Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}"><span class="dlong">Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}</span><span class="dshort"><span class="dword">Deck </span>${a.hand.length}/${a.drawPile.length}/${a.discard.length}</span></button>`}
       <div class="tags">${iconTags(tags(a))}${cb.duel && a !== hero() ? `<span class="tag">Hand ${a.hand.length} &middot; Mana ${a.mana}</span>` : ''}</div></div></div>`;
   }
@@ -13896,6 +13992,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     $('order').innerHTML = `<span class="lbl"><b>Round ${cb.round}</b>Turn order</span>` + cb.order.map((id, i) => { const a = cb.actorById(id); const st = a.hp <= 0 ? 'dead' : cb.raid && a.isPlayer ? (cb.raidDone && cb.raidDone.has(a.id) ? 'done' : cb.phase === 'player' && !cb.over ? 'now' : '') : i === cb.turnIndex && !cb.over ? 'now' : i < cb.turnIndex ? 'done' : '';
       const dt = a.isPlayer && a.hp > 0 && a.demons && a.demons.length ? a.demons.map(dm => `<div class="otile demon ${st === 'done' ? 'done' : ''}" title="${esc(dm.name)} (${esc(a.name)}'s demon): acts at the end of ${esc(a.name)}'s turn. HP ${dm.hp}/${dm.maxHp}, ${dm.turns} turn${dm.turns > 1 ? 's' : ''} left."><div class="ofig">${demonFig(dm)}</div><div class="onm">${esc((CB.DEMONS[dm.key] || {}).short || dm.name)}</div><span class="oini">${dm.turns}t</span></div>`).join('') : '';
       return `${i ? '<span class="osep" aria-hidden="true">&rsaquo;</span>' : ''}<div class="otile ${a.isPlayer ? 'hero' : 'foe'} ${st}" style="--oc:${a.isPlayer ? CC[a.cls] : '#e0b8a8'}" title="${esc(a.name)}: Initiative ${cb.initiative(a)}, HP ${a.hp}/${a.maxHp}"><span class="oini">${cb.initiative(a)}</span>${cb.raid && a.isPlayer && a.hp > 0 && cb.raidDone && cb.raidDone.has(a.id) ? '<span class="ock" title="Ended their turn">&#10003;</span>' : ''}<div class="ofig">${figure(a)}</div><div class="onm">${a.isPlayer && !party ? 'You' : a === p && cb.myMi != null ? 'You' : esc(a.name)}</div><div class="obar"><i style="width:${Math.max(0, 100 * a.hp / a.maxHp)}%"></i></div></div>${dt}`; }).join('') + `${run && run.over && cb.over ? '<button class="btn primary" id="btnCResults" style="padding:4px 12px">Results</button>' : ''}${cb.practice ? '<button class="pilebtn" id="btnCReset" title="Start a fresh fight">Reset</button><button class="pilebtn" id="btnCLeave">Leave</button>' : ''}`;
+    $('scrCombat').classList.toggle('hud3', hud3On());
     const mine = cb.duel ? [p] : cb.players, foes = cb.duel ? cb.players.filter(x => x !== p) : cb.enemies;
     { // one shared figure size for heroes and foes, picked from the busier side, so nobody is drawn at a different scale or jumps around mid-fight
       const hc = mine.length, fc = foes.length, hCols = hc <= 5 ? hc : Math.ceil(hc / 2), fCols = fc <= 4 ? fc : Math.ceil(fc / 2), rows = hc > 5 || fc > 4, n = Math.max(hCols, fCols);
@@ -13911,8 +14008,9 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if (window.CB_BF) CB_BF.layout(cb, { map: $('scrCombat').dataset.map, row: run && run.at && run.map && run.map.nodes[run.at] ? (run.at === 'boss' ? 'boss' : run.map.nodes[run.at].row) : null, left: cb.duel ? 'You' : cb.raid ? 'The raid' : cb.partySize > 1 ? 'Your party' : esc(hero().name), right: cb.duel ? 'Your rival' : (DATA.maps[$('scrCombat').dataset.map] || {}).name || 'The enemy' });
     if (withPops) popups(); else snapshot();
     if (window.CB_FX) CB_FX.consume(cb); // hero moves, hit effects and spell projectiles (src/fx.js, src/forge.js)
+    $('pframe').innerHTML = `<div class="pfimg"><img src="img/heroes/${String(p.cls).toLowerCase()}.png" alt=""></div><div class="pfr"><div class="pfn">${esc(p.name)} <small>${esc(p.cls)}</small></div><div class="pfrow"><div class="pfhp" title="${p.hp} / ${p.maxHp} HP"><i style="width:${Math.max(0, 100 * p.hp / p.maxHp)}%"></i><span>${p.hp} / ${p.maxHp}</span></div>${p.block ? `<div class="mkshield" title="${esc(p.defName || 'Block')} ${p.block}">${p.block}</div>` : ''}</div><div class="tags">${iconTags(tags(p))}</div></div>`;
     $('orb').innerHTML = `<i class="orbfill" style="--mf:${Math.max(0, Math.min(1, p.mana / Math.max(1, p.maxMana)))}"></i><span>${p.mana}</span>`;
-    $('manaSub').innerHTML = `<span class="mmax">of ${p.maxMana}</span><span class="mreg">+${p.regen} / turn</span>`;
+    $('manaSub').innerHTML = `<span class="m3">${p.mana} / ${p.maxMana} MANA</span><span class="mmax">of ${p.maxMana}</span><span class="mreg">+${p.regen} / turn</span>`;
     const fat = [...p.drawPile, ...p.hand, ...p.discard].filter(c => CARDS[c.key].type === 'Status').length;
     $('piles').innerHTML = `<button class="pilebtn pi-draw" data-pile="draw" title="Draw pile: ${p.drawPile.length} cards (you draw ${p.draw} a round)"><i></i><b>${p.drawPile.length}</b><em>Draw</em></button><button class="pilebtn pi-discard" data-pile="discard" title="Discard pile: ${p.discard.length} cards"><i></i><b>${p.discard.length}</b><em>Discard</em></button><button class="pilebtn pi-exhaust" data-pile="exhaust" title="Exhausted: ${p.exhaust.length} cards (gone for this fight)"><i></i><b>${p.exhaust.length}</b><em>Exhaust</em></button><span class="hchip">Draws <b>${p.draw}</b>/round</span>${fat ? `<span class="hchip">Status cards <b>${fat}</b></span>` : ''}${cb.pressure() ? `<span class="hchip">Pressure <b>+${Math.round(cb.pressure() * 100)}%</b></span>` : ''}`;
     const myTurn = cb.phase === 'player' && !cb.over && (cb.myMi == null || cb.canAct(p));
@@ -13960,11 +14058,12 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   function rowHtml(n, d, extra) {
     return `<div class="cardrow" style="--rc:${RC[d.rarity] || 'var(--line)'}"><span class="n">${n}x</span><b>${esc(d.name)}${d.planned === false ? ' <span class="muted">(can\'t afford: discarded)</span>' : ''}</b><span class="cst">${d.cost != null ? d.cost + ' mana' : 'unplayable'}</span><span class="tx">${esc(d.text)}</span></div>`;
   }
+  function hud3On() { return innerWidth >= 900 && innerHeight >= 560 && cb && !cb.raid && !cb.duel && !(cb.partySize > 1); }
   function viewPile(which) {
     const p = hero();
-    const title = { draw: 'Draw pile', discard: 'Discard pile', exhaust: 'Exhaust pile' }[which];
-    const cards = which === 'draw' ? p.drawPile : which === 'discard' ? p.discard : p.exhaust;
-    const note = { draw: 'Sorted by name; the real order is hidden. Your discard pile is shuffled back in when this runs out (adding a Fatigue).', discard: 'Played and discarded cards. Shuffled back into your draw pile when it runs out.', exhaust: 'Removed for the rest of this fight.' }[which];
+    const title = { draw: 'Draw pile', discard: 'Discard pile', exhaust: 'Exhaust pile', deck: 'Your deck' }[which];
+    const cards = which === 'draw' ? p.drawPile : which === 'discard' ? p.discard : which === 'deck' ? [...p.drawPile, ...p.hand, ...p.discard, ...p.exhaust] : p.exhaust;
+    const note = { deck: 'Every card you have in this fight, wherever it is right now.', draw: 'Sorted by name; the real order is hidden. Your discard pile is shuffled back in when this runs out (adding a Fatigue).', discard: 'Played and discarded cards. Shuffled back into your draw pile when it runs out.', exhaust: 'Removed for the rest of this fight.' }[which];
     const groups = new Map();
     for (const c of cards) { const k = c.key + '+' + (c.rank || 0); const g = groups.get(k) || { n: 0, c }; g.n++; groups.set(k, g); }
     const faces = [...groups.values()].sort((a, b) => cb.card(a.c).name.localeCompare(cb.card(b.c).name)).map(g => { const d = cb.card(g.c); const box = d.type !== 'Status' && cardBox(d, 130); return `<div class="pilecard">${box || rowHtml(1, d)}${g.n > 1 ? `<span class="pilecount">x${g.n}</span>` : ''}</div>`; }).join('');
@@ -13983,6 +14082,9 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     $('modalBox').classList.add('wide'); fitCards($('modalBox'));
     $('mClose').onclick = closeModal; $('mLoot').onclick = () => lootModal(e.key);
   }
+  $('btnLogC').addEventListener('click', () => $('scrCombat').classList.toggle('logopen'));
+  $('btnDeckC').addEventListener('click', () => viewPile('deck'));
+  addEventListener('resize', () => { if (cb && !$('scrCombat').hidden) $('scrCombat').classList.toggle('hud3', hud3On()); });
   $('piles').addEventListener('click', (ev) => { const b = ev.target.closest('[data-pile]'); if (b) viewPile(b.dataset.pile); });
   $('foes').addEventListener('click', (ev) => { const b = ev.target.closest('[data-enemy]'); if (b) { ev.stopPropagation(); viewEnemy(b.dataset.enemy); } }, true);
   $('modal').addEventListener('click', (ev) => { if (ev.target === $('modal') && $('mClose')) closeModal(); });
