@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-11', items: [
+      ['UI', "Big hands fan out flatter: past 6 cards the arc and tilt ease off, so a full hand reads as a neat row."],
       ['UI', "Big hands squeeze together to fit between your draw pile and discard pile instead of spilling over them, however many cards you hold."],
       ['Art', "Act bosses are drawn 30% smaller in fights, so they stand on the field with room for their HP bar and intent above them."],
       ['UI', "Block is now a big shield badge right beside every HP bar in a fight (yours and every enemy's), with the number on it; Rogues see their Dodge swirl instead. It's gone from the small status icons."],
