@@ -7066,8 +7066,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794448423055';
-  const CB_BUILD = 'e7f5f594ad'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794448529878';
+  const CB_BUILD = 'c177bbfbff'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8173,6 +8173,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-11', items: [
+      ['UI', "Fighters stand a little further up the field, on the ground instead of on the edge of the bottom panel."],
       ['UI', "Big hands fan out flatter: past 6 cards the arc and tilt ease off, so a full hand reads as a neat row."],
       ['UI', "Big hands squeeze together to fit between your draw pile and discard pile instead of spilling over them, however many cards you hold."],
       ['Art', "Act bosses are drawn 30% smaller in fights, so they stand on the field with room for their HP bar and intent above them."],
@@ -11929,7 +11930,7 @@ function layout(cb, opts) {
   if (hint) hint.title = hint.textContent;
   stage.parentElement.classList.toggle('bfnarrow', W < 700); stage.parentElement.classList.toggle('bfmid', W < 900);
   const sr = stage.getBoundingClientRect(), T = (order ? Math.max(0, order.getBoundingClientRect().bottom - sr.top) + 8 : 90) + 22; // + the name tag over the back fighters' heads
-  const hudH = hud ? (sc.classList.contains('hud3') ? 14 : hud.offsetHeight) : 64, // hud3: the panel sits below the stage, overlapping it by 14px
+  const hudH = hud ? (sc.classList.contains('hud3') ? 14 + Math.round(H * .1) : hud.offsetHeight) : 64, // hud3: the panel sits below the stage, overlapping it by 14px
     B = H - hudH - 10; stage.parentElement.style.setProperty('--hudh', hudH + 'px');
   const sides = [[...document.querySelectorAll('#playerSlot > .unit')], [...document.querySelectorAll('#foes > .unit')]];
   const cmp = sides.map(us => us.length > 4), narrow = W < 760;

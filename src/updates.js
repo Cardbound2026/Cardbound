@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-11', items: [
+      ['UI', "Fighters stand a little further up the field, on the ground instead of on the edge of the bottom panel."],
       ['UI', "Big hands fan out flatter: past 6 cards the arc and tilt ease off, so a full hand reads as a neat row."],
       ['UI', "Big hands squeeze together to fit between your draw pile and discard pile instead of spilling over them, however many cards you hold."],
       ['Art', "Act bosses are drawn 30% smaller in fights, so they stand on the field with room for their HP bar and intent above them."],

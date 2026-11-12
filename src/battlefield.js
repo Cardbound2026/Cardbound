@@ -227,7 +227,7 @@ function layout(cb, opts) {
   if (hint) hint.title = hint.textContent;
   stage.parentElement.classList.toggle('bfnarrow', W < 700); stage.parentElement.classList.toggle('bfmid', W < 900);
   const sr = stage.getBoundingClientRect(), T = (order ? Math.max(0, order.getBoundingClientRect().bottom - sr.top) + 8 : 90) + 22; // + the name tag over the back fighters' heads
-  const hudH = hud ? (sc.classList.contains('hud3') ? 14 : hud.offsetHeight) : 64, // hud3: the panel sits below the stage, overlapping it by 14px
+  const hudH = hud ? (sc.classList.contains('hud3') ? 14 + Math.round(H * .1) : hud.offsetHeight) : 64, // hud3: the panel sits below the stage, overlapping it by 14px
     B = H - hudH - 10; stage.parentElement.style.setProperty('--hudh', hudH + 'px');
   const sides = [[...document.querySelectorAll('#playerSlot > .unit')], [...document.querySelectorAll('#foes > .unit')]];
   const cmp = sides.map(us => us.length > 4), narrow = W < 760;
