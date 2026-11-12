@@ -825,6 +825,46 @@ body #scrCombat.bf .endturn.btn.primary:disabled { filter: grayscale(.8) brightn
 #scrCombat.bf .field-panel.bfmid .hud .pilebtn > em { display: none; }
 @media (max-width: 700px) { body #scrCombat.bf .field-panel > .hud .mana .orb { width: 58px; height: 60px; margin: -10px 0 -4px; } #scrCombat.bf .field-panel > .hud .mana .orb::before, body #scrCombat.bf .field-panel > .hud .mana .orb .orbfill { inset: 9px 10px 10px 9px; } #scrCombat .hud .pilebtn { width: 40px; height: 40px; } #scrCombat .hud .pilebtn > i { width: 26px; height: 26px; } #scrCombat .hud .pilebtn > em { display: none; } #scrCombat .endturn.btn.primary { min-width: 0; font-size: 18px; } }
 
+/* Nov 11 (round 2, from the player's markup): the HUD is one carved stone ledge between the battlefield and the hand, holding a big
+   ornate mana orb (iron vines weave it into the stone; the liquid drains as you spend), the piles, the hint and an ornate End turn
+   plate. Turn order sits in pixel portrait frames; every HP bar has an iron frame; buffs and debuffs are small icons with a number. */
+body #scrCombat.bf .field-panel > .hud { position: relative; z-index: 3; margin: 0; min-height: 84px; padding: 10px 30px 10px 150px; border-radius: 0; background: none; border: 0; box-shadow: 0 -12px 22px rgba(0,0,0,.6);
+  border-style: solid; border-width: 14px 24px; border-image: url(img/ui/hud2/stone.png) 34 fill / 40px / 0 round; image-rendering: pixelated; box-sizing: border-box; align-items: center; grid-template-columns: auto minmax(0, 1fr) auto !important; display: grid; }
+body #scrCombat.bf .field-panel > .hud > * { image-rendering: auto; }
+body #scrCombat.bf .field-panel > .hud { padding: 4px 4px; }
+body #scrCombat.bf .field-panel > .hud .mana { position: absolute; left: -26px; top: 50%; transform: translateY(-36%); z-index: 4; gap: 0; }
+body #scrCombat.bf .field-panel > .hud .mana .orb { width: 192px; height: 192px; margin: 0; }
+body #scrCombat.bf .field-panel > .hud .mana .orb::before { background-image: url(img/ui/hud2/orb_ring.png); z-index: 2; }
+body #scrCombat.bf .field-panel > .hud .mana .orb .orbfill { inset: 30.5%; z-index: 1; background: radial-gradient(circle at 50% 40%, #121b2c, #05070c 75%); box-shadow: inset 0 0 12px #000; }
+body #scrCombat.bf .field-panel > .hud .mana .orb .orbfill::before { background: radial-gradient(130% 80% at 40% 0%, #9fdcff 0%, #3b8cf0 22%, #1d4fc2 55%, #0f2a78 100%); box-shadow: inset 0 4px 0 #c4ecff99, inset 0 0 14px #0a1a5a; }
+body #scrCombat.bf .field-panel > .hud .mana .orb .orbfill::after { z-index: 2; left: 20%; top: 12%; width: 30%; height: 20%; background: rgba(255,255,255,.4); }
+body #scrCombat.bf .field-panel > .hud .mana .orb > span { z-index: 3; font-size: 34px; }
+body #scrCombat.bf .field-panel > .hud .mana .mtext { position: absolute; left: 200px; top: 50%; transform: translateY(-50%); white-space: nowrap; text-shadow: 0 1px 2px #000; }
+body #scrCombat.bf .field-panel > .hud .piles { margin-left: 268px; }
+body #scrCombat.bf .field-panel > .hud > .hint { flex: 1 1 auto; min-width: 0; text-align: center; font-size: 13px; color: #d9cbb0; text-shadow: 0 1px 2px #000; padding: 0 10px; }
+body #scrCombat.bf .endturn.btn.primary { min-width: 196px; height: 62px; padding: 0 22px; border-radius: 0; background: none; box-shadow: none; border-style: solid; border-width: 18px; border-image: url(img/ui/hud2/endturn.png) 14 fill / 18px / 0 stretch; image-rendering: pixelated; margin: -12px -14px; box-sizing: border-box; }
+body #scrCombat.bf .endturn.btn.primary > * { image-rendering: pixelated; }
+/* turn order: pixel portrait frames */
+body #scrCombat.bf .order .otile { border: 0 !important; border-radius: 0; background: none !important; box-shadow: none !important; border-style: solid !important; border-width: 12px !important; border-image: url(img/ui/hud2/portrait.png) 14 fill / 12px / 0 stretch !important; image-rendering: pixelated; padding: 0 2px 2px; width: 96px; }
+body #scrCombat.bf .order .otile > * { image-rendering: auto; }
+body #scrCombat.bf .order .otile.now { filter: drop-shadow(0 0 7px rgba(255,200,90,.75)); transform: translateY(-3px) scale(1.06); }
+body #scrCombat.bf .order .otile .oini { top: -8px; right: -6px; min-width: 18px; padding: 0 4px; border-radius: 9px; background: #120e0b; border: 1px solid #8a6d40; color: #f2e2bf; font-weight: 700; text-align: center; }
+body #scrCombat.bf .order .otile.now::after { bottom: -16px; }
+/* HP bars in an iron frame (skull end on enemies) */
+body #scrCombat.bf .stage .uplate .bar { position: relative; height: 38px; width: calc(100% + 8px); max-width: none; margin: -6px 0 -4px -6px; border: 0; border-radius: 0; background: url(img/ui/hud2/hp_frame.png) center / 100% 100% no-repeat; image-rendering: pixelated; box-shadow: none; overflow: visible; }
+body #scrCombat.bf .stage .uplate .bar i { position: absolute; left: 24.2%; top: 31.5%; height: 25%; width: calc(var(--hpw, 100%) * .604) !important; border-radius: 0; image-rendering: auto; }
+body #scrCombat.bf .stage .uplate .bar span { position: absolute; left: 24.2%; width: 60.4%; top: 31.5%; height: 25%; display: grid; place-items: center; font: 700 11px var(--f-ui); color: #fff4dd; text-shadow: 0 1px 1px #000, 0 0 3px #000; image-rendering: auto; }
+body #scrCombat.bf .stage #playerSlot .uplate .bar { transform: scaleX(-1); } body #scrCombat.bf .stage #playerSlot .uplate .bar span { transform: scaleX(-1); }
+/* buff and debuff icons */
+.sico { position: relative; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 5px; background: #0c0a08d9; border: 1px solid #4a3c2c; cursor: help; }
+.sico.bad { border-color: #7a3428; } .sico.good { border-color: #3f6a3a; } .sico.block { border-color: #3f5f80; }
+.sico img { width: 22px; height: 22px; image-rendering: pixelated; }
+.sico b { position: absolute; right: -5px; bottom: -6px; min-width: 14px; padding: 0 3px; border-radius: 7px; background: #120e0b; border: 1px solid #8a6d40; font: 700 10.5px/13px var(--f-ui); color: #fff1d0; text-align: center; font-variant-numeric: tabular-nums; }
+.sico:hover, .sico:focus-visible { outline: 1px solid #e3b768; }
+.sico[data-tip]:hover::after, .sico[data-tip]:focus-visible::after { content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); z-index: 60; width: max-content; max-width: 220px; padding: 6px 9px; border-radius: 6px; background: #120e0bf2; border: 1px solid #8a6d40; color: #f0e3c8; font: 500 12.5px/1.3 var(--f-ui); text-align: left; white-space: normal; pointer-events: none; box-shadow: 0 6px 16px #000a; }
+body #scrCombat.bf .stage .uplate .tags { display: flex; flex-wrap: wrap; gap: 5px 7px; padding-top: 3px; grid-column: 1 / -1 !important; grid-row: auto !important; }
+body #scrCombat.bf .stage .uplate .bar span { font-size: 12px; }
+
 #scrCombat .hand > .hint { color: #e8d6b4; text-shadow: 0 1px 2px #000; }
 #scrCombat .hand::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 0;
   background: radial-gradient(60% 90% at 50% 55%, transparent 55%, rgba(0,0,0,.35) 100%); }
@@ -952,10 +992,9 @@ body #scrCombat.bf .endturn.btn.primary:disabled { filter: grayscale(.8) brightn
       <div class="hud">
         <div class="mana"><div class="orb" id="orb">0</div><div class="mtext"><b>Mana</b><small id="manaSub"></small></div></div>
         <div class="piles" id="piles"></div>
-        <span class="spacer"></span>
+        <div class="hint" id="hint"></div>
         <button class="btn primary endturn" id="btnEnd"><i class="hg" aria-hidden="true"></i>End turn</button>
       </div>
-      <div class="hint" id="hint"></div>
       <div class="hand" id="hand" aria-label="Your hand"></div>
     </div>
     <aside class="panel ledger" id="ledger"><div class="lgrip lgrip-w" data-grip="w" title="Drag to resize (double-click to reset)"></div><div class="lgrip lgrip-h" data-grip="h" title="Drag to resize (double-click to reset)"></div><div class="lgrip lgrip-c" data-grip="c" title="Drag to resize (double-click to reset)"></div><div class="tabs" role="tablist"><button role="tab" id="tCLog" aria-selected="true">Combat log</button><button role="tab" id="tCMeter" aria-selected="false">Meter</button></div><div class="pane" id="pCLog"><div class="log" id="log"></div></div><div class="pane" id="pCMeter" hidden><div id="meterC" class="meter"></div></div></aside>
@@ -2950,6 +2989,26 @@ body #scrCombat.bf .endturn.btn.primary:disabled { filter: grayscale(.8) brightn
     if (!a.isPlayer && a.phase === 2) t.push(`<span class="tag bad">Phase 2</span>`);
     return t.join('');
   }
+  // Nov 11: buffs and debuffs as small pixel icons with their number; hover (or focus) shows what it does.
+  // Built from the same tag list as before: each known tag becomes an icon, anything unknown stays a word pill.
+  const SICO = [['Block', 'block'], ['Dodge', 'dodge'], ['Parry', 'parry'], ['Barrier', 'barrier'], ['Absorb', 'absorb'], ['Str ', 'strength'], ['Int ', 'intellect'], ['Stealth', 'stealth'],
+    ['Weak', 'weak'], ['Vuln', 'vuln'], ['Bleed', 'bleed'], ['Poison', 'poison'], ['Burn', 'burn'], ['Dread', 'dread'], ['Rot', 'rot'], ['Chill', 'chill'], ['Slow', 'slow'], ['Frozen', 'frozen'],
+    ['Stunned', 'stun'], ['Feared', 'fear'], ['Silenced', 'silence'], ['Disarmed', 'disarm'], ['Spikes', 'thorns'], ['Riposte', 'parry'], ['Regrowth', 'regen'], ['◆', 'power'], ['Next Attack', 'nextatk'], ['Next spell', 'nextatk'],
+    ['Condemn', 'condemn'], ['Unwarded', 'unwarded'], ['Exposure', 'exposure'], ['Magic Vulnerability', 'magvuln'], ['Grievous', 'grievous'], ['Deathmark', 'deathmark'], ['☣', 'demon'], ['Soul Beacon', 'beacon'],
+    ['Divine Shield', 'barrier'], ['Untouchable', 'dodge'], ['Taunting', 'block'], ['Reflect', 'barrier'], ['Debuff immune', 'barrier']];
+  const SICO_HAVE = new Set(['block','dodge','parry','barrier','absorb','strength','intellect','stealth','weak','vuln','bleed','poison','burn','dread','rot','chill','slow','frozen','stun','fear','silence','disarm','thorns','regen','power','nextatk','condemn','unwarded','exposure','magvuln','grievous','deathmark','demon','beacon']);
+  const SICO_WORD = { strength: 'Strength', intellect: 'Intelligence', vuln: 'Vulnerable', stun: 'Stunned', fear: 'Feared', silence: 'Silenced', disarm: 'Disarmed', thorns: 'Thorns', regen: 'Regrowth', magvuln: 'Magic Vulnerability' };
+  function glossLine(word) { try { if (typeof GLOSSARY === 'undefined') return ''; for (const [, rows] of GLOSSARY) for (const [k, v] of rows) if (k.toLowerCase() === word.toLowerCase()) return v; } catch (e) {} return ''; }
+  function iconTags(html) {
+    return html.replace(/<span class="tag( [a-z]+)?"( title="([^"]*)")?>([\s\S]*?)<\/span>/g, (m, cls, _t, title, inner) => {
+      const txt = inner.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&#9670;/g, '◆').replace(/&#9763;/g, '☣').trim();
+      const hit = SICO.find(([w]) => txt.startsWith(w) || txt.includes(w)); if (!hit || !SICO_HAVE.has(hit[1])) return m;
+      const key = hit[1], num = (txt.match(/(\d+%?)(?!.*\d)/) || [])[1] || '';
+      const name = txt.replace(/^[◆☣]\s*/, '').replace(/\s*\d+%?(\/turn)?\s*$/, '').trim();
+      const tip = [txt.replace(/^[◆☣]\s*/, ''), title || glossLine(SICO_WORD[key] || name) || ''].filter(Boolean).join(': ').replace(/"/g, '&quot;');
+      return `<span class="sico${cls || ''}" tabindex="0" data-tip="${tip}" aria-label="${tip}"><img src="img/ui/status/${key}.png" alt="">${num ? `<b>${num}</b>` : ''}</span>`;
+    });
+  }
   function intentHtml(e) {
     if (e.hp <= 0) return '';
     return e.hand.map(c => {
@@ -3003,9 +3062,9 @@ body #scrCombat.bf .endturn.btn.primary:disabled { filter: grayscale(.8) brightn
       <div class="uhead"><b style="color:${a.isPlayer ? CC[a.cls] : '#ead9c4'}">${esc(a.name)}</b>${unitGuild(a) ? `<small>&lt;${esc(unitGuild(a))}&gt;</small>` : ''}</div>
       <div class="figure">${figure(a, true)}</div>${demonsHtml(a)}
       <div class="uplate"><div class="uname"><b ${a.isPlayer ? `style="color:${CC[a.cls]}"` : ''}>${esc(a.name)}</b><small>${cb.raid && a.isPlayer && a.hp > 0 && !cb.over ? (cb.raidDone && cb.raidDone.has(a.id) ? '<span class="rdone" title="Ended their turn">&#10003; Done</span>' : cb.phase === 'player' ? '<span class="rwait">playing...</span>' : '') : sub}</small></div>
-      <div class="bar"><i style="width:${pct}%"></i><span>${a.hp} / ${a.maxHp}</span></div>
+      <div class="bar"><i style="width:${pct}%;--hpw:${pct}%"></i><span>${a.hp} / ${a.maxHp}</span></div>
       ${a.isPlayer ? '' : `<button class="pilebtn deckbtn" data-enemy="${a.id}" title="Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}"><span class="dlong">Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}</span><span class="dshort"><span class="dword">Deck </span>${a.hand.length}/${a.drawPile.length}/${a.discard.length}</span></button>`}
-      <div class="tags">${(a.isPlayer ? cb.partySize > 2 : cb.foes().length > 2) && !cb.duel ? shortTags(tags(a)) : tags(a)}${cb.duel && a !== hero() ? `<span class="tag">Hand ${a.hand.length} &middot; Mana ${a.mana}</span>` : ''}</div></div></div>`;
+      <div class="tags">${iconTags(tags(a))}${cb.duel && a !== hero() ? `<span class="tag">Hand ${a.hand.length} &middot; Mana ${a.mana}</span>` : ''}</div></div></div>`;
   }
   function popups() {
     for (const a of [...cb.players, ...cb.enemies]) {

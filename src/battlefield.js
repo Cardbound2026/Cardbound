@@ -232,7 +232,7 @@ function layout(cb, opts) {
   const cmp = sides.map(us => us.length > 4), narrow = W < 760;
   stage.classList.toggle('narrow', narrow);
   document.getElementById('playerSlot').classList.toggle('compact', cmp[0]); document.getElementById('foes').classList.toggle('compact', cmp[1]);
-  const P = narrow ? 112 : W < 900 ? 124 : 136; stage.style.setProperty('--plw', P + 'px');
+  const P = narrow ? 132 : W < 900 ? 156 : 180; // Nov 11: wider plates for the framed HP bar and the status icons stage.style.setProperty('--plw', P + 'px');
   const hts = sides.map(us => us.map(el => { const pl = el.querySelector('.uplate'); return pl ? pl.offsetHeight : 40; }));
   // each figure's visible half-width and height, as a share of the figure size (from the image's shape; re-run when images load)
   const shp = sides.map(us => us.map(el => { const im = el.querySelector('.figure img'); let a = .8, k = 1;
