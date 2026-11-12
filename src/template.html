@@ -923,6 +923,7 @@ body #scrCombat.bf .stage .uplate .bar span { font-size: 12px; }
    iron-and-stone panel (img/ui/hud3/panel.png, one generated piece) holds the mana orb, the hand, the piles and End turn. --u is one pixel of that
    panel art, so everything inside it scales with the panel; the stone ends keep their shape and only the iron middle stretches on wider screens. */
 #pframe, .hudbtns, .mtext .m3 { display: none; }
+.hand.notr .cf { transition: none !important; }
 .ubrow { display: contents; } .ushield { display: none; }
 #scrCombat.bf.hud3 .stage .uplate .ubrow { order: 1; display: flex; align-items: center; gap: 4px; position: relative; }
 #scrCombat.bf.hud3 .stage .uplate .ushield { display: grid; place-items: center; position: absolute; right: calc(100% + 2px); top: 50%; transform: translateY(-50%); width: 46px; height: 46px; background: var(--si) center / contain no-repeat; image-rendering: pixelated; filter: drop-shadow(0 0 4px rgba(120,170,255,.55)) drop-shadow(0 2px 2px #000); cursor: help; pointer-events: auto; }
@@ -986,7 +987,7 @@ body #scrCombat.bf.hud3 .field-panel > .hud #btnEnd:disabled { color: #6f6250 !i
 #scrCombat.hud3 .hudbtns button:hover, #scrCombat.hud3.logopen .hudbtns #btnLogC { color: #f0dfbf; box-shadow: inset 0 0 0 1px #8a653d, 0 0 8px rgba(214,161,74,.4); }
 body #scrCombat.bf.hud3 .field-panel > .hud .hint { position: absolute !important; left: calc(var(--u) * 105) !important; right: calc(var(--u) * 106) !important; top: calc(var(--u) * 6) !important; width: auto !important; height: calc(var(--u) * 13) !important; margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; display: grid !important; place-items: center; font-size: 12.5px !important; color: #b7ab97; text-shadow: 0 1px 0 #000; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 /* the hand lies in the recess */
-#scrCombat.hud3 .field-panel > .hand { position: absolute !important; left: calc(var(--u) * 105) !important; right: calc(var(--u) * 106) !important; bottom: calc(var(--u) * 23) !important; top: auto !important; height: calc(var(--u) * 98) !important; width: auto !important; margin: 0 !important; padding: 0 0 calc(var(--u) * 2) !important; z-index: 5; background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; --hcw: calc(var(--u) * 63); align-items: center !important; }
+#scrCombat.hud3 .field-panel > .hand { position: absolute !important; left: calc(var(--u) * 153) !important; right: calc(var(--u) * 152) !important; bottom: calc(var(--u) * 23) !important; top: auto !important; height: calc(var(--u) * 98) !important; width: auto !important; margin: 0 !important; padding: 0 0 calc(var(--u) * 2) !important; z-index: 5; background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; --hcw: calc(var(--u) * 63); align-items: center !important; }
 #scrCombat.hud3 .field-panel > .hand::before, #scrCombat.hud3 .field-panel > .hand::after { display: none !important; }
 /* the combat log becomes a drawer on the right */
 #scrCombat.hud3 #ledger { position: fixed !important; top: 62px !important; right: 0 !important; bottom: calc(var(--ph) - 14px) !important; left: auto !important; width: min(380px, 42vw) !important; height: auto !important; max-height: none !important; z-index: 8; margin: 0 !important; transform: translateX(105%); transition: transform .2s ease-out; box-shadow: -8px 0 24px rgba(0,0,0,.7); }
@@ -3285,7 +3286,12 @@ body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 16px; text-sha
     fitCards($('hand'));
     { // big hands overlap more instead of pushing the battlefield wider
       const H = $('hand'), f = H.querySelector('.cf'), n = H.querySelectorAll('.cf').length;
-      if (f && n > 1) { const cw = f.offsetWidth, W = H.clientWidth - 70; H.style.setProperty('--ov', Math.max(0.3, Math.min(0.85, 1 - (W - cw) / ((n - 1) * cw))).toFixed(3)); } else H.style.removeProperty('--ov');
+      if (f && n > 1) { const cw = f.offsetWidth, W = H.clientWidth - ($('scrCombat').classList.contains('hud3') ? 16 : 70); /* hud3: the hand lives between the draw pile and the discard pile */ H.style.setProperty('--ov', Math.max(0.3, Math.min(0.85, 1 - (W - cw) / ((n - 1) * cw))).toFixed(3));
+        if ($('scrCombat').classList.contains('hud3')) { // the fan's tilted corners swing out past the cards' boxes: measure the real spread and squeeze until it fits
+          const cs = H.querySelectorAll('.cf'), hr = H.getBoundingClientRect(); H.classList.add('notr'); // no transitions while measuring, or we'd read a half-moved fan
+          for (let k = 0; k < 3; k++) { let lo = 1e9, hi = -1e9; for (const c of cs) { const r = c.getBoundingClientRect(); lo = Math.min(lo, r.left); hi = Math.max(hi, r.right); } const over = Math.max(hi - lo - (hr.width - 8), 0); if (over < 2) break; const ov = +H.style.getPropertyValue('--ov'); H.style.setProperty('--ov', Math.min(0.9, ov + over / ((n - 1) * cw)).toFixed(3)); }
+          void H.offsetWidth; H.classList.remove('notr');
+        } } else H.style.removeProperty('--ov');
     }
     if ($('btnWatch')) $('btnWatch').onclick = () => { watchMine = !watchMine; render(); };
     if (!$('pCMeter').hidden) renderMeter($('meterC'));

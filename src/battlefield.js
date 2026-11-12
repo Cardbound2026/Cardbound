@@ -238,7 +238,7 @@ function layout(cb, opts) {
   // each figure's visible half-width and height, as a share of the figure size (from the image's shape; re-run when images load)
   const shp = sides.map(us => us.map(el => { const im = el.querySelector('.figure img'); let a = .8, k = 1;
     if (im) { if (im.naturalWidth) a = im.naturalWidth / im.naturalHeight; else if (!im.dataset.bfw) { im.dataset.bfw = 1; im.addEventListener('load', () => again && again(), { once: true }); } k = parseFloat(im.style.getPropertyValue('--s')) || 1; }
-    const hd = el.querySelector(':scope > .uhead'); return { hw: a * k * .5 * .8, ht: k * (el.dataset.boss ? 1.22 : 1), tw: hd && hd.offsetWidth ? hd.offsetWidth : 0, th: hd && hd.offsetHeight ? hd.offsetHeight : 0 }; }));
+    const hd = el.querySelector(':scope > .uhead'); return { hw: a * k * .5 * .8, ht: k * (el.dataset.boss ? .854 : 1), tw: hd && hd.offsetWidth ? hd.offsetWidth : 0, th: hd && hd.offsetHeight ? hd.offsetHeight : 0 }; }));
   const figTop = 1.08;
   // one side's positions for figure size s; returns null if it doesn't fit
   const plan = (n, h, s, force, compact, sh) => {
@@ -287,7 +287,8 @@ function layout(cb, opts) {
   for (; s >= smin; s -= 4) { P0 = plan(sides[0].length, hts[0], s, false, cmp[0], shp[0]); P1 = plan(sides[1].length, hts[1], s, false, cmp[1], shp[1]); if (P0 && P1) break; }
   if (!P0 || !P1) { s = Math.max(s, smin); P0 = plan(sides[0].length, hts[0], s, true, cmp[0], shp[0]); P1 = plan(sides[1].length, hts[1], s, true, cmp[1], shp[1]); }
   const put = (els, pts, enemy) => els.forEach((el, i) => {
-    const p = pts[i]; if (!p) return; const big = el.dataset.boss ? 1.22 : 1, size = Math.round(s * (1 - p.d * .035) * big);
+    const p = pts[i]; if (!p) return; const big = el.dataset.boss ? .854 : 1, // Nov 11: bosses drawn 30% smaller than before (was 1.22)
+      size = Math.round(s * (1 - p.d * .035) * big);
     el.style.left = Math.round(enemy ? W - p.x : p.x) + 'px'; el.style.top = Math.round(p.y) + 'px';
     el.style.setProperty('--fh', size + 'px'); el.style.setProperty('--plate', Math.round(p.G) + 'px'); if (p.pw) el.style.setProperty('--pw', Math.round(p.pw) + 'px'); else el.style.removeProperty('--pw');
     el.style.zIndex = String(60 - Math.round(p.d * 6));

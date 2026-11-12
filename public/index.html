@@ -927,6 +927,7 @@ body #scrCombat.bf .stage .uplate .bar span { font-size: 12px; }
    iron-and-stone panel (img/ui/hud3/panel.png, one generated piece) holds the mana orb, the hand, the piles and End turn. --u is one pixel of that
    panel art, so everything inside it scales with the panel; the stone ends keep their shape and only the iron middle stretches on wider screens. */
 #pframe, .hudbtns, .mtext .m3 { display: none; }
+.hand.notr .cf { transition: none !important; }
 .ubrow { display: contents; } .ushield { display: none; }
 #scrCombat.bf.hud3 .stage .uplate .ubrow { order: 1; display: flex; align-items: center; gap: 4px; position: relative; }
 #scrCombat.bf.hud3 .stage .uplate .ushield { display: grid; place-items: center; position: absolute; right: calc(100% + 2px); top: 50%; transform: translateY(-50%); width: 46px; height: 46px; background: var(--si) center / contain no-repeat; image-rendering: pixelated; filter: drop-shadow(0 0 4px rgba(120,170,255,.55)) drop-shadow(0 2px 2px #000); cursor: help; pointer-events: auto; }
@@ -990,7 +991,7 @@ body #scrCombat.bf.hud3 .field-panel > .hud #btnEnd:disabled { color: #6f6250 !i
 #scrCombat.hud3 .hudbtns button:hover, #scrCombat.hud3.logopen .hudbtns #btnLogC { color: #f0dfbf; box-shadow: inset 0 0 0 1px #8a653d, 0 0 8px rgba(214,161,74,.4); }
 body #scrCombat.bf.hud3 .field-panel > .hud .hint { position: absolute !important; left: calc(var(--u) * 105) !important; right: calc(var(--u) * 106) !important; top: calc(var(--u) * 6) !important; width: auto !important; height: calc(var(--u) * 13) !important; margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; display: grid !important; place-items: center; font-size: 12.5px !important; color: #b7ab97; text-shadow: 0 1px 0 #000; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 /* the hand lies in the recess */
-#scrCombat.hud3 .field-panel > .hand { position: absolute !important; left: calc(var(--u) * 105) !important; right: calc(var(--u) * 106) !important; bottom: calc(var(--u) * 23) !important; top: auto !important; height: calc(var(--u) * 98) !important; width: auto !important; margin: 0 !important; padding: 0 0 calc(var(--u) * 2) !important; z-index: 5; background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; --hcw: calc(var(--u) * 63); align-items: center !important; }
+#scrCombat.hud3 .field-panel > .hand { position: absolute !important; left: calc(var(--u) * 153) !important; right: calc(var(--u) * 152) !important; bottom: calc(var(--u) * 23) !important; top: auto !important; height: calc(var(--u) * 98) !important; width: auto !important; margin: 0 !important; padding: 0 0 calc(var(--u) * 2) !important; z-index: 5; background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; --hcw: calc(var(--u) * 63); align-items: center !important; }
 #scrCombat.hud3 .field-panel > .hand::before, #scrCombat.hud3 .field-panel > .hand::after { display: none !important; }
 /* the combat log becomes a drawer on the right */
 #scrCombat.hud3 #ledger { position: fixed !important; top: 62px !important; right: 0 !important; bottom: calc(var(--ph) - 14px) !important; left: auto !important; width: min(380px, 42vw) !important; height: auto !important; max-height: none !important; z-index: 8; margin: 0 !important; transform: translateX(105%); transition: transform .2s ease-out; box-shadow: -8px 0 24px rgba(0,0,0,.7); }
@@ -7065,8 +7066,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794448069492';
-  const CB_BUILD = 'd33492bb31'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794448361379';
+  const CB_BUILD = '113604f45d'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8172,6 +8173,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-11', items: [
+      ['UI', "Big hands squeeze together to fit between your draw pile and discard pile instead of spilling over them, however many cards you hold."],
+      ['Art', "Act bosses are drawn 30% smaller in fights, so they stand on the field with room for their HP bar and intent above them."],
       ['UI', "Block is now a big shield badge right beside every HP bar in a fight (yours and every enemy's), with the number on it; Rogues see their Dodge swirl instead. It's gone from the small status icons."],
       ['UI', "Hover any HP bar on the field to see exact HP (and block) in a popup."],
       ['Combat', "Enemy turns slow down a touch: each card the enemy plays is shown big in the middle of the field first, then its hit lands and you see the damage numbers on your hero before the next card. Fast mode in Settings keeps the old speed."],
@@ -11936,7 +11939,7 @@ function layout(cb, opts) {
   // each figure's visible half-width and height, as a share of the figure size (from the image's shape; re-run when images load)
   const shp = sides.map(us => us.map(el => { const im = el.querySelector('.figure img'); let a = .8, k = 1;
     if (im) { if (im.naturalWidth) a = im.naturalWidth / im.naturalHeight; else if (!im.dataset.bfw) { im.dataset.bfw = 1; im.addEventListener('load', () => again && again(), { once: true }); } k = parseFloat(im.style.getPropertyValue('--s')) || 1; }
-    const hd = el.querySelector(':scope > .uhead'); return { hw: a * k * .5 * .8, ht: k * (el.dataset.boss ? 1.22 : 1), tw: hd && hd.offsetWidth ? hd.offsetWidth : 0, th: hd && hd.offsetHeight ? hd.offsetHeight : 0 }; }));
+    const hd = el.querySelector(':scope > .uhead'); return { hw: a * k * .5 * .8, ht: k * (el.dataset.boss ? .854 : 1), tw: hd && hd.offsetWidth ? hd.offsetWidth : 0, th: hd && hd.offsetHeight ? hd.offsetHeight : 0 }; }));
   const figTop = 1.08;
   // one side's positions for figure size s; returns null if it doesn't fit
   const plan = (n, h, s, force, compact, sh) => {
@@ -11985,7 +11988,8 @@ function layout(cb, opts) {
   for (; s >= smin; s -= 4) { P0 = plan(sides[0].length, hts[0], s, false, cmp[0], shp[0]); P1 = plan(sides[1].length, hts[1], s, false, cmp[1], shp[1]); if (P0 && P1) break; }
   if (!P0 || !P1) { s = Math.max(s, smin); P0 = plan(sides[0].length, hts[0], s, true, cmp[0], shp[0]); P1 = plan(sides[1].length, hts[1], s, true, cmp[1], shp[1]); }
   const put = (els, pts, enemy) => els.forEach((el, i) => {
-    const p = pts[i]; if (!p) return; const big = el.dataset.boss ? 1.22 : 1, size = Math.round(s * (1 - p.d * .035) * big);
+    const p = pts[i]; if (!p) return; const big = el.dataset.boss ? .854 : 1, // Nov 11: bosses drawn 30% smaller than before (was 1.22)
+      size = Math.round(s * (1 - p.d * .035) * big);
     el.style.left = Math.round(enemy ? W - p.x : p.x) + 'px'; el.style.top = Math.round(p.y) + 'px';
     el.style.setProperty('--fh', size + 'px'); el.style.setProperty('--plate', Math.round(p.G) + 'px'); if (p.pw) el.style.setProperty('--pw', Math.round(p.pw) + 'px'); else el.style.removeProperty('--pw');
     el.style.zIndex = String(60 - Math.round(p.d * 6));
@@ -14097,7 +14101,12 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     fitCards($('hand'));
     { // big hands overlap more instead of pushing the battlefield wider
       const H = $('hand'), f = H.querySelector('.cf'), n = H.querySelectorAll('.cf').length;
-      if (f && n > 1) { const cw = f.offsetWidth, W = H.clientWidth - 70; H.style.setProperty('--ov', Math.max(0.3, Math.min(0.85, 1 - (W - cw) / ((n - 1) * cw))).toFixed(3)); } else H.style.removeProperty('--ov');
+      if (f && n > 1) { const cw = f.offsetWidth, W = H.clientWidth - ($('scrCombat').classList.contains('hud3') ? 16 : 70); /* hud3: the hand lives between the draw pile and the discard pile */ H.style.setProperty('--ov', Math.max(0.3, Math.min(0.85, 1 - (W - cw) / ((n - 1) * cw))).toFixed(3));
+        if ($('scrCombat').classList.contains('hud3')) { // the fan's tilted corners swing out past the cards' boxes: measure the real spread and squeeze until it fits
+          const cs = H.querySelectorAll('.cf'), hr = H.getBoundingClientRect(); H.classList.add('notr'); // no transitions while measuring, or we'd read a half-moved fan
+          for (let k = 0; k < 3; k++) { let lo = 1e9, hi = -1e9; for (const c of cs) { const r = c.getBoundingClientRect(); lo = Math.min(lo, r.left); hi = Math.max(hi, r.right); } const over = Math.max(hi - lo - (hr.width - 8), 0); if (over < 2) break; const ov = +H.style.getPropertyValue('--ov'); H.style.setProperty('--ov', Math.min(0.9, ov + over / ((n - 1) * cw)).toFixed(3)); }
+          void H.offsetWidth; H.classList.remove('notr');
+        } } else H.style.removeProperty('--ov');
     }
     if ($('btnWatch')) $('btnWatch').onclick = () => { watchMine = !watchMine; render(); };
     if (!$('pCMeter').hidden) renderMeter($('meterC'));
