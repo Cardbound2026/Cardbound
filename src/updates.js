@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-11', items: [
+      ['UI', "Block is now a big shield badge right beside every HP bar in a fight (yours and every enemy's), with the number on it; Rogues see their Dodge swirl instead. It's gone from the small status icons."],
+      ['UI', "Hover any HP bar on the field to see exact HP (and block) in a popup."],
       ['Combat', "Enemy turns slow down a touch: each card the enemy plays is shown big in the middle of the field first, then its hit lands and you see the damage numbers on your hero before the next card. Fast mode in Settings keeps the old speed."],
       ['Fix', "A tall fighter like the act boss no longer pushes its HP bar and intent off the top of the screen: they slide down onto the figure instead."],
       ['Map', "Every node you've cleared now carries a big red skull, so the road you've walked is easy to read. When you draw a route, the ring under each planned node turns the route's colour instead of getting a second circle."],

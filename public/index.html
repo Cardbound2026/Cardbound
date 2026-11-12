@@ -927,6 +927,12 @@ body #scrCombat.bf .stage .uplate .bar span { font-size: 12px; }
    iron-and-stone panel (img/ui/hud3/panel.png, one generated piece) holds the mana orb, the hand, the piles and End turn. --u is one pixel of that
    panel art, so everything inside it scales with the panel; the stone ends keep their shape and only the iron middle stretches on wider screens. */
 #pframe, .hudbtns, .mtext .m3 { display: none; }
+.ubrow { display: contents; } .ushield { display: none; }
+#scrCombat.bf.hud3 .stage .uplate .ubrow { order: 1; display: flex; align-items: center; gap: 4px; position: relative; }
+#scrCombat.bf.hud3 .stage .uplate .ushield { display: grid; place-items: center; position: absolute; right: calc(100% + 2px); top: 50%; transform: translateY(-50%); width: 46px; height: 46px; background: var(--si) center / contain no-repeat; image-rendering: pixelated; filter: drop-shadow(0 0 4px rgba(120,170,255,.55)) drop-shadow(0 2px 2px #000); cursor: help; pointer-events: auto; }
+#scrCombat.bf.hud3 .stage .uplate .ushield b { font: 800 20px/1 var(--f-ui); color: #fff; text-shadow: 0 0 2px #000, 0 2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000; image-rendering: auto; }
+#scrCombat.bf.hud3 .stage .uplate .tags .sico.block { display: none !important; }
+#scrCombat.bf.hud3 .stage .uplate .bar { cursor: help; pointer-events: auto; } #scrCombat.bf.hud3 .stage .uplate .bar::before { content: ''; position: absolute; inset: -8px -4px; }
 #ftip { position: fixed; z-index: 2000; max-width: 240px; padding: 7px 10px; border-radius: 6px; background: #120e0bf5; border: 1px solid #8a6d40; color: #efe2c8; font: 500 12.5px/1.35 var(--f-ui); box-shadow: 0 6px 18px rgba(0,0,0,.7); pointer-events: none; white-space: normal; }
 #ftip[hidden] { display: none; }
 html body #scrCombat[hidden] { display: none !important; } /* the hud3 layout forces display:block; never let it beat the hidden screen flag */
@@ -1012,7 +1018,7 @@ body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 16px; text-sha
 #pframe .pfhp i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(#c94a3f, #8f2a24); transition: width .3s; }
 #pframe .pfhp span { position: absolute; inset: 0; display: grid; place-items: center; font: 700 13px var(--f-ui); color: #fff; text-shadow: 0 1px 0 #000; }
 .mkshield.zero { opacity: .45; }
-.mkshield { width: 24px; height: 26px; flex: none; background: linear-gradient(#a9b4bf, #5e6a76); clip-path: polygon(50% 0, 100% 18%, 92% 70%, 50% 100%, 8% 70%, 0 18%); display: grid; place-items: center; font: 700 12px var(--f-ui); color: #0c0a09; }
+.mkshield { width: 46px; height: 46px; flex: none; display: grid; place-items: center; background: var(--si) center / contain no-repeat; image-rendering: pixelated; filter: drop-shadow(0 0 4px rgba(120,170,255,.55)) drop-shadow(0 2px 2px #000); cursor: help; margin: -14px 0; } .mkshield b { font: 800 20px/1 var(--f-ui); color: #fff; text-shadow: 0 0 2px #000, 0 2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000; }
 #pframe .tags { display: flex; gap: 4px; flex-wrap: wrap; } #pframe .tags .sico.block { display: none; }
 /* compact notched HP bars over every unit; exact numbers on hover */
 #scrCombat.bf.hud3 .stage .unit > .uhead { display: none !important; }
@@ -7059,8 +7065,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794447255612';
-  const CB_BUILD = '54b722d32d'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794448069492';
+  const CB_BUILD = 'd33492bb31'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8166,6 +8172,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-11', items: [
+      ['UI', "Block is now a big shield badge right beside every HP bar in a fight (yours and every enemy's), with the number on it; Rogues see their Dodge swirl instead. It's gone from the small status icons."],
+      ['UI', "Hover any HP bar on the field to see exact HP (and block) in a popup."],
       ['Combat', "Enemy turns slow down a touch: each card the enemy plays is shown big in the middle of the field first, then its hit lands and you see the damage numbers on your hero before the next card. Fast mode in Settings keeps the old speed."],
       ['Fix', "A tall fighter like the act boss no longer pushes its HP bar and intent off the top of the screen: they slide down onto the figure instead."],
       ['Map', "Every node you've cleared now carries a big red skull, so the road you've walked is easy to read. When you draw a route, the ring under each planned node turns the route's colour instead of getting a second circle."],
@@ -13985,7 +13993,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       <div class="uhead"><b style="color:${a.isPlayer ? CC[a.cls] : '#ead9c4'}">${esc(a.name)}</b>${unitGuild(a) ? `<small>&lt;${esc(unitGuild(a))}&gt;</small>` : ''}</div>
       <div class="figure">${figure(a, true)}</div>${demonsHtml(a)}
       <div class="uplate"><div class="uname"><b ${a.isPlayer ? `style="color:${CC[a.cls]}"` : ''}>${esc(a.name)}</b><small>${cb.raid && a.isPlayer && a.hp > 0 && !cb.over ? (cb.raidDone && cb.raidDone.has(a.id) ? '<span class="rdone" title="Ended their turn">&#10003; Done</span>' : cb.phase === 'player' ? '<span class="rwait">playing...</span>' : '') : sub}</small></div>
-      <div class="bar" title="${esc(a.name)}: ${a.hp} / ${a.maxHp} HP${a.block ? `, ${a.isPlayer ? esc(a.defName || 'Block') : 'Block'} ${a.block}` : ''}" style="--n:${(124 * (a.maxHp <= 160 ? 10 : a.maxHp <= 800 ? 50 : 100) / Math.max(1, a.maxHp)).toFixed(2)}px"><i style="width:${pct}%;--hpw:${pct}%"></i><span>${a.hp} / ${a.maxHp}</span></div>
+      <div class="ubrow">${a.block > 0 ? `<div class="ushield" data-tip="${a.isPlayer ? esc(a.defName || 'Block') : 'Block'} ${a.block}: soaks that much damage before HP" style="--si:url(img/ui/status/${a.isPlayer ? ({ Dodge: 'dodge', Parry: 'parry', Barrier: 'barrier', Absorb: 'absorb' }[a.defName] || 'block') : 'block'}.png)"><b>${a.block}</b></div>` : ''}<div class="bar" data-tip="${esc(a.name)}: ${a.hp} / ${a.maxHp} HP${a.block ? `, ${a.isPlayer ? esc(a.defName || 'Block') : 'Block'} ${a.block}` : ''}" style="--n:${(124 * (a.maxHp <= 160 ? 10 : a.maxHp <= 800 ? 50 : 100) / Math.max(1, a.maxHp)).toFixed(2)}px"><i style="width:${pct}%;--hpw:${pct}%"></i><span>${a.hp} / ${a.maxHp}</span></div></div>
       ${a.isPlayer ? '' : `<button class="pilebtn deckbtn" data-enemy="${a.id}" title="Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}"><span class="dlong">Hand ${a.hand.length} &middot; Draw ${a.drawPile.length} &middot; Discard ${a.discard.length}</span><span class="dshort"><span class="dword">Deck </span>${a.hand.length}/${a.drawPile.length}/${a.discard.length}</span></button>`}
       <div class="tags">${iconTags(tags(a))}${cb.duel && a !== hero() ? `<span class="tag">Hand ${a.hand.length} &middot; Mana ${a.mana}</span>` : ''}</div></div></div>`;
   }
@@ -14060,7 +14068,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if (window.CB_BF) CB_BF.layout(cb, { map: $('scrCombat').dataset.map, row: run && run.at && run.map && run.map.nodes[run.at] ? (run.at === 'boss' ? 'boss' : run.map.nodes[run.at].row) : null, left: cb.duel ? 'You' : cb.raid ? 'The raid' : cb.partySize > 1 ? 'Your party' : esc(hero().name), right: cb.duel ? 'Your rival' : (DATA.maps[$('scrCombat').dataset.map] || {}).name || 'The enemy' });
     if (withPops) popups(); else snapshot();
     if (window.CB_FX) CB_FX.consume(cb); // hero moves, hit effects and spell projectiles (src/fx.js, src/forge.js)
-    $('pframe').innerHTML = `<div class="pfimg"><img src="img/heroes/${String(p.cls).toLowerCase()}.png" alt=""></div><div class="pfr"><div class="pfn">${esc(p.name)} <small>${esc(p.cls)}</small></div><div class="pfrow"><div class="pfhp" title="${p.hp} / ${p.maxHp} HP"><i style="width:${Math.max(0, 100 * p.hp / p.maxHp)}%"></i><span>${p.hp} / ${p.maxHp}</span></div><div class="mkshield${p.block ? '' : ' zero'}" title="${esc(p.defName || 'Block')} ${p.block}">${p.block}</div></div><div class="tags">${iconTags(tags(p))}</div></div>`;
+    $('pframe').innerHTML = `<div class="pfimg"><img src="img/heroes/${String(p.cls).toLowerCase()}.png" alt=""></div><div class="pfr"><div class="pfn">${esc(p.name)} <small>${esc(p.cls)}</small></div><div class="pfrow"><div class="pfhp"><i style="width:${Math.max(0, 100 * p.hp / p.maxHp)}%"></i><span>${p.hp} / ${p.maxHp}</span></div><div class="mkshield${p.block ? '' : ' zero'}" data-tip="${esc(p.defName || 'Block')} ${p.block}: soaks that much damage before HP" style="--si:url(img/ui/status/${({ Dodge: 'dodge', Parry: 'parry', Barrier: 'barrier', Absorb: 'absorb' }[p.defName] || 'block')}.png)"><b>${p.block}</b></div></div><div class="tags">${iconTags(tags(p))}</div></div>`;
     $('orb').innerHTML = `<i class="orbfill" style="--mf:${Math.max(0, Math.min(1, p.mana / Math.max(1, p.maxMana)))}"></i><span>${p.mana}</span>`;
     $('manaSub').innerHTML = `<span class="m3">${p.mana} / ${p.maxMana} MANA</span><span class="mmax">of ${p.maxMana}</span><span class="mreg">+${p.regen} / turn</span>`;
     const fat = [...p.drawPile, ...p.hand, ...p.discard].filter(c => CARDS[c.key].type === 'Status').length;
@@ -14139,7 +14147,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     const show = (el) => { on = el; tip.textContent = el.dataset.tip; tip.hidden = false; const r = el.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
       let x = Math.max(6, Math.min(innerWidth - tw - 6, r.left + r.width / 2 - tw / 2)), y = r.top - th - 8; if (y < 6) y = r.bottom + 8; tip.style.left = x + 'px'; tip.style.top = y + 'px'; };
     const hide = () => { on = null; tip.hidden = true; };
-    document.addEventListener('mouseover', (ev) => { const el = ev.target.closest && ev.target.closest('.sico[data-tip]'); if (el) { if (el !== on) show(el); } else if (on) hide(); });
+    document.addEventListener('mouseover', (ev) => { const el = ev.target.closest && ev.target.closest('.sico[data-tip], #scrCombat .bar[data-tip], #scrCombat .ushield[data-tip], #scrCombat .mkshield[data-tip]'); if (el) { if (el !== on) show(el); } else if (on) hide(); });
     document.addEventListener('focusin', (ev) => { const el = ev.target.closest && ev.target.closest('.sico[data-tip]'); if (el) show(el); });
     document.addEventListener('focusout', hide); addEventListener('scroll', hide, true); document.addEventListener('pointerdown', hide, true);
   }
