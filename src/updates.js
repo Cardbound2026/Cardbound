@@ -3,7 +3,7 @@
   const CHANGELOG = [
     { date: '2026-11-12', items: [
       ['Art', "Enemy cards are getting paintings: every card a monster plays gets its own pixel illustration in the same style as your cards, starting with the Broken March. More arrive through the day."],
-      ['Art', "Every enemy card in the Broken March, the Cinder Reach, Rimewatch, the Tanglewild and the Shattered Spire now has its own painting, bosses included. The Hollow Crypts are under way (crypt rats, skeletons, bats, ghouls)."],
+      ['Art', "Every enemy card in every map now has its own painting, bosses included, from the Broken March to the Hollow King's crypts, and so do the status cards enemies shuffle into your deck (Dazed, Stun, Fatigue, Venom, Frostbite, Hex and Bomb)."],
     ] },
     { date: '2026-11-11', items: [
       ['Art', "The rarity gem at the top of Rogue cards now glows softly in its colour (white, green, blue or gold), so you can tell a card's rarity at a glance. Card names on the new frames are coloured by rarity too, like the type line."],
