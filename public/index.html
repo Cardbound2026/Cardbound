@@ -925,6 +925,7 @@ body #scrCombat.bf .stage .uplate .bar span { font-size: 12px; }
    iron-and-stone panel (img/ui/hud3/panel.png, one generated piece) holds the mana orb, the hand, the piles and End turn. --u is one pixel of that
    panel art, so everything inside it scales with the panel; the stone ends keep their shape and only the iron middle stretches on wider screens. */
 #pframe, .hudbtns, .mtext .m3 { display: none; }
+html body #scrCombat[hidden] { display: none !important; } /* the hud3 layout forces display:block; never let it beat the hidden screen flag */
 #scrCombat.hud3 { --ph: min(calc(100vw * 146 / 605), 44vh); --u: calc(var(--ph) / 146); position: fixed !important; inset: 0 !important; margin: 0 !important; padding: 0 !important; display: block !important; max-width: none !important; width: auto !important; z-index: 2; }
 body:has(#scrCombat.hud3:not([hidden])) { background: #000 !important; overflow: hidden; }
 body:has(#scrCombat.hud3:not([hidden])) header.top { position: fixed; top: 12px; right: 14px; z-index: 30; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; width: auto; }
@@ -7043,8 +7044,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794445520843';
-  const CB_BUILD = '2f15fcedaf'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794445840172';
+  const CB_BUILD = 'c786ad2cb4'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8150,6 +8151,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-11', items: [
+      ['Fix', "Leaving a fight with Back to the map no longer leaves the fight screen frozen over the map (and hiding the Menu button)."],
       ['UI', "New fight screen on wide screens: the battlefield fills the whole window and one iron-and-stone panel along the bottom holds everything you touch. The mana orb sits in the left pillar and drains as you spend, your hand lies in the recess with the draw pile on the left and discard and exhaust on the right, and End turn is engraved on the plate in the right pillar."],
       ['UI', "Your hero now has a frame in the top left with portrait, exact HP, block and every buff and debuff. Every fighter on the field gets a compact notched HP bar over their head (each notch is 10 HP, hover it for exact numbers), with their statuses under it and their intent above."],
       ['UI', "Turn order is a row of small portraits at the top with the round under it. The combat log is now a drawer: open it with the LOG button. DECK shows every card you have in the fight. Group fights, raids, duels and small screens keep the old layout for now."],

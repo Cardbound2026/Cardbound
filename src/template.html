@@ -921,6 +921,7 @@ body #scrCombat.bf .stage .uplate .bar span { font-size: 12px; }
    iron-and-stone panel (img/ui/hud3/panel.png, one generated piece) holds the mana orb, the hand, the piles and End turn. --u is one pixel of that
    panel art, so everything inside it scales with the panel; the stone ends keep their shape and only the iron middle stretches on wider screens. */
 #pframe, .hudbtns, .mtext .m3 { display: none; }
+html body #scrCombat[hidden] { display: none !important; } /* the hud3 layout forces display:block; never let it beat the hidden screen flag */
 #scrCombat.hud3 { --ph: min(calc(100vw * 146 / 605), 44vh); --u: calc(var(--ph) / 146); position: fixed !important; inset: 0 !important; margin: 0 !important; padding: 0 !important; display: block !important; max-width: none !important; width: auto !important; z-index: 2; }
 body:has(#scrCombat.hud3:not([hidden])) { background: #000 !important; overflow: hidden; }
 body:has(#scrCombat.hud3:not([hidden])) header.top { position: fixed; top: 12px; right: 14px; z-index: 30; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; width: auto; }
