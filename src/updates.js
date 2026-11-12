@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-11', items: [
+      ['UI', "Co-op fights (up to 4 heroes) now use the new fight screen too. Your own hero sits in the frame at the top left; your allies keep their name and statuses over their HP bar. Party chat is a drawer on the left: the CHAT button glows when someone writes, and pressing T opens it."],
       ['Fix', "Leaving a fight with Back to the map no longer leaves the fight screen frozen over the map (and hiding the Menu button)."],
       ['UI', "New fight screen on wide screens: the battlefield fills the whole window and one iron-and-stone panel along the bottom holds everything you touch. The mana orb sits in the left pillar and drains as you spend, your hand lies in the recess with the draw pile on the left and discard and exhaust on the right, and End turn is engraved on the plate in the right pillar."],
       ['UI', "Your hero now has a frame in the top left with portrait, exact HP, block and every buff and debuff. Every fighter on the field gets a compact notched HP bar over their head (each notch is 10 HP, hover it for exact numbers), with their statuses under it and their intent above."],

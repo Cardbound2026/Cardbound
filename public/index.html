@@ -932,7 +932,15 @@ body:has(#scrCombat.hud3:not([hidden])) header.top { position: fixed; top: 12px;
 body:has(#scrCombat.hud3:not([hidden])) header.top .brand, body:has(#scrCombat.hud3:not([hidden])) header.top #topInfo { display: none; }
 body:has(#scrCombat.hud3:not([hidden])) #verTag { font-size: 9.5px; right: 26px; bottom: 6px; opacity: .75; }
 body:has(#scrCombat.hud3:not([hidden])) #btnUpdates { right: 42px; bottom: 26px; padding: 3px 10px; font-size: 12px; }
-#scrCombat.hud3 .combatchat { display: none !important; }
+#scrCombat.hud3 .combatchat:not([hidden]) { position: fixed !important; left: 0 !important; top: 0 !important; bottom: calc(var(--ph) - 14px) !important; width: min(340px, 36vw) !important; height: auto !important; max-height: none !important; margin: 0 !important; z-index: 8; transform: translateX(-105%); transition: transform .2s ease-out; box-shadow: 8px 0 24px rgba(0,0,0,.7); }
+#scrCombat.hud3.chatopen .combatchat:not([hidden]) { transform: none; }
+#scrCombat.hud3 .hudbtns button[hidden] { display: none; }
+#scrCombat.hud3 .hudbtns button.unread { color: #ffe2a6; box-shadow: inset 0 0 0 1px #d6a14a, 0 0 10px rgba(214,161,74,.6); }
+#scrCombat.hud3.chatopen .hudbtns #btnChatC { color: #f0dfbf; box-shadow: inset 0 0 0 1px #8a653d, 0 0 8px rgba(214,161,74,.4); }
+/* co-op: allies keep their name and statuses over their bar; only your own hero moves to the frame */
+#scrCombat.bf.hud3 .stage #playerSlot .unit:not(.me) .uplate .tags { display: flex !important; }
+#scrCombat.bf.hud3 .stage #playerSlot .unit:not(.me) .uplate .uname { display: block !important; order: 0; text-align: center; } #scrCombat.bf.hud3 .stage #playerSlot .unit:not(.me) .uplate .uname small { display: none !important; }
+#scrCombat.bf.hud3 .stage #playerSlot .unit:not(.me) .uplate .uname b { font-size: 14px; text-shadow: 0 1px 0 #000, 0 0 4px #000; }
 #scrCombat.hud3 > .field-panel { position: absolute !important; inset: 0 !important; display: block !important; padding: 0 !important; margin: 0 !important; border: 0 !important; border-radius: 0 !important; min-height: 0 !important; height: auto !important; box-shadow: none !important; }
 #scrCombat.hud3 > .field-panel::before, #scrCombat.hud3 > .field-panel::after { border-radius: 0; bottom: calc(var(--ph) - 14px); }
 #scrCombat.hud3 .stage { position: absolute !important; left: 0; right: 0; top: 0; height: calc(100vh - var(--ph) + 14px) !important; min-height: 0 !important; margin: 0 !important; border-radius: 0 !important; }
@@ -967,8 +975,8 @@ body #scrCombat.bf.hud3 .field-panel > .hud #btnEnd { position: absolute !import
 body #scrCombat.bf.hud3 .field-panel > .hud #btnEnd .hg { display: none !important; }
 body #scrCombat.bf.hud3 .field-panel > .hud #btnEnd:hover:not(:disabled) { color: #ffe2a6 !important; box-shadow: inset 0 0 22px rgba(224,176,80,.45) !important; }
 body #scrCombat.bf.hud3 .field-panel > .hud #btnEnd:disabled { color: #6f6250 !important; text-shadow: 0 2px 0 #000 !important; box-shadow: none !important; }
-#scrCombat.hud3 .hudbtns { display: flex; gap: 8px; justify-content: center; position: absolute; right: calc(var(--u) * 4.5); top: calc(var(--u) * 104); width: calc(var(--u) * 76); }
-#scrCombat.hud3 .hudbtns button { width: 46px; height: 30px; padding: 0; background: linear-gradient(#211e1b, #141211); border: 2px solid #0a0908; box-shadow: inset 0 0 0 1px #5a4128, 0 3px 6px rgba(0,0,0,.6); border-radius: 3px; font: 600 11px var(--f-ui); letter-spacing: .08em; color: #b7ab97; cursor: pointer; }
+#scrCombat.hud3 .hudbtns { display: flex; gap: 6px; justify-content: center; position: absolute; right: calc(var(--u) * 4.5); top: calc(var(--u) * 104); width: calc(var(--u) * 76); }
+#scrCombat.hud3 .hudbtns button { width: 44px; height: 30px; padding: 0; background: linear-gradient(#211e1b, #141211); border: 2px solid #0a0908; box-shadow: inset 0 0 0 1px #5a4128, 0 3px 6px rgba(0,0,0,.6); border-radius: 3px; font: 600 11px var(--f-ui); letter-spacing: .08em; color: #b7ab97; cursor: pointer; }
 #scrCombat.hud3 .hudbtns button:hover, #scrCombat.hud3.logopen .hudbtns #btnLogC { color: #f0dfbf; box-shadow: inset 0 0 0 1px #8a653d, 0 0 8px rgba(214,161,74,.4); }
 body #scrCombat.bf.hud3 .field-panel > .hud .hint { position: absolute !important; left: calc(var(--u) * 105) !important; right: calc(var(--u) * 106) !important; top: calc(var(--u) * 6) !important; width: auto !important; height: calc(var(--u) * 13) !important; margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; display: grid !important; place-items: center; font-size: 12.5px !important; color: #b7ab97; text-shadow: 0 1px 0 #000; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 /* the hand lies in the recess */
@@ -1004,7 +1012,7 @@ body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 16px; text-sha
 /* compact notched HP bars over every unit; exact numbers on hover */
 #scrCombat.bf.hud3 .stage .unit > .uhead { display: none !important; }
 #scrCombat.bf.hud3 .stage .uplate { left: 50% !important; right: auto !important; bottom: calc(var(--figh, var(--fh)) + 4px) !important; transform: translateX(-50%); width: 150px !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; display: flex !important; flex-direction: column; align-items: center; gap: 5px; z-index: 4; filter: drop-shadow(0 1px 2px rgba(0,0,0,.9)); }
-#scrCombat.bf.hud3 .stage .uplate .uname, #scrCombat.bf.hud3 .stage .uplate .deckbtn, #scrCombat.bf.hud3 .stage #playerSlot .uplate .tags { display: none !important; }
+#scrCombat.bf.hud3 .stage .uplate .uname, #scrCombat.bf.hud3 .stage .uplate .deckbtn, #scrCombat.bf.hud3 .stage #playerSlot .unit.me .uplate .tags { display: none !important; }
 #scrCombat.bf.hud3 .stage .uplate .bar { order: 1; position: relative; width: 124px !important; height: 10px !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; background: #0c0a09 !important; border: 1px solid #000 !important; border-image: none !important; box-shadow: 0 0 0 1px #4e4741 !important; border-radius: 0 !important; }
 #scrCombat.bf.hud3 .stage .uplate .bar::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(var(--n, 12px) - 1px), rgba(0,0,0,.85) calc(var(--n, 12px) - 1px) var(--n, 12px)); pointer-events: none; }
 #scrCombat.bf.hud3 .stage .uplate .bar i { position: absolute !important; left: 0 !important; top: 0 !important; bottom: 0 !important; height: auto !important; width: var(--hpw, 100%) !important; background: linear-gradient(#c94a3f, #8f2a24) !important; border-radius: 0 !important; }
@@ -1093,7 +1101,7 @@ body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 16px; text-sha
         <div class="piles" id="piles"></div>
         <div class="hint" id="hint"></div>
         <button class="btn primary endturn" id="btnEnd"><i class="hg" aria-hidden="true"></i>End turn</button>
-        <div class="hudbtns"><button type="button" id="btnLogC" title="Combat log">LOG</button><button type="button" id="btnDeckC" title="Every card in your deck this fight">DECK</button></div>
+        <div class="hudbtns"><button type="button" id="btnChatC" title="Party chat" hidden>CHAT</button><button type="button" id="btnLogC" title="Combat log">LOG</button><button type="button" id="btnDeckC" title="Every card in your deck this fight">DECK</button></div>
       </div>
       <div class="hand" id="hand" aria-label="Your hand"></div>
     </div>
@@ -7044,8 +7052,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794445840172';
-  const CB_BUILD = 'c786ad2cb4'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794446098999';
+  const CB_BUILD = '06adf1e29f'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8151,6 +8159,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-11', items: [
+      ['UI', "Co-op fights (up to 4 heroes) now use the new fight screen too. Your own hero sits in the frame at the top left; your allies keep their name and statuses over their HP bar. Party chat is a drawer on the left: the CHAT button glows when someone writes, and pressing T opens it."],
       ['Fix', "Leaving a fight with Back to the map no longer leaves the fight screen frozen over the map (and hiding the Menu button)."],
       ['UI', "New fight screen on wide screens: the battlefield fills the whole window and one iron-and-stone panel along the bottom holds everything you touch. The mana orb sits in the left pillar and drains as you spend, your hand lies in the recess with the draw pile on the left and discard and exhaust on the right, and End turn is engraved on the plate in the right pillar."],
       ['UI', "Your hero now has a frame in the top left with portrait, exact HP, block and every buff and debuff. Every fighter on the field gets a compact notched HP bar over their head (each notch is 10 HP, hover it for exact numbers), with their statuses under it and their intent above."],
@@ -13282,7 +13291,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     const box = $('chatBox'), home = $('townWrap'), slot = $('combatChat'); if (!box || !slot) return;
     const inFight = which === 'combat' && typeof socOn === 'function' && socOn();
     if (inFight && box.parentElement !== slot) slot.appendChild(box); else if (!inFight && box.parentElement !== home) home.appendChild(box);
-    slot.hidden = !inFight; $('scrCombat').classList.toggle('withchat', inFight);
+    slot.hidden = !inFight; $('scrCombat').classList.toggle('withchat', inFight); if ($('btnChatC')) $('btnChatC').hidden = !inFight;
     if (typeof renderChat === 'function') renderChat();
   }
   // Nov 2: the line under the logo says where you are
@@ -13937,7 +13946,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     const isNow = (cb.raid && a.isPlayer ? cb.canAct(a) : cb.current === a) && !cb.over, targetable = a.hp > 0 && !!selected && ((CARDS[selected.key].target === 'enemy' && (cb.duel ? a.isPlayer && a !== hero() : !a.isPlayer)) || (CARDS[selected.key].target === 'ally' && a.isPlayer && !cb.duel));
     const pct = Math.max(0, 100 * a.hp / a.maxHp), ini = cb.initiative(a);
     const sub = a.isPlayer ? (cb.raid ? "" : `Init ${ini}`) : `${a.tier === 'Elite' || a.tier === 'Boss' ? a.tier + ' &middot; ' : ''}${a.type} &middot; weak ${a.weakTo} &middot; Init ${ini}`;
-    return `<div class="unit ${isNow ? 'active' : ''} ${a.isPlayer && cb.partySize > 1 && a === viewHero && !isNow ? 'viewing' : ''} ${a.hp <= 0 ? 'dead' : ''} ${targetable ? 'targetable' : ''}" data-id="${a.id}" ${a.tier === 'Boss' ? 'data-boss="1"' : ''} style="--uc:${a.isPlayer ? CC[a.cls] : '#ad7a5c'}" ${targetable ? 'role="button" tabindex="0"' : ''}>
+    return `<div class="unit ${a === hero() ? 'me' : ''} ${isNow ? 'active' : ''} ${a.isPlayer && cb.partySize > 1 && a === viewHero && !isNow ? 'viewing' : ''} ${a.hp <= 0 ? 'dead' : ''} ${targetable ? 'targetable' : ''}" data-id="${a.id}" ${a.tier === 'Boss' ? 'data-boss="1"' : ''} style="--uc:${a.isPlayer ? CC[a.cls] : '#ad7a5c'}" ${targetable ? 'role="button" tabindex="0"' : ''}>
       ${a.isPlayer ? '' : `<div class="uintent"><div class="intents">${intentHtml(a)}</div></div>`}
       <div class="uhead"><b style="color:${a.isPlayer ? CC[a.cls] : '#ead9c4'}">${esc(a.name)}</b>${unitGuild(a) ? `<small>&lt;${esc(unitGuild(a))}&gt;</small>` : ''}</div>
       <div class="figure">${figure(a, true)}</div>${demonsHtml(a)}
@@ -14060,7 +14069,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   function rowHtml(n, d, extra) {
     return `<div class="cardrow" style="--rc:${RC[d.rarity] || 'var(--line)'}"><span class="n">${n}x</span><b>${esc(d.name)}${d.planned === false ? ' <span class="muted">(can\'t afford: discarded)</span>' : ''}</b><span class="cst">${d.cost != null ? d.cost + ' mana' : 'unplayable'}</span><span class="tx">${esc(d.text)}</span></div>`;
   }
-  function hud3On() { return innerWidth >= 900 && innerHeight >= 560 && cb && !cb.raid && !cb.duel && !(cb.partySize > 1); }
+  function hud3On() { return innerWidth >= 900 && innerHeight >= 560 && cb && !cb.raid && !cb.duel && !(cb.partySize > 4); }
   function viewPile(which) {
     const p = hero();
     const title = { draw: 'Draw pile', discard: 'Discard pile', exhaust: 'Exhaust pile', deck: 'Your deck' }[which];
@@ -14085,6 +14094,9 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     $('mClose').onclick = closeModal; $('mLoot').onclick = () => lootModal(e.key);
   }
   $('btnLogC').addEventListener('click', () => $('scrCombat').classList.toggle('logopen'));
+  $('chatIn') && $('chatIn').addEventListener('focus', () => { if ($('scrCombat').classList.contains('hud3') && !$('scrCombat').hidden) { $('scrCombat').classList.add('chatopen'); $('btnChatC').classList.remove('unread'); } });
+  $('btnChatC').addEventListener('click', () => { $('scrCombat').classList.toggle('chatopen'); $('btnChatC').classList.remove('unread'); });
+  new MutationObserver(() => { const sc = $('scrCombat'); if (sc.classList.contains('hud3') && !sc.classList.contains('chatopen') && !$('combatChat').hidden) $('btnChatC').classList.add('unread'); }).observe($('combatChat'), { childList: true, subtree: true, characterData: true });
   $('btnDeckC').addEventListener('click', () => viewPile('deck'));
   addEventListener('resize', () => { if (cb && !$('scrCombat').hidden) $('scrCombat').classList.toggle('hud3', hud3On()); });
   $('piles').addEventListener('click', (ev) => { const b = ev.target.closest('[data-pile]'); if (b) viewPile(b.dataset.pile); });
