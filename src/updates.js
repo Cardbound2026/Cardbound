@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-11', items: [
+      ['Art', "The mana in the orb is a much deeper blue now, with slow drifting motes and swirls so it reads as liquid."],
       ['Map', "The Broken March map is a little shorter and wider, and the node grid starts lower: the boss now stands in front of the castle gate and the last rows sit on the open ground in front of it instead of on the castle."],
       ['UI', "The mana orb now fills its iron ring snugly, with a bigger number."],
       ['UI', "Fighters stand a little further up the field, on the ground instead of on the edge of the bottom panel."],

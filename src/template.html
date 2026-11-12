@@ -959,7 +959,12 @@ body #scrCombat.bf.hud3 .field-panel > .hud .mana { position: static !important;
 body #scrCombat.bf.hud3 .field-panel > .hud .mana .orb { position: absolute !important; left: calc(var(--u) * 17) !important; top: calc(var(--u) * 34.5) !important; width: calc(var(--u) * 52) !important; height: calc(var(--u) * 52) !important; margin: 0 !important; border-radius: 50% !important; }
 body #scrCombat.bf.hud3 .field-panel > .hud .mana .orb::before { display: none !important; }
 body #scrCombat.bf.hud3 .field-panel > .hud .mana .orb .orbfill { inset: 0 !important; border-radius: 50% !important; background: radial-gradient(circle at 50% 45%, #121a2a, #05070c 75%) !important; box-shadow: inset 0 0 8px #000 !important; }
-body #scrCombat.bf.hud3 .field-panel > .hud .mana .orb .orbfill::before { background: linear-gradient(#5a8fe0, #2a4fa0 40%, #162a5c) !important; box-shadow: inset 0 3px 0 rgba(170,205,255,.55) !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud .mana .orb .orbfill::before { /* Nov 11: deep, dark mana with drifting motes and swirl streaks */
+  background: radial-gradient(circle, rgba(150,190,255,.28) 0 1.5px, transparent 2.5px) 3px 2px / 23px 19px, radial-gradient(circle, rgba(120,160,240,.16) 0 3px, transparent 5px) 11px 9px / 37px 31px, radial-gradient(ellipse, rgba(0,0,0,.3) 0 6px, transparent 11px) 0 0 / 29px 41px,
+    repeating-linear-gradient(118deg, rgba(110,150,230,.07) 0 3px, transparent 3px 9px), radial-gradient(120% 80% at 35% 0%, rgba(70,110,200,.35), transparent 60%), linear-gradient(#162c66, #0b1a46 45%, #050c26) !important;
+  box-shadow: inset 0 2px 0 rgba(110,150,230,.5), inset 0 -8px 14px rgba(0,0,0,.55) !important; animation: manadrift 9s linear infinite; }
+@keyframes manadrift { to { background-position: 26px -36px, -26px 40px, 29px -41px, 0 0, 0 0, 0 0; } }
+@media (prefers-reduced-motion: reduce) { body #scrCombat.bf.hud3 .field-panel > .hud .mana .orb .orbfill::before { animation: none; } }
 body #scrCombat.bf.hud3 .field-panel > .hud .mana .orb > span { font-size: calc(var(--u) * 16) !important; color: #eef4ff; text-shadow: 0 2px 0 #000, 0 0 10px rgba(80,140,255,.7) !important; }
 body #scrCombat.bf.hud3 .field-panel > .hud .mtext { position: absolute !important; left: calc(var(--u) * 4) !important; top: calc(var(--u) * 111) !important; width: calc(var(--u) * 78) !important; transform: none !important; text-align: center; display: grid !important; gap: 0; }
 body #scrCombat.bf.hud3 .field-panel > .hud .mtext > b, body #scrCombat.bf.hud3 .field-panel > .hud .mtext .mmax { display: none !important; }
