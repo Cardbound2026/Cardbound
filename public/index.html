@@ -307,10 +307,12 @@ svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
 /* Nov 11: Roman numeral levels; a soft glow behind each card in its rarity colour (a jewel on the back lighting the table),
    Legendary breathes and gets a slow sheen across its frame. Off in small pile thumbnails. */
 .cf .forb.flvl { font-family: var(--cf-text, var(--f-ui)); font-weight: 700; font-size: 7cqw; letter-spacing: .02em; }
-.cf.rf { --rglow: rgba(242,234,216,.16); filter: drop-shadow(0 0 2.6cqw var(--rglow)); }
-.cf.rf.r-Green { --rglow: rgba(79,216,106,.5); } .cf.rf.r-Blue { --rglow: rgba(74,168,255,.55); } .cf.rf.r-Gold { --rglow: rgba(255,201,74,.55); animation: rglow 3.2s ease-in-out infinite; }
-@keyframes rglow { 50% { filter: drop-shadow(0 0 4cqw rgba(255,201,74,.85)); } }
-.hand .cf.rf:hover:not(:disabled), .hand .cf.rf:focus-visible { filter: drop-shadow(0 0 4cqw var(--rglow)) drop-shadow(0 16px 24px rgba(0,0,0,.7)); animation: none; }
+.cf.rf { --rglow: rgba(242,234,216,.45); } /* Nov 11: the rarity glow only shows while you hold or drag a card */
+.dragghost .cf.rf, .hand .cf.rf:active:not(:disabled):not(.dragging) { filter: drop-shadow(0 0 2.4cqw var(--rglow)) drop-shadow(0 0 .8cqw var(--rglow)); }
+.hand .cf.rf.dragging { filter: none !important; }
+.cf.rf.r-Green { --rglow: rgba(79,216,106,.75); } .cf.rf.r-Blue { --rglow: rgba(74,168,255,.8); } .cf.rf.r-Gold { --rglow: rgba(255,201,74,.85); } .dragghost .cf.rf.r-Gold { animation: rglow 1.6s ease-in-out infinite; }
+@keyframes rglow { 50% { filter: drop-shadow(0 0 6cqw rgba(255,201,74,1)) drop-shadow(0 0 2cqw rgba(255,201,74,.9)); } }
+.hand .cf.rf:hover:not(:disabled):not(:active), .hand .cf.rf:focus-visible { filter: drop-shadow(0 16px 24px rgba(0,0,0,.7)); animation: none; }
 .cf .fsheen { position: absolute; inset: 0; pointer-events: none; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; background: linear-gradient(115deg, transparent 35%, rgba(255,235,170,.3) 48%, transparent 60%) no-repeat; background-size: 250% 100%; animation: fsheen 3.6s ease-in-out infinite; }
 @keyframes fsheen { 0% { background-position: 130% 0; } 60%, 100% { background-position: -40% 0; } }
 .pilecard .cf.rf, .cardgrid .cf.rf { animation: none; filter: none; } .pilecard .cf .fsheen { display: none; }
@@ -323,7 +325,7 @@ svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
 .hand > .hint { align-self: center; }
 .hand .cf { --cw: var(--hcw); margin-left: calc(var(--cw) * -1 * var(--ov, .3)); transform-origin: 50% 120%; transform: translateY(calc(var(--off, 0) * 1px)) rotate(calc(var(--rot, 0) * 1deg)); transition: transform .14s ease-out, filter .14s, margin .14s; position: relative; z-index: var(--z, 1); }
 .hand .cf:first-child { margin-left: 0; }
-.hand .cf:hover:not(:disabled), .hand .cf:focus-visible { transform: translateY(-64px) rotate(0deg) scale(1.2); z-index: 50; filter: drop-shadow(0 16px 24px rgba(0,0,0,.7)); }
+.hand .cf:hover:not(:disabled), .hand .cf:focus-visible { transform: translateY(-84px) rotate(0deg) scale(1.44); z-index: 50; filter: drop-shadow(0 16px 24px rgba(0,0,0,.7)); }
 .hand .cf.selected { transform: translateY(-48px) rotate(0deg) scale(1.18); z-index: 49; filter: drop-shadow(0 0 12px rgba(214,161,74,.85)); }
 @media (max-width: 700px) { .hand { --hcw: 156px; } .hand .cf { --cw: 156px; margin-left: calc(var(--cw) * -0.45); } .hand .cf:hover:not(:disabled) { transform: translateY(-36px) scale(1.15); } }
 @media (prefers-reduced-motion: reduce) { .hand .cf { transition: none; } }
@@ -645,7 +647,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 @media (max-width: 760px) { .minimap { width: 120px !important; height: auto !important; } }
 .tutpick { border-color: #6a5422; background: #1a150b; } .tutpick input { accent-color: var(--accent); }
 .tutbox { position: fixed; left: 50%; transform: translateX(-50%); bottom: 25vh; z-index: 40; width: min(440px, calc(100vw - 32px)); max-height: calc(75vh - 16px); overflow: auto; background: #15110d; border: 2px solid #d6a14a; border-radius: 8px; padding: 10px 14px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.6); font-size: 15px; line-height: 1.45; }
-.camphp { display: grid; grid-template-columns: minmax(70px, auto) 1fr; gap: 8px; align-items: center; margin: 6px 0; } .camphp .bar { position: relative; margin: 0; } .camphp .bar em { position: absolute; top: 0; bottom: 0; background: rgba(120, 200, 110, .35); }
+.camphp { display: grid; grid-template-columns: minmax(70px, auto) 1fr; gap: 8px; align-items: center; margin: 6px 0; } .camphp .bar { position: relative; margin: 0; height: 22px; } body .camphp .bar i { background: linear-gradient(#c94a3f, #8f2a24) !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.18) !important; } .camphp .bar em { background: linear-gradient(#5fae58, #3a7a36) !important; opacity: .75; } .camphp .bar span { position: absolute !important; inset: 0; display: grid !important; place-items: center; z-index: 2; line-height: 1 !important; text-shadow: 0 1px 0 #000, 0 0 3px #000; } .camphp .bar em { position: absolute; top: 0; bottom: 0; background: rgba(120, 200, 110, .35); }
 .feedpeek { position: fixed; z-index: 60; pointer-events: none; filter: drop-shadow(0 6px 14px rgba(0,0,0,.6)); }
 #pickBox { position: fixed; inset: 0; z-index: 70; background: rgba(10,8,6,.72); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
 #pickBox[hidden] { display: none; }
@@ -865,7 +867,7 @@ body #scrCombat.bf .stage #playerSlot .uplate .bar { transform: scaleX(-1); } bo
 .sico img { width: 22px; height: 22px; image-rendering: pixelated; }
 .sico b { position: absolute; right: -5px; bottom: -6px; min-width: 14px; padding: 0 3px; border-radius: 7px; background: #120e0b; border: 1px solid #8a6d40; font: 700 10.5px/13px var(--f-ui); color: #fff1d0; text-align: center; font-variant-numeric: tabular-nums; }
 .sico:hover, .sico:focus-visible { outline: 1px solid #e3b768; }
-.sico[data-tip]:hover::after, .sico[data-tip]:focus-visible::after { content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); z-index: 60; width: max-content; max-width: 220px; padding: 6px 9px; border-radius: 6px; background: #120e0bf2; border: 1px solid #8a6d40; color: #f0e3c8; font: 500 12.5px/1.3 var(--f-ui); text-align: left; white-space: normal; pointer-events: none; box-shadow: 0 6px 16px #000a; }
+.sico[data-tip].nofloat:hover::after, .sico[data-tip].nofloat:focus-visible::after { content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); z-index: 60; width: max-content; max-width: 220px; padding: 6px 9px; border-radius: 6px; background: #120e0bf2; border: 1px solid #8a6d40; color: #f0e3c8; font: 500 12.5px/1.3 var(--f-ui); text-align: left; white-space: normal; pointer-events: none; box-shadow: 0 6px 16px #000a; }
 body #scrCombat.bf .stage .uplate .tags { display: flex; flex-wrap: wrap; gap: 5px 7px; padding-top: 3px; grid-column: 1 / -1 !important; grid-row: auto !important; }
 body #scrCombat.bf .stage .uplate .bar span { font-size: 12px; }
 
@@ -925,6 +927,8 @@ body #scrCombat.bf .stage .uplate .bar span { font-size: 12px; }
    iron-and-stone panel (img/ui/hud3/panel.png, one generated piece) holds the mana orb, the hand, the piles and End turn. --u is one pixel of that
    panel art, so everything inside it scales with the panel; the stone ends keep their shape and only the iron middle stretches on wider screens. */
 #pframe, .hudbtns, .mtext .m3 { display: none; }
+#ftip { position: fixed; z-index: 2000; max-width: 240px; padding: 7px 10px; border-radius: 6px; background: #120e0bf5; border: 1px solid #8a6d40; color: #efe2c8; font: 500 12.5px/1.35 var(--f-ui); box-shadow: 0 6px 18px rgba(0,0,0,.7); pointer-events: none; white-space: normal; }
+#ftip[hidden] { display: none; }
 html body #scrCombat[hidden] { display: none !important; } /* the hud3 layout forces display:block; never let it beat the hidden screen flag */
 #scrCombat.hud3 { --ph: min(calc(100vw * 146 / 605), 44vh); --u: calc(var(--ph) / 146); position: fixed !important; inset: 0 !important; margin: 0 !important; padding: 0 !important; display: block !important; max-width: none !important; width: auto !important; z-index: 2; }
 body:has(#scrCombat.hud3:not([hidden])) { background: #000 !important; overflow: hidden; }
@@ -1007,6 +1011,7 @@ body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 16px; text-sha
 #pframe .pfhp { position: relative; flex: 1; height: 18px; background: #0c0a09; border: 1px solid #000; box-shadow: 0 0 0 1px #5a4128; }
 #pframe .pfhp i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(#c94a3f, #8f2a24); transition: width .3s; }
 #pframe .pfhp span { position: absolute; inset: 0; display: grid; place-items: center; font: 700 13px var(--f-ui); color: #fff; text-shadow: 0 1px 0 #000; }
+.mkshield.zero { opacity: .45; }
 .mkshield { width: 24px; height: 26px; flex: none; background: linear-gradient(#a9b4bf, #5e6a76); clip-path: polygon(50% 0, 100% 18%, 92% 70%, 50% 100%, 8% 70%, 0 18%); display: grid; place-items: center; font: 700 12px var(--f-ui); color: #0c0a09; }
 #pframe .tags { display: flex; gap: 4px; flex-wrap: wrap; } #pframe .tags .sico.block { display: none; }
 /* compact notched HP bars over every unit; exact numbers on hover */
@@ -7052,8 +7057,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794446098999';
-  const CB_BUILD = '06adf1e29f'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794447138873';
+  const CB_BUILD = '39b09676d3'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8159,6 +8164,11 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-11', items: [
+      ['Map', "Every node you've cleared now carries a big red skull, so the road you've walked is easy to read. When you draw a route, the ring under each planned node turns the route's colour instead of getting a second circle."],
+      ['UI', "Status tooltips in fights now always sit in front of everything, and drop below the icon when there's no room above it."],
+      ['UI', "Your block shield always sits at the end of your HP bar in the top-left frame (greyed out at 0)."],
+      ['UI', "Cards no longer glow at rest: the rarity glow lights up while you hold or drag a card. Hovering a card in your hand now blows it up 20% bigger."],
+      ['Fix', "The HP bars on the rest site read cleanly again: red for your HP, green for what resting would heal."],
       ['UI', "Co-op fights (up to 4 heroes) now use the new fight screen too. Your own hero sits in the frame at the top left; your allies keep their name and statuses over their HP bar. Party chat is a drawer on the left: the CHAT button glows when someone writes, and pressing T opens it."],
       ['Fix', "Leaving a fight with Back to the map no longer leaves the fight screen frozen over the map (and hiding the Menu button)."],
       ['UI', "New fight screen on wide screens: the battlefield fills the whole window and one iron-and-stone panel along the bottom holds everything you touch. The mana orb sits in the left pillar and drains as you spend, your hand lies in the recess with the draw pile on the left and discard and exhaust on the right, and End turn is engraved on the plate in the right pillar."],
@@ -11084,15 +11094,16 @@ window.CB_MAPART = (function () {
   const props = {};
   const propImg = (k) => props[k] || (props[k] = Object.assign(new Image(), { decoding: 'async', src: 'img/map/node_' + k + '.png' }));
   const RING = { fight: '#f4efe4', elite: '#ff3b2f', boss: '#ff3b2f', merchant: '#4fd86a', rest: '#ffd23f', shrine: '#47a4ff' };
-  function ring(g, cx, cy, rx, col, t, enraged, dim) {
+  function ring(g, cx, cy, rx, col, t, enraged, dim, bold) {
     const pulse = enraged ? 0.5 + 0.5 * Math.sin(t / 180) : 0, ry = rx * 0.42;
     g.save(); g.globalAlpha = (dim ? 0.35 : 1) * (enraged ? 0.55 + 0.45 * pulse : 0.9);
     g.fillStyle = col + (enraged ? '40' : '22'); g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.fill();
-    g.shadowColor = col; g.shadowBlur = enraged ? 6 + 10 * pulse : 5; g.strokeStyle = col; g.lineWidth = enraged ? 2.5 + 1.5 * pulse : 2;
+    g.shadowColor = col; g.shadowBlur = enraged ? 6 + 10 * pulse : 5; g.strokeStyle = col; g.lineWidth = enraged ? 2.5 + 1.5 * pulse : bold ? 3.5 : 2; if (bold) { g.shadowBlur = 10; g.fillStyle = col + '44'; g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.fill(); }
     g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.stroke();
     if (enraged) { g.lineWidth = 1.5; g.globalAlpha *= 0.6; g.beginPath(); g.ellipse(cx, cy, rx + 4 + 3 * pulse, ry + 2 + 1.5 * pulse, 0, 0, Math.PI * 2); g.stroke(); }
     g.restore();
   }
+  const skull = Object.assign(new Image(), { src: 'img/map/skull_done.png' });
   let boxes = [];                                                     // live overlays: { cv, run, list }
   function decorate(el, run) {
     if (!el || !run) return; const svg = el.querySelector(':scope > svg'); if (!svg) return;
@@ -11108,11 +11119,13 @@ window.CB_MAPART = (function () {
       const n = run.map.nodes[g.dataset.id]; if (!n || !run.visible(n)) continue;
       const tr = /translate\(([-\d.]+),([-\d.]+)\)/.exec(g.getAttribute('transform')); if (!tr) continue;
       const boss = n.id === 'boss', kind = boss ? 'boss' : n.type;
-      const e = { x: +tr[1], y: +tr[2], kind, enraged: !!n.enraged, ks: [], prop: PROP[n.type] || null, dim: run.visited.includes(n.id) && run.at !== n.id, boss, ph: (n.row * 7 + n.col * 3) % 9 };
+      const pl = run.plan || {}, plan = (pl.A || []).includes(n.id) ? '#4fd1ff' : (pl.B || []).includes(n.id) ? '#c084fc' : null;
+      const e = { x: +tr[1], y: +tr[2], kind, enraged: !!n.enraged, ks: [], prop: PROP[n.type] || null, dim: run.visited.includes(n.id) && run.at !== n.id, done: run.visited.includes(n.id), plan, boss, ph: (n.row * 7 + n.col * 3) % 9 };
       if (n.enemies) { e.ks = n.enemies.map((k) => ({ k: keyFor(k), tier: ((window.CB_DATA && CB_DATA.enemies[k]) || {}).tier || '1' })).filter((x) => x.k).slice(0, 3); for (const x of e.ks) sheet(x.k); }
       if (e.prop) propImg(e.prop);
       if (!e.ks.length && !e.prop) continue;
       g.classList.add('artnode'); list.push(e);
+      if (plan) { const pc = svg.querySelector(`circle.plan[data-k="${n.id}"]`); if (pc) pc.remove(); } // the ring under the model turns the route's colour instead
     }
     if (!list.length) return;
     const cv = document.createElement('canvas'), dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -11129,7 +11142,7 @@ window.CB_MAPART = (function () {
       const g = b.cv.getContext('2d'); g.setTransform(b.dpr, 0, 0, b.dpr, 0, 0); g.clearRect(0, 0, b.cv.width, b.cv.height); g.imageSmoothingEnabled = false;
       for (const s of b.list) {                                          // rings first, so every model stands on top of its own
         const n = s.ks.length, rx = s.boss ? 30 : s.prop ? 22 : Math.max(17, (n - 1) * 8 + 14);
-        ring(g, s.x, s.y + (s.prop ? 10 : 8), rx, RING[s.kind] || RING.fight, t, s.enraged, s.dim);
+        ring(g, s.x, s.y + (s.prop ? 10 : 8), rx, s.plan || RING[s.kind] || RING.fight, t, s.enraged && !s.plan, s.dim && !s.plan, !!s.plan);
       }
       for (const s of b.list) {
         if (s.prop) {
@@ -11150,6 +11163,9 @@ window.CB_MAPART = (function () {
           g.save(); g.translate(cx, foot);
           g.drawImage(img, i * m.w, r * m.h, m.w, m.h, -((x0 + x1) / 2) * k, -y1 * k, m.w * k, m.h * k); g.restore();
         });
+      }
+      for (const s of b.list) if (s.done && skull.complete && skull.naturalWidth) { // a cleared node gets a big red skull, so you can see the road you've walked
+        const sz = s.boss ? 40 : 30; g.globalAlpha = 0.95; g.drawImage(skull, s.x - sz / 2, s.y - (s.prop ? 24 : 20) - sz / 2, sz, sz);
       }
       g.globalAlpha = 1;
     }
@@ -13380,7 +13396,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if (interactive) for (const [slot, col, dash] of [['B', '#c084fc', '7 5'], ['A', '#4fd1ff', '']]) {
       const P = planOf(slot); if (!P.length) continue; const pts = [run.at, ...P].filter(Boolean);
       for (let i = 1; i < pts.length; i++) { const a = pos(nodes[pts[i - 1]]), b = pos(nodes[pts[i]]); planSvg += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${col}" stroke-width="${slot === MP.slot ? 6 : 4}" stroke-linecap="round" stroke-dasharray="${dash}" opacity="${slot === MP.slot ? .85 : .55}"/>`; }
-      for (const k of P) { const p = pos(nodes[k]); planSvg += `<circle cx="${p.x}" cy="${p.y}" r="${k === 'boss' ? 27 : 21}" fill="none" stroke="${col}" stroke-width="2.5" stroke-dasharray="${dash}" opacity=".9"/>`; }
+      for (const k of P) { const p = pos(nodes[k]); planSvg += `<circle class="plan" data-k="${k}" cx="${p.x}" cy="${p.y}" r="${k === 'boss' ? 27 : 21}" fill="none" stroke="${col}" stroke-width="2.5" stroke-dasharray="${dash}" opacity=".9"/>`; }
     }
     let rowsTxt = '';
     for (let r = 1; r <= ROWS; r++) { const y = PADY + (ROWS + 1 - r) * RH; rowsTxt += `<text x="8" y="${y + 4}" fill="#6b5a44" font-size="11">${r}</text>`; }
@@ -14019,7 +14035,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if (window.CB_BF) CB_BF.layout(cb, { map: $('scrCombat').dataset.map, row: run && run.at && run.map && run.map.nodes[run.at] ? (run.at === 'boss' ? 'boss' : run.map.nodes[run.at].row) : null, left: cb.duel ? 'You' : cb.raid ? 'The raid' : cb.partySize > 1 ? 'Your party' : esc(hero().name), right: cb.duel ? 'Your rival' : (DATA.maps[$('scrCombat').dataset.map] || {}).name || 'The enemy' });
     if (withPops) popups(); else snapshot();
     if (window.CB_FX) CB_FX.consume(cb); // hero moves, hit effects and spell projectiles (src/fx.js, src/forge.js)
-    $('pframe').innerHTML = `<div class="pfimg"><img src="img/heroes/${String(p.cls).toLowerCase()}.png" alt=""></div><div class="pfr"><div class="pfn">${esc(p.name)} <small>${esc(p.cls)}</small></div><div class="pfrow"><div class="pfhp" title="${p.hp} / ${p.maxHp} HP"><i style="width:${Math.max(0, 100 * p.hp / p.maxHp)}%"></i><span>${p.hp} / ${p.maxHp}</span></div>${p.block ? `<div class="mkshield" title="${esc(p.defName || 'Block')} ${p.block}">${p.block}</div>` : ''}</div><div class="tags">${iconTags(tags(p))}</div></div>`;
+    $('pframe').innerHTML = `<div class="pfimg"><img src="img/heroes/${String(p.cls).toLowerCase()}.png" alt=""></div><div class="pfr"><div class="pfn">${esc(p.name)} <small>${esc(p.cls)}</small></div><div class="pfrow"><div class="pfhp" title="${p.hp} / ${p.maxHp} HP"><i style="width:${Math.max(0, 100 * p.hp / p.maxHp)}%"></i><span>${p.hp} / ${p.maxHp}</span></div><div class="mkshield${p.block ? '' : ' zero'}" title="${esc(p.defName || 'Block')} ${p.block}">${p.block}</div></div><div class="tags">${iconTags(tags(p))}</div></div>`;
     $('orb').innerHTML = `<i class="orbfill" style="--mf:${Math.max(0, Math.min(1, p.mana / Math.max(1, p.maxMana)))}"></i><span>${p.mana}</span>`;
     $('manaSub').innerHTML = `<span class="m3">${p.mana} / ${p.maxMana} MANA</span><span class="mmax">of ${p.maxMana}</span><span class="mreg">+${p.regen} / turn</span>`;
     const fat = [...p.drawPile, ...p.hand, ...p.discard].filter(c => CARDS[c.key].type === 'Status').length;
@@ -14092,6 +14108,15 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       <div class="row"><button class="btn primary" id="mClose">Close</button><button class="btn" id="mLoot">Loot table</button></div>`);
     $('modalBox').classList.add('wide'); fitCards($('modalBox'));
     $('mClose').onclick = closeModal; $('mLoot').onclick = () => lootModal(e.key);
+  }
+  { // floating status tooltip: lives on <body> so it is never hidden behind another unit's plate, and drops below when there's no room above
+    const tip = document.createElement('div'); tip.id = 'ftip'; tip.hidden = true; document.body.appendChild(tip); let on = null;
+    const show = (el) => { on = el; tip.textContent = el.dataset.tip; tip.hidden = false; const r = el.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+      let x = Math.max(6, Math.min(innerWidth - tw - 6, r.left + r.width / 2 - tw / 2)), y = r.top - th - 8; if (y < 6) y = r.bottom + 8; tip.style.left = x + 'px'; tip.style.top = y + 'px'; };
+    const hide = () => { on = null; tip.hidden = true; };
+    document.addEventListener('mouseover', (ev) => { const el = ev.target.closest && ev.target.closest('.sico[data-tip]'); if (el) { if (el !== on) show(el); } else if (on) hide(); });
+    document.addEventListener('focusin', (ev) => { const el = ev.target.closest && ev.target.closest('.sico[data-tip]'); if (el) show(el); });
+    document.addEventListener('focusout', hide); addEventListener('scroll', hide, true); document.addEventListener('pointerdown', hide, true);
   }
   $('btnLogC').addEventListener('click', () => $('scrCombat').classList.toggle('logopen'));
   $('chatIn') && $('chatIn').addEventListener('focus', () => { if ($('scrCombat').classList.contains('hud3') && !$('scrCombat').hidden) { $('scrCombat').classList.add('chatopen'); $('btnChatC').classList.remove('unread'); } });

@@ -30,15 +30,16 @@ window.CB_MAPART = (function () {
   const props = {};
   const propImg = (k) => props[k] || (props[k] = Object.assign(new Image(), { decoding: 'async', src: 'img/map/node_' + k + '.png' }));
   const RING = { fight: '#f4efe4', elite: '#ff3b2f', boss: '#ff3b2f', merchant: '#4fd86a', rest: '#ffd23f', shrine: '#47a4ff' };
-  function ring(g, cx, cy, rx, col, t, enraged, dim) {
+  function ring(g, cx, cy, rx, col, t, enraged, dim, bold) {
     const pulse = enraged ? 0.5 + 0.5 * Math.sin(t / 180) : 0, ry = rx * 0.42;
     g.save(); g.globalAlpha = (dim ? 0.35 : 1) * (enraged ? 0.55 + 0.45 * pulse : 0.9);
     g.fillStyle = col + (enraged ? '40' : '22'); g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.fill();
-    g.shadowColor = col; g.shadowBlur = enraged ? 6 + 10 * pulse : 5; g.strokeStyle = col; g.lineWidth = enraged ? 2.5 + 1.5 * pulse : 2;
+    g.shadowColor = col; g.shadowBlur = enraged ? 6 + 10 * pulse : 5; g.strokeStyle = col; g.lineWidth = enraged ? 2.5 + 1.5 * pulse : bold ? 3.5 : 2; if (bold) { g.shadowBlur = 10; g.fillStyle = col + '44'; g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.fill(); }
     g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.stroke();
     if (enraged) { g.lineWidth = 1.5; g.globalAlpha *= 0.6; g.beginPath(); g.ellipse(cx, cy, rx + 4 + 3 * pulse, ry + 2 + 1.5 * pulse, 0, 0, Math.PI * 2); g.stroke(); }
     g.restore();
   }
+  const skull = Object.assign(new Image(), { src: 'img/map/skull_done.png' });
   let boxes = [];                                                     // live overlays: { cv, run, list }
   function decorate(el, run) {
     if (!el || !run) return; const svg = el.querySelector(':scope > svg'); if (!svg) return;
@@ -54,11 +55,13 @@ window.CB_MAPART = (function () {
       const n = run.map.nodes[g.dataset.id]; if (!n || !run.visible(n)) continue;
       const tr = /translate\(([-\d.]+),([-\d.]+)\)/.exec(g.getAttribute('transform')); if (!tr) continue;
       const boss = n.id === 'boss', kind = boss ? 'boss' : n.type;
-      const e = { x: +tr[1], y: +tr[2], kind, enraged: !!n.enraged, ks: [], prop: PROP[n.type] || null, dim: run.visited.includes(n.id) && run.at !== n.id, boss, ph: (n.row * 7 + n.col * 3) % 9 };
+      const pl = run.plan || {}, plan = (pl.A || []).includes(n.id) ? '#4fd1ff' : (pl.B || []).includes(n.id) ? '#c084fc' : null;
+      const e = { x: +tr[1], y: +tr[2], kind, enraged: !!n.enraged, ks: [], prop: PROP[n.type] || null, dim: run.visited.includes(n.id) && run.at !== n.id, done: run.visited.includes(n.id), plan, boss, ph: (n.row * 7 + n.col * 3) % 9 };
       if (n.enemies) { e.ks = n.enemies.map((k) => ({ k: keyFor(k), tier: ((window.CB_DATA && CB_DATA.enemies[k]) || {}).tier || '1' })).filter((x) => x.k).slice(0, 3); for (const x of e.ks) sheet(x.k); }
       if (e.prop) propImg(e.prop);
       if (!e.ks.length && !e.prop) continue;
       g.classList.add('artnode'); list.push(e);
+      if (plan) { const pc = svg.querySelector(`circle.plan[data-k="${n.id}"]`); if (pc) pc.remove(); } // the ring under the model turns the route's colour instead
     }
     if (!list.length) return;
     const cv = document.createElement('canvas'), dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -75,7 +78,7 @@ window.CB_MAPART = (function () {
       const g = b.cv.getContext('2d'); g.setTransform(b.dpr, 0, 0, b.dpr, 0, 0); g.clearRect(0, 0, b.cv.width, b.cv.height); g.imageSmoothingEnabled = false;
       for (const s of b.list) {                                          // rings first, so every model stands on top of its own
         const n = s.ks.length, rx = s.boss ? 30 : s.prop ? 22 : Math.max(17, (n - 1) * 8 + 14);
-        ring(g, s.x, s.y + (s.prop ? 10 : 8), rx, RING[s.kind] || RING.fight, t, s.enraged, s.dim);
+        ring(g, s.x, s.y + (s.prop ? 10 : 8), rx, s.plan || RING[s.kind] || RING.fight, t, s.enraged && !s.plan, s.dim && !s.plan, !!s.plan);
       }
       for (const s of b.list) {
         if (s.prop) {
@@ -96,6 +99,9 @@ window.CB_MAPART = (function () {
           g.save(); g.translate(cx, foot);
           g.drawImage(img, i * m.w, r * m.h, m.w, m.h, -((x0 + x1) / 2) * k, -y1 * k, m.w * k, m.h * k); g.restore();
         });
+      }
+      for (const s of b.list) if (s.done && skull.complete && skull.naturalWidth) { // a cleared node gets a big red skull, so you can see the road you've walked
+        const sz = s.boss ? 40 : 30; g.globalAlpha = 0.95; g.drawImage(skull, s.x - sz / 2, s.y - (s.prop ? 24 : 20) - sz / 2, sz, sz);
       }
       g.globalAlpha = 1;
     }

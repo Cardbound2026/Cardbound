@@ -2,6 +2,11 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-11', items: [
+      ['Map', "Every node you've cleared now carries a big red skull, so the road you've walked is easy to read. When you draw a route, the ring under each planned node turns the route's colour instead of getting a second circle."],
+      ['UI', "Status tooltips in fights now always sit in front of everything, and drop below the icon when there's no room above it."],
+      ['UI', "Your block shield always sits at the end of your HP bar in the top-left frame (greyed out at 0)."],
+      ['UI', "Cards no longer glow at rest: the rarity glow lights up while you hold or drag a card. Hovering a card in your hand now blows it up 20% bigger."],
+      ['Fix', "The HP bars on the rest site read cleanly again: red for your HP, green for what resting would heal."],
       ['UI', "Co-op fights (up to 4 heroes) now use the new fight screen too. Your own hero sits in the frame at the top left; your allies keep their name and statuses over their HP bar. Party chat is a drawer on the left: the CHAT button glows when someone writes, and pressing T opens it."],
       ['Fix', "Leaving a fight with Back to the map no longer leaves the fight screen frozen over the map (and hiding the Menu button)."],
       ['UI', "New fight screen on wide screens: the battlefield fills the whole window and one iron-and-stone panel along the bottom holds everything you touch. The mana orb sits in the left pillar and drains as you spend, your hand lies in the recess with the draw pile on the left and discard and exhaust on the right, and End turn is engraved on the plate in the right pillar."],
