@@ -960,7 +960,7 @@ body #scrCombat.bf.hud3 .field-panel > .hud { position: absolute !important; lef
   border-image: url(img/ui/hud3/panel.png) 0 106 0 105 fill / 0 calc(var(--u) * 106) 0 calc(var(--u) * 105) / 0 stretch !important; image-rendering: pixelated; box-shadow: 0 -6px 12px rgba(0,0,0,.6) !important; }
 body #scrCombat.bf.hud3 .field-panel > .hud > * { image-rendering: auto; }
 body #scrCombat.bf.hud3 .field-panel > .hud .mana { position: static !important; transform: none !important; display: block !important; }
-body #scrCombat.bf.hud3 .field-panel > .hud .mana .orb { position: absolute !important; left: calc(var(--u) * 17.5) !important; top: calc(var(--u) * 35) !important; width: calc(var(--u) * 51) !important; height: calc(var(--u) * 51) !important; margin: 0 !important; border-radius: 50% !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud .mana .orb { position: absolute !important; left: calc(var(--u) * 16.5) !important; top: calc(var(--u) * 34) !important; width: calc(var(--u) * 53) !important; height: calc(var(--u) * 53) !important; margin: 0 !important; border-radius: 50% !important; }
 body #scrCombat.bf.hud3 .field-panel > .hud .mana .orb::before { display: none !important; }
 body #scrCombat.bf.hud3 .field-panel > .hud .mana .orb .orbfill { inset: 0 !important; border-radius: 50% !important; background: radial-gradient(circle at 50% 45%, #121a2a, #05070c 75%) !important; box-shadow: inset 0 0 8px #000 !important; }
 body #scrCombat.bf.hud3 .field-panel > .hud .mana .orb .orbfill::before { background: linear-gradient(#5a8fe0, #2a4fa0 40%, #162a5c) !important; box-shadow: inset 0 3px 0 rgba(170,205,255,.55) !important; }
@@ -7066,8 +7066,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794448685355';
-  const CB_BUILD = '6312c61929'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794448729404';
+  const CB_BUILD = '837048636e'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
