@@ -313,7 +313,7 @@ svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
 .cf.rf.r-Green { --rglow: rgba(79,216,106,.75); } .cf.rf.r-Blue { --rglow: rgba(74,168,255,.8); } .cf.rf.r-Gold { --rglow: rgba(255,201,74,.85); } .dragghost .cf.rf.r-Gold { animation: rglow 1.6s ease-in-out infinite; }
 @keyframes rglow { 50% { filter: drop-shadow(0 0 6cqw rgba(255,201,74,1)) drop-shadow(0 0 2cqw rgba(255,201,74,.9)); } }
 .hand .cf.rf:hover:not(:disabled):not(:active), .hand .cf.rf:focus-visible { filter: drop-shadow(0 16px 24px rgba(0,0,0,.7)); animation: none; }
-.cf .fgem { position: absolute; width: 22%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; background: radial-gradient(circle, var(--gemc) 0%, transparent 60%); opacity: .7; z-index: 1; box-shadow: none !important; } /* Nov 11: rarity gem glows in its colour */
+.cf .fgem { position: absolute; width: 22%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; background: radial-gradient(circle, var(--gemc) 0%, transparent 60%); opacity: .8; z-index: 1; box-shadow: none !important; } /* Nov 11: rarity gem glows in its colour */
 .cf.r-White .fgem { --gemc: rgba(235,230,220,.45); } .cf.r-Green .fgem { --gemc: rgba(79,230,106,.85); } .cf.r-Blue .fgem { --gemc: rgba(74,160,255,.9); } .cf.r-Gold .fgem { --gemc: rgba(255,200,70,.9); }
 .cf .fsheen { position: absolute; inset: 0; pointer-events: none; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; background: linear-gradient(115deg, transparent 35%, rgba(255,235,170,.3) 48%, transparent 60%) no-repeat; background-size: 250% 100%; animation: fsheen 3.6s ease-in-out infinite; }
 @keyframes fsheen { 0% { background-position: 130% 0; } 60%, 100% { background-position: -40% 0; } }
@@ -321,7 +321,7 @@ svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
 @media (prefers-reduced-motion: reduce) { .cf.rf.r-Gold, .cf .fsheen { animation: none; } }
 .cf .fplq { position: absolute; display: grid; place-items: center; font-family: var(--cf-text, var(--f-ui)); font-size: 4.4cqw; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; color: var(--rt-dark); text-shadow: 0 .4cqw .8cqw #000; pointer-events: none; }
 .cf.rf .fpanel { color: #efe4cf; padding: 3.5cqw 4cqw 2.5cqw; }
-.cf.rf .fname { color: #f6e9cf; text-shadow: 0 .5cqw 1cqw #000; }
+.cf.rf .fname { color: var(--rt-dark, #f6e9cf); text-shadow: 0 .5cqw 1cqw #000; } /* Nov 11: the name takes the rarity colour, like the type plaque */
 .cf.rf .ftext b { color: #ffcf7a; }
 .hand { --hcw: min(218px, max(150px, calc((100vh - 610px) / 1.5))); height: calc(var(--hcw) * 1.5 + 30px); box-sizing: border-box; } /* the tray keeps one height, empty or full */
 .hand > .hint { align-self: center; }
@@ -7076,8 +7076,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794451642973';
-  const CB_BUILD = 'f4ac2e8086'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794451706784';
+  const CB_BUILD = '8d40c39701'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8183,7 +8183,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-11', items: [
-      ['Art', "The rarity gem at the top of Rogue cards now glows softly in its colour (white, green, blue or gold), so you can tell a card's rarity at a glance."],
+      ['Art', "The rarity gem at the top of Rogue cards now glows softly in its colour (white, green, blue or gold), so you can tell a card's rarity at a glance. Card names on the new frames are coloured by rarity too, like the type line."],
       ['Art', "Every map now has painted pixel art. The Cinder Reach, Rimewatch, Tanglewild, Shattered Spire and Hollow Crypts each get a run map seen from above (with their volcano fortress, glacier keep, thorn tree, floating tower or crypt cathedral behind the boss) and their own fight backdrops: four road scenes that bring the landmark closer the further you go, and a boss scene."],
       ['UI', "The turn order is 30% bigger, and your own portrait wears a ring in your class colour so you can always spot yourself in a co-op fight."],
       ['Art', "The mana in the orb is a much deeper blue now, with slow drifting motes and swirls so it reads as liquid."],

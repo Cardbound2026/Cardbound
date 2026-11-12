@@ -309,7 +309,7 @@ svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
 .cf.rf.r-Green { --rglow: rgba(79,216,106,.75); } .cf.rf.r-Blue { --rglow: rgba(74,168,255,.8); } .cf.rf.r-Gold { --rglow: rgba(255,201,74,.85); } .dragghost .cf.rf.r-Gold { animation: rglow 1.6s ease-in-out infinite; }
 @keyframes rglow { 50% { filter: drop-shadow(0 0 6cqw rgba(255,201,74,1)) drop-shadow(0 0 2cqw rgba(255,201,74,.9)); } }
 .hand .cf.rf:hover:not(:disabled):not(:active), .hand .cf.rf:focus-visible { filter: drop-shadow(0 16px 24px rgba(0,0,0,.7)); animation: none; }
-.cf .fgem { position: absolute; width: 22%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; background: radial-gradient(circle, var(--gemc) 0%, transparent 60%); opacity: .7; z-index: 1; box-shadow: none !important; } /* Nov 11: rarity gem glows in its colour */
+.cf .fgem { position: absolute; width: 22%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; background: radial-gradient(circle, var(--gemc) 0%, transparent 60%); opacity: .8; z-index: 1; box-shadow: none !important; } /* Nov 11: rarity gem glows in its colour */
 .cf.r-White .fgem { --gemc: rgba(235,230,220,.45); } .cf.r-Green .fgem { --gemc: rgba(79,230,106,.85); } .cf.r-Blue .fgem { --gemc: rgba(74,160,255,.9); } .cf.r-Gold .fgem { --gemc: rgba(255,200,70,.9); }
 .cf .fsheen { position: absolute; inset: 0; pointer-events: none; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; background: linear-gradient(115deg, transparent 35%, rgba(255,235,170,.3) 48%, transparent 60%) no-repeat; background-size: 250% 100%; animation: fsheen 3.6s ease-in-out infinite; }
 @keyframes fsheen { 0% { background-position: 130% 0; } 60%, 100% { background-position: -40% 0; } }
@@ -317,7 +317,7 @@ svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
 @media (prefers-reduced-motion: reduce) { .cf.rf.r-Gold, .cf .fsheen { animation: none; } }
 .cf .fplq { position: absolute; display: grid; place-items: center; font-family: var(--cf-text, var(--f-ui)); font-size: 4.4cqw; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; color: var(--rt-dark); text-shadow: 0 .4cqw .8cqw #000; pointer-events: none; }
 .cf.rf .fpanel { color: #efe4cf; padding: 3.5cqw 4cqw 2.5cqw; }
-.cf.rf .fname { color: #f6e9cf; text-shadow: 0 .5cqw 1cqw #000; }
+.cf.rf .fname { color: var(--rt-dark, #f6e9cf); text-shadow: 0 .5cqw 1cqw #000; } /* Nov 11: the name takes the rarity colour, like the type plaque */
 .cf.rf .ftext b { color: #ffcf7a; }
 .hand { --hcw: min(218px, max(150px, calc((100vh - 610px) / 1.5))); height: calc(var(--hcw) * 1.5 + 30px); box-sizing: border-box; } /* the tray keeps one height, empty or full */
 .hand > .hint { align-self: center; }
