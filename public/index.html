@@ -1029,6 +1029,7 @@ body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 16px; text-sha
 #scrCombat.bf.hud3 .stage .uplate .bar::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(var(--n, 12px) - 1px), rgba(0,0,0,.85) calc(var(--n, 12px) - 1px) var(--n, 12px)); pointer-events: none; }
 #scrCombat.bf.hud3 .stage .uplate .bar i { position: absolute !important; left: 0 !important; top: 0 !important; bottom: 0 !important; height: auto !important; width: var(--hpw, 100%) !important; background: linear-gradient(#c94a3f, #8f2a24) !important; border-radius: 0 !important; }
 #scrCombat.bf.hud3 .stage .uplate .bar span { display: none !important; }
+body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !important; } /* heroes' bars drain right to left like the frame up top (the old layout mirrored them) */
 #scrCombat.bf.hud3 .stage .uplate .tags { order: 2; display: flex !important; flex-wrap: wrap; justify-content: center !important; gap: 3px !important; width: 150px; margin: 0 !important; }
 #scrCombat.bf.hud3 .stage .uplate .tags .sico { width: 22px !important; height: 22px !important; }
 #scrCombat.bf.hud3 .stage .uintent { bottom: calc(var(--figh, var(--fh)) + var(--ih, 40px) + 10px) !important; right: auto !important; left: 0 !important; transform: translate(-50%, var(--cy, 0px)); }
@@ -7066,8 +7067,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794448763518';
-  const CB_BUILD = '6db4ceb009'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794448820242';
+  const CB_BUILD = '15572da71f'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
