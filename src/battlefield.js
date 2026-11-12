@@ -328,6 +328,15 @@ function placeIntents(stage, foes, s) {
     const sp = spots[best.k]; it.style.left = sp.left; it.style.right = sp.right; it.style.bottom = sp.bottom; it.style.setProperty('--jc', sp.jc);
     for (const c of it.querySelectorAll('.intent')) obst.push({ u: null, r: R(c), w: 3 });
   }
+  // hud3: a tall fighter (the act boss) would push its HP bar and intent off the top of the field or under the turn order; slide them down onto the figure instead
+  if (document.getElementById('scrCombat').classList.contains('hud3')) {
+    const lim = Math.max(sr.top + 8, ord ? R(ord).bottom + 6 : sr.top + 96);
+    for (const u of document.querySelectorAll('#scrCombat .stage .unit')) {
+      u.style.setProperty('--cy', '0px'); const pl = u.querySelector('.uplate'), it = u.querySelector('.uintent'); if (!pl) continue;
+      let top = R(pl).top; if (it && it.textContent.trim()) top = Math.min(top, R(it).top);
+      if (top < lim) u.style.setProperty('--cy', Math.ceil(lim - top) + 'px');
+    }
+  }
 }
 let ro = null;
 let again = null;

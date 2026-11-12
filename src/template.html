@@ -1012,7 +1012,7 @@ body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 16px; text-sha
 #pframe .tags { display: flex; gap: 4px; flex-wrap: wrap; } #pframe .tags .sico.block { display: none; }
 /* compact notched HP bars over every unit; exact numbers on hover */
 #scrCombat.bf.hud3 .stage .unit > .uhead { display: none !important; }
-#scrCombat.bf.hud3 .stage .uplate { left: 50% !important; right: auto !important; bottom: calc(var(--figh, var(--fh)) + 4px) !important; transform: translateX(-50%); width: 150px !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; display: flex !important; flex-direction: column; align-items: center; gap: 5px; z-index: 4; filter: drop-shadow(0 1px 2px rgba(0,0,0,.9)); }
+#scrCombat.bf.hud3 .stage .uplate { left: 50% !important; right: auto !important; bottom: calc(var(--figh, var(--fh)) + 4px) !important; transform: translate(-50%, var(--cy, 0px)); width: 150px !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; display: flex !important; flex-direction: column; align-items: center; gap: 5px; z-index: 4; filter: drop-shadow(0 1px 2px rgba(0,0,0,.9)); }
 #scrCombat.bf.hud3 .stage .uplate .uname, #scrCombat.bf.hud3 .stage .uplate .deckbtn, #scrCombat.bf.hud3 .stage #playerSlot .unit.me .uplate .tags { display: none !important; }
 #scrCombat.bf.hud3 .stage .uplate .bar { order: 1; position: relative; width: 124px !important; height: 10px !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; background: #0c0a09 !important; border: 1px solid #000 !important; border-image: none !important; box-shadow: 0 0 0 1px #4e4741 !important; border-radius: 0 !important; }
 #scrCombat.bf.hud3 .stage .uplate .bar::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(var(--n, 12px) - 1px), rgba(0,0,0,.85) calc(var(--n, 12px) - 1px) var(--n, 12px)); pointer-events: none; }
@@ -1020,7 +1020,9 @@ body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 16px; text-sha
 #scrCombat.bf.hud3 .stage .uplate .bar span { display: none !important; }
 #scrCombat.bf.hud3 .stage .uplate .tags { order: 2; display: flex !important; flex-wrap: wrap; justify-content: center !important; gap: 3px !important; width: 150px; margin: 0 !important; }
 #scrCombat.bf.hud3 .stage .uplate .tags .sico { width: 22px !important; height: 22px !important; }
-#scrCombat.bf.hud3 .stage .uintent { bottom: calc(var(--figh, var(--fh)) + var(--ih, 40px) + 10px) !important; right: auto !important; left: 0; transform: translateX(-50%); }
+#scrCombat.bf.hud3 .stage .uintent { bottom: calc(var(--figh, var(--fh)) + var(--ih, 40px) + 10px) !important; right: auto !important; left: 0 !important; transform: translate(-50%, var(--cy, 0px)); }
+#scrCombat.hud3 .playedpeek { top: 96px; }
+.playedpeek.foeplay .ppcap b { color: #e8a090; }
 </style>
 
 <div class="wrap">
@@ -3026,7 +3028,12 @@ body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 16px; text-sha
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
   async function pump() {
     if (busy) return; busy = true; const me = cb; // a pump belongs to one fight: if the fight is replaced or left mid-turn (training dummy reset/leave), it stops
-    while (cb && cb === me && cb.phase === 'enemy' && !cb.over) { render(); await sleep(settings.fast ? 140 : 400); if (cb !== me) return; cb.enemyStep(); render(true); }
+    while (cb && cb === me && cb.phase === 'enemy' && !cb.over) {
+      render(); const e = cb.current, c = e && !e.isPlayer && e.hp > 0 && e.plan.length ? e.hand.find(x => x.uid === e.plan[0]) : null;
+      if (c && !settings.fast) { showFoePlay(e, c); await sleep(800); } else await sleep(settings.fast ? 140 : 400); // Nov 11: you see the enemy's card first...
+      if (cb !== me) return; cb.enemyStep(); render(true);
+      if (c && !settings.fast) await sleep(750); // ...then its damage numbers land on you before the next card
+    }
     if (cb !== me) return;
     busy = false; render();
     if (cb && cb.over) combatOver();
@@ -3192,6 +3199,13 @@ body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 16px; text-sha
   }
   // the card someone else just played, shown big in the middle of the field for a moment
   let playedTimer = null;
+  function showFoePlay(e, c) {
+    const el = $('playedPeek'); if (!el || !cb) return; let box = '';
+    try { box = cardBox(enemyCardD(c, e.key), 170); } catch (er) {}
+    el.innerHTML = `<div class="ppcap"><b>${esc(e.name)}</b> plays</div>${box || `<div class="cardrow">${esc(c.name)}</div>`}`;
+    el.classList.add('foeplay'); el.hidden = false; el.classList.remove('out'); fitCards(el); clearTimeout(playedTimer);
+    playedTimer = setTimeout(() => { el.classList.add('out'); playedTimer = setTimeout(() => { el.hidden = true; el.classList.remove('foeplay'); }, 350); }, 1500);
+  }
   function showPlayed(who, c, tgt) {
     const el = $('playedPeek'); if (!el || !cb) return; const d = cb.card(c);
     el.innerHTML = `<div class="ppcap"><b style="color:${CC[who.cls] || 'var(--text)'}">${esc(who.name)}</b> plays${tgt && tgt !== who ? ` on <b>${esc(tgt.name)}</b>` : ''}</div>${cardBox(d, 170) || `<div class="cardrow">${esc(d.name)}</div>`}`;

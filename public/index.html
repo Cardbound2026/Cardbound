@@ -1016,7 +1016,7 @@ body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 16px; text-sha
 #pframe .tags { display: flex; gap: 4px; flex-wrap: wrap; } #pframe .tags .sico.block { display: none; }
 /* compact notched HP bars over every unit; exact numbers on hover */
 #scrCombat.bf.hud3 .stage .unit > .uhead { display: none !important; }
-#scrCombat.bf.hud3 .stage .uplate { left: 50% !important; right: auto !important; bottom: calc(var(--figh, var(--fh)) + 4px) !important; transform: translateX(-50%); width: 150px !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; display: flex !important; flex-direction: column; align-items: center; gap: 5px; z-index: 4; filter: drop-shadow(0 1px 2px rgba(0,0,0,.9)); }
+#scrCombat.bf.hud3 .stage .uplate { left: 50% !important; right: auto !important; bottom: calc(var(--figh, var(--fh)) + 4px) !important; transform: translate(-50%, var(--cy, 0px)); width: 150px !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; display: flex !important; flex-direction: column; align-items: center; gap: 5px; z-index: 4; filter: drop-shadow(0 1px 2px rgba(0,0,0,.9)); }
 #scrCombat.bf.hud3 .stage .uplate .uname, #scrCombat.bf.hud3 .stage .uplate .deckbtn, #scrCombat.bf.hud3 .stage #playerSlot .unit.me .uplate .tags { display: none !important; }
 #scrCombat.bf.hud3 .stage .uplate .bar { order: 1; position: relative; width: 124px !important; height: 10px !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; background: #0c0a09 !important; border: 1px solid #000 !important; border-image: none !important; box-shadow: 0 0 0 1px #4e4741 !important; border-radius: 0 !important; }
 #scrCombat.bf.hud3 .stage .uplate .bar::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(var(--n, 12px) - 1px), rgba(0,0,0,.85) calc(var(--n, 12px) - 1px) var(--n, 12px)); pointer-events: none; }
@@ -1024,7 +1024,9 @@ body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 16px; text-sha
 #scrCombat.bf.hud3 .stage .uplate .bar span { display: none !important; }
 #scrCombat.bf.hud3 .stage .uplate .tags { order: 2; display: flex !important; flex-wrap: wrap; justify-content: center !important; gap: 3px !important; width: 150px; margin: 0 !important; }
 #scrCombat.bf.hud3 .stage .uplate .tags .sico { width: 22px !important; height: 22px !important; }
-#scrCombat.bf.hud3 .stage .uintent { bottom: calc(var(--figh, var(--fh)) + var(--ih, 40px) + 10px) !important; right: auto !important; left: 0; transform: translateX(-50%); }
+#scrCombat.bf.hud3 .stage .uintent { bottom: calc(var(--figh, var(--fh)) + var(--ih, 40px) + 10px) !important; right: auto !important; left: 0 !important; transform: translate(-50%, var(--cy, 0px)); }
+#scrCombat.hud3 .playedpeek { top: 96px; }
+.playedpeek.foeplay .ppcap b { color: #e8a090; }
 </style>
 </head>
 <body>
@@ -7057,8 +7059,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794447138873';
-  const CB_BUILD = '39b09676d3'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794447255612';
+  const CB_BUILD = '54b722d32d'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8164,6 +8166,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-11', items: [
+      ['Combat', "Enemy turns slow down a touch: each card the enemy plays is shown big in the middle of the field first, then its hit lands and you see the damage numbers on your hero before the next card. Fast mode in Settings keeps the old speed."],
+      ['Fix', "A tall fighter like the act boss no longer pushes its HP bar and intent off the top of the screen: they slide down onto the figure instead."],
       ['Map', "Every node you've cleared now carries a big red skull, so the road you've walked is easy to read. When you draw a route, the ring under each planned node turns the route's colour instead of getting a second circle."],
       ['UI', "Status tooltips in fights now always sit in front of everything, and drop below the icon when there's no room above it."],
       ['UI', "Your block shield always sits at the end of your HP bar in the top-left frame (greyed out at 0)."],
@@ -12014,6 +12018,15 @@ function placeIntents(stage, foes, s) {
     const sp = spots[best.k]; it.style.left = sp.left; it.style.right = sp.right; it.style.bottom = sp.bottom; it.style.setProperty('--jc', sp.jc);
     for (const c of it.querySelectorAll('.intent')) obst.push({ u: null, r: R(c), w: 3 });
   }
+  // hud3: a tall fighter (the act boss) would push its HP bar and intent off the top of the field or under the turn order; slide them down onto the figure instead
+  if (document.getElementById('scrCombat').classList.contains('hud3')) {
+    const lim = Math.max(sr.top + 8, ord ? R(ord).bottom + 6 : sr.top + 96);
+    for (const u of document.querySelectorAll('#scrCombat .stage .unit')) {
+      u.style.setProperty('--cy', '0px'); const pl = u.querySelector('.uplate'), it = u.querySelector('.uintent'); if (!pl) continue;
+      let top = R(pl).top; if (it && it.textContent.trim()) top = Math.min(top, R(it).top);
+      if (top < lim) u.style.setProperty('--cy', Math.ceil(lim - top) + 'px');
+    }
+  }
 }
 let ro = null;
 let again = null;
@@ -13825,7 +13838,12 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
   async function pump() {
     if (busy) return; busy = true; const me = cb; // a pump belongs to one fight: if the fight is replaced or left mid-turn (training dummy reset/leave), it stops
-    while (cb && cb === me && cb.phase === 'enemy' && !cb.over) { render(); await sleep(settings.fast ? 140 : 400); if (cb !== me) return; cb.enemyStep(); render(true); }
+    while (cb && cb === me && cb.phase === 'enemy' && !cb.over) {
+      render(); const e = cb.current, c = e && !e.isPlayer && e.hp > 0 && e.plan.length ? e.hand.find(x => x.uid === e.plan[0]) : null;
+      if (c && !settings.fast) { showFoePlay(e, c); await sleep(800); } else await sleep(settings.fast ? 140 : 400); // Nov 11: you see the enemy's card first...
+      if (cb !== me) return; cb.enemyStep(); render(true);
+      if (c && !settings.fast) await sleep(750); // ...then its damage numbers land on you before the next card
+    }
     if (cb !== me) return;
     busy = false; render();
     if (cb && cb.over) combatOver();
@@ -13991,6 +14009,13 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   }
   // the card someone else just played, shown big in the middle of the field for a moment
   let playedTimer = null;
+  function showFoePlay(e, c) {
+    const el = $('playedPeek'); if (!el || !cb) return; let box = '';
+    try { box = cardBox(enemyCardD(c, e.key), 170); } catch (er) {}
+    el.innerHTML = `<div class="ppcap"><b>${esc(e.name)}</b> plays</div>${box || `<div class="cardrow">${esc(c.name)}</div>`}`;
+    el.classList.add('foeplay'); el.hidden = false; el.classList.remove('out'); fitCards(el); clearTimeout(playedTimer);
+    playedTimer = setTimeout(() => { el.classList.add('out'); playedTimer = setTimeout(() => { el.hidden = true; el.classList.remove('foeplay'); }, 350); }, 1500);
+  }
   function showPlayed(who, c, tgt) {
     const el = $('playedPeek'); if (!el || !cb) return; const d = cb.card(c);
     el.innerHTML = `<div class="ppcap"><b style="color:${CC[who.cls] || 'var(--text)'}">${esc(who.name)}</b> plays${tgt && tgt !== who ? ` on <b>${esc(tgt.name)}</b>` : ''}</div>${cardBox(d, 170) || `<div class="cardrow">${esc(d.name)}</div>`}`;
