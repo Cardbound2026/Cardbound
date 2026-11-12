@@ -7074,8 +7074,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794449359761';
-  const CB_BUILD = 'e45c2d487a'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794450523636';
+  const CB_BUILD = 'b75ff80295'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8181,6 +8181,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-11', items: [
+      ['Art', "Every map now has painted pixel art. The Cinder Reach, Rimewatch, Tanglewild, Shattered Spire and Hollow Crypts each get a run map seen from above (with their volcano fortress, glacier keep, thorn tree, floating tower or crypt cathedral behind the boss) and their own fight backdrops: four road scenes that bring the landmark closer the further you go, and a boss scene."],
       ['UI', "The turn order is 30% bigger, and your own portrait wears a ring in your class colour so you can always spot yourself in a co-op fight."],
       ['Art', "The mana in the orb is a much deeper blue now, with slow drifting motes and swirls so it reads as liquid."],
       ['Map', "The Broken March map is a little shorter and wider, and the node grid starts lower: the boss now stands in front of the castle gate and the last rows sit on the open ground in front of it instead of on the castle."],
@@ -11098,7 +11099,8 @@ async function exportTravelPack(){
 // decorate(el, run) is called after the map SVG is written into a scroll box (the map screen and the Map button in a fight).
 // TO REMOVE: delete this file, its line in build.js and the two CB_MAPART calls in src/template.html.
 window.CB_MAPART = (function () {
-  const ART = { physical: { src: 'img/map/physical.webp', w: 1040 } };   // background drawn at w CSS px wide, centred on the map
+  const ART = {};   // background drawn at w CSS px wide, centred on the map (Nov 11: every map has one now, made by tools/mapart/compose_map.py)
+  for (const k of ['physical', 'fire', 'frost', 'nature', 'arcane', 'shadow']) ART[k] = { src: 'img/map/' + k + '.webp', w: 1040 };
   const css = document.createElement('style');
   css.textContent = `.mapart { position: relative; margin: 0 auto; background-repeat: no-repeat; background-position: center top; image-rendering: pixelated; }
     .mapart > svg { position: relative; z-index: 1; }
@@ -11898,7 +11900,9 @@ const BF = { on: true, key: '', w: 0, h: 0 }; // Nov 2: the side-by-side classic
 // Painted pixel-art backdrops (Nov 11): the Broken March has ten road scenes and a boss scene, made with PixelLab
 // (public/img/bg/physical_NN.webp). The burned castle at the end of the road gets closer the further up the map the fight is,
 // and the boss is fought at its gate. Maps without art (and fights off the map) keep the painted scenery above.
-const BGART = { physical: { n: 10, boss: 'img/bg/physical_boss.webp', at: (i) => 'img/bg/physical_' + String(i).padStart(2, '0') + '.webp' } };
+// Nov 11: the other maps got four road scenes and a boss scene each (img/bg/<map>_01..04.webp, <map>_boss.webp), the landmark closer every scene.
+const BG_SETS = { physical: 10, fire: 4, frost: 4, nature: 4, arcane: 4, shadow: 4 }, BGART = {};
+for (const [k, n] of Object.entries(BG_SETS)) BGART[k] = { n, boss: 'img/bg/' + k + '_boss.webp', at: (i) => 'img/bg/' + k + '_' + String(i).padStart(2, '0') + '.webp' };
 const bgImgs = {};
 function bgFor(map, row) {
   const A = BGART[map]; if (!A || row == null) return null;

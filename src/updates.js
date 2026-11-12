@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-11', items: [
+      ['Art', "Every map now has painted pixel art. The Cinder Reach, Rimewatch, Tanglewild, Shattered Spire and Hollow Crypts each get a run map seen from above (with their volcano fortress, glacier keep, thorn tree, floating tower or crypt cathedral behind the boss) and their own fight backdrops: four road scenes that bring the landmark closer the further you go, and a boss scene."],
       ['UI', "The turn order is 30% bigger, and your own portrait wears a ring in your class colour so you can always spot yourself in a co-op fight."],
       ['Art', "The mana in the orb is a much deeper blue now, with slow drifting motes and swirls so it reads as liquid."],
       ['Map', "The Broken March map is a little shorter and wider, and the node grid starts lower: the boss now stands in front of the castle gate and the last rows sit on the open ground in front of it instead of on the castle."],

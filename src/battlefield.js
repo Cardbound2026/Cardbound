@@ -183,7 +183,9 @@ const BF = { on: true, key: '', w: 0, h: 0 }; // Nov 2: the side-by-side classic
 // Painted pixel-art backdrops (Nov 11): the Broken March has ten road scenes and a boss scene, made with PixelLab
 // (public/img/bg/physical_NN.webp). The burned castle at the end of the road gets closer the further up the map the fight is,
 // and the boss is fought at its gate. Maps without art (and fights off the map) keep the painted scenery above.
-const BGART = { physical: { n: 10, boss: 'img/bg/physical_boss.webp', at: (i) => 'img/bg/physical_' + String(i).padStart(2, '0') + '.webp' } };
+// Nov 11: the other maps got four road scenes and a boss scene each (img/bg/<map>_01..04.webp, <map>_boss.webp), the landmark closer every scene.
+const BG_SETS = { physical: 10, fire: 4, frost: 4, nature: 4, arcane: 4, shadow: 4 }, BGART = {};
+for (const [k, n] of Object.entries(BG_SETS)) BGART[k] = { n, boss: 'img/bg/' + k + '_boss.webp', at: (i) => 'img/bg/' + k + '_' + String(i).padStart(2, '0') + '.webp' };
 const bgImgs = {};
 function bgFor(map, row) {
   const A = BGART[map]; if (!A || row == null) return null;

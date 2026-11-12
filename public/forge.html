@@ -2491,7 +2491,8 @@ async function exportTravelPack(){
 // decorate(el, run) is called after the map SVG is written into a scroll box (the map screen and the Map button in a fight).
 // TO REMOVE: delete this file, its line in build.js and the two CB_MAPART calls in src/template.html.
 window.CB_MAPART = (function () {
-  const ART = { physical: { src: 'img/map/physical.webp', w: 1040 } };   // background drawn at w CSS px wide, centred on the map
+  const ART = {};   // background drawn at w CSS px wide, centred on the map (Nov 11: every map has one now, made by tools/mapart/compose_map.py)
+  for (const k of ['physical', 'fire', 'frost', 'nature', 'arcane', 'shadow']) ART[k] = { src: 'img/map/' + k + '.webp', w: 1040 };
   const css = document.createElement('style');
   css.textContent = `.mapart { position: relative; margin: 0 auto; background-repeat: no-repeat; background-position: center top; image-rendering: pixelated; }
     .mapart > svg { position: relative; z-index: 1; }
