@@ -196,7 +196,8 @@ svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
 .demon .dbar { width: 34px; height: 4px; background: #0b0a0c; border: 1px solid #00000088; border-radius: 2px; overflow: hidden; } .demon .dbar i { display: block; height: 100%; background: linear-gradient(90deg, #8a3f8f, #d07ad8); }
 .demon small { font-size: 9px; color: #f0b6ea; background: rgba(12,8,14,.8); padding: 0 4px; border-radius: 3px; white-space: nowrap; }
 .intent .itgt { font-weight: 600; font-size: 11px; margin-left: 2px; opacity: .95; }
-.order .lbl { color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-size: 11px; margin-right: 4px; }
+.order .lbl { color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-size: 11px; margin-right: 4px; display: flex; flex-direction: column; gap: 2px; }
+.order .lbl b { font-family: var(--f-display); font-weight: 400; text-transform: none; letter-spacing: .02em; font-size: 22px; color: var(--accent); line-height: 1; }
 .order .chip.now { border-color: var(--accent); color: var(--text); background: #3a2c17; }
 .order .chip.dead { text-decoration: line-through; opacity: .5; }
 .order .round { white-space: nowrap; margin-left: auto; font-family: var(--f-display); font-size: 22px; color: var(--accent); }
@@ -778,17 +779,12 @@ body.inkui:not(.ui-classic) .sheetbox .btn, body.inkui:not(.ui-classic) .modal .
 #scrCombat .field-panel::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: 8px; background: var(--battle-bg, radial-gradient(120% 90% at 50% 0%, #2a2219 0%, #15110d 70%)) center 30% / cover no-repeat; filter: brightness(.82) saturate(1.05); }
 #scrCombat .field-panel::after { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: 8px; pointer-events: none; background: radial-gradient(130% 100% at 50% 40%, transparent 45%, rgba(0,0,0,.55) 100%), linear-gradient(180deg, transparent 55%, rgba(8,6,4,.85) 100%); }
 #scrCombat[data-map="physical"] { --battle-bg: url(img/ui/bg_physical.webp); }
-/* the card table (Nov 11): your hand lies on a worn tavern table with a crimson card mat, iron-and-bone corner brackets, bone dice,
-   a coin purse and a skull candle (all PixelLab pixel art in img/ui/table/). Everything is a background layer of the hand tray,
+/* the card table (Nov 11): your hand lies on a worn tavern table with a crimson card mat (PixelLab pixel art in img/ui/table/;
+   the corner brackets, dice, coin purse and skull candle were taken off the same day). Everything is a background layer of the hand tray,
    so re-rendering the hand never touches it; the cards keep their own smooth rendering. */
 #scrCombat .hand { position: relative; border-radius: 10px; image-rendering: pixelated;
   --tc: clamp(64px, 7vw, 96px);
   background:
-    url(img/ui/table/c_tl.png) left 0 top 0 / var(--tc) no-repeat, url(img/ui/table/c_tr.png) right 0 top 0 / var(--tc) no-repeat,
-    url(img/ui/table/c_bl.png) left 0 bottom 0 / var(--tc) no-repeat, url(img/ui/table/c_br.png) right 0 bottom 0 / var(--tc) no-repeat,
-    url(img/ui/table/dice.png) left calc(var(--tc) * .9) bottom calc(var(--tc) * .55) / calc(var(--tc) * .62) auto no-repeat,
-    url(img/ui/table/coins.png) left calc(var(--tc) * 1.55) bottom calc(var(--tc) * .3) / calc(var(--tc) * .72) auto no-repeat,
-    url(img/ui/table/skull.png) right calc(var(--tc) * 1.05) bottom calc(var(--tc) * .35) / calc(var(--tc) * .9) auto no-repeat,
     url(img/ui/table/table.webp) center / cover no-repeat, #2a1a10;
   box-shadow: 0 -6px 18px rgba(0,0,0,.55), inset 0 0 0 2px rgba(0,0,0,.6), inset 0 0 40px rgba(0,0,0,.55); }
 #scrCombat .hand > * { image-rendering: auto; }
@@ -2299,6 +2295,7 @@ body #scrCombat.bf .endturn.btn.primary:disabled { filter: grayscale(.8) brightn
       ${profile && profile.chars[heroKey] && !onTitle ? `<button class="btn" id="mnGuide">Build guide: playstyles, decks, where to farm</button>` : ''}
       ${profile && profile.chars[heroKey] && !onTitle ? `<button class="btn" id="mnAch">Achievements and titles</button>` : ''}
       ${profile && profile.chars[heroKey] && !onTitle && !run && !cb ? `<button class="btn" id="mnTut">Tutorial: a tour of Emberwatch</button>` : ''}
+      ${run && cb && !$('scrCombat').hidden ? `<button class="btn" id="mnMap">View the map (M)</button>` : ''}
       ${inRun ? `<button class="btn" id="mnLeave">Leave run and return to town</button>` : ''}
       ${cb && cb.duel && !cb.over ? `<button class="btn" id="mnForfeit">Forfeit the duel</button>` : ''}
       ${cb && cb.duel && cb.over ? `<button class="btn" id="mnTown">Return to town</button>` : ''}
@@ -2318,6 +2315,7 @@ body #scrCombat.bf .endturn.btn.primary:disabled { filter: grayscale(.8) brightn
     </div>`);
     $('mClose').onclick = closeModal;
     $('mnGloss').onclick = () => openGlossary();
+    if ($('mnMap')) $('mnMap').onclick = () => { closeModal(); mapPeek(); };
     if ($('mnGuide')) $('mnGuide').onclick = () => openGuide();
     if ($('mnAch')) $('mnAch').onclick = () => openAchievements();
     if ($('mnTut')) $('mnTut').onclick = () => { closeModal(); tutStart(); };
@@ -3054,9 +3052,9 @@ body #scrCombat.bf .endturn.btn.primary:disabled { filter: grayscale(.8) brightn
     if (cb.round !== render.whereRound && typeof retrack === 'function') { render.whereRound = cb.round; try { retrack(); } catch (e) {} } // friends see the round/row we're on
     const p = hero(), party = cb.partySize > 1, wh = watchedHero(p);
     $('order').classList.toggle('raid', !!cb.raid && cb.partySize > 4); $('order').classList.toggle('many', cb.order.length > 5 && !(cb.raid && cb.partySize > 4));
-    $('order').innerHTML = `<span class="lbl">Turn<br>order</span>` + cb.order.map((id, i) => { const a = cb.actorById(id); const st = a.hp <= 0 ? 'dead' : cb.raid && a.isPlayer ? (cb.raidDone && cb.raidDone.has(a.id) ? 'done' : cb.phase === 'player' && !cb.over ? 'now' : '') : i === cb.turnIndex && !cb.over ? 'now' : i < cb.turnIndex ? 'done' : '';
+    $('order').innerHTML = `<span class="lbl"><b>Round ${cb.round}</b>Turn order</span>` + cb.order.map((id, i) => { const a = cb.actorById(id); const st = a.hp <= 0 ? 'dead' : cb.raid && a.isPlayer ? (cb.raidDone && cb.raidDone.has(a.id) ? 'done' : cb.phase === 'player' && !cb.over ? 'now' : '') : i === cb.turnIndex && !cb.over ? 'now' : i < cb.turnIndex ? 'done' : '';
       const dt = a.isPlayer && a.hp > 0 && a.demons && a.demons.length ? a.demons.map(dm => `<div class="otile demon ${st === 'done' ? 'done' : ''}" title="${esc(dm.name)} (${esc(a.name)}'s demon): acts at the end of ${esc(a.name)}'s turn. HP ${dm.hp}/${dm.maxHp}, ${dm.turns} turn${dm.turns > 1 ? 's' : ''} left."><div class="ofig">${demonFig(dm)}</div><div class="onm">${esc((CB.DEMONS[dm.key] || {}).short || dm.name)}</div><span class="oini">${dm.turns}t</span></div>`).join('') : '';
-      return `${i ? '<span class="osep" aria-hidden="true">&rsaquo;</span>' : ''}<div class="otile ${a.isPlayer ? 'hero' : 'foe'} ${st}" style="--oc:${a.isPlayer ? CC[a.cls] : '#e0b8a8'}" title="${esc(a.name)}: Initiative ${cb.initiative(a)}, HP ${a.hp}/${a.maxHp}"><span class="oini">${cb.initiative(a)}</span>${cb.raid && a.isPlayer && a.hp > 0 && cb.raidDone && cb.raidDone.has(a.id) ? '<span class="ock" title="Ended their turn">&#10003;</span>' : ''}<div class="ofig">${figure(a)}</div><div class="onm">${a.isPlayer && !party ? 'You' : a === p && cb.myMi != null ? 'You' : esc(a.name)}</div><div class="obar"><i style="width:${Math.max(0, 100 * a.hp / a.maxHp)}%"></i></div></div>${dt}`; }).join('') + `<span class="round">Round ${cb.round}</span>${run && run.over && cb.over ? '<button class="btn primary" id="btnCResults" style="padding:4px 12px">Results</button>' : run ? '<button class="pilebtn" id="btnCMap" title="Look at the map (M)">Map</button>' : ''}${cb.practice ? '<button class="pilebtn" id="btnCReset" title="Start a fresh fight">Reset</button><button class="pilebtn" id="btnCLeave">Leave</button>' : ''}`;
+      return `${i ? '<span class="osep" aria-hidden="true">&rsaquo;</span>' : ''}<div class="otile ${a.isPlayer ? 'hero' : 'foe'} ${st}" style="--oc:${a.isPlayer ? CC[a.cls] : '#e0b8a8'}" title="${esc(a.name)}: Initiative ${cb.initiative(a)}, HP ${a.hp}/${a.maxHp}"><span class="oini">${cb.initiative(a)}</span>${cb.raid && a.isPlayer && a.hp > 0 && cb.raidDone && cb.raidDone.has(a.id) ? '<span class="ock" title="Ended their turn">&#10003;</span>' : ''}<div class="ofig">${figure(a)}</div><div class="onm">${a.isPlayer && !party ? 'You' : a === p && cb.myMi != null ? 'You' : esc(a.name)}</div><div class="obar"><i style="width:${Math.max(0, 100 * a.hp / a.maxHp)}%"></i></div></div>${dt}`; }).join('') + `${run && run.over && cb.over ? '<button class="btn primary" id="btnCResults" style="padding:4px 12px">Results</button>' : ''}${cb.practice ? '<button class="pilebtn" id="btnCReset" title="Start a fresh fight">Reset</button><button class="pilebtn" id="btnCLeave">Leave</button>' : ''}`;
     const mine = cb.duel ? [p] : cb.players, foes = cb.duel ? cb.players.filter(x => x !== p) : cb.enemies;
     { // one shared figure size for heroes and foes, picked from the busier side, so nobody is drawn at a different scale or jumps around mid-fight
       const hc = mine.length, fc = foes.length, hCols = hc <= 5 ? hc : Math.ceil(hc / 2), fCols = fc <= 4 ? fc : Math.ceil(fc / 2), rows = hc > 5 || fc > 4, n = Math.max(hCols, fCols);
