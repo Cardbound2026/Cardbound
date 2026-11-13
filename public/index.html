@@ -6198,7 +6198,9 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     return Object.assign({}, base, { ink: 'hero_' + heroKey_.toLowerCase(), trim: rc('chest') || '#9c968a', helm: R.helm ? (base.helm || 'helm') : base.helm || null, helmC: rc('helm') || '#5a5f66', wpnC: rc('weapon') || '#9c968a', capeTrim: rc('cloak'), bootC: rc('boots'), hero: true });
   }
   // the training dummy: a straw scarecrow on a post, swaying a little
+  const DUMMY_IMG = Object.assign(new Image(), { src: 'img/mobs/dummy.png' }); // pixel-art training dummy (Nov 12)
   function drawScarecrow(g, cx, by, s, t) {
+    if (DUMMY_IMG.complete && DUMMY_IMG.naturalWidth) { const h = 86 * s, w = h * DUMMY_IMG.naturalWidth / DUMMY_IMG.naturalHeight; g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, 14 * s, 5 * s, 0, 0, Math.PI * 2); g.fill(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.drawImage(DUMMY_IMG, cx - w / 2, by - h + 3 * s, w, h); g.restore(); return; }
     if (window.CB_INK && CB_INK.scarecrow && CB_INK.scarecrow(g, cx, by, s, t)) return; // Gothic Ink art pack
     const sway = Math.sin(t / 900) * 1.2 * s;
     g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, 11 * s, 4 * s, 0, 0, Math.PI * 2); g.fill();
@@ -6233,6 +6235,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     return y - h;
   }
   function drawChar(g, cx, by, dir, step, pal, s, t) {
+    if (window.CB_HEROPUP && pal && !pal.forge && CB_HEROPUP.npc(g, pal, cx, by, dir, step, s, t)) return; // townsfolk are pixel puppets too (src/heropup.js)
     if (window.CB_FORGE && pal.forge && CB_FORGE.town(g, pal.forge.cls, pal.forge.gear, cx, by, dir, step, s, t, pal.forge.who)) return; // your hero wears its real gear (src/forge.js)
     if (window.CB_INK && pal.ink && CB_INK.town(g, pal.ink, cx, by, dir, step, s, t)) return; // Gothic Ink art pack; the drawn walker below otherwise
     const bob = step ? -1.5 * s : 0, sw = step === 1 ? 1 : step === 2 ? -1 : 0;
@@ -6338,7 +6341,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     // embers over the fire
     for (const e of TOWN.embers) { gx.fillStyle = `rgba(255,${150 + (e.life * 80 | 0)},70,${e.life})`; gx.fillRect(e.x * TS, e.y * TS, 2.5 * s, 2.5 * s); }
     // name tags over every head: townspeople always, and your own hero with your guild under the name
-    for (const n of NV) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.open === 'dummy' ? 52 : n.pal && n.pal.forge ? 80 : null);
+    for (const n of NV) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.open === 'dummy' ? 84 : window.CB_HEROPUP ? 98 : n.pal && n.pal.forge ? 80 : null);
     { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? 72 + MOUNT_RISE : 98, CBHub.titleOf(c, profile)); }
     // night: darken everything, then cut light pools around fires and the hero
     const dk = TOWN.dark, dg = dk.getContext('2d');
@@ -7085,8 +7088,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794540226340';
-  const CB_BUILD = 'b9a82fd154'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794540834582';
+  const CB_BUILD = '39c4a19600'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8192,6 +8195,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-12', items: [
+      ['Art', "The people of Emberwatch are pixel-art characters now too, each with their own face, hair and clothes for their trade, and the training dummies in the yard and in practice fights are new pixel art."],
       ['Feature', "Heroes are now pixel-art characters you make your own. When you create a hero you pick its skin, hair, hair colour, beard, eyes, eye colour, mouth and lips, and you can change them any time with the Mirror button in your hero window. Warriors are big and strong, Paladins sturdy, Mages slender, and Rogues and Warlocks share a slender female build."],
       ['Art', "What you wear now shows on your hero, in town and in fights: every helm, shoulders, chest, bracers, gloves, belt, pants and boots in plate, leather and cloth, with its own look for each of the six maps, plus cloaks, every kind of weapon and staff, shields and off-hand orbs. Heroes turn to face the way they walk in town, and swing, cast, guard and flinch in fights."],
       ['Art', "Enemy cards are getting paintings: every card a monster plays gets its own pixel illustration in the same style as your cards, starting with the Broken March. More arrive through the day."],
@@ -10902,6 +10906,7 @@ window.CB_PUPPET = (function () {
     const b = (Math.sin(p * TAU) + 1) / 2, breathe = (k) => { q[1].dy = -b * .9 * k; q[2].dy = q[4].dy = -b * .6 * k; q[0].sy = 1 + b * .012 * k; };
     if (anim === 'idle') { breathe(1); if (side) { q[2].r = .03 * s; q[4].r = -.03 * s; } return P; }
     const ready = (k) => { if (!side) return; q[2].r += -.45 * k; q[3].r += -.75 * k; P.wr += .55 * k; q[6].r += -.2 * k; q[7].r += .16 * k; q[8].r += .2 * k; q[9].r += .1 * k; q[0].r += .04 * k; P.dy += 1.2 * k; };   // the fighting stance
+    if (anim === 'sit') { breathe(1); if (side) { q[6].r = -1.2; q[7].r = 1.25; q[8].r = -1.2; q[9].r = 1.25; q[2].r = -.5; q[3].r = -.7; } else { q[6].sy = q[8].sy = .55; q[7].sy = q[9].sy = .7; } return P; }   // riding
     if (anim === 'ready') { breathe(1); ready(1); q[2].r += .03 * s; return P; }
     // the fight moves play once, in the side view: p runs 0..1
     const A = side ? 2 : 4, F = side ? 3 : 5;   // the acting arm (near arm in the side view)
@@ -10923,7 +10928,7 @@ window.CB_PUPPET = (function () {
     }
     return P;
   }
-  const CLIP = { ready: 1600, idle: 1600, walk: 760, attack: 560, aoe: 700, cast: 800, guard: 700, hit: 380, dead: 700 }; // ms per loop (or per play)
+  const CLIP = { sit: 1600, ready: 1600, idle: 1600, walk: 760, attack: 560, aoe: 700, cast: 800, guard: 700, hit: 380, dead: 700 }; // ms per loop (or per play)
   const ONCE = { attack: 1, aoe: 1, cast: 1, guard: 1, hit: 1, dead: 1 };
   // ---------- drawing: each part is drawn from the look's strip with its parents' moves applied
   const work = canvas(S * 2, S * 2), wg = work.getContext('2d');
@@ -10968,7 +10973,7 @@ window.CB_PUPPET = (function () {
     }
     return out;
   }
-  return { armsOf, draw, pose, compose, defaults, gearOf, len: (a) => CLIP[a] || 1000, once: (a) => !!ONCE[a], loads: () => loads, S, SLOTS, SKIN, HAIRCOL, EYECOL, LIPCOL, EYES, MOUTHS, HAIR: H.styles, BEARDS: H.beards, BODY,
+  return { img, armsOf, draw, pose, compose, defaults, gearOf, len: (a) => CLIP[a] || 1000, once: (a) => !!ONCE[a], loads: () => loads, S, SLOTS, SKIN, HAIRCOL, EYECOL, LIPCOL, EYES, MOUTHS, HAIR: H.styles, BEARDS: H.beards, BODY,
     ready: (look, view) => !!compose(look, view === 'w' ? 'e' : view) };
 })();
 
@@ -11032,6 +11037,37 @@ window.CB_PUPPET = (function () {
       return P.draw(g, L, v, step ? 'walk' : 'idle', t, cx, by + 2 * s, 96 * s / 118);
     };
   }
+  // ---------- townsfolk: each gets a look of its own from its colours (always the same one), dressed for its trade
+  const NPC = new WeakMap(), DIRS = { down: 's', up: 'n', left: 'w', right: 'e' };
+  const hash = (str) => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+  const lum = (hex) => { const m = /^#?([0-9a-f]{6})/i.exec(hex || ''); if (!m) return 128; const n = parseInt(m[1], 16); return ((n >> 16) * .3 + ((n >> 8) & 255) * .59 + (n & 255) * .11); };
+  function npcLook(pal) {
+    let L = NPC.get(pal); if (L) return L; const h = hash(JSON.stringify(pal)), pick = (arr, k) => arr[(h >>> k) % arr.length];
+    const armed = /sword|spear|axe|halberd|mace|blade/.test(pal.weapon || ''), guard = pal.helm === 'helm' || armed, body = guard ? pick(['warrior', 'paladin'], 3) : pick(['paladin', 'mage', 'female', 'female', 'mage', 'warrior'], 3);
+    const skinL = lum(pal.skin), skin = skinL > 190 ? 0 : skinL > 165 ? 1 : skinL > 140 ? 2 : skinL > 115 ? 3 : skinL > 85 ? 4 : 5, hl = lum(pal.hair);
+    const set = guard ? 'physical_Plate' : pick(['physical_Cloth', 'physical_Leather', 'nature_Cloth', 'physical_Cloth', 'fire_Cloth', 'frost_Cloth', 'nature_Leather', 'arcane_Cloth', 'physical_Leather', 'shadow_Cloth'], 7);
+    const gear = { Chest: set, Pants: set, Boots: set, Belt: set }; if (guard) Object.assign(gear, { Shoulders: set, Gloves: set, Bracers: set }, pal.helm === 'helm' ? { Helm: set } : {}); else if ((h >>> 11) % 3 === 0) gear.Shoulders = set; if (pal.helm === 'hood') gear.Helm = /Cloth/.test(set) ? set : 'physical_Cloth'; else if (pal.helm === 'cap') gear.Helm = /Leather/.test(set) ? set : 'physical_Leather';
+    L = { body, skin, eyes: (h >>> 5) % P.EYES, eyeCol: (h >>> 9) % 4, mouth: (h >>> 13) % P.MOUTHS, lipCol: body === 'female' ? (h >>> 15) % 3 : 0, hair: pal.helm === 'helm' ? 'short' : pick(P.HAIR, 17), hairCol: hl > 200 ? 5 : hl > 150 ? 3 : hl > 110 ? 6 : hl > 70 ? 2 : (h >>> 19) % 2, beard: body !== 'female' && (h >>> 21) % 3 === 0 ? pick(P.BEARDS, 23) : null, gear };
+    if (pal.helm === 'helm') L.weapon = ['sword1h', 0], L.off = ['kite', 0]; else if ((h >>> 25) % 5 === 0) L.cloak = (h >>> 27) % 4;
+    NPC.set(pal, L); return L;
+  }
+  function npc(g, pal, cx, by, dir, step, s, t) {
+    const L = npcLook(pal), v = DIRS[dir] || 's'; if (!P.ready(L, v)) return false;
+    g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, 15 * s, 5 * s, 0, 0, Math.PI * 2); g.fill(); g.restore();
+    return P.draw(g, L, v, step ? 'walk' : 'idle', t + (hash(L.body + L.hair) % 1500), cx, by + 2 * s, 96 * s / 118);
+  }
+  // ---------- riding: the pixel horse (img/hero/horse: rows facing the camera, sideways, away; the first cell stands, the rest walk)
+  const HORSE = { cell: 136, frames: 6, k: 1.02, foot: { s: 118, e: 112, n: 118 }, seat: { s: [0, -44], e: [-4, -40], n: [0, -46] } };   // seat: where the rider's feet line sits, from the horse's feet, in horse pixels
+  function ride(g, look, cx, by, dir, moving, s, t) {
+    const im = P.img('horse'), v = DIRS[dir] || 's', hv = v === 'w' ? 'e' : v; if (!im || !P.ready(look, v)) return false;
+    const row = { s: 0, e: 1, n: 2 }[hv], fr = moving ? 1 + Math.floor(t / 105) % HORSE.frames : 0, k = HORSE.k * s, C = HORSE.cell, bob = moving ? Math.round(Math.sin(t / 105 * Math.PI) * 1.2 * s) : 0;
+    const horse = () => { g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.translate(cx, by); if (v === 'w') g.scale(-1, 1); g.drawImage(im, fr * C, row * C, C, C, -C / 2 * k, -HORSE.foot[hv] * k, C * k, C * k); g.restore(); };
+    const seat = HORSE.seat[hv], rx = cx + seat[0] * k * (v === 'w' ? -1 : 1), ry = by + seat[1] * k + bob, sc = 96 * s / 118;
+    const rider = (clip) => { g.save(); if (clip) { g.beginPath(); g.rect(cx - 80 * s, by - 260 * s, 160 * s, 260 * s + (ry - by) - 30 * sc); g.clip(); } P.draw(g, look, v, 'sit', t, rx, ry + (v === 'e' || v === 'w' ? 30 * sc : 22 * sc), sc); g.restore(); };
+    g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, (hv === 'e' ? 34 : 18) * s, 7 * s, 0, 0, Math.PI * 2); g.fill(); g.restore();
+    if (hv === 's') { rider(false); horse(); } else if (hv === 'n') { horse(); rider(true); } else { horse(); rider(false); }
+    return true;
+  }
   // ---------- the appearance picker (character creation, and the mirror in the hero window)
   const NAMES = { skin: ['Fair', 'Light', 'Tan', 'Brown', 'Dark', 'Deep'], eyes: ['Round', 'Narrow', 'Wide', 'Lashes', 'Stern'], mouth: ['Plain', 'Full', 'Smirk', 'Small'],
     eyeCol: ['Brown', 'Blue', 'Green', 'Grey', 'Amber', 'Red', 'Violet'], lipCol: ['Natural', 'Red', 'Wine', 'Plum', 'Black'], hairCol: ['Black', 'Brown', 'Chestnut', 'Blond', 'Red', 'White', 'Grey', 'Blue', 'Violet', 'Green'] };
@@ -11057,7 +11093,7 @@ window.CB_PUPPET = (function () {
     const get = () => { const o = {}; for (const k of ['skin', 'eyes', 'eyeCol', 'mouth', 'lipCol', 'hair', 'hairCol', 'beard']) o[k] = L[k] == null ? null : L[k]; return o; };
     paint(); return { get, wear: (gear) => { Object.assign(L, { gear: P.gearOf(gear) }, P.armsOf(gear)); paint(); } };
   }
-  window.CB_HEROPUP = { html, lookOf, appOf, picker, fig: (id, cls, gear, opt) => html(id, lookOf(opt && opt.who || id, cls, gear), opt) };
+  window.CB_HEROPUP = { html, lookOf, appOf, picker, npc, npcLook, HORSE, ride: (g, pal, cx, by, dir, moving, s, t) => ride(g, pal && pal.forge ? lookOf(pal.forge.who || 'me', pal.forge.cls, pal.forge.gear) : npcLook(pal || {}), cx, by, dir, moving, s, t), fig: (id, cls, gear, opt) => html(id, lookOf(opt && opt.who || id, cls, gear), opt) };
 })();
 
   // ---------- Fight effects (Nov 2): ink-style hit effects, spell projectiles and the move each hero makes, all driven by the engine's events.
@@ -13411,6 +13447,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   }
   // a rider and mount, drawn in the right order (the town calls this instead of drawChar while mounted)
   function drawRider(g, cx, by, dir, phase, pal, s, t, kind, blanket) {
+    if (window.CB_HEROPUP && CB_HEROPUP.ride(g, pal, cx, by, dir, !!phase, s, t)) return; // Nov 12: the pixel horse and rider (src/heropup.js)
     drawMount(g, cx, by, dir, phase, s, 'back', kind, blanket);
     drawChar(g, cx, by - MOUNT_RISE * s, dir, 0, pal, s, t);
     drawMount(g, cx, by, dir, phase, s, 'front', kind, blanket);
@@ -14228,9 +14265,10 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     $('mirOk').onclick = () => { c.app = pk.get(); save(); closeModal(); document.querySelectorAll('.dpup').forEach(d => { const f = d.querySelector('.pupfig'); if (f) f.outerHTML = CB_HEROPUP.html('doll' + Date.now(), CB_HEROPUP.lookOf({ app: c.app }, c.cls, c.gear), { view: 's', s: 1 }); }); toast('Your new look is saved.'); };
   }
   document.addEventListener('click', (ev) => { if (ev.target.closest && ev.target.closest('[data-mirror]')) openMirror(); });
-  window.__startDummy = () => startDummy(); // for automated checks
+  window.__startDummy = () => startDummy(); window.__npcs = () => NPCS.map(n => [n.id, n.x, n.y]); window.__tp = (x, y) => { P.x = x; P.y = y; P.mv = null; P.path = []; }; // for automated checks
   window.__cbActor = (id) => (cb ? cb.actorById(id) : null); // pixel monsters check HP for a boss's phase change
   function figure(a, unit) {
+    if (!a.isPlayer && a.key === 'training_dummy') return `<img class="inkfig pxhero" src="img/mobs/dummy.png" style="--s:1.05" alt="" draggable="false">`; // pixel-art training dummy
     if (a.isPlayer && window.CB_HEROPUP && window.CB_FORGE) return CB_FORGE.figureHtml(a); // Nov 12: pixel-art hero puppets (src/heropup.js)
     if (unit && a.isPlayer && window.CB_FORGE && a.look && !(window.CB_INK && CB_INK.pxHero && CB_INK.pxHero(a.cls))) return CB_FORGE.figureHtml(a, window.CB_INK ? CB_INK.figure(a) || '' : ''); // live sprite from the gear the hero wears (src/forge.js)
     if (window.CB_MOBS && !settings.classicFoes) { const px = CB_MOBS.figure(a, unit); if (px) return px; } // Nov 10: animated pixel monsters (src/mobsprites.js)

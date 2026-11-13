@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-12', items: [
+      ['Art', "The people of Emberwatch are pixel-art characters now too, each with their own face, hair and clothes for their trade, and the training dummies in the yard and in practice fights are new pixel art."],
       ['Feature', "Heroes are now pixel-art characters you make your own. When you create a hero you pick its skin, hair, hair colour, beard, eyes, eye colour, mouth and lips, and you can change them any time with the Mirror button in your hero window. Warriors are big and strong, Paladins sturdy, Mages slender, and Rogues and Warlocks share a slender female build."],
       ['Art', "What you wear now shows on your hero, in town and in fights: every helm, shoulders, chest, bracers, gloves, belt, pants and boots in plate, leather and cloth, with its own look for each of the six maps, plus cloaks, every kind of weapon and staff, shields and off-hand orbs. Heroes turn to face the way they walk in town, and swing, cast, guard and flinch in fights."],
       ['Art', "Enemy cards are getting paintings: every card a monster plays gets its own pixel illustration in the same style as your cards, starting with the Broken March. More arrive through the day."],

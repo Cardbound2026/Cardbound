@@ -71,6 +71,7 @@
   }
   // a rider and mount, drawn in the right order (the town calls this instead of drawChar while mounted)
   function drawRider(g, cx, by, dir, phase, pal, s, t, kind, blanket) {
+    if (window.CB_HEROPUP && CB_HEROPUP.ride(g, pal, cx, by, dir, !!phase, s, t)) return; // Nov 12: the pixel horse and rider (src/heropup.js)
     drawMount(g, cx, by, dir, phase, s, 'back', kind, blanket);
     drawChar(g, cx, by - MOUNT_RISE * s, dir, 0, pal, s, t);
     drawMount(g, cx, by, dir, phase, s, 'front', kind, blanket);

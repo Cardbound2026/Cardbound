@@ -104,6 +104,7 @@ window.CB_PUPPET = (function () {
     const b = (Math.sin(p * TAU) + 1) / 2, breathe = (k) => { q[1].dy = -b * .9 * k; q[2].dy = q[4].dy = -b * .6 * k; q[0].sy = 1 + b * .012 * k; };
     if (anim === 'idle') { breathe(1); if (side) { q[2].r = .03 * s; q[4].r = -.03 * s; } return P; }
     const ready = (k) => { if (!side) return; q[2].r += -.45 * k; q[3].r += -.75 * k; P.wr += .55 * k; q[6].r += -.2 * k; q[7].r += .16 * k; q[8].r += .2 * k; q[9].r += .1 * k; q[0].r += .04 * k; P.dy += 1.2 * k; };   // the fighting stance
+    if (anim === 'sit') { breathe(1); if (side) { q[6].r = -1.2; q[7].r = 1.25; q[8].r = -1.2; q[9].r = 1.25; q[2].r = -.5; q[3].r = -.7; } else { q[6].sy = q[8].sy = .55; q[7].sy = q[9].sy = .7; } return P; }   // riding
     if (anim === 'ready') { breathe(1); ready(1); q[2].r += .03 * s; return P; }
     // the fight moves play once, in the side view: p runs 0..1
     const A = side ? 2 : 4, F = side ? 3 : 5;   // the acting arm (near arm in the side view)
@@ -125,7 +126,7 @@ window.CB_PUPPET = (function () {
     }
     return P;
   }
-  const CLIP = { ready: 1600, idle: 1600, walk: 760, attack: 560, aoe: 700, cast: 800, guard: 700, hit: 380, dead: 700 }; // ms per loop (or per play)
+  const CLIP = { sit: 1600, ready: 1600, idle: 1600, walk: 760, attack: 560, aoe: 700, cast: 800, guard: 700, hit: 380, dead: 700 }; // ms per loop (or per play)
   const ONCE = { attack: 1, aoe: 1, cast: 1, guard: 1, hit: 1, dead: 1 };
   // ---------- drawing: each part is drawn from the look's strip with its parents' moves applied
   const work = canvas(S * 2, S * 2), wg = work.getContext('2d');
@@ -170,6 +171,6 @@ window.CB_PUPPET = (function () {
     }
     return out;
   }
-  return { armsOf, draw, pose, compose, defaults, gearOf, len: (a) => CLIP[a] || 1000, once: (a) => !!ONCE[a], loads: () => loads, S, SLOTS, SKIN, HAIRCOL, EYECOL, LIPCOL, EYES, MOUTHS, HAIR: H.styles, BEARDS: H.beards, BODY,
+  return { img, armsOf, draw, pose, compose, defaults, gearOf, len: (a) => CLIP[a] || 1000, once: (a) => !!ONCE[a], loads: () => loads, S, SLOTS, SKIN, HAIRCOL, EYECOL, LIPCOL, EYES, MOUTHS, HAIR: H.styles, BEARDS: H.beards, BODY,
     ready: (look, view) => !!compose(look, view === 'w' ? 'e' : view) };
 })();

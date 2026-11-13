@@ -58,6 +58,37 @@
       return P.draw(g, L, v, step ? 'walk' : 'idle', t, cx, by + 2 * s, 96 * s / 118);
     };
   }
+  // ---------- townsfolk: each gets a look of its own from its colours (always the same one), dressed for its trade
+  const NPC = new WeakMap(), DIRS = { down: 's', up: 'n', left: 'w', right: 'e' };
+  const hash = (str) => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+  const lum = (hex) => { const m = /^#?([0-9a-f]{6})/i.exec(hex || ''); if (!m) return 128; const n = parseInt(m[1], 16); return ((n >> 16) * .3 + ((n >> 8) & 255) * .59 + (n & 255) * .11); };
+  function npcLook(pal) {
+    let L = NPC.get(pal); if (L) return L; const h = hash(JSON.stringify(pal)), pick = (arr, k) => arr[(h >>> k) % arr.length];
+    const armed = /sword|spear|axe|halberd|mace|blade/.test(pal.weapon || ''), guard = pal.helm === 'helm' || armed, body = guard ? pick(['warrior', 'paladin'], 3) : pick(['paladin', 'mage', 'female', 'female', 'mage', 'warrior'], 3);
+    const skinL = lum(pal.skin), skin = skinL > 190 ? 0 : skinL > 165 ? 1 : skinL > 140 ? 2 : skinL > 115 ? 3 : skinL > 85 ? 4 : 5, hl = lum(pal.hair);
+    const set = guard ? 'physical_Plate' : pick(['physical_Cloth', 'physical_Leather', 'nature_Cloth', 'physical_Cloth', 'fire_Cloth', 'frost_Cloth', 'nature_Leather', 'arcane_Cloth', 'physical_Leather', 'shadow_Cloth'], 7);
+    const gear = { Chest: set, Pants: set, Boots: set, Belt: set }; if (guard) Object.assign(gear, { Shoulders: set, Gloves: set, Bracers: set }, pal.helm === 'helm' ? { Helm: set } : {}); else if ((h >>> 11) % 3 === 0) gear.Shoulders = set; if (pal.helm === 'hood') gear.Helm = /Cloth/.test(set) ? set : 'physical_Cloth'; else if (pal.helm === 'cap') gear.Helm = /Leather/.test(set) ? set : 'physical_Leather';
+    L = { body, skin, eyes: (h >>> 5) % P.EYES, eyeCol: (h >>> 9) % 4, mouth: (h >>> 13) % P.MOUTHS, lipCol: body === 'female' ? (h >>> 15) % 3 : 0, hair: pal.helm === 'helm' ? 'short' : pick(P.HAIR, 17), hairCol: hl > 200 ? 5 : hl > 150 ? 3 : hl > 110 ? 6 : hl > 70 ? 2 : (h >>> 19) % 2, beard: body !== 'female' && (h >>> 21) % 3 === 0 ? pick(P.BEARDS, 23) : null, gear };
+    if (pal.helm === 'helm') L.weapon = ['sword1h', 0], L.off = ['kite', 0]; else if ((h >>> 25) % 5 === 0) L.cloak = (h >>> 27) % 4;
+    NPC.set(pal, L); return L;
+  }
+  function npc(g, pal, cx, by, dir, step, s, t) {
+    const L = npcLook(pal), v = DIRS[dir] || 's'; if (!P.ready(L, v)) return false;
+    g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, 15 * s, 5 * s, 0, 0, Math.PI * 2); g.fill(); g.restore();
+    return P.draw(g, L, v, step ? 'walk' : 'idle', t + (hash(L.body + L.hair) % 1500), cx, by + 2 * s, 96 * s / 118);
+  }
+  // ---------- riding: the pixel horse (img/hero/horse: rows facing the camera, sideways, away; the first cell stands, the rest walk)
+  const HORSE = { cell: 136, frames: 6, k: 1.02, foot: { s: 118, e: 112, n: 118 }, seat: { s: [0, -44], e: [-4, -40], n: [0, -46] } };   // seat: where the rider's feet line sits, from the horse's feet, in horse pixels
+  function ride(g, look, cx, by, dir, moving, s, t) {
+    const im = P.img('horse'), v = DIRS[dir] || 's', hv = v === 'w' ? 'e' : v; if (!im || !P.ready(look, v)) return false;
+    const row = { s: 0, e: 1, n: 2 }[hv], fr = moving ? 1 + Math.floor(t / 105) % HORSE.frames : 0, k = HORSE.k * s, C = HORSE.cell, bob = moving ? Math.round(Math.sin(t / 105 * Math.PI) * 1.2 * s) : 0;
+    const horse = () => { g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.translate(cx, by); if (v === 'w') g.scale(-1, 1); g.drawImage(im, fr * C, row * C, C, C, -C / 2 * k, -HORSE.foot[hv] * k, C * k, C * k); g.restore(); };
+    const seat = HORSE.seat[hv], rx = cx + seat[0] * k * (v === 'w' ? -1 : 1), ry = by + seat[1] * k + bob, sc = 96 * s / 118;
+    const rider = (clip) => { g.save(); if (clip) { g.beginPath(); g.rect(cx - 80 * s, by - 260 * s, 160 * s, 260 * s + (ry - by) - 30 * sc); g.clip(); } P.draw(g, look, v, 'sit', t, rx, ry + (v === 'e' || v === 'w' ? 30 * sc : 22 * sc), sc); g.restore(); };
+    g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, (hv === 'e' ? 34 : 18) * s, 7 * s, 0, 0, Math.PI * 2); g.fill(); g.restore();
+    if (hv === 's') { rider(false); horse(); } else if (hv === 'n') { horse(); rider(true); } else { horse(); rider(false); }
+    return true;
+  }
   // ---------- the appearance picker (character creation, and the mirror in the hero window)
   const NAMES = { skin: ['Fair', 'Light', 'Tan', 'Brown', 'Dark', 'Deep'], eyes: ['Round', 'Narrow', 'Wide', 'Lashes', 'Stern'], mouth: ['Plain', 'Full', 'Smirk', 'Small'],
     eyeCol: ['Brown', 'Blue', 'Green', 'Grey', 'Amber', 'Red', 'Violet'], lipCol: ['Natural', 'Red', 'Wine', 'Plum', 'Black'], hairCol: ['Black', 'Brown', 'Chestnut', 'Blond', 'Red', 'White', 'Grey', 'Blue', 'Violet', 'Green'] };
@@ -83,5 +114,5 @@
     const get = () => { const o = {}; for (const k of ['skin', 'eyes', 'eyeCol', 'mouth', 'lipCol', 'hair', 'hairCol', 'beard']) o[k] = L[k] == null ? null : L[k]; return o; };
     paint(); return { get, wear: (gear) => { Object.assign(L, { gear: P.gearOf(gear) }, P.armsOf(gear)); paint(); } };
   }
-  window.CB_HEROPUP = { html, lookOf, appOf, picker, fig: (id, cls, gear, opt) => html(id, lookOf(opt && opt.who || id, cls, gear), opt) };
+  window.CB_HEROPUP = { html, lookOf, appOf, picker, npc, npcLook, HORSE, ride: (g, pal, cx, by, dir, moving, s, t) => ride(g, pal && pal.forge ? lookOf(pal.forge.who || 'me', pal.forge.cls, pal.forge.gear) : npcLook(pal || {}), cx, by, dir, moving, s, t), fig: (id, cls, gear, opt) => html(id, lookOf(opt && opt.who || id, cls, gear), opt) };
 })();

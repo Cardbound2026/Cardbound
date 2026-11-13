@@ -1941,7 +1941,9 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     return Object.assign({}, base, { ink: 'hero_' + heroKey_.toLowerCase(), trim: rc('chest') || '#9c968a', helm: R.helm ? (base.helm || 'helm') : base.helm || null, helmC: rc('helm') || '#5a5f66', wpnC: rc('weapon') || '#9c968a', capeTrim: rc('cloak'), bootC: rc('boots'), hero: true });
   }
   // the training dummy: a straw scarecrow on a post, swaying a little
+  const DUMMY_IMG = Object.assign(new Image(), { src: 'img/mobs/dummy.png' }); // pixel-art training dummy (Nov 12)
   function drawScarecrow(g, cx, by, s, t) {
+    if (DUMMY_IMG.complete && DUMMY_IMG.naturalWidth) { const h = 86 * s, w = h * DUMMY_IMG.naturalWidth / DUMMY_IMG.naturalHeight; g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, 14 * s, 5 * s, 0, 0, Math.PI * 2); g.fill(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.drawImage(DUMMY_IMG, cx - w / 2, by - h + 3 * s, w, h); g.restore(); return; }
     if (window.CB_INK && CB_INK.scarecrow && CB_INK.scarecrow(g, cx, by, s, t)) return; // Gothic Ink art pack
     const sway = Math.sin(t / 900) * 1.2 * s;
     g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, 11 * s, 4 * s, 0, 0, Math.PI * 2); g.fill();
@@ -1976,6 +1978,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     return y - h;
   }
   function drawChar(g, cx, by, dir, step, pal, s, t) {
+    if (window.CB_HEROPUP && pal && !pal.forge && CB_HEROPUP.npc(g, pal, cx, by, dir, step, s, t)) return; // townsfolk are pixel puppets too (src/heropup.js)
     if (window.CB_FORGE && pal.forge && CB_FORGE.town(g, pal.forge.cls, pal.forge.gear, cx, by, dir, step, s, t, pal.forge.who)) return; // your hero wears its real gear (src/forge.js)
     if (window.CB_INK && pal.ink && CB_INK.town(g, pal.ink, cx, by, dir, step, s, t)) return; // Gothic Ink art pack; the drawn walker below otherwise
     const bob = step ? -1.5 * s : 0, sw = step === 1 ? 1 : step === 2 ? -1 : 0;
@@ -2081,7 +2084,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     // embers over the fire
     for (const e of TOWN.embers) { gx.fillStyle = `rgba(255,${150 + (e.life * 80 | 0)},70,${e.life})`; gx.fillRect(e.x * TS, e.y * TS, 2.5 * s, 2.5 * s); }
     // name tags over every head: townspeople always, and your own hero with your guild under the name
-    for (const n of NV) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.open === 'dummy' ? 52 : n.pal && n.pal.forge ? 80 : null);
+    for (const n of NV) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.open === 'dummy' ? 84 : window.CB_HEROPUP ? 98 : n.pal && n.pal.forge ? 80 : null);
     { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? 72 + MOUNT_RISE : 98, CBHub.titleOf(c, profile)); }
     // night: darken everything, then cut light pools around fires and the hero
     const dk = TOWN.dark, dg = dk.getContext('2d');
@@ -3076,9 +3079,10 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     $('mirOk').onclick = () => { c.app = pk.get(); save(); closeModal(); document.querySelectorAll('.dpup').forEach(d => { const f = d.querySelector('.pupfig'); if (f) f.outerHTML = CB_HEROPUP.html('doll' + Date.now(), CB_HEROPUP.lookOf({ app: c.app }, c.cls, c.gear), { view: 's', s: 1 }); }); toast('Your new look is saved.'); };
   }
   document.addEventListener('click', (ev) => { if (ev.target.closest && ev.target.closest('[data-mirror]')) openMirror(); });
-  window.__startDummy = () => startDummy(); // for automated checks
+  window.__startDummy = () => startDummy(); window.__npcs = () => NPCS.map(n => [n.id, n.x, n.y]); window.__tp = (x, y) => { P.x = x; P.y = y; P.mv = null; P.path = []; }; // for automated checks
   window.__cbActor = (id) => (cb ? cb.actorById(id) : null); // pixel monsters check HP for a boss's phase change
   function figure(a, unit) {
+    if (!a.isPlayer && a.key === 'training_dummy') return `<img class="inkfig pxhero" src="img/mobs/dummy.png" style="--s:1.05" alt="" draggable="false">`; // pixel-art training dummy
     if (a.isPlayer && window.CB_HEROPUP && window.CB_FORGE) return CB_FORGE.figureHtml(a); // Nov 12: pixel-art hero puppets (src/heropup.js)
     if (unit && a.isPlayer && window.CB_FORGE && a.look && !(window.CB_INK && CB_INK.pxHero && CB_INK.pxHero(a.cls))) return CB_FORGE.figureHtml(a, window.CB_INK ? CB_INK.figure(a) || '' : ''); // live sprite from the gear the hero wears (src/forge.js)
     if (window.CB_MOBS && !settings.classicFoes) { const px = CB_MOBS.figure(a, unit); if (px) return px; } // Nov 10: animated pixel monsters (src/mobsprites.js)
