@@ -122,6 +122,7 @@ body.sheetopen #btnUpdates, body.modalopen #btnUpdates { display: none; }
 .camph { font-size: 17px; margin: 10px 0 4px; color: var(--accent); } .camph .muted { font-size: 13px; font-family: var(--f-ui); } .campsack { max-height: 320px; }
 .baggrid { display: grid; grid-template-columns: repeat(auto-fill, 54px); gap: 5px; align-content: start; padding: 8px; border: 1px solid #2b2521; border-radius: 6px; background: rgba(8, 7, 9, .55); }
 .bagcell { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 4px; background: #0c0a0b; box-shadow: inset 0 0 0 1px #2f2822, inset 0 0 0 2px #000; cursor: pointer; }
+.baggrid.qsalv { box-shadow: inset 0 0 0 2px #b0352a; } .baggrid.qsalv .bagcell:not(.empty) { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg transform='rotate(-40 16 16)'%3E%3Crect x='14' y='10' width='4' height='20' rx='1' fill='%237a5432' stroke='%23000' stroke-width='1.5'/%3E%3Crect x='6' y='3' width='20' height='10' rx='2' fill='%23b9bcc4' stroke='%23000' stroke-width='1.5'/%3E%3Crect x='6' y='3' width='20' height='3' rx='1' fill='%23e6e8ee'/%3E%3C/g%3E%3C/svg%3E") 6 6, crosshair; } .baggrid.qsalv .bagcell:not(.empty):hover { box-shadow: inset 0 0 0 2px #e06a5a, 0 0 12px #e06a5a; }
 .bagcell.empty { cursor: default; background: #0a0809; box-shadow: inset 0 0 0 1px #221d19, inset 0 2px 6px #000; }
 .bagcell:not(.empty):hover, .bagcell:focus-visible { box-shadow: inset 0 0 0 1px var(--rc), inset 0 0 0 2px #000, 0 0 10px color-mix(in srgb, var(--rc) 55%, transparent); outline: none; }
 .bagcell .iticon { --isz: 46px; } .bagcard { font-size: 12px; letter-spacing: .5px; color: color-mix(in srgb, var(--rc) 60%, #fff); }
@@ -5794,7 +5795,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const heroRow = multi ? `<div class="cxchips" role="tablist" aria-label="Hero" style="margin:0 0 8px">${heroKeys().map(k => `<button class="cxchip ${k === heroKey ? 'on' : ''}" data-hero="${k}"><b style="color:${CC[profile.chars[k].cls]}">${esc(profile.chars[k].name)}</b> <span class="muted">${profile.chars[k].cls}</span></button>`).join('')}</div>` : '';
     $('hpGear').innerHTML = `${heroRow}<div class="gearwrap"><div>${paperdoll(c, c.cls, { own: true })}<p class="muted" style="font-size:12px;margin:6px 0 0">Hover a slot for the item, click it to swap or unequip.</p></div>
       <div class="gearside"><div class="tabs gtabs" role="tablist"><button role="tab" data-gtab="deck" aria-selected="${GT.tab === 'deck'}">Deck ${c.deck.length}</button><button role="tab" data-gtab="stash" aria-selected="${GT.tab === 'stash'}">Bags ${profile.stash.length} / ${CBHub.STASH_MAX}</button><button role="tab" data-gtab="stats" aria-selected="${GT.tab === 'stats'}">Stats</button><button role="tab" data-gtab="looks" aria-selected="${GT.tab === 'looks'}">Wardrobe</button></div>
-      ${GT.tab === 'deck' ? deckPanel(c) : GT.tab === 'stats' ? exStatsHtml(c) : GT.tab === 'looks' ? exWardrobeHtml(c) : `${exBagBar('bags')}<p class="muted" style="font-size:12px;margin:0 0 6px">${c.hardcore ? '<b style="color:#e06a5a">Hardcore bags</b>: shared by your hardcore heroes only.' : 'Shared by all your heroes (hardcore heroes have their own bags).'}</p><div class="baggrid">${st}</div><p class="muted" style="font-size:12px;margin:6px 0 0">Hover an item to read it. Click it to equip or salvage. Double-click to equip right away.</p>`}</div></div>`;
+      ${GT.tab === 'deck' ? deckPanel(c) : GT.tab === 'stats' ? exStatsHtml(c) : GT.tab === 'looks' ? exWardrobeHtml(c) : `${exBagBar('bags')}<p class="muted" style="font-size:12px;margin:0 0 6px">${c.hardcore ? '<b style="color:#e06a5a">Hardcore bags</b>: shared by your hardcore heroes only.' : 'Shared by all your heroes (hardcore heroes have their own bags).'}</p><div class="baggrid${GT.qs ? ' qsalv' : ''}">${st}</div><div style="display:flex;align-items:center;gap:10px;margin:6px 0 0"><button class="btn ${GT.qs ? 'primary' : ''}" data-qsalv="1" title="Turn it on, then every item you click is salvaged for gold">${GT.qs ? 'Quick salvage: ON (click to stop)' : 'Quick salvage'}</button><p class="muted" style="font-size:12px;margin:0">${GT.qs ? '<b style="color:#e06a5a">Every item you click is salvaged at once.</b> Codexes and bags are left alone.' : 'Hover an item to read it. Click it to equip or salvage. Double-click to equip right away.'}</p></div>`}</div></div>`;
     fitCards($('hpGear'));
     paintPortraits($('hpGear'));
   }
@@ -5815,10 +5816,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if ($('bSalv')) $('bSalv').onclick = () => { CBHub.salvage(profile, it.id); done(); };
     if ($('bBreak')) $('bBreak').onclick = () => { const r = CBHub.breakCodex(profile, it.id); if (!r.ok) return toast(r.why); done(); toast(r.tokens ? `+1 Reroll Token (you have ${profile.rerollTokens}). Spend it at Jeweler Rook.` : 'The codex crumbles to dust. No Reroll Token this time.'); };
   }
-  $('hpGear').addEventListener('dblclick', (ev) => { const bc = ev.target.closest('[data-bagit]'); if (!bc) return; const it = profile.stash.find(x => x.id === bc.dataset.bagit); if (!it || it.kind === 'card' || it.bag) return; const r = CBHub.equip(profile, heroKey, it.id); closeModal(); if (!r.ok) return toast(r.why); keepScroll(() => { save(); renderHub(); }); });
+  $('hpGear').addEventListener('dblclick', (ev) => { const bc = ev.target.closest('[data-bagit]'); if (!bc || GT.qs) return; const it = profile.stash.find(x => x.id === bc.dataset.bagit); if (!it || it.kind === 'card' || it.bag) return; const r = CBHub.equip(profile, heroKey, it.id); closeModal(); if (!r.ok) return toast(r.why); keepScroll(() => { save(); renderHub(); }); });
   $('hpGear').addEventListener('keydown', (ev) => { if (ev.key !== 'Enter') return; const bc = ev.target.closest && ev.target.closest('[data-bagit]'); if (bc) { ev.preventDefault(); ev.stopPropagation(); bagItem(bc.dataset.bagit); } });
   $('hpGear').addEventListener('click', (ev) => {
     const pc = ev.target.closest('[data-dcard]'); if (pc) return upgradeModal(pc.dataset.dcard);
+    { const qb = ev.target.closest('[data-qsalv]'); if (qb) { GT.qs = !GT.qs; return keepScroll(() => renderGearTab(CBHub.char(profile, heroKey))); } }
+    if (GT.qs) { const qc = ev.target.closest('[data-bagit]'); if (qc) { const it = profile.stash.find(x => x.id === qc.dataset.bagit); if (!it || it.kind === 'card') return; if (it.slot === 'Codex' || it.bag) return toast('Quick salvage leaves codexes and bags alone. Turn it off to handle this one.'); const gold = CBHub.salvageValue(it); CBHub.salvage(profile, it.id); try { if (window.CB_AUDIO) CB_AUDIO.sfx('coin', .7); } catch (e) {} const gt = document.querySelector('.gtip:not(.bagpop)'); if (gt) gt.hidden = true; toast(`Salvaged ${it.name} for ${gold} gold.`); return keepScroll(() => { save(); renderHub(); }); } }
     const bc = ev.target.closest('[data-bagit]'); if (bc) { if (ev.shiftKey) return; const el = document.querySelector('.gtip:not(.bagpop)'); if (el) el.hidden = true; return bagItem(bc.dataset.bagit); }
     const b = ev.target.closest('button'); if (!b) return;
     if (b.dataset.gtab) { GT.tab = b.dataset.gtab; return renderGearTab(CBHub.char(profile, heroKey)); }
@@ -6889,7 +6892,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   }
   // body classes for "a big window is open" (the chat box floats beside it)
   for (const [id, cls] of [['sheet', 'sheetopen'], ['modal', 'modalopen']]) { const el = $(id), sync = () => document.body.classList.toggle(cls, !el.hidden && !$('scrStart').hidden); new MutationObserver(sync).observe(el, { attributes: true, attributeFilter: ['hidden'] }); }
-  function closeSheet() { $('sheet').hidden = true; renderTownBar(); cv.focus({ preventScroll: true }); }
+  function closeSheet() { $('sheet').hidden = true; GT.qs = false; renderTownBar(); cv.focus({ preventScroll: true }); }
   $('sheetClose').addEventListener('click', closeSheet);
   $('sheet').addEventListener('click', (ev) => { if (ev.target === $('sheet')) closeSheet(); });
   $('chatIn').addEventListener('keydown', (ev) => {
@@ -7461,8 +7464,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794609105002';
-  const CB_BUILD = '7389c1a1e6'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794609492227';
+  const CB_BUILD = '9d43746d07'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -14253,8 +14256,8 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     ['aura_void', 'Void Shroud', 600, 'aura', { fx: 'shadow', at: 'f', back: 1, z: 1.45 }], ['aura_smoke', 'Black Smoke', 600, 'aura', { fx: 'shadow', at: 'f', back: 1, z: 1.45, tint: 'grayscale(1) brightness(.42)' }],
     ['aura_holy', 'Radiance', 600, 'aura', { fx: 'holy', at: 'c', back: 1, z: 1.7 }], ['aura_souls', 'Circling Souls', 800, 'aura', { fx: 'souls', at: 'c', z: 2.2 }], ['aura_motes', 'Arcane Motes', 400, 'aura', { fx: 'motes', at: 'c', z: 1.9 }],
     ['aura_storm', 'Crackling Storm', 700, 'aura', { fx: 'arcs', at: 'c', z: 2.1 }], ['aura_butterflies', 'Butterflies', 400, 'aura', { fx: 'butterflies', at: 'c', z: 1.5 }], ['aura_halo', 'Halo of Stars', 400, 'aura', { fx: 'halo', at: 'h', z: 1.6 }],
-    ['trail_fire', 'Fire Footsteps', 500, 'trail', { fx: 'embers', z: 1.5 }], ['trail_frost', 'Frost Footsteps', 500, 'trail', { fx: 'mist', z: 0.55 }], ['trail_shadow', 'Shadow Footsteps', 500, 'trail', { fx: 'mist', z: 0.55, tint: 'hue-rotate(60deg) brightness(.5) saturate(1.6)' }],
-    ['trail_blood', 'Bloody Footsteps', 500, 'trail', { fx: 'mist', z: 0.5, tint: 'hue-rotate(150deg) saturate(2.2) brightness(.7)' }],
+    ['trail_fire', 'Fire Footsteps', 500, 'trail', { col: [255, 122, 42] }], ['trail_frost', 'Frost Footsteps', 500, 'trail', { col: [127, 211, 255] }], ['trail_shadow', 'Shadow Footsteps', 500, 'trail', { col: [150, 96, 224] }],
+    ['trail_blood', 'Bloody Footsteps', 500, 'trail', { col: [176, 28, 28] }],
     ['wings_angel', 'Angel Wings', 1200, 'wings', 0], ['wings_demon', 'Demon Wings', 1200, 'wings', 1], ['wings_dragon', 'Dragon Wings', 1200, 'wings', 2], ['wings_fairy', 'Fairy Wings', 1000, 'wings', 3], ['wings_bone', 'Bone Wings', 1000, 'wings', 4], ['wings_phoenix', 'Phoenix Wings', 1500, 'wings', 5],
     ['wskin_0', 'Emberfall, the Burning Blade', 900, 'wskin', 0], ['wskin_1', 'Rimeshard', 900, 'wskin', 1], ['wskin_2', 'Voidreaper', 900, 'wskin', 2], ['wskin_3', 'Dawnhammer', 900, 'wskin', 3], ['wskin_4', 'Wyrmcleaver', 900, 'wskin', 4], ['wskin_5', 'Starcaller', 900, 'wskin', 5],
     ['cback_dragon', 'Dragon Hoard Card Back', 400, 'cback', 5], ['cback_skull', 'Skull and Bones Card Back', 400, 'cback', 6], ['cback_phoenix', 'Phoenix Card Back', 400, 'cback', 7], ['cback_kraken', 'Kraken Card Back', 400, 'cback', 8], ['cback_runes', 'Runestone Card Back', 400, 'cback', 9], ['cback_bloodmoon', 'Blood Moon Card Back', 400, 'cback', 10], ['cback_frost', 'Frost Crystal Card Back', 400, 'cback', 11], ['cback_tree', 'Elder Tree Card Back', 400, 'cback', 12], ['cback_voideye', 'Void Eye Card Back', 400, 'cback', 13], ['cback_lion', 'Royal Crest Card Back', 400, 'cback', 14], ['cback_anvil', 'Dwarven Forge Card Back', 400, 'cback', 15], ['cback_sigil', 'Demon Sigil Card Back', 400, 'cback', 16], ['cback_compass', 'Treasure Map Card Back', 400, 'cback', 17], ['cback_stars', 'Night Sky Card Back', 400, 'cback', 18], ['cback_rose', 'Black Rose Card Back', 400, 'cback', 19],
@@ -14335,10 +14338,18 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     draw(g, look, v, anim, t, x, footY, sc, layer) {
       const c = look && look.cos; if (!c) return; const dead = anim === 'dead';
       const A = c.aura && EX_COSBY[c.aura] && EX_COSBY[c.aura][4], T = c.trail && EX_COSBY[c.trail] && EX_COSBY[c.trail][4], W = c.wings && EX_COSBY[c.wings];
-      if (layer === 'front' && T && !dead) {   // footsteps: stamped where the hero stands, they linger and fade as the hero walks on
-        const now = performance.now(); let near = false; for (const s of STAMPS) if (s.k === c.trail && Math.abs(s.x - x) + Math.abs(s.y - footY) < 9 * sc && now - s.t0 < 500) { near = true; break; }
-        if (!near) { STAMPS.push({ k: c.trail, x, y: footY, t0: now, sc, g }); if (STAMPS.length > 160) STAMPS.splice(0, 40); }
-        for (let i = STAMPS.length - 1; i >= 0; i--) { const s = STAMPS[i], u = (now - s.t0) / 1100; if (u >= 1) { STAMPS.splice(i, 1); continue; } if (s.k !== c.trail || s.g !== g) continue; if (Math.abs(s.x - x) + Math.abs(s.y - footY) > 420 * sc) continue; cosBlit(g, T.fx, now - s.t0 + i * 90, s.x, s.y, T.z * s.sc * 1.0, T.tint, (1 - u) * .7); }
+      if (layer === 'back' && T && !dead) {   // Nov 13 (later): footsteps are real footprints in the element's colour, left where each foot lands, fading out.
+        // They are a few filled shapes each (the old ones were filtered mist sprites, dozens at a time, which is what made the game crawl).
+        const now = performance.now(), col = T.col || [255, 140, 50], side = v === 'e' || v === 'w'; let lastT = 0, lastN = 0;
+        for (const s of STAMPS) if (s.k === c.trail && s.g === g && s.who === look && s.t0 > lastT) { lastT = s.t0; lastN = s.n; }
+        const last = STAMPS.length ? STAMPS.filter(s => s.k === c.trail && s.g === g).pop() : null;
+        if (anim === 'walk' && (!last || Math.abs(last.x - x) + Math.abs(last.y - footY) > 17 * sc)) { const n = (last ? last.n : 0) + 1, off = (n % 2 ? -1 : 1) * 6 * sc; STAMPS.push({ k: c.trail, x: side ? x : x + off, y: side ? footY + off * .45 : footY, t0: now, sc, g, n, v, col }); if (STAMPS.length > 60) STAMPS.splice(0, STAMPS.length - 60); }
+        for (let i = STAMPS.length - 1; i >= 0; i--) { const s = STAMPS[i], u = (now - s.t0) / 3200; if (u >= 1) { STAMPS.splice(i, 1); continue; } if (s.g !== g) continue;
+          const al = (1 - u) * .8, w = 5.4 * s.sc, h = 8.5 * s.sc, sv = s.v === 'e' || s.v === 'w', fl = s.v === 'w' || s.v === 'n' ? -1 : 1;
+          g.save(); g.translate(Math.round(s.x), Math.round(s.y)); g.scale(1, .7); if (sv) g.rotate(Math.PI / 2 * fl); else if (fl < 0) g.rotate(Math.PI);
+          g.fillStyle = `rgba(${s.col[0]},${s.col[1]},${s.col[2]},${al * .35})`; g.beginPath(); g.ellipse(0, -h * .2, w * 1.05, h * 1.2, 0, 0, 6.3); g.fill();   // glow
+          g.fillStyle = `rgba(${s.col[0]},${s.col[1]},${s.col[2]},${al})`; g.beginPath(); g.ellipse(0, -h * .3, w * .62, h * .6, 0, 0, 6.3); g.fill(); g.beginPath(); g.ellipse(0, h * .62, w * .46, h * .3, 0, 0, 6.3); g.fill();   // sole and heel
+          g.restore(); }
       }
       if (W && !dead && wingImg.complete && wingImg.naturalWidth && (layer === 'back') === (v !== 'n')) {
         const flap = 1 + Math.sin(t / 420) * 0.05, k = sc * 0.95, side = v === 'e' || v === 'w';

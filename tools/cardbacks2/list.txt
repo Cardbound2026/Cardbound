@@ -1,0 +1,35 @@
+scroll|Ancient Scroll|an old rolled parchment scroll unrolled flat, curled wooden rods at the top and bottom edges, faded ink runes and a red wax seal in the centre, tan and brown
+ironplate|Iron Bound|a slab of dark riveted iron plate held by two thick metal straps with bolts and a heavy padlock in the centre, scratched steel grey
+bloodpaper|Blood Parchment|a card roughly cut out of torn yellowed parchment paper with ragged edges, splattered and dripping with dark red blood, a bloody handprint
+stainedglass|Stained Glass|a gothic stained glass window with lead lines, a knight and a rose in jewel tones of red, blue, green and gold, light glowing through
+carvedwood|Carved Oak|dark carved oak wood panel with Celtic knotwork border and a carved tree of life, visible wood grain, warm brown
+stonetablet|Stone Tablet|a cracked grey stone tablet chiselled with ancient glyphs, moss growing in the cracks, weathered
+tome|Leather Tome|the cover of an old leather bound spellbook with brass corner plates, two buckled straps and a gem set in the centre, dark red leather
+chainmail|Chainmail|a sheet of interlocked steel chainmail rings with a small heraldic shield badge riveted in the middle, cold grey metal
+dragonscale|Dragonscale|overlapping glossy red dragon scales covering the whole card with a single slit golden dragon eye opening in the centre
+web|Widow's Web|a large white spider web spanning the card with a black widow spider with a red hourglass in the centre, on black
+ossuary|Ossuary|a wall of stacked human skulls and long bones like a catacomb ossuary, bone white and dusty brown, candle glow
+tarot|Sun and Moon|an antique tarot card back with a golden sun face and a silver crescent moon face entwined, stars, navy blue and gold filigree
+alchemy|Alchemist|alchemy glass flasks and bubbling green and purple potions on a shelf with an alchemical circle diagram, brass and glass
+clockwork|Clockwork|interlocking brass gears, cogs and springs of a clockwork mechanism filling the card, copper and brass on dark steel
+iceblock|Frozen|a block of clear blue ice with a frozen sword trapped inside it, frost cracks and icicles at the edges
+obsidian|Molten Obsidian|black volcanic obsidian rock split by glowing orange lava cracks in a jagged pattern, heat glow
+necro|Necromancer|a green flaming skull above an open grimoire with ghostly green souls rising, sickly green on black
+cathedral|Cathedral|a radiant white and gold holy rose window with a golden chalice and rays of divine light, ivory and gold
+acedaggers|Ace of Daggers|a rogue's vintage playing card back with two crossed daggers, a mask and ornate mirrored scrollwork, black, red and cream
+wanted|Wanted Poster|a torn weathered wanted poster nailed to wood, a hooded outlaw sketch, a bag of gold coins drawn below, sepia paper with nails in the corners
+mimic|Mimic|a treasure chest mimic monster seen from the front with rows of sharp teeth, a long purple tongue and gold coins, wood and brass
+amethyst|Crystal Cavern|a cluster of glowing purple amethyst crystals growing from dark cave rock, violet light and sparkles
+pirate|Black Flag|a ship's wooden steering wheel over a tattered black pirate flag with a skull and crossed cutlasses, rope border
+banner|War Banner|a tattered crimson cloth war banner with a black gryphon emblem, woven fabric texture, frayed edges, gold tassels
+fairyring|Fairy Ring|a ring of glowing red and white mushrooms in a moonlit forest glade with tiny floating lights, teal and green
+ouroboros|Ouroboros|a green and gold serpent eating its own tail forming a circle around an alchemical symbol, emerald on black
+doubloon|Doubloon|a huge embossed gold coin filling the card with a crowned skull profile stamped on it, beaded rim, shining gold
+vikingshield|Shield Wall|a round wooden viking shield with an iron boss, painted knotwork ravens and crossed axes behind it, wood, iron and red paint
+vampire|Crypt Lord|a black coffin lid with a silver cross, red roses and a swarm of bats against a blood red sky, black, silver and crimson
+storm|Tempest|dark storm clouds with forked white-blue lightning striking a lone mountain peak, electric blue on slate grey
+dungeon|Dungeon Door|a heavy wooden dungeon door with iron bands, a barred window with glowing eyes behind it and a big keyhole, torchlight
+jade|Jade Dragon|a carved green jade relief of a long eastern dragon coiling through clouds, polished jade green with gold inlay
+eldritch|Forbidden Tome|a book cover made of dark flesh-like leather with a closed stitched eye and writhing tentacles at the edges, deep purple and sickly green
+hourglass|Sands of Time|an ornate brass hourglass with glowing golden sand falling, surrounded by clock numerals and stars, bronze and midnight blue
+beast|Beastmaster|a bear paw print with claw slash marks torn through tanned animal hide stretched and laced on a frame, brown fur and leather

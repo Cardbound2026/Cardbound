@@ -17,8 +17,8 @@
     ['aura_void', 'Void Shroud', 600, 'aura', { fx: 'shadow', at: 'f', back: 1, z: 1.45 }], ['aura_smoke', 'Black Smoke', 600, 'aura', { fx: 'shadow', at: 'f', back: 1, z: 1.45, tint: 'grayscale(1) brightness(.42)' }],
     ['aura_holy', 'Radiance', 600, 'aura', { fx: 'holy', at: 'c', back: 1, z: 1.7 }], ['aura_souls', 'Circling Souls', 800, 'aura', { fx: 'souls', at: 'c', z: 2.2 }], ['aura_motes', 'Arcane Motes', 400, 'aura', { fx: 'motes', at: 'c', z: 1.9 }],
     ['aura_storm', 'Crackling Storm', 700, 'aura', { fx: 'arcs', at: 'c', z: 2.1 }], ['aura_butterflies', 'Butterflies', 400, 'aura', { fx: 'butterflies', at: 'c', z: 1.5 }], ['aura_halo', 'Halo of Stars', 400, 'aura', { fx: 'halo', at: 'h', z: 1.6 }],
-    ['trail_fire', 'Fire Footsteps', 500, 'trail', { fx: 'embers', z: 1.5 }], ['trail_frost', 'Frost Footsteps', 500, 'trail', { fx: 'mist', z: 0.55 }], ['trail_shadow', 'Shadow Footsteps', 500, 'trail', { fx: 'mist', z: 0.55, tint: 'hue-rotate(60deg) brightness(.5) saturate(1.6)' }],
-    ['trail_blood', 'Bloody Footsteps', 500, 'trail', { fx: 'mist', z: 0.5, tint: 'hue-rotate(150deg) saturate(2.2) brightness(.7)' }],
+    ['trail_fire', 'Fire Footsteps', 500, 'trail', { col: [255, 122, 42] }], ['trail_frost', 'Frost Footsteps', 500, 'trail', { col: [127, 211, 255] }], ['trail_shadow', 'Shadow Footsteps', 500, 'trail', { col: [150, 96, 224] }],
+    ['trail_blood', 'Bloody Footsteps', 500, 'trail', { col: [176, 28, 28] }],
     ['wings_angel', 'Angel Wings', 1200, 'wings', 0], ['wings_demon', 'Demon Wings', 1200, 'wings', 1], ['wings_dragon', 'Dragon Wings', 1200, 'wings', 2], ['wings_fairy', 'Fairy Wings', 1000, 'wings', 3], ['wings_bone', 'Bone Wings', 1000, 'wings', 4], ['wings_phoenix', 'Phoenix Wings', 1500, 'wings', 5],
     ['wskin_0', 'Emberfall, the Burning Blade', 900, 'wskin', 0], ['wskin_1', 'Rimeshard', 900, 'wskin', 1], ['wskin_2', 'Voidreaper', 900, 'wskin', 2], ['wskin_3', 'Dawnhammer', 900, 'wskin', 3], ['wskin_4', 'Wyrmcleaver', 900, 'wskin', 4], ['wskin_5', 'Starcaller', 900, 'wskin', 5],
     ['cback_dragon', 'Dragon Hoard Card Back', 400, 'cback', 5], ['cback_skull', 'Skull and Bones Card Back', 400, 'cback', 6], ['cback_phoenix', 'Phoenix Card Back', 400, 'cback', 7], ['cback_kraken', 'Kraken Card Back', 400, 'cback', 8], ['cback_runes', 'Runestone Card Back', 400, 'cback', 9], ['cback_bloodmoon', 'Blood Moon Card Back', 400, 'cback', 10], ['cback_frost', 'Frost Crystal Card Back', 400, 'cback', 11], ['cback_tree', 'Elder Tree Card Back', 400, 'cback', 12], ['cback_voideye', 'Void Eye Card Back', 400, 'cback', 13], ['cback_lion', 'Royal Crest Card Back', 400, 'cback', 14], ['cback_anvil', 'Dwarven Forge Card Back', 400, 'cback', 15], ['cback_sigil', 'Demon Sigil Card Back', 400, 'cback', 16], ['cback_compass', 'Treasure Map Card Back', 400, 'cback', 17], ['cback_stars', 'Night Sky Card Back', 400, 'cback', 18], ['cback_rose', 'Black Rose Card Back', 400, 'cback', 19],
@@ -99,10 +99,18 @@
     draw(g, look, v, anim, t, x, footY, sc, layer) {
       const c = look && look.cos; if (!c) return; const dead = anim === 'dead';
       const A = c.aura && EX_COSBY[c.aura] && EX_COSBY[c.aura][4], T = c.trail && EX_COSBY[c.trail] && EX_COSBY[c.trail][4], W = c.wings && EX_COSBY[c.wings];
-      if (layer === 'front' && T && !dead) {   // footsteps: stamped where the hero stands, they linger and fade as the hero walks on
-        const now = performance.now(); let near = false; for (const s of STAMPS) if (s.k === c.trail && Math.abs(s.x - x) + Math.abs(s.y - footY) < 9 * sc && now - s.t0 < 500) { near = true; break; }
-        if (!near) { STAMPS.push({ k: c.trail, x, y: footY, t0: now, sc, g }); if (STAMPS.length > 160) STAMPS.splice(0, 40); }
-        for (let i = STAMPS.length - 1; i >= 0; i--) { const s = STAMPS[i], u = (now - s.t0) / 1100; if (u >= 1) { STAMPS.splice(i, 1); continue; } if (s.k !== c.trail || s.g !== g) continue; if (Math.abs(s.x - x) + Math.abs(s.y - footY) > 420 * sc) continue; cosBlit(g, T.fx, now - s.t0 + i * 90, s.x, s.y, T.z * s.sc * 1.0, T.tint, (1 - u) * .7); }
+      if (layer === 'back' && T && !dead) {   // Nov 13 (later): footsteps are real footprints in the element's colour, left where each foot lands, fading out.
+        // They are a few filled shapes each (the old ones were filtered mist sprites, dozens at a time, which is what made the game crawl).
+        const now = performance.now(), col = T.col || [255, 140, 50], side = v === 'e' || v === 'w'; let lastT = 0, lastN = 0;
+        for (const s of STAMPS) if (s.k === c.trail && s.g === g && s.who === look && s.t0 > lastT) { lastT = s.t0; lastN = s.n; }
+        const last = STAMPS.length ? STAMPS.filter(s => s.k === c.trail && s.g === g).pop() : null;
+        if (anim === 'walk' && (!last || Math.abs(last.x - x) + Math.abs(last.y - footY) > 17 * sc)) { const n = (last ? last.n : 0) + 1, off = (n % 2 ? -1 : 1) * 6 * sc; STAMPS.push({ k: c.trail, x: side ? x : x + off, y: side ? footY + off * .45 : footY, t0: now, sc, g, n, v, col }); if (STAMPS.length > 60) STAMPS.splice(0, STAMPS.length - 60); }
+        for (let i = STAMPS.length - 1; i >= 0; i--) { const s = STAMPS[i], u = (now - s.t0) / 3200; if (u >= 1) { STAMPS.splice(i, 1); continue; } if (s.g !== g) continue;
+          const al = (1 - u) * .8, w = 5.4 * s.sc, h = 8.5 * s.sc, sv = s.v === 'e' || s.v === 'w', fl = s.v === 'w' || s.v === 'n' ? -1 : 1;
+          g.save(); g.translate(Math.round(s.x), Math.round(s.y)); g.scale(1, .7); if (sv) g.rotate(Math.PI / 2 * fl); else if (fl < 0) g.rotate(Math.PI);
+          g.fillStyle = `rgba(${s.col[0]},${s.col[1]},${s.col[2]},${al * .35})`; g.beginPath(); g.ellipse(0, -h * .2, w * 1.05, h * 1.2, 0, 0, 6.3); g.fill();   // glow
+          g.fillStyle = `rgba(${s.col[0]},${s.col[1]},${s.col[2]},${al})`; g.beginPath(); g.ellipse(0, -h * .3, w * .62, h * .6, 0, 0, 6.3); g.fill(); g.beginPath(); g.ellipse(0, h * .62, w * .46, h * .3, 0, 0, 6.3); g.fill();   // sole and heel
+          g.restore(); }
       }
       if (W && !dead && wingImg.complete && wingImg.naturalWidth && (layer === 'back') === (v !== 'n')) {
         const flap = 1 + Math.sin(t / 420) * 0.05, k = sc * 0.95, side = v === 'e' || v === 'w';
