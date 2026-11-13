@@ -2,12 +2,12 @@
 # the side without its arm, and the side with it (256x224), plus the paint mask (everything but the face).
 import json, os, numpy as np
 from PIL import Image
-HERE = os.path.dirname(os.path.abspath(__file__)); S = 128; CW, CH = 64, 112
+HERE = os.path.dirname(os.path.abspath(__file__)); S = 128; CW, CH = 64, 128
 PAIRS = {'a': ['warrior', 'paladin'], 'b': ['mage', 'female']}; VIEWS = ['s', 'n', 'e', 'e_full']
 def origin(body, v):
     im = np.array(Image.open(f'{HERE}/src/{body}/{v}.png').convert('RGBA')); a = im[..., 3] > 0
     ys = np.nonzero(a.any(1))[0]; xs = np.nonzero(a.any(0))[0]; cx = (xs.min() + xs.max() + 1) // 2
-    return im, int(cx - CW // 2), int(ys.max() + 1 - (CH - 3))
+    return im, int(cx - CW // 2), 0
 def dil(m, n):
     for _ in range(n): m = m | np.roll(m, 1, 0) | np.roll(m, -1, 0) | np.roll(m, 1, 1) | np.roll(m, -1, 1)
     return m
