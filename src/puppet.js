@@ -57,21 +57,23 @@ window.CB_PUPPET = (function () {
     const key = v + JSON.stringify(L, (k, val) => k === 'cos' ? undefined : val); let c = COMP.get(key); if (c) return c;
     const B = D.bodies[L.body][v], body = img(L.body + '_' + v); if (!body) return null;
     const gear = L.gear || {}, sets = SLOTS.map(s => gear[s] || null), need = [...new Set(sets.filter(Boolean))], gi = {};
-    let st = null; if (need.length) { st = stencils(L.body, v); if (st === null) return null; for (const n of need) { const im = img('gear/' + n + '_' + L.body + '_' + v); if (im === null) return null; gi[n] = im; } }
+    let st = null; if (need.length) { st = stencils(L.body, v); if (st === null) return null; let wait = false; for (const n of need) { const im = img('gear/' + n + '_' + L.body + '_' + v); if (im === null) wait = true; gi[n] = im; } if (wait) { if (L.hair) img('hair/' + L.hair); if (L.beard) img('hair/' + L.beard); return null; } }   // Nov 13: ask for every piece at once; they used to load one after another, so mixed sets took a while to appear
     const hair = L.hair ? img('hair/' + L.hair) : false, beard = L.beard ? img('hair/' + L.beard) : false; if (hair === null || beard === null) return null;
     c = canvas(S * 10, S); const g = c.getContext('2d', { willReadFrequently: true }); g.imageSmoothingEnabled = false; g.drawImage(body, 0, 0);
     const id = g.getImageData(0, 0, S * 10, S), d = id.data, skin = SKIN[L.skin || 0] || SKIN[0], mean = (B.skin[0] + B.skin[1] + B.skin[2]) / 3;
     for (let i = 0; i < d.length; i += 4) if (d[i + 3] && d[i] - d[i + 2] > 22 && d[i] > 70) { const k = Math.pow((d[i] + d[i + 1] + d[i + 2]) / 3 / mean, .9); d[i] = Math.min(250, skin[0] * k); d[i + 1] = Math.min(240, skin[1] * k); d[i + 2] = Math.min(230, skin[2] * k); }   // every body's skin lands on the same tone, keeping its shading
     face(d, B, v, L, skin); g.putImageData(id, 0, 0);
-    const wear = (si) => { const n = sets[si]; if (!n || !gi[n] || !st) return; tg.globalCompositeOperation = 'source-over'; tg.clearRect(0, 0, S * 10, S); tg.drawImage(gi[n], 0, 0); tg.globalCompositeOperation = 'destination-in'; tg.drawImage(st[si], 0, 0);
-      const dc = L.dye && window.CB_COS ? CB_COS.dyeOf(L, SLOTS[si]) : null;   // Nov 13: a dye recolours the piece, keeping its shading
+    const wear = (si, from, torso) => { const n = sets[from == null ? si : from]; if (!n || !gi[n] || !st) return; tg.globalCompositeOperation = 'source-over'; tg.clearRect(0, 0, S * 10, S); tg.drawImage(gi[n], 0, 0); tg.globalCompositeOperation = 'destination-in'; tg.drawImage(st[si], 0, 0); if (torso) tg.clearRect(S, 0, S * 9, S);
+      const dc = L.dye && window.CB_COS ? CB_COS.dyeOf(L, SLOTS[from == null ? si : from]) : null;   // Nov 13: a dye recolours the piece, keeping its shading
       if (dc) { const dd = tg.getImageData(0, 0, S * 10, S), p = dd.data; for (let i = 0; i < p.length; i += 4) { if (!p[i + 3]) continue; const l = (p[i] * .3 + p[i + 1] * .59 + p[i + 2] * .11) / 255, k = l < .5 ? l * 1.9 : .95 + (l - .5) * 1.1; p[i] = Math.min(255, dc[0] * k + (l > .8 ? (l - .8) * 300 : 0)); p[i + 1] = Math.min(255, dc[1] * k + (l > .8 ? (l - .8) * 300 : 0)); p[i + 2] = Math.min(255, dc[2] * k + (l > .8 ? (l - .8) * 300 : 0)); } tg.putImageData(dd, 0, 0); }
       g.drawImage(tmp, 0, 0); };
-    for (const si of [7, 6, 2, 5, 3, 4, 1]) wear(si);
+    // Nov 13: an empty Belt or Shoulders slot no longer cuts a bare strip or torn holes out of the body armour: the trousers (or chest piece) carry on
+    // over the waist, and the chest piece keeps its own shoulders (its sleeves start below them, so a bare cap read as a hole)
+    for (const si of [7, 6, 2, 5, 3, 4, 1]) { if (si === 5 && !sets[5]) wear(5, sets[6] ? 6 : 2, true); else if (si === 1 && !sets[1]) wear(1, 2); else wear(si); }
     const vi = H.views.indexOf(v), bi = H.bodies.indexOf(L.body), [hx, hy] = H.at[L.body][v];
     const dye = (im, col, clipY) => {   // hair is painted grey-white; multiply it by the colour
       tg.globalCompositeOperation = 'source-over'; tg.clearRect(0, 0, H.cw, H.ch); tg.drawImage(im, bi * H.cw, vi * H.ch, H.cw, H.ch, 0, 0, H.cw, H.ch);
-      const hd = tg.getImageData(0, 0, H.cw, H.ch), p = hd.data; for (let i = 0; i < p.length; i += 4) { if (!p[i + 3]) continue; if (clipY != null && (i / 4 / H.cw | 0) + hy < clipY) { p[i + 3] = 0; continue; } const k = Math.min(1.12, p[i] / 215); p[i] = col[0] * k; p[i + 1] = col[1] * k; p[i + 2] = col[2] * k; }
+      const hd = tg.getImageData(0, 0, H.cw, H.ch), p = hd.data; for (let i = 0; i < p.length; i += 4) { if (!p[i + 3]) continue; if (clipY != null) { const Y = (i / 4 / H.cw | 0) + hy; if (Y < clipY) { p[i + 3] = 0; continue; } if (Y <= clipY + 8) { const X = S + hx + (i / 4) % H.cw, o = Y * S * 10; if (!(d[(o + X) * 4 + 3] || d[(o + X - 1) * 4 + 3] || d[(o + X + 1) * 4 + 3] || d[(o + X - 2) * 4 + 3] || d[(o + X + 2) * 4 + 3])) { p[i + 3] = 0; continue; } } } /* Nov 13: beside the face, hair that sticks out past the head is tucked into the helm; it used to poke out like wings */ const k = Math.min(1.12, p[i] / 215); p[i] = col[0] * k; p[i + 1] = col[1] * k; p[i + 2] = col[2] * k; }
       tg.putImageData(hd, 0, 0); g.drawImage(tmp, 0, 0, H.cw, H.ch, S + hx, hy, H.cw, H.ch);
     };
     const hc = HAIRCOL[L.hairCol || 0] || HAIRCOL[0];

@@ -24,7 +24,9 @@ def slot_layers(body):
                 t = tpos(el, wr); sl[part == i + 1] = 3; sl[(part == i + 1) & (t > .82)] = 4
             for i, sd in ((6, A), (8, B)):
                 kn, an = J[sd + ' KNEE'], J[sd + ' LEG']; sl[part == i] = 6; t = tpos(kn, an); sl[part == i + 1] = 6; sl[(part == i + 1) & (t > .4)] = 7
-            sl[part == 1] = 0; out[view] = sl
+            sl[part == 1] = 0
+            sl[(part == 1) & (py > chin - 6) & (abs(px - neck[0]) > sw * .3)] = 1   # Nov 13: shoulder tops that rise past the chin are shoulder armour, not helm (they showed as wings beside a lone helm)
+            out[view] = sl
         else:
             kn = (J['LEFT KNEE'][1] + J['RIGHT KNEE'][1]) / 2; an = max(J['LEFT LEG'][1], J['RIGHT LEG'][1])
             sl[py > hipy - 7] = 5; sl[py > hipy] = 6; sl[py > kn + (an - kn) * .4] = 7; sl[py < chin] = 0; out['e'] = sl
