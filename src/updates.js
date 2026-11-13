@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Art', "The Ember Whelps' cards (Fire Spit, Singe, Shriek, Flap) have paintings now, and so do the other 22 group-monster cards that were blank: wolves, bandits, magma golems, frostfangs, wights, spiderlings, raptors, ley hounds and animated armour."],
       ['Interface', "An opened chest lays its loot out in front of it: a pile of gold that grows with the amount (a few coins up to a hoard), each item's picture, each card. Click a thing to take it, or Take all. Hover gear to read it."],
       ['Interface', "Foes in a group stand closer together."],
       ['Art', "Your pet in a fight stands on the ground beside you playing its idle animation. It no longer floats or blinks in and out."],
