@@ -112,6 +112,32 @@ window.CB_PUPPET = (function () {
       const w = ease(up(p, 0, .32)), hit = ease(up(p, .32, .5)), back = ease(up(p, .62, 1)), big = anim === 'aoe' ? 1.25 : 1;
       q[A].r = (.9 * w - 2.5 * hit) * big * (1 - back); q[F].r = (-.5 * w + .1 * hit) * (1 - back); q[0].r = (-.07 * w + .16 * hit) * (1 - back);
       P.dx = (-2 * w + 9 * hit * big) * (1 - back); q[6].r = -.25 * hit * (1 - back); q[8].r = .2 * hit * (1 - back); q[1].r = .05 * hit * (1 - back); P.wr = (-1.9 * w * (1 - hit) + 2.75 * hit) * (1 - back); ready(back);
+    } else if (anim === 'thrust') {            // daggers and spears: a quick step and a straight stab
+      const w = ease(up(p, 0, .25)), hit = ease(up(p, .25, .42)), back = ease(up(p, .6, 1)), k = 1 - back;
+      q[A].r = (.5 * w - 1.9 * hit) * k; q[F].r = (-1.1 * w + 1.0 * hit) * k; P.wr = (.2 * w + 1.75 * hit) * k; q[0].r = (-.05 * w + .2 * hit) * k; P.dx = (-3 * w + 14 * hit) * k; q[6].r = -.4 * hit * k; q[7].r = .25 * hit * k; q[8].r = .3 * hit * k; P.dy = 2 * hit * k; ready(back);
+    } else if (anim === 'heavy') {             // two-handers: a long wind-up, then the whole body comes down with it
+      const w = ease(up(p, 0, .42)), hit = ease(up(p, .42, .56)), back = ease(up(p, .72, 1)), k = 1 - back;
+      q[A].r = (1.5 * w - 3.4 * hit) * k; q[F].r = (-.8 * w + .5 * hit) * k; P.wr = (-2.3 * w * (1 - hit) + 3.1 * hit) * k; q[0].r = (-.16 * w + .34 * hit) * k; q[1].r = (-.08 * w + .12 * hit) * k; P.dx = (-4 * w + 11 * hit) * k; P.dy = (-2 * w + 5 * hit) * k; q[6].r = (.1 * w - .35 * hit) * k; q[8].r = .25 * hit * k; ready(back);
+    } else if (anim === 'leap') {              // a jump and a slam
+      const w = ease(up(p, 0, .2)), airT = up(p, .2, .55), hit = ease(up(p, .5, .6)), back = ease(up(p, .75, 1)), k = 1 - back, arc = Math.sin(airT * Math.PI);
+      P.dy = (3 * w * (1 - airT) - 20 * arc + 4 * hit) * k; P.dx = (16 * ease(airT)) * k; q[A].r = (1.4 * Math.max(w, arc) * (1 - hit) - 2.4 * hit) * k; q[F].r = -.5 * k * (1 - hit); P.wr = (-2.2 * (1 - hit) * Math.max(w, arc) + 2.9 * hit) * k; q[0].r = (-.1 * arc + .3 * hit) * k; q[6].r = (-.7 * arc - .2 * hit) * k; q[7].r = .9 * arc * k; q[8].r = (.5 * arc + .2 * hit) * k; q[9].r = .6 * arc * k; ready(back);
+    } else if (anim === 'double') {            // two fast cuts
+      const h = p < .5 ? p * 2 : (p - .5) * 2, sec = p >= .5, w = ease(up(h, 0, .35)), hit = ease(up(h, .35, .6)), back = sec ? ease(up(h, .7, 1)) : 0, k = 1 - back, d = sec ? -1 : 1;
+      q[A].r = (.7 * w - 2.3 * hit) * k; q[F].r = (-.5 * w + .2 * hit) * k; P.wr = ((d > 0 ? -1.7 : -.6) * w * (1 - hit) + (d > 0 ? 2.7 : 1.9) * hit) * k; q[0].r = (-.05 * w + .14 * hit) * k * d; P.dx = (3 + 7 * hit) * k + (sec ? 4 * k : 0); q[6].r = -.25 * k; q[8].r = .2 * k; ready(back);
+    } else if (anim === 'spin') {              // a sweep through everyone: the blade goes all the way round
+      const w = ease(up(p, 0, .2)), turn = ease(up(p, .2, .7)), back = ease(up(p, .8, 1)), k = 1 - back;
+      q[A].r = (1.0 * w - 6.6 * turn) * k; q[F].r = -.3 * k; P.wr = 1.2 * w * k; q[0].r = Math.sin(turn * Math.PI) * .22 * k; P.dx = Math.sin(turn * Math.PI) * 8 * k; P.dy = -Math.sin(turn * Math.PI) * 3 * k; q[6].r = -.3 * Math.sin(turn * Math.PI) * k; q[8].r = .3 * Math.sin(turn * Math.PI) * k; ready(back);
+    } else if (anim === 'empower') {           // a power: both feet set, the weapon lifted high, a breath held
+      const w = ease(up(p, 0, .3)), back = ease(up(p, .7, 1)), k = w * (1 - back), sh = Math.sin(p * TAU * 5) * .03 * k;
+      q[A].r = (-2.9 + sh) * k; q[F].r = -.1 * k; P.wr = 1.75 * k; q[0].r = -.1 * k; q[1].r = -.16 * k; P.dy = -3 * k; q[6].r = -.18 * k; q[8].r = .18 * k; ready(1 - k);
+    } else if (anim === 'parry') {             // the weapon snaps across the body and knocks the blow aside
+      const w = ease(up(p, 0, .18)), back = ease(up(p, .55, 1)), k = w * (1 - back);
+      q[A].r = -1.5 * k; q[F].r = -.9 * k; P.wr = -.9 * k; q[0].r = -.06 * k; P.dx = -2 * k; ready(1 - k);
+    } else if (anim === 'dodge') {             // a hop back out of reach
+      const k = Math.sin(Math.min(1, p) * Math.PI); ready(1); P.dx = -11 * k; P.dy = -5 * k; q[0].r += -.2 * k; q[1].r = -.1 * k; q[6].r += .35 * k; q[8].r += -.3 * k; q[A].r += .5 * k;
+    } else if (anim === 'knock') {             // a heavy blow: thrown back on the heels
+      const k = Math.sin(Math.min(1, p) * Math.PI), j = Math.sin(Math.min(1, p * 3) * Math.PI) * (1 - Math.min(1, p));
+      ready(1); q[0].r += -.3 * k; q[1].r = -.22 * k; P.dx = -9 * k; P.dy = -3 * j; q[A].r += .9 * k; q[F].r += .5 * k; q[6].r += .3 * k; q[8].r += -.15 * k;
     } else if (anim === 'cast') {
       const w = ease(up(p, 0, .3)), back = ease(up(p, .75, 1)), k = w * (1 - back), fl = Math.sin(p * TAU * 3) * .06 * k;
       q[A].r = (-2.3 + fl) * k; q[F].r = -.35 * k; q[0].r = -.05 * k; q[1].r = -.1 * k; P.dy = -1.5 * k; P.wr = 2.1 * k; ready(1 - k);
@@ -126,8 +152,8 @@ window.CB_PUPPET = (function () {
     }
     return P;
   }
-  const CLIP = { sit: 1600, ready: 1600, idle: 1600, walk: 760, attack: 560, aoe: 700, cast: 800, guard: 700, hit: 380, dead: 700 }; // ms per loop (or per play)
-  const ONCE = { attack: 1, aoe: 1, cast: 1, guard: 1, hit: 1, dead: 1 };
+  const CLIP = { thrust: 480, heavy: 820, leap: 820, double: 720, spin: 760, empower: 900, parry: 520, dodge: 460, knock: 560, sit: 1600, ready: 1600, idle: 1600, walk: 760, attack: 560, aoe: 700, cast: 800, guard: 700, hit: 380, dead: 700 }; // ms per loop (or per play)
+  const ONCE = { thrust: 1, heavy: 1, leap: 1, double: 1, spin: 1, empower: 1, parry: 1, dodge: 1, knock: 1, attack: 1, aoe: 1, cast: 1, guard: 1, hit: 1, dead: 1 };
   // ---------- drawing: each part is drawn from the look's strip with its parents' moves applied
   // parts are drawn enlarged (each art pixel a block of q x q) and the result shrunk to size, so a turned limb gets clean edges instead of jagged ones
   const WORK = {}, workFor = (q) => WORK[q] || (WORK[q] = (() => { const c = canvas(S * 2 * q, S * 2 * q); return { c, g: c.getContext('2d') }; })());

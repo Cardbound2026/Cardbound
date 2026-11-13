@@ -56,6 +56,11 @@ def no_arm(body, im):
     if len(pal):                # then snap every filled pixel to a colour the armour really uses nearby, so it stays crisp pixel art
         pal = np.unique(pal // 6 * 6, axis=0)
         for y, x in zip(ys, xs): c = sm[y, x].astype(int); out[y, x, :3] = pal[np.argmin(((pal - c) ** 2).sum(1))]
+    zx = np.nonzero(fill.any(0))[0]; W = int(zx.max() - zx.min() + 2)      # where real armour sits one arm's width behind or ahead, carry that over instead: it keeps the rivets, straps and plates
+    for y, x in zip(ys, xs):
+        for sh in (-W, W):
+            q = x + sh
+            if 0 <= q < S and good[y, q] and 0 <= q + (1 if sh > 0 else -1) < S and good[y, q + (1 if sh > 0 else -1)]: out[y, x, :3] = im[y, q, :3]; break
     body = np.array(Image.open(f'{HERE}/src/{body}/e.png').convert('RGBA'))[..., 3] > 0; out[fill & ~GS.dil(body, 2)] = 0   # and nothing may stick out past the body where the arm did
     return out
 def bake_set(name):

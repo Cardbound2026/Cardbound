@@ -28,9 +28,12 @@
   const lookOf = (key, cls, gear) => Object.assign(appOf(key, cls), { gear: P.gearOf(gear) }, P.armsOf(gear));
   // ---------- figures on the page: <span class="pupfig" data-pf="id"><canvas>; one loop draws them all
   const FIG = {}, ANIM = {}, BOX = 124, CW = 230, CH = 180, FX = 100, FY = 168; let ST = {}, n = 0;
-  const MOVE = { attack: 'attack', heavy: 'attack', lunge: 'attack', double: 'attack', leap: 'attack', twirl: 'aoe', cast: 'cast', empower: 'cast', vanish: 'cast', guard: 'guard', guard2: 'guard', parry: 'guard', dodge: 'guard', hit: 'hit', knock: 'hit' };
+  const MOVE = { attack: 'attack', heavy: 'heavy', lunge: 'thrust', double: 'double', leap: 'leap', twirl: 'spin', cast: 'cast', empower: 'empower', vanish: 'cast', guard: 'guard', guard2: 'guard', parry: 'parry', dodge: 'dodge', hit: 'hit', knock: 'knock' };
   function html(id, look, opt) { FIG[id] = { look, view: (opt && opt.view) || 'e', anim: (opt && opt.anim) || 'idle', t0: performance.now() - Math.random() * 1500 }; return `<span class="pupfig" data-pf="${id}" style="--s:${(opt && opt.s) || 1.12}"><canvas width="${CW * 3}" height="${CH * 3}"></canvas></span>`; }
-  function loop(now) {
+  let holdUntil = 0, heldFor = 0;   // hit-stop: the puppets freeze for an instant on a big hit
+  function loop(real) {
+    if (real < holdUntil) { requestAnimationFrame(loop); return; }
+    const now = real - heldFor;
     for (const el of document.querySelectorAll('.pupfig')) {
       const f = FIG[el.dataset.pf], cv = el.firstElementChild; if (!f || !cv) continue;
       const h = el.clientHeight; if (!h) continue; const k = h / BOX;
@@ -50,7 +53,7 @@
   if (F) {
     const play0 = F.play, states0 = F.setStates, town0 = F.town;
     F.figureHtml = (a) => html(a.id, lookOf(a, a.cls, a.look), { anim: 'ready' });
-    F.play = (id, move, o) => { if (FIG[id] && MOVE[move]) { ANIM[id] = { anim: MOVE[move], t0: performance.now() }; return; } play0(id, move, o); };
+    F.play = (id, move, o) => { if (FIG[id] && MOVE[move]) { ANIM[id] = { anim: MOVE[move], t0: performance.now() - heldFor }; return; } play0(id, move, o); };
     F.setStates = (m) => { ST = Object.assign({}, m); states0(m); };
     F.warm = (cls, gear) => { const L = lookOf('me', cls, gear); P.compose(L, 'e'); return { ready: true }; };
     const DIR = { down: 's', up: 'n', left: 'w', right: 'e' };
@@ -118,5 +121,5 @@
     const get = () => { const o = {}; for (const k of ['skin', 'eyes', 'eyeCol', 'mouth', 'lipCol', 'hair', 'hairCol', 'beard']) o[k] = L[k] == null ? null : L[k]; return o; };
     paint(); return { get, wear: (gear) => { Object.assign(L, { gear: P.gearOf(gear) }, P.armsOf(gear)); paint(); } };
   }
-  window.CB_HEROPUP = { html, lookOf, appOf, picker, npc, npcLook, HORSE, ride: (g, pal, cx, by, dir, moving, s, t) => ride(g, pal && pal.forge ? lookOf(pal.forge.who || 'me', pal.forge.cls, pal.forge.gear) : npcLook(pal || {}), pal && pal.forge ? pal.forge.who || 'me' : 'npc', cx, by, dir, moving, s, t) };
+  window.CB_HEROPUP = { hold: (ms) => { const t = performance.now(); if (t < holdUntil) return; holdUntil = t + ms; heldFor += ms; }, html, lookOf, appOf, picker, npc, npcLook, HORSE, ride: (g, pal, cx, by, dir, moving, s, t) => ride(g, pal && pal.forge ? lookOf(pal.forge.who || 'me', pal.forge.cls, pal.forge.gear) : npcLook(pal || {}), pal && pal.forge ? pal.forge.who || 'me' : 'npc', cx, by, dir, moving, s, t) };
 })();
