@@ -81,9 +81,19 @@ def bake_set(name):
                 bx = SIDE_BOX[b]; y0, y1 = bx['y'], bx['y'] + bx['h']; sa = src[y0:y1, 128:192, 3] > 128; fa = src[y0:y1, 0:64, 3] > 128
                 sc = int(round(128 + np.nonzero(sa)[1].mean())); fc = int(round(np.nonzero(fa)[1].mean()))
                 front = res[y0:y1, 0:64].copy(); sd = GS.dil(sa, 1); fg = (np.abs(front - src[y0:y1, 0:64]).sum(-1) > 24) & (front[..., 3] > 128)
+                H = y1 - y0; cr = next((r for r in range(H // 2, H) if not fa[r, fc]), H)   # the row where the legs part, seen from the front
+                lc = int(round(np.nonzero(fa[cr:, :fc])[1].mean())) if cr < H and fa[cr:, :fc].any() else fc
                 for x in range(bx['x'], bx['x'] + bx['w']):
-                    q = min(fc + 8, max(fc - 8, x - sc + fc)); col = sd[:, x - 128] if 0 <= x - 128 < 64 else np.zeros(y1 - y0, bool)
-                    res[y0:y1, x] = np.where((col & fg[:, q])[:, None], front[:, q], np.where(col[:, None], res[y0:y1, x], src[y0:y1, x]))
+                    col = sd[:, x - 128] if 0 <= x - 128 < 64 else np.zeros(H, bool)
+                    t = (x - sc + 8) % 32; q = fc - 8 + (t if t <= 16 else 32 - t)   # past the band the armour folds back on itself, so no pixel is smeared sideways
+                    t = (x - sc + 4) % 16; ql = lc - 4 + (t if t <= 8 else 16 - t)   # below the hips the trousers come from one leg of the front view the same way
+                    old = res[y0:y1, x].copy()
+                    for r in range(H):
+                        if not col[r]: res[y0 + r, x] = src[y0 + r, x]; continue
+                        qq = q if r < cr else ql
+                        if fg[r, qq]: res[y0 + r, x] = front[r, qq]
+                        elif r < cr: res[y0 + r, x] = src[y0 + r, x]
+                        else: res[y0 + r, x] = old[r]
                 side.add(b)
         gear = (np.abs(res - src).sum(-1) > 24) & (res[..., 3] > 128); lay = np.where(gear[..., None], res, 0).astype(np.uint8); lay[..., 3] = gear * 255
         for r, b in enumerate(bodies):
