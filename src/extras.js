@@ -289,6 +289,10 @@
     document.addEventListener('keydown', (ev) => { if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.target.matches('input, select, textarea') || $('scrStart').hidden || !$('modal').hidden || !$('sheet').hidden || (typeof $('talk') !== 'undefined' && $('talk') && !$('talk').hidden)) return;
       if (ev.key === 'b' || ev.key === 'B') { ev.preventDefault(); act('bags'); } else if (ev.key === 'l' || ev.key === 'L') { ev.preventDefault(); act('lfg'); } });
   }
+  // Nov 13: the talent trees changed (new talents at the bottom of every tree), so every hero gets all their picks back once
+  function exTalentRefund() { if (!profile || profile.talV >= 2) return; let n = 0; for (const c of Object.values(profile.chars || {})) for (const st of Object.values(c.codexes || {})) if (st.picks && st.picks.some(x => x != null)) { st.picks = []; n++; } profile.talV = 2; save();
+    if (n) setTimeout(() => { try { modal('<h2>Your talents were refunded</h2><p>The talent trees were reworked: every talent has a picture now, and the lower rows have new talents (counter-attacks, cleanses, low-health defences, card draw, mana and ways to disrupt enemies) in place of the ones every tree shared.</p><p>All your picks have been cleared, so you can choose again for free. Press <b>N</b> in town to open your tree.</p><div class="row"><button class="btn primary" id="mClose">Got it</button></div>'); $('mClose').onclick = closeModal; } catch (e) {} }, 2500); }
+  setInterval(() => { try { if (profile && !(profile.talV >= 2) && !$('scrStart').hidden && $('modal').hidden) exTalentRefund(); } catch (e) {} }, 3000);
   setTimeout(() => { try { CBHub.syncCaps(profile); exBorder(); } catch (e) {} }, 0);
   window.__x = (code) => eval(code); // test hook
   // ---------- going indoors (Nov 13): most townsfolk work inside. Their spot at the door is the way in: the screen dips to black and

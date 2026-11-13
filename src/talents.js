@@ -299,5 +299,43 @@
     txt = txt.replace(/Thorns \(enemies that hit you take (\d+) damage\)/, (m, k) => { const f = fx.find(x => x[1] === 'thorns'); return f ? `Thorns (enemies that hit you take ${f[2]} damage)` : m; });
     return { n: t.n, t: txt.replace(/\u0001/g, 'below 30% HP').replace(/\u0002/g, 'at 1 HP'), fx, halved: true }; };
   for (const c of Object.values(D)) c.rows = c.rows.map((row, i) => i === 4 ? row : row.map(halve));
+  // ---- Nov 13 pass on the bottom of the trees (rows for Lv 12, 14, 16 and 18). The Defense and Support columns there were the same
+  // talent in almost every tree of a class (28 of 30 trees ended on the same cheat-death, 19 on the same 5% aura). Within each class the
+  // first tree keeps its talent; every repeat is swapped for one from the pools below, so no two trees of a class share a talent in the
+  // same spot, and the bottom rows offer real choices: counter-attacks, cleanses, low-health defences, card draw, mana and disruption.
+  { const N = (n, t, ...fx) => ({ n, t, fx, halved: true });
+    const POOL = (cls) => { const typ = cls === 'Mage' || cls === 'Warlock' ? 'Skill' : 'Attack'; return {
+      '4:1': [N('Unbreakable', 'Take 15% less damage while below 50% HP.', ['incoming', 15, 'lowhp']), N('Iron Counter', 'When your {D} stops an attack completely, the attacker takes 10 damage.', ['full', 'back', 10]),
+        N('Clean Slate', 'At the start of each of your turns, remove 1 debuff from yourself and heal 1% of your max HP.', ['turn', 'cleanse', 1], ['turn', 'heal', 1, null, null]), N('Bolstered', 'Start each fight with 15 {D}, and {D} you gain is increased by 6%.', ['start', 'block', 15], ['def', 6, null]),
+        N('Lifeline', 'Once per fight, when you drop below 30% HP, heal 20% of your max HP.', ['lowhp', 20, 'heal']), N('Turn the Tide', 'Enemies that hit you gain 1 Weak and 1 Slow.', ['hitBy', 'debuff', 1, 'weak'], ['hitBy', 'debuff', 1, 'slow'])],
+      '5:1': [N('Stoneskin', 'Take 6% less damage while you have {D}.', ['incoming', 6, 'block']), N('Grit', 'Take 8% less damage while below 50% HP.', ['incoming', 8, 'lowhp']), N('Barbed Guard', 'When your {D} stops an attack completely, the attacker takes 5 damage.', ['full', 'back', 5]),
+        N('Shake It Off', 'Remove 1 debuff from yourself at the start of each of your turns.', ['turn', 'cleanse', 1]), N('Sapping Guard', 'Enemies that hit you gain 1 Weak.', ['hitBy', 'debuff', 1, 'weak']), N('Blood Price', 'Heal 2% of your max HP when you kill an enemy.', ['kill', 'heal', 2])],
+      '5:2': [N('Quick Study', 'Draw 1 extra card on your first turn of each fight.', ['start', 'draw', 1]), N('Rhythm', 'Every 4th card you play in a turn gives 3 mana.', ['every', 4, {}, 'mana', 3]), N('Cutpurse', '+6 Luck (better loot).', ['run', 'luck', 6]),
+        N('Light Feet', '+3 Initiative.', ['stat', 'baseInit', 3]), N('Deep Breath', 'Start each fight with +8 mana.', ['start', 'mana', 8]), N('Hex Ward', '10% chance to shrug off any debuff an enemy puts on you.', ['stat', 'debuffRes', 10])],
+      '6:1': [N('Hold the Line', '{D} you gain is increased by 10% while below 50% HP.', ['def', 10, 'lowhp']), N('Hobbling Guard', 'Enemies that hit you gain 1 Slow.', ['hitBy', 'debuff', 1, 'slow']), N('Second Skin', '+5% resistance to every element.', ['stat', 'resistAll', 5]),
+        N('Mending', 'Heal 3% of your max HP at the start of each of your turns while below 50% HP.', ['turn', 'heal', 3, null, 'lowhp']), N('Guarded Mind', 'When your {D} stops an attack completely, gain 3 mana.', ['full', 'mana', 3]), N('Ironclad', 'Start each fight with 12 {D}.', ['start', 'block', 12])],
+      '6:2': [N('Trophy Hunter', 'Gain 5 {D} when you kill an enemy.', ['kill', 'block', 5]), N('Momentum', `Every 3rd ${typ} you play in a turn draws a card.`, ['every', 3, { type: typ }, 'draw', 1]), N('Mana Font', '+2 mana regeneration.', ['stat', 'regen', 2]),
+        N('Unsettle', 'At the start of each fight, every enemy discards 1 card.', ['start', 'discard', 1]), N('Sixth Sense', '20% chance, when you draw a status card, to discard it and draw again.', ['stat', 'statusSkip', 20]), N('Packrat', 'When you extract, 10% more of your sack survives.', ['run', 'extract', 10])],
+      '7:1': [N('Riposte', 'When your {D} stops an attack completely, the attacker takes 8 damage and gains 1 Weak.', ['full', 'back', 8], ['full', 'debuff', 1, 'weak']), N('Bulwark', 'Take 10% less damage while you have {D}.', ['incoming', 10, 'block']),
+        N('Purity', 'Remove 1 debuff from yourself at the start of each of your turns, and 10% chance to shrug off any debuff.', ['turn', 'cleanse', 1], ['stat', 'debuffRes', 10]), N('Vengeful Guard', 'Enemies that hit you gain 1 Vulnerable.', ['hitBy', 'debuff', 1, 'vulnerable']),
+        N('Warded Soul', '+8% resistance to every element.', ['stat', 'resistAll', 8]), N('Bloodied Resolve', 'Take 12% less damage while below 50% HP.', ['incoming', 12, 'lowhp'])],
+      '7:2': [N('Battle Trance', 'Every 4th card you play in a turn draws a card.', ['every', 4, {}, 'draw', 1]), N('Soul Harvest', 'When you kill an enemy, draw 1 card and gain 4 mana.', ['kill', 'draw', 1], ['kill', 'mana', 4]),
+        N('Head Start', '+6 Initiative, and draw 1 extra card on your first turn of each fight.', ['stat', 'baseInit', 6], ['start', 'draw', 1]), N('Mana Burn', 'At the start of each of your turns, drain 2 mana from every enemy.', ['turn', 'drain', 2]),
+        N('Daze', 'Every enemy starts the fight with 2 Dazed cards in its deck.', ['start', 'dazed', 2]), N('Field Rations', 'After each fight, you and your allies heal 6 HP.', ['run', 'partyHealthRegen', 6])],
+      '8:1': [N('Second Wind', 'Once per fight, a killing blow leaves you at 1 HP instead, then you heal 25% of your max HP.', ['cheat', 25, 'heal']), N('Last Bastion', 'While below 50% HP: take 12% less damage, and heal 2% of your max HP at the start of each of your turns.', ['incoming', 12, 'lowhp'], ['turn', 'heal', 2, null, 'lowhp']),
+        N('Retribution', 'When your {D} stops an attack completely, the attacker takes 12 damage and gains 2 Weak.', ['full', 'back', 12], ['full', 'debuff', 2, 'weak']), N('Unshakable', '25% chance to shrug off any debuff an enemy puts on you, and remove 1 debuff from yourself at the start of each of your turns.', ['stat', 'debuffRes', 25], ['turn', 'cleanse', 1]),
+        N('Countermeasure', 'When your {D} stops an attack completely, gain 5 mana and draw a card.', ['full', 'mana', 5], ['full', 'draw', 1]), N('Fortress', 'Start each fight with 20 {D}, and gain 4 {D} at the start of each of your turns.', ['start', 'block', 20], ['turn', 'block', 4])],
+      '8:2': [N('Spoils of War', 'When you kill an enemy, draw 1 card and gain 6 mana.', ['kill', 'draw', 1], ['kill', 'mana', 6]), N('Opening Gambit', 'Start each fight with +10 mana, and draw 2 extra cards on your first turn.', ['start', 'mana', 10], ['start', 'draw', 2]),
+        N('Disruption', 'Every enemy starts the fight with 2 Dazed cards in its deck, and you drain 2 mana from every enemy at the start of each of your turns.', ['start', 'dazed', 2], ['turn', 'drain', 2]),
+        N('Second Breath', 'Every 4th card you play in a turn draws a card and gives 3 mana.', ['every', 4, {}, 'draw', 1], ['every', 4, {}, 'mana', 3]), N("Fortune's Tide", 'You and your allies gain +10 Luck (better loot).', ['run', 'partyLuck', 10]),
+        N('Tireless', '+3 mana regeneration and +10 maximum mana.', ['stat', 'regen', 3], ['stat', 'maxMana', 10])] }; };
+    const seen = {}, used = {};
+    for (const [k, tr] of Object.entries(D)) { const pool = POOL(tr.cls);
+      for (const ri of [4, 5, 6, 7, 8]) for (const ci of [1, 2]) { const t = tr.rows[ri] && tr.rows[ri][ci]; if (!t || !pool[ri + ':' + ci]) continue; const cell = tr.cls + ':' + ri + ':' + ci, s = seen[cell] = seen[cell] || new Set();
+        if (!s.has(t.t)) { s.add(t.t); continue; }
+        const list = pool[ri + ':' + ci], u = used[cell] = used[cell] || 0, nt = list[u % list.length]; used[cell] = u + 1;
+        if (nt.fx.some(f => f[0] === 'cheat' || f[0] === 'lowhp') && tr.rows.some((row, j) => j !== ri && row.some(x => x.fx.some(f => f[0] === nt.fx.find(z => z[0] === 'cheat' || z[0] === 'lowhp')[0])))) { used[cell]++; tr.rows[ri][ci] = list[(u + 1) % list.length]; } else tr.rows[ri][ci] = nt;
+        s.add(tr.rows[ri][ci].t); } }
+  }
   if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.CB_TALENTS = D;
 })(typeof window !== 'undefined' ? window : globalThis);

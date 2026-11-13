@@ -44,3 +44,17 @@ tal 6 7440d789-02b0-468d-9d59-989ee10a20a6
 tal 7 4a4db819-82f1-4768-aec2-60dcf07f3b8a
 tal 8 08534224-444f-4102-9079-ce18ee7df586
 tal 9 4241d61e-e2b7-420c-80ee-b38f90b598cf
+raid fire 0889a64d-d324-4bce-890e-0e5bc47697dc
+raid nature b509813c-9330-4c19-b222-afceda99e45a
+raid frost a25ccb19-fd0c-4cce-b1b8-5b2d49f9399d
+raid physical 591f9150-654a-44cd-8602-b2808c884ae1
+raid arcane 7238def3-f842-4e1a-bda7-0e7bd2ab5af1
+raid shadow 9e8d672b-d42e-4502-a31c-c0fca38478ad
+raidbg fire 28c2c9a7-a782-4169-98ff-7996911739fd
+raidbg nature 63f2bc63-91e4-421f-9297-97ed39d9fe99
+raidbg frost ce04784a-b166-4dd1-a0fd-d4b48e399cbd
+raidbg physical d4e32357-881b-4d0a-84dd-27c625838946
+raidbg arcane b7c886fe-e5ab-4d58-b71b-834b54f0abcc
+raidbg shadow cbba0c57-74ea-412b-b3c5-cb77a001741f
+tal 10 e8e080bf-fd1e-4757-8018-fc20dbe12532
+tal 11 0e59e54f-c3fe-44a3-8782-029a3fd67dfb

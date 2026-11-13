@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Feature', "Talent trees: every talent has its own picture, and the lower rows were reworked. Within a class, no two trees now share the same talent in the same spot from level 10 down. In place of the repeats there are new defensive and utility talents: hit back when your defence stops an attack, cleanse a debuff every turn, take less damage or heal while below half health, draw a card on every 4th card, drain enemy mana, start enemies with Dazed cards, and more. Every hero's talent picks were refunded once, so you can choose again for free."],
       ['Feature', "You can walk into the buildings of Emberwatch. Most townsfolk now work indoors: walk up to the glowing arrow at a door and press Space, and you step inside the armory, the bank, the library, the jeweler, the guild hall, the barracks, the war room and the rest. Walk with A and D or a click, talk with Space, leave with Esc."],
       ['Feature', "Three new shops. Fenwick's Barber Shop changes your hero's hair, beard and face any time, free. The Ember Mug inn keeps the group board. The Skull Boutique sells mounts and looks for Skull Tokens."],
       ['Feature', "The group board (the inn, the button in town, or L). Pin a notice that shows your strength, who you are looking for, which road and level you are doing, and a message of your own. Everyone online can read it, whisper you from it, or invite you to their party."],
