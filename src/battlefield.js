@@ -267,12 +267,12 @@ function layout(cb, opts) {
     let x = 12 + P + sh[0].hw * s + 8, y = B;
     for (let i = 0; i < n; i++) {
       if (i) {
-        const pv = out[i - 1], dx = Math.max(s * .5, (sh[i - 1].hw + sh[i].hw) * s * .8) + 8; x += dx;
+        const pv = out[i - 1], dx = Math.max(s * .42, (sh[i - 1].hw + sh[i].hw) * s * .62) + 6; x += dx;   /* Nov 13: fighters on one side stand closer together now that the HP bars are small */
         const pl = x - sh[i].hw * s - 8 - P, pr = x - sh[i].hw * s - 8, fl = pv.x - sh[i - 1].hw * s, fr = pv.x + sh[i - 1].hw * s;
         const over = pr > fl + 4 && pl < fr - 4, tl = pv.x - sh[i - 1].tw / 2, tr = pv.x + sh[i - 1].tw / 2, overTag = sh[i - 1].tw && pr > tl - 2 && pl < tr + 2;
         // the plate must clear the front fighter's head, and its name tag if it reaches over it
         const clear = overTag ? s * sh[i - 1].ht * 1.0 + sh[i - 1].th + 6 : over ? s * sh[i - 1].ht * .92 : 0;
-        y -= Math.max(h[i - 1] + 5, clear, s * .2);
+        y -= Math.max(s * .16, Math.min(Math.max(h[i - 1] + 5, clear), s * .3));
       }
       out.push({ x, y, d: i, G: sh[i].hw * s + 8 });
     }

@@ -2,6 +2,12 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Interface', "An opened chest lays its loot out in front of it: a pile of gold that grows with the amount (a few coins up to a hoard), each item's picture, each card. Click a thing to take it, or Take all. Hover gear to read it."],
+      ['Interface', "Foes in a group stand closer together."],
+      ['Art', "Your pet in a fight stands on the ground beside you playing its idle animation. It no longer floats or blinks in and out."],
+      ['Art', "The exhaust pile's fire stands on the bottom edge of the card."],
+      ['Interface', "A boss's loot list now says it outright: a kill has a 25% chance to drop one codex, picked at random from that boss's five, which is why each codex shows 5%."],
+      ['Interface', "The turn hint above your hand sits in the middle of its bar."],
       ['Interface', "Cosmetics window (K, or the wings button on the bottom bar, or the Menu): every mount, pet, aura, footsteps, wings, weapon look, card border and card back you own, in one place. Click to use, click again to take off."],
       ['Interface', "The loot chest now opens when you click it: the lid lifts, the chest fades back, and the loot is laid out in front of it. Rummaging at a campfire gives a chest too."],
       ['Interface', "Engage on the node window is a big gold button."],

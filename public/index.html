@@ -1152,9 +1152,11 @@ body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn[data-n="0"] > i { backgroun
 body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust { width: calc(var(--u) * 19) !important; height: calc(var(--u) * 26) !important; top: calc(var(--u) * 88) !important; }
 body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust[data-n="0"] { display: none !important; }
 body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust:not([data-n="0"]) > i { filter: brightness(.5) sepia(.75) saturate(1.5); clip-path: polygon(0 20%, 11% 9%, 24% 17%, 38% 5%, 53% 15%, 68% 3%, 84% 14%, 100% 7%, 100% 100%, 0 100%); box-shadow: none; }
-body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust:not([data-n="0"])::before { content: ''; position: absolute; left: -18%; right: -18%; top: -42%; height: 95%; pointer-events: none; background: radial-gradient(ellipse 34% 58% at 30% 88%, #fff1a8 0, #ffb347 30%, #ff6a1a 55%, transparent 78%), radial-gradient(ellipse 30% 70% at 62% 90%, #ffe58a 0, #ff9a2a 32%, #e2401a 58%, transparent 80%), radial-gradient(ellipse 60% 40% at 50% 100%, rgba(255,120,30,.8) 0, transparent 75%); mix-blend-mode: screen; transform-origin: 50% 100%; animation: exflame .42s steps(4) infinite alternate; }
-body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust:not([data-n="0"])::after { content: ''; position: absolute; left: 0; right: 0; top: 4%; height: 16%; pointer-events: none; background: linear-gradient(180deg, transparent, rgba(255,140,40,.85)); filter: blur(2px); animation: exflame .6s steps(3) infinite alternate-reverse; }
-@keyframes exflame { from { transform: scale(1, .86) skewX(-4deg); opacity: .8; } to { transform: scale(1.06, 1.08) skewX(5deg); opacity: 1; } }
+body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust:not([data-n="0"])::before { content: ''; position: absolute; left: -22%; right: -22%; top: -55%; bottom: -3%; pointer-events: none; /* Nov 13: the fire stands on the bottom edge of the card and licks up past the top, fading out with no cut line */
+  background: radial-gradient(ellipse 26% 62% at 28% 100%, #fff4b8 0, #ffc04d 22%, #ff7a1f 46%, rgba(214,60,14,.55) 66%, transparent 86%), radial-gradient(ellipse 30% 78% at 55% 100%, #fff1a8 0, #ffb347 20%, #ff6a1a 44%, rgba(200,50,12,.5) 66%, transparent 88%), radial-gradient(ellipse 24% 56% at 78% 100%, #ffe58a 0, #ff9a2a 26%, #e2401a 52%, transparent 84%);
+  mix-blend-mode: screen; transform-origin: 50% 100%; animation: exflame .42s steps(4) infinite alternate; }
+body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust:not([data-n="0"])::after { content: ''; position: absolute; left: -6%; right: -6%; bottom: -5%; height: 16%; pointer-events: none; background: radial-gradient(ellipse 50% 100% at 50% 100%, rgba(255,150,40,.9), transparent 75%); filter: blur(2px); transform-origin: 50% 100%; animation: exflame .6s steps(3) infinite alternate-reverse; }
+@keyframes exflame { from { transform: scale(1, .88) skewX(-3deg); opacity: .82; } to { transform: scale(1.05, 1.06) skewX(4deg); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust::before, body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust::after { animation: none !important; } }
 /* Nov 13: the killing-blow banner, then a chest over the dimmed fight. Light the colour of its loot leaks from under the lid */
 #killov { position: fixed; inset: 0; z-index: 900; display: grid; place-items: center; cursor: pointer; background: rgba(4,3,5,0); transition: background .35s ease; }
@@ -1171,11 +1173,19 @@ body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust:not([data-n="0"]
 #killov .kchest.t0 { --sy: 44%; } #killov .kchest.t1 { --sy: 36%; } #killov .kchest.t2 { --sy: 41%; } #killov .kchest.t3 { --sy: 41%; }
 #killov .kchest em { position: absolute; left: 50%; top: calc(100% + 10px); transform: translateX(-50%); white-space: nowrap; font: 600 15px 'Grenze', serif; font-style: normal; font-variant: small-caps; letter-spacing: 2px; color: #d9c9a8; text-shadow: 0 1px 0 #000; animation: sppulse 2.2s ease-in-out infinite; }
 #killov .kchest:hover .kcimg, #killov .kchest:focus-visible .kcimg { filter: drop-shadow(0 10px 12px rgba(0,0,0,.8)) brightness(1.18); } #killov .kchest:focus { outline: none; }
-#killov.open { background: rgba(4,3,5,.84); z-index: 19; } #killov.open .kchest { animation: none; cursor: default; opacity: .55; transform: translateY(-30vh) scale(1.3); transition: opacity .5s ease .25s, transform .5s ease; } #killov.open .kchest em, #killov.open .kseam { display: none; }
+#killov.open { background: rgba(4,3,5,.84); z-index: 300; } #killov.open .kchest { animation: none; cursor: default; opacity: .55; transform: translateY(-30vh) scale(1.3); transition: opacity .5s ease .25s, transform .5s ease; } #killov.open .kchest em, #killov.open .kseam { display: none; }
 #killov.open .kcimg { background-position-y: 100%; animation: kcpop .3s ease; } #killov.open .krays { top: calc(var(--sy, 44%) - 60%); height: 62%; opacity: .9; transition: all .4s ease; }
 @keyframes kcpop { 0% { transform: scale(1.1, .88); filter: brightness(2.2); } 100% { transform: none; } }
+.kloot { position: absolute; inset: 14vh 0 0 0; margin: auto; height: fit-content; width: min(760px, 94vw); display: grid; justify-items: center; gap: 14px; text-align: center; text-shadow: 0 2px 0 #000, 0 0 12px #000; animation: kcin .35s ease both; }
+.kloot h2 { margin: 0; font-size: 46px; color: var(--accent); } .kloot .ktiles { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 14px; max-height: 50vh; overflow: auto; padding: 8px; }
+.ktile { position: relative; display: grid; place-items: center; width: 84px; height: 84px; padding: 0; border: 0; border-radius: 6px; cursor: pointer; background: #0c0a0b; box-shadow: inset 0 0 0 2px var(--rc, #5a4128), inset 0 0 0 3px #000, 0 0 16px color-mix(in srgb, var(--rc, #5a4128) 55%, transparent); transition: transform .12s ease, filter .12s ease; }
+.ktile:hover, .ktile:focus-visible { transform: translateY(-3px) scale(1.06); filter: brightness(1.2); outline: none; } .ktile .iticon { --isz: 64px; }
+.ktile.kgold { width: 108px; height: 108px; background: none; box-shadow: none; } .kgpile { width: 96px; height: 96px; background: url(img/ui/gold.webp) 0 0 / 500% 100% no-repeat; image-rendering: pixelated; filter: drop-shadow(0 0 12px rgba(255,190,60,.6)); } .ktile.kgold b { position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); padding: 0 8px; border-radius: 10px; background: #120e0b; border: 1px solid #8a653d; font: 700 16px var(--f-ui, sans-serif); color: #ffd76a; }
+.ktile.kcardt { width: auto; height: auto; background: none; box-shadow: 0 0 18px color-mix(in srgb, var(--rc) 60%, transparent); } .ktile.kcardt .card { pointer-events: none; }
+.ktile.taken { pointer-events: none; animation: ktake .34s ease-in forwards; } @keyframes ktake { to { transform: translateY(60px) scale(.3); opacity: 0; } }
+.kloot .knote { margin: 0; font-size: 13px; color: #b9ad97; } .kloot #kTake { min-width: 180px; font-size: 20px; padding: 9px 26px; }
 .modal:has(.lootpop) { background: transparent !important; } body .modal .box.lootpop { width: min(620px, 94vw); text-align: center; text-shadow: 0 2px 0 #000, 0 0 12px #000; gap: 10px; animation: kcin .35s ease both; }
-.lootpop h2 { font-size: 44px; margin: 0; } .lootpop .list { text-align: left; text-shadow: none; max-height: 46vh; } .lootpop .row { justify-content: center; } .lootpop .sackhead { text-shadow: 0 1px 0 #000; }
+.lootpop h2 { font-size: 44px; margin: 0; } .lootgold { display: flex; align-items: center; justify-content: center; gap: 10px; font: 600 26px 'Grenze', serif; color: #ffd76a; } .lootgold i { width: 96px; height: 96px; background: url(img/ui/gold.webp) 0 0 / 500% 100% no-repeat; image-rendering: pixelated; filter: drop-shadow(0 0 14px rgba(255,190,60,.55)); animation: kcin .4s cubic-bezier(.2,1.4,.4,1) both; } .lootgold b { font-size: 38px; color: #fff1c4; } .lootgold span { font-variant: small-caps; letter-spacing: 2px; } .lootpop .list { text-align: left; text-shadow: none; max-height: 46vh; } .lootpop .row { justify-content: center; } .lootpop .sackhead { text-shadow: 0 1px 0 #000; }
 @keyframes kcin { from { opacity: 0; transform: translateY(-40px) scale(.7); } to { opacity: 1; transform: none; } }
 @keyframes kglow { from { opacity: .55; transform: scaleX(.92); } to { opacity: 1; transform: scaleX(1.04); } }
 @media (prefers-reduced-motion: reduce) { #killov .kseam, #killov .krays, #killov .kchest em { animation: none; } }
@@ -1195,7 +1205,7 @@ body #scrCombat.bf.hud3 .field-panel > .hud #btnEnd:disabled { color: #6f6250 !i
 #scrCombat.hud3 .hudbtns { display: flex; gap: 6px; justify-content: center; position: absolute; right: calc(var(--u) * 4.5); top: calc(var(--u) * 104); width: calc(var(--u) * 76); }
 #scrCombat.hud3 .hudbtns button { width: 44px; height: 30px; padding: 0; background: linear-gradient(#211e1b, #141211); border: 2px solid #0a0908; box-shadow: inset 0 0 0 1px #5a4128, 0 3px 6px rgba(0,0,0,.6); border-radius: 3px; font: 600 11px var(--f-ui); letter-spacing: .08em; color: #b7ab97; cursor: pointer; }
 #scrCombat.hud3 .hudbtns button:hover, #scrCombat.hud3.logopen .hudbtns #btnLogC { color: #f0dfbf; box-shadow: inset 0 0 0 1px #8a653d, 0 0 8px rgba(214,161,74,.4); }
-body #scrCombat.bf.hud3 .field-panel > .hud .hint { position: absolute !important; left: calc(var(--u) * 105) !important; right: calc(var(--u) * 106) !important; top: calc(var(--u) * 6) !important; width: auto !important; height: calc(var(--u) * 13) !important; margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; display: grid !important; place-items: center; font-size: 12.5px !important; color: #b7ab97; text-shadow: 0 1px 0 #000; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+body #scrCombat.bf.hud3 .field-panel > .hud .hint { position: absolute !important; left: calc(var(--u) * 105) !important; right: calc(var(--u) * 106) !important; top: calc(var(--u) * 4.7) !important; width: auto !important; height: calc(var(--u) * 13) !important; margin: 0 !important; padding: 0 !important; background: none !important; border: 0 !important; display: grid !important; place-items: center; font-size: 12.5px !important; color: #b7ab97; text-shadow: 0 1px 0 #000; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 /* the hand lies in the recess */
 #scrCombat.hud3 .field-panel > .hand { position: absolute !important; left: calc(var(--u) * 153) !important; right: calc(var(--u) * 152) !important; bottom: calc(var(--u) * 23) !important; top: auto !important; height: calc(var(--u) * 98) !important; width: auto !important; margin: 0 !important; padding: 0 0 calc(var(--u) * 2) !important; z-index: 5; background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; --hcw: calc(var(--u) * 63); align-items: center !important; }
 #scrCombat.hud3 .field-panel > .hand::before, #scrCombat.hud3 .field-panel > .hand::after { display: none !important; }
@@ -7451,8 +7461,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794608169260';
-  const CB_BUILD = 'fb41128ec3'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794608840910';
+  const CB_BUILD = '5f1f3d7e52'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8558,6 +8568,12 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Interface', "An opened chest lays its loot out in front of it: a pile of gold that grows with the amount (a few coins up to a hoard), each item's picture, each card. Click a thing to take it, or Take all. Hover gear to read it."],
+      ['Interface', "Foes in a group stand closer together."],
+      ['Art', "Your pet in a fight stands on the ground beside you playing its idle animation. It no longer floats or blinks in and out."],
+      ['Art', "The exhaust pile's fire stands on the bottom edge of the card."],
+      ['Interface', "A boss's loot list now says it outright: a kill has a 25% chance to drop one codex, picked at random from that boss's five, which is why each codex shows 5%."],
+      ['Interface', "The turn hint above your hand sits in the middle of its bar."],
       ['Interface', "Cosmetics window (K, or the wings button on the bottom bar, or the Menu): every mount, pet, aura, footsteps, wings, weapon look, card border and card back you own, in one place. Click to use, click again to take off."],
       ['Interface', "The loot chest now opens when you click it: the lid lifts, the chest fades back, and the loot is laid out in front of it. Rummaging at a campfire gives a chest too."],
       ['Interface', "Engage on the node window is a big gold button."],
@@ -13048,12 +13064,12 @@ function layout(cb, opts) {
     let x = 12 + P + sh[0].hw * s + 8, y = B;
     for (let i = 0; i < n; i++) {
       if (i) {
-        const pv = out[i - 1], dx = Math.max(s * .5, (sh[i - 1].hw + sh[i].hw) * s * .8) + 8; x += dx;
+        const pv = out[i - 1], dx = Math.max(s * .42, (sh[i - 1].hw + sh[i].hw) * s * .62) + 6; x += dx;   /* Nov 13: fighters on one side stand closer together now that the HP bars are small */
         const pl = x - sh[i].hw * s - 8 - P, pr = x - sh[i].hw * s - 8, fl = pv.x - sh[i - 1].hw * s, fr = pv.x + sh[i - 1].hw * s;
         const over = pr > fl + 4 && pl < fr - 4, tl = pv.x - sh[i - 1].tw / 2, tr = pv.x + sh[i - 1].tw / 2, overTag = sh[i - 1].tw && pr > tl - 2 && pl < tr + 2;
         // the plate must clear the front fighter's head, and its name tag if it reaches over it
         const clear = overTag ? s * sh[i - 1].ht * 1.0 + sh[i - 1].th + 6 : over ? s * sh[i - 1].ht * .92 : 0;
-        y -= Math.max(h[i - 1] + 5, clear, s * .2);
+        y -= Math.max(s * .16, Math.min(Math.max(h[i - 1] + 5, clear), s * .3));
       }
       out.push({ x, y, d: i, G: sh[i].hw * s + 8 });
     }
@@ -14296,8 +14312,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     #actbar button::after { content: attr(data-tip); position: absolute; bottom: 52px; right: 0; white-space: nowrap; background: #0b0a08; border: 1px solid #5a4a2e; color: #efe6d2; font-size: 13px; padding: 3px 8px; border-radius: 3px; opacity: 0; pointer-events: none; transition: opacity .12s; }
     #actbar button:hover::after { opacity: 1; }
     #actbar button .abadge { position: absolute; left: 1px; top: 1px; min-width: 15px; height: 15px; border-radius: 8px; background: #b3261e; color: #fff; font: 700 10px/15px sans-serif; text-align: center; padding: 0 3px; box-shadow: 0 0 0 1px #000; }
-    .petfig { position: absolute; left: -34%; bottom: 4%; height: 34%; scale: -1 1; image-rendering: pixelated; pointer-events: none; filter: drop-shadow(0 2px 0 rgba(0,0,0,.5)); animation: petbob 1.6s ease-in-out infinite; z-index: 1; }
-    @keyframes petbob { 50% { transform: translateY(-4%); } }
+    .petfig { position: absolute; z-index: 15; background-repeat: no-repeat; transform: scaleX(-1); image-rendering: pixelated; pointer-events: none; filter: drop-shadow(0 2px 0 rgba(0,0,0,.5)); } body.modalopen .petfig, body.sheetopen .petfig { display: none !important; }
     .bankbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 8px; } .bankbar input[type=search] { flex: 1; min-width: 180px; }
     .bankbar .shoptabs { margin: 0; }
     body[data-cardborder] .hand .card, body[data-cardborder] #hand .card { box-shadow: 0 0 0 2px var(--cbord), 0 0 12px -2px var(--cbord); border-radius: 6px; }
@@ -14356,11 +14371,26 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     g.save(); g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.ellipse(p.x, p.y, w * 0.34, 3.5 * s, 0, 0, Math.PI * 2); g.fill(); g.imageSmoothingEnabled = false;
     g.translate(p.x, p.y - bob); if (p.f < 0) g.scale(-1, 1); g.drawImage(im, -w / 2, -h, w, h); g.restore();
   }
-  setInterval(() => {   // a fight: every hero with a pet gets it standing at their side
-    try { if (typeof cb === 'undefined' || !cb || $('scrCombat').hidden) return;
-      for (const a of cb.players) { const u = document.querySelector(`#scrCombat .unit[data-id="${a.id}"] .figure`); if (!u) continue; const app = window.CB_PUP_APP ? CB_PUP_APP(a) : null, pet = app && app.cos && app.cos.pet; let im = u.querySelector('.petfig');
-        if (!pet || a.hp <= 0) { if (im) im.remove(); continue; } if (!im) { im = document.createElement('img'); im.className = 'petfig'; im.alt = ''; im.draggable = false; if (getComputedStyle(u).position === 'static') u.style.position = 'relative'; /* Nov 13: the fight figure is already placed by the stage; forcing it to relative dropped the hero off the bottom of the screen */ u.appendChild(im); } const src = petSrc(pet); if (im.dataset.k !== pet) { im.dataset.k = pet; im.src = src; } }
-    } catch (e) {} }, 700);
+  // a fight: every hero with a pet gets it standing at their side.
+  // Nov 13 (later): the pet lives in its own layer over the fight, so it is not thrown away and remade each time the fight redraws (it used to
+  // blink in and out), it no longer bobs up and down, and it plays its monster's idle animation, standing on the ground beside its hero.
+  const PETS = new Map();
+  setInterval(() => {
+    try {
+      const on = typeof cb !== 'undefined' && cb && !$('scrCombat').hidden, seen = new Set();
+      if (on) for (const a of cb.players) {
+        const u = document.querySelector(`#scrCombat .unit[data-id="${a.id}"] .figure`), app = window.CB_PUP_APP ? CB_PUP_APP(a) : null, pet = app && app.cos && app.cos.pet; if (!u || !pet || a.hp <= 0) continue;
+        const f = window.CB_MOBS && CB_MOBS.keyOf ? CB_MOBS.keyOf(pet) : null, k = f ? f.k || f : pet, m = window.CB_MOBS && CB_MOBS.manifest && CB_MOBS.manifest[k]; if (!m) continue;
+        seen.add(a.id); let el = PETS.get(a.id);
+        if (!el || el.dataset.k !== k) { if (el) el.remove(); el = document.createElement('div'); el.className = 'petfig'; el.dataset.k = k; el.style.backgroundImage = `url(img/mobs/${k}.webp)`; document.body.appendChild(el); PETS.set(a.id, el); }
+        const r = u.getBoundingClientRect(); if (r.width < 4) { el.style.display = 'none'; continue; }
+        const idle = (m.a.find(x => x[0] === 'idle') || m.a[0]), n = idle[1], row = m.a.indexOf(idle), ib = m.ib || [0, 0, m.w, m.h], hgt = Math.max(26, r.height * .34), sc = hgt / (ib[3] - ib[1] || m.h), fr = Math.floor(performance.now() / 150) % n;
+        const cols = Math.max(...m.a.map(x => x[1]));
+        el.style.display = ''; el.style.width = m.w * sc + 'px'; el.style.height = m.h * sc + 'px'; el.style.backgroundSize = `${cols * m.w * sc}px ${m.a.length * m.h * sc}px`; el.style.backgroundPosition = `${-fr * m.w * sc}px ${-row * m.h * sc}px`;
+        el.style.left = Math.round(r.left - m.w * sc * .78 + scrollX) + 'px'; el.style.top = Math.round(r.bottom - ib[3] * sc + scrollY) + 'px';
+      }
+      for (const [id, el] of PETS) if (!seen.has(id)) { el.remove(); PETS.delete(id); }
+    } catch (e) {} }, 150);
   // a pet that dropped on the last run: say so
   function exPetNews() { const n = profile.newPets; if (!n || !n.length) return; profile.newPets = []; { const ap = exApp(); if (ap.cos && !ap.cos.pet) ap.cos.pet = n[0]; } /* Nov 13: your first pet starts following you straight away */ save(); modal(`<h2>A new pet!</h2><p>${n.map(k => `<b>${esc(petName(k))}</b>`).join(', ')} followed you home. One kill in a thousand does that.</p><div style="display:flex;gap:14px;justify-content:center;margin:10px 0">${n.map(k => `<img src="${petSrc(k)}" alt="" style="height:96px;image-rendering:pixelated">`).join('')}</div><p class="muted">Pets are for show: they trot behind you in town and stand by you in a fight. Swap or dismiss it in your hero window (C), Wardrobe.</p><div class="row"><button class="btn primary" id="mClose">Lovely</button></div>`); $('mClose').onclick = closeModal; }
   setInterval(() => { try { if (profile && profile.newPets && profile.newPets.length && !$('scrStart').hidden && $('modal').hidden && $('sheet').hidden) exPetNews(); } catch (e) {} }, 2500);
@@ -15163,7 +15193,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       <p class="muted">Luck ${lk}: every chance is multiplied by ${(1 + lk / 100).toFixed(2)}.${t.chance['Purple (Epic)'] ? '' : ' Purples only drop from elites and the boss.'}</p>
       <p><b>Item bases it drops</b> (one picked per roll; stats roll at map +${lvl}):</p><div class="cardlist">${e.pool.map(b => { const bb = G.bases.find(x => x.name === b); return `<div class="cardrow" style="--rc:var(--line)"><span class="n"></span><b>${esc(b)}</b><span class="cst">${esc(bb ? bb.label : '')}</span></div>`; }).join('')}</div>` : '';
     const cards = (e.loot || []).filter(x => x.type === 'Card' || x.type === 'Codex');
-    const cardHtml = cards.length ? `<p><b>Cards and codexes</b> (each rolls on its own; Gold cards only drop here):</p><div class="cardlist">${cards.map(x => `<div class="cardrow" style="--rc:${RC[x.rarity] || 'var(--line)'}"><span class="n">${x.type === 'Codex' ? +CB.bossCodexPct(e).toFixed(1) : x.pct}%</span><b>${esc(x.item)} <span class="muted">${esc(x.cls)} ${esc(x.rarity)} ${x.type === 'Codex' ? 'codex' : ''}</span></b><span class="cst"></span><span class="tx">${esc(x.note || '')}</span></div>`).join('')}</div>` : '';
+    const cardHtml = cards.length ? `<p><b>Cards and codexes</b> (each card rolls on its own; Gold cards only drop here):</p>${cards.some(x => x.type === 'Codex') ? `<p class="muted" style="margin:0 0 4px">A kill has a <b style="color:#e0802a">${Math.round(CB.BOSS_CODEX_CHANCE * 100)}% chance to drop one codex</b>. Which one is random among the ${cards.filter(x => x.type === 'Codex').length} below, so each shows ${+CB.bossCodexPct(e).toFixed(1)}%.</p>` : ''}<div class="cardlist">${cards.map(x => `<div class="cardrow" style="--rc:${RC[x.rarity] || 'var(--line)'}"><span class="n">${x.type === 'Codex' ? +CB.bossCodexPct(e).toFixed(1) : x.pct}%</span><b>${esc(x.item)} <span class="muted">${esc(x.cls)} ${esc(x.rarity)} ${x.type === 'Codex' ? 'codex' : ''}</span></b><span class="cst"></span><span class="tx">${esc(x.note || '')}</span></div>`).join('')}</div>` : '';
     const html = `<p><b>Gold:</b> ${Math.round(e.gold[0] * gm)} to ${Math.round(e.gold[1] * gm)} per kill.</p>${gear}${cardHtml}<p><b>Card drops:</b> ${{ 1: '30% per kill (mostly White)', 2: '40% per kill', 3: '50% per kill', Elite: 'always 1 card, Green or better (10% Gold)', Boss: '2 cards, Blue or Gold' }[e.tier]}, from your class's implemented cards. The named cards above come from the Map 1 design and arrive when more cards are built.</p>`;
     if (asHtml) return html;
     modal(`<h2>${esc(e.name)}: loot</h2>${html}<div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
@@ -15386,7 +15416,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     const parts = idx.map(i => { const m = run.members[i], o = out[i]; return `<div><b style="color:${CC[m.cls]}">${esc(m.name)}</b>: ${o.heal ? `healed ${o.heal} HP` : 'no healing'}${choices[i] === 'rummage' ? `, rummaged${o.from ? ' (' + esc(o.from) + ')' : ''}: ${o.gold} gold${o.drops.length ? ' and:' : ', nothing else.'}` : ''}</div>${o.drops.length ? `<div class="list">${o.drops.map(d => itemHtml(d)).join('')}</div>` : ''}`; });
     if (!idx.some(i => choices[i] === 'rummage') && !run.online) return; // a plain rest needs no popup
     const show = () => { modal(`<h2>At the fire</h2>${parts.join('')}<div class="row"><button class="btn primary" id="mClose">Back to the map</button></div>`); $('mClose').onclick = closeModal; };
-    if (idx.some(i => choices[i] === 'rummage')) killSplash(idx.filter(i => choices[i] === 'rummage').flatMap(i => out[i].drops), false, show, true); else show();   // Nov 13: what you rummage up comes in a chest too
+    if (idx.some(i => choices[i] === 'rummage')) killSplash(idx.filter(i => choices[i] === 'rummage').flatMap(i => out[i].drops), false, show, true, idx.filter(i => choices[i] === 'rummage').reduce((t, i) => t + (out[i].gold || 0), 0)); else show();   // Nov 13: what you rummage up comes in a chest too
   }
   function pendingModal() {
     const p = run.pending; redrawShop = null;
@@ -15927,9 +15957,9 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       };
     // Nov 13: a beat between the last hit and the loot. First who landed the killing blow, then a chest to open
     const mine = run.solo ? d : run.online ? result.per[run.myMi].drops : result.per.flatMap(r => r.drops);
-    killSplash(mine, isBoss, showLoot);
+    killSplash(mine, isBoss, showLoot, false, run.solo ? g : run.online ? result.per[run.myMi].gold : result.per.reduce((t, r) => t + r.gold, 0));
   }
-  function killSplash(drops, isBoss, then, camp) {   // camp: a chest found by rummaging at a campfire, with no killing blow to announce
+  function killSplash(drops, isBoss, then, camp, gold) {   // camp: a chest found by rummaging at a campfire, with no killing blow to announce
     const k = !camp && cb && cb.lastKill, tiers = !camp && cb ? cb.enemies.map(e => String(e.tier || '1')) : [], ti = isBoss || tiers.includes('Boss') ? 3 : tiers.includes('Elite') || tiers.includes('3') ? 2 : tiers.includes('2') ? 1 : 0;
     const old = $('killov'); if (old) old.remove();
     const ov = document.createElement('div'); ov.id = 'killov'; ov.className = 'kb';
@@ -15943,9 +15973,24 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     document.body.appendChild(ov);
     let stage = 0, t1 = null;
     const toChest = () => { if (stage) return; stage = 1; clearTimeout(t1); ov.className = 'chest'; const b = ov.querySelector('.kchest'); try { b.focus(); } catch (e) {} };
-    const open = () => { if (stage !== 1) return; stage = 2; ov.classList.add('open'); try { if (window.CB_AUDIO) CB_AUDIO.sfx('loot', .9); } catch (e) {}
-      // Nov 13 (later): the lid opens, the chest fades back, and the loot is laid out in front of it
-      setTimeout(() => { then(); const mb = $('modalBox'); mb.classList.add('bare', 'lootpop'); const gone = () => $('modal').hidden || !mb.classList.contains('lootpop'); const iv = setInterval(() => { if (gone()) { clearInterval(iv); ov.remove(); } }, 80); }, 520); };
+    /* Nov 13 (later): the lid opens, the chest fades back, and what was inside is laid out in front of it: a pile of gold, each item's picture, each card.
+       Click a thing to take it, or Take all. (It is already in your sack either way; taking is the flourish.) */
+    const open = () => { if (stage !== 1) return; stage = 2; ov.classList.add('open'); try { if (window.CB_AUDIO) CB_AUDIO.sfx('loot', .9); } catch (e) {} setTimeout(lay, 480); };
+    const lay = () => {
+      const gi = gold < 10 ? 0 : gold < 30 ? 1 : gold < 100 ? 2 : gold < 400 ? 3 : 4, worn = typeof wornGear === 'function' && run ? wornGear() : [];
+      const tiles = (gold > 0 ? [`<button type="button" class="ktile kgold" title="${gold} gold"><i class="kgpile" style="background-position:${gi * 25}% 0"></i><b>${gold.toLocaleString()}</b></button>`] : [])
+        .concat(drops.map(it => it.kind === 'card' ? `<button type="button" class="ktile kcardt" style="--rc:${RC[CARDS[it.key].rarity] || 'var(--line)'}" title="${esc(CARDS[it.key].name)}">${cardBox(CARDS[it.key], 92)}</button>` : `<button type="button" class="ktile" style="--rc:${RC[it.rarity] || 'var(--line)'}" data-tip="${tipKey(it, worn)}" aria-label="${esc(it.name)}">${itemIcon(it, 64)}</button>`));
+      const pan = document.createElement('div'); pan.className = 'kloot';
+      pan.innerHTML = `<h2>${camp ? 'At the fire' : isBoss ? 'The boss falls' : 'Victory'}</h2><div class="ktiles">${tiles.join('') || '<span class="muted">Nothing inside this time.</span>'}</div><div class="row"><button type="button" class="btn primary" id="kTake">${tiles.length > 1 ? 'Take all' : tiles.length ? 'Take it' : 'Continue'}</button></div>${tiles.length ? '<p class="knote">Click a thing to take it. Hover gear to read it.</p>' : ''}`;
+      ov.appendChild(pan); fitCards(pan); try { $('kTake').focus(); } catch (e) {}
+      let done = false;
+      const finish = () => { if (done) return; done = true; const gt = document.querySelector('.gtip:not(.bagpop)'); if (gt) gt.hidden = true; ov.remove(); then(); const bk = $('mBack') || $('mClose'); if (bk) bk.click(); };
+      pan.addEventListener('click', (ev) => {
+        if (ev.target.closest('#kTake')) { pan.querySelectorAll('.ktile').forEach((t, i) => setTimeout(() => t.classList.add('taken'), i * 60)); try { if (window.CB_AUDIO && tiles.length) CB_AUDIO.sfx('coin', .8); } catch (e) {} return setTimeout(finish, 280 + tiles.length * 60); }
+        const t = ev.target.closest('.ktile'); if (!t || t.classList.contains('taken')) return; t.classList.add('taken'); try { if (window.CB_AUDIO) CB_AUDIO.sfx(t.classList.contains('kgold') ? 'coin' : 'equip', .8); } catch (e) {}
+        if (!pan.querySelector('.ktile:not(.taken)')) setTimeout(finish, 420);
+      });
+    };
     if (camp) { ov.querySelector('.kbanner').remove(); toChest(); } else t1 = setTimeout(toChest, k ? 2100 : 900);
     ov.addEventListener('click', (ev) => { if (stage === 0) return toChest(); if (ev.target.closest('.kchest')) open(); });
   }

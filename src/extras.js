@@ -77,8 +77,7 @@
     #actbar button::after { content: attr(data-tip); position: absolute; bottom: 52px; right: 0; white-space: nowrap; background: #0b0a08; border: 1px solid #5a4a2e; color: #efe6d2; font-size: 13px; padding: 3px 8px; border-radius: 3px; opacity: 0; pointer-events: none; transition: opacity .12s; }
     #actbar button:hover::after { opacity: 1; }
     #actbar button .abadge { position: absolute; left: 1px; top: 1px; min-width: 15px; height: 15px; border-radius: 8px; background: #b3261e; color: #fff; font: 700 10px/15px sans-serif; text-align: center; padding: 0 3px; box-shadow: 0 0 0 1px #000; }
-    .petfig { position: absolute; left: -34%; bottom: 4%; height: 34%; scale: -1 1; image-rendering: pixelated; pointer-events: none; filter: drop-shadow(0 2px 0 rgba(0,0,0,.5)); animation: petbob 1.6s ease-in-out infinite; z-index: 1; }
-    @keyframes petbob { 50% { transform: translateY(-4%); } }
+    .petfig { position: absolute; z-index: 15; background-repeat: no-repeat; transform: scaleX(-1); image-rendering: pixelated; pointer-events: none; filter: drop-shadow(0 2px 0 rgba(0,0,0,.5)); } body.modalopen .petfig, body.sheetopen .petfig { display: none !important; }
     .bankbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 8px; } .bankbar input[type=search] { flex: 1; min-width: 180px; }
     .bankbar .shoptabs { margin: 0; }
     body[data-cardborder] .hand .card, body[data-cardborder] #hand .card { box-shadow: 0 0 0 2px var(--cbord), 0 0 12px -2px var(--cbord); border-radius: 6px; }
@@ -137,11 +136,26 @@
     g.save(); g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.ellipse(p.x, p.y, w * 0.34, 3.5 * s, 0, 0, Math.PI * 2); g.fill(); g.imageSmoothingEnabled = false;
     g.translate(p.x, p.y - bob); if (p.f < 0) g.scale(-1, 1); g.drawImage(im, -w / 2, -h, w, h); g.restore();
   }
-  setInterval(() => {   // a fight: every hero with a pet gets it standing at their side
-    try { if (typeof cb === 'undefined' || !cb || $('scrCombat').hidden) return;
-      for (const a of cb.players) { const u = document.querySelector(`#scrCombat .unit[data-id="${a.id}"] .figure`); if (!u) continue; const app = window.CB_PUP_APP ? CB_PUP_APP(a) : null, pet = app && app.cos && app.cos.pet; let im = u.querySelector('.petfig');
-        if (!pet || a.hp <= 0) { if (im) im.remove(); continue; } if (!im) { im = document.createElement('img'); im.className = 'petfig'; im.alt = ''; im.draggable = false; if (getComputedStyle(u).position === 'static') u.style.position = 'relative'; /* Nov 13: the fight figure is already placed by the stage; forcing it to relative dropped the hero off the bottom of the screen */ u.appendChild(im); } const src = petSrc(pet); if (im.dataset.k !== pet) { im.dataset.k = pet; im.src = src; } }
-    } catch (e) {} }, 700);
+  // a fight: every hero with a pet gets it standing at their side.
+  // Nov 13 (later): the pet lives in its own layer over the fight, so it is not thrown away and remade each time the fight redraws (it used to
+  // blink in and out), it no longer bobs up and down, and it plays its monster's idle animation, standing on the ground beside its hero.
+  const PETS = new Map();
+  setInterval(() => {
+    try {
+      const on = typeof cb !== 'undefined' && cb && !$('scrCombat').hidden, seen = new Set();
+      if (on) for (const a of cb.players) {
+        const u = document.querySelector(`#scrCombat .unit[data-id="${a.id}"] .figure`), app = window.CB_PUP_APP ? CB_PUP_APP(a) : null, pet = app && app.cos && app.cos.pet; if (!u || !pet || a.hp <= 0) continue;
+        const f = window.CB_MOBS && CB_MOBS.keyOf ? CB_MOBS.keyOf(pet) : null, k = f ? f.k || f : pet, m = window.CB_MOBS && CB_MOBS.manifest && CB_MOBS.manifest[k]; if (!m) continue;
+        seen.add(a.id); let el = PETS.get(a.id);
+        if (!el || el.dataset.k !== k) { if (el) el.remove(); el = document.createElement('div'); el.className = 'petfig'; el.dataset.k = k; el.style.backgroundImage = `url(img/mobs/${k}.webp)`; document.body.appendChild(el); PETS.set(a.id, el); }
+        const r = u.getBoundingClientRect(); if (r.width < 4) { el.style.display = 'none'; continue; }
+        const idle = (m.a.find(x => x[0] === 'idle') || m.a[0]), n = idle[1], row = m.a.indexOf(idle), ib = m.ib || [0, 0, m.w, m.h], hgt = Math.max(26, r.height * .34), sc = hgt / (ib[3] - ib[1] || m.h), fr = Math.floor(performance.now() / 150) % n;
+        const cols = Math.max(...m.a.map(x => x[1]));
+        el.style.display = ''; el.style.width = m.w * sc + 'px'; el.style.height = m.h * sc + 'px'; el.style.backgroundSize = `${cols * m.w * sc}px ${m.a.length * m.h * sc}px`; el.style.backgroundPosition = `${-fr * m.w * sc}px ${-row * m.h * sc}px`;
+        el.style.left = Math.round(r.left - m.w * sc * .78 + scrollX) + 'px'; el.style.top = Math.round(r.bottom - ib[3] * sc + scrollY) + 'px';
+      }
+      for (const [id, el] of PETS) if (!seen.has(id)) { el.remove(); PETS.delete(id); }
+    } catch (e) {} }, 150);
   // a pet that dropped on the last run: say so
   function exPetNews() { const n = profile.newPets; if (!n || !n.length) return; profile.newPets = []; { const ap = exApp(); if (ap.cos && !ap.cos.pet) ap.cos.pet = n[0]; } /* Nov 13: your first pet starts following you straight away */ save(); modal(`<h2>A new pet!</h2><p>${n.map(k => `<b>${esc(petName(k))}</b>`).join(', ')} followed you home. One kill in a thousand does that.</p><div style="display:flex;gap:14px;justify-content:center;margin:10px 0">${n.map(k => `<img src="${petSrc(k)}" alt="" style="height:96px;image-rendering:pixelated">`).join('')}</div><p class="muted">Pets are for show: they trot behind you in town and stand by you in a fight. Swap or dismiss it in your hero window (C), Wardrobe.</p><div class="row"><button class="btn primary" id="mClose">Lovely</button></div>`); $('mClose').onclick = closeModal; }
   setInterval(() => { try { if (profile && profile.newPets && profile.newPets.length && !$('scrStart').hidden && $('modal').hidden && $('sheet').hidden) exPetNews(); } catch (e) {} }, 2500);
