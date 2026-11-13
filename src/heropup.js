@@ -11,7 +11,8 @@
     .order .otile .ofig { position: relative; overflow: hidden; } .order .otile .ofig .pupfig, #scrCombat.bf .order .otile .ofig .pupfig { position: absolute; height: 230%; width: 140%; left: -20%; top: 4%; }
     .pfimg { position: relative; overflow: hidden; } .pfimg .pupfig { position: absolute; height: 250%; width: 150%; left: -25%; top: 2%; }
     #scrCombat.bf .stage .unit .figure .pupfig { height: calc(var(--fh) * var(--s, 1)); }
-    .seatfig .pupfig { --fh: 132px; margin: 0 auto; }
+    .seatfig .pupfig { --fh: 156px; margin: 0 auto; } .seat.soon .pupfig canvas { filter: brightness(.2) saturate(.2); }
+    .campscene { background: #07070d url(img/bg/camp.webp) 50% 84% / cover no-repeat !important; image-rendering: pixelated; } .campscene::before, .campscene .ground, .campscene .fire { display: none !important; } .campscene .seat, .campscene .seat * { image-rendering: auto; } .campscene .pupfig canvas { image-rendering: pixelated; }
     .dpup { display: grid; justify-items: center; gap: 2px; } .dpup .pupfig { --fh: 210px; } .dpup .dmirror { padding: 2px 12px; font-size: 13px; }
     .lookpick { display: grid; grid-template-columns: 150px 1fr; gap: 10px 16px; align-items: center; margin: 4px 0 12px; }
     .lookpick .lookview { display: grid; justify-items: center; gap: 4px; } .lookpick .lookview .pupfig { --fh: 190px; }
@@ -77,17 +78,16 @@
     g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, 15 * s, 5 * s, 0, 0, Math.PI * 2); g.fill(); g.restore();
     return P.draw(g, L, v, step ? 'walk' : 'idle', t + (hash(L.body + L.hair) % 1500), cx, by + 2 * s, 96 * s / 118);
   }
-  // ---------- riding: the pixel horse (img/hero/horse: rows facing the camera, sideways, away; the first cell stands, the rest walk)
-  const HORSE = { cell: 136, frames: 6, k: 1.02, foot: { s: 118, e: 112, n: 118 }, seat: { s: [0, -44], e: [-4, -40], n: [0, -46] } };   // seat: where the rider's feet line sits, from the horse's feet, in horse pixels
-  function ride(g, look, cx, by, dir, moving, s, t) {
-    const im = P.img('horse'), v = DIRS[dir] || 's', hv = v === 'w' ? 'e' : v; if (!im || !P.ready(look, v)) return false;
-    const row = { s: 0, e: 1, n: 2 }[hv], fr = moving ? 1 + Math.floor(t / 105) % HORSE.frames : 0, k = HORSE.k * s, C = HORSE.cell, bob = moving ? Math.round(Math.sin(t / 105 * Math.PI) * 1.2 * s) : 0;
-    const horse = () => { g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.translate(cx, by); if (v === 'w') g.scale(-1, 1); g.drawImage(im, fr * C, row * C, C, C, -C / 2 * k, -HORSE.foot[hv] * k, C * k, C * k); g.restore(); };
-    const seat = HORSE.seat[hv], rx = cx + seat[0] * k * (v === 'w' ? -1 : 1), ry = by + seat[1] * k + bob, sc = 96 * s / 118;
-    const rider = (clip) => { g.save(); if (clip) { g.beginPath(); g.rect(cx - 80 * s, by - 260 * s, 160 * s, 260 * s + (ry - by) - 30 * sc); g.clip(); } P.draw(g, look, v, 'sit', t, rx, ry + (v === 'e' || v === 'w' ? 30 * sc : 22 * sc), sc); g.restore(); };
-    g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, (hv === 'e' ? 34 : 18) * s, 7 * s, 0, 0, Math.PI * 2); g.fill(); g.restore();
-    if (hv === 's') { rider(false); horse(); } else if (hv === 'n') { horse(); rider(true); } else { horse(); rider(false); }
-    return true;
+  // ---------- riding: the pixel horse (img/hero/horse: one row seen from the side; the first cell stands, the next six walk).
+  // A rider always shows from the side: riding up or down the screen keeps the way they last faced.
+  const HORSE = { cell: 136, frames: 6, k: 1.3, foot: 110, saddle: [-14, -63], hip: 61 }, FACE = new Map();   // saddle: from the horse's feet, in horse pixels; hip: a hero's hip above its feet
+  function ride(g, look, key, cx, by, dir, moving, s, t) {
+    const im = P.img('horse'); if (!im || !P.ready(look, 'e')) return false;
+    if (dir === 'left' || dir === 'right') FACE.set(key, dir); const left = (FACE.get(key) || 'right') === 'left', f = left ? -1 : 1;
+    const fr = moving ? 1 + Math.floor(t / 105) % HORSE.frames : 0, k = HORSE.k * s, C = HORSE.cell, bob = moving ? Math.round(Math.sin(t / 105 * Math.PI) * 1.2 * s) : 0, sc = 96 * s / 118;
+    g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, 36 * s, 7 * s, 0, 0, Math.PI * 2); g.fill();
+    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.translate(cx, by); if (left) g.scale(-1, 1); g.drawImage(im, fr * C, 0, C, C, -C / 2 * k, -HORSE.foot * k, C * k, C * k); g.restore();
+    return P.draw(g, look, left ? 'w' : 'e', 'sit', t, cx + HORSE.saddle[0] * k * f, by + HORSE.saddle[1] * k + HORSE.hip * sc + bob + 3 * s, sc);
   }
   // ---------- the appearance picker (character creation, and the mirror in the hero window)
   const NAMES = { skin: ['Fair', 'Light', 'Tan', 'Brown', 'Dark', 'Deep'], eyes: ['Round', 'Narrow', 'Wide', 'Lashes', 'Stern'], mouth: ['Plain', 'Full', 'Smirk', 'Small'],
@@ -114,5 +114,5 @@
     const get = () => { const o = {}; for (const k of ['skin', 'eyes', 'eyeCol', 'mouth', 'lipCol', 'hair', 'hairCol', 'beard']) o[k] = L[k] == null ? null : L[k]; return o; };
     paint(); return { get, wear: (gear) => { Object.assign(L, { gear: P.gearOf(gear) }, P.armsOf(gear)); paint(); } };
   }
-  window.CB_HEROPUP = { html, lookOf, appOf, picker, npc, npcLook, HORSE, ride: (g, pal, cx, by, dir, moving, s, t) => ride(g, pal && pal.forge ? lookOf(pal.forge.who || 'me', pal.forge.cls, pal.forge.gear) : npcLook(pal || {}), cx, by, dir, moving, s, t), fig: (id, cls, gear, opt) => html(id, lookOf(opt && opt.who || id, cls, gear), opt) };
+  window.CB_HEROPUP = { html, lookOf, appOf, picker, npc, npcLook, HORSE, ride: (g, pal, cx, by, dir, moving, s, t) => ride(g, pal && pal.forge ? lookOf(pal.forge.who || 'me', pal.forge.cls, pal.forge.gear) : npcLook(pal || {}), pal && pal.forge ? pal.forge.who || 'me' : 'npc', cx, by, dir, moving, s, t) };
 })();

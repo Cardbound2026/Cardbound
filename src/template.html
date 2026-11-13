@@ -2085,7 +2085,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     for (const e of TOWN.embers) { gx.fillStyle = `rgba(255,${150 + (e.life * 80 | 0)},70,${e.life})`; gx.fillRect(e.x * TS, e.y * TS, 2.5 * s, 2.5 * s); }
     // name tags over every head: townspeople always, and your own hero with your guild under the name
     for (const n of NV) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.open === 'dummy' ? 84 : window.CB_HEROPUP ? 98 : n.pal && n.pal.forge ? 80 : null);
-    { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? 72 + MOUNT_RISE : 98, CBHub.titleOf(c, profile)); }
+    { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? (window.CB_HEROPUP ? 132 : 72 + MOUNT_RISE) : 98, CBHub.titleOf(c, profile)); }
     // night: darken everything, then cut light pools around fires and the hero
     const dk = TOWN.dark, dg = dk.getContext('2d');
     dg.setTransform(1, 0, 0, 1, 0, 0); dg.globalCompositeOperation = 'source-over'; dg.clearRect(0, 0, dk.width, dk.height);
@@ -2426,13 +2426,13 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   // the campfire: every class sits around it (one seat per class, plus classes still to come); click one to pick it
   const SEATS = [[13, 4, 1], [27, 24, .86], [40, 36, .74], [60, 36, .74], [73, 24, .86], [87, 4, 1]]; // left %, bottom %, scale
   const SOON = ['Shaman'];
-  const STARTER_LOOK = (k) => [{ slot: 'Chest', arch: k === 'Mage' || k === 'Warlock' ? 'Robe' : k === 'Rogue' ? 'Jerkin' : 'Cuirass', map: k === 'Warlock' ? 'shadow' : k === 'Mage' ? 'arcane' : 'physical' }, { slot: 'Pants', arch: k === 'Mage' || k === 'Warlock' ? 'Leggings' : k === 'Rogue' ? 'Breeches' : 'Greaves', map: k === 'Warlock' ? 'shadow' : k === 'Mage' ? 'arcane' : 'physical' }, { slot: 'Boots', arch: k === 'Mage' || k === 'Warlock' ? 'Slippers' : k === 'Rogue' ? 'Leather Boots' : 'Sabatons', map: k === 'Warlock' ? 'shadow' : k === 'Mage' ? 'arcane' : 'physical' }]; // what a class wears at the campfire
+  const STARTER_LOOK = (k) => { const cloth = k === 'Mage' || k === 'Warlock', lea = k === 'Rogue' || k === 'Shaman', map = k === 'Warlock' ? 'shadow' : k === 'Mage' ? 'arcane' : k === 'Shaman' ? 'nature' : 'physical'; return [{ slot: 'Chest', arch: cloth ? 'Robe' : lea ? 'Jerkin' : 'Cuirass', map }, { slot: 'Pants', arch: cloth ? 'Leggings' : lea ? 'Breeches' : 'Greaves', map }, { slot: 'Boots', arch: cloth ? 'Slippers' : lea ? 'Leather Boots' : 'Sabatons', map }].concat(k === 'Shaman' ? [{ slot: 'Helm', arch: 'Leather Cap', map }, { slot: 'Shoulders', arch: 'Spaulders', map }, { slot: 'Weapon', arch: 'Nature Staff', map }] : []); }; // what a class wears at the campfire
   let lookPick = null;
   function renderCamp() {
     const n = Object.keys(profile.chars).length, list = [...Object.keys(CLASSES), ...SOON].slice(0, SEATS.length);
     $('classPick').innerHTML = '<div class="ground"></div><div class="fire" aria-hidden="true"><b></b><b></b><i></i><i></i><i></i><em></em><em></em><em></em></div>' + list.map((k, i) => {
       const [x, y, sc] = SEATS[i], flip = x > 50, soon = SOON.includes(k), have = soon ? 0 : Object.values(profile.chars).filter(c => c.cls === k).length;
-      const fig = `<span class="seatfig">${window.CB_HEROPUP && !soon ? CB_HEROPUP.html('seat' + k, CB_HEROPUP.lookOf('seat', k, STARTER_LOOK(k)), { view: flip ? 'w' : 'e', s: 1 }) : `<img src="img/ink/hero_${k.toLowerCase()}.webp" class="${flip ? 'flip' : ''}" alt="" draggable="false" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'noart'}))">`}</span>`;
+      const fig = `<span class="seatfig">${window.CB_HEROPUP ? CB_HEROPUP.html('seat' + k, CB_HEROPUP.lookOf('seat', k, STARTER_LOOK(k)), { view: flip ? 'w' : 'e', s: 1 }) : `<img src="img/ink/hero_${k.toLowerCase()}.webp" class="${flip ? 'flip' : ''}" alt="" draggable="false" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'noart'}))">`}</span>`;
       const pos = `left:${x}%;bottom:${y}%;--s:${sc};z-index:${50 - y};--cc:${soon ? '#8f8c80' : CC[k]}`;
       return soon ? `<div class="seat soon" style="${pos}" title="${k}: coming in a future expansion">${fig}<span class="seatname">${k}</span><span class="soonnote">Coming in a future expansion</span></div>`
         : `<button class="seat ${k === createCls ? 'on' : ''}" role="radio" aria-checked="${k === createCls}" data-cls="${k}" style="${pos}" title="${esc(k + ': ' + CLASSES[k].blurb)}${have ? ` (you have ${have})` : ''}">${fig}<span class="seatname">${k}</span></button>`;
