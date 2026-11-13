@@ -1615,7 +1615,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     profile.last = { cls: heroKey, level: lvl, party: extra, map: mk }; save(); $('sheet').hidden = true;
     const base = party.length > 1 ? CBHub.partyOpts(profile, party) : CBHub.runOpts(profile, heroKey);
     run = new Run(Object.assign(base, { level: lvl, map: mk, seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA, firstBoss: party.some(k => !CBHub.beatMap(CBHub.char(profile, k), mk)) }));
-    show('map'); renderMap(true);
+    if (typeof exRideOut === 'function') exRideOut(DATA.maps[mk].name, 'Level +' + lvl, () => { show('map'); renderMap(true); }); else { show('map'); renderMap(true); }
   }
 
   // ---------- character screen (C): paperdoll on the left, deck or stash on the right

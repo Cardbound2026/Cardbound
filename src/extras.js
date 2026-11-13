@@ -387,3 +387,54 @@
     .lfgcard { border: 1px solid #4a3d28; border-left: 3px solid var(--mc); border-radius: 4px; background: linear-gradient(#1b1814, #12100d); padding: 8px 10px; } .lfgcard p { margin: 6px 0 0; color: #efe6d2; }
     .lfgtop { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; } .lfgtop b { font-size: 17px; } .lfgmid { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 5px; font-size: 14px; color: #d8cdb8; } .lfgmid i { font-style: normal; color: #8f8674; margin-right: 4px; } .lfgmid em { font-style: normal; font-weight: 600; }
   `; document.head.appendChild(st); }
+  // ---------- transitions and boss entrances (Nov 13): the screen dips to black on the way into a fight, onto a road and back to town;
+  // a boss (and a raid boss) gets a name card with a line of its own before the fight begins.
+  const BOSS_LINES = { physical: 'The March ends where I stand.', fire: 'Kneel. Everything burns down to its crown.', frost: 'Winter does not hate you. It simply does not stop.', nature: 'Root remembers. Root repays.',
+    arcane: 'I broke the sky to see what was behind it. You will not like it either.', shadow: 'Every crown is hollow. Come and wear mine.' };
+  const RAID_LINES = { physical: 'You broke my line once. Now break a mountain.', fire: 'I drank the sun. What are ten of you?', frost: 'I am the last snow, and I fall on everything.', nature: 'Come into the web. The forest is hungry.',
+    arcane: 'I am every star you ever wished on, and I am falling.', shadow: 'Kings do not die. We wait.' };
+  { const st = document.createElement('style'); st.textContent = `
+    #bossIntro { position: fixed; inset: 0; z-index: 1850; display: grid; grid-template-columns: 1fr 1fr; align-items: center; background: radial-gradient(90% 70% at 70% 55%, rgba(110,28,18,.82), rgba(5,4,6,.97) 70%); opacity: 0; visibility: hidden; transition: opacity .35s, visibility .35s; cursor: pointer; overflow: hidden; }
+    #bossIntro.on { opacity: 1; visibility: visible; }
+    #bossIntro::before, #bossIntro::after { content: ''; position: absolute; left: 0; right: 0; height: 13vh; background: #030203; transform: scaleY(0); transition: transform .45s cubic-bezier(.2,.8,.2,1); } #bossIntro::before { top: 0; transform-origin: top; } #bossIntro::after { bottom: 0; transform-origin: bottom; }
+    #bossIntro.on::before, #bossIntro.on::after { transform: none; }
+    #bossIntro .bitx { padding: 0 4vw 0 9vw; transform: translateX(-40px); opacity: 0; transition: transform .7s .25s cubic-bezier(.2,.8,.2,1), opacity .7s .25s; } #bossIntro.on .bitx { transform: none; opacity: 1; }
+    #bossIntro small { display: block; font: 600 clamp(13px, 1.3vw, 18px) 'Inter', sans-serif; letter-spacing: .32em; text-transform: uppercase; color: #e0805a; margin-bottom: 10px; }
+    #bossIntro b { display: block; font: 600 clamp(34px, 5.2vw, 78px)/1.02 'Grenze', serif; font-variant: small-caps; letter-spacing: 2px; color: #ffe9b0; text-shadow: 0 3px 0 #000, 0 0 34px rgba(240,120,50,.55); }
+    #bossIntro em { display: block; margin-top: 18px; font: italic 500 clamp(16px, 1.9vw, 26px)/1.35 'Grenze', serif; color: #e8dcc4; max-width: 30ch; } #bossIntro em::before { content: '\\201C'; } #bossIntro em::after { content: '\\201D'; }
+    #bossIntro .biart { justify-self: center; height: 62vh; max-width: 46vw; display: grid; place-items: center; transform: translateX(60px) scale(.94); opacity: 0; transition: transform .8s .15s cubic-bezier(.2,.8,.2,1), opacity .6s .15s; } #bossIntro.on .biart { transform: none; opacity: 1; }
+    #bossIntro .biart img { max-height: 62vh; max-width: 46vw; image-rendering: pixelated; filter: drop-shadow(0 0 40px rgba(0,0,0,.9)) drop-shadow(0 0 22px rgba(240,90,40,.35)); animation: raidbreath 3.4s ease-in-out infinite; transform-origin: 50% 100%; }
+    #bossIntro .biskip { position: absolute; right: 22px; bottom: calc(13vh + 12px); font-size: 12.5px; color: #9d927e; z-index: 2; }
+    #storyCard { max-width: 620px; text-align: center; } #storyCard p { font: 500 19px/1.5 'Grenze', serif; color: #e8dcc4; margin: 0 0 12px; opacity: 0; animation: storyin .9s forwards; } #storyCard p:nth-child(2) { animation-delay: .9s; } #storyCard p:nth-child(3) { animation-delay: 1.8s; } #storyCard p:nth-child(4) { animation-delay: 2.7s; }
+    @keyframes storyin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { #bossIntro *, #bossIntro::before, #bossIntro::after { transition: none !important; animation: none !important; } }
+  `; document.head.appendChild(st);
+    const d = document.createElement('div'); d.id = 'bossIntro'; d.setAttribute('role', 'dialog'); d.innerHTML = '<div class="bitx"><small id="biKick"></small><b id="biName"></b><em id="biLine"></em></div><div class="biart" id="biArt"></div><span class="biskip">Click or press any key</span>'; document.body.appendChild(d); }
+  let biTimer = 0;
+  function exBossIntroOff() { clearTimeout(biTimer); $('bossIntro').classList.remove('on'); }
+  $('bossIntro').addEventListener('click', exBossIntroOff);
+  document.addEventListener('keydown', (ev) => { if ($('bossIntro').classList.contains('on')) { ev.preventDefault(); ev.stopImmediatePropagation(); exBossIntroOff(); } }, true);
+  function exBossIntro(e) {
+    const d = DATA.enemies[e.key] || {}, raid = !!d.raid, mk = raid ? d.map : (typeof run !== 'undefined' && run && run.mapKey) || Object.keys(DATA.maps).find(k => DATA.maps[k].boss === e.key) || 'physical', M = DATA.maps[mk];
+    const f = window.CB_MOBS && CB_MOBS.keyOf ? CB_MOBS.keyOf(e.key) : null, src = raid ? 'img/raid/' + mk + '.webp' : f ? 'img/mobs/' + f.k + '_p.webp' : '';
+    $('biKick').textContent = raid ? 'Raid boss' : 'Boss of ' + (M ? M.name : 'the road'); $('biName').textContent = e.name; $('biLine').textContent = (raid ? RAID_LINES : BOSS_LINES)[mk] || 'You should not have come.';
+    $('biArt').innerHTML = src ? `<img src="${src}" alt="" draggable="false" style="height:${raid ? 60 : 50}vh">` : '';
+    $('bossIntro').classList.add('on'); if (window.CB_AUDIO) CB_AUDIO.sfx('roar', .9, 250); clearTimeout(biTimer); biTimer = setTimeout(exBossIntroOff, 4200);
+  }
+  { const scu0 = startCombatUI;
+    startCombatUI = function () {
+      if (!cb || cb.practice || cb._veiled || cb.duel) return scu0(); cb._veiled = true;
+      const boss = cb.enemies.find(e => e.tier === 'Boss' || (DATA.enemies[e.key] || {}).raid), names = [...new Set(cb.enemies.filter(e => !e.noLoot || true).map(e => e.name))];
+      veil(boss ? '' : names.slice(0, 2).join(' and ') + (names.length > 2 ? ' and more' : ''), boss ? '' : cb.enemies.some(e => e.tier === 'Elite') ? 'Elite fight' : 'Fight', () => { scu0(); if (boss) setTimeout(() => exBossIntro(boss), 120); });
+    };
+    const btt0 = backToTown; let leaving = false;
+    backToTown = function () { if (leaving) return; leaving = true; veil('Emberwatch', 'Home', () => { leaving = false; btt0(); }); };
+  }
+  // the first time a hero rides out: a few lines before the road
+  function exRideOut(title, sub, go) {
+    const c = profile.chars[heroKey], first = c && !(c.runs > 0) && !profile.seenRideOut;
+    if (!first) return veil(title, sub, go);
+    profile.seenRideOut = 1; save();
+    modal(`<div id="storyCard"><p>Emberwatch is the last city. Beyond its gate lies the March, and whatever took the kingdom.</p><p>You ride with a deck of cards and what you can carry home.</p><p>Kill what you can. Leave when you must. The dead keep nothing.</p><p><button class="btn primary" id="storyGo">Ride out</button></p></div>`);
+    $('storyGo').onclick = () => { closeModal(); veil(title, sub, go); };
+  }
