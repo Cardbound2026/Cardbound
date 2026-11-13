@@ -120,7 +120,7 @@
       out.push({ y: p.y + 0.5, f: () => {
         if (o.mount) drawRider(gx, p.x * TS + TS / 2, p.y * TS + TS * 0.92, o.dir, moving ? ((o.step % 2) + o.t) / 2 : 0, pal, s, t, o.mount, CC[o.cls]);
         else drawChar(gx, p.x * TS + TS / 2, p.y * TS + TS * 0.92, o.dir, moving ? ((o.step + (o.t > 0.5 ? 1 : 0)) % 2 ? 1 : 2) : 0, pal, s, t);
-        const tx = p.x * TS + TS / 2, ty = townTag(gx, tx, p.y * TS + TS * 0.92, o.name, SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0', o.guild, s, o.mount ? (window.CB_HEROPUP ? 132 : 72 + MOUNT_RISE) : 98, o.title);
+        const tx = p.x * TS + TS / 2, ty = townTag(gx, tx, p.y * TS + TS * 0.92, o.name, SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0', o.guild, s, o.mount ? (window.CB_HEROPUP ? 150 : 72 + MOUNT_RISE) : 98, o.title);
         if (o.shop && o.shop.t) drawShopSign(gx, tx, ty - 4, o.shop.t, s);
       } });
     }

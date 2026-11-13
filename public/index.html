@@ -6462,7 +6462,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     for (const e of TOWN.embers) { gx.fillStyle = `rgba(255,${150 + (e.life * 80 | 0)},70,${e.life})`; gx.fillRect(e.x * TS, e.y * TS, 2.5 * s, 2.5 * s); }
     // name tags over every head: townspeople always, and your own hero with your guild under the name
     for (const n of NV) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.open === 'dummy' ? 84 : window.CB_HEROPUP ? 98 : n.pal && n.pal.forge ? 80 : null);
-    { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? (window.CB_HEROPUP ? 132 : 72 + MOUNT_RISE) : 98, CBHub.titleOf(c, profile)); }
+    { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? (window.CB_HEROPUP ? 150 : 72 + MOUNT_RISE) : 98, CBHub.titleOf(c, profile)); }
     // night: darken everything, then cut light pools around fires and the hero
     const dk = TOWN.dark, dg = dk.getContext('2d');
     dg.setTransform(1, 0, 0, 1, 0, 0); dg.globalCompositeOperation = 'source-over'; dg.clearRect(0, 0, dk.width, dk.height);
@@ -6788,7 +6788,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       out.push({ y: p.y + 0.5, f: () => {
         if (o.mount) drawRider(gx, p.x * TS + TS / 2, p.y * TS + TS * 0.92, o.dir, moving ? ((o.step % 2) + o.t) / 2 : 0, pal, s, t, o.mount, CC[o.cls]);
         else drawChar(gx, p.x * TS + TS / 2, p.y * TS + TS * 0.92, o.dir, moving ? ((o.step + (o.t > 0.5 ? 1 : 0)) % 2 ? 1 : 2) : 0, pal, s, t);
-        const tx = p.x * TS + TS / 2, ty = townTag(gx, tx, p.y * TS + TS * 0.92, o.name, SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0', o.guild, s, o.mount ? (window.CB_HEROPUP ? 132 : 72 + MOUNT_RISE) : 98, o.title);
+        const tx = p.x * TS + TS / 2, ty = townTag(gx, tx, p.y * TS + TS * 0.92, o.name, SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0', o.guild, s, o.mount ? (window.CB_HEROPUP ? 150 : 72 + MOUNT_RISE) : 98, o.title);
         if (o.shop && o.shop.t) drawShopSign(gx, tx, ty - 4, o.shop.t, s);
       } });
     }
@@ -7208,8 +7208,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794545897103';
-  const CB_BUILD = '335b53b2e1'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794545938020';
+  const CB_BUILD = 'd785861f3e'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -11207,7 +11207,7 @@ window.CB_PUPPET = (function () {
   }
   // ---------- riding: the pixel horse (img/hero/horse: rows facing the camera, sideways and away; the first cell stands, the next six walk)
   // seat: where the rider's hips go, from the middle of the horse's feet, in horse pixels; hip: a hero's hips above its feet
-  const HORSE = { cell: 128, frames: 6, k: 1.3, hip: 61, s: { row: 0, foot: 108, seat: [1, -70] }, e: { row: 1, foot: 108, seat: [-6, -47] }, n: { row: 2, foot: 119, seat: [1, -68] } };
+  const HORSE = { cell: 128, frames: 6, k: 1.55, hip: 61, s: { row: 0, foot: 108, seat: [1, -70] }, e: { row: 1, foot: 108, seat: [-6, -47] }, n: { row: 2, foot: 119, seat: [1, -68] } };
   const MOVED = new Map();
   function ride(g, look, key, cx, by, dir, moving, s, t) {
     const im = P.img('horse'), v = DIRS[dir] || 's', hv = v === 'w' ? 'e' : v, H = HORSE[hv]; if (!im || !P.ready(look, v)) return false;

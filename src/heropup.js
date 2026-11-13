@@ -81,7 +81,7 @@
   }
   // ---------- riding: the pixel horse (img/hero/horse: rows facing the camera, sideways and away; the first cell stands, the next six walk)
   // seat: where the rider's hips go, from the middle of the horse's feet, in horse pixels; hip: a hero's hips above its feet
-  const HORSE = { cell: 128, frames: 6, k: 1.3, hip: 61, s: { row: 0, foot: 108, seat: [1, -70] }, e: { row: 1, foot: 108, seat: [-6, -47] }, n: { row: 2, foot: 119, seat: [1, -68] } };
+  const HORSE = { cell: 128, frames: 6, k: 1.55, hip: 61, s: { row: 0, foot: 108, seat: [1, -70] }, e: { row: 1, foot: 108, seat: [-6, -47] }, n: { row: 2, foot: 119, seat: [1, -68] } };
   const MOVED = new Map();
   function ride(g, look, key, cx, by, dir, moving, s, t) {
     const im = P.img('horse'), v = DIRS[dir] || 's', hv = v === 'w' ? 'e' : v, H = HORSE[hv]; if (!im || !P.ready(look, v)) return false;

@@ -2205,7 +2205,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     for (const e of TOWN.embers) { gx.fillStyle = `rgba(255,${150 + (e.life * 80 | 0)},70,${e.life})`; gx.fillRect(e.x * TS, e.y * TS, 2.5 * s, 2.5 * s); }
     // name tags over every head: townspeople always, and your own hero with your guild under the name
     for (const n of NV) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.open === 'dummy' ? 84 : window.CB_HEROPUP ? 98 : n.pal && n.pal.forge ? 80 : null);
-    { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? (window.CB_HEROPUP ? 132 : 72 + MOUNT_RISE) : 98, CBHub.titleOf(c, profile)); }
+    { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? (window.CB_HEROPUP ? 150 : 72 + MOUNT_RISE) : 98, CBHub.titleOf(c, profile)); }
     // night: darken everything, then cut light pools around fires and the hero
     const dk = TOWN.dark, dg = dk.getContext('2d');
     dg.setTransform(1, 0, 0, 1, 0, 0); dg.globalCompositeOperation = 'source-over'; dg.clearRect(0, 0, dk.width, dk.height);
