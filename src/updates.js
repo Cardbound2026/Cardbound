@@ -2,6 +2,14 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Interface', "Your bags are now a grid of slots showing just each item's picture. Hover an item for the same card your character slots show, click it to equip or salvage, double-click to equip right away."],
+      ['Interface', "The small item level number is gone from the corner of item pictures."],
+      ['Interface', "Guild and Friends are both on the bottom bar (G and O). The Character and Friends buttons at the top are gone."],
+      ['Interface', "Enter opens the chat box, and Enter again sends."],
+      ['Art', "Mounts are 30% smaller, and riders sit on the saddle: hips on the seat with a leg down the flank from the side, legs astride from the front and back."],
+      ['Art', "Heroes close their fist around the weapon's handle."],
+      ['Fix', "Townsfolk and heroes no longer flash the old art for a moment when they turn to face a new way."],
+      ['Fix', "Dodging plays a whoosh, not a clink."],
       ['Fix', "With a pet out, your hero dropped off the bottom of the fight screen and the pet did not show. Both now stand where they should, and the pet faces the enemy. Your first pet starts following you as soon as it arrives; swap or dismiss it in the Wardrobe."],
       ['Art', "Clipping pass on the hero. A helm worn on its own no longer has dark wings beside the neck (they were the shoulder tops of the suit, filed under the helm). A chest piece worn without shoulder guards keeps its own shoulders instead of showing torn holes, and trousers or a chest piece carry on over the waist when no belt is worn, so there is no bare strip of skin. Hair that stuck out past a helm beside the face is tucked in. Pieces from different sets now load together, so a mixed outfit appears at once instead of one piece at a time."],
       ['Art', "Armour seen from the side was repainted. Under the arm there used to be a smooth grey patch, because that part of the suit had never been painted; it showed every time the arm swung in an attack or a cast. All 18 armour sets on all four bodies now have a real painted flank there: straps, buckles and plates on plate, lacing and pouches on leather, seams, sashes and trim on cloth."],

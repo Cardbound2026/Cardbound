@@ -58,12 +58,19 @@
     F.warm = (cls, gear) => { const L = lookOf('me', cls, gear); P.compose(L, 'e'); return { ready: true }; };
     const DIR = { down: 's', up: 'n', left: 'w', right: 'e' };
     F.town = (g, cls, gear, cx, by, dir, step, s, t, who) => {
-      const L = lookOf(who || 'me', cls, gear), v = DIR[dir] || 's'; if (!P.ready(L, v)) return town0 ? town0(g, cls, gear, cx, by, dir, step, s, t, who) : false;
+      const L = lookOf(who || 'me', cls, gear), v = viewOf(L, DIR[dir] || 's', who || 'me'); if (v === false) return town0 ? town0(g, cls, gear, cx, by, dir, step, s, t, who) : false; if (!v) return true;
       g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, 15 * s, 5 * s, 0, 0, Math.PI * 2); g.fill(); g.restore();
       return P.draw(g, L, v, step ? 'walk' : 'idle', t, cx, by + 2 * s, 96 * s / 118);
     };
   }
   // ---------- townsfolk: each gets a look of its own from its colours (always the same one), dressed for its trade
+  // the view to draw: the one asked for, or one that is already painted while it is being made (never the old art for a few frames); false only if the art never arrives
+  const WAITED = new Map();
+  function viewOf(L, v, key) {
+    if (P.ready(L, v)) { WAITED.delete(key); return v; }
+    for (const o of ['s', 'e', 'n']) if (o !== v && P.ready(L, o)) return v === 'w' && o === 'e' ? 'w' : o;
+    const now = performance.now(), w = WAITED.get(key) || now; WAITED.set(key, w); return now - w > 5000 ? false : null;
+  }
   const NPC = new WeakMap(), DIRS = { down: 's', up: 'n', left: 'w', right: 'e' };
   const hash = (str) => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
   const lum = (hex) => { const m = /^#?([0-9a-f]{6})/i.exec(hex || ''); if (!m) return 128; const n = parseInt(m[1], 16); return ((n >> 16) * .3 + ((n >> 8) & 255) * .59 + (n & 255) * .11); };
@@ -78,7 +85,7 @@
     NPC.set(pal, L); return L;
   }
   function npc(g, pal, cx, by, dir, step, s, t) {
-    const L = npcLook(pal), v = DIRS[dir] || 's'; if (!P.ready(L, v)) return false;
+    const L = npcLook(pal), v = viewOf(L, DIRS[dir] || 's', pal); if (v === false) return false; if (!v) return true;
     g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, 15 * s, 5 * s, 0, 0, Math.PI * 2); g.fill(); g.restore();
     return P.draw(g, L, v, step ? 'walk' : 'idle', t + (hash(L.body + L.hair) % 1500), cx, by + 2 * s, 96 * s / 118);
   }
@@ -89,7 +96,7 @@
   const MOUNTS = { horse: HORSE };   // filled from src/mounts_data.js (tools/heroart/bake_mounts.py): the same layout as the horse, with each beast's own seat
   if (window.CB_MOUNTS) for (const k in window.CB_MOUNTS) MOUNTS[k] = window.CB_MOUNTS[k];
   function ride(g, look, key, cx, by, dir, moving, s, t, kind) {
-    const HORSE = MOUNTS[kind] || MOUNTS.horse, im = P.img(HORSE === MOUNTS.horse ? 'horse' : 'mounts/' + kind), v = DIRS[dir] || 's', hv = v === 'w' ? 'e' : v, H = HORSE[hv]; if (!im || !P.ready(look, v)) return false;
+    const HORSE = MOUNTS[kind] || MOUNTS.horse, im = P.img(HORSE === MOUNTS.horse ? 'horse' : 'mounts/' + kind), v = DIRS[dir] || 's', hv = v === 'w' ? 'e' : v, H = HORSE[hv], rv = viewOf(look, v, key); if (rv === false) return false; if (!im || rv !== v) return true;
     const M = MOVED.get(key) || { x: cx, y: by, at: -1e9 }; if (Math.abs(M.x - cx) + Math.abs(M.y - by) > .01) { M.x = cx; M.y = by; M.at = t; } MOVED.set(key, M); moving = t - M.at < 140;   // a rider is moving while its place changes (no flicker between steps)
     const f = v === 'w' ? -1 : 1, fr = moving ? 1 + Math.floor(t / 80) % HORSE.frames : 0, k = HORSE.k * s * .7, C = HORSE.cell, bob = moving ? Math.sin(t / 240 * Math.PI) * 2.2 * s : 0, sc = 96 * s / 118;
     g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, (hv === 'e' ? 30 : 15) * s, 6 * s, 0, 0, Math.PI * 2); g.fill(); g.restore();

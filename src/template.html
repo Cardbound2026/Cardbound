@@ -108,6 +108,12 @@ body.sheetopen #btnUpdates, body.modalopen #btnUpdates { display: none; }
 .asbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; margin: 0 0 4px; } .asbar .btn { padding: 2px 8px; font-size: 12px; }
 .assack { display: grid; gap: 3px; } .assack .asbtn { justify-self: end; padding: 2px 9px; font-size: 12px; margin-top: -2px; } .assack.on > .item { opacity: .45; } .assack.on .asbtn { color: #f0b36a; }
 .camph { font-size: 17px; margin: 10px 0 4px; color: var(--accent); } .camph .muted { font-size: 13px; font-family: var(--f-ui); } .campsack { max-height: 320px; }
+.baggrid { display: grid; grid-template-columns: repeat(auto-fill, 54px); gap: 5px; align-content: start; padding: 8px; border: 1px solid #2b2521; border-radius: 6px; background: rgba(8, 7, 9, .55); }
+.bagcell { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 4px; background: #0c0a0b; box-shadow: inset 0 0 0 1px #2f2822, inset 0 0 0 2px #000; cursor: pointer; }
+.bagcell.empty { cursor: default; background: #0a0809; box-shadow: inset 0 0 0 1px #221d19, inset 0 2px 6px #000; }
+.bagcell:not(.empty):hover, .bagcell:focus-visible { box-shadow: inset 0 0 0 1px var(--rc), inset 0 0 0 2px #000, 0 0 10px color-mix(in srgb, var(--rc) 55%, transparent); outline: none; }
+.bagcell .iticon { --isz: 46px; } .bagcard { font-size: 12px; letter-spacing: .5px; color: color-mix(in srgb, var(--rc) 60%, #fff); }
+.gtip.bagpop { position: static; width: 330px; margin: 0 auto; pointer-events: auto; filter: none; }
 .stashgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 6px; align-content: start; } .stashgrid > .muted { grid-column: 1 / -1; }
 .item .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .item .acts .btn { padding: 3px 9px; font-size: 13px; }
@@ -1652,24 +1658,37 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   function renderGearTab(c) {
     if (run && !(cb && cb.practice)) c = Object.assign({}, c, { gear: wornGear() }); // out on a run: show what the hero actually wears there
     const eq = CBHub.SLOTS.map(sl => { const it = c.gear.find(g => g.slot === sl); return it ? itemHtml(it, `<div class="acts"><button class="btn" data-unequip="${sl}">Unequip</button></div>`) : `<div class="item" style="--rc:var(--line)"><span class="muted">${sl}: empty</span></div>`; }).join('');
-    const st = profile.stash.map(it => {
-      const opts = CBHub.slotOptions(it);
-      const cur = opts.map(sl => c.gear.find(g => g.slot === sl)).filter(Boolean);
-      const vs = cur.length ? cur.map(g => { const d = (it.ilvl || 0) - (g.ilvl || 0); return `${esc(g.name)} ilvl ${g.ilvl} <span class="${d > 0 ? 'up' : d < 0 ? 'down' : ''}">(${d > 0 ? '+' : ''}${d})</span>`; }).join(', ') : 'an empty slot';
-      if (it.bag) return itemHtml(it, `<div class="il">Adds ${it.bag} slots while it sits in a bag slot (yours, or the bank's).</div><div class="acts"><button class="btn primary" data-exbagput="bags:${it.id}">Put in a bag slot</button><button class="btn" data-salvage="${it.id}">Salvage +${CBHub.salvageValue(it)} gold</button></div>`); // Nov 13: bags
-      const btns = opts.length > 1 ? opts.map(sl => `<button class="btn" data-equip="${it.id}" data-slot="${sl}">Equip as ${sl}</button>`).join('') : `<button class="btn" data-equip="${it.id}">Equip</button>`;
-      return itemHtml(it, `<div class="il">${upBadge(it, c.gear)} Replaces ${vs}</div><div class="acts">${btns}${it.slot === 'Codex' ? `<button class="btn" data-breakcx="${it.id}">Break down (${Math.round(CB.CODEX_TOKEN_CHANCE(it) * 100)}% chance of a Reroll Token)</button>` : `<button class="btn" data-salvage="${it.id}">Salvage +${CBHub.salvageValue(it)} gold</button>`}</div>`);
-    }).join('');
+    // Nov 13: the bags are a grid of slots with just each item's picture; hover for the same card the character slots show, click for what you can do with it
+    const st = profile.stash.map(it => `<div class="bagcell" style="--rc:${RC[it.kind === 'card' ? CARDS[it.key].rarity : it.rarity] || 'var(--line)'}" data-tip="${tipKey(it, c.gear)}" data-bagit="${it.id}" role="button" tabindex="0" aria-label="${esc(it.kind === 'card' ? CARDS[it.key].name : it.name)}">${it.kind === 'card' ? '<span class="bagcard">Card</span>' : itemIcon(it, 46)}</div>`).join('')
+      + Array.from({ length: Math.max(0, CBHub.STASH_MAX - profile.stash.length) }, () => '<div class="bagcell empty"></div>').join('');
     const multi = Object.keys(profile.chars).length > 1;
     const heroRow = multi ? `<div class="cxchips" role="tablist" aria-label="Hero" style="margin:0 0 8px">${heroKeys().map(k => `<button class="cxchip ${k === heroKey ? 'on' : ''}" data-hero="${k}"><b style="color:${CC[profile.chars[k].cls]}">${esc(profile.chars[k].name)}</b> <span class="muted">${profile.chars[k].cls}</span></button>`).join('')}</div>` : '';
     $('hpGear').innerHTML = `${heroRow}<div class="gearwrap"><div>${paperdoll(c, c.cls, { own: true })}<p class="muted" style="font-size:12px;margin:6px 0 0">Hover a slot for the item, click it to swap or unequip.</p></div>
       <div class="gearside"><div class="tabs gtabs" role="tablist"><button role="tab" data-gtab="deck" aria-selected="${GT.tab === 'deck'}">Deck ${c.deck.length}</button><button role="tab" data-gtab="stash" aria-selected="${GT.tab === 'stash'}">Bags ${profile.stash.length} / ${CBHub.STASH_MAX}</button><button role="tab" data-gtab="stats" aria-selected="${GT.tab === 'stats'}">Stats</button><button role="tab" data-gtab="looks" aria-selected="${GT.tab === 'looks'}">Wardrobe</button></div>
-      ${GT.tab === 'deck' ? deckPanel(c) : GT.tab === 'stats' ? exStatsHtml(c) : GT.tab === 'looks' ? exWardrobeHtml(c) : `${exBagBar('bags')}<p class="muted" style="font-size:12px;margin:0 0 6px">${c.hardcore ? '<b style="color:#e06a5a">Hardcore bags</b>: shared by your hardcore heroes only.' : 'Shared by all your heroes (hardcore heroes have their own bags).'}</p><div class="list tall stashgrid">${st || '<span class="muted">Empty. Gear you bring home from a run lands here. Unequipped gear goes here too.</span>'}</div>`}</div></div>`;
+      ${GT.tab === 'deck' ? deckPanel(c) : GT.tab === 'stats' ? exStatsHtml(c) : GT.tab === 'looks' ? exWardrobeHtml(c) : `${exBagBar('bags')}<p class="muted" style="font-size:12px;margin:0 0 6px">${c.hardcore ? '<b style="color:#e06a5a">Hardcore bags</b>: shared by your hardcore heroes only.' : 'Shared by all your heroes (hardcore heroes have their own bags).'}</p><div class="baggrid">${st}</div><p class="muted" style="font-size:12px;margin:6px 0 0">Hover an item to read it. Click it to equip or salvage. Double-click to equip right away.</p>`}</div></div>`;
     fitCards($('hpGear'));
     paintPortraits($('hpGear'));
   }
+  // a bag item: its card, and what you can do with it
+  function bagItem(id) {
+    const c = CBHub.char(profile, heroKey), it = profile.stash.find(x => x.id === id); if (!it) return;
+    const opts = it.kind === 'card' ? [] : CBHub.slotOptions(it), cur = opts.map(sl => c.gear.find(g => g.slot === sl)).filter(Boolean);
+    const vs = cur.length ? cur.map(g => esc(g.name)).join(', ') : 'an empty slot';
+    const btns = it.kind === 'card' ? '' : it.bag ? `<button class="btn primary" data-exbagput="bags:${it.id}">Put in a bag slot</button>` : opts.length > 1 ? opts.map(sl => `<button class="btn primary" data-beq="${sl}">Equip as ${sl}</button>`).join('') : `<button class="btn primary" data-beq="">Equip</button>`;
+    const scrap = it.kind === 'card' ? '' : it.slot === 'Codex' ? `<button class="btn" id="bBreak">Break down (${Math.round(CB.CODEX_TOKEN_CHANCE(it) * 100)}% chance of a Reroll Token)</button>` : `<button class="btn" id="bSalv">Salvage +${CBHub.salvageValue(it)} gold</button>`;
+    modal(`<div class="gtip bagpop">${itemHtml(it, it.kind === 'card' ? '' : `<div class="il"><b>${itemPower(it)}</b>Item Power</div>`)}</div>${it.kind === 'card' ? '' : it.bag ? `<p class="muted" style="text-align:center;margin:8px 0 0">Adds ${it.bag} slots while it sits in a bag slot (yours, or the bank's).</p>` : `<p style="text-align:center;margin:8px 0 0">${upBadge(it, c.gear)} <span class="muted">Replaces ${vs}</span></p>`}
+      <div class="row" style="justify-content:center;flex-wrap:wrap">${btns}${scrap}<button class="btn" id="mClose">Close</button></div>`);
+    $('mClose').onclick = closeModal;
+    const done = () => { closeModal(); keepScroll(() => { save(); renderHub(); }); };
+    for (const b of $('modalBox').querySelectorAll('[data-beq]')) b.onclick = () => { const r = CBHub.equip(profile, heroKey, it.id, b.dataset.beq || undefined); if (!r.ok) return toast(r.why); done(); };
+    if ($('bSalv')) $('bSalv').onclick = () => { CBHub.salvage(profile, it.id); done(); };
+    if ($('bBreak')) $('bBreak').onclick = () => { const r = CBHub.breakCodex(profile, it.id); if (!r.ok) return toast(r.why); done(); toast(r.tokens ? `+1 Reroll Token (you have ${profile.rerollTokens}). Spend it at Jeweler Rook.` : 'The codex crumbles to dust. No Reroll Token this time.'); };
+  }
+  $('hpGear').addEventListener('dblclick', (ev) => { const bc = ev.target.closest('[data-bagit]'); if (!bc) return; const it = profile.stash.find(x => x.id === bc.dataset.bagit); if (!it || it.kind === 'card' || it.bag) return; const r = CBHub.equip(profile, heroKey, it.id); closeModal(); if (!r.ok) return toast(r.why); keepScroll(() => { save(); renderHub(); }); });
+  $('hpGear').addEventListener('keydown', (ev) => { if (ev.key !== 'Enter') return; const bc = ev.target.closest && ev.target.closest('[data-bagit]'); if (bc) { ev.preventDefault(); ev.stopPropagation(); bagItem(bc.dataset.bagit); } });
   $('hpGear').addEventListener('click', (ev) => {
     const pc = ev.target.closest('[data-dcard]'); if (pc) return upgradeModal(pc.dataset.dcard);
+    const bc = ev.target.closest('[data-bagit]'); if (bc) { if (ev.shiftKey) return; const el = document.querySelector('.gtip:not(.bagpop)'); if (el) el.hidden = true; return bagItem(bc.dataset.bagit); }
     const b = ev.target.closest('button'); if (!b) return;
     if (b.dataset.gtab) { GT.tab = b.dataset.gtab; return renderGearTab(CBHub.char(profile, heroKey)); }
     if (b.dataset.gsort) { GT.sort = b.dataset.gsort; return renderGearTab(CBHub.char(profile, heroKey)); }
@@ -3053,7 +3072,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   }
   $('hpBank').addEventListener('click', (ev) => { const a = ev.target.closest('[data-tovault], [data-fromvault]'); if (!a) return; const r = a.dataset.tovault ? CBHub.toVault(profile, a.dataset.tovault) : CBHub.fromVault(profile, a.dataset.fromvault); if (!r.ok) return toast(r.why); keepScroll(() => { save(); renderBank(); }); });
   // an item's picture (img/items.webp, cut from the art heroes wear: tools/heroart/bake_icons.py), in a frame of its rarity colour
-  function itemIcon(it, px) { const p = window.CB_PUPPET && CB_PUPPET.iconOf ? CB_PUPPET.iconOf(it) : null; return `<span class="iticon" style="--rc:${RC[it.rarity] || 'var(--r-white)'};${p ? `--iy:${p[0]};--ix:${p[1]};` : 'background-image:none;'}${px ? `--isz:${px}px` : ''}">${it.ilvl != null ? `<i>${it.ilvl}</i>` : ''}</span>`; }
+  function itemIcon(it, px) { const p = window.CB_PUPPET && CB_PUPPET.iconOf ? CB_PUPPET.iconOf(it) : null; return `<span class="iticon" style="--rc:${RC[it.rarity] || 'var(--r-white)'};${p ? `--iy:${p[0]};--ix:${p[1]};` : 'background-image:none;'}${px ? `--isz:${px}px` : ''}"></span>`; }
   { const ck = (on) => document.body.classList.toggle('ctrlheld', on); document.addEventListener('keydown', (ev) => { if (ev.key === 'Control') ck(true); }); document.addEventListener('keyup', (ev) => { if (ev.key === 'Control') ck(false); }); window.addEventListener('blur', () => ck(false)); }
   function itemHtml(it, extra) {
     if (it.kind === 'card') { const d = CARDS[it.key]; return `<div class="item" data-ilink="${linkKey(it)}" style="--rc:${RC[d.rarity]};grid-template-columns:auto 1fr;align-items:center;column-gap:10px">${cardBox(d, 96)}<div><div class="ih"><b>${esc(d.name)}</b></div><div class="il">${d.rarity} card &middot; ${d.cost} mana</div>${extra || ''}</div></div>`; }

@@ -94,7 +94,7 @@
   const gtip = document.createElement('div'); gtip.className = 'gtip'; gtip.hidden = true; document.body.appendChild(gtip);
   function showTip(el) {
     const t = TIPS.get(el.dataset.tip); if (!t) return;
-    gtip.innerHTML = itemHtml(t.it, `<div class="il"><b>${itemPower(t.it)}</b>Item Power</div>`) + (t.cmp ? `<div style="margin-top:4px">${upBadge(t.it, t.cmp)}</div>` : '');
+    gtip.innerHTML = itemHtml(t.it, t.it.kind === 'card' ? '' : `<div class="il"><b>${itemPower(t.it)}</b>Item Power</div>`) + (t.cmp ? `<div style="margin-top:4px">${upBadge(t.it, t.cmp)}</div>` : '');
     gtip.hidden = false;
     const r = el.getBoundingClientRect(), w = gtip.offsetWidth, h = gtip.offsetHeight;
     let x = r.right + 8; if (x + w > innerWidth - 8) x = r.left - w - 8; if (x < 8) x = Math.max(8, Math.min(innerWidth - w - 8, r.left));
