@@ -69,13 +69,13 @@ card('prismatic_barrier', { cls: 'Mage', name: 'Prismatic Barrier', rarity: 'Blu
 card('amplify', { cls: 'Mage', name: 'Amplify', rarity: 'Gold', type: 'Skill', cost: 20, target: 'self', text: 'Your next damaging Skill deals 50% more damage.', play: (cb) => { cb.player.nextSkillMult = 1.5; cb.say('player', 'Your next damaging Skill deals 50% more damage.'); }, tags: { setup: 'skill' } });
 
 // --- Paladin
-card('crusader_strike', { cls: 'Paladin', name: 'Crusader Strike', rarity: 'White', type: 'Attack', cost: 10, target: 'enemy', dtype: 'Physical', text: 'Deal 12 damage.', play: (cb, t) => cb.hit(t, 12, 'Crusader Strike'), tags: { dmg: 12 } });
-card('raise_shield', { cls: 'Paladin', name: 'Raise Shield', rarity: 'White', type: 'Skill', cost: 10, target: 'self', text: 'Gain 10 Block.', play: (cb) => cb.gainDef(10), tags: { def: 10 } });
-card('righteous_blow', { cls: 'Paladin', name: 'Righteous Blow', rarity: 'White', type: 'Attack', cost: 10, target: 'enemy', dtype: 'Physical', text: 'Deal 8 damage and gain 8 Block.', play: (cb, t) => { cb.hit(t, 8, 'Righteous Blow'); cb.gainDef(8); }, tags: { dmg: 8, def: 8 } });
+card('crusader_strike', { cls: 'Paladin', name: 'Crusader Strike', rarity: 'White', type: 'Attack', cost: 10, target: 'enemy', dtype: 'Physical', text: 'Deal 12 damage.', play: (cb, t) => cb.hit(t, 14, 'Crusader Strike'), tags: { dmg: 14 } }); // Nov 13: the card read 14 after its retune but still hit for 12
+card('raise_shield', { cls: 'Paladin', name: 'Raise Shield', rarity: 'White', type: 'Skill', cost: 10, target: 'self', text: 'Gain 10 Block.', play: (cb) => cb.gainDef(12), tags: { def: 12 } }); // Nov 13: reads 12 after its retune, gave 10
+card('righteous_blow', { cls: 'Paladin', name: 'Righteous Blow', rarity: 'White', type: 'Attack', cost: 10, target: 'enemy', dtype: 'Physical', text: 'Deal 8 damage and gain 8 Block.', play: (cb, t) => { cb.hit(t, 10, 'Righteous Blow'); cb.gainDef(10); }, tags: { dmg: 10, def: 10 } }); // Nov 13: reads 10 and 10, did 8 and 8
 card('smite', { cls: 'Paladin', name: 'Smite', rarity: 'White', type: 'Skill', cost: 10, target: 'enemy', dtype: 'Holy', text: 'Deal 14 Holy damage. (Holy ignores resistance and weakness.)', play: (cb, t) => cb.hit(t, 14, 'Smite'), tags: { dmg: 14 } });
 card('mend_wounds', { cls: 'Paladin', name: 'Mend Wounds', rarity: 'White', type: 'Skill', cost: 10, target: 'self', text: 'Heal yourself for 8 HP.', play: (cb) => cb.heal(cb.player, 8, 'Mend Wounds'), tags: { heal: 8 } });
 card('sacred_ward', { cls: 'Paladin', name: 'Sacred Ward', rarity: 'White', type: 'Skill', cost: 10, target: 'self', text: 'Gain 10 Barrier.', play: (cb) => cb.gainDef(10), tags: { def: 10 } });
-card('divine_storm', { cls: 'Paladin', name: 'Divine Storm', rarity: 'Green', type: 'Attack', cost: 20, target: 'all', dtype: 'Holy', text: 'Deal 12 Holy damage to all enemies. Breaks Stealth.', play: (cb) => { for (const e of cb.alive()) cb.hit(e, 12, 'Divine Storm'); }, tags: { dmg: 12, aoe: 1 } });
+card('divine_storm', { cls: 'Paladin', name: 'Divine Storm', rarity: 'Green', type: 'Attack', cost: 20, target: 'all', dtype: 'Holy', text: 'Deal 12 Holy damage to all enemies. Breaks Stealth.', play: (cb) => { for (const e of cb.alive()) cb.hit(e, 14, 'Divine Storm'); }, tags: { dmg: 14, aoe: 1 } }); // Nov 13: reads 14, did 12
 card('healing_light', { cls: 'Paladin', name: 'Healing Light', rarity: 'Green', type: 'Skill', cost: 10, target: 'self', text: 'Heal yourself for 15 HP.', play: (cb) => cb.heal(cb.player, 15, 'Healing Light'), tags: { heal: 15 } });
 card('divine_shield', { cls: 'Paladin', name: 'Divine Shield', rarity: 'Green', type: 'Skill', cost: 10, target: 'self', text: 'Gain 8 Block. Negate the next debuff applied to you before your next turn.', play: (cb) => { cb.gainDef(8); cb.player.negateDebuff = true; }, tags: { def: 9 } });
 card('ardent_defense', { cls: 'Paladin', name: 'Ardent Defense', rarity: 'Blue', type: 'Skill', cost: 20, target: 'self', text: 'Gain 40 Block.', play: (cb) => cb.gainDef(40), tags: { def: 40 } });
@@ -123,7 +123,7 @@ const POWERS = {
   sharpened_stars: { shurikenX: 2 },
   shuriken_storm: { turnStart: (cb) => cb.addToHand('shuriken'), shurikenAoe: true },
   reflexive_volley: { fullBlock: (cb, p, e) => { if (e.hp > 0) cb.powerHit(p, e, Math.round((shurikenDmg + cb.pwSum(p, 'shurikenPlus')) * cb.pwProd(p, 'shurikenX')), 'Reflexive Volley', 'Physical', 'Attack'); } }, // Nov 1: the thrown Shuriken gets Shuriken Mastery / Sharpened Stars / Ninja too
-  fleetfooted: { dealt: (cb, p, h) => { if (h.kind === 'Attack' && h.lost > 0 && !h.absorbed) cb.gainDef(2); } },
+  fleetfooted: { dealt: (cb, p, h) => { if (h.kind === 'Attack' && h.lost > 0 && !h.absorbed) cb.gainDef(1); } }, // Nov 13: the card says 1, it gave 2
   first_move: { initPlus: () => 100 },
   nimble: { turnStart: (cb) => cb.gainDef(3) },
   hidden_pockets: { turnStart: (cb, p, ...a) => { for (let k = PN(a, 0, 1); k > 0; k--) cb.addToHand('shuriken'); } },
@@ -137,7 +137,7 @@ const POWERS = {
   // --- Mage
   quick_study: { turnStart: (cb, p, ...a) => { if (cb.order[0] === p.id && cb.turnIndex === 0) { const n = PN(a, 0, 2); cb.say('player', `Quick Study: first to act, draw ${n}.`); cb.drawCards(p, n); } } },
   flashpoint: { dotTicks: { burn: 2 } },
-  combustion_threshold: { dealt: (cb, p, h) => { if (h.d && h.d.cost > 30 && h.kind === 'Skill' && h.e.burn > 0 && h.e.hp > 0 && !h.combusted) { h.combusted = true; cb.applyHit(p, h.e, h.e.burn, { isDot: true, label: 'Combustion' }); } } },
+  combustion_threshold: { dealt: (cb, p, h) => { if (h.d && (h.d.cost >= 30 || (cb._paid || 0) >= 30) && h.kind === 'Skill' && h.e.burn > 0 && h.e.hp > 0 && !h.combusted) { h.combusted = true; cb.applyHit(p, h.e, h.e.burn, { isDot: true, label: 'Combustion' }); } } },
   temporal_siphon: { initPlus: (cb, p, ...a) => Math.round(PN(a, 0, 20) / 100 * cb.foes().reduce((s, e) => s + cb.initiative(e), 0)) },
   arcane_ascension: { onPlay: (cb, p, ...a) => { p.draw += 2; p.regen = Math.round(p.regen * (1 + PN(a, 0, 30) / 100)); } },
   potency: { hitMult: (cb, p, e, c) => c.kind === 'Skill' ? 1.15 : 1 },
@@ -251,7 +251,7 @@ const CUSTOM = {
   war_chest: { retain: true, endInHand: retainMana, play: () => {} },
   survey_the_field: { play: (cb, t, p) => cb.topPick(p, 3) },
   fall_back: { play: (cb, t, p) => { const n = p.hand.length; p.discard.push(...p.hand.splice(0)); p.drawNext = (p.drawNext || 0) + n; say(cb, `Draw ${n} more next round.`); } },
-  marching_orders: { play: (cb, t, p) => { let k = 0; cb.timed(p, 'march', 3, { each: (c, q) => { k++; q.drawNext = (q.drawNext || 0) + k; } }); say(cb, 'Draw 1, then 2, then 3 extra cards over your next turns.'); } },
+  marching_orders: { play: (cb, t, p) => { let k = 1; p.drawNext = (p.drawNext || 0) + 1; cb.timed(p, 'march', 2, { each: (c, q) => { k++; q.drawNext = (q.drawNext || 0) + k; } }); /* Nov 13: the first extra card came a turn late */ say(cb, 'Draw 1, then 2, then 3 extra cards over your next turns.'); } },
   adrenaline_surge: { play: (cb, t, p) => { p.strCombat += 60; cb.timed(p, 'adrenaline', 6, { each: (c, q) => { q.strCombat -= 10; } }); say(cb, '+60 Strength, fading by 10 each turn.'); } },
   bully: { play: (cb, t, p) => { const e = tgtOf(cb, t); D_(cb, e, 16 + (e && p.hp > e.hp ? 16 : 0), 'Bully'); } },
   fortify: { play: (cb, t, p) => { cb.timed(p, 'fortify', 5, { each: (c) => c.gainDef(10) }); say(cb, 'Gain 10 Block at the start of each of your next 5 turns.'); } },
@@ -367,7 +367,7 @@ const CUSTOM = {
   hamstring_cut: { play: (cb, t, p) => { const e = D_(cb, t, 6, 'Hamstring Cut'); if (e) { e.initNext = (e.initNext || 0) - 4; p.initNext += 4; } } },
   blinding_speed: { play: (cb, t, p) => { cb.timed(p, 'speed', 2, { begin: (c, q) => { q.baseInit += 10; }, end: (c, q) => { q.baseInit -= 10; } }); cb.drawCards(p, 1); } },
   evasive_precision: { play: (cb, t, p) => { p.turn.critPlus = Math.min(50, p.block); say(cb, `+${p.turn.critPlus}% crit chance this turn.`); } },
-  death_from_above: { play: (cb, t, p) => DA(cb, p.stealth ? 24 : 16, 'Death From Above') },
+  death_from_above: { play: (cb, t, p) => DA(cb, p.stealth || cb._wasStealth ? 24 : 16, 'Death From Above') }, // Nov 13: an area card ends Stealth before it resolves, so the bonus never applied
   // ===== Mage
   borrowed_power: { play: (cb, t, p) => { p.turn.nextFree = true; say(cb, 'Your next card costs no mana.'); } },
   grand_conduit: { play: (cb, t, p) => { p.turn.nextMult = 2; say(cb, 'Your next card is twice as strong.'); } },
@@ -412,7 +412,7 @@ const CUSTOM = {
   scry: { play: (cb, t, p) => cb.topPick(p, 3) },
   drain_essence: { play: (cb, t, p) => { D_(cb, t, 8, 'Drain Essence'); if (cb._lastLost) cb.heal(p, Math.round(cb._lastLost / 2), 'Drain Essence'); } },
   overcharge: { play: (cb, t, p) => { p.mana += 50; p.noRegenTurns = 1; say(cb, '+50 mana. No regeneration next turn.'); } },
-  elemental_focus: { play: (cb, t, p) => { p.turn.skillFlat = (p.turn.skillFlat || 0) + 10; say(cb, 'Your next damaging Skill deals 10 more.'); } },
+  elemental_focus: { play: (cb, t, p) => { p.turn.focusFlat = (p.turn.focusFlat || 0) + 10; p.turn.focusNot = p.lastSkillElem || null; say(cb, p.lastSkillElem ? `Your next damaging Skill deals 10 more unless it is ${p.lastSkillElem}.` : 'Your next damaging Skill deals 10 more.'); } }, // Nov 13: the element check was missing
   flash_freeze: { play: (cb, t) => { const e = D_(cb, t, 12, 'Flash Freeze'); if (e && e.chill >= 5) cb.applyChill(e, 5); } },
   glacial_spike: { play: (cb, t) => { const e = tgtOf(cb, t); const ch = e && e.chill > 0; D_(cb, e, 30, 'Glacial Spike'); if (ch && e.hp > 0) { e.frozen = true; say(cb, `${e.name} is Frozen.`); } } },
   arcane_blast: { play: (cb, t, p) => D_(cb, t, 8 + Math.min(18, 6 * ((p.turn.played || []).filter(c => C[c.key].type === 'Skill' && C[c.key].dtype === 'Arcane').length)), 'Arcane Blast') },
@@ -430,7 +430,7 @@ const CUSTOM = {
   bombardment: { play: (cb) => { for (const e of cb.alive()) cb.eStatus(e, 'bomb', 1); } },
   transmute: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (e) cb.eExhaust(e, 1); p.manaNext -= 10; say(cb, 'You will have 10 less mana next turn.'); } },
   mirror_image: { play: (cb, t, p) => { cb.timed(p, 'mirror', 3); say(cb, 'For 2 turns, the first attack on you each round is negated.'); } },
-  void_lance: { play: (cb, t) => { const e = tgtOf(cb, t); D_(cb, e, 10 + Math.floor((e ? e.maxMana - e.mana : 0) / 3), 'Void Lance'); } },
+  void_lance: { play: (cb, t) => { const e = tgtOf(cb, t); D_(cb, e, 10 + Math.max(0, Math.floor((e ? e.maxMana - e.mana : 0) / 3)), 'Void Lance'); } },
   arcane_overflow: { play: (cb, t, p) => DA(cb, cb.spendAll(p) * 0.5, 'Arcane Overflow') },
   faerie_fire: { play: (cb, t) => D_(cb, t, 5, 'Faerie Fire') },
   cauterizing_flame: { play: (cb, t, p) => { const n = p.bleed; p.bleed = 0; if (n) cb.gainDef(2 * n); } },
@@ -450,15 +450,15 @@ const CUSTOM = {
   mass_condemnation: { play: (cb, t) => { const e = tgtOf(cb, t); if (!e) return; for (const o of cb.alive()) if (o !== e) for (const k of cb.debuffKeys(e, true)) o[k] = (o[k] || 0) + e[k]; say(cb, `${e.name}'s debuffs spread to every enemy.`); } },
   benediction: { play: (cb, t, p) => { for (const a of cb.allies()) if (a !== p) { a.strTurn += p.strTurn; a.strCombat += p.strCombat; a.block += Math.round(p.block / 2); } say(cb, 'Your blessings spread to the party.'); } },
   twin_verdict: { play: (cb, t, p) => { p.turn.twin = true; say(cb, 'Your next Physical Attack also strikes as Holy.'); } },
-  cleansing_flame: { play: (cb, t, p) => { const n = p.burn; p.burn = 0; cb.heal(p, n * 2, 'Cleansing Flame'); } },
-  sacred_ash: { play: (cb, t, p) => { const n = p.burn; p.burn = 0; if (n) cb.gainDef(n * 2); } },
+  cleansing_flame: { play: (cb, t, p) => { const n = p.burn; p.burn = 0; cb.heal(p, n * 2, 'Cleansing Flame'); if (n) cb.fire(p, 'onCleanse', n); } },
+  sacred_ash: { play: (cb, t, p) => { const n = p.burn; p.burn = 0; if (n) { cb.gainDef(n * 2); cb.fire(p, 'onCleanse', n); } } },
   tithe_of_mana: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (!e) return; const s = cb.drainMana(e, 20); p.mana += s; say(cb, `Took ${s} mana.`); } },
   inquisition: { play: (cb, t) => { const e = tgtOf(cb, t); if (e) cb.eExhaust(e, 2); } },
   burden_of_sin: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (e) { const n = debuffMove(cb, p, e, ['weak', 'vulnerable', 'slow', 'bleed', 'poison', 'burn', 'chill']); say(cb, n ? `Your debuffs move to ${e.name}.` : 'No debuffs to move.'); } } },
   divine_communion: { play: (cb, t, p) => { const m = cb.spendAll(p); for (const a of cb.allies()) cb.heal(a, m, 'Divine Communion'); } },
   quiet_prayer: { play: (cb, t, p) => { cb.gainDef(6); devote(cb, p, 2); } },
   morning_prayer: { play: (cb, t, p) => devote(cb, p, 3) },
-  purify: { play: (cb, t, p) => { const a = cb.pickAlly(p, true); const ks = cb.debuffKeys(a, false).slice(0, 2); for (const k of ks) a[k] = 0; say(cb, `${a.name}: ${ks.length} debuff${ks.length === 1 ? '' : 's'} removed.`); } },
+  purify: { play: (cb, t, p) => { const a = cb.pickAlly(p, true); const ks = cb.debuffKeys(a, false).slice(0, 2); let rm = 0; for (const k of ks) { rm += a[k]; a[k] = 0; } say(cb, `${a.name}: ${ks.length} debuff${ks.length === 1 ? '' : 's'} removed.`); if (rm) cb.fire(p, 'onCleanse', rm); } }, // Nov 13: Purify did not count as cleansing
   condemn: { play: (cb, t) => { const e = D_(cb, t, 5, 'Condemn'); if (e) condemn(cb, e, 6); } },
   blessing_of_might: { play: (cb, t, p) => { const a = cb.pickAlly(p, true); a.strTurn += 20; cb.drawCards(a, 1); say(cb, `${a.name} gains 20 Strength this turn.`); } },
   guarding_light: { play: (cb, t, p) => cb.defFor(cb.pickAlly(p, false), 10) },
@@ -473,9 +473,9 @@ const CUSTOM = {
   condemning_mark: { play: (cb, t) => { const e = tgtOf(cb, t); if (e) condemn(cb, e, 18); } },
   purge_the_wicked: { play: (cb, t) => { const e = tgtOf(cb, t); if (!e) return; let n = 0; for (const k of cb.debuffKeys(e, true)) { n += e[k]; e[k] = 0; } D_(cb, e, 3 * n, 'Purge the Wicked'); } },
   cleanse: { play: (cb, t, p) => { const a = cb.pickAlly(p, true); cb.cleanseAll(a, false); } },
-  stanch_the_wound: { play: (cb, t, p) => { const a = cb.allies().slice().sort((x, y) => y.bleed - x.bleed)[0] || p; const n = a.bleed; a.bleed = 0; cb.heal(a, n, 'Stanch the Wound'); } },
+  stanch_the_wound: { play: (cb, t, p) => { const a = cb.allies().slice().sort((x, y) => y.bleed - x.bleed)[0] || p; const n = a.bleed; a.bleed = 0; cb.heal(a, n, 'Stanch the Wound'); if (n) cb.fire(p, 'onCleanse', n); } },
   blessing_of_kings: { play: (cb, t, p) => CUSTOM.rally.play(cb, t, p) },
-  hand_of_freedom: { play: (cb, t, p) => { const a = cb.allies().slice().sort((x, y) => (y.slow + y.chill) - (x.slow + x.chill))[0] || p; a.slow = 0; a.chill = 0; a.initNext = (a.initNext || 0) + 4; say(cb, `${a.name} is freed: +4 Initiative next turn.`); } },
+  hand_of_freedom: { play: (cb, t, p) => { const a = cb.allies().slice().sort((x, y) => (y.slow + y.chill) - (x.slow + x.chill))[0] || p; const fr = (a.slow || 0) + (a.chill || 0); a.slow = 0; a.chill = 0; a.initNext = (a.initNext || 0) + 4; if (fr) cb.fire(p, 'onCleanse', fr); say(cb, `${a.name} is freed: +4 Initiative next turn.`); } },
   avenging_strike: { play: (cb, t, p) => D_(cb, t, 7 + ([...(cb.allyLost || [])].some(id => id !== p.id) ? 7 : 0), 'Avenging Strike') },
   mending_prayer: { play: (cb, t, p) => { cb.heal(p, 5, 'Mending Prayer'); devote(cb, p, 2); } },
   shield_of_righteousness: { play: (cb, t, p) => blockToDmg(cb, t, p, 0.6, 'Shield of Righteousness', true, false, true) },
@@ -1275,7 +1275,7 @@ class Combat {
     };
     let flat = 0;
     if (kind === 'Attack') flat += (p.nextAttackFlat || 0) + (p.weaponDmg || 0) + (p.windUp ? Math.floor((d.cost || 0) / 5) * (+p.windUp) : 0);
-    if (kind === 'Skill' && d.tags && d.tags.dmg) flat += T.skillFlat || 0;
+    if (kind === 'Skill' && d.tags && d.tags.dmg) flat += (T.skillFlat || 0) + (T.focusFlat && d.dtype !== T.focusNot ? T.focusFlat : 0);
     if (pow) { try { flat += this.pwSum(p, 'flat', d); } catch (x) {} }
     let shX = 1, shP = 0; if (pow && d.key === 'shuriken') { try { shP = this.pwSum(p, 'shurikenPlus'); shX = this.pwProd(p, 'shurikenX'); } catch (x) {} } // Shuriken Mastery / Sharpened Stars / Ninja show on the card
     const mark = (n0, n1) => n1 > n0 ? '\u0001' + n1 + '\u0002' : n1 < n0 ? '\u0003' + n1 + '\u0004' : String(n1);
@@ -1607,7 +1607,7 @@ class Combat {
     if (p.isPlayer && p.turn) {
       if (kind === 'Attack' && p.turn.attackDtype && cd && !cd.isPower) dtype = ctx.dtype = p.turn.attackDtype;
       if (kind === 'Attack' && p.windUp && cd && !cd.isPower) base += Math.floor((cd.cost || 0) / 5) * (+p.windUp);
-      if (kind === 'Skill' && cd && !cd.isPower && cd.tags && cd.tags.dmg && p.turn.skillFlat) base += p.turn.skillFlat;
+      if (kind === 'Skill' && cd && !cd.isPower && cd.tags && cd.tags.dmg) base += (p.turn.skillFlat || 0) + (p.turn.focusFlat && (ctx.dtype || cd.dtype) !== p.turn.focusNot ? p.turn.focusFlat : 0);
       const dw = this.has(p, 'codex_divine_wrath');
       if (cd && !cd.isPower && cd.dtype === 'Holy' && p.devotion > 0) { // Nov 3: only Holy cards spend Devotion (Nov 7: the spend code below had been commented out by mistake)
         const per = cd.devotionPer || (dw ? 3 : 2); base += p.devotion * per; this.say('player', `${p.devotion} Devotion: +${p.devotion * per} Holy damage.`); p._devHit = p.devotion;
@@ -1648,7 +1648,7 @@ class Combat {
       if (T.siphon) this.drainMana(e, Math.round(r.lost * (T.siphon === true ? 1 : T.siphon)));
       if (kind === 'Attack' && T.perfectGuard) this.gainDef(r.lost);
       if (dtype === 'Holy' && T.kindled) { T.kindled = false; e.burn += Math.round(r.lost * 0.5); e.burnBy = p.id; this.say('player', `Kindled Faith: ${e.name} gains ${Math.round(r.lost * 0.5)} Burn.`); }
-      if (kind === 'Attack' && T.coated) { T.coated = false; const q = Math.max(1, Math.round(r.lost * (T.coated === true ? 0.25 : T.coated))); e.bleed += q; e.poison += q; e.bleedBy = e.poisonBy = p.id; this.say('player', `Coated Blade: ${q} Bleed and ${q} Poison.`); }
+      if (kind === 'Attack' && T.coated) { const cf = T.coated === true ? 0.25 : T.coated; T.coated = false; const q = Math.max(1, Math.round(r.lost * cf)); /* Nov 13: the share was read after it had been cleared, so it always gave 1 */ e.bleed += q; e.poison += q; e.bleedBy = e.poisonBy = p.id; this.say('player', `Coated Blade: ${q} Bleed and ${q} Poison.`); }
       if (kind === 'Attack' && !r.absorbed && p.timed) { const rl = p.timed.find(x => x.key === 'relentless'); if (rl) e.vulnerable += rl.n || 1; }
       if (e.deathmark && e.deathmark.by === p.id) e.deathmark.dmg += r.lost;
     }
@@ -1758,7 +1758,7 @@ class Combat {
     if (T.nextFree) T.nextFree = false; if (T.nextCost) T.nextCost = 0;
     const echoArc = T.echoArcane && d.type === 'Skill' && d.dtype === 'Arcane'; if (echoArc) T.echoArcane = false;
     this.say('card', `${this.partySize > 1 ? p.name + ' plays' : 'You play'} ${d.name}${paid ? ' (' + paid + ' mana)' : ''}` + (tgt ? ` on ${tgt.name}` : '') + `. Mana ${p.mana}.`);
-    if (d.target === 'all' && p.stealth) p.stealth = false;
+    this._wasStealth = !!p.stealth; if (d.target === 'all' && p.stealth) p.stealth = false;
     const stAtk = d.type === 'Attack' && !!p.stealth; if (stAtk) p.stealth = 'atk'; // Nov 2: attacking ends Stealth (after this card; a card that grants Stealth keeps it)
     if (this.duel && d.target === 'all') for (const x of this.alive()) if (x.stealth) { x.stealth = false; this.say('player', `${x.name}'s Stealth is broken.`); }
     this._playing = d; this._rankMult = 1; this._rk = d.rk || null; this._rkCard = d; const ms = d.ms || {};
@@ -1789,7 +1789,7 @@ class Combat {
     if (T.cascade && !this.over) this.drawCards(p, 1);
     (T.played = T.played || []).push(c);
     if (this.has(p, 'smoke_and_mirrors') && this._forced >= 2) { p.stealth = true; this.say('player', 'Smoke and Mirrors: you slip into Stealth.'); }
-    if (d.type === 'Attack') { p.turnAttacks++; p.nextAttackFlat = 0; p.windUp = false; } else if (d.type === 'Skill') { p.turnSkills++; if (d.tags.dmg) { p.spellCount++; if (d.dtype && !p.turnElems.includes(d.dtype)) p.turnElems.push(d.dtype); } }
+    if (d.type === 'Attack') { p.turnAttacks++; p.nextAttackFlat = 0; p.windUp = false; } else if (d.type === 'Skill') { p.turnSkills++; if (d.tags.dmg) { T.skillFlat = 0; T.focusFlat = 0; if (d.dtype) p.lastSkillElem = d.dtype; /* Nov 13: Concentrate and Elemental Focus are spent by the next damaging Skill; they used to last all turn */ p.spellCount++; if (d.dtype && !p.turnElems.includes(d.dtype)) p.turnElems.push(d.dtype); } }
     this._cmult = 1;
     if (d.rank && !this.over) this.rkMilestones(p, d, dn0, tgt);
     this.rkEnd(); this._rk = null; this._rkCard = null; this._rkHits = this._rkTimed = this._rkAdded = null;
@@ -2349,8 +2349,8 @@ function rankedCard(key, rank) {
   if (pow && main) for (const k in rk) rk[k] = main; // a Power's numbers all grow together
   let txt = d.text;
   for (const t of toks.slice().sort((x, y) => y[0] - x[0])) {
-    const [i, j, n, k] = t, val = u.x || k.startsWith('ms_') ? tval(t) : Math.round(n * (pow ? main : rk[k]));
-    txt = txt.slice(0, i) + val + txt.slice(j);
+    const [i, j, n, k] = t, val = t[6] != null ? Math.round(t[6] * (pow ? main : rk[k])) : u.x || k.startsWith('ms_') ? tval(t) : Math.round(n * (pow ? main : rk[k])); // t[6]: Dread prints what lands
+    txt = txt.slice(0, i) + val + txt.slice(j); if (key === 'wither' && t[6] != null) txt = txt.replace(/apply \d+ more/, 'apply ' + val + ' more');
   }
   if (u.dw && MILESTONE(rank)) { ms.draw = MILESTONE(rank); txt = txt.replace(/([Dd])raw a card/, (m, D) => `${D}raw ${1 + ms.draw} cards`); }
   if (u.d35 && rank >= 3) { ms.draw = (rank >= 3 ? 1 : 0) + (rank >= 5 ? 1 : 0); txt = txt.replace(/([Dd])raw 1 card/, (m, D) => `${D}raw ${1 + ms.draw} cards`); } // Nov 2: +1 card at +3, +2 at +5 (Battle Shout)
@@ -2470,6 +2470,10 @@ const HEAL_FLAT = { healing_light: 5, overflowing_light: 4 };
 const TEXT_FIX = {
 "open_the_floodgates": "Draw 3 cards. Everything is free to play this turn. You cannot draw more cards. Exhaust.",
 "divine_echo": "Each attack you play has a 10% chance to repeat. When it repeats, the chance drops to 0% for the rest of the turn.",
+"combustion_threshold": "Hitting a burning target with a Skill that costs 30 mana or more makes its Burn tick at once.",
+"scorched_plans": "Spend all your mana. You and the target each exhaust 1 card from your draw piles for every 10 mana spent.",
+"thought_collapse": "Exhaust every status card in your hand. The target exhausts that many cards from its hand and draws that many fewer next turn.",
+"dread_strike": "Deal 8 damage. Apply Dread equal to a third of the damage dealt.",
 "decisive_reprisal": "If you parried last turn, execute the target, dealing 45 damage.",
 "survey_the_field": "Look at the top 3 cards of your draw pile. Choose 1 to put into your hand; the rest go back.",
 "torrent": "Every 3rd Skill you play draws 1 card. The count carries over between turns.",
@@ -2563,6 +2567,9 @@ function retune(key, ti, nv) { const u = UPG[key], d = C[key]; if (!u || !u.t ||
  ['shadow_volley', 0, 11], ['blood_boil', 0, 11], ['cleave', 0, 11], ['whirling_blades', 0, 11], ['arcane_explosion', 0, 11], ['fan_of_knives', 0, 11], // Equilibrium capstone nerf
  // Nov 3 mega sim: deck fixes
  ['wither', 0, 3], ['dread_touch', 1, 4], ['lingering_dread', 0, 6], ['creeping_dread', 0, 3], ['nightfall_wl', 0, 1], ['follow_through', 0, 50], ['hold_the_line', 0, 16], ['unstoppable_force', 0, 30], ['bankrupt', 0, 3], ['condemning_mark', 0, 18], ['mark_of_guilt', 0, 6], ['repentance', 1, 15], ['purge_the_wicked', 0, 3]].forEach(([k, i, n]) => retune(k, i, n));
+// Nov 13: Dread lands at 70% of a card's number (the balance knob in applyDot), so the cards now print what actually lands
+for (const [k, u] of Object.entries(UPG)) { const d = C[k]; if (!d || !u.t) continue; for (const tk of u.t) if (tk[3] === 'dread') { const s0 = d.text.slice(tk[0], tk[1]); if (s0 !== String(tk[2])) continue; const shown = Math.max(1, Math.round(tk[2] * 0.7)), dl = String(shown).length - s0.length; d.text = d.text.slice(0, tk[0]) + shown + d.text.slice(tk[1]); for (const o of u.t) if (o !== tk && o[0] >= tk[1]) { o[0] += dl; o[1] += dl; } tk[1] += dl; tk[6] = shown; } }
+if (C.wither && UPG.wither && UPG.wither.t[0][6]) C.wither.text = C.wither.text.replace(/apply \d+ more/, 'apply ' + UPG.wither.t[0][6] + ' more');
 for (const [k, f] of Object.entries(CARD_FLAT)) if (C[k]) C[k].text += ` +${f} damage${/ times\./.test(C[k].text) ? ' per hit' : C[k].target === 'all' ? ' to each enemy' : ''} (flat).`;
 for (const [k, f] of Object.entries(HEAL_FLAT)) if (C[k]) C[k].text += ` +${f} healing (flat).`;
 if (C.pilfer) C.pilfer.cost = 20; // Nov 2

@@ -3324,7 +3324,51 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
       if (U.immuneTypes && U.immuneTypes.length) t.push(`<span class="tag good">No ${U.immuneTypes.join('/')} damage</span>`);
       if (U.backDmg) t.push(`<span class="tag good">Counter ${U.backDmg}</span>`);
       for (const x of a.timed || []) { const L = { keepBlock: 'Block locked', critBuff: 'Crit up', mirror: 'Mirror Image', noBleed: 'Bleed immune', poisonBlock: 'Poison blockable', fortify: 'Fortify', relentless: 'Relentless', endless: 'Endless Blades', defX: 'Defense x2', warEngine: 'Regen x3', bleedX: 'Bleed x2', adrenaline: 'Adrenaline', shadowArmor: 'Shadow Armor', bloodArmor: 'Blood Armor', soulArmor: 'Soul Armor', netherArmor: 'Nether Armor', demonArmor: 'Demon Armor' }[x.key]; if (L) t.push(`<span class="tag good">${L} ${x.turns}</span>`); }
-      if (a.turn && (cb.raid ? cb.phase === 'player' : cb.current === a)) { const T = a.turn; if (T.twice) t.push(`<span class="tag good">Next ${T.twice.type === 'any' ? 'card' : T.twice.type} twice</span>`); if (T.nextFree || T.freeAll) t.push(`<span class="tag good">Free</span>`); if (T.noDraw) t.push(`<span class="tag bad">No draws</span>`); if (T.killMana) t.push(`<span class="tag good">Kill: +${T.killMana} mana</span>`); }
+      if (a.turn && (cb.raid ? cb.phase === 'player' : cb.current === a)) { const T = a.turn; if (T.twice) t.push(`<span class="tag good">Next ${T.twice.type === 'any' ? 'card' : T.twice.type} twice</span>`); if (T.nextFree || T.freeAll) t.push(`<span class="tag good">Free</span>`); if (T.noDraw) t.push(`<span class="tag bad">No draws</span>`); if (T.killMana) t.push(`<span class="tag good">Kill: +${T.killMana} mana</span>`);
+        // Nov 13: every "next card" and "this turn" effect shows as a buff until it is used up
+        const G = (txt, tip) => t.push(`<span class="tag good"${tip ? ` title="${tip}"` : ''}>${txt}</span>`);
+        if (T.nextMult) G(`Next card x${T.nextMult}`, 'Your next Attack or Skill is this much stronger');
+        if (T.skillFlat) G(`Next spell +${T.skillFlat}`, 'Your next damaging Skill deals this much more per hit');
+        if (T.focusFlat) G(`Next spell +${T.focusFlat}${T.focusNot ? ' (not ' + T.focusNot + ')' : ''}`, 'Elemental Focus: your next damaging Skill deals more if its element differs from your last one');
+        if (T.coated) G('Coated Blade', 'Your next Attack also applies part of its damage as Bleed and Poison');
+        if (T.twin) G('Twin Verdict', 'Your next Physical Attack strikes again as Holy');
+        if (T.kindled) G('Kindled Faith', 'Your next Holy damage also applies Burn');
+        if (T.killingBlow) G('Killing Blow', 'Your next critical strike this turn deals double damage');
+        if (T.echoArcane) G('Echo', 'Your next Arcane Skill is played twice');
+        if (T.nextCost) G(`Next card ${T.nextCost > 0 ? '+' : ''}${T.nextCost} mana`);
+        if (T.costDelta) G(`Cards ${T.costDelta > 0 ? '+' : ''}${T.costDelta} mana`, 'This turn');
+        if (T.costAttack) G(`Attacks ${T.costAttack > 0 ? '+' : ''}${T.costAttack} mana`, 'This turn');
+        if (T.costSkill) G(`Skills ${T.costSkill > 0 ? '+' : ''}${T.costSkill} mana`, 'This turn');
+        if (T.costX && T.costX !== 1) t.push(`<span class="tag bad" title="This turn">Costs x${T.costX}</span>`);
+        if (T.perfectGuard) G('Perfect Guard', 'Attack damage this turn is added to your defence');
+        if (T.defX && !(a.timed || []).some(x => x.key === 'defX')) G('Defense x2', 'This turn');
+        if (T.siphon) G('Siphoning Strikes', 'Damage you deal this turn also burns that much mana');
+        if (T.attackDtype) G(`Attacks are ${T.attackDtype}`, 'This turn');
+        if (T.lifesteal) G(`Lifesteal ${Math.round(T.lifesteal * 100)}%`, 'Your Attacks heal you this turn');
+        if (T.pierce) G('Piercing', 'Your Skills ignore Block, Parry, Dodge and Barrier this turn');
+        if (T.cascade) G('Cascade', 'Every card you play this turn draws a card');
+        if (T.reflux) G('Mana Reflux', "Your next Skill's cost comes back over 3 turns");
+        if (T.spikedWard) G('Spiked Ward', 'Barrier you gain this turn adds Thorns');
+        if (T.critPlus) G(`Crit +${T.critPlus}%`, 'This turn');
+        if (T.healX) G(`Next heal x${T.healX}`);
+        if (T.bloodPay) G('Crimson Rite', 'This turn, cards you cannot afford are paid with HP');
+        if (T.endStealth) G('Shadow Cloak', 'Play no other card this turn to enter Stealth');
+        if (T.lurk) G('Lurk', 'Play no other card this turn to draw 1 more next turn');
+      }
+      if (a.windUp) t.push(`<span class="tag good" title="Your next Attack deals +1 damage for every 5 mana it costs">Wind Up</span>`);
+      if (a.nextHolyMult > 1) t.push(`<span class="tag good">Next Holy x${Math.round(a.nextHolyMult * 100) / 100}</span>`);
+      if (a.stealthKeep > 0) t.push(`<span class="tag good" title="Your next Attack does not break Stealth">Shadow Dance</span>`);
+      if (a.parryNext && a.parryNext.length) t.push(`<span class="tag good" title="The next attack you parry is punished">Bait</span>`);
+      if (a.drawNext) t.push(`<span class="tag good">+${a.drawNext} cards next turn</span>`);
+      if (a.manaNext) t.push(`<span class="tag ${a.manaNext > 0 ? 'good' : 'bad'}">${a.manaNext > 0 ? '+' : ''}${a.manaNext} mana next turn</span>`);
+      if (a.noRegenTurns) t.push(`<span class="tag bad">No mana regen ${a.noRegenTurns}</span>`);
+      { const U2 = a.until || {};
+        if (U2.storing) t.push(`<span class="tag good" title="Damage you take comes back as Barrier on your next turn">Stored Impact</span>`);
+        if (U2.grudge) t.push(`<span class="tag good" title="Damage you take burns the attackers' mana on your next turn">Grudge</span>`);
+        if (U2.onFull) t.push(`<span class="tag good" title="Fully stopping an attack triggers your card">Ready to counter</span>`);
+        if (U2.nextAttacker) t.push(`<span class="tag good" title="The next enemy to attack you is Chilled">Frost Armor</span>`);
+        if (U2.lessDmg) t.push(`<span class="tag good">-${Math.round(U2.lessDmg * 100)}% damage taken</span>`);
+      }
     } else {
       for (const [k, l, tip] of [['condemn', 'Condemn', 'Takes more Holy damage (%)'], ['unwarded', 'Unwarded', 'Takes more Skill damage (%)'], ['exposure', 'Exposure', 'Its cards cost 5% more per stack'], ['magicVuln', 'Magic Vulnerability', 'Takes more magic (non-Physical) damage (%); wears off 10% a turn']]) if (a[k]) t.push(`<span class="tag bad" title="${tip}">${l} ${a[k]}</span>`);
       if (a.stunned) t.push(`<span class="tag bad" title="Loses its next turn">Stunned</span>`); else if (a.feared) t.push(`<span class="tag bad" title="Skips its attacks on its next turn">Feared</span>`);
