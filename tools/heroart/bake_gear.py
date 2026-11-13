@@ -63,19 +63,25 @@ def no_arm(body, im):
             if 0 <= q < S and good[y, q] and 0 <= q + (1 if sh > 0 else -1) < S and good[y, q + (1 if sh > 0 else -1)]: out[y, x, :3] = im[y, q, :3]; break
     body = np.array(Image.open(f'{HERE}/src/{body}/e.png').convert('RGBA'))[..., 3] > 0; out[fill & ~GS.dil(body, 2)] = 0   # and nothing may stick out past the body where the arm did
     return out
+SIDE_BOX = json.load(open(f'{HERE}/gear/side_boxes.json')) if os.path.exists(f'{HERE}/gear/side_boxes.json') else {}
 def bake_set(name):
     for pk, bodies in GS.PAIRS.items():
         f = f'{HERE}/gear/raw/{name}_{pk}.png'
         if not os.path.exists(f): continue
         res = np.array(Image.open(f).convert('RGBA')).astype(int); src = np.array(Image.open(f'{HERE}/gear/bodies_{pk}.png').convert('RGBA')).astype(int)
         if res.shape != src.shape: print('size mismatch', f, res.shape); continue
+        side = set()      # Nov 13: a repainted side torso (no arm, real armour where the arm used to hide it) replaces that box of the sheet
+        for r, b in enumerate(bodies):
+            sf = f'{HERE}/gear/side/{name}_{b}.png'
+            if os.path.exists(sf):
+                bx = SIDE_BOX[b]; cut = np.array(Image.open(sf).convert('RGBA')).astype(int); res[bx['y']:bx['y'] + bx['h'], bx['x']:bx['x'] + bx['w']] = cut; side.add(b)
         gear = (np.abs(res - src).sum(-1) > 24) & (res[..., 3] > 128); lay = np.where(gear[..., None], res, 0).astype(np.uint8); lay[..., 3] = gear * 255
         for r, b in enumerate(bodies):
             L = {}
             for c, v in enumerate(GS.VIEWS):
                 _, x0, y0 = GS.origin(b, v); im = np.zeros((S, S, 4), np.uint8); cell = lay[r * GS.CH:(r + 1) * GS.CH, c * GS.CW:(c + 1) * GS.CW]
                 im[y0:y0 + GS.CH, max(0, x0):x0 + GS.CW] = cell[:S - y0, max(0, -x0):]; L[v] = im
-            L['e'] = no_arm(b, L['e'])
+            if b not in side: L['e'] = no_arm(b, L['e'])
             for v, strip in BB.bake(b, L).items(): Image.fromarray(strip).save(f'{OUT}/{name}_{b}_{v}.webp', lossless=True, method=6)
     print('gear', name)
 if __name__ == '__main__':
