@@ -1062,6 +1062,8 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
           <div class="classpick deckpick" id="deckPick" role="radiogroup" aria-label="Starting deck"></div>
           <h4 class="createstep">Starting amulet <span class="muted">(6 points split between cards drawn each round and mana regen; you can buy the others later from Jeweler Rook in town)</span></h4>
           <div class="amupick" id="amuPick" role="radiogroup" aria-label="Starting amulet"></div>
+          <h4 class="createstep">Appearance <span class="muted">(yours to change later at the mirror in your hero window)</span></h4>
+          <div id="lookPick"></div>
           <div class="namerow"><div class="field"><label for="heroName">Name</label><input id="heroName" maxlength="16" autocomplete="off" placeholder="Name your hero"></div><label class="hcpick" title="One life: the first time this hero falls in a fight (not duels or the dummy), it becomes a normal hero. Hardcore heroes have their own leaderboard."><input type="checkbox" id="heroHC"> <b>Hardcore</b> <small>one life, own leaderboard</small></label><label class="hcpick tutpick" title="A short guided tour of the town and every system, right after you create your hero. You can also start it from the Menu any time."><input type="checkbox" id="heroTut"> <b>Tutorial</b> <small>show me around</small></label><button class="btn primary" id="btnCreate">Create hero</button><button class="btn" id="btnCancelCreate" hidden>Cancel</button></div>
         </div>
         <aside class="createright" id="createCards" aria-label="Cards this hero can find"></aside>
@@ -1927,6 +1929,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
 
   // ---------- characters: one drawing routine for the hero and every NPC
   const RARC = { White: '#9c968a', Green: '#4f8f48', Blue: '#3f74b8', 'Purple (Epic)': '#8461b8', Gold: '#e4a93a' };
+  window.CB_PUP_APP = (k) => { const me = CBHub.char(profile, heroKey), oth = typeof SOC !== 'undefined' ? SOC.others : null; if (k === 'me') return me && me.app; if (k && typeof k === 'object') { if (k.app) return k.app; if (me && k.name === me.name && k.cls === me.cls) return me.app; if (oth) for (const o of oth.values()) if (o.name === k.name && o.cls === k.cls) return o.ap; return null; } const c = profile.chars && profile.chars[k]; if (c) return c.app; const o = oth && oth.get(k); return o ? o.ap : null; }; // a hero's saved appearance, for the pixel puppets (src/heropup.js)
   function heroPal() { const c = CBHub.char(profile, heroKey); return Object.assign(palFor(c ? c.cls : 'Warrior', c ? rcOf(c) : {}), c ? { forge: { cls: c.cls, gear: c.gear, who: 'me' } } : {}); }
   function palFor(cls, R) {
     R = R || {}; const rc = (k) => R[k] ? RARC[R[k]] || '#9c968a' : null; const heroKey_ = cls || 'Warrior';
@@ -2420,11 +2423,13 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   // the campfire: every class sits around it (one seat per class, plus classes still to come); click one to pick it
   const SEATS = [[13, 4, 1], [27, 24, .86], [40, 36, .74], [60, 36, .74], [73, 24, .86], [87, 4, 1]]; // left %, bottom %, scale
   const SOON = ['Shaman'];
+  const STARTER_LOOK = (k) => [{ slot: 'Chest', arch: k === 'Mage' || k === 'Warlock' ? 'Robe' : k === 'Rogue' ? 'Jerkin' : 'Cuirass', map: k === 'Warlock' ? 'shadow' : k === 'Mage' ? 'arcane' : 'physical' }, { slot: 'Pants', arch: k === 'Mage' || k === 'Warlock' ? 'Leggings' : k === 'Rogue' ? 'Breeches' : 'Greaves', map: k === 'Warlock' ? 'shadow' : k === 'Mage' ? 'arcane' : 'physical' }, { slot: 'Boots', arch: k === 'Mage' || k === 'Warlock' ? 'Slippers' : k === 'Rogue' ? 'Leather Boots' : 'Sabatons', map: k === 'Warlock' ? 'shadow' : k === 'Mage' ? 'arcane' : 'physical' }]; // what a class wears at the campfire
+  let lookPick = null;
   function renderCamp() {
     const n = Object.keys(profile.chars).length, list = [...Object.keys(CLASSES), ...SOON].slice(0, SEATS.length);
     $('classPick').innerHTML = '<div class="ground"></div><div class="fire" aria-hidden="true"><b></b><b></b><i></i><i></i><i></i><em></em><em></em><em></em></div>' + list.map((k, i) => {
       const [x, y, sc] = SEATS[i], flip = x > 50, soon = SOON.includes(k), have = soon ? 0 : Object.values(profile.chars).filter(c => c.cls === k).length;
-      const fig = `<span class="seatfig"><img src="img/ink/hero_${k.toLowerCase()}.webp" class="${flip ? 'flip' : ''}" alt="" draggable="false" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'noart'}))"></span>`;
+      const fig = `<span class="seatfig">${window.CB_HEROPUP && !soon ? CB_HEROPUP.html('seat' + k, CB_HEROPUP.lookOf('seat', k, STARTER_LOOK(k)), { view: flip ? 'w' : 'e', s: 1 }) : `<img src="img/ink/hero_${k.toLowerCase()}.webp" class="${flip ? 'flip' : ''}" alt="" draggable="false" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'noart'}))">`}</span>`;
       const pos = `left:${x}%;bottom:${y}%;--s:${sc};z-index:${50 - y};--cc:${soon ? '#8f8c80' : CC[k]}`;
       return soon ? `<div class="seat soon" style="${pos}" title="${k}: coming in a future expansion">${fig}<span class="seatname">${k}</span><span class="soonnote">Coming in a future expansion</span></div>`
         : `<button class="seat ${k === createCls ? 'on' : ''}" role="radio" aria-checked="${k === createCls}" data-cls="${k}" style="${pos}" title="${esc(k + ': ' + CLASSES[k].blurb)}${have ? ` (you have ${have})` : ''}">${fig}<span class="seatname">${k}</span></button>`;
@@ -2438,14 +2443,14 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     if (!quiet) $('createPanel').scrollIntoView({ block: 'start' });
     if (createCls && !quiet) $('heroName').focus();
   }
-  $('classPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-cls]'); if (!b) return; createCls = b.dataset.cls; createDeck = 'balanced'; renderCamp(); renderCreateChoices(); });
+  $('classPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-cls]'); if (!b) return; createCls = b.dataset.cls; createDeck = 'balanced'; renderCamp(); renderCreateChoices(); if (window.CB_HEROPUP) { lookPick = CB_HEROPUP.picker($('lookPick'), createCls); lookPick.wear(STARTER_LOOK(createCls)); } });
   $('createCards').addEventListener('click', (ev) => { const b = ev.target.closest('[data-zoomcard]'); const zoom = $('cardZoom'); if (!b || !zoom || !CARDS[b.dataset.zoomcard]) return; const c = CARDS[b.dataset.zoomcard];
     zoom.innerHTML = `<div class="zoomin">${cardBox(c, 300)}<p>${esc(c.rarity)} ${esc(c.cls)} card &middot; click anywhere to close</p></div>`; zoom.hidden = false; fitCards(zoom); requestAnimationFrame(() => fitCards(zoom)); });
   const doCreate = () => {
     if (!createCls) { $('createMsg').textContent = 'Pick a class.'; return; }
     const r = CBHub.createChar(profile, createCls, $('heroName').value, createDeck, createAmu, $('heroHC').checked);
     if (!r.ok) { $('createMsg').textContent = r.why; return; }
-    const tut = $('heroTut').checked; heroKey = r.id; $('heroName').value = ''; $('heroHC').checked = false; createCls = null; save(); renderHub(); show('start'); saveCard();
+    const tut = $('heroTut').checked; heroKey = r.id; if (lookPick && profile.chars[r.id]) profile.chars[r.id].app = lookPick.get(); lookPick = null; $('heroName').value = ''; $('heroHC').checked = false; createCls = null; save(); renderHub(); show('start'); saveCard();
     if (tut) tutStart(); else openGuide({ fresh: true }); // new players: the tour (it ends at the build guide), or straight to what kind of hero do you want to play?
   };
   $('btnCreate').onclick = doCreate; $('heroName').addEventListener('keydown', (e) => { if (e.key === 'Enter') doCreate(); });
