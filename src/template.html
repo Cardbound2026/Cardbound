@@ -583,6 +583,10 @@ body.boxed .wrap { min-height: var(--gameH, auto); box-shadow: 0 0 0 1px #1c1815
 #scrCombat .unit.hitflash .figure { filter: brightness(2.6) saturate(.4); transition: none; }
 #scrCombat .stage.fxpunch { animation: fxpunch .26s cubic-bezier(.2, .9, .3, 1); } @keyframes fxpunch { 0% { transform: scale(1); } 30% { transform: scale(1.022) translateY(2px); } 100% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { #scrCombat .stage.fxpunch { animation: none; } }
+/* First steps: the task box sits out of the way in a fight, with a row of pips for progress */
+.tutbox.tutfight:not(.min) { left: auto !important; right: 14px !important; top: 86px !important; bottom: auto !important; transform: none !important; width: min(330px, 92vw) !important; }
+.tutbox.tutfight.min { left: auto !important; right: 14px !important; top: 86px !important; bottom: auto !important; transform: none !important; }
+.tutdots { display: flex; gap: 6px; margin: 0 0 8px; } .tutdots i { width: 9px; height: 9px; transform: rotate(45deg); background: #2a2420; box-shadow: 0 0 0 1px #5c4a34; } .tutdots i.ok { background: #d6a14a; box-shadow: 0 0 0 1px #f0c56a; } .tutdots i.on { background: #fff1c4; box-shadow: 0 0 0 1px #f0c56a, 0 0 8px #f0c56a; }
 .iticon { position: relative; flex: none; display: block; width: var(--isz, 46px); height: var(--isz, 46px); background: url(img/items.webp) calc(var(--ix, 0) * var(--isz, 46px) * -1) calc(var(--iy, 0) * var(--isz, 46px) * -1) / calc(var(--isz, 46px) * 6) auto no-repeat, radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--rc, #6b6258) 22%, #1d1815), #0e0c0b 78%); image-rendering: pixelated; border-radius: 3px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rc, #6b6258) 75%, #000), inset 0 0 0 2px #000, 0 0 0 1px #000; }
 .iticon i { position: absolute; right: 3px; bottom: 1px; font: 600 10px/1.2 'IBM Plex Mono', monospace; color: #e9dfca; text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000; font-style: normal; image-rendering: auto; opacity: .9; }
 /* Item cards (Nov 12, second pass). In lists: a quiet row, picture left, name in its rarity colour. As a tooltip or in a comparison: a card with a rarity-lit header, the picture top right, and bonuses as diamond-bulleted lines. */
@@ -2613,7 +2617,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     const r = CBHub.createChar(profile, createCls, $('heroName').value, createDeck, createAmu, $('heroHC').checked);
     if (!r.ok) { $('createMsg').textContent = r.why; return; }
     const tut = $('heroTut').checked; heroKey = r.id; titleMode = 'select'; selKey = r.id; if (lookPick && profile.chars[r.id]) profile.chars[r.id].app = lookPick.get(); lookPick = null; $('heroName').value = ''; $('heroHC').checked = false; createCls = null; save(); renderHub(); show('start'); saveCard();
-    if (tut) tutStart(); else openGuide({ fresh: true }); // new players: the tour (it ends at the build guide), or straight to what kind of hero do you want to play?
+    if (tut) tutStart('first'); else openGuide({ fresh: true }); // new players: the tour (it ends at the build guide), or straight to what kind of hero do you want to play?
   };
   $('btnCreate').onclick = doCreate; $('heroName').addEventListener('keydown', (e) => { if (e.key === 'Enter') doCreate(); });
   $('btnCancelCreate').onclick = () => { createCls = null; renderCamp(); renderCreateChoices(); };
@@ -3639,7 +3643,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   $('hand').addEventListener('click', () => { peek.hidden = true; });
   // ---------- drag a card onto an enemy to play it (click-to-select still works). While aiming, the card's numbers include the target.
   function playCard(c, tgt) {
-    try { if (window.CB_AUDIO) CB_AUDIO.sfx('card', .8); } catch (e) {}
+    try { if (window.CB_AUDIO) CB_AUDIO.sfx('card', .8); } catch (e) {} try { tutEv('card'); } catch (e) {}
     selected = null;
     if (cb.myMi != null) { netAct({ t: 'play', uid: c.uid, tgt }); render(); return; }
     cb.play(c.uid, tgt); render(true); if (cb.over) combatOver();

@@ -2,6 +2,9 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Feature', "New heroes now learn by doing. First steps is six short tasks that tick themselves off as you do them: start a practice fight, play a card, end a turn, finish the fight, open your hero window, and ride out. The full tour of Emberwatch is still in the Menu."],
+      ['Feature', "Fights hit harder. Heroes have their own moves for each kind of attack: a stab for daggers, a long overhead swing for two-handers, a leaping slam, two fast cuts, a full sweep for attacks that hit everyone, plus a real parry, a hop back to dodge and a stagger from heavy blows. Whoever is struck flashes white, and a big hit holds the fight still for an instant and jolts the camera."],
+      ['Balance', "Elite monsters are more even. The toughest kinds (the clockwork constructs, the twin fighters, the brutes and the Hollow Archivist) have 8 to 14% less health, and the easiest (the commanders, wardens and hoarders) have about 20% more."],
       ['Feature', "The game has sound. Music for the welcome screen, Emberwatch, the road, battles and bosses, a fanfare when you win and a toll when you fall, and effects for hits, critical hits, spells, blocks, heals, playing a card, buttons and gear. Menu, Sound has sliders for music and effects."],
       ['Art', "Your horse gallops when you ride, facing whichever way you go."],
       ['Feature', "A welcome screen greets you when the game opens: click to start your adventure. Choosing a hero is new too: your hero stands in the camp at full size with your roster down the side, and Create a new hero takes you to the campfire."],

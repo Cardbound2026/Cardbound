@@ -587,6 +587,10 @@ body.boxed .wrap { min-height: var(--gameH, auto); box-shadow: 0 0 0 1px #1c1815
 #scrCombat .unit.hitflash .figure { filter: brightness(2.6) saturate(.4); transition: none; }
 #scrCombat .stage.fxpunch { animation: fxpunch .26s cubic-bezier(.2, .9, .3, 1); } @keyframes fxpunch { 0% { transform: scale(1); } 30% { transform: scale(1.022) translateY(2px); } 100% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { #scrCombat .stage.fxpunch { animation: none; } }
+/* First steps: the task box sits out of the way in a fight, with a row of pips for progress */
+.tutbox.tutfight:not(.min) { left: auto !important; right: 14px !important; top: 86px !important; bottom: auto !important; transform: none !important; width: min(330px, 92vw) !important; }
+.tutbox.tutfight.min { left: auto !important; right: 14px !important; top: 86px !important; bottom: auto !important; transform: none !important; }
+.tutdots { display: flex; gap: 6px; margin: 0 0 8px; } .tutdots i { width: 9px; height: 9px; transform: rotate(45deg); background: #2a2420; box-shadow: 0 0 0 1px #5c4a34; } .tutdots i.ok { background: #d6a14a; box-shadow: 0 0 0 1px #f0c56a; } .tutdots i.on { background: #fff1c4; box-shadow: 0 0 0 1px #f0c56a, 0 0 8px #f0c56a; }
 .iticon { position: relative; flex: none; display: block; width: var(--isz, 46px); height: var(--isz, 46px); background: url(img/items.webp) calc(var(--ix, 0) * var(--isz, 46px) * -1) calc(var(--iy, 0) * var(--isz, 46px) * -1) / calc(var(--isz, 46px) * 6) auto no-repeat, radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--rc, #6b6258) 22%, #1d1815), #0e0c0b 78%); image-rendering: pixelated; border-radius: 3px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rc, #6b6258) 75%, #000), inset 0 0 0 2px #000, 0 0 0 1px #000; }
 .iticon i { position: absolute; right: 3px; bottom: 1px; font: 600 10px/1.2 'IBM Plex Mono', monospace; color: #e9dfca; text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000; font-style: normal; image-rendering: auto; opacity: .9; }
 /* Item cards (Nov 12, second pass). In lists: a quiet row, picture left, name in its rarity colour. As a tooltip or in a comparison: a card with a rarity-lit header, the picture top right, and bonuses as diamond-bulleted lines. */
@@ -7212,8 +7216,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794583467303';
-  const CB_BUILD = '7481817aa8'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794583666756';
+  const CB_BUILD = 'c2ec926120'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8319,6 +8323,9 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Feature', "New heroes now learn by doing. First steps is six short tasks that tick themselves off as you do them: start a practice fight, play a card, end a turn, finish the fight, open your hero window, and ride out. The full tour of Emberwatch is still in the Menu."],
+      ['Feature', "Fights hit harder. Heroes have their own moves for each kind of attack: a stab for daggers, a long overhead swing for two-handers, a leaping slam, two fast cuts, a full sweep for attacks that hit everyone, plus a real parry, a hop back to dodge and a stagger from heavy blows. Whoever is struck flashes white, and a big hit holds the fight still for an instant and jolts the camera."],
+      ['Balance', "Elite monsters are more even. The toughest kinds (the clockwork constructs, the twin fighters, the brutes and the Hollow Archivist) have 8 to 14% less health, and the easiest (the commanders, wardens and hoarders) have about 20% more."],
       ['Feature', "The game has sound. Music for the welcome screen, Emberwatch, the road, battles and bosses, a fanfare when you win and a toll when you fall, and effects for hits, critical hits, spells, blocks, heals, playing a card, buttons and gear. Menu, Sound has sliders for music and effects."],
       ['Art', "Your horse gallops when you ride, facing whichever way you go."],
       ['Feature', "A welcome screen greets you when the game opens: click to start your adventure. Choosing a hero is new too: your hero stands in the camp at full size with your roster down the side, and Create a new hero takes you to the campfire."],
@@ -13555,6 +13562,20 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       x: `<p><b>Friends</b> (button at the top, when signed in): invite them to your party and run together.</p><p><b>Guildmaster Strecks</b>: found a guild (${typeof GUILD_COST !== 'undefined' ? GUILD_COST : 50} gold) or join one. <b>Raid Warden Bagadee</b>: bigger bosses for 2 to 10 players, once a week. <b>Arenamaster Kord</b> at the Colosseum (south-east): wager gear or gold and duel other players.</p>` },
     { t: "You're ready", x: `<p>Next: pick a <b>playstyle</b> in the Build guide so you know which cards and codex to look for, then talk to <b>Wagoneer Arisha</b> and ride out on <b>Map 1 +0</b>.</p><p>Good luck out there.</p>`, open: ['Open the Build guide', () => { tutStop(); openGuide({ fresh: true }); }], last: true },
   ];
+  // First steps (Nov 13): new heroes learn by doing, not by reading. Six short tasks, each ticked off by doing it: start a practice fight,
+  // play a card, end a turn, finish the fight, open the hero window, ride out. The full tour of the town is still in the Menu.
+  const inPractice = () => !$('scrCombat').hidden && typeof cb !== 'undefined' && cb && cb.practice;
+  const leftFight = () => TUT.fought && $('scrCombat').hidden;
+  const TUT_FIRST = [
+    { t: 'Your first fight', x: `<p>Dummies don't hit back. It's the best place to learn how a fight works.</p>`, act: ['Start a practice fight', () => startDummy()], done: () => { if (inPractice()) TUT.fought = true; return TUT.fought; } },
+    { t: 'Play a card', fight: true, x: `<p>Drag an <b>Attack</b> onto the dummy. Each card costs <b>mana</b> (the number in its corner), paid from the blue orb.</p>`, done: () => (TUT.ev.card || 0) >= 1 || leftFight() },
+    { t: 'Spend your mana, then end the turn', fight: true, x: `<p>Play what you can afford. <b>Block</b> cards stop what an enemy shows above its head. Then press <b>End turn</b>: you draw new cards and your mana comes back.</p>`, done: () => (TUT.ev.end || 0) >= 1 || leftFight() },
+    { t: 'Finish it', fight: true, x: `<p>Keep going until the dummy breaks, or press <b>Leave</b> at the top once you have the idea.</p>`, done: () => leftFight() },
+    { t: 'Your hero and your gear', x: `<p>Press <b>C</b> for your hero window. Hover a piece of gear to read it; hold <b>Shift</b> to compare and <b>Ctrl</b> to see its rolls. The <b>Mirror</b> changes how you look.</p>`, act: ['Open my hero', () => openSheet('char')], done: () => { if (!$('sheet').hidden && document.querySelector('#sheet .dpup')) TUT.sawHero = true; return TUT.sawHero && $('sheet').hidden; } },
+    { t: 'Ride out', at: 'wagon', last: true, x: `<p>Runs are how you grow: fight down a road, beat its boss, keep the loot. Talk to <b>Wagoneer Arisha</b> and pick <b>Map 1, +0</b>.</p>`, done: () => !$('scrMap').hidden },
+  ];
+  function tutEv(k) { if (TUT.ev) TUT.ev[k] = (TUT.ev[k] || 0) + 1; }
+  document.addEventListener('click', (ev) => { if (ev.target.closest && ev.target.closest('.endturn')) tutEv('end'); }, true);
   function tutBox() { let b = document.getElementById('tutBox'); if (!b) { b = document.createElement('div'); b.id = 'tutBox'; b.className = 'tutbox'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-live', 'polite'); document.body.appendChild(b); b.addEventListener('click', tutClick); } return b; }
   function tutWhere(s) { if (!s || !s.at) return null; if (typeof s.at === 'string') { const n = tutNpc(s.at); return n ? { x: n.x, y: n.y, solid: true } : null; } return s.at; }
   function tutWalk(s) {
@@ -13563,11 +13584,16 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   }
   function tutRender() {
     const b = tutBox(); if (!TUT.on || !TUT.set) { b.hidden = true; return; }
-    const inTown = !$('scrStart').hidden; b.hidden = !inTown; if (!inTown) return;
-    const s = TUT.set[TUT.i], busy = !$('sheet').hidden || !$('modal').hidden; TUT.mark = tutWhere(s);
+    const first = TUT.set === TUT_FIRST; let s = TUT.set[TUT.i];
+    if (first && s.done) { let guard = 0; while (s.done && s.done() && guard++ < 8) { if (s.last) { tutStop(); toast('That is the whole loop: fight, loot, gear up, ride out again. Everyone else in town is on your map, and the Menu has the full tour.'); return; } TUT.i++; s = TUT.set[TUT.i]; b.dataset.sig = ''; if (s.at) tutWalk(s); } }
+    const inTown = !$('scrStart').hidden || (!!s.fight && !$('scrCombat').hidden); b.hidden = !inTown; if (!inTown) return; b.classList.toggle('tutfight', !!s.fight);
+    const  busy = !$('sheet').hidden || !$('modal').hidden; TUT.mark = tutWhere(s);
     b.classList.toggle('min', busy || TUT.min);
-    const sig = TUT.i + ':' + (busy || TUT.min) + ':' + (TUT.set === TUT_ROAD); if (b.dataset.sig === sig && b.innerHTML) return; b.dataset.sig = sig; // only redraw when something changed, so clicks aren't lost
-    if (busy || TUT.min) { b.innerHTML = `<button class="tutpill" data-tut="max" title="Show the tutorial">Tutorial ${TUT.i + 1}/${TUT.set.length}: ${esc(s.t)} &#9656;</button>`; return; }
+    const sig = TUT.i + ':' + (busy || TUT.min) + ':' + (TUT.set === TUT_ROAD) + first; if (b.dataset.sig === sig && b.innerHTML) return; b.dataset.sig = sig; // only redraw when something changed, so clicks aren't lost
+    if (busy || TUT.min) { b.innerHTML = `<button class="tutpill" data-tut="max" title="Show the tutorial">${first ? 'First steps' : 'Tutorial'} ${TUT.i + 1}/${TUT.set.length}: ${esc(s.t)} &#9656;</button>`; return; }
+    if (first) { b.innerHTML = `<div class="tuthead"><span class="muted">First steps ${TUT.i + 1}/${TUT.set.length}</span><button class="tutx" data-tut="min" title="Shrink">&ndash;</button></div>
+      <div class="tutdots">${TUT.set.map((_, i) => `<i class="${i < TUT.i ? 'ok' : i === TUT.i ? 'on' : ''}"></i>`).join('')}</div><h3>${esc(s.t)}</h3>${s.x}
+      <div class="row">${s.act ? `<button class="btn primary" data-tut="act">${esc(s.act[0])}</button>` : ''}${s.at ? '<button class="btn primary" data-tut="walk">Show me the way</button>' : ''}<button class="btn tutskip" data-tut="skip">Skip</button></div>`; return; }
     b.innerHTML = `<div class="tuthead"><span class="muted">Tutorial ${TUT.i + 1}/${TUT.set.length}</span><button class="tutx" data-tut="min" title="Shrink">&ndash;</button></div>
       <h3>${esc(s.t)}</h3>${s.x}
       <div class="row">${TUT.i > 0 ? '<button class="btn" data-tut="back">Back</button>' : ''}${s.at ? '<button class="btn" data-tut="walk">Show me</button>' : ''}${s.open ? `<button class="btn" data-tut="open">${esc(s.open[0])}</button>` : ''}
@@ -13579,12 +13605,13 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if (k === 'next') tutGo(TUT.i + 1); else if (k === 'back') tutGo(TUT.i - 1);
     else if (k === 'walk') tutWalk(s);
     else if (k === 'open' && s.open) { s.open[1](); tutRender(); }
+    else if (k === 'act' && s.act) { s.act[1](); tutRender(); return; }
     else if (k === 'min') { TUT.min = true; tutRender(); }
     else if (k === 'max') { TUT.min = false; if (!$('modal').hidden) closeModal(); if (!$('sheet').hidden) $('sheetClose').click(); tutRender(); }
     else if (k === 'skip' || k === 'done') { tutStop(); if (k === 'skip') toast('Tutorial skipped. It\'s in the Menu (Esc) any time.'); }
-    cv.focus({ preventScroll: true });
+    if (!$('scrStart').hidden) cv.focus({ preventScroll: true });
   }
-  function tutStart(which) { tutBox().dataset.sig = ''; TUT.set = which === 'road' ? TUT_ROAD : TUT_STEPS; TUT.on = true; TUT.min = false; clearInterval(TUT.timer); TUT.timer = setInterval(tutRender, 400); tutGo(0); }
+  function tutStart(which) { tutBox().dataset.sig = ''; TUT.set = which === 'road' ? TUT_ROAD : which === 'first' ? TUT_FIRST : TUT_STEPS; if (which === 'first') { TUT.ev = {}; TUT.fought = false; TUT.sawHero = false; try { const c = profile.chars[heroKey]; if (c && !c.tutRoad) { c.tutRoad = 1; save(); } } catch (e) {} } TUT.on = true; TUT.min = false; clearInterval(TUT.timer); TUT.timer = setInterval(tutRender, 400); tutGo(0); }
   function tutStop() { tutBox().dataset.sig = ''; TUT.on = false; TUT.mark = null; clearInterval(TUT.timer); tutRender(); }
   // the arrow over whoever the tutorial is talking about (drawn by the town each frame)
   function tutDraw(gx, TS, t) {
@@ -13899,7 +13926,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     const r = CBHub.createChar(profile, createCls, $('heroName').value, createDeck, createAmu, $('heroHC').checked);
     if (!r.ok) { $('createMsg').textContent = r.why; return; }
     const tut = $('heroTut').checked; heroKey = r.id; titleMode = 'select'; selKey = r.id; if (lookPick && profile.chars[r.id]) profile.chars[r.id].app = lookPick.get(); lookPick = null; $('heroName').value = ''; $('heroHC').checked = false; createCls = null; save(); renderHub(); show('start'); saveCard();
-    if (tut) tutStart(); else openGuide({ fresh: true }); // new players: the tour (it ends at the build guide), or straight to what kind of hero do you want to play?
+    if (tut) tutStart('first'); else openGuide({ fresh: true }); // new players: the tour (it ends at the build guide), or straight to what kind of hero do you want to play?
   };
   $('btnCreate').onclick = doCreate; $('heroName').addEventListener('keydown', (e) => { if (e.key === 'Enter') doCreate(); });
   $('btnCancelCreate').onclick = () => { createCls = null; renderCamp(); renderCreateChoices(); };
@@ -14925,7 +14952,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   $('hand').addEventListener('click', () => { peek.hidden = true; });
   // ---------- drag a card onto an enemy to play it (click-to-select still works). While aiming, the card's numbers include the target.
   function playCard(c, tgt) {
-    try { if (window.CB_AUDIO) CB_AUDIO.sfx('card', .8); } catch (e) {}
+    try { if (window.CB_AUDIO) CB_AUDIO.sfx('card', .8); } catch (e) {} try { tutEv('card'); } catch (e) {}
     selected = null;
     if (cb.myMi != null) { netAct({ t: 'play', uid: c.uid, tgt }); render(); return; }
     cb.play(c.uid, tgt); render(true); if (cb.over) combatOver();

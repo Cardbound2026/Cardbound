@@ -50,6 +50,20 @@
       x: `<p><b>Friends</b> (button at the top, when signed in): invite them to your party and run together.</p><p><b>Guildmaster Strecks</b>: found a guild (${typeof GUILD_COST !== 'undefined' ? GUILD_COST : 50} gold) or join one. <b>Raid Warden Bagadee</b>: bigger bosses for 2 to 10 players, once a week. <b>Arenamaster Kord</b> at the Colosseum (south-east): wager gear or gold and duel other players.</p>` },
     { t: "You're ready", x: `<p>Next: pick a <b>playstyle</b> in the Build guide so you know which cards and codex to look for, then talk to <b>Wagoneer Arisha</b> and ride out on <b>Map 1 +0</b>.</p><p>Good luck out there.</p>`, open: ['Open the Build guide', () => { tutStop(); openGuide({ fresh: true }); }], last: true },
   ];
+  // First steps (Nov 13): new heroes learn by doing, not by reading. Six short tasks, each ticked off by doing it: start a practice fight,
+  // play a card, end a turn, finish the fight, open the hero window, ride out. The full tour of the town is still in the Menu.
+  const inPractice = () => !$('scrCombat').hidden && typeof cb !== 'undefined' && cb && cb.practice;
+  const leftFight = () => TUT.fought && $('scrCombat').hidden;
+  const TUT_FIRST = [
+    { t: 'Your first fight', x: `<p>Dummies don't hit back. It's the best place to learn how a fight works.</p>`, act: ['Start a practice fight', () => startDummy()], done: () => { if (inPractice()) TUT.fought = true; return TUT.fought; } },
+    { t: 'Play a card', fight: true, x: `<p>Drag an <b>Attack</b> onto the dummy. Each card costs <b>mana</b> (the number in its corner), paid from the blue orb.</p>`, done: () => (TUT.ev.card || 0) >= 1 || leftFight() },
+    { t: 'Spend your mana, then end the turn', fight: true, x: `<p>Play what you can afford. <b>Block</b> cards stop what an enemy shows above its head. Then press <b>End turn</b>: you draw new cards and your mana comes back.</p>`, done: () => (TUT.ev.end || 0) >= 1 || leftFight() },
+    { t: 'Finish it', fight: true, x: `<p>Keep going until the dummy breaks, or press <b>Leave</b> at the top once you have the idea.</p>`, done: () => leftFight() },
+    { t: 'Your hero and your gear', x: `<p>Press <b>C</b> for your hero window. Hover a piece of gear to read it; hold <b>Shift</b> to compare and <b>Ctrl</b> to see its rolls. The <b>Mirror</b> changes how you look.</p>`, act: ['Open my hero', () => openSheet('char')], done: () => { if (!$('sheet').hidden && document.querySelector('#sheet .dpup')) TUT.sawHero = true; return TUT.sawHero && $('sheet').hidden; } },
+    { t: 'Ride out', at: 'wagon', last: true, x: `<p>Runs are how you grow: fight down a road, beat its boss, keep the loot. Talk to <b>Wagoneer Arisha</b> and pick <b>Map 1, +0</b>.</p>`, done: () => !$('scrMap').hidden },
+  ];
+  function tutEv(k) { if (TUT.ev) TUT.ev[k] = (TUT.ev[k] || 0) + 1; }
+  document.addEventListener('click', (ev) => { if (ev.target.closest && ev.target.closest('.endturn')) tutEv('end'); }, true);
   function tutBox() { let b = document.getElementById('tutBox'); if (!b) { b = document.createElement('div'); b.id = 'tutBox'; b.className = 'tutbox'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-live', 'polite'); document.body.appendChild(b); b.addEventListener('click', tutClick); } return b; }
   function tutWhere(s) { if (!s || !s.at) return null; if (typeof s.at === 'string') { const n = tutNpc(s.at); return n ? { x: n.x, y: n.y, solid: true } : null; } return s.at; }
   function tutWalk(s) {
@@ -58,11 +72,16 @@
   }
   function tutRender() {
     const b = tutBox(); if (!TUT.on || !TUT.set) { b.hidden = true; return; }
-    const inTown = !$('scrStart').hidden; b.hidden = !inTown; if (!inTown) return;
-    const s = TUT.set[TUT.i], busy = !$('sheet').hidden || !$('modal').hidden; TUT.mark = tutWhere(s);
+    const first = TUT.set === TUT_FIRST; let s = TUT.set[TUT.i];
+    if (first && s.done) { let guard = 0; while (s.done && s.done() && guard++ < 8) { if (s.last) { tutStop(); toast('That is the whole loop: fight, loot, gear up, ride out again. Everyone else in town is on your map, and the Menu has the full tour.'); return; } TUT.i++; s = TUT.set[TUT.i]; b.dataset.sig = ''; if (s.at) tutWalk(s); } }
+    const inTown = !$('scrStart').hidden || (!!s.fight && !$('scrCombat').hidden); b.hidden = !inTown; if (!inTown) return; b.classList.toggle('tutfight', !!s.fight);
+    const  busy = !$('sheet').hidden || !$('modal').hidden; TUT.mark = tutWhere(s);
     b.classList.toggle('min', busy || TUT.min);
-    const sig = TUT.i + ':' + (busy || TUT.min) + ':' + (TUT.set === TUT_ROAD); if (b.dataset.sig === sig && b.innerHTML) return; b.dataset.sig = sig; // only redraw when something changed, so clicks aren't lost
-    if (busy || TUT.min) { b.innerHTML = `<button class="tutpill" data-tut="max" title="Show the tutorial">Tutorial ${TUT.i + 1}/${TUT.set.length}: ${esc(s.t)} &#9656;</button>`; return; }
+    const sig = TUT.i + ':' + (busy || TUT.min) + ':' + (TUT.set === TUT_ROAD) + first; if (b.dataset.sig === sig && b.innerHTML) return; b.dataset.sig = sig; // only redraw when something changed, so clicks aren't lost
+    if (busy || TUT.min) { b.innerHTML = `<button class="tutpill" data-tut="max" title="Show the tutorial">${first ? 'First steps' : 'Tutorial'} ${TUT.i + 1}/${TUT.set.length}: ${esc(s.t)} &#9656;</button>`; return; }
+    if (first) { b.innerHTML = `<div class="tuthead"><span class="muted">First steps ${TUT.i + 1}/${TUT.set.length}</span><button class="tutx" data-tut="min" title="Shrink">&ndash;</button></div>
+      <div class="tutdots">${TUT.set.map((_, i) => `<i class="${i < TUT.i ? 'ok' : i === TUT.i ? 'on' : ''}"></i>`).join('')}</div><h3>${esc(s.t)}</h3>${s.x}
+      <div class="row">${s.act ? `<button class="btn primary" data-tut="act">${esc(s.act[0])}</button>` : ''}${s.at ? '<button class="btn primary" data-tut="walk">Show me the way</button>' : ''}<button class="btn tutskip" data-tut="skip">Skip</button></div>`; return; }
     b.innerHTML = `<div class="tuthead"><span class="muted">Tutorial ${TUT.i + 1}/${TUT.set.length}</span><button class="tutx" data-tut="min" title="Shrink">&ndash;</button></div>
       <h3>${esc(s.t)}</h3>${s.x}
       <div class="row">${TUT.i > 0 ? '<button class="btn" data-tut="back">Back</button>' : ''}${s.at ? '<button class="btn" data-tut="walk">Show me</button>' : ''}${s.open ? `<button class="btn" data-tut="open">${esc(s.open[0])}</button>` : ''}
@@ -74,12 +93,13 @@
     if (k === 'next') tutGo(TUT.i + 1); else if (k === 'back') tutGo(TUT.i - 1);
     else if (k === 'walk') tutWalk(s);
     else if (k === 'open' && s.open) { s.open[1](); tutRender(); }
+    else if (k === 'act' && s.act) { s.act[1](); tutRender(); return; }
     else if (k === 'min') { TUT.min = true; tutRender(); }
     else if (k === 'max') { TUT.min = false; if (!$('modal').hidden) closeModal(); if (!$('sheet').hidden) $('sheetClose').click(); tutRender(); }
     else if (k === 'skip' || k === 'done') { tutStop(); if (k === 'skip') toast('Tutorial skipped. It\'s in the Menu (Esc) any time.'); }
-    cv.focus({ preventScroll: true });
+    if (!$('scrStart').hidden) cv.focus({ preventScroll: true });
   }
-  function tutStart(which) { tutBox().dataset.sig = ''; TUT.set = which === 'road' ? TUT_ROAD : TUT_STEPS; TUT.on = true; TUT.min = false; clearInterval(TUT.timer); TUT.timer = setInterval(tutRender, 400); tutGo(0); }
+  function tutStart(which) { tutBox().dataset.sig = ''; TUT.set = which === 'road' ? TUT_ROAD : which === 'first' ? TUT_FIRST : TUT_STEPS; if (which === 'first') { TUT.ev = {}; TUT.fought = false; TUT.sawHero = false; try { const c = profile.chars[heroKey]; if (c && !c.tutRoad) { c.tutRoad = 1; save(); } } catch (e) {} } TUT.on = true; TUT.min = false; clearInterval(TUT.timer); TUT.timer = setInterval(tutRender, 400); tutGo(0); }
   function tutStop() { tutBox().dataset.sig = ''; TUT.on = false; TUT.mark = null; clearInterval(TUT.timer); tutRender(); }
   // the arrow over whoever the tutorial is talking about (drawn by the town each frame)
   function tutDraw(gx, TS, t) {
