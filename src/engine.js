@@ -1282,13 +1282,14 @@ class Combat {
     const EL = '(Fire|Frost|Arcane|Nature|Shadow|Holy|Physical)';
     let t = d.text.replace(new RegExp('\\b(\\d+)( ' + EL + ')? damage(?! back)', 'g'), (m, n, sp, el) => { const v = Math.max(0, Math.round(((+n + shP) * shX + flat) * dmgMult(el || d.dtype || 'Physical'))); return mark(+n, v) + (sp || '') + ' damage'; });
     t = t.replace(/\b([Dd]eal) (\d+) (instead|more)/g, (m, w, n, x) => `${w} ${mark(+n, Math.max(0, Math.round((+n + flat) * dmgMult(d.dtype || 'Physical'))))} ${x}`);
-    let defM = 1 + (p.dexterity || 0) / 100; if (T.defX || this.hasTimed(p, 'defX')) defM *= 2;
+    const allX = kind !== 'Power' && p.nextAllMult > 1 ? p.nextAllMult : 1;   /* Nov 13: Assassinate shows on the card: its damage over time and Dodge numbers double too */
+    let defM = 1 + (p.dexterity || 0) / 100; if (T.defX || this.hasTimed(p, 'defX')) defM *= 2; defM *= allX;
     if (pow) { try { defM *= this.pwProd(p, 'defMult') * this.pwProd(p, 'defMultFn'); } catch (x) {} }
-    for (const [st, W] of [['poison', 'Poison'], ['bleed', 'Bleed'], ['dread', 'Dread'], ['rot', 'Rot']]) if (new RegExp(W).test(t)) {
-      let pm = (1 + (st === 'dread' || st === 'rot' ? p.intelligence + (p.intTurn || 0) : p.strength + p.strTurn + p.strCombat) / 100), pp = 0; // Nov 2: Spirit no longer boosts damage over time
+    for (const [st, W] of [['poison', 'Poison'], ['bleed', 'Bleed'], ['dread', 'Dread'], ['rot', 'Rot']]) if (new RegExp(W, 'i').test(t)) {
+      let pm = allX * (1 + (st === 'dread' || st === 'rot' ? p.intelligence + (p.intTurn || 0) : p.strength + p.strTurn + p.strCombat) / 100), pp = 0; // Nov 2: Spirit no longer boosts damage over time
       if (pow) { try { pm *= this.pwKey(p, 'dotMult', st); pp = this.pwKey(p, 'dotPlus', st, 'sum') || 0; } catch (x) {} }
       if (st === 'bleed' && p.bleedX) pm *= p.bleedX;
-      t = t.replace(new RegExp('\\b(\\d+) ' + W + '\\b', 'g'), (m, n) => `${mark(+n, Math.round(+n * pm) + pp)} ${W}`);
+      t = t.replace(new RegExp('\\b(\\d+) (' + W + ')\\b(?! currently| for every| on the)', 'gi'), (m, n, w) => `${mark(+n, Math.round(+n * pm) + pp)} ${w}`);
     }
     t = t.replace(/\b([Gg]ains?) (\d+) (Block|Barrier|Dodge|Parry|Absorb)/g, (m, w, n, k) => `${w} ${mark(+n, Math.round(+n * defM))} ${k}`);
     return t;
