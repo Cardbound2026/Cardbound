@@ -520,6 +520,51 @@ body.aiming { cursor: grabbing; user-select: none; }
 .dslot .dtx { display: grid; min-width: 0; line-height: 1.15; } .dslot .dtx b { font-size: 13px; color: var(--rc, var(--muted)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .dslot .dtx small { font-size: 11px; color: var(--muted); }
 .dslot.empty { opacity: .55; border-left-color: var(--line); } .dslot.empty .dtx b { color: var(--muted); }
 .dstats { grid-area: s; display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 2px 10px; font-size: 13px; margin: 6px 0 0; padding: 8px 10px; background: var(--panel2); border-radius: 6px; }
+/* ===== Nov 13: the welcome screen, the hero select, and one button style for the whole game ===== */
+#splash { position: fixed; inset: 0; z-index: 2000; display: grid; grid-template-rows: 1fr auto 1fr; justify-items: center; align-items: center; cursor: pointer; background: #050406 url(img/ui/bg_title.webp) center 40% / cover no-repeat; image-rendering: pixelated; overflow: hidden; transition: opacity .7s ease, visibility .7s; }
+#splash::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 60% at 50% 45%, transparent 0, rgba(5,4,6,.35) 55%, rgba(5,4,6,.92) 100%), linear-gradient(180deg, rgba(5,4,6,.55), transparent 30%, transparent 60%, rgba(5,4,6,.9)); }
+#splash.gone { opacity: 0; visibility: hidden; pointer-events: none; }
+#splash > * { position: relative; image-rendering: auto; }
+#splash .splogo { grid-row: 2; display: grid; justify-items: center; gap: 6px; animation: sprise 1.6s ease both; }
+#splash h1 { margin: 0; font: 400 clamp(64px, 13vw, 168px)/.9 'Pirata One', 'New Rocker', serif; letter-spacing: 2px; color: #f3d48a; background: linear-gradient(180deg, #fff1c4 0%, #f0c56a 38%, #b7742a 72%, #6a3a12 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 3px 0 #1a0d05) drop-shadow(0 0 26px rgba(240,150,50,.45)); }
+#splash .spsup { font: 600 clamp(13px, 1.5vw, 19px) 'Grenze', serif; font-variant: small-caps; letter-spacing: 6px; color: #d9c9a8; text-shadow: 0 1px 0 #000, 0 0 10px #000; }
+#splash .sprule { width: min(520px, 70vw); height: 2px; margin-top: 10px; background: linear-gradient(90deg, transparent, #d6a14a 30%, #fff1c4 50%, #d6a14a 70%, transparent); box-shadow: 0 0 12px rgba(214,161,74,.6); }
+#splash .spgo { grid-row: 3; align-self: start; margin-top: 4vh; font: 600 clamp(18px, 2.2vw, 28px) 'Grenze', serif; font-variant: small-caps; letter-spacing: 3px; color: #fff1c4; text-shadow: 0 2px 0 #000, 0 0 16px rgba(240,150,50,.7); animation: sppulse 2.2s ease-in-out infinite; }
+#splash .spfoot { position: absolute; left: 0; right: 0; bottom: 18px; text-align: center; font: 500 13px 'Grenze', serif; font-variant: small-caps; letter-spacing: 4px; color: #8f8779; }
+#splash .spembers i { position: absolute; bottom: -10px; width: 4px; height: 4px; background: #ffb65a; box-shadow: 0 0 8px 2px rgba(255,140,50,.7); opacity: 0; animation: spember 7s linear infinite; }
+#splash .spembers i:nth-child(1) { left: 8%; animation-delay: -1s; } #splash .spembers i:nth-child(2) { left: 17%; animation-delay: -4s; animation-duration: 9s; } #splash .spembers i:nth-child(3) { left: 26%; animation-delay: -2.5s; } #splash .spembers i:nth-child(4) { left: 35%; animation-delay: -6s; animation-duration: 10s; } #splash .spembers i:nth-child(5) { left: 44%; animation-delay: -3s; } #splash .spembers i:nth-child(6) { left: 52%; animation-delay: -5.5s; animation-duration: 8s; } #splash .spembers i:nth-child(7) { left: 61%; animation-delay: -.5s; } #splash .spembers i:nth-child(8) { left: 69%; animation-delay: -4.5s; animation-duration: 11s; } #splash .spembers i:nth-child(9) { left: 77%; animation-delay: -2s; } #splash .spembers i:nth-child(10) { left: 85%; animation-delay: -6.5s; animation-duration: 9s; } #splash .spembers i:nth-child(11) { left: 92%; animation-delay: -3.5s; } #splash .spembers i:nth-child(12) { left: 3%; animation-delay: -5s; animation-duration: 12s; }
+@keyframes spember { 0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: .9; } 100% { transform: translate(60px, -105vh); opacity: 0; } }
+@keyframes sppulse { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+@keyframes sprise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { #splash .spembers { display: none; } #splash .spgo { animation: none; } }
+/* hero select: your hero stands in the camp; the roster is down the right side */
+#heroSelect { display: grid; grid-template-columns: 1fr minmax(250px, 320px); gap: 14px; align-items: stretch; }
+#heroSelect[hidden] { display: none; }
+.selscene { position: relative; min-height: min(64vh, 600px); border: 1px solid #3b332b; box-shadow: 0 0 0 1px #000, inset 0 0 0 1px #000; background: #07070d url(img/bg/camp.webp) 50% 88% / cover no-repeat; image-rendering: pixelated; overflow: hidden; display: grid; grid-template-rows: 1fr auto; justify-items: center; }
+.selscene::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 70% at 50% 60%, transparent 30%, rgba(4,3,6,.7) 100%); pointer-events: none; }
+.selscene > * { position: relative; z-index: 1; image-rendering: auto; }
+.selscene .selfig { align-self: end; margin-bottom: -6px; } .selscene .selfig .pupfig { --fh: clamp(230px, 40vh, 380px); }
+.selplate { width: 100%; display: grid; justify-items: center; gap: 4px; padding: 14px 16px 18px; background: linear-gradient(180deg, transparent, rgba(4,3,6,.88) 38%); text-align: center; }
+.selplate .selname { font: 600 clamp(28px, 3.6vw, 44px)/1 'Grenze', serif; font-variant: small-caps; letter-spacing: 1.5px; color: var(--cc, #f3d48a); text-shadow: 0 2px 0 #000, 0 0 18px color-mix(in srgb, var(--cc, #f3d48a) 50%, transparent); }
+.selplate .selsub { font: 500 16px 'Grenze', serif; font-variant: small-caps; letter-spacing: 1.2px; color: #b9b0a0; } .selplate .selsub b { color: #fff; font-weight: 600; }
+.selplate .selenter { margin-top: 8px; min-width: 260px; font-size: 21px !important; padding: 10px 28px !important; }
+.selroster { display: grid; grid-template-rows: auto 1fr auto; gap: 8px; min-height: 0; }
+.selroster h3 { margin: 0; font: 600 18px 'Grenze', serif; font-variant: small-caps; letter-spacing: 1.5px; color: #d9c9a8; display: flex; justify-content: space-between; align-items: baseline; } .selroster h3 span { font-size: 13px; color: #8f8779; }
+.sellist { display: grid; gap: 6px; align-content: start; overflow: auto; max-height: min(52vh, 480px); padding-right: 2px; }
+.selrow { position: relative; display: grid; grid-template-columns: 46px 1fr; gap: 10px; align-items: center; padding: 6px 10px 6px 6px; text-align: left; cursor: pointer; border: 1px solid #2b2521; background: rgba(8,7,9,.72); box-shadow: inset 2px 0 0 var(--cc); color: #cfc6b6; font: inherit; border-radius: 2px; }
+.selrow:hover { background: rgba(26,22,19,.9); } .selrow.on { border-color: #c79a4a; background: linear-gradient(90deg, color-mix(in srgb, var(--cc) 22%, #14110f), #14110f 70%); box-shadow: inset 2px 0 0 var(--cc), 0 0 12px rgba(214,161,74,.18); }
+.selrow .selpor { width: 46px; height: 46px; position: relative; overflow: hidden; background: radial-gradient(circle at 50% 40%, #2a2420, #0e0c0b); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cc) 70%, #000), inset 0 0 0 2px #000; } .selrow .selpor .pupfig { position: absolute; height: 250%; width: 150%; left: -25%; top: 4%; }
+.selrow b { display: block; font: 600 18px/1.1 'Grenze', serif; font-variant: small-caps; letter-spacing: .6px; color: color-mix(in srgb, var(--cc) 75%, #fff); } .selrow small { color: #8f8779; font-size: 12px; }
+.selfoot { display: grid; gap: 6px; } .selfoot .seldel { justify-self: end; background: none; border: 0; color: #8f8779; font-size: 12px; cursor: pointer; text-decoration: underline; padding: 2px; } .selfoot .seldel:hover { color: #e07a6a; }
+#createPanel h3 { display: flex; align-items: baseline; gap: 12px; } #createPanel h3 #createBack { margin-left: auto; }
+@media (max-width: 820px) { #heroSelect { grid-template-columns: 1fr; } .sellist { max-height: none; } }
+/* one button for the whole game: an iron plate with a bronze edge, lettered in small capitals; the main action is lit gold */
+body.inkui:not(.ui-classic) .btn.primary:not(.endturn), body.inkui:not(.ui-classic) .btn:not(.primary):not(.endturn) { border: 1px solid #5c4a34; border-image: none; image-rendering: auto; border-radius: 2px; background: linear-gradient(180deg, #2c2520, #191411); box-shadow: inset 0 1px 0 rgba(255,220,160,.10), inset 0 0 0 1px #000, 0 1px 0 #000; color: #dccfb6; text-shadow: 0 1px 0 #000; filter: none; font-family: 'Grenze', 'Barlow Semi Condensed', serif; font-variant: small-caps; font-weight: 600; letter-spacing: .7px; font-size: 16px; line-height: 1.15; padding: 6px 16px; transition: border-color .12s, color .12s, background .12s; }
+body.inkui:not(.ui-classic) .btn.primary:not(.endturn) { border-color: #c79a4a; background: linear-gradient(180deg, #7a5524, #4a3115 55%, #37230e); color: #ffe9b0; box-shadow: inset 0 1px 0 rgba(255,235,180,.38), inset 0 0 0 1px #1a1008, 0 1px 0 #000, 0 0 14px rgba(214,161,74,.16); }
+body.inkui:not(.ui-classic) .btn:not(.primary):not(.endturn):hover:not(:disabled) { border-color: #c79a4a; color: #fff1c4; background: linear-gradient(180deg, #342b24, #1f1915); filter: none; }
+body.inkui:not(.ui-classic) .btn.primary:not(.endturn):hover:not(:disabled) { border-color: #ffe9b0; color: #fff8e0; background: linear-gradient(180deg, #8f6529, #563917 55%, #402910); filter: none; }
+body.inkui:not(.ui-classic) .btn:not(.endturn):active:not(:disabled) { transform: translateY(1px); }
+body.inkui:not(.ui-classic) .btn:not(.endturn):disabled { filter: grayscale(.7); opacity: .5; color: #9a9184; }
 .iticon { position: relative; flex: none; display: block; width: var(--isz, 46px); height: var(--isz, 46px); background: url(img/items.webp) calc(var(--ix, 0) * var(--isz, 46px) * -1) calc(var(--iy, 0) * var(--isz, 46px) * -1) / calc(var(--isz, 46px) * 6) auto no-repeat, radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--rc, #6b6258) 22%, #1d1815), #0e0c0b 78%); image-rendering: pixelated; border-radius: 3px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rc, #6b6258) 75%, #000), inset 0 0 0 2px #000, 0 0 0 1px #000; }
 .iticon i { position: absolute; right: 3px; bottom: 1px; font: 600 10px/1.2 'IBM Plex Mono', monospace; color: #e9dfca; text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000; font-style: normal; image-rendering: auto; opacity: .9; }
 /* Item cards (Nov 12, second pass). In lists: a quiet row, picture left, name in its rarity colour. As a tooltip or in a comparison: a card with a rarity-lit header, the picture top right, and bonuses as diamond-bulleted lines. */
@@ -1106,10 +1151,17 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   </header>
 
   <!-- TITLE: pick or create a hero -->
+  <div id="splash" role="button" tabindex="0" aria-label="Click to start your adventure">
+    <div class="spembers" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="splogo"><span class="spsup">A dark deckbuilding adventure</span><h1>Cardbound</h1><span class="sprule"></span></div>
+    <div class="spgo">Click to start your adventure</div>
+    <div class="spfoot">Emberwatch awaits</div>
+  </div>
   <section id="scrTitle" class="title" aria-label="Choose your hero" hidden>
-    <div class="titlehead"><h2>Choose your hero</h2><span id="titleAcct"></span></div>
+    <div class="titlehead"><h2 id="titleH">Choose your hero</h2><span id="titleAcct"></span></div>
+    <div id="heroSelect" hidden></div>
     <div class="panel create" id="createPanel">
-      <h3>Create a hero <span class="muted" id="createHint">Pick a hero at the fire</span></h3>
+      <h3>Around the fire <span class="muted" id="createHint">Pick a hero at the fire</span><button class="btn" id="createBack" hidden>Back to my heroes</button></h3>
       <div class="campscene" id="classPick" role="radiogroup" aria-label="Class"></div>
       <div class="clsinfo" id="clsInfo"></div>
       <div class="creategrid" id="createGrid" hidden>
@@ -7137,8 +7189,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794544736567';
-  const CB_BUILD = '44b9eb0f9f'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794545194591';
+  const CB_BUILD = 'f36dfd5471'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -13601,13 +13653,28 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   function saveSettings() { try { localStorage.setItem('cb-settings', JSON.stringify(settings)); } catch (e) {} }
 
   // ---------- title screen: pick a hero, or create one (class + name)
-  let createCls = null;
+  let createCls = null, titleMode = 'select', selKey = null;
+  // the hero select (Nov 13): the chosen hero stands in the camp, the roster is down the side; "Create a new hero" goes to the campfire
+  function renderSelect(keys) {
+    if (!keys.includes(selKey)) selKey = keys.includes(heroKey) ? heroKey : keys.includes(profile.last && profile.last.cls) ? profile.last.cls : keys[0];
+    const c = profile.chars[selKey], fig = (k, id) => window.CB_HEROPUP ? CB_HEROPUP.html(id + k, CB_HEROPUP.lookOf(k, profile.chars[k].cls, profile.chars[k].gear), { view: 's', s: 1 }) : '';
+    $('heroSelect').innerHTML = `<div class="selscene" style="--cc:${CC[c.cls]}"><div class="selfig">${fig(selKey, 'sel')}</div>
+        <div class="selplate"><div class="selname">${esc(c.name)}${c.hardcore ? ' <span class="hcbadge">Hardcore</span>' : c.hcFell ? ' <span class="hcbadge fell" title="Fell as a hardcore hero">Fallen</span>' : ''}</div>
+          <div class="selsub">${c.cls} &middot; Power <b>${CBHub.powerLevel(c)}</b> &middot; <b>${c.runs}</b> run${c.runs === 1 ? '' : 's'}${c.bossKills ? ` &middot; <b>${c.bossKills}</b> boss kill${c.bossKills === 1 ? '' : 's'}` : ''}</div>
+          <button class="btn primary play selenter" data-play="${selKey}">Enter Emberwatch</button></div></div>
+      <div class="selroster"><h3>Your heroes <span>${keys.length} / ${CBHub.MAX_HEROES}</span></h3>
+        <div class="sellist">${keys.map(k => { const h = profile.chars[k]; return `<button class="selrow${k === selKey ? ' on' : ''}" data-sel="${k}" style="--cc:${CC[h.cls]}"><span class="selpor">${fig(k, 'row')}</span><span><b>${esc(h.name)}</b><small>${h.cls} &middot; Power ${CBHub.powerLevel(h)}${h.hardcore ? ' &middot; Hardcore' : ''}</small></span></button>`; }).join('')}</div>
+        <div class="selfoot"><button class="btn" id="selNew"${keys.length >= CBHub.MAX_HEROES ? ' disabled title="All hero slots are used"' : ''}>Create a new hero</button><button class="seldel" data-delhero="${selKey}">Delete ${esc(c.name)}</button></div></div>`;
+  }
   function renderTitle() {
     const keys = heroKeys(), chars = keys.map(k => profile.chars[k]);
+    if (!chars.length) titleMode = 'create';
+    $('heroSelect').hidden = titleMode !== 'select'; $('createBack').hidden = !chars.length; $('titleH').textContent = titleMode === 'select' ? 'Choose your hero' : 'Create a hero';
+    if (titleMode === 'select') { renderSelect(keys); $('createPanel').hidden = true; $('heroHead').hidden = true; $('heroList').innerHTML = profile.stash.length || profile.gold || chars.length ? `<p class="savenote" style="grid-column:1/-1;margin:4px 0 0">Want a clean slate? <button class="pilebtn" id="btnWipe">Start fresh: delete everything</button></p>` : ''; return; }
     $('heroList').innerHTML = keys.map(k => { const c = profile.chars[k]; return `<div class="herocard${window.CB_HEROPUP ? ' haspup' : ''}" style="--cc:${CC[c.cls]}">${window.CB_HEROPUP ? `<span class="hcpup">${CB_HEROPUP.html('hc' + k, CB_HEROPUP.lookOf(k, c.cls, c.gear), { view: 's', s: 1 })}</span>` : ''}<b>${esc(c.name)}${c.hardcore ? ' <span class="hcbadge">Hardcore</span>' : c.hcFell ? ' <span class="hcbadge fell" title="Fell as a hardcore hero">Fallen</span>' : ''}</b><small>${c.cls} &middot; Power ${CBHub.powerLevel(c)} &middot; ${c.runs} run${c.runs === 1 ? '' : 's'}${c.bossKills ? ` &middot; ${c.bossKills} boss kill${c.bossKills === 1 ? '' : 's'}` : ''}</small><div class="row" style="display:flex;gap:6px;align-items:center"><button class="btn primary play" data-play="${k}">Enter Emberwatch</button><button class="pilebtn" data-delhero="${k}" title="Delete this hero">Delete</button></div></div>`; }).join('')
       ;
-    $('heroHead').hidden = !chars.length;
-    openCreate(true);
+    $('heroHead').hidden = true; $('heroList').innerHTML = '';
+    openCreate(true); return;
     $('heroList').insertAdjacentHTML('beforeend', chars.length || profile.stash.length || profile.gold ? `<p class="savenote" style="grid-column:1/-1;margin:4px 0 0">Want a clean slate? <button class="pilebtn" id="btnWipe">Start fresh: delete everything</button></p>` : '');
     if ($('btnWipe')) $('btnWipe').onclick = wipeFlow;
     $('titleAcct').innerHTML = supa ? (supaUser ? `<span class="muted">Signed in as ${esc(acctName(supaUser))}</span>` : `<button class="btn" id="btnTitleSignIn">Sign in to save online</button>`) : '';
@@ -13642,6 +13709,15 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       () => { const keep = { savedAt: Date.now() }; profile = CBHub.fix(Object.assign(CBHub.newProfile(), keep)); heroKey = 'Warrior'; afterRosterChange(); toast('Everything was deleted. Create a hero to begin again.'); });
   }
   $('heroList').addEventListener('click', (ev) => { const d = ev.target.closest('[data-delhero]'); if (d) return deleteHeroFlow(d.dataset.delhero); });
+  $('heroSelect').addEventListener('click', (ev) => {
+    const d = ev.target.closest('[data-delhero]'); if (d) return deleteHeroFlow(d.dataset.delhero);
+    const r = ev.target.closest('[data-sel]'); if (r) { selKey = r.dataset.sel; renderTitle(); return; }
+    if (ev.target.closest('#selNew')) { titleMode = 'create'; createCls = null; renderTitle(); return; }
+    const b = ev.target.closest('[data-play]'); if (b) { heroKey = b.dataset.play; profile.last.cls = heroKey; titleMode = 'select'; save(); renderHub(); show('start'); saveCard(); }
+  });
+  $('heroSelect').addEventListener('dblclick', (ev) => { const r = ev.target.closest('[data-sel]'); if (r) { heroKey = r.dataset.sel; profile.last.cls = heroKey; save(); renderHub(); show('start'); saveCard(); } });
+  $('createBack').onclick = () => { titleMode = 'select'; createCls = null; renderTitle(); };
+  { const sp = $('splash'), go = () => { if (sp.classList.contains('gone')) return; sp.classList.add('gone'); setTimeout(() => sp.remove(), 900); }; sp.addEventListener('click', go); document.addEventListener('keydown', function k(ev) { if (!document.body.contains(sp)) return document.removeEventListener('keydown', k); if (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); go(); } }, true); }
   $('heroList').addEventListener('click', (ev) => { const b = ev.target.closest('[data-play]'); if (!b) return; heroKey = b.dataset.play; profile.last.cls = heroKey; save(); renderHub(); show('start'); saveCard(); });
   let createDeck = 'balanced', createAmu = 'soldier';
   // starter deck ratings, 0-5 stars: offense, defense, utility (draw, mana, control), support (healing and helping the party)
@@ -13696,6 +13772,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     $('createMsg').textContent = n >= CBHub.MAX_HEROES ? `All ${CBHub.MAX_HEROES} hero slots are used. Delete a hero first.` : '';
   }
   function openCreate(quiet) {
+    if (titleMode !== 'create') { titleMode = 'create'; renderTitle(); return; }
     renderCamp(); renderCreateChoices();
     if ($('heroTut')) $('heroTut').checked = !Object.keys(profile.chars || {}).length; // the tour is ticked for a player's first hero
     $('createPanel').hidden = false;
@@ -13709,7 +13786,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if (!createCls) { $('createMsg').textContent = 'Pick a class.'; return; }
     const r = CBHub.createChar(profile, createCls, $('heroName').value, createDeck, createAmu, $('heroHC').checked);
     if (!r.ok) { $('createMsg').textContent = r.why; return; }
-    const tut = $('heroTut').checked; heroKey = r.id; if (lookPick && profile.chars[r.id]) profile.chars[r.id].app = lookPick.get(); lookPick = null; $('heroName').value = ''; $('heroHC').checked = false; createCls = null; save(); renderHub(); show('start'); saveCard();
+    const tut = $('heroTut').checked; heroKey = r.id; titleMode = 'select'; selKey = r.id; if (lookPick && profile.chars[r.id]) profile.chars[r.id].app = lookPick.get(); lookPick = null; $('heroName').value = ''; $('heroHC').checked = false; createCls = null; save(); renderHub(); show('start'); saveCard();
     if (tut) tutStart(); else openGuide({ fresh: true }); // new players: the tour (it ends at the build guide), or straight to what kind of hero do you want to play?
   };
   $('btnCreate').onclick = doCreate; $('heroName').addEventListener('keydown', (e) => { if (e.key === 'Enter') doCreate(); });
