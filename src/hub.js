@@ -4,7 +4,20 @@
 const CB = (typeof module !== 'undefined' && module.exports) ? require('./engine.js') : root.CB;
 const { CARDS, CLASSES, STARTER_GEAR, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, deckLevel } = CB;
 const SLOTS = ['Weapon', 'Off-hand', 'Helm', 'Shoulders', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves', 'Belt', 'Pants', 'Boots', 'Ring 1', 'Ring 2'];
-const STASH_MAX = 60;
+let STASH_MAX = 20;
+// Nov 13: bags. You carry BAG_BASE items plus whatever your (up to 4) bags hold; the bank holds BANK_BASE plus its (up to 10) bags.
+// Both are per account. Nothing is ever deleted for being over the limit: you just cannot add more until there is room.
+const BAG_BASE = 20, BANK_BASE = 40, BAG_SLOTS = 4, BANK_BAG_SLOTS = 10;
+const BAG_NAMES = { 5: "Traveler's Pouch", 10: 'Leather Satchel', 15: 'Reinforced Pack', 20: 'Wyvernhide Haversack', 30: 'Bottomless Skull Sack' };
+const BAG_RAR = { 5: 'White', 10: 'Green', 15: 'Blue', 20: 'Purple (Epic)', 30: 'Gold' };
+function makeBag(size) { return { slot: 'Bag', kind: 'bag', bag: size, name: BAG_NAMES[size] || size + '-slot Bag', label: size + '-slot bag', rarity: BAG_RAR[size] || 'White', ilvl: size, level: 0, stats: {} }; }
+function bagSizeFor(level) { return level >= 12 ? 20 : level >= 6 ? 15 : level >= 3 ? 10 : 5; } // maps 0-2: 5 slots, 3-5: 10, 6-11: 15, 12+: 20
+function syncCaps(p) { if (!p) return; p.bags = p.bags || []; p.bankBags = p.bankBags || []; const sum = (a) => a.reduce((t, b) => t + (b && b.bag || 0), 0); STASH_MAX = BAG_BASE + sum(p.bags); VAULT_MAX = BANK_BASE + sum(p.bankBags); }
+function equipBag(p, itemId, where) { const list = where === 'bank' ? (p.bankBags = p.bankBags || []) : (p.bags = p.bags || []), max = where === 'bank' ? BANK_BAG_SLOTS : BAG_SLOTS; const i = p.stash.findIndex(x => x.id === itemId); if (i < 0 || !p.stash[i].bag) return { ok: false, why: 'That is not a bag in your bags.' }; if (list.filter(Boolean).length >= max) return { ok: false, why: 'Every bag slot is full. Take a bag out first.' }; const [b] = p.stash.splice(i, 1); let at = list.findIndex(x => !x); if (at < 0) at = list.length; list[at] = b; syncCaps(p); return { ok: true }; }
+function unequipBag(p, where, at) { const list = where === 'bank' ? (p.bankBags = p.bankBags || []) : (p.bags = p.bags || []), b = list[at]; if (!b) return { ok: false, why: 'No bag there.' }; const cur = where === 'bank' ? (p.vault || []).length : p.stash.length, cap = (where === 'bank' ? VAULT_MAX : STASH_MAX) - b.bag; if (cur > cap) return { ok: false, why: `Take ${cur - cap} item${cur - cap === 1 ? '' : 's'} out first: that bag is holding them.` }; if (p.stash.length + 1 > STASH_MAX - (where === 'bank' ? 0 : b.bag)) return { ok: false, why: 'No room in your bags for the bag itself.' }; list[at] = null; while (list.length && !list[list.length - 1]) list.pop(); syncCaps(p); p.stash.unshift(b); return { ok: true }; }
+// ---------- Nov 13: Skull Tokens (the shop's currency), and what an account owns: mounts, pets, cosmetics, dyes
+function own(p) { const o = p.own = p.own || {}; o.mounts = o.mounts || ['horse']; o.pets = o.pets || []; o.cos = o.cos || []; o.dyes = o.dyes || {}; if (!o.mounts.includes('horse')) o.mounts.unshift('horse'); return o; }
+function grantPet(p, key) { const o = own(p); if (o.pets.includes(key)) return false; o.pets.push(key); p.newPets = (p.newPets || []).concat(key); return true; }
 // Hall of Records seasons (Nov 2): the board shows one season at a time. To start a new season, add it here and set SEASON.
 const SEASONS = [{ id: '0.01', name: 'Season 0.01' }, { id: '0.02', name: 'Season 0.02' }];
 const SEASON = '0.02';
@@ -222,14 +235,14 @@ function arenaLock(p, cls) { if (OUT_CHECK(cls)) return 'You\'re out on a run: g
 // between a normal and a hardcore hero.
 const stashMode = (c) => c && c.hardcore ? 'hc' : 'normal';
 function useStash(p, key) {
-  if (!p) return; p.stashMode = p.stashMode || 'normal'; p.stashOther = p.stashOther || []; p.stash = p.stash || [];
+  if (!p) return; syncCaps(p); p.stashMode = p.stashMode || 'normal'; p.stashOther = p.stashOther || []; p.stash = p.stash || [];
   const want = stashMode(p.chars[key]); if (!p.chars[key] || p.stashMode === want) return;
   const t = p.stash; p.stash = p.stashOther; p.stashOther = t; p.stashMode = want;
   const v = p.vault || []; p.vault = p.vaultOther || []; p.vaultOther = v;
   const g = p.gold || 0; p.gold = p.goldOther || 0; p.goldOther = g; const k = p.ink || 0; p.ink = p.inkOther || 0; p.inkOther = k; const r = p.rerollTokens || 0; p.rerollTokens = p.tokensOther || 0; p.tokensOther = r;
 }
 // Nov 2: the Bank. A vault of VAULT_MAX slots next to the stash, for gear you keep but don't need at hand (hardcore heroes have their own).
-const VAULT_MAX = 120;
+let VAULT_MAX = 40;
 function toVault(p, itemId) { p.vault = p.vault || []; const i = p.stash.findIndex(x => x.id === itemId); if (i < 0) return { ok: false, why: 'Not in your stash.' }; if (p.vault.length >= VAULT_MAX) return { ok: false, why: `Your vault is full (${VAULT_MAX}).` }; p.vault.unshift(p.stash.splice(i, 1)[0]); return { ok: true }; }
 function fromVault(p, itemId) { p.vault = p.vault || []; const i = p.vault.findIndex(x => x.id === itemId); if (i < 0) return { ok: false, why: 'Not in your vault.' }; if (p.stash.length >= STASH_MAX) return { ok: false, why: 'Your stash is full.' }; p.stash.unshift(p.vault.splice(i, 1)[0]); return { ok: true }; }
 function stashFor(p, c) { p.stashMode = p.stashMode || 'normal'; p.stashOther = p.stashOther || []; return stashMode(c) === p.stashMode ? p.stash : p.stashOther; }
@@ -410,6 +423,7 @@ function absorbRun(p, run, mi) {
     else lost++;
   }
   p.gold += kept.gold;
+  for (const k of mem.pets || []) grantPet(p, k); mem.pets = []; // Nov 13: a pet that dropped is yours whatever happens to the sack
   // codex XP from this run's kills; +10% for every codex this hero has maxed
   const xpGain = {}; { const bonus = 1 + 0.1 * maxedCodexes(c); for (const [cx, v] of Object.entries(mem.cxp || {})) { if (!CB.CODEX_BY_KEY[cx]) continue; const st = codexState(c, cx), before = CB.codexLevel(st.xp).level, g = Math.round(v * bonus); st.xp += g; xpGain[cx] = { xp: g, from: before, to: CB.codexLevel(st.xp).level }; } }
   c.runs++; const row = run.currentRow(); c.best = Math.max(c.best, row);
@@ -430,6 +444,7 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk, ach };
 }
 
-const API = { defWord, defText, titleAfter, titled, staffShield, VAULT_MAX, toVault, fromVault, ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { makeBag, bagSizeFor, syncCaps, equipBag, unequipBag, own, grantPet, BAG_BASE, BANK_BASE, BAG_SLOTS, BANK_BAG_SLOTS, defWord, defText, titleAfter, titled, staffShield, toVault, fromVault, ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+Object.defineProperty(API, 'STASH_MAX', { get: () => STASH_MAX, enumerable: true }); Object.defineProperty(API, 'VAULT_MAX', { get: () => VAULT_MAX, enumerable: true });
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);

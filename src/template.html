@@ -1653,14 +1653,15 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
       const opts = CBHub.slotOptions(it);
       const cur = opts.map(sl => c.gear.find(g => g.slot === sl)).filter(Boolean);
       const vs = cur.length ? cur.map(g => { const d = (it.ilvl || 0) - (g.ilvl || 0); return `${esc(g.name)} ilvl ${g.ilvl} <span class="${d > 0 ? 'up' : d < 0 ? 'down' : ''}">(${d > 0 ? '+' : ''}${d})</span>`; }).join(', ') : 'an empty slot';
+      if (it.bag) return itemHtml(it, `<div class="il">Adds ${it.bag} slots while it sits in a bag slot (yours, or the bank's).</div><div class="acts"><button class="btn primary" data-exbagput="bags:${it.id}">Put in a bag slot</button><button class="btn" data-salvage="${it.id}">Salvage +${CBHub.salvageValue(it)} gold</button></div>`); // Nov 13: bags
       const btns = opts.length > 1 ? opts.map(sl => `<button class="btn" data-equip="${it.id}" data-slot="${sl}">Equip as ${sl}</button>`).join('') : `<button class="btn" data-equip="${it.id}">Equip</button>`;
       return itemHtml(it, `<div class="il">${upBadge(it, c.gear)} Replaces ${vs}</div><div class="acts">${btns}${it.slot === 'Codex' ? `<button class="btn" data-breakcx="${it.id}">Break down (${Math.round(CB.CODEX_TOKEN_CHANCE(it) * 100)}% chance of a Reroll Token)</button>` : `<button class="btn" data-salvage="${it.id}">Salvage +${CBHub.salvageValue(it)} gold</button>`}</div>`);
     }).join('');
     const multi = Object.keys(profile.chars).length > 1;
     const heroRow = multi ? `<div class="cxchips" role="tablist" aria-label="Hero" style="margin:0 0 8px">${heroKeys().map(k => `<button class="cxchip ${k === heroKey ? 'on' : ''}" data-hero="${k}"><b style="color:${CC[profile.chars[k].cls]}">${esc(profile.chars[k].name)}</b> <span class="muted">${profile.chars[k].cls}</span></button>`).join('')}</div>` : '';
     $('hpGear').innerHTML = `${heroRow}<div class="gearwrap"><div>${paperdoll(c, c.cls, { own: true })}<p class="muted" style="font-size:12px;margin:6px 0 0">Hover a slot for the item, click it to swap or unequip.</p></div>
-      <div class="gearside"><div class="tabs gtabs" role="tablist"><button role="tab" data-gtab="deck" aria-selected="${GT.tab === 'deck'}">Deck ${c.deck.length}</button><button role="tab" data-gtab="stash" aria-selected="${GT.tab === 'stash'}">Stash ${profile.stash.length} / ${CBHub.STASH_MAX}</button></div>
-      ${GT.tab === 'deck' ? deckPanel(c) : `<p class="muted" style="font-size:12px;margin:0 0 6px">${c.hardcore ? '<b style="color:#e06a5a">Hardcore stash</b>: shared by your hardcore heroes only.' : 'Shared by all your heroes (hardcore heroes have their own stash).'}</p><div class="list tall stashgrid">${st || '<span class="muted">Empty. Gear you bring home from a run lands here. Unequipped gear goes here too.</span>'}</div>`}</div></div>`;
+      <div class="gearside"><div class="tabs gtabs" role="tablist"><button role="tab" data-gtab="deck" aria-selected="${GT.tab === 'deck'}">Deck ${c.deck.length}</button><button role="tab" data-gtab="stash" aria-selected="${GT.tab === 'stash'}">Bags ${profile.stash.length} / ${CBHub.STASH_MAX}</button><button role="tab" data-gtab="stats" aria-selected="${GT.tab === 'stats'}">Stats</button><button role="tab" data-gtab="looks" aria-selected="${GT.tab === 'looks'}">Wardrobe</button></div>
+      ${GT.tab === 'deck' ? deckPanel(c) : GT.tab === 'stats' ? exStatsHtml(c) : GT.tab === 'looks' ? exWardrobeHtml(c) : `${exBagBar('bags')}<p class="muted" style="font-size:12px;margin:0 0 6px">${c.hardcore ? '<b style="color:#e06a5a">Hardcore bags</b>: shared by your hardcore heroes only.' : 'Shared by all your heroes (hardcore heroes have their own bags).'}</p><div class="list tall stashgrid">${st || '<span class="muted">Empty. Gear you bring home from a run lands here. Unequipped gear goes here too.</span>'}</div>`}</div></div>`;
     fitCards($('hpGear'));
     paintPortraits($('hpGear'));
   }
@@ -1916,11 +1917,22 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
       lines: ['Every card, every beast on every road, every scrap of iron worth wearing. It is all written here.', 'Ask before you ride. The Compendium knows what drops where.', 'Looking for a codex for your Codex slot? I keep a page on every one of them.'] },
   ];
   // Nov 2: the city. The Banker, five more training dummies, and everyone moves into their new building
-  NPCS.push({ id: 'banker', name: 'Banker Hollis', x: 0, y: 0, dir: 'down', open: 'bank', btn: 'Open your vault', pal: Object.assign({ skin: '#c8a080', hair: '#3a2a20', chest: '#2a2a3a', trim: '#d6a14a', legs: '#1e1e28', helm: null, cape: null, weapon: null }, { forge: { cls: 'Mage', gear: CB.presetGear('Mage', 'Blue'), who: 'npc_banker' } }),
-    lines: ['Your stash is for what you carry. The vault is for what you keep.', 'Every coin and every blade, counted twice. Hardcore accounts are kept in a separate ledger.'] });
+  NPCS.push({ id: 'banker', name: 'Banker Hollis', x: 0, y: 0, dir: 'down', open: 'bank', btn: 'Open the bank', pal: Object.assign({ skin: '#c8a080', hair: '#3a2a20', chest: '#2a2a3a', trim: '#d6a14a', legs: '#1e1e28', helm: null, cape: null, weapon: null }, { forge: { cls: 'Mage', gear: CB.presetGear('Mage', 'Blue'), who: 'npc_banker' } }),
+    lines: ['Your bags are for what you carry. The bank is for what you keep.', 'Bags make room. Put one in a bag slot, here or in your own pack, and it holds more.', 'Every coin and every blade, counted twice. Hardcore accounts are kept in a separate ledger.'] });
+  // Nov 13: three new shops. The Barber changes your hero's looks, the inn keeps the group board, the boutique sells for Skull Tokens.
+  NPCS.push({ id: 'barber', name: 'Barber Fenwick', x: 0, y: 0, dir: 'down', open: 'barber', btn: 'A new look', pal: { skin: '#d2a684', hair: '#2a1d14', chest: '#e8e0cc', trim: '#c9472f', legs: '#2b231b', helm: null, cape: null, weapon: null },
+    lines: ['Sit, sit. Hair, beard, the lot. No charge for heroes.', 'A new face for a new road? I have seen stranger requests.', 'The dyes on the shelf are for hair. For armour, see Madame Skulle.'] });
+  NPCS.push({ id: 'tavern', name: 'Innkeeper Marla', x: 0, y: 0, dir: 'down', open: 'lfg', btn: 'Read the group board', pal: { skin: '#c99a76', hair: '#7a2d1e', chest: '#5a3a22', trim: '#d6a14a', legs: '#2d2418', helm: null, cape: null, weapon: null },
+    lines: ['Looking for company on the road? Pin a notice to the board. Everyone reads it.', 'Say what you are, what you want and where you are headed. Then wait for a whisper.', 'A full party fights better than four strangers. Mostly.'] });
+  NPCS.push({ id: 'boutique', name: 'Madame Skulle', x: 0, y: 0, dir: 'down', open: 'skullshop', btn: 'Browse the Skull Shop', pal: { skin: '#b9a08a', hair: '#1c1612', chest: '#3a2a4a', trim: '#b48cd8', legs: '#22182a', helm: 'hood', helmC: '#3a2a4a', cape: '#3a2a4a', weapon: null },
+    lines: ['Skull Tokens only, darling. Mounts, wings, auras, dyes. Nothing that makes you stronger. Everything that makes you seen.', 'A hero should leave footprints. Burning ones, ideally.', 'I do sell bags. A lady has to carry her things.'] });
   { const d0 = NPCS.find(n => n.id === 'dummy'); for (const [i, x, y] of [[2, 24, 92], [3, 30, 92], [4, 36, 92], [5, 24, 98], [6, 30, 98]]) NPCS.push(Object.assign({}, d0, { id: 'dummy' + i, x, y, pal: Object.assign({}, d0.pal) })); }
   for (const n of NPCS) { const q = CITY_NPC[n.id]; if (q) { n.x = q[0]; n.y = q[1]; n.dir = q[2]; } }
   for (const n of NPCS) n.pal.ink = 'npc_' + (/^dummy/.test(n.id) ? 'dummy' : n.id); // town art pack key (src/inkart.js)
+  // Nov 13: most townsfolk now work indoors. Their spot at the door is where you walk in (src/extras.js exEnter): [room painting, the name over the door]
+  const IN_PLACES = { qm: ['armory', "Old Arthur's Armory"], scribe: ['scriptorium', 'The Scriptorium'], chron: ['records', 'Hall of Records'], captain: ['barracks', 'The Barracks'], merchant: ['store', "Dace's Wares"], guildmaster: ['guildhall', 'The Guild Hall'],
+    jeweler: ['jeweler', "Rook's Jewels"], banker: ['bank', 'The Bank'], archivist: ['library', 'The Archive'], raidwarden: ['warroom', 'The War Room'], arena: ['arena', 'Arena Office'], barber: ['barber', "Fenwick's Barber Shop"], tavern: ['tavern', 'The Ember Mug'], boutique: ['boutique', 'The Skull Boutique'] };
+  for (const n of NPCS) if (IN_PLACES[n.id]) { n.inside = IN_PLACES[n.id][0]; n.place = IN_PLACES[n.id][1]; }
   for (const n of NPCS) { n.home = n.dir; solid.add(K(n.x, n.y)); }
   // Nov 2: Tinker Pip (free test goods) only stands in town for admins (supabase/trust.sql: add your user id to public.admins)
   const TINKER = NPCS.find(n => n.id === 'tinker');
@@ -2202,17 +2214,18 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     const vx0 = cam.x / TS, vy0 = cam.y / TS, vx1 = (cam.x + TOWN.vw) / TS, vy1 = (cam.y + TOWN.vh) / TS, onV = (x, y, w, h) => x + w > vx0 - 3 && x < vx1 + 3 && y + h > vy0 - 1 && y < vy1 + 7;
     const list = []; for (const p of PROPS) { const big = p.kind === 'colosseum'; if (big ? onV(p.x, p.cy0, p.w, p.ch) : onV(p.x, p.y, p.w, p.h)) list.push({ y: p.y + p.h - 0.01, f: () => drawProp(gx, p, TS, t) }); }
     const NV = NPCS.filter(n => onV(n.x, n.y, 1, 1));
-    for (const n of NV) list.push({ y: n.y + 0.5, f: () => n.open === 'dummy' ? drawScarecrow(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, s, t) : drawChar(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.dir, 0, n.pal, s, t) });
+    for (const n of NV) list.push({ y: n.y + 0.5, f: () => n.open === 'dummy' ? drawScarecrow(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, s, t) : n.inside && typeof exDoor === 'function' ? exDoor(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, s, t) : drawChar(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.dir, 0, n.pal, s, t) });
     const hp = heroPos(); const walking = P.mv ? (Math.floor(P.mv.t * 2) % 2 ? 2 : 1) * (P.step % 2 ? 1 : 1) : 0;
     const stepF = P.mv ? ((P.step + (P.mv.t > 0.5 ? 1 : 0)) % 2 ? 1 : 2) : 0;
     list.push({ y: hp.y + 0.5, f: () => P.mount ? drawRider(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, P.dir, P.mv ? ((P.step % 2) + P.mv.t) / 2 : 0, heroPal(), s, t, P.mount, CC[(profile.chars[heroKey] || {}).cls]) : drawChar(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, P.dir, stepF, heroPal(), s, t) });
+    if (typeof exPetDraw === 'function') { const pk = exApp().cos.pet; if (pk) list.push({ y: hp.y + 0.49, f: () => exPetDraw(gx, 'me', pk, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, s, t) }); } // Nov 13: your pet trots behind you
     for (const o of othersDrawList(TS, s, t)) list.push(o);
     list.sort((a, b) => a.y - b.y); for (const o of list) o.f();
     if (BZ.open) drawShopSign(gx, hp.x * TS + TS / 2, hp.y * TS - TS * 0.12, shopTitle(), s);
     // embers over the fire
     for (const e of TOWN.embers) { gx.fillStyle = `rgba(255,${150 + (e.life * 80 | 0)},70,${e.life})`; gx.fillRect(e.x * TS, e.y * TS, 2.5 * s, 2.5 * s); }
     // name tags over every head: townspeople always, and your own hero with your guild under the name
-    for (const n of NV) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.open === 'dummy' ? 84 : window.CB_HEROPUP ? 98 : n.pal && n.pal.forge ? 80 : null);
+    for (const n of NV) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.inside ? n.place : n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.inside ? 58 : n.open === 'dummy' ? 84 : window.CB_HEROPUP ? 98 : n.pal && n.pal.forge ? 80 : null);
     { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? (window.CB_HEROPUP ? 150 : 72 + MOUNT_RISE) : 98, CBHub.titleOf(c, profile)); }
     // night: darken everything, then cut light pools around fires and the hero
     const dk = TOWN.dark, dg = dk.getContext('2d');
@@ -2272,7 +2285,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   function interactTarget() { const f = facing(); if (!f) return null; if (f.name) return f; if (f.kind === 'chest') return NPCS[0]; if (f.kind === 'wagon') return NPCS.find(n => n.id === 'wagon'); if (TALK_PROPS.includes(f.kind)) return propNpc(f); return null; }
   let lastPrompt = '';
   function updatePrompt() {
-    const n = interactTarget(); const txt = n && !townBusy() ? `<kbd>Space</kbd> Talk to ${esc(n.name)}` : '';
+    const n = interactTarget(); const txt = n && !townBusy() ? (n.inside && Math.abs(n.x - P.x) + Math.abs(n.y - P.y) <= 2 ? `<kbd>Space</kbd> Enter ${esc(n.place)}` : `<kbd>Space</kbd> Talk to ${esc(n.name)}`) : '';
     if (txt !== lastPrompt) { lastPrompt = txt; $('prompt').innerHTML = txt; $('prompt').hidden = !txt; }
   }
   function bfs(tx, ty, toNpc) {
@@ -2357,17 +2370,18 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     guild: { title: 'Guildmaster Strecks: guilds', show: ['hpGuild'] },
     raid: { title: 'Raid Warden Bagadee: raids', show: ['hpRaid'] },
     records: { title: 'Hall of Records', show: ['hpRec'] },
-    bank: { title: 'The Bank: your vault', show: ['hpBank'] },
+    bank: { title: 'The Bank', show: ['hpBank'] },
     arena: { title: 'The Arena: wagers', show: ['hpArena'] },
   };
   function talk(n) {
     P.held = []; P.path = []; P.target = null;
+    if (n.inside && typeof exEnter === 'function' && !exInside() && Math.abs(n.x - P.x) + Math.abs(n.y - P.y) <= 2) return exEnter(n); // Nov 13: walk in; you talk to them inside
     if (!n.fixed) n.dir = n.x > P.x ? 'left' : n.x < P.x ? 'right' : n.y > P.y ? 'up' : 'down';
     n.lineN = ((n.lineN == null ? -1 : n.lineN) + 1) % n.lines.length;
     { const c = profile.chars[heroKey]; if (n.id === 'wagon' && c && !c.tutRoad && !(c.runs > 0)) { c.tutRoad = 1; save(); closeTalk(); tutStart('road'); return; } } // Nov 2: the first talk with Arisha is the road and fight tutorial
     $('talk').innerHTML = `<b>${esc(n.name)}</b><p>${esc(n.lines[n.lineN])}</p><div class="row">${n.open ? `<button class="btn primary" id="tOpen">${esc(n.btn)}</button>` : ''}${n.id === 'wagon' ? '<button class="btn" id="tHow">How do runs and fights work?</button>' : ''}<button class="btn" id="tBye">${n.open ? 'Not now' : 'Farewell'}</button></div>`;
     $('talk').hidden = false; updatePrompt();
-    if (n.open) $('tOpen').onclick = () => { closeTalk(); if (n.open === 'dummy') startDummy(); else openSheet(n.open); };
+    if (n.open) $('tOpen').onclick = () => { closeTalk(); if (n.open === 'dummy') startDummy(); else if (n.open === 'barber') openMirror(); else if (n.open === 'lfg') openLfg(); else if (n.open === 'skullshop') openShop(); else openSheet(n.open); };
     $('tBye').onclick = closeTalk; if ($('tHow')) $('tHow').onclick = () => { closeTalk(); tutStart('road'); };
   }
   function closeTalk() { $('talk').hidden = true; updatePrompt(); cv.focus({ preventScroll: true }); }
@@ -2442,6 +2456,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
 /*TUTORIAL*/
 /*MOUNT*/
 /*ACHUI*/
+/*EXTRAS*/
   let townReturn = false;
 
   // ---------- settings (this browser)
@@ -3256,7 +3271,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     const c = CBHub.char(profile, heroKey); if (!c || !window.CB_HEROPUP) return;
     modal(`<h3>The mirror</h3><p class="muted" style="margin:0 0 8px">Change how ${esc(c.name || 'your hero')} looks. It costs nothing and you can come back any time.</p><div id="mirrorPick"></div><div class="row"><button class="btn primary" id="mirOk">Keep this look</button><button class="btn" id="mClose">Cancel</button></div>`);
     const pk = CB_HEROPUP.picker($('mirrorPick'), c.cls, c.app); pk.wear(c.gear); $('mClose').onclick = closeModal;
-    $('mirOk').onclick = () => { c.app = pk.get(); save(); closeModal(); document.querySelectorAll('.dpup').forEach(d => { const f = d.querySelector('.pupfig'); if (f) f.outerHTML = CB_HEROPUP.html('doll' + Date.now(), CB_HEROPUP.lookOf({ app: c.app }, c.cls, c.gear), { view: 's', s: 1 }); }); toast('Your new look is saved.'); };
+    $('mirOk').onclick = () => { c.app = Object.assign({}, c.app, pk.get()); save(); closeModal(); document.querySelectorAll('.dpup').forEach(d => { const f = d.querySelector('.pupfig'); if (f) f.outerHTML = CB_HEROPUP.html('doll' + Date.now(), CB_HEROPUP.lookOf({ app: c.app }, c.cls, c.gear), { view: 's', s: 1 }); }); toast('Your new look is saved.'); };
   }
   document.addEventListener('click', (ev) => { if (ev.target.closest && ev.target.closest('[data-mirror]')) openMirror(); });
   window.__open = (k) => openSheet(k);

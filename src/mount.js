@@ -71,15 +71,15 @@
   }
   // a rider and mount, drawn in the right order (the town calls this instead of drawChar while mounted)
   function drawRider(g, cx, by, dir, phase, pal, s, t, kind, blanket) {
-    if (window.CB_HEROPUP && CB_HEROPUP.ride(g, pal, cx, by, dir, !!phase, s, t)) return; // Nov 12: the pixel horse and rider (src/heropup.js)
+    if (window.CB_HEROPUP && CB_HEROPUP.ride(g, pal, cx, by, dir, !!phase, s, t, kind)) return; // Nov 12: the pixel horse and rider (src/heropup.js)
     drawMount(g, cx, by, dir, phase, s, 'back', kind, blanket);
     drawChar(g, cx, by - MOUNT_RISE * s, dir, 0, pal, s, t);
     drawMount(g, cx, by, dir, phase, s, 'front', kind, blanket);
   }
   function toggleMount() {
     if ($('scrStart').hidden || (typeof BZ !== 'undefined' && BZ.open)) return;
-    P.mount = P.mount ? null : 'horse'; settings.mount = P.mount; saveSettings();
-    if (typeof sysChat === 'function') sysChat(P.mount ? 'You mount your horse (225% speed). Press M to get down.' : 'You get down from your horse.');
+    P.mount = P.mount ? null : ((typeof exApp === 'function' && exApp().mount) || 'horse'); settings.mount = P.mount; saveSettings();
+    if (typeof sysChat === 'function') sysChat(P.mount ? 'You mount up (225% speed). Press M to get down.' : 'You get down from your mount.');
     if (typeof retrack === 'function') retrack(true);
   }
-  setTimeout(() => { try { if (settings.mount && MOUNTS[settings.mount]) P.mount = settings.mount; } catch (e) {} }, 0); // you stay mounted between sessions
+  setTimeout(() => { try { if (settings.mount) P.mount = (typeof exApp === 'function' && exApp().mount) || 'horse'; } catch (e) {} }, 0); // you stay mounted between sessions

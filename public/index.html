@@ -4381,6 +4381,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
 (function (root) {
 'use strict';
 const CB = (typeof module !== 'undefined' && module.exports) ? require('./engine.js') : root.CB;
+const bagDrop = (level) => { const n = level >= 12 ? 20 : level >= 6 ? 15 : level >= 3 ? 10 : 5; return { slot: 'Bag', kind: 'bag', bag: n, name: { 5: "Traveler's Pouch", 10: 'Leather Satchel', 15: 'Reinforced Pack', 20: 'Wyvernhide Haversack' }[n], label: n + '-slot bag', rarity: { 5: 'White', 10: 'Green', 15: 'Blue', 20: 'Purple (Epic)' }[n], ilvl: n, level: 0, stats: {} }; }; // Nov 13: bags drop by map level
 const { makeRng, shuffle, ri, rollItem, rollDrops, sumGear, STARTER_GEAR, presetGear, Combat, rollCards, rollNamedCards, KILL_XP } = CB;
 
 const ROWS = 14, COLS = 5;
@@ -4691,6 +4692,8 @@ class Run {
           drops.push(...rollNamedCards(this.data, this.rng, e.key, m.cls, this.luck(m)));
           const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * goldMult(this.level));
         }
+        { const tier = this.data.enemies[e.key].tier, ch = tier === 'Boss' ? 0.2 : tier === 'Elite' ? 0.04 : 0.006; if (this.rng() < ch) drops.push(bagDrop(this.level)); // Nov 13: a bag (its size goes by the map level; named when it reaches your bags)
+          if (this.rng() < 1 / 1000) (m.pets = m.pets || []).push(e.key); } // Nov 13: 1 in 1000: a miniature of the monster follows you home as a pet
         if (e.enraged) { const pool = this.data.enemies[e.key].pool; if (pool && pool.length) { const it = rollItem(this.data, this.rng, pool[Math.floor(this.rng() * pool.length)], this.rng() < 0.25 * (1 + this.luck(m) / 100) ? 'Purple (Epic)' : 'Blue', this.level); if (it) drops.push(it); } } // plus a guaranteed Blue, 25% Epic
       }
       m.sack.push(...drops); m.gold += gold;
@@ -4789,7 +4792,20 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
 const CB = (typeof module !== 'undefined' && module.exports) ? require('./engine.js') : root.CB;
 const { CARDS, CLASSES, STARTER_GEAR, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, deckLevel } = CB;
 const SLOTS = ['Weapon', 'Off-hand', 'Helm', 'Shoulders', 'Amulet', 'Cloak', 'Chest', 'Bracers', 'Gloves', 'Belt', 'Pants', 'Boots', 'Ring 1', 'Ring 2'];
-const STASH_MAX = 60;
+let STASH_MAX = 20;
+// Nov 13: bags. You carry BAG_BASE items plus whatever your (up to 4) bags hold; the bank holds BANK_BASE plus its (up to 10) bags.
+// Both are per account. Nothing is ever deleted for being over the limit: you just cannot add more until there is room.
+const BAG_BASE = 20, BANK_BASE = 40, BAG_SLOTS = 4, BANK_BAG_SLOTS = 10;
+const BAG_NAMES = { 5: "Traveler's Pouch", 10: 'Leather Satchel', 15: 'Reinforced Pack', 20: 'Wyvernhide Haversack', 30: 'Bottomless Skull Sack' };
+const BAG_RAR = { 5: 'White', 10: 'Green', 15: 'Blue', 20: 'Purple (Epic)', 30: 'Gold' };
+function makeBag(size) { return { slot: 'Bag', kind: 'bag', bag: size, name: BAG_NAMES[size] || size + '-slot Bag', label: size + '-slot bag', rarity: BAG_RAR[size] || 'White', ilvl: size, level: 0, stats: {} }; }
+function bagSizeFor(level) { return level >= 12 ? 20 : level >= 6 ? 15 : level >= 3 ? 10 : 5; } // maps 0-2: 5 slots, 3-5: 10, 6-11: 15, 12+: 20
+function syncCaps(p) { if (!p) return; p.bags = p.bags || []; p.bankBags = p.bankBags || []; const sum = (a) => a.reduce((t, b) => t + (b && b.bag || 0), 0); STASH_MAX = BAG_BASE + sum(p.bags); VAULT_MAX = BANK_BASE + sum(p.bankBags); }
+function equipBag(p, itemId, where) { const list = where === 'bank' ? (p.bankBags = p.bankBags || []) : (p.bags = p.bags || []), max = where === 'bank' ? BANK_BAG_SLOTS : BAG_SLOTS; const i = p.stash.findIndex(x => x.id === itemId); if (i < 0 || !p.stash[i].bag) return { ok: false, why: 'That is not a bag in your bags.' }; if (list.filter(Boolean).length >= max) return { ok: false, why: 'Every bag slot is full. Take a bag out first.' }; const [b] = p.stash.splice(i, 1); let at = list.findIndex(x => !x); if (at < 0) at = list.length; list[at] = b; syncCaps(p); return { ok: true }; }
+function unequipBag(p, where, at) { const list = where === 'bank' ? (p.bankBags = p.bankBags || []) : (p.bags = p.bags || []), b = list[at]; if (!b) return { ok: false, why: 'No bag there.' }; const cur = where === 'bank' ? (p.vault || []).length : p.stash.length, cap = (where === 'bank' ? VAULT_MAX : STASH_MAX) - b.bag; if (cur > cap) return { ok: false, why: `Take ${cur - cap} item${cur - cap === 1 ? '' : 's'} out first: that bag is holding them.` }; if (p.stash.length + 1 > STASH_MAX - (where === 'bank' ? 0 : b.bag)) return { ok: false, why: 'No room in your bags for the bag itself.' }; list[at] = null; while (list.length && !list[list.length - 1]) list.pop(); syncCaps(p); p.stash.unshift(b); return { ok: true }; }
+// ---------- Nov 13: Skull Tokens (the shop's currency), and what an account owns: mounts, pets, cosmetics, dyes
+function own(p) { const o = p.own = p.own || {}; o.mounts = o.mounts || ['horse']; o.pets = o.pets || []; o.cos = o.cos || []; o.dyes = o.dyes || {}; if (!o.mounts.includes('horse')) o.mounts.unshift('horse'); return o; }
+function grantPet(p, key) { const o = own(p); if (o.pets.includes(key)) return false; o.pets.push(key); p.newPets = (p.newPets || []).concat(key); return true; }
 // Hall of Records seasons (Nov 2): the board shows one season at a time. To start a new season, add it here and set SEASON.
 const SEASONS = [{ id: '0.01', name: 'Season 0.01' }, { id: '0.02', name: 'Season 0.02' }];
 const SEASON = '0.02';
@@ -5007,14 +5023,14 @@ function arenaLock(p, cls) { if (OUT_CHECK(cls)) return 'You\'re out on a run: g
 // between a normal and a hardcore hero.
 const stashMode = (c) => c && c.hardcore ? 'hc' : 'normal';
 function useStash(p, key) {
-  if (!p) return; p.stashMode = p.stashMode || 'normal'; p.stashOther = p.stashOther || []; p.stash = p.stash || [];
+  if (!p) return; syncCaps(p); p.stashMode = p.stashMode || 'normal'; p.stashOther = p.stashOther || []; p.stash = p.stash || [];
   const want = stashMode(p.chars[key]); if (!p.chars[key] || p.stashMode === want) return;
   const t = p.stash; p.stash = p.stashOther; p.stashOther = t; p.stashMode = want;
   const v = p.vault || []; p.vault = p.vaultOther || []; p.vaultOther = v;
   const g = p.gold || 0; p.gold = p.goldOther || 0; p.goldOther = g; const k = p.ink || 0; p.ink = p.inkOther || 0; p.inkOther = k; const r = p.rerollTokens || 0; p.rerollTokens = p.tokensOther || 0; p.tokensOther = r;
 }
 // Nov 2: the Bank. A vault of VAULT_MAX slots next to the stash, for gear you keep but don't need at hand (hardcore heroes have their own).
-const VAULT_MAX = 120;
+let VAULT_MAX = 40;
 function toVault(p, itemId) { p.vault = p.vault || []; const i = p.stash.findIndex(x => x.id === itemId); if (i < 0) return { ok: false, why: 'Not in your stash.' }; if (p.vault.length >= VAULT_MAX) return { ok: false, why: `Your vault is full (${VAULT_MAX}).` }; p.vault.unshift(p.stash.splice(i, 1)[0]); return { ok: true }; }
 function fromVault(p, itemId) { p.vault = p.vault || []; const i = p.vault.findIndex(x => x.id === itemId); if (i < 0) return { ok: false, why: 'Not in your vault.' }; if (p.stash.length >= STASH_MAX) return { ok: false, why: 'Your stash is full.' }; p.stash.unshift(p.vault.splice(i, 1)[0]); return { ok: true }; }
 function stashFor(p, c) { p.stashMode = p.stashMode || 'normal'; p.stashOther = p.stashOther || []; return stashMode(c) === p.stashMode ? p.stash : p.stashOther; }
@@ -5195,6 +5211,7 @@ function absorbRun(p, run, mi) {
     else lost++;
   }
   p.gold += kept.gold;
+  for (const k of mem.pets || []) grantPet(p, k); mem.pets = []; // Nov 13: a pet that dropped is yours whatever happens to the sack
   // codex XP from this run's kills; +10% for every codex this hero has maxed
   const xpGain = {}; { const bonus = 1 + 0.1 * maxedCodexes(c); for (const [cx, v] of Object.entries(mem.cxp || {})) { if (!CB.CODEX_BY_KEY[cx]) continue; const st = codexState(c, cx), before = CB.codexLevel(st.xp).level, g = Math.round(v * bonus); st.xp += g; xpGain[cx] = { xp: g, from: before, to: CB.codexLevel(st.xp).level }; } }
   c.runs++; const row = run.currentRow(); c.best = Math.max(c.best, row);
@@ -5215,7 +5232,8 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk, ach };
 }
 
-const API = { defWord, defText, titleAfter, titled, staffShield, VAULT_MAX, toVault, fromVault, ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, STASH_MAX, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { makeBag, bagSizeFor, syncCaps, equipBag, unequipBag, own, grantPet, BAG_BASE, BANK_BASE, BAG_SLOTS, BANK_BAG_SLOTS, defWord, defText, titleAfter, titled, staffShield, toVault, fromVault, ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+Object.defineProperty(API, 'STASH_MAX', { get: () => STASH_MAX, enumerable: true }); Object.defineProperty(API, 'VAULT_MAX', { get: () => VAULT_MAX, enumerable: true });
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -5578,14 +5596,15 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       const opts = CBHub.slotOptions(it);
       const cur = opts.map(sl => c.gear.find(g => g.slot === sl)).filter(Boolean);
       const vs = cur.length ? cur.map(g => { const d = (it.ilvl || 0) - (g.ilvl || 0); return `${esc(g.name)} ilvl ${g.ilvl} <span class="${d > 0 ? 'up' : d < 0 ? 'down' : ''}">(${d > 0 ? '+' : ''}${d})</span>`; }).join(', ') : 'an empty slot';
+      if (it.bag) return itemHtml(it, `<div class="il">Adds ${it.bag} slots while it sits in a bag slot (yours, or the bank's).</div><div class="acts"><button class="btn primary" data-exbagput="bags:${it.id}">Put in a bag slot</button><button class="btn" data-salvage="${it.id}">Salvage +${CBHub.salvageValue(it)} gold</button></div>`); // Nov 13: bags
       const btns = opts.length > 1 ? opts.map(sl => `<button class="btn" data-equip="${it.id}" data-slot="${sl}">Equip as ${sl}</button>`).join('') : `<button class="btn" data-equip="${it.id}">Equip</button>`;
       return itemHtml(it, `<div class="il">${upBadge(it, c.gear)} Replaces ${vs}</div><div class="acts">${btns}${it.slot === 'Codex' ? `<button class="btn" data-breakcx="${it.id}">Break down (${Math.round(CB.CODEX_TOKEN_CHANCE(it) * 100)}% chance of a Reroll Token)</button>` : `<button class="btn" data-salvage="${it.id}">Salvage +${CBHub.salvageValue(it)} gold</button>`}</div>`);
     }).join('');
     const multi = Object.keys(profile.chars).length > 1;
     const heroRow = multi ? `<div class="cxchips" role="tablist" aria-label="Hero" style="margin:0 0 8px">${heroKeys().map(k => `<button class="cxchip ${k === heroKey ? 'on' : ''}" data-hero="${k}"><b style="color:${CC[profile.chars[k].cls]}">${esc(profile.chars[k].name)}</b> <span class="muted">${profile.chars[k].cls}</span></button>`).join('')}</div>` : '';
     $('hpGear').innerHTML = `${heroRow}<div class="gearwrap"><div>${paperdoll(c, c.cls, { own: true })}<p class="muted" style="font-size:12px;margin:6px 0 0">Hover a slot for the item, click it to swap or unequip.</p></div>
-      <div class="gearside"><div class="tabs gtabs" role="tablist"><button role="tab" data-gtab="deck" aria-selected="${GT.tab === 'deck'}">Deck ${c.deck.length}</button><button role="tab" data-gtab="stash" aria-selected="${GT.tab === 'stash'}">Stash ${profile.stash.length} / ${CBHub.STASH_MAX}</button></div>
-      ${GT.tab === 'deck' ? deckPanel(c) : `<p class="muted" style="font-size:12px;margin:0 0 6px">${c.hardcore ? '<b style="color:#e06a5a">Hardcore stash</b>: shared by your hardcore heroes only.' : 'Shared by all your heroes (hardcore heroes have their own stash).'}</p><div class="list tall stashgrid">${st || '<span class="muted">Empty. Gear you bring home from a run lands here. Unequipped gear goes here too.</span>'}</div>`}</div></div>`;
+      <div class="gearside"><div class="tabs gtabs" role="tablist"><button role="tab" data-gtab="deck" aria-selected="${GT.tab === 'deck'}">Deck ${c.deck.length}</button><button role="tab" data-gtab="stash" aria-selected="${GT.tab === 'stash'}">Bags ${profile.stash.length} / ${CBHub.STASH_MAX}</button><button role="tab" data-gtab="stats" aria-selected="${GT.tab === 'stats'}">Stats</button><button role="tab" data-gtab="looks" aria-selected="${GT.tab === 'looks'}">Wardrobe</button></div>
+      ${GT.tab === 'deck' ? deckPanel(c) : GT.tab === 'stats' ? exStatsHtml(c) : GT.tab === 'looks' ? exWardrobeHtml(c) : `${exBagBar('bags')}<p class="muted" style="font-size:12px;margin:0 0 6px">${c.hardcore ? '<b style="color:#e06a5a">Hardcore bags</b>: shared by your hardcore heroes only.' : 'Shared by all your heroes (hardcore heroes have their own bags).'}</p><div class="list tall stashgrid">${st || '<span class="muted">Empty. Gear you bring home from a run lands here. Unequipped gear goes here too.</span>'}</div>`}</div></div>`;
     fitCards($('hpGear'));
     paintPortraits($('hpGear'));
   }
@@ -5896,7 +5915,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'p' && solid.has(K(x, y)) && PROPS.some(p => p.kind === 'bridge' && x >= p.x && x < p.x + p.w)) solid.delete(K(x, y)); // walk over the bridges
   // where each townsperson stands (in front of their building)
   const CITY_NPC = { wagon: [74, 97, 'down'], tinker: [77, 58, 'left'], qm: [58, 57, 'down'], merchant: [43, 57, 'down'], jeweler: [51, 57, 'down'], scribe: [19, 18, 'down'], archivist: [42, 17, 'down'],
-    chron: [70, 49, 'down'], captain: [19, 81, 'down'], guildmaster: [41, 81, 'down'], raidwarden: [75, 16, 'down'], arena: [99, 91, 'right'], dummy: [18, 92, 'down'], banker: [35, 57, 'down'] };
+    chron: [70, 49, 'down'], barber: [17, 57, 'down'], boutique: [25, 57, 'down'], tavern: [61, 71, 'down'], captain: [19, 81, 'down'], guildmaster: [41, 81, 'down'], raidwarden: [75, 16, 'down'], arena: [99, 91, 'right'], dummy: [18, 92, 'down'], banker: [35, 57, 'down'] };
   // districts: the name shows when you walk in
   const DISTRICTS = [['Ember Square', 61, 49, 88, 71], ['The Grand Bazaar', 93, 47, 141, 73], ['The Colosseum', 97, 77, 137, 105], ['The Wagon Yard', 57, 88, 92, 105], ['Market Row', 4, 50, 60, 62], ['The Old Market', 33, 62, 53, 77],
     ['The Barracks', 4, 72, 47, 105], ['Guild Row', 33, 72, 56, 87], ["Scholars' Quarter", 4, 4, 56, 28], ['The Keep', 57, 4, 92, 24], ['Cathedral Hill', 93, 4, 146, 28], ['The River Ash', 4, 27, 146, 35], ['Riverside', 4, 35, 146, 49], ['The Stables', 93, 94, 106, 105]];
@@ -6173,11 +6192,22 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       lines: ['Every card, every beast on every road, every scrap of iron worth wearing. It is all written here.', 'Ask before you ride. The Compendium knows what drops where.', 'Looking for a codex for your Codex slot? I keep a page on every one of them.'] },
   ];
   // Nov 2: the city. The Banker, five more training dummies, and everyone moves into their new building
-  NPCS.push({ id: 'banker', name: 'Banker Hollis', x: 0, y: 0, dir: 'down', open: 'bank', btn: 'Open your vault', pal: Object.assign({ skin: '#c8a080', hair: '#3a2a20', chest: '#2a2a3a', trim: '#d6a14a', legs: '#1e1e28', helm: null, cape: null, weapon: null }, { forge: { cls: 'Mage', gear: CB.presetGear('Mage', 'Blue'), who: 'npc_banker' } }),
-    lines: ['Your stash is for what you carry. The vault is for what you keep.', 'Every coin and every blade, counted twice. Hardcore accounts are kept in a separate ledger.'] });
+  NPCS.push({ id: 'banker', name: 'Banker Hollis', x: 0, y: 0, dir: 'down', open: 'bank', btn: 'Open the bank', pal: Object.assign({ skin: '#c8a080', hair: '#3a2a20', chest: '#2a2a3a', trim: '#d6a14a', legs: '#1e1e28', helm: null, cape: null, weapon: null }, { forge: { cls: 'Mage', gear: CB.presetGear('Mage', 'Blue'), who: 'npc_banker' } }),
+    lines: ['Your bags are for what you carry. The bank is for what you keep.', 'Bags make room. Put one in a bag slot, here or in your own pack, and it holds more.', 'Every coin and every blade, counted twice. Hardcore accounts are kept in a separate ledger.'] });
+  // Nov 13: three new shops. The Barber changes your hero's looks, the inn keeps the group board, the boutique sells for Skull Tokens.
+  NPCS.push({ id: 'barber', name: 'Barber Fenwick', x: 0, y: 0, dir: 'down', open: 'barber', btn: 'A new look', pal: { skin: '#d2a684', hair: '#2a1d14', chest: '#e8e0cc', trim: '#c9472f', legs: '#2b231b', helm: null, cape: null, weapon: null },
+    lines: ['Sit, sit. Hair, beard, the lot. No charge for heroes.', 'A new face for a new road? I have seen stranger requests.', 'The dyes on the shelf are for hair. For armour, see Madame Skulle.'] });
+  NPCS.push({ id: 'tavern', name: 'Innkeeper Marla', x: 0, y: 0, dir: 'down', open: 'lfg', btn: 'Read the group board', pal: { skin: '#c99a76', hair: '#7a2d1e', chest: '#5a3a22', trim: '#d6a14a', legs: '#2d2418', helm: null, cape: null, weapon: null },
+    lines: ['Looking for company on the road? Pin a notice to the board. Everyone reads it.', 'Say what you are, what you want and where you are headed. Then wait for a whisper.', 'A full party fights better than four strangers. Mostly.'] });
+  NPCS.push({ id: 'boutique', name: 'Madame Skulle', x: 0, y: 0, dir: 'down', open: 'skullshop', btn: 'Browse the Skull Shop', pal: { skin: '#b9a08a', hair: '#1c1612', chest: '#3a2a4a', trim: '#b48cd8', legs: '#22182a', helm: 'hood', helmC: '#3a2a4a', cape: '#3a2a4a', weapon: null },
+    lines: ['Skull Tokens only, darling. Mounts, wings, auras, dyes. Nothing that makes you stronger. Everything that makes you seen.', 'A hero should leave footprints. Burning ones, ideally.', 'I do sell bags. A lady has to carry her things.'] });
   { const d0 = NPCS.find(n => n.id === 'dummy'); for (const [i, x, y] of [[2, 24, 92], [3, 30, 92], [4, 36, 92], [5, 24, 98], [6, 30, 98]]) NPCS.push(Object.assign({}, d0, { id: 'dummy' + i, x, y, pal: Object.assign({}, d0.pal) })); }
   for (const n of NPCS) { const q = CITY_NPC[n.id]; if (q) { n.x = q[0]; n.y = q[1]; n.dir = q[2]; } }
   for (const n of NPCS) n.pal.ink = 'npc_' + (/^dummy/.test(n.id) ? 'dummy' : n.id); // town art pack key (src/inkart.js)
+  // Nov 13: most townsfolk now work indoors. Their spot at the door is where you walk in (src/extras.js exEnter): [room painting, the name over the door]
+  const IN_PLACES = { qm: ['armory', "Old Arthur's Armory"], scribe: ['scriptorium', 'The Scriptorium'], chron: ['records', 'Hall of Records'], captain: ['barracks', 'The Barracks'], merchant: ['store', "Dace's Wares"], guildmaster: ['guildhall', 'The Guild Hall'],
+    jeweler: ['jeweler', "Rook's Jewels"], banker: ['bank', 'The Bank'], archivist: ['library', 'The Archive'], raidwarden: ['warroom', 'The War Room'], arena: ['arena', 'Arena Office'], barber: ['barber', "Fenwick's Barber Shop"], tavern: ['tavern', 'The Ember Mug'], boutique: ['boutique', 'The Skull Boutique'] };
+  for (const n of NPCS) if (IN_PLACES[n.id]) { n.inside = IN_PLACES[n.id][0]; n.place = IN_PLACES[n.id][1]; }
   for (const n of NPCS) { n.home = n.dir; solid.add(K(n.x, n.y)); }
   // Nov 2: Tinker Pip (free test goods) only stands in town for admins (supabase/trust.sql: add your user id to public.admins)
   const TINKER = NPCS.find(n => n.id === 'tinker');
@@ -6459,17 +6489,18 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     const vx0 = cam.x / TS, vy0 = cam.y / TS, vx1 = (cam.x + TOWN.vw) / TS, vy1 = (cam.y + TOWN.vh) / TS, onV = (x, y, w, h) => x + w > vx0 - 3 && x < vx1 + 3 && y + h > vy0 - 1 && y < vy1 + 7;
     const list = []; for (const p of PROPS) { const big = p.kind === 'colosseum'; if (big ? onV(p.x, p.cy0, p.w, p.ch) : onV(p.x, p.y, p.w, p.h)) list.push({ y: p.y + p.h - 0.01, f: () => drawProp(gx, p, TS, t) }); }
     const NV = NPCS.filter(n => onV(n.x, n.y, 1, 1));
-    for (const n of NV) list.push({ y: n.y + 0.5, f: () => n.open === 'dummy' ? drawScarecrow(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, s, t) : drawChar(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.dir, 0, n.pal, s, t) });
+    for (const n of NV) list.push({ y: n.y + 0.5, f: () => n.open === 'dummy' ? drawScarecrow(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, s, t) : n.inside && typeof exDoor === 'function' ? exDoor(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, s, t) : drawChar(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.dir, 0, n.pal, s, t) });
     const hp = heroPos(); const walking = P.mv ? (Math.floor(P.mv.t * 2) % 2 ? 2 : 1) * (P.step % 2 ? 1 : 1) : 0;
     const stepF = P.mv ? ((P.step + (P.mv.t > 0.5 ? 1 : 0)) % 2 ? 1 : 2) : 0;
     list.push({ y: hp.y + 0.5, f: () => P.mount ? drawRider(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, P.dir, P.mv ? ((P.step % 2) + P.mv.t) / 2 : 0, heroPal(), s, t, P.mount, CC[(profile.chars[heroKey] || {}).cls]) : drawChar(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, P.dir, stepF, heroPal(), s, t) });
+    if (typeof exPetDraw === 'function') { const pk = exApp().cos.pet; if (pk) list.push({ y: hp.y + 0.49, f: () => exPetDraw(gx, 'me', pk, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, s, t) }); } // Nov 13: your pet trots behind you
     for (const o of othersDrawList(TS, s, t)) list.push(o);
     list.sort((a, b) => a.y - b.y); for (const o of list) o.f();
     if (BZ.open) drawShopSign(gx, hp.x * TS + TS / 2, hp.y * TS - TS * 0.12, shopTitle(), s);
     // embers over the fire
     for (const e of TOWN.embers) { gx.fillStyle = `rgba(255,${150 + (e.life * 80 | 0)},70,${e.life})`; gx.fillRect(e.x * TS, e.y * TS, 2.5 * s, 2.5 * s); }
     // name tags over every head: townspeople always, and your own hero with your guild under the name
-    for (const n of NV) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.open === 'dummy' ? 84 : window.CB_HEROPUP ? 98 : n.pal && n.pal.forge ? 80 : null);
+    for (const n of NV) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.inside ? n.place : n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.inside ? 58 : n.open === 'dummy' ? 84 : window.CB_HEROPUP ? 98 : n.pal && n.pal.forge ? 80 : null);
     { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? (window.CB_HEROPUP ? 150 : 72 + MOUNT_RISE) : 98, CBHub.titleOf(c, profile)); }
     // night: darken everything, then cut light pools around fires and the hero
     const dk = TOWN.dark, dg = dk.getContext('2d');
@@ -6529,7 +6560,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   function interactTarget() { const f = facing(); if (!f) return null; if (f.name) return f; if (f.kind === 'chest') return NPCS[0]; if (f.kind === 'wagon') return NPCS.find(n => n.id === 'wagon'); if (TALK_PROPS.includes(f.kind)) return propNpc(f); return null; }
   let lastPrompt = '';
   function updatePrompt() {
-    const n = interactTarget(); const txt = n && !townBusy() ? `<kbd>Space</kbd> Talk to ${esc(n.name)}` : '';
+    const n = interactTarget(); const txt = n && !townBusy() ? (n.inside && Math.abs(n.x - P.x) + Math.abs(n.y - P.y) <= 2 ? `<kbd>Space</kbd> Enter ${esc(n.place)}` : `<kbd>Space</kbd> Talk to ${esc(n.name)}`) : '';
     if (txt !== lastPrompt) { lastPrompt = txt; $('prompt').innerHTML = txt; $('prompt').hidden = !txt; }
   }
   function bfs(tx, ty, toNpc) {
@@ -6614,17 +6645,18 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     guild: { title: 'Guildmaster Strecks: guilds', show: ['hpGuild'] },
     raid: { title: 'Raid Warden Bagadee: raids', show: ['hpRaid'] },
     records: { title: 'Hall of Records', show: ['hpRec'] },
-    bank: { title: 'The Bank: your vault', show: ['hpBank'] },
+    bank: { title: 'The Bank', show: ['hpBank'] },
     arena: { title: 'The Arena: wagers', show: ['hpArena'] },
   };
   function talk(n) {
     P.held = []; P.path = []; P.target = null;
+    if (n.inside && typeof exEnter === 'function' && !exInside() && Math.abs(n.x - P.x) + Math.abs(n.y - P.y) <= 2) return exEnter(n); // Nov 13: walk in; you talk to them inside
     if (!n.fixed) n.dir = n.x > P.x ? 'left' : n.x < P.x ? 'right' : n.y > P.y ? 'up' : 'down';
     n.lineN = ((n.lineN == null ? -1 : n.lineN) + 1) % n.lines.length;
     { const c = profile.chars[heroKey]; if (n.id === 'wagon' && c && !c.tutRoad && !(c.runs > 0)) { c.tutRoad = 1; save(); closeTalk(); tutStart('road'); return; } } // Nov 2: the first talk with Arisha is the road and fight tutorial
     $('talk').innerHTML = `<b>${esc(n.name)}</b><p>${esc(n.lines[n.lineN])}</p><div class="row">${n.open ? `<button class="btn primary" id="tOpen">${esc(n.btn)}</button>` : ''}${n.id === 'wagon' ? '<button class="btn" id="tHow">How do runs and fights work?</button>' : ''}<button class="btn" id="tBye">${n.open ? 'Not now' : 'Farewell'}</button></div>`;
     $('talk').hidden = false; updatePrompt();
-    if (n.open) $('tOpen').onclick = () => { closeTalk(); if (n.open === 'dummy') startDummy(); else openSheet(n.open); };
+    if (n.open) $('tOpen').onclick = () => { closeTalk(); if (n.open === 'dummy') startDummy(); else if (n.open === 'barber') openMirror(); else if (n.open === 'lfg') openLfg(); else if (n.open === 'skullshop') openShop(); else openSheet(n.open); };
     $('tBye').onclick = closeTalk; if ($('tHow')) $('tHow').onclick = () => { closeTalk(); tutStart('road'); };
   }
   function closeTalk() { $('talk').hidden = true; updatePrompt(); cv.focus({ preventScroll: true }); }
@@ -6704,7 +6736,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   function myPresence() {
     const c = profile.chars[heroKey];
     const place = !$('scrStart').hidden ? 'town' : run ? 'run' : cb && cb.duel ? 'duel' : 'menu';
-    return { lk: lookList(c), ap: c ? c.app || null : null, uid: SOC.me, guild: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), shop: typeof BZ !== 'undefined' && BZ.open ? { t: shopTitle(), n: bzState().items.length } : null, arena: typeof arenaPresence === 'function' ? arenaPresence() : null, x: P.x, y: P.y, dir: P.dir, mount: P.mount || null, title: c ? CBHub.titleOf(c, profile) || null : null, hc: !!(c && c.hardcore), party: SOC.party ? SOC.party.id : null };
+    return { lk: lookList(c), ap: c ? c.app || null : null, uid: SOC.me, guild: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), shop: typeof BZ !== 'undefined' && BZ.open ? { t: shopTitle(), n: bzState().items.length } : null, arena: typeof arenaPresence === 'function' ? arenaPresence() : null, x: P.x, y: P.y, dir: P.dir, mount: P.mount || null, title: c ? CBHub.titleOf(c, profile) || null : null, hc: !!(c && c.hardcore), party: SOC.party ? SOC.party.id : null, lfg: typeof exLfgPresence === 'function' ? exLfgPresence() : null };
   }
 
   async function socStart() {
@@ -6776,8 +6808,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     for (const [uid, st] of SOC.online) {
       if (uid === SOC.me || st.place !== 'town' || !st.cls) { SOC.others.delete(uid); continue; }
       const o = SOC.others.get(uid);
-      if (!o) SOC.others.set(uid, { uid, x: st.x, y: st.y, fx: st.x, fy: st.y, t: 1, dir: st.dir || 'down', step: 0, name: st.name, guild: st.guild || null, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, ap: st.ap || null, party: st.party, shop: st.shop || null, mount: st.mount || null, title: st.title || null, hc: !!st.hc });
-      else Object.assign(o, { guild: st.guild || null, name: st.name, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, ap: st.ap || null, party: st.party, shop: st.shop || null, mount: st.mount || null, title: st.title || null, hc: !!st.hc });
+      if (!o) SOC.others.set(uid, { uid, x: st.x, y: st.y, fx: st.x, fy: st.y, t: 1, dir: st.dir || 'down', step: 0, name: st.name, guild: st.guild || null, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, ap: st.ap || null, party: st.party, shop: st.shop || null, lfg: st.lfg || null, mount: st.mount || null, title: st.title || null, hc: !!st.hc });
+      else Object.assign(o, { guild: st.guild || null, name: st.name, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, ap: st.ap || null, party: st.party, shop: st.shop || null, lfg: st.lfg || null, mount: st.mount || null, title: st.title || null, hc: !!st.hc });
     }
     for (const uid of [...SOC.others.keys()]) if (!SOC.online.has(uid)) SOC.others.delete(uid);
   }
@@ -6796,6 +6828,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       out.push({ y: p.y + 0.5, f: () => {
         if (o.mount) drawRider(gx, p.x * TS + TS / 2, p.y * TS + TS * 0.92, o.dir, moving ? ((o.step % 2) + o.t) / 2 : 0, pal, s, t, o.mount, CC[o.cls]);
         else drawChar(gx, p.x * TS + TS / 2, p.y * TS + TS * 0.92, o.dir, moving ? ((o.step + (o.t > 0.5 ? 1 : 0)) % 2 ? 1 : 2) : 0, pal, s, t);
+        if (typeof exPetDraw === 'function' && o.ap && o.ap.cos && o.ap.cos.pet) exPetDraw(gx, o.uid, o.ap.cos.pet, p.x * TS + TS / 2, p.y * TS + TS * 0.92, s, t); // Nov 13: their pet
         const tx = p.x * TS + TS / 2, ty = townTag(gx, tx, p.y * TS + TS * 0.92, o.name, SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0', o.guild, s, o.mount ? (window.CB_HEROPUP ? 150 : 72 + MOUNT_RISE) : 98, o.title);
         if (o.shop && o.shop.t) drawShopSign(gx, tx, ty - 4, o.shop.t, s);
       } });
@@ -7216,8 +7249,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794591183721';
-  const CB_BUILD = '229df6d008'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794593392829';
+  const CB_BUILD = '65dc48066f'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8323,6 +8356,17 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Feature', "You can walk into the buildings of Emberwatch. Most townsfolk now work indoors: walk up to the glowing arrow at a door and press Space, and you step inside the armory, the bank, the library, the jeweler, the guild hall, the barracks, the war room and the rest. Walk with A and D or a click, talk with Space, leave with Esc."],
+      ['Feature', "Three new shops. Fenwick's Barber Shop changes your hero's hair, beard and face any time, free. The Ember Mug inn keeps the group board. The Skull Boutique sells mounts and looks for Skull Tokens."],
+      ['Feature', "The group board (the inn, the button in town, or L). Pin a notice that shows your strength, who you are looking for, which road and level you are doing, and a message of your own. Everyone online can read it, whisper you from it, or invite you to their party."],
+      ['Feature', "The Skull Shop (Menu, or the skull button in town) sells for Skull Tokens: nine new mounts (dire wolf, war boar, great stag, shadow panther, war bear, frost sabertooth, bone steed, nightmare and a molten beast), twelve auras, four kinds of footsteps, six pairs of wings, six legendary weapon looks, six card borders, dyes and bags. Everything is for show except bags, and other players see what you wear. Skull Tokens are handed out by Tinker Pip for now."],
+      ['Feature', "Dyes. Buy a dye in the Skull Shop, then colour any piece of armour in your hero window (C), Wardrobe. Eighteen colours, and the dye remover is free."],
+      ['Feature', "Pets. Every monster you kill on a run has a 1 in 1000 chance to follow you home as a miniature. A pet trots behind you in town and stands at your side in a fight. Choose one in the Wardrobe."],
+      ['Feature', "Bags. You carry 20 items, plus whatever your bags hold: there are four bag slots above your bags. Monsters drop bags (5 slots on map levels 0 to 2, 10 on 3 to 5, 15 on 6 to 11, 20 from level 12), and the Skull Shop sells 20 and 30-slot bags. Nothing you already own is lost: if you are over the new limit you just cannot add more until there is room."],
+      ['Feature', "The bank has ten bag slots of its own, a search box (try fire resistance, crit or a name) and buttons to show only weapons, helms, jewelry and so on."],
+      ['Feature', "A stats page in your hero window (C), Stats: every number your hero takes into a fight, split into what comes from your class, your gear and your talents, with your codex and picked talents listed."],
+      ['Interface', "The Menu has tabs down the side: Game, Settings, Skull Shop, Compendium, Glossary, Build guide, Achievements, Hall of Records. The Compendium opens from anywhere, including mid-run and mid-fight."],
+      ['Interface', "A bar of buttons in the bottom right of town: Character, Bags (B), Talents (N), Deck, Compendium, Achievements, Arena, Group board (L), Friends, Skull Shop, Mount (M) and Menu."],
       ['Art', "38 new fight effects. Swings now vary (crossed cuts, a three-hit flurry, a long dash cut, an overhead chop that cracks the ground, a full spin), monsters bite and rake, and big spell hits get their own look: a meteor or fireball for fire, ice spikes for frost, grasping shadows or bats for shadow, a pillar of light for holy, a lightning strike for arcane, stone spikes and thorns for nature. Holy, nature and shadow spells now fly as bolts."],
       ['Feature', "Fights show more of what is happening: stars over a Stunned fighter, green arrows when someone gets stronger, red arrows when they are weakened, a beam when a demon is summoned, a wisp when mana is drained, and a puff of smoke when a monster dies."],
       ['Feature', "New heroes now learn by doing. First steps is six short tasks that tick themselves off as you do them: start a practice fight, play a card, end a turn, finish the fight, open your hero window, and ride out. The full tour of Emberwatch is still in the Menu."],
@@ -10945,7 +10989,10 @@ async function exportTravelPack(){
   })();
 
 // made by tools/heroart/bake_body.py: hero puppet bodies (pivots per part and view, art size 128)
-window.CB_PUPPET_DATA = {"S": 128, "bodies": {"female": {"s": {"hand": [[42.4, 71.7], [84.6, 71.4]], "skin": [189, 129, 109], "face": [63.2, 18.9, 27.0], "piv": [[63.5, 62.8], [63.3, 28.0], [51.7, 32.9], [47.6, 49.9], [74.9, 32.9], [79.3, 49.6], [56.7, 62.8], [55.6, 91.3], [70.2, 62.8], [71.7, 91.3]], "order": [7, 6, 9, 8, 0, 1, 2, 3, 4, 5], "foot": 124, "top": 4, "cx": 64.0}, "n": {"hand": [[43.4, 71.3], [84.4, 70.9]], "skin": [187, 127, 108], "face": [63.6, 16.7, 26.2], "piv": [[64.0, 63.5], [63.9, 27.2], [51.4, 33.0], [47.9, 50.7], [76.4, 33.3], [79.6, 50.7], [56.3, 63.5], [55.4, 92.8], [71.7, 63.5], [72.3, 92.6]], "order": [7, 6, 9, 8, 2, 3, 4, 5, 0, 1], "foot": 123, "top": 4, "cx": 64.0}, "e": {"hand": [[64.8, 75.3], [64.8, 75.3]], "skin": [196, 136, 115], "face": [72.6, 19.0, 29.1], "piv": [[65.7, 64.6], [64.0, 30.1], [59.4, 37.5], [58.8, 54.2], [62.4, 37.5], [61.8, 54.2], [65.7, 66.6], [65.0, 92.2], [67.7, 66.6], [67.0, 92.2]], "order": [9, 8, 7, 6, 0, 1, 2, 3], "foot": 125, "top": 5, "cx": 65.0}}, "mage": {"s": {"hand": [[45.0, 73.3], [82.4, 73.3]], "skin": [155, 117, 89], "face": [63.6, 19.8, 27.8], "piv": [[63.7, 63.1], [63.7, 28.8], [51.3, 33.5], [47.5, 51.1], [76.2, 33.5], [80.0, 51.1], [57.4, 63.1], [56.8, 91.8], [70.0, 63.1], [70.6, 91.8]], "order": [7, 6, 9, 8, 0, 1, 2, 3, 4, 5], "foot": 124, "top": 4, "cx": 64.0}, "n": {"hand": [[45.8, 72.2], [82.9, 72.4]], "skin": [156, 118, 90], "face": [64.1, 16.7, 26.8], "piv": [[63.7, 65.2], [63.7, 27.8], [50.4, 33.9], [47.5, 51.3], [76.9, 34.2], [80.1, 51.9], [56.5, 65.2], [56.2, 93.1], [70.8, 65.2], [71.4, 93.1]], "order": [7, 6, 9, 8, 2, 3, 4, 5, 0, 1], "foot": 123, "top": 4, "cx": 64.5}, "e": {"hand": [[63.8, 74.8], [63.8, 74.8]], "skin": [161, 122, 92], "face": [72.7, 18.7, 28.1], "piv": [[64.8, 63.2], [63.1, 29.1], [59.4, 36.4], [58.8, 53.6], [62.4, 36.4], [61.8, 53.6], [64.8, 65.2], [64.8, 90.8], [66.8, 65.2], [66.8, 90.8]], "order": [9, 8, 7, 6, 0, 1, 2, 3], "foot": 125, "top": 4, "cx": 65.0}}, "paladin": {"s": {"hand": [[38.5, 76.9], [87.7, 76.9]], "skin": [160, 110, 79], "face": [63.1, 18.6, 28.1], "piv": [[63.3, 67.2], [63.1, 29.1], [46.5, 34.9], [41.0, 54.0], [79.8, 34.9], [85.5, 54.0], [55.5, 67.3], [53.4, 95.5], [71.0, 67.0], [74.0, 95.2]], "order": [7, 6, 9, 8, 0, 1, 2, 3, 4, 5], "foot": 126, "top": 2, "cx": 63.5}, "n": {"hand": [[39.7, 76.2], [87.6, 76.6]], "skin": [158, 108, 77], "face": [63.5, 15.3, 26.5], "piv": [[63.5, 67.6], [63.3, 27.5], [46.5, 34.6], [42.3, 53.7], [80.1, 34.6], [84.7, 53.7], [55.0, 67.6], [53.8, 94.9], [71.9, 67.6], [73.5, 94.9]], "order": [7, 6, 9, 8, 2, 3, 4, 5, 0, 1], "foot": 126, "top": 2, "cx": 64.0}, "e": {"hand": [[63.1, 80.4], [63.1, 80.4]], "skin": [165, 114, 82], "face": [73.6, 17.8, 28.2], "piv": [[63.4, 66.8], [60.8, 29.2], [55.6, 37.3], [56.5, 58.1], [58.6, 37.3], [59.5, 58.1], [63.4, 68.8], [62.3, 93.2], [65.4, 68.8], [64.3, 93.2]], "order": [9, 8, 7, 6, 0, 1, 2, 3], "foot": 127, "top": 2, "cx": 62.5}}, "warrior": {"s": {"hand": [[35.2, 79.2], [91.9, 79.5]], "skin": [161, 110, 82], "face": [63.6, 21.4, 30.6], "piv": [[63.7, 68.3], [63.7, 31.6], [45.2, 37.2], [38.0, 55.6], [82.3, 37.2], [89.5, 55.6], [55.0, 68.3], [52.1, 93.7], [72.5, 68.3], [75.4, 93.4]], "order": [7, 6, 9, 8, 0, 1, 2, 3, 4, 5], "foot": 123, "top": 5, "cx": 64.0}, "n": {"hand": [[37.4, 79.2], [88.6, 79.2]], "skin": [152, 101, 76], "face": [63.5, 18.1, 29.4], "piv": [[63.2, 68.8], [63.3, 30.4], [45.2, 37.5], [39.5, 56.9], [81.5, 37.8], [87.2, 56.9], [54.6, 68.6], [52.4, 93.2], [71.8, 68.9], [74.6, 93.5]], "order": [7, 6, 9, 8, 2, 3, 4, 5, 0, 1], "foot": 122, "top": 5, "cx": 64.0}, "e": {"hand": [[67.4, 82.4], [67.4, 82.4]], "skin": [169, 117, 85], "face": [76.0, 21.1, 30.7], "piv": [[64.8, 68.8], [62.6, 31.7], [56.9, 39.8], [56.9, 60.6], [59.9, 39.8], [59.9, 60.6], [64.8, 70.8], [64.5, 92.5], [66.8, 70.8], [66.5, 92.5]], "order": [9, 8, 7, 6, 0, 1, 2, 3], "foot": 125, "top": 5, "cx": 63.5}}}, "hair": {"cw": 48, "ch": 56, "bodies": ["warrior", "paladin", "mage", "female"], "views": ["s", "e", "n"], "styles": ["bob", "braid", "curls", "long", "mohawk", "ponytail", "short", "slick", "topknot", "wavy", "wild"], "beards": ["beard_braid", "beard_full", "beard_goatee", "beard_short"], "at": {"warrior": {"s": [40, -4], "e": [42, -4], "n": [39, -4]}, "paladin": {"s": [39, -7], "e": [40, -7], "n": [39, -7]}, "mage": {"s": [40, -5], "e": [42, -5], "n": [40, -5]}, "female": {"s": [39, -5], "e": [43, -4], "n": [40, -5]}}}, "weapons": {"cw": 48, "ch": 112, "types": ["sword1h", "axe1h", "mace1h", "dagger", "wand", "sword2h", "axe2h", "maul", "hammer", "scythe", "staff", "kite", "tower", "focus"], "grip": {"sword1h": [[23.0, 105], [22.5, 105], [23.0, 105], [23.0, 104], [23.0, 104], [23.0, 104]], "axe1h": [[20.0, 103], [19.0, 103], [18.0, 103], [17.5, 103], [19.0, 103], [19.0, 103]], "mace1h": [[23.5, 104], [23.0, 104], [24.0, 104], [23.0, 104], [23.5, 104], [23.5, 104]], "dagger": [[23.0, 105], [23.0, 105], [23.0, 105], [21.5, 104], [23.5, 105], [23.5, 105]], "wand": [[23.5, 105], [23.0, 105], [22.5, 105], [23.5, 105], [23.5, 105], [22.5, 105]], "sword2h": [[23.5, 99], [23.5, 99], [23.0, 99], [23.7, 99], [23.5, 99], [23.0, 99]], "axe2h": [[23.0, 80], [23.0, 79], [23.0, 80], [23.5, 79], [24.0, 80], [23.0, 79]], "maul": [[22.0, 79], [23.0, 79], [22.5, 79], [24.0, 79], [24.0, 79], [23.5, 79]], "hammer": [[23.5, 84], [23.5, 84], [24.0, 83], [21.5, 83], [23.5, 83], [22.0, 82]], "scythe": [[12.0, 68], [14.0, 68], [11.5, 68], [14.0, 67], [12.5, 68], [14.0, 67]], "staff": [[21.5, 70], [22.5, 66], [23.5, 68], [25.3, 68], [23.0, 69], [23.5, 66]], "kite": [[23.5, 86], [23.5, 86], [23.5, 85], [24.0, 84], [23.5, 85], [23.5, 84]], "tower": [[23.5, 81], [23.5, 81], [24.0, 81], [24.0, 81], [23.5, 81], [23.5, 79]], "focus": [[23.5, 99], [23.5, 98], [23.5, 98], [23.5, 98], [23.5, 99], [24.0, 98]]}}};
+window.CB_PUPPET_DATA = {"S": 128, "bodies": {"female": {"s": {"hand": [[42.4, 71.7], [84.6, 71.4]], "skin": [189, 129, 109], "face": [63.2, 18.9, 27.0], "piv": [[63.5, 62.8], [63.3, 28.0], [51.7, 32.9], [47.6, 49.9], [74.9, 32.9], [79.3, 49.6], [56.7, 62.8], [55.6, 91.3], [70.2, 62.8], [71.7, 91.3]], "order": [7, 6, 9, 8, 0, 1, 2, 3, 4, 5], "foot": 124, "top": 4, "cx": 64.0}, "n": {"hand": [[43.4, 71.3], [84.4, 70.9]], "skin": [187, 127, 108], "face": [63.6, 16.7, 26.2], "piv": [[64.0, 63.5], [63.9, 27.2], [51.4, 33.0], [47.9, 50.7], [76.4, 33.3], [79.6, 50.7], [56.3, 63.5], [55.4, 92.8], [71.7, 63.5], [72.3, 92.6]], "order": [7, 6, 9, 8, 2, 3, 4, 5, 0, 1], "foot": 123, "top": 4, "cx": 64.0}, "e": {"hand": [[64.8, 75.3], [64.8, 75.3]], "skin": [196, 136, 115], "face": [72.6, 19.0, 29.1], "piv": [[65.7, 64.6], [64.0, 30.1], [59.4, 37.5], [58.8, 54.2], [62.4, 37.5], [61.8, 54.2], [65.7, 66.6], [65.0, 92.2], [67.7, 66.6], [67.0, 92.2]], "order": [9, 8, 7, 6, 0, 1, 2, 3], "foot": 125, "top": 5, "cx": 65.0}}, "mage": {"s": {"hand": [[45.0, 73.3], [82.4, 73.3]], "skin": [155, 117, 89], "face": [63.6, 19.8, 27.8], "piv": [[63.7, 63.1], [63.7, 28.8], [51.3, 33.5], [47.5, 51.1], [76.2, 33.5], [80.0, 51.1], [57.4, 63.1], [56.8, 91.8], [70.0, 63.1], [70.6, 91.8]], "order": [7, 6, 9, 8, 0, 1, 2, 3, 4, 5], "foot": 124, "top": 4, "cx": 64.0}, "n": {"hand": [[45.8, 72.2], [82.9, 72.4]], "skin": [156, 118, 90], "face": [64.1, 16.7, 26.8], "piv": [[63.7, 65.2], [63.7, 27.8], [50.4, 33.9], [47.5, 51.3], [76.9, 34.2], [80.1, 51.9], [56.5, 65.2], [56.2, 93.1], [70.8, 65.2], [71.4, 93.1]], "order": [7, 6, 9, 8, 2, 3, 4, 5, 0, 1], "foot": 123, "top": 4, "cx": 64.5}, "e": {"hand": [[63.8, 74.8], [63.8, 74.8]], "skin": [161, 122, 92], "face": [72.7, 18.7, 28.1], "piv": [[64.8, 63.2], [63.1, 29.1], [59.4, 36.4], [58.8, 53.6], [62.4, 36.4], [61.8, 53.6], [64.8, 65.2], [64.8, 90.8], [66.8, 65.2], [66.8, 90.8]], "order": [9, 8, 7, 6, 0, 1, 2, 3], "foot": 125, "top": 4, "cx": 65.0}}, "paladin": {"s": {"hand": [[38.5, 76.9], [87.7, 76.9]], "skin": [160, 110, 79], "face": [63.1, 18.6, 28.1], "piv": [[63.3, 67.2], [63.1, 29.1], [46.5, 34.9], [41.0, 54.0], [79.8, 34.9], [85.5, 54.0], [55.5, 67.3], [53.4, 95.5], [71.0, 67.0], [74.0, 95.2]], "order": [7, 6, 9, 8, 0, 1, 2, 3, 4, 5], "foot": 126, "top": 2, "cx": 63.5}, "n": {"hand": [[39.7, 76.2], [87.6, 76.6]], "skin": [158, 108, 77], "face": [63.5, 15.3, 26.5], "piv": [[63.5, 67.6], [63.3, 27.5], [46.5, 34.6], [42.3, 53.7], [80.1, 34.6], [84.7, 53.7], [55.0, 67.6], [53.8, 94.9], [71.9, 67.6], [73.5, 94.9]], "order": [7, 6, 9, 8, 2, 3, 4, 5, 0, 1], "foot": 126, "top": 2, "cx": 64.0}, "e": {"hand": [[63.1, 80.4], [63.1, 80.4]], "skin": [165, 114, 82], "face": [73.6, 17.8, 28.2], "piv": [[63.4, 66.8], [60.8, 29.2], [55.6, 37.3], [56.5, 58.1], [58.6, 37.3], [59.5, 58.1], [63.4, 68.8], [62.3, 93.2], [65.4, 68.8], [64.3, 93.2]], "order": [9, 8, 7, 6, 0, 1, 2, 3], "foot": 127, "top": 2, "cx": 62.5}}, "warrior": {"s": {"hand": [[35.2, 79.2], [91.9, 79.5]], "skin": [161, 110, 82], "face": [63.6, 21.4, 30.6], "piv": [[63.7, 68.3], [63.7, 31.6], [45.2, 37.2], [38.0, 55.6], [82.3, 37.2], [89.5, 55.6], [55.0, 68.3], [52.1, 93.7], [72.5, 68.3], [75.4, 93.4]], "order": [7, 6, 9, 8, 0, 1, 2, 3, 4, 5], "foot": 123, "top": 5, "cx": 64.0}, "n": {"hand": [[37.4, 79.2], [88.6, 79.2]], "skin": [152, 101, 76], "face": [63.5, 18.1, 29.4], "piv": [[63.2, 68.8], [63.3, 30.4], [45.2, 37.5], [39.5, 56.9], [81.5, 37.8], [87.2, 56.9], [54.6, 68.6], [52.4, 93.2], [71.8, 68.9], [74.6, 93.5]], "order": [7, 6, 9, 8, 2, 3, 4, 5, 0, 1], "foot": 122, "top": 5, "cx": 64.0}, "e": {"hand": [[67.4, 82.4], [67.4, 82.4]], "skin": [169, 117, 85], "face": [76.0, 21.1, 30.7], "piv": [[64.8, 68.8], [62.6, 31.7], [56.9, 39.8], [56.9, 60.6], [59.9, 39.8], [59.9, 60.6], [64.8, 70.8], [64.5, 92.5], [66.8, 70.8], [66.5, 92.5]], "order": [9, 8, 7, 6, 0, 1, 2, 3], "foot": 125, "top": 5, "cx": 63.5}}}, "hair": {"cw": 48, "ch": 56, "bodies": ["warrior", "paladin", "mage", "female"], "views": ["s", "e", "n"], "styles": ["bob", "braid", "curls", "long", "mohawk", "ponytail", "short", "slick", "topknot", "wavy", "wild"], "beards": ["beard_braid", "beard_full", "beard_goatee", "beard_short"], "at": {"warrior": {"s": [40, -4], "e": [42, -4], "n": [39, -4]}, "paladin": {"s": [39, -7], "e": [40, -7], "n": [39, -7]}, "mage": {"s": [40, -5], "e": [42, -5], "n": [40, -5]}, "female": {"s": [39, -5], "e": [43, -4], "n": [40, -5]}}}, "weapons": {"cw": 48, "ch": 112, "types": ["sword1h", "axe1h", "mace1h", "dagger", "wand", "sword2h", "axe2h", "maul", "hammer", "scythe", "staff", "kite", "tower", "focus", "legend"], "grip": {"sword1h": [[23.0, 105], [22.5, 105], [23.0, 105], [23.0, 104], [23.0, 104], [23.0, 104]], "axe1h": [[20.0, 103], [19.0, 103], [18.0, 103], [17.5, 103], [19.0, 103], [19.0, 103]], "mace1h": [[23.5, 104], [23.0, 104], [24.0, 104], [23.0, 104], [23.5, 104], [23.5, 104]], "dagger": [[23.0, 105], [23.0, 105], [23.0, 105], [21.5, 104], [23.5, 105], [23.5, 105]], "wand": [[23.5, 105], [23.0, 105], [22.5, 105], [23.5, 105], [23.5, 105], [22.5, 105]], "sword2h": [[23.5, 99], [23.5, 99], [23.0, 99], [23.7, 99], [23.5, 99], [23.0, 99]], "axe2h": [[23.0, 80], [23.0, 79], [23.0, 80], [23.5, 79], [24.0, 80], [23.0, 79]], "maul": [[22.0, 79], [23.0, 79], [22.5, 79], [24.0, 79], [24.0, 79], [23.5, 79]], "hammer": [[23.5, 84], [23.5, 84], [24.0, 83], [21.5, 83], [23.5, 83], [22.0, 82]], "scythe": [[12.0, 68], [14.0, 68], [11.5, 68], [14.0, 67], [12.5, 68], [14.0, 67]], "staff": [[21.5, 70], [22.5, 66], [23.5, 68], [25.3, 68], [23.0, 69], [23.5, 66]], "kite": [[23.5, 86], [23.5, 86], [23.5, 85], [24.0, 84], [23.5, 85], [23.5, 84]], "tower": [[23.5, 81], [23.5, 81], [24.0, 81], [24.0, 81], [23.5, 81], [23.5, 79]], "focus": [[23.5, 99], [23.5, 98], [23.5, 98], [23.5, 98], [23.5, 99], [24.0, 98]], "legend": [[23.0, 101], [24.0, 101], [18.4, 75], [23.0, 84], [26.0, 79], [23.0, 69]]}}};
+
+// made by tools/heroart/bake_mounts.py: where the rider sits on each mount
+window.CB_MOUNTS = {"bear": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 111, "seat": [0, -75]}, "e": {"row": 1, "foot": 107, "seat": [-7, -57]}, "n": {"row": 2, "foot": 116, "seat": [0, -62]}}, "boar": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 111, "seat": [0, -76]}, "e": {"row": 1, "foot": 107, "seat": [-5, -60]}, "n": {"row": 2, "foot": 117, "seat": [0, -65]}}, "nightmare": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 114, "seat": [0, -81]}, "e": {"row": 1, "foot": 109, "seat": [-8, -45]}, "n": {"row": 2, "foot": 120, "seat": [0, -71]}}, "panther": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 108, "seat": [0, -70]}, "e": {"row": 1, "foot": 105, "seat": [-11, -45]}, "n": {"row": 2, "foot": 115, "seat": [0, -61]}}, "sabertooth": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 110, "seat": [0, -73]}, "e": {"row": 1, "foot": 104, "seat": [-9, -49]}, "n": {"row": 2, "foot": 115, "seat": [0, -60]}}, "stag": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 116, "seat": [0, -86]}, "e": {"row": 1, "foot": 118, "seat": [-2, -75]}, "n": {"row": 2, "foot": 121, "seat": [0, -72]}}, "wolf": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 110, "seat": [0, -73]}, "e": {"row": 1, "foot": 104, "seat": [-7, -46]}, "n": {"row": 2, "foot": 117, "seat": [0, -64]}}};
 
 // ---------- Hero puppets (Nov 12): pixel-art heroes built from parts. Each body is cut at the joints (tools/heroart/bake_body.py):
 // torso, head, upper and lower arms, thighs and shins, for three views (s = facing the camera, n = facing away, e = side; west is the
@@ -11003,7 +11050,7 @@ window.CB_PUPPET = (function () {
   // ---------- one look, painted: a strip of the ten parts for a view (cached)
   const COMP = new Map(), tmp = canvas(S * 10, S), tg = tmp.getContext('2d', { willReadFrequently: true });
   function compose(L, v) {
-    const key = v + JSON.stringify(L); let c = COMP.get(key); if (c) return c;
+    const key = v + JSON.stringify(L, (k, val) => k === 'cos' ? undefined : val); let c = COMP.get(key); if (c) return c;
     const B = D.bodies[L.body][v], body = img(L.body + '_' + v); if (!body) return null;
     const gear = L.gear || {}, sets = SLOTS.map(s => gear[s] || null), need = [...new Set(sets.filter(Boolean))], gi = {};
     let st = null; if (need.length) { st = stencils(L.body, v); if (st === null) return null; for (const n of need) { const im = img('gear/' + n + '_' + L.body + '_' + v); if (im === null) return null; gi[n] = im; } }
@@ -11012,7 +11059,10 @@ window.CB_PUPPET = (function () {
     const id = g.getImageData(0, 0, S * 10, S), d = id.data, skin = SKIN[L.skin || 0] || SKIN[0], mean = (B.skin[0] + B.skin[1] + B.skin[2]) / 3;
     for (let i = 0; i < d.length; i += 4) if (d[i + 3] && d[i] - d[i + 2] > 22 && d[i] > 70) { const k = Math.pow((d[i] + d[i + 1] + d[i + 2]) / 3 / mean, .9); d[i] = Math.min(250, skin[0] * k); d[i + 1] = Math.min(240, skin[1] * k); d[i + 2] = Math.min(230, skin[2] * k); }   // every body's skin lands on the same tone, keeping its shading
     face(d, B, v, L, skin); g.putImageData(id, 0, 0);
-    const wear = (si) => { const n = sets[si]; if (!n || !gi[n] || !st) return; tg.globalCompositeOperation = 'source-over'; tg.clearRect(0, 0, S * 10, S); tg.drawImage(gi[n], 0, 0); tg.globalCompositeOperation = 'destination-in'; tg.drawImage(st[si], 0, 0); g.drawImage(tmp, 0, 0); };
+    const wear = (si) => { const n = sets[si]; if (!n || !gi[n] || !st) return; tg.globalCompositeOperation = 'source-over'; tg.clearRect(0, 0, S * 10, S); tg.drawImage(gi[n], 0, 0); tg.globalCompositeOperation = 'destination-in'; tg.drawImage(st[si], 0, 0);
+      const dc = L.dye && window.CB_COS ? CB_COS.dyeOf(L, SLOTS[si]) : null;   // Nov 13: a dye recolours the piece, keeping its shading
+      if (dc) { const dd = tg.getImageData(0, 0, S * 10, S), p = dd.data; for (let i = 0; i < p.length; i += 4) { if (!p[i + 3]) continue; const l = (p[i] * .3 + p[i + 1] * .59 + p[i + 2] * .11) / 255, k = l < .5 ? l * 1.9 : .95 + (l - .5) * 1.1; p[i] = Math.min(255, dc[0] * k + (l > .8 ? (l - .8) * 300 : 0)); p[i + 1] = Math.min(255, dc[1] * k + (l > .8 ? (l - .8) * 300 : 0)); p[i + 2] = Math.min(255, dc[2] * k + (l > .8 ? (l - .8) * 300 : 0)); } tg.putImageData(dd, 0, 0); }
+      g.drawImage(tmp, 0, 0); };
     for (const si of [7, 6, 2, 5, 3, 4, 1]) wear(si);
     const vi = H.views.indexOf(v), bi = H.bodies.indexOf(L.body), [hx, hy] = H.at[L.body][v];
     const dye = (im, col, clipY) => {   // hair is painted grey-white; multiply it by the colour
@@ -11109,7 +11159,9 @@ window.CB_PUPPET = (function () {
   function chain(g, B, P, i) { if (PAR[i] >= 0) chain(g, B, P, PAR[i]); const a = P.parts[i], pv = B.piv[i]; g.translate(pv[0] + a.dx, pv[1] + a.dy); if (a.r) g.rotate(a.r); if (a.sy !== 1) g.scale(1, a.sy); g.translate(-pv[0], -pv[1]); }
   function draw(g, look, view, anim, t, x, footY, scale) {
     const flip = view === 'w', v = flip ? 'e' : view, B = D.bodies[look.body] && D.bodies[look.body][v]; if (!B) return false;
+    const COS = window.CB_COS; if (COS && look.cos) { const ws = COS.weapon(look); if (ws && W && W.types.includes('legend')) look = Object.assign({}, look, { weapon: ws }); }
     const strip = compose(look, v) || img(look.body + '_' + v); if (!strip) return false;
+    if (COS && look.cos) { g.save(); try { COS.draw(g, look, view, anim, t, x, footY, scale, 'back'); } catch (e) {} g.restore(); }
     const len = CLIP[anim] || 1000, p = ONCE[anim] ? Math.min(1, t / len) : (t % len) / len, P = pose(anim, p, v);
     const q = scale >= 1.5 ? 3 : 2, wk = workFor(q), work = wk.c, wg = wk.g;
     wg.setTransform(1, 0, 0, 1, 0, 0); wg.clearRect(0, 0, work.width, work.height); wg.imageSmoothingEnabled = false;
@@ -11118,7 +11170,7 @@ window.CB_PUPPET = (function () {
       if (!it || !wim) return; const ti = W.types.indexOf(it[0]), gp = W.grip[it[0]] && W.grip[it[0]][it[1]]; if (ti < 0 || !gp) return;
       base(); chain(wg, B, P, part); wg.translate(at ? at[0] : B.hand[hand][0], at ? at[1] : B.hand[hand][1]); wg.rotate(rot); wg.drawImage(wim, it[1] * W.cw, ti * W.ch, W.cw, W.ch, -Math.round(gp[0]), -Math.round(gp[1]), W.cw, W.ch);
     };
-    const wrot = (it, d) => (HELD[it[0]] ? 0 : LONG[it[0]] ? .18 * d : 1.15 * d), mainPart = v === 'n' ? 5 : 3, offPart = v === 'n' ? 3 : 5;
+    const wrot = (it, d) => (HELD[it[0]] ? 0 : LONG[it[0]] || (it[0] === 'legend' && (it[1] === 2 || it[1] === 5)) ? .18 * d : 1.15 * d), mainPart = v === 'n' ? 5 : 3, offPart = v === 'n' ? 3 : 5;
     if (cl && v !== 'n') { base(); chain(wg, B, P, 0); wg.drawImage(cl, 0, 0); }
     if (v === 'e' && look.off && !HELD[look.off[0]]) held(look.off, 0, 0, 1.0, [B.hand[0][0] + 6, B.hand[0][1] - 4]);   // the other hand's weapon shows behind the body
     for (const i of B.order) {
@@ -11129,7 +11181,9 @@ window.CB_PUPPET = (function () {
       if (look.off && v !== 'e' && i === offPart) held(look.off, i, v === 'n' ? 0 : 1, wrot(look.off, v === 's' ? .26 : -.26));
     }
     g.save(); g.imageSmoothingEnabled = scale !== q; g.imageSmoothingQuality = 'high'; g.translate(x, footY); if (flip) g.scale(-1, 1);
-    g.drawImage(work, -(S / 2 + B.cx) * scale, -(S / 2 + B.foot) * scale, S * 2 * scale, S * 2 * scale); g.restore(); return true;
+    g.drawImage(work, -(S / 2 + B.cx) * scale, -(S / 2 + B.foot) * scale, S * 2 * scale, S * 2 * scale); g.restore();
+    if (COS && look.cos) { g.save(); try { COS.draw(g, look, view, anim, t, x, footY, scale, 'front'); } catch (e) {} g.restore(); }
+    return true;
   }
   // the look a hero starts with, and what its gear looks like: items -> { slot: '<map>_<Plate|Leather|Cloth>' }
   function defaults(cls) { const body = BODY[cls] || 'warrior'; return { body, skin: body === 'mage' ? 0 : body === 'female' ? 1 : 2, eyes: body === 'female' ? 3 : 0, eyeCol: 0, mouth: body === 'female' ? 1 : 0, lipCol: 0, hair: body === 'female' ? 'long' : body === 'mage' ? 'slick' : 'short', hairCol: body === 'female' ? 0 : 1, beard: null }; }
@@ -11251,8 +11305,10 @@ window.CB_PUPPET = (function () {
   // seat: where the rider's hips go, from the middle of the horse's feet, in horse pixels; hip: a hero's hips above its feet
   const HORSE = { cell: 128, frames: 6, k: 1.55, hip: 61, s: { row: 0, foot: 108, seat: [1, -70] }, e: { row: 1, foot: 108, seat: [-6, -47] }, n: { row: 2, foot: 119, seat: [1, -68] } };
   const MOVED = new Map();
-  function ride(g, look, key, cx, by, dir, moving, s, t) {
-    const im = P.img('horse'), v = DIRS[dir] || 's', hv = v === 'w' ? 'e' : v, H = HORSE[hv]; if (!im || !P.ready(look, v)) return false;
+  const MOUNTS = { horse: HORSE };   // filled from src/mounts_data.js (tools/heroart/bake_mounts.py): the same layout as the horse, with each beast's own seat
+  if (window.CB_MOUNTS) for (const k in window.CB_MOUNTS) MOUNTS[k] = window.CB_MOUNTS[k];
+  function ride(g, look, key, cx, by, dir, moving, s, t, kind) {
+    const HORSE = MOUNTS[kind] || MOUNTS.horse, im = P.img(HORSE === MOUNTS.horse ? 'horse' : 'mounts/' + kind), v = DIRS[dir] || 's', hv = v === 'w' ? 'e' : v, H = HORSE[hv]; if (!im || !P.ready(look, v)) return false;
     const M = MOVED.get(key) || { x: cx, y: by, at: -1e9 }; if (Math.abs(M.x - cx) + Math.abs(M.y - by) > .01) { M.x = cx; M.y = by; M.at = t; } MOVED.set(key, M); moving = t - M.at < 140;   // a rider is moving while its place changes (no flicker between steps)
     const f = v === 'w' ? -1 : 1, fr = moving ? 1 + Math.floor(t / 80) % HORSE.frames : 0, k = HORSE.k * s, C = HORSE.cell, bob = moving ? Math.sin(t / 240 * Math.PI) * 2.2 * s : 0, sc = 96 * s / 118;
     g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, (hv === 'e' ? 40 : 20) * s, 7 * s, 0, 0, Math.PI * 2); g.fill(); g.restore();
@@ -11286,7 +11342,7 @@ window.CB_PUPPET = (function () {
     const get = () => { const o = {}; for (const k of ['skin', 'eyes', 'eyeCol', 'mouth', 'lipCol', 'hair', 'hairCol', 'beard']) o[k] = L[k] == null ? null : L[k]; return o; };
     paint(); return { get, wear: (gear) => { Object.assign(L, { gear: P.gearOf(gear) }, P.armsOf(gear)); paint(); } };
   }
-  window.CB_HEROPUP = { hold: (ms) => { const t = performance.now(); if (t < holdUntil) return; holdUntil = t + ms; heldFor += ms; }, html, lookOf, appOf, picker, npc, npcLook, HORSE, ride: (g, pal, cx, by, dir, moving, s, t) => ride(g, pal && pal.forge ? lookOf(pal.forge.who || 'me', pal.forge.cls, pal.forge.gear) : npcLook(pal || {}), pal && pal.forge ? pal.forge.who || 'me' : 'npc', cx, by, dir, moving, s, t) };
+  window.CB_HEROPUP = { hold: (ms) => { const t = performance.now(); if (t < holdUntil) return; holdUntil = t + ms; heldFor += ms; }, html, lookOf, appOf, picker, npc, npcLook, HORSE, ride: (g, pal, cx, by, dir, moving, s, t, kind) => ride(g, pal && pal.forge ? lookOf(pal.forge.who || 'me', pal.forge.cls, pal.forge.gear) : npcLook(pal || {}), pal && pal.forge ? pal.forge.who || 'me' : 'npc', cx, by, dir, moving, s, t, kind) };
 })();
 
 // ---------- Sound (Nov 13): background music for each part of the game and effects for hits, spells, blocks, cards and clicks.
@@ -12272,7 +12328,7 @@ window.CB_TOWNART = (function () {
   }
   requestAnimationFrame(draw);
   window.CB_MOBS = {
-    manifest: M, figure, cardPlay, play, has: (k) => !!M[k],
+    manifest: M, figure, cardPlay, play, has: (k) => !!M[k], keyOf: (k) => keyFor({ key: k }),
     preload(keys) { for (const k0 of keys || []) { const f = keyFor({ key: k0 }); if (f) { sheet(f.k); new Image().src = 'img/mobs/' + f.k + '_p.webp'; } } },
   };
   // load a map's sheets along with the ink art the game already preloads
@@ -13373,6 +13429,8 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       <div class="cxtop"><div class="tabs cxtabs" role="tablist">${[['decks', 'Test decks'], ['cards', `${hcls()} cards`], ['codex', 'Codexes'], ['misc', 'Gold']].map(([k, l]) => `<button role="tab" aria-selected="${TV.tab === k}" data-tvtab="${k}">${l}</button>`).join('')}</div>
         ${TV.tab === 'cards' ? `<input id="tvQ" type="search" placeholder="Search ${hcls()} cards by name or text..." value="${esc(TV.q)}" autocomplete="off">` : ''}
         <button class="btn" data-tvgold="clear" title="Sets the bank to 0 gold (to test a new player)">Clear all gold (${profile.gold})</button>
+        <button class="btn" data-tvgold="skulls" title="Skull Tokens, spent in the Skull Shop (Menu)">+1,000 Skull Tokens (${(profile.skulls || 0).toLocaleString()})</button>
+        <button class="btn" data-tvgold="pet" title="A random pet, as if it had dropped">A random pet</button>
         <button class="btn" data-tvgold="tokens" title="Reroll Tokens, spent at Jeweler Rook">+10 Reroll Tokens (${profile.rerollTokens || 0})</button>
         <button class="btn" data-tvshop="1" title="Merchant Dace normally restocks every 12 hours">Restock Merchant Dace now</button>
         <button class="btn" data-tvkit="Blue" title="Equips a full set of Blue gear for your class (the set the raid balance was tuned with). Your current gear goes to the stash; your codex stays on.">Full Blue gear kit</button>
@@ -13412,7 +13470,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     else if (b.dataset.tvshop) { CBHub.refreshShop(profile, DATA); save(); toast(`Merchant Dace has new stock (from your last boss kill: ${DATA.maps[profile.shop.map].name} +${profile.shop.level}).`); }
     else if (b.dataset.tvall) { const q = TV.q.toLowerCase(); let n = 0; for (const [k, d] of Object.entries(CARDS)) if (d.cls === hcls() && !d.designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(d.rarity) && (TV.rar === 'All' || d.rarity === TV.rar) && (!q || (d.name + ' ' + d.text + ' ' + d.type + ' ' + d.rarity).toLowerCase().includes(q)) && ++n) c.cards.push({ id: 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), key: k, rank: 0 }); save(); toast(`Added ${n} ${hcls()} card${n === 1 ? '' : 's'} to ${c.name}'s collection.`); }
     else if (b.dataset.tvcx) { if (profile.stash.length >= CBHub.STASH_MAX) return toast('Stash is full.'); const it = CB.makeCodex(DATA, CB.makeRng(Date.now() % 2147483646), b.dataset.tvcx, profile.last.level || 0); profile.stash.unshift(Object.assign({ id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, it)); save(); }
-    else if (b.dataset.tvgold) { if (b.dataset.tvgold === 'tokens') { profile.rerollTokens = (profile.rerollTokens || 0) + 10; toast(`+10 Reroll Tokens (${profile.rerollTokens}).`); save(); return renderTestVendor(); } if (b.dataset.tvgold === 'clear') { profile.gold = 0; toast('Bank emptied: 0 gold.'); } else profile.gold += +b.dataset.tvgold; save(); renderTownBar(); }
+    else if (b.dataset.tvgold) { if (b.dataset.tvgold === 'skulls') { profile.skulls = (profile.skulls || 0) + 1000; save(); renderTownBar(); return renderTestVendor(); } if (b.dataset.tvgold === 'pet') { const ks = Object.keys(DATA.enemies).filter(k => window.CB_MOBS && CB_MOBS.has(k) && !CBHub.own(profile).pets.includes(k)); if (ks.length) CBHub.grantPet(profile, ks[Math.floor(Math.random() * ks.length)]); save(); return renderTestVendor(); } if (b.dataset.tvgold === 'tokens') { profile.rerollTokens = (profile.rerollTokens || 0) + 10; toast(`+10 Reroll Tokens (${profile.rerollTokens}).`); save(); return renderTestVendor(); } if (b.dataset.tvgold === 'clear') { profile.gold = 0; toast('Bank emptied: 0 gold.'); } else profile.gold += +b.dataset.tvgold; save(); renderTownBar(); }
     renderTestVendor();
   });
 
@@ -13793,18 +13851,18 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   }
   // a rider and mount, drawn in the right order (the town calls this instead of drawChar while mounted)
   function drawRider(g, cx, by, dir, phase, pal, s, t, kind, blanket) {
-    if (window.CB_HEROPUP && CB_HEROPUP.ride(g, pal, cx, by, dir, !!phase, s, t)) return; // Nov 12: the pixel horse and rider (src/heropup.js)
+    if (window.CB_HEROPUP && CB_HEROPUP.ride(g, pal, cx, by, dir, !!phase, s, t, kind)) return; // Nov 12: the pixel horse and rider (src/heropup.js)
     drawMount(g, cx, by, dir, phase, s, 'back', kind, blanket);
     drawChar(g, cx, by - MOUNT_RISE * s, dir, 0, pal, s, t);
     drawMount(g, cx, by, dir, phase, s, 'front', kind, blanket);
   }
   function toggleMount() {
     if ($('scrStart').hidden || (typeof BZ !== 'undefined' && BZ.open)) return;
-    P.mount = P.mount ? null : 'horse'; settings.mount = P.mount; saveSettings();
-    if (typeof sysChat === 'function') sysChat(P.mount ? 'You mount your horse (225% speed). Press M to get down.' : 'You get down from your horse.');
+    P.mount = P.mount ? null : ((typeof exApp === 'function' && exApp().mount) || 'horse'); settings.mount = P.mount; saveSettings();
+    if (typeof sysChat === 'function') sysChat(P.mount ? 'You mount up (225% speed). Press M to get down.' : 'You get down from your mount.');
     if (typeof retrack === 'function') retrack(true);
   }
-  setTimeout(() => { try { if (settings.mount && MOUNTS[settings.mount]) P.mount = settings.mount; } catch (e) {} }, 0); // you stay mounted between sessions
+  setTimeout(() => { try { if (settings.mount) P.mount = (typeof exApp === 'function' && exApp().mount) || 'horse'; } catch (e) {} }, 0); // you stay mounted between sessions
 
   // ---------- Achievements and titles (Nov 2): the list (Menu, or the button on the character sheet), the unlock banner, and the
   // title picker on the character sheet (C). Definitions and checks are in src/hub.js (ACH, achCheck).
@@ -13845,6 +13903,392 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   }
   document.addEventListener('change', (ev) => { const s = ev.target.closest('[data-titlepick]'); if (!s) return; CBHub.setTitle(profile, heroKey, s.value || null); save(); if (typeof retrack === 'function') retrack(true); });
   document.addEventListener('click', (ev) => { if (ev.target.closest('[data-achopen]')) openAchievements(); });
+
+  // ---------- Extras (Nov 13): Skull Tokens and the Shop (mounts, auras, wings, weapon skins, card borders, dyes, bags), the Wardrobe,
+  // pets, bags and bank bags, the stats sheet, the tabbed Menu and the town's action bar. Account-wide things live on the profile
+  // (profile.skulls, profile.own via CBHub.own, profile.bags, profile.bankBags); what a hero wears is on its appearance (char.app.cos,
+  // char.app.dye, char.app.mount), which other players already receive, so they see it too.
+  // TO REMOVE: delete this file and its line in build.js; the hooks elsewhere all check for window.CB_COS or typeof exXxx first.
+  const EX = { menu: 'game', shop: 'mounts', bankF: 'All', bankQ: '', dyeCol: null };
+  const exOwn = () => CBHub.own(profile);
+  const exSk = () => profile.skulls || 0;
+  const exApp = () => { const c = profile.chars[heroKey]; if (!c) return { cos: {}, dye: {} }; c.app = c.app || {}; c.app.cos = c.app.cos || {}; c.app.dye = c.app.dye || {}; return c.app; };
+  const EX_MOUNTS = [['horse', 'Emberwatch Horse', 0, 'The steady brown horse every hero starts with.'], ['wolf', 'Dire Wolf', 400, 'A shaggy grey wolf the size of a pony.'], ['boar', 'War Boar', 400, 'Tusks first, questions never.'],
+    ['stag', 'Great Stag', 500, 'A forest lord with mossy antlers.'], ['panther', 'Shadow Panther', 600, 'Silent, black, and violet-eyed.'], ['bear', 'War Bear', 600, 'A brown bear in steel barding.'],
+    ['sabertooth', 'Frost Sabertooth', 800, 'White fur, blue stripes, very long teeth.'], ['bonesteed', 'Bone Steed', 1000, 'It stopped needing oats a long time ago.'], ['nightmare', 'Nightmare', 1200, 'A black horse with a mane of fire.'], ['slug', 'Molten Slug', 1500, 'Slow to anger. Fast downhill.']];
+  // cosmetics: [key, name, price, kind, how it is drawn]
+  const EX_COS = [
+    ['aura_fire', 'Burning Aura', 500, 'aura', { fx: 'flame', at: 'f', back: 1, z: 1.05 }], ['aura_frost', 'Frostfire Aura', 500, 'aura', { fx: 'flame', at: 'f', back: 1, z: 1.05, tint: 'hue-rotate(170deg)' }],
+    ['aura_fel', 'Felfire Aura', 500, 'aura', { fx: 'flame', at: 'f', back: 1, z: 1.05, tint: 'hue-rotate(75deg)' }], ['aura_arcane', 'Arcane Blaze', 500, 'aura', { fx: 'flame', at: 'f', back: 1, z: 1.05, tint: 'hue-rotate(250deg)' }],
+    ['aura_void', 'Void Shroud', 600, 'aura', { fx: 'shadow', at: 'f', back: 1, z: 1.45 }], ['aura_smoke', 'Black Smoke', 600, 'aura', { fx: 'shadow', at: 'f', back: 1, z: 1.45, tint: 'grayscale(1) brightness(.42)' }],
+    ['aura_holy', 'Radiance', 600, 'aura', { fx: 'holy', at: 'c', back: 1, z: 1.7 }], ['aura_souls', 'Circling Souls', 800, 'aura', { fx: 'souls', at: 'c', z: 2.2 }], ['aura_motes', 'Arcane Motes', 400, 'aura', { fx: 'motes', at: 'c', z: 1.9 }],
+    ['aura_storm', 'Crackling Storm', 700, 'aura', { fx: 'arcs', at: 'c', z: 2.1 }], ['aura_butterflies', 'Butterflies', 400, 'aura', { fx: 'butterflies', at: 'c', z: 1.5 }], ['aura_halo', 'Halo of Stars', 400, 'aura', { fx: 'halo', at: 'h', z: 1.6 }],
+    ['trail_fire', 'Fire Footsteps', 500, 'trail', { fx: 'embers', z: 1.5 }], ['trail_frost', 'Frost Footsteps', 500, 'trail', { fx: 'mist', z: 0.55 }], ['trail_shadow', 'Shadow Footsteps', 500, 'trail', { fx: 'mist', z: 0.55, tint: 'hue-rotate(60deg) brightness(.5) saturate(1.6)' }],
+    ['trail_blood', 'Bloody Footsteps', 500, 'trail', { fx: 'mist', z: 0.5, tint: 'hue-rotate(150deg) saturate(2.2) brightness(.7)' }],
+    ['wings_angel', 'Angel Wings', 1200, 'wings', 0], ['wings_demon', 'Demon Wings', 1200, 'wings', 1], ['wings_dragon', 'Dragon Wings', 1200, 'wings', 2], ['wings_fairy', 'Fairy Wings', 1000, 'wings', 3], ['wings_bone', 'Bone Wings', 1000, 'wings', 4], ['wings_phoenix', 'Phoenix Wings', 1500, 'wings', 5],
+    ['wskin_0', 'Emberfall, the Burning Blade', 900, 'wskin', 0], ['wskin_1', 'Rimeshard', 900, 'wskin', 1], ['wskin_2', 'Voidreaper', 900, 'wskin', 2], ['wskin_3', 'Dawnhammer', 900, 'wskin', 3], ['wskin_4', 'Wyrmcleaver', 900, 'wskin', 4], ['wskin_5', 'Starcaller', 900, 'wskin', 5],
+    ['border_gold', 'Gilded Card Border', 300, 'border', '#e4b04a'], ['border_ember', 'Ember Card Border', 300, 'border', '#ff7a2a'], ['border_frost', 'Frost Card Border', 300, 'border', '#7fd3ff'], ['border_void', 'Void Card Border', 300, 'border', '#a06be0'], ['border_bone', 'Bone Card Border', 300, 'border', '#e8e0cc'], ['border_blood', 'Blood Card Border', 300, 'border', '#c9372f'],
+  ];
+  const EX_COSBY = Object.fromEntries(EX_COS.map(c => [c[0], c]));
+  const EX_KIND = { aura: 'Aura', trail: 'Footsteps', wings: 'Wings', wskin: 'Weapon look', border: 'Card border' };
+  // dyes: the game's own colours (class, element and rarity colours, plus the neutrals)
+  const EX_DYES = [['Ember Red', [201, 71, 47]], ['Blood', [140, 30, 34]], ['Flame Orange', [224, 122, 60]], ['Paladin Gold', [228, 169, 58]], ['Bone', [226, 216, 190]], ['Rogue Green', [100, 178, 91]], ['Moss', [74, 104, 58]], ['Teal', [95, 179, 161]],
+    ['Frost Blue', [127, 211, 255]], ['Mage Blue', [79, 147, 230]], ['Midnight', [44, 52, 96]], ['Warlock Violet', [167, 123, 224]], ['Royal Purple', [104, 62, 150]], ['Rose', [222, 120, 150]], ['Ash Grey', [130, 130, 128]], ['Snow', [240, 240, 236]], ['Pitch Black', [38, 36, 40]], ['Leather Brown', [122, 84, 52]]];
+  const EX_DYE_PRICE = 60, EX_DYE_SLOTS = ['Helm', 'Shoulders', 'Chest', 'Bracers', 'Gloves', 'Belt', 'Pants', 'Boots'];
+  const EX_BAGS = [[20, 300], [30, 600]];
+  const rgb = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
+  { const st = document.createElement('style'); st.textContent = `
+    .skull { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.2em; background: url(img/ui/icons.webp) -3.45em -1.15em / 6.9em 3.45em no-repeat; image-rendering: pixelated; }
+    .skchip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border: 1px solid #5a4a2e; border-radius: 3px; background: rgba(10,9,8,.6); color: #efe6d2; font-weight: 600; }
+    .mnwrap { display: grid; grid-template-columns: 190px 1fr; gap: 18px; min-height: 420px; }
+    .mnnav { display: flex; flex-direction: column; gap: 4px; border-right: 1px solid rgba(214,161,74,.22); padding-right: 14px; }
+    .mnnav button { text-align: left; background: none; border: 1px solid transparent; color: #cfc4ae; font: inherit; font-size: 16px; padding: 7px 10px; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 9px; }
+    .mnnav button:hover { background: rgba(214,161,74,.1); color: #fff; } .mnnav button.on { background: rgba(214,161,74,.16); border-color: rgba(214,161,74,.45); color: #f4d89a; }
+    .mnnav hr { border: 0; border-top: 1px solid rgba(214,161,74,.2); margin: 6px 0; width: 100%; }
+    .mnpane { min-width: 0; } .mnpane .menu { display: flex; flex-direction: column; gap: 8px; max-width: 520px; } .mnpane h3 { margin: 10px 0 4px; }
+    .uic { display: inline-block; width: 24px; height: 24px; flex: none; background: url(img/ui/icons.webp) 0 0 / 144px 72px no-repeat; image-rendering: pixelated; }
+    .shoptabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 10px; } .shoptabs button { background: rgba(10,9,8,.5); border: 1px solid #4a3d28; color: #cfc4ae; font: inherit; padding: 5px 12px; border-radius: 3px; cursor: pointer; } .shoptabs button.on { border-color: #d6a14a; color: #f4d89a; background: rgba(214,161,74,.14); }
+    .shopgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 10px; max-height: 56vh; overflow: auto; padding-right: 4px; }
+    .shopit { border: 1px solid #4a3d28; border-radius: 4px; background: linear-gradient(#1b1814, #12100d); padding: 8px; display: flex; flex-direction: column; gap: 5px; align-items: center; text-align: center; }
+    .shopit.own { border-color: #5f7a4a; } .shopit.worn { border-color: #d6a14a; box-shadow: 0 0 0 1px rgba(214,161,74,.4) inset; }
+    .shopit b { color: #f0e6d0; font-size: 15px; line-height: 1.15; } .shopit small { color: #9d927e; font-size: 12px; line-height: 1.25; min-height: 2.4em; }
+    .shopit .pv { width: 128px; height: 104px; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 80%, rgba(214,161,74,.16), transparent 65%); image-rendering: pixelated; overflow: hidden; }
+    .shopit .pv canvas { image-rendering: pixelated; } .shopit .pv i.sw { width: 54px; height: 54px; border-radius: 50%; border: 3px solid #0b0a08; box-shadow: 0 0 0 2px rgba(255,255,255,.18) inset; }
+    .shopit .price { display: inline-flex; gap: 4px; align-items: center; color: #efe6d2; font-weight: 600; }
+    .wardrow { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: center; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+    .wardrow > span { color: #b9ad96; } .wardrow select { max-width: 100%; }
+    .dyerow { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; } .dyerow button { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #0b0a08; cursor: pointer; padding: 0; position: relative; } .dyerow button.on { outline: 2px solid #f4d89a; }
+    .dyerow button em { position: absolute; right: -5px; bottom: -6px; font: 600 10px/1 sans-serif; font-style: normal; color: #fff; background: #0b0a08; border-radius: 6px; padding: 1px 3px; }
+    .dyeslots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 6px; } .dyeslots button { font: inherit; font-size: 13px; padding: 5px 4px; border: 1px solid #4a3d28; border-radius: 3px; background: rgba(10,9,8,.5); color: #d8cdb8; cursor: pointer; display: flex; gap: 5px; align-items: center; justify-content: center; }
+    .dyeslots button i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #000; }
+    .bagbar { display: flex; gap: 6px; align-items: center; margin: 0 0 8px; flex-wrap: wrap; } .bagbar > span { color: #b9ad96; font-size: 13px; }
+    .bagslot { width: 46px; height: 46px; border: 1px solid #4a3d28; border-radius: 4px; background: rgba(10,9,8,.55); display: grid; place-items: center; position: relative; cursor: pointer; padding: 0; color: #6f6654; font-size: 20px; }
+    .bagslot.full { border-color: var(--rc, #d6a14a); } .bagslot em { position: absolute; right: 2px; bottom: 1px; font: 600 11px/1 sans-serif; font-style: normal; color: #fff; text-shadow: 0 1px 0 #000, 0 0 3px #000; }
+    .bagic { display: block; width: 40px; height: 40px; background: url(img/ui/icons.webp) 0 -80px / 240px 120px no-repeat; image-rendering: pixelated; }
+    .statsheet { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+    .statbox { border: 1px solid #4a3d28; border-radius: 4px; background: rgba(10,9,8,.45); padding: 8px 10px; } .statbox h4 { margin: 0 0 6px; font-size: 17px; color: #f4d89a; letter-spacing: .02em; }
+    .statbox table { width: 100%; border-collapse: collapse; font-size: 14px; } .statbox th { text-align: right; font-weight: 500; color: #8f8674; font-size: 12px; padding: 0 0 3px 8px; } .statbox th:first-child { text-align: left; padding-left: 0; }
+    .statbox td { padding: 2.5px 0 2.5px 8px; text-align: right; color: #a79c86; font-variant-numeric: tabular-nums; border-top: 1px solid rgba(255,255,255,.05); } .statbox td:first-child { text-align: left; color: #d8cdb8; padding-left: 0; } .statbox td.tot { color: #fff; font-weight: 600; } .statbox td.g { color: #9fc98a; } .statbox td.t { color: #b9a3ee; }
+    .statbox ul { margin: 0; padding: 0 0 0 16px; font-size: 13.5px; color: #cfc4ae; } .statbox li { margin: 2px 0; } .statbox li b { color: #f0e6d0; }
+    #actbar { position: absolute; right: 12px; bottom: 46px; z-index: 6; display: flex; gap: 4px; padding: 5px; background: linear-gradient(#211c16, #14110d); border: 1px solid #5a4a2e; border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,.55); }
+    #actbar button { width: 44px; height: 44px; padding: 0; border: 1px solid #3c3222; border-radius: 4px; background: #0e0c0a; cursor: pointer; display: grid; place-items: center; position: relative; }
+    #actbar button:hover { border-color: #d6a14a; background: #1c1710; } #actbar button .uic { width: 36px; height: 36px; background-size: 216px 108px; }
+    #actbar button kbd { position: absolute; right: 2px; bottom: 1px; font: 600 10px/1 sans-serif; color: #f4d89a; text-shadow: 0 1px 0 #000; }
+    #actbar button::after { content: attr(data-tip); position: absolute; bottom: 52px; right: 0; white-space: nowrap; background: #0b0a08; border: 1px solid #5a4a2e; color: #efe6d2; font-size: 13px; padding: 3px 8px; border-radius: 3px; opacity: 0; pointer-events: none; transition: opacity .12s; }
+    #actbar button:hover::after { opacity: 1; }
+    .petfig { position: absolute; left: -34%; bottom: 4%; height: 34%; image-rendering: pixelated; pointer-events: none; filter: drop-shadow(0 2px 0 rgba(0,0,0,.5)); animation: petbob 1.6s ease-in-out infinite; z-index: 1; }
+    @keyframes petbob { 50% { transform: translateY(-4%); } }
+    .bankbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 8px; } .bankbar input[type=search] { flex: 1; min-width: 180px; }
+    .bankbar .shoptabs { margin: 0; }
+    body[data-cardborder] .hand .card, body[data-cardborder] #hand .card { box-shadow: 0 0 0 2px var(--cbord), 0 0 12px -2px var(--cbord); border-radius: 6px; }
+    @media (max-width: 760px) { .mnwrap { grid-template-columns: 1fr; } .mnnav { flex-direction: row; flex-wrap: wrap; border-right: 0; padding-right: 0; } #actbar { flex-wrap: wrap; max-width: 60vw; justify-content: flex-end; } }
+  `; document.head.appendChild(st); }
+  const skHtml = (n) => `<span class="price">${n.toLocaleString()} <i class="skull"></i></span>`;
+  // ---------- drawing what a hero wears for show (called by the puppet for every hero it draws: src/puppet.js draw)
+  const COSM = { shadow: [0, 64, 79, 16, 12, 32, 62, 16], souls: [79, 46, 52, 16, 10, 24, 37, 16], motes: [131, 58, 30, 24, 12, 29, 15, 17], arcs: [191, 43, 49, 12, 12, 21, 26, 12], embers: [240, 38, 48, 12, 12, 16, 43, 12], mist: [288, 107, 36, 16, 10, 57, 20, 9],
+    butterflies: [360, 90, 54, 24, 12, 50, 29, 11], holy: [522, 53, 79, 12, 12, 26, 40, 12], flame: [601, 68, 112, 8, 12, 34, 97, 8], halo: [713, 39, 23, 12, 12, 19, 15, 12] };
+  const cosImg = Object.assign(new Image(), { src: 'img/cos.webp' }), wingImg = Object.assign(new Image(), { src: 'img/hero/wings.webp' });
+  const STAMPS = [];
+  function cosBlit(g, k, t, x, y, z, tint, alpha) {
+    const m = COSM[k]; if (!m || !cosImg.complete || !cosImg.naturalWidth) return; const [ry, fw, fh, n, fps, ax, ay, per] = m, i = Math.floor(t / 1000 * fps) % n;
+    g.save(); g.imageSmoothingEnabled = false; if (tint) g.filter = tint; if (alpha != null) g.globalAlpha *= alpha;
+    g.drawImage(cosImg, (i % per) * fw, ry + Math.floor(i / per) * fh, fw, fh, Math.round(x - ax * z), Math.round(y - ay * z), fw * z, fh * z); g.restore();
+  }
+  window.CB_COS = {
+    // layer 'back' is drawn before the body, 'front' after it
+    draw(g, look, v, anim, t, x, footY, sc, layer) {
+      const c = look && look.cos; if (!c) return; const dead = anim === 'dead';
+      const A = c.aura && EX_COSBY[c.aura] && EX_COSBY[c.aura][4], T = c.trail && EX_COSBY[c.trail] && EX_COSBY[c.trail][4], W = c.wings && EX_COSBY[c.wings];
+      if (layer === 'back' && T && !dead) {   // footsteps: stamped where the hero stands, they linger and fade as the hero walks on
+        const now = performance.now(); let near = false; for (const s of STAMPS) if (s.k === c.trail && Math.abs(s.x - x) + Math.abs(s.y - footY) < 9 * sc && now - s.t0 < 500) { near = true; break; }
+        if (!near) { STAMPS.push({ k: c.trail, x, y: footY, t0: now, sc, g }); if (STAMPS.length > 160) STAMPS.splice(0, 40); }
+        for (let i = STAMPS.length - 1; i >= 0; i--) { const s = STAMPS[i], u = (now - s.t0) / 1100; if (u >= 1) { STAMPS.splice(i, 1); continue; } if (s.k !== c.trail || s.g !== g) continue; if (Math.abs(s.x - x) + Math.abs(s.y - footY) > 420 * sc) continue; cosBlit(g, T.fx, now - s.t0 + i * 90, s.x, s.y, T.z * s.sc * 1.0, T.tint, 1 - u); }
+      }
+      if (W && !dead && wingImg.complete && wingImg.naturalWidth && (layer === 'back') === (v !== 'n')) {
+        const flap = 1 + Math.sin(t / 420) * 0.05, k = sc * 0.95, side = v === 'e' || v === 'w', wx = side ? 0.42 : 1, dir = v === 'w' ? 1 : -1;
+        g.save(); g.imageSmoothingEnabled = false; g.translate(Math.round(x + (side ? dir * 9 * sc : 0)), Math.round(footY - 84 * sc)); g.scale(wx * flap, 1);
+        g.drawImage(wingImg, W[4] * 128, 0, 128, 96, -64 * k, -52 * k, 128 * k, 96 * k); g.restore();
+      }
+      if (A && !dead && (layer === 'back') === !!A.back) {
+        const y = A.at === 'f' ? footY + 2 * sc : A.at === 'h' ? footY - 108 * sc : footY - 56 * sc;
+        cosBlit(g, A.fx, t, x, y, A.z * sc, A.tint, A.back ? 0.92 : 1);
+      }
+    },
+    weapon(look) { const c = look && look.cos; return c && c.wskin != null && EX_COSBY[c.wskin] && look.weapon ? ['legend', EX_COSBY[c.wskin][4]] : null; },
+    dyeOf(look, slot) { const d = look && look.dye && look.dye[slot]; return d != null && EX_DYES[d] ? EX_DYES[d][1] : null; },
+  };
+  function exBorder() { const b = exApp().cos.border, c = b && EX_COSBY[b]; if (c) { document.body.dataset.cardborder = b; document.body.style.setProperty('--cbord', c[4]); } else { delete document.body.dataset.cardborder; } }
+  // ---------- pets: a miniature of a monster (1 in 1000 from a kill on a run). It follows you in town and stands by you in a fight.
+  const petSrc = (k) => { const f = window.CB_MOBS && CB_MOBS.keyOf ? CB_MOBS.keyOf(k) : null; return 'img/mobs/' + (f ? f.k : k) + '_p.webp'; };
+  const petName = (k) => (DATA.enemies[k] ? 'Tiny ' + DATA.enemies[k].name : k);
+  const PETIMG = {}, PETPOS = new Map();
+  function exPetDraw(g, owner, pet, wx, wy, s, t) {   // town: wx, wy = the owner's feet in world pixels
+    if (!pet) return; const im = PETIMG[pet] || (PETIMG[pet] = Object.assign(new Image(), { src: petSrc(pet) })); if (!im.complete || !im.naturalWidth) return;
+    let p = PETPOS.get(owner); if (!p) PETPOS.set(owner, p = { x: wx - 30 * s, y: wy, f: 1, hop: 0 });
+    const tx = wx - 34 * s * p.f, ty = wy + 4 * s, dx = tx - p.x, dy = ty - p.y, d = Math.hypot(dx, dy);
+    if (d > 300 * s) { p.x = tx; p.y = ty; } else if (d > 6 * s) { const k = Math.min(1, 0.09 + d / (900 * s)); p.x += dx * k; p.y += dy * k; if (Math.abs(dx) > 2) p.f = dx > 0 ? 1 : -1; p.hop = t; }
+    const h = 34 * s, w = h * im.naturalWidth / im.naturalHeight, bob = (t - p.hop < 200 ? Math.abs(Math.sin(t / 70)) * 4 : Math.sin(t / 500) * 1.2) * s;
+    g.save(); g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.ellipse(p.x, p.y, w * 0.34, 3.5 * s, 0, 0, Math.PI * 2); g.fill(); g.imageSmoothingEnabled = false;
+    g.translate(p.x, p.y - bob); if (p.f < 0) g.scale(-1, 1); g.drawImage(im, -w / 2, -h, w, h); g.restore();
+  }
+  setInterval(() => {   // a fight: every hero with a pet gets it standing at their side
+    try { if (typeof cb === 'undefined' || !cb || $('scrCombat').hidden) return;
+      for (const a of cb.players) { const u = document.querySelector(`#scrCombat .unit[data-id="${a.id}"] .figure`); if (!u) continue; const app = window.CB_PUP_APP ? CB_PUP_APP(a) : null, pet = app && app.cos && app.cos.pet; let im = u.querySelector('.petfig');
+        if (!pet || a.hp <= 0) { if (im) im.remove(); continue; } if (!im) { im = document.createElement('img'); im.className = 'petfig'; im.alt = ''; im.draggable = false; u.style.position = u.style.position || 'relative'; u.appendChild(im); } const src = petSrc(pet); if (im.dataset.k !== pet) { im.dataset.k = pet; im.src = src; } }
+    } catch (e) {} }, 700);
+  // a pet that dropped on the last run: say so
+  function exPetNews() { const n = profile.newPets; if (!n || !n.length) return; profile.newPets = []; save(); modal(`<h2>A new pet!</h2><p>${n.map(k => `<b>${esc(petName(k))}</b>`).join(', ')} followed you home. One kill in a thousand does that.</p><div style="display:flex;gap:14px;justify-content:center;margin:10px 0">${n.map(k => `<img src="${petSrc(k)}" alt="" style="height:96px;image-rendering:pixelated">`).join('')}</div><p class="muted">Pets are for show: they trot behind you in town and stand by you in a fight. Choose one in your hero window (C), Wardrobe.</p><div class="row"><button class="btn primary" id="mClose">Lovely</button></div>`); $('mClose').onclick = closeModal; }
+  setInterval(() => { try { if (profile && profile.newPets && profile.newPets.length && !$('scrStart').hidden && $('modal').hidden && $('sheet').hidden) exPetNews(); } catch (e) {} }, 2500);
+  // ---------- the Shop
+  function exBuy(price, fn) { if (exSk() < price) return toast(`That costs ${price} Skull Tokens and you have ${exSk()}.`); profile.skulls = exSk() - price; fn(); save(); if (window.CB_AUDIO) CB_AUDIO.sfx('coin'); return true; }
+  function exShopHtml() {
+    const o = exOwn(), app = exApp(), tabs = [['mounts', 'Mounts'], ['aura', 'Auras'], ['trail', 'Footsteps'], ['wings', 'Wings'], ['wskin', 'Weapon looks'], ['border', 'Card borders'], ['dyes', 'Dyes'], ['bags', 'Bags']];
+    let items = '';
+    const tile = (k, pv, name, note, price, owned, worn, extra) => `<div class="shopit ${owned ? 'own' : ''} ${worn ? 'worn' : ''}"><div class="pv">${pv}</div><b>${esc(name)}</b><small>${esc(note || '')}</small>${extra || (owned ? `<button class="btn ${worn ? '' : 'primary'}" data-exwear="${k}">${worn ? 'Take off' : 'Use'}</button>` : `${skHtml(price)}<button class="btn primary" data-exbuy="${k}">Buy</button>`)}</div>`;
+    if (EX.shop === 'mounts') items = EX_MOUNTS.map(([k, n, p, d]) => tile('mount:' + k, `<canvas data-pvmount="${k}" width="128" height="104"></canvas>`, n, d, p, o.mounts.includes(k), (app.mount || 'horse') === k, o.mounts.includes(k) ? `<button class="btn ${(app.mount || 'horse') === k ? '' : 'primary'}" data-exwear="mount:${k}" ${(app.mount || 'horse') === k ? 'disabled' : ''}>${(app.mount || 'horse') === k ? 'Your mount' : 'Ride this'}</button>` : null)).join('');
+    else if (EX.shop === 'dyes') items = EX_DYES.map(([n, c], i) => tile('dye:' + i, `<i class="sw" style="background:${rgb(c)}"></i>`, n + ' Dye', `You have ${o.dyes[i] || 0}. One dye colours one piece of armour.`, EX_DYE_PRICE, false, false, `${skHtml(EX_DYE_PRICE)}<button class="btn primary" data-exbuy="dye:${i}">Buy one</button>`)).join('') + tile('', '<i class="sw" style="background:repeating-linear-gradient(45deg,#777 0 6px,#333 6px 12px)"></i>', 'Dye Remover', 'Free. Take a dye off in your hero window (C), Wardrobe: the armour goes back to its own colours.', 0, false, false, '<span class="muted">Always free</span>');
+    else if (EX.shop === 'bags') items = EX_BAGS.map(([n, p]) => tile('bag:' + n, `<i class="bagic" style="background-position:${-({ 20: 3, 30: 4 }[n]) * 40}px -80px;transform:scale(1.8)"></i>`, CBHub.makeBag(n).name, `${n} more slots. Put it in a bag slot (your bags, or the bank's).`, p, false, false, `${skHtml(p)}<button class="btn primary" data-exbuy="bag:${n}">Buy</button>`)).join('') + `<div class="shopit"><div class="pv"><i class="bagic" style="transform:scale(1.8)"></i></div><b>Smaller bags</b><small>5, 10, 15 and 20-slot bags drop from monsters. Deeper maps drop bigger bags.</small></div>`;
+    else items = EX_COS.filter(c => c[3] === EX.shop).map(([k, n, p, kind, d]) => tile(k, kind === 'border' ? `<i class="sw" style="border-radius:6px;width:60px;height:84px;background:#1a1612;box-shadow:0 0 0 3px ${d},0 0 16px ${d}"></i>` : `<canvas data-pvcos="${k}" width="128" height="104"></canvas>`, n, EX_KIND[kind], p, o.cos.includes(k), app.cos[kind] === k)).join('');
+    return `<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><h2 style="margin:0">The Skull Shop</h2><span class="skchip">${exSk().toLocaleString()} <i class="skull"></i> Skull Tokens</span><span class="muted" style="font-size:13px">Everything here is for show, except bags. Bought once, shared by all your heroes.</span></div>
+      <div class="shoptabs">${tabs.map(([k, n]) => `<button class="${EX.shop === k ? 'on' : ''}" data-exshop="${k}">${n}</button>`).join('')}</div><div class="shopgrid">${items}</div>`;
+  }
+  // previews: a little canvas per tile, drawn in one loop while the shop or wardrobe is on screen
+  function exPreviews() {
+    const t = performance.now();
+    for (const cv of document.querySelectorAll('canvas[data-pvmount]')) { const k = cv.dataset.pvmount, g = cv.getContext('2d'), im = window.CB_PUPPET && CB_PUPPET.img(k === 'horse' ? 'horse' : 'mounts/' + k); g.clearRect(0, 0, 128, 104); if (im) { g.imageSmoothingEnabled = false; g.drawImage(im, (1 + Math.floor(t / 110) % 6) * 128, 128, 128, 128, 0, -18, 128, 128); } }
+    for (const cv of document.querySelectorAll('canvas[data-pvcos]')) { const c = EX_COSBY[cv.dataset.pvcos], g = cv.getContext('2d'); g.clearRect(0, 0, 128, 104); if (!c) continue;
+      const L = Object.assign({}, exLook(), { cos: { [c[3]]: c[0] } }); if (c[3] === 'wskin' && !L.weapon) L.weapon = ['sword2h', 0];
+      if (window.CB_PUPPET) CB_PUPPET.draw(g, L, c[3] === 'wings' ? 's' : 'e', c[3] === 'trail' ? 'walk' : 'idle', t, 64, 98, 0.78); }
+  }
+  function exLook() { const c = profile.chars[heroKey]; return c && window.CB_HEROPUP ? CB_HEROPUP.lookOf('me', c.cls, c.gear) : {}; }
+  setInterval(() => { if (document.querySelector('canvas[data-pvmount], canvas[data-pvcos]')) exPreviews(); }, 90);
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-exshop], [data-exbuy], [data-exwear]'); if (!b || !profile) return; const o = exOwn(), app = exApp();
+    if (b.dataset.exshop) { EX.shop = b.dataset.exshop; return exRefresh(); }
+    if (b.dataset.exbuy) { const [kind, id] = b.dataset.exbuy.includes(':') ? b.dataset.exbuy.split(':') : ['cos', b.dataset.exbuy];
+      if (kind === 'mount') { const m = EX_MOUNTS.find(x => x[0] === id); if (m && exBuy(m[2], () => { o.mounts.push(id); app.mount = id; })) { if (typeof P !== 'undefined' && P.mount) P.mount = id; } }
+      else if (kind === 'dye') exBuy(EX_DYE_PRICE, () => { o.dyes[id] = (o.dyes[id] || 0) + 1; });
+      else if (kind === 'bag') { const n = +id, bg = EX_BAGS.find(x => x[0] === n); if (profile.stash.length >= CBHub.STASH_MAX) return toast('Your bags are full: make room for the new bag first.'); if (bg) exBuy(bg[1], () => profile.stash.unshift(Object.assign({ id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, CBHub.makeBag(n)))); }
+      else { const c = EX_COSBY[id]; if (c && !o.cos.includes(id)) exBuy(c[2], () => { o.cos.push(id); app.cos[c[3]] = id; }); }
+      exBorder(); if (typeof retrack === 'function') retrack(true); return exRefresh(); }
+    if (b.dataset.exwear) { const id = b.dataset.exwear; if (id.startsWith('mount:')) { app.mount = id.slice(6); if (typeof P !== 'undefined' && P.mount) P.mount = app.mount; } else { const c = EX_COSBY[id]; if (c) app.cos[c[3]] = app.cos[c[3]] === id ? null : id; }
+      save(); exBorder(); if (typeof retrack === 'function') retrack(true); return exRefresh(); }
+  });
+  function exRefresh() { if (!$('modal').hidden && $('modalBox').querySelector('.mnwrap')) exMenu(EX.menu); if (!$('sheet').hidden) renderHub(); if (typeof renderTownBar === 'function') renderTownBar(); }
+  // ---------- the Wardrobe (hero window): mount, pet, aura, footsteps, wings, weapon look, card border, and dyes for each piece of armour
+  function exWardrobeHtml(c) {
+    const o = exOwn(), app = exApp(), cos = app.cos;
+    const sel = (kind, label) => { const have = EX_COS.filter(x => x[3] === kind && o.cos.includes(x[0])); return `<div class="wardrow"><span>${label}</span><select data-exsel="${kind}"><option value="">None</option>${have.map(x => `<option value="${x[0]}" ${cos[kind] === x[0] ? 'selected' : ''}>${esc(x[1])}</option>`).join('')}</select></div>`; };
+    const dyes = EX_DYES.map(([n, col], i) => [n, col, i, o.dyes[i] || 0]).filter(d => d[3] > 0);
+    return `<div class="gearwrap" style="grid-template-columns:1fr"><div>
+      <p class="muted" style="font-size:12.5px;margin:0 0 6px">Everything here is for show and other players see it. Buy more in the Shop (Menu, or the skull button in town). You have <b style="color:#efe6d2">${exSk().toLocaleString()}</b> <i class="skull"></i>.</p>
+      <div class="wardrow"><span>Mount</span><select data-exsel="mount">${EX_MOUNTS.filter(m => o.mounts.includes(m[0])).map(m => `<option value="${m[0]}" ${(app.mount || 'horse') === m[0] ? 'selected' : ''}>${esc(m[1])}</option>`).join('')}</select></div>
+      <div class="wardrow"><span>Pet</span><select data-exsel="pet"><option value="">None</option>${o.pets.map(k => `<option value="${k}" ${cos.pet === k ? 'selected' : ''}>${esc(petName(k))}</option>`).join('')}</select></div>
+      ${o.pets.length ? '' : '<p class="muted" style="font-size:12.5px;margin:2px 0 4px 118px">No pets yet. Any monster you kill on a run has a 1 in 1000 chance to follow you home as a tiny pet.</p>'}
+      ${sel('aura', 'Aura')}${sel('trail', 'Footsteps')}${sel('wings', 'Wings')}${sel('wskin', 'Weapon look')}${sel('border', 'Card border')}
+      <h3 style="font-size:18px;margin:12px 0 4px;color:var(--accent)">Dyes</h3>
+      ${dyes.length ? `<div class="dyerow">${dyes.map(([n, col, i, cnt]) => `<button type="button" class="${EX.dyeCol === i ? 'on' : ''}" data-exdyepick="${i}" style="background:${rgb(col)}" title="${esc(n)}: you have ${cnt}"><em>${cnt}</em></button>`).join('')}<button type="button" class="${EX.dyeCol === -1 ? 'on' : ''}" data-exdyepick="-1" style="background:repeating-linear-gradient(45deg,#777 0 4px,#333 4px 8px)" title="Dye remover (free)"></button><span class="muted" style="font-size:12.5px">${EX.dyeCol == null ? 'Pick a dye, then a piece of armour.' : EX.dyeCol === -1 ? 'Dye remover: click a dyed piece.' : `<b>${esc(EX_DYES[EX.dyeCol][0])}</b>: click a piece to dye it (uses one).`}</span></div>` : '<p class="muted" style="font-size:12.5px;margin:0">You have no dyes. Buy them in the Shop, then colour any piece of armour you are wearing.</p>'}
+      <div class="dyeslots">${EX_DYE_SLOTS.map(sl => { const worn = c.gear.find(g => g.slot === sl), d = app.dye[sl]; return `<button type="button" data-exdyeslot="${sl}" ${worn ? '' : 'disabled style="opacity:.4"'} title="${worn ? esc(worn.name) : 'Nothing worn'}">${d != null && EX_DYES[d] ? `<i style="background:${rgb(EX_DYES[d][1])}"></i>` : ''}${sl}</button>`; }).join('')}</div>
+      <p class="muted" style="font-size:12px;margin:6px 0 0">A dye stays on the slot, so it carries over when you swap that piece for another.</p></div></div>`;
+  }
+  document.addEventListener('change', (ev) => { const s = ev.target.closest('[data-exsel]'); if (!s || !profile) return; const app = exApp(), k = s.dataset.exsel; if (k === 'mount') { app.mount = s.value || 'horse'; if (typeof P !== 'undefined' && P.mount) P.mount = app.mount; } else app.cos[k] = s.value || null; save(); exBorder(); if (typeof retrack === 'function') retrack(true); renderHub(); });
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-exdyepick], [data-exdyeslot]'); if (!b || !profile) return; const o = exOwn(), app = exApp();
+    if (b.dataset.exdyepick) { const i = +b.dataset.exdyepick; EX.dyeCol = EX.dyeCol === i ? null : i; return renderHub(); }
+    const sl = b.dataset.exdyeslot; if (EX.dyeCol == null) return toast('Pick a dye colour first (or the remover).');
+    if (EX.dyeCol === -1) { if (app.dye[sl] == null) return; delete app.dye[sl]; }
+    else { if (app.dye[sl] === EX.dyeCol) return; if (!(o.dyes[EX.dyeCol] > 0)) { EX.dyeCol = null; return renderHub(); } o.dyes[EX.dyeCol]--; app.dye[sl] = EX.dyeCol; if (!o.dyes[EX.dyeCol]) EX.dyeCol = null; }
+    save(); if (typeof retrack === 'function') retrack(true); renderHub();
+  });
+  // ---------- bags: the row of bag slots above your bags, and above the bank
+  function exBagBar(where) {
+    const list = where === 'bank' ? (profile.bankBags = profile.bankBags || []) : (profile.bags = profile.bags || []), n = where === 'bank' ? CBHub.BANK_BAG_SLOTS : CBHub.BAG_SLOTS, base = where === 'bank' ? CBHub.BANK_BASE : CBHub.BAG_BASE;
+    const col = { 5: 0, 10: 1, 15: 2, 20: 3, 30: 4 };
+    let h = `<div class="bagbar"><span>${where === 'bank' ? 'Bank' : 'Bag'} slots</span>`;
+    for (let i = 0; i < n; i++) { const b = list[i]; h += b ? `<button type="button" class="bagslot full" style="--rc:${RC[b.rarity] || '#d6a14a'}" data-exunbag="${where}:${i}" title="${esc(b.name)}: ${b.bag} slots. Click to take it out."><i class="bagic" style="background-position:${-(col[b.bag] || 0) * 40}px -80px"></i><em>${b.bag}</em></button>` : `<button type="button" class="bagslot" data-exbagslot="${where}" title="Empty bag slot. Click to put a bag from your bags in here.">+</button>`; }
+    return h + `<span>${base} + ${list.reduce((t, b) => t + (b ? b.bag : 0), 0)} from bags</span></div>`;
+  }
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-exunbag], [data-exbagslot], [data-exbagput]'); if (!b || !profile) return; let r = null;
+    if (b.dataset.exunbag) { const [w, i] = b.dataset.exunbag.split(':'); r = CBHub.unequipBag(profile, w, +i); }
+    else if (b.dataset.exbagput) { const [w, id] = b.dataset.exbagput.split(':'); r = CBHub.equipBag(profile, id, w); closeModal(); }
+    else { const w = b.dataset.exbagslot, bags = profile.stash.filter(x => x.bag); if (!bags.length) return toast('You have no spare bag. Bags drop from monsters (bigger ones on deeper maps) and the Shop sells 20 and 30-slot bags.');
+      if (bags.length === 1) r = CBHub.equipBag(profile, bags[0].id, w); else { modal(`<h2>Which bag?</h2><div class="list" style="max-height:340px">${bags.map(x => itemHtml(x, `<div class="acts"><button class="btn primary" data-exbagput="${w}:${x.id}">Put it in</button></div>`)).join('')}</div><div class="row"><button class="btn" id="mClose">Cancel</button></div>`); $('mClose').onclick = closeModal; return; } }
+    if (r && !r.ok) return toast(r.why); save(); renderHub(); if (!$('hpBank').hidden) renderBank();
+  });
+  // ---------- the bank: its own bag slots, a filter by kind of item and a search (names, stats and bonuses)
+  const BANK_F = [['All', null], ['Weapons', /^(Weapon|Off-hand)$/], ['Helm', /^Helm$/], ['Shoulders', /^Shoulders$/], ['Chest', /^Chest$/], ['Arms', /^(Bracers|Gloves)$/], ['Belt', /^Belt$/], ['Legs', /^(Pants|Boots)$/], ['Jewelry', /^(Ring|Ring 1|Ring 2|Amulet)$/], ['Cloak', /^Cloak$/], ['Codex', /^Codex$/], ['Bags', /^Bag$/]];
+  const itemText = (it) => [it.name, it.slot, it.label, it.rarity, it.arch, it.passive, ...Object.keys(it.stats || {}), ...Object.keys(it.imp2 || {}), ...(it.lines || []).map(l => l.stat)].filter(Boolean).join(' ').replace(/Elemental\/Holy Damage:/g, '').replace(/Resistance:(\w+)/g, '$1 Resistance').toLowerCase();
+  function exBankMatch(it) { const f = BANK_F.find(x => x[0] === EX.bankF); if (f && f[1] && !f[1].test(it.slot || '')) return false; const q = EX.bankQ.trim().toLowerCase(); return !q || q.split(/\s+/).every(w => itemText(it).includes(w)); }
+  renderBank = function () {
+    const c = profile.chars[heroKey], v = profile.vault = profile.vault || [], st = profile.stash.filter(x => x.kind !== 'card');
+    const col = (list, btn, lbl, max) => { const show = list.filter(exBankMatch); return `<div><h3>${lbl} <span class="muted">${list.length} / ${max}${show.length !== list.length ? ` &middot; showing ${show.length}` : ''}</span></h3>${exBagBar(btn === 'tovault' ? 'bags' : 'bank')}<div class="list tall">${show.map(it => itemHtml(it, `<div class="acts"><button class="btn" data-${btn}="${it.id}">${btn === 'tovault' ? 'To bank &#9654;' : '&#9664; To bags'}</button></div>`)).join('') || `<p class="muted">${list.length ? 'Nothing matches.' : 'Empty.'}</p>`}</div></div>`; };
+    const foc = document.activeElement && document.activeElement.id === 'bankQ', pos = foc ? document.activeElement.selectionStart : 0;
+    $('hpBank').innerHTML = `<p class="savenote" style="margin:0 0 8px">Your <b>bags</b> are what you carry between runs; the <b>bank</b> keeps the rest safe. Both are shared by all your ${c && c.hardcore ? 'Hardcore' : 'normal'} heroes, and both grow when you put bags in their bag slots. Gear in the bank can't be equipped, salvaged or traded until you take it out.</p>
+      <div class="bankbar"><input type="search" id="bankQ" placeholder="Search by name or stat: fire resistance, crit, strength..." value="${esc(EX.bankQ)}" autocomplete="off"><div class="shoptabs">${BANK_F.map(([n]) => `<button class="${EX.bankF === n ? 'on' : ''}" data-bankf="${n}">${n}</button>`).join('')}</div></div>
+      <div class="bankcols">${col(st, 'tovault', 'Bags', CBHub.STASH_MAX)}${col(v, 'fromvault', 'Bank', CBHub.VAULT_MAX)}</div>`;
+    if (foc) { const q = $('bankQ'); q.focus(); try { q.setSelectionRange(pos, pos); } catch (e) {} }
+  };
+  $('hpBank').addEventListener('input', (ev) => { if (ev.target.id === 'bankQ') { EX.bankQ = ev.target.value; renderBank(); } });
+  $('hpBank').addEventListener('click', (ev) => { const b = ev.target.closest('[data-bankf]'); if (b) { EX.bankF = b.dataset.bankf; renderBank(); } });
+  // ---------- the stats sheet: every number your hero takes into a fight, and where it comes from (gear, talents)
+  function exStatsHtml(c) {
+    const o = CBHub.runOpts(profile, heroKey), mk = (gear, talents) => { try { return new CB.Combat({ party: [{ cls: c.cls, name: c.name, gear, deck: o.deck, talents }], enemies: ['training_dummy'], practice: true, seed: 7, data: DATA }).players[0]; } catch (e) { return null; } };
+    const full = mk(o.gear, o.talents), noTal = mk(o.gear, null), bare = mk([], null); if (!full || !noTal || !bare) return '<p class="muted">Stats are not available right now.</p>';
+    const num = (p, k) => k.startsWith('resist:') ? (p.resist[k.slice(7)] || 0) : k === 'critMult' ? Math.round((p.critMult || 0) * 100) : (p[k] || 0);
+    const row = (label, k, unit) => { const t = num(full, k), g = num(noTal, k) - num(bare, k), tl = t - num(noTal, k), b = num(bare, k); const f = (v, plus) => v ? (plus && v > 0 ? '+' : '') + v + (unit || '') : '<span style="opacity:.35">-</span>'; return t || g || tl ? `<tr><td>${label}</td><td>${f(b)}</td><td class="g">${f(g, 1)}</td><td class="t">${f(tl, 1)}</td><td class="tot">${t}${unit || ''}</td></tr>` : ''; };
+    const box = (title, rows) => { const r = rows.map(x => row(...x)).join(''); return r ? `<div class="statbox"><h4>${title}</h4><table><tr><th></th><th>Base</th><th>Gear</th><th>Talents</th><th>Total</th></tr>${r}</table></div>` : ''; };
+    const defW = CBHub.defWord(c) || CLASSES[c.cls].defense;
+    const tl = full.powers.find(p => p.talent), cx = full.powers.find(p => p.codex), tr = o.talents && CB.TALENTS[o.talents.codex];
+    const picked = tr ? (o.talents.picks || []).map((j, i) => j == null ? null : i < 9 ? tr.rows[i] && tr.rows[i][j] : (CARDS[tr.cap[j]] ? { n: CARDS[tr.cap[j]].name + ' (capstone)', t: CARDS[tr.cap[j]].text } : null)).filter(Boolean) : [];
+    const sg = CB.sumGear(o.gear), extra = [['Healing received', sg.healIn], ['Health regained after a fight', sg.healthRegen], ['Luck (better loot)', sg.luck], ['Gold found', sg.goldFind]].filter(x => x[1]);
+    return `<div class="statsheet">
+      ${box('Vitals', [['Max health', 'maxHp'], ['Max mana', 'maxMana'], ['Mana each turn', 'regen'], ['Cards each round', 'draw'], ['Initiative', 'baseInit'], ['Spirit (healing)', 'spirit', '%']])}
+      ${box('Offense', [['Strength (Attack damage)', 'strength', '%'], ['Intelligence (spell damage)', 'intelligence', '%'], ['Weapon damage per hit', 'weaponDmg'], ['Crit chance', 'crit', '%'], ['Crit damage', 'critMult', '%'], ['Multi-hit chance', 'multiHit', '%'], ['Multiplay chance', 'multiplay', '%'], ['Multicast chance', 'multicast', '%'], ['Bleed chance', 'bleedChance', '%'], ['Lifesteal', 'lifesteal', '%'], ['Demon damage', 'demonDmg', '%']])}
+      ${box('Defense', [[`Dexterity (${esc(defW)} gained)`, 'dexterity', '%'], ['Thorns', 'thorns'], ['Recovery', 'recovery'], ['Taunt chance', 'tauntChance', '%'], ['Debuff resistance', 'debuffRes', '%'], ['Reflect', 'reflect', '%']])}
+      ${box('Resistances', CB.ELEMENTS.map(el => [el, 'resist:' + el, '%']))}
+      <div class="statbox"><h4>Codex and talents</h4>${cx ? `<ul><li><b>${esc(cx.name)}</b>: ${esc(cx.text)}</li></ul>` : '<p class="muted" style="margin:0;font-size:13px">No codex worn.</p>'}
+        ${picked.length ? `<ul style="margin-top:6px">${picked.map(t => `<li><b>${esc(t.n)}</b>: ${esc(talentText(t.t, c.cls, c))}</li>`).join('')}</ul>` : '<p class="muted" style="margin:6px 0 0;font-size:13px">No talents picked for the codex you are wearing (N opens the tree).</p>'}</div>
+      ${extra.length ? `<div class="statbox"><h4>Other gear bonuses</h4><table>${extra.map(([n, v]) => `<tr><td>${n}</td><td class="tot">${v}</td></tr>`).join('')}</table></div>` : ''}
+    </div><p class="muted" style="font-size:12px;margin:8px 0 0">Base is your class with nothing on. Talents only count while their codex is worn. Powers and buffs from cards are added during a fight.</p>`;
+  }
+  // ---------- the Menu, in tabs: Game, Settings, Shop, and the reference books
+  const _menu0 = openMenu;
+  const MN_TABS = [['game', 'Game', 11], ['settings', 'Settings', 11], ['shop', 'Skull Shop', 9], null, ['compendium', 'Compendium', 4], ['glossary', 'Glossary', 4], ['guide', 'Build guide', 2], ['ach', 'Achievements', 5], ['records', 'Hall of Records', 5], ['news', "What's new", 7]];
+  const uic = (i) => `<i class="uic" style="background-position:${-(i % 6) * 24}px ${-Math.floor(i / 6) * 24}px"></i>`;
+  function exMenu(tab) {
+    EX.menu = tab || 'game'; const hero = profile && profile.chars[heroKey], onTitle = !$('scrTitle').hidden;
+    _menu0();   // the game's own menu: its buttons keep their handlers when moved into the panes below
+    const old = $('modalBox').querySelector('.menu'); if (!old) return;
+    const game = document.createElement('div'), sets = document.createElement('div'); game.className = sets.className = 'menu'; let to = game;
+    for (const n of [...old.children]) { if (n.tagName === 'H3' && /Settings/.test(n.textContent)) { to = sets; continue; } if (['mnGloss', 'mnGuide', 'mnAch', 'mnRec', 'mClose'].includes(n.id)) continue; to.appendChild(n); }
+    const nav = MN_TABS.filter(t => !t || !((t[0] === 'shop' || t[0] === 'guide' || t[0] === 'ach' || t[0] === 'records') && (!hero || onTitle)) && !(t[0] === 'records' && (typeof run !== 'undefined' && run || typeof cb !== 'undefined' && cb)) && !(t[0] === 'news' && typeof openUpdates !== 'function'))
+      .map(t => t ? `<button type="button" class="${EX.menu === t[0] ? 'on' : ''}" data-mntab="${t[0]}">${uic(t[2])}${t[1]}</button>` : '<hr>').join('');
+    $('modalBox').innerHTML = `<div class="mnwrap"><nav class="mnnav" aria-label="Menu">${nav}<hr><button type="button" class="on" id="mClose" style="margin-top:auto">Resume <span class="muted" style="margin-left:auto;font-size:12px">Esc</span></button></nav><div class="mnpane" id="mnPane"></div></div>`;
+    $('modalBox').classList.add('wide');
+    const pane = $('mnPane'); $('mClose').onclick = closeModal;
+    if (EX.menu === 'settings') { const h = document.createElement('h2'); h.textContent = 'Settings'; pane.appendChild(h); pane.appendChild(sets); }
+    else if (EX.menu === 'shop' && hero) pane.innerHTML = exShopHtml();
+    else { const h = document.createElement('h2'); h.textContent = 'Menu'; pane.appendChild(h); pane.appendChild(game); }
+  }
+  openMenu = function () { exMenu('game'); };
+  document.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-mntab]'); if (!b) return; const k = b.dataset.mntab;
+    if (k === 'compendium') { closeModal(); if (typeof closeTalk === 'function') closeTalk(); return openSheet('codex'); }
+    if (k === 'glossary') return openGlossary();
+    if (k === 'guide') return openGuide();
+    if (k === 'ach') return openAchievements();
+    if (k === 'records') { closeModal(); return openRecords(); }
+    if (k === 'news') { closeModal(); return openUpdates(); }
+    exMenu(k);
+  });
+  function openShop() { if (!profile || !profile.chars[heroKey]) return; exMenu('shop'); }
+  // ---------- the town's action bar (bottom right): every window one click away
+  { const bar = document.createElement('div'); bar.id = 'actbar'; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Quick buttons');
+    const B = [['char', 'Character', 0, 'C'], ['bags', 'Bags', 1, 'B'], ['talents', 'Talents', 2, 'N'], ['deck', 'Deck and cards', 3, ''], ['compendium', 'Compendium', 4, ''], ['ach', 'Achievements', 5, ''], ['pvp', 'Arena (PvP)', 6, ''], ['lfg', 'Group finder', 7, 'L'], ['friends', 'Friends', 8, ''], ['shop', 'Skull Shop', 9, ''], ['mount', 'Mount up', 10, 'M'], ['menu', 'Menu', 11, 'Esc']];
+    bar.innerHTML = B.map(([k, n, i, key]) => `<button type="button" data-act="${k}" data-tip="${n}${key ? ' (' + key + ')' : ''}" aria-label="${n}"><i class="uic" style="background-position:${-(i % 6) * 36}px ${-Math.floor(i / 6) * 36}px"></i>${key && key.length === 1 ? `<kbd>${key}</kbd>` : ''}</button>`).join('');
+    $('scrStart').appendChild(bar);
+    const act = (k) => { if (typeof closeTalk === 'function') closeTalk();
+      if (k === 'char') { GT.tab = 'deck'; openSheet('char'); } else if (k === 'bags') { openSheet('char'); GT.tab = 'stash'; renderHub(); } else if (k === 'talents') openTalents(); else if (k === 'deck') openSheet('deck'); else if (k === 'compendium') openSheet('codex');
+      else if (k === 'ach') openAchievements(); else if (k === 'pvp') openSheet('arena'); else if (k === 'lfg') { if (typeof openLfg === 'function') openLfg(); } else if (k === 'friends') openSheet('friends'); else if (k === 'shop') openShop(); else if (k === 'mount') toggleMount(); else if (k === 'menu') openMenu(); };
+    bar.addEventListener('click', (ev) => { const b = ev.target.closest('[data-act]'); if (b) { act(b.dataset.act); b.blur(); } });
+    document.addEventListener('keydown', (ev) => { if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.target.matches('input, select, textarea') || $('scrStart').hidden || !$('modal').hidden || !$('sheet').hidden || (typeof $('talk') !== 'undefined' && $('talk') && !$('talk').hidden)) return;
+      if (ev.key === 'b' || ev.key === 'B') { ev.preventDefault(); act('bags'); } else if (ev.key === 'l' || ev.key === 'L') { ev.preventDefault(); act('lfg'); } });
+  }
+  setTimeout(() => { try { CBHub.syncCaps(profile); exBorder(); } catch (e) {} }, 0);
+  window.__x = (code) => eval(code); // test hook
+  // ---------- going indoors (Nov 13): most townsfolk work inside. Their spot at the door is the way in: the screen dips to black and
+  // you stand in the room (a painting, img/bg/in_<room>.webp) with them. Walk with A/D, the arrows or a click; Space talks; Esc leaves.
+  const EXIN = { n: null, x: 0.12, dir: 1, tx: null, talkAfter: false, keys: new Set(), img: {}, last: 0, walking: false };
+  { const st = document.createElement('style'); st.textContent = `
+    #interior { position: absolute; inset: 0; background: #070608; overflow: hidden; } #interior canvas { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; cursor: pointer; }
+    #interior .inname { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); font: 600 26px 'Grenze', serif; font-variant: small-caps; letter-spacing: 3px; color: #ffe9b0; text-shadow: 0 2px 0 #000, 0 0 18px rgba(240,150,50,.45); pointer-events: none; white-space: nowrap; }
+    #interior .inhint { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); font-size: 13px; color: #d8cdb8; background: rgba(8,7,6,.72); border: 1px solid rgba(214,161,74,.3); border-radius: 3px; padding: 4px 10px; pointer-events: none; white-space: nowrap; }
+    #interior .inhint kbd, #interior .inleave kbd { font: 600 12px/1 sans-serif; color: #f4d89a; border: 1px solid #5a4a2e; border-radius: 3px; padding: 1px 4px; margin: 0 2px; background: #14110d; }
+    #interior .inleave { position: absolute; left: 12px; top: 12px; }
+    #townWrap.indoors > :not(#interior):not(.talk):not(.chatbox):not(.partypanel):not(#town) { visibility: hidden; }
+  `; document.head.appendChild(st);
+    const d = document.createElement('div'); d.id = 'interior'; d.hidden = true; d.innerHTML = '<canvas id="inCv" aria-label="Inside the building"></canvas><div class="inname" id="inName"></div><button type="button" class="btn inleave" id="inLeave">&#9664; Leave <kbd>Esc</kbd></button><div class="inhint" id="inHint"></div>';
+    $('townWrap').insertBefore(d, $('prompt')); }
+  const exInside = () => !!EXIN.n;
+  function exDoor(g, cx, by, s, t) {   // outdoors: a warm glow on the step and a bouncing arrow where the townsperson used to stand
+    const b = Math.sin(t / 260) * 3 * s; g.save();
+    const gr = g.createRadialGradient(cx, by - 4 * s, 2, cx, by - 4 * s, 26 * s); gr.addColorStop(0, 'rgba(255,196,110,.5)'); gr.addColorStop(1, 'rgba(255,196,110,0)'); g.fillStyle = gr; g.beginPath(); g.ellipse(cx, by - 4 * s, 26 * s, 11 * s, 0, 0, Math.PI * 2); g.fill();
+    g.translate(cx, by - 34 * s + b); g.fillStyle = '#0b0907'; g.beginPath(); g.moveTo(-9 * s, -8 * s); g.lineTo(9 * s, -8 * s); g.lineTo(0, 6 * s); g.closePath(); g.fill();
+    g.fillStyle = '#f4c869'; g.beginPath(); g.moveTo(-6 * s, -6 * s); g.lineTo(6 * s, -6 * s); g.lineTo(0, 3 * s); g.closePath(); g.fill(); g.restore();
+  }
+  function exEnter(n) {
+    if (!n || !n.inside) return; if (typeof closeTalk === 'function') closeTalk();
+    const im = EXIN.img[n.inside] || (EXIN.img[n.inside] = Object.assign(new Image(), { src: 'img/bg/in_' + n.inside + '.webp' }));
+    veil(n.place, n.name, () => { EXIN.n = n; EXIN.x = 0.12; EXIN.dir = 1; EXIN.tx = null; EXIN.keys.clear(); $('inName').textContent = n.place; $('interior').hidden = false; $('townWrap').classList.add('indoors'); $('prompt').hidden = true; exInHint(); if (window.CB_AUDIO) CB_AUDIO.sfx('door'); requestAnimationFrame(exInFrame); });
+  }
+  function exLeave() { if (!EXIN.n) return; const n = EXIN.n; if (typeof closeTalk === 'function') closeTalk(); veil('Emberwatch', '', () => { EXIN.n = null; $('interior').hidden = true; $('townWrap').classList.remove('indoors'); if (window.CB_AUDIO) CB_AUDIO.sfx('door'); updatePrompt(); $('town').focus({ preventScroll: true }); }); }
+  $('inLeave').onclick = exLeave;
+  const IN_NPCX = 0.7;
+  function exInHint() { const n = EXIN.n; if (!n) return; const near = Math.abs(EXIN.x - IN_NPCX) < 0.13; $('inHint').innerHTML = near ? `<kbd>Space</kbd> Talk to ${esc(n.name)}` : `<kbd>A</kbd><kbd>D</kbd> or click to walk &middot; walk up to ${esc(n.name)} to talk`; }
+  function exInTalk() { const n = EXIN.n; if (!n) return; EXIN.tx = null; EXIN.dir = EXIN.x < IN_NPCX ? 1 : -1; talk(n); }
+  function exInFrame(t) {
+    const n = EXIN.n; if (!n) return; requestAnimationFrame(exInFrame);
+    const cvs = $('inCv'), W = cvs.clientWidth, H = cvs.clientHeight; if (!W || !H) return; const dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (cvs.width !== Math.round(W * dpr)) { cvs.width = Math.round(W * dpr); cvs.height = Math.round(H * dpr); }
+    const dt = Math.min(60, t - (EXIN.last || t)); EXIN.last = t;
+    const busy = !$('talk').hidden || !$('sheet').hidden || !$('modal').hidden; let v = 0;
+    if (!busy) { if (EXIN.keys.has('l')) { v = -1; EXIN.tx = null; } else if (EXIN.keys.has('r')) { v = 1; EXIN.tx = null; } else if (EXIN.tx != null) { const d = EXIN.tx - EXIN.x; if (Math.abs(d) < 0.008) { EXIN.tx = null; if (EXIN.talkAfter) { EXIN.talkAfter = false; exInTalk(); } } else v = d > 0 ? 1 : -1; } }
+    if (v) { EXIN.x = Math.max(0.02, Math.min(0.95, EXIN.x + v * dt * 0.00032)); EXIN.dir = v; if (EXIN.x <= 0.03 && v < 0) { exLeave(); return; } }
+    if (!!v !== EXIN.walking || (t | 0) % 9 === 0) { EXIN.walking = !!v; exInHint(); }
+    const g = cvs.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.imageSmoothingEnabled = false; g.fillStyle = '#070608'; g.fillRect(0, 0, W, H);
+    const im = EXIN.img[n.inside]; let floor = H * 0.9, bx = 0, bw = W;
+    if (im && im.complete && im.naturalWidth) { const k = Math.max(W / im.naturalWidth, H / im.naturalHeight), w = im.naturalWidth * k, h = im.naturalHeight * k; g.drawImage(im, (W - w) / 2, H - h, w, h); floor = H - Math.max(h * 0.2, 150); }
+    const s = Math.max(1.2, H * 0.27 / 96), c = profile.chars[heroKey], hx = bx + bw * EXIN.x, nx = bx + bw * IN_NPCX;
+    const draw = [[floor - 6 * s, () => { if (window.CB_HEROPUP) CB_HEROPUP.npc(g, n.pal, nx, floor - 6 * s, hx < nx ? 'left' : 'right', 0, s, t); }],
+      [floor, () => { if (window.CB_FORGE && CB_FORGE.town && c) CB_FORGE.town(g, c.cls, c.gear, hx, floor, EXIN.dir > 0 ? 'right' : 'left', v ? 1 : 0, s, t, 'me'); const pk = exApp().cos.pet; if (pk) exPetDraw(g, 'me-in', pk, hx, floor, s, t); }]];
+    draw.sort((a, b) => a[0] - b[0]); for (const d of draw) d[1]();
+    // their name over their head
+    g.font = `600 ${Math.round(13 * Math.min(1.6, s / 1.6))}px 'Inter', sans-serif`; g.textAlign = 'center'; g.lineWidth = 3; g.strokeStyle = 'rgba(0,0,0,.85)'; g.fillStyle = '#f4c869'; g.strokeText(n.name, nx, floor - 112 * s); g.fillText(n.name, nx, floor - 112 * s);
+  }
+  $('inCv').addEventListener('click', (ev) => { if (!EXIN.n) return; const r = $('inCv').getBoundingClientRect(), x = (ev.clientX - r.left) / r.width; if (Math.abs(x - IN_NPCX) < 0.07) { EXIN.tx = IN_NPCX + (EXIN.x < IN_NPCX ? -0.09 : 0.09); EXIN.talkAfter = true; } else { EXIN.tx = Math.max(0.0, Math.min(0.95, x)); EXIN.talkAfter = false; } });
+  // keys while indoors: caught before the town sees them, so the hero outside stays put
+  { const KD = { a: 'l', A: 'l', ArrowLeft: 'l', d: 'r', D: 'r', ArrowRight: 'r' };
+    document.addEventListener('keydown', (ev) => { if (!EXIN.n || ev.target.matches('input, select, textarea') || !$('modal').hidden || !$('sheet').hidden || !$('talk').hidden) return;
+      if (KD[ev.key]) { EXIN.keys.add(KD[ev.key]); ev.preventDefault(); ev.stopImmediatePropagation(); return; }
+      if (ev.key === 'Escape') { ev.preventDefault(); ev.stopImmediatePropagation(); ev.cbHandled = true; return exLeave(); }
+      if (ev.key === ' ' || ev.key === 'Enter' || ev.key === 'e' || ev.key === 'E') { ev.preventDefault(); ev.stopImmediatePropagation(); if (Math.abs(EXIN.x - IN_NPCX) < 0.13) exInTalk(); return; }
+      if (['w', 'W', 's', 'S', 'ArrowUp', 'ArrowDown', 'm', 'M'].includes(ev.key)) { ev.preventDefault(); ev.stopImmediatePropagation(); }
+    }, true);
+    document.addEventListener('keyup', (ev) => { if (KD[ev.key]) EXIN.keys.delete(KD[ev.key]); }, true); window.addEventListener('blur', () => EXIN.keys.clear()); }
+  // ---------- the group finder (Nov 13): pin a notice in town (your strength, who you want, what you are doing), read everyone else's
+  const LFG_DO = ['Runs', 'Boss kills', 'Raids', 'Arena duels', 'Trading', 'Anything'];
+  function exLfgMine() { return profile.lfg && profile.lfg.on ? profile.lfg : null; }
+  function exLfgPresence() { const l = exLfgMine(), c = profile.chars[heroKey]; if (!l || !c) return null; return { tx: String(l.tx || '').slice(0, 160), want: (l.want || []).slice(0, 6), doing: l.doing || 'Runs', map: l.map || '', lv: l.lv || 0, pw: CBHub.powerLevel(c), gs: CBHub.gearScore(c), dk: CB.deckLevel(c.deck), n: typeof SOC !== 'undefined' && SOC.party ? SOC.party.members.length : 1 }; }
+  function openLfg() {
+    if (!profile || !profile.chars[heroKey]) return; const c = profile.chars[heroKey], mine = profile.lfg = profile.lfg || { on: false, tx: '', want: [], doing: 'Runs', map: curMap(), lv: profile.last.level || 0 };
+    const on = typeof socOn === 'function' && socOn(), others = on ? [...SOC.others.values()].filter(o => o.lfg) : [];
+    const card = (name, cls, l, me, uid, hc) => `<div class="lfgcard" style="--mc:${CC[cls] || '#d6a14a'}"><div class="lfgtop"><b style="color:${CC[cls] || '#fff'}">${esc(name)}</b><span class="muted">${esc(cls || '')}${hc ? ' &middot; Hardcore' : ''}</span><span class="chip">Power ${l.pw}</span><span class="chip">Gear ${l.gs}</span><span class="chip">Deck ${l.dk}</span><span class="chip">${l.n} in party</span></div>
+        <div class="lfgmid"><span><i>Doing</i> ${esc(l.doing)}${l.map && DATA.maps[l.map] ? ': ' + esc(DATA.maps[l.map].name) + ' level ' + (+l.lv || 0) : ''}</span><span><i>Looking for</i> ${(l.want && l.want.length ? l.want : ['Anyone']).map(w => `<em style="color:${CC[w] || '#efe6d2'}">${esc(w)}</em>`).join(', ')}</span></div>
+        ${l.tx ? `<p>${esc(l.tx)}</p>` : ''}${me ? '' : `<div class="row" style="justify-content:flex-start;margin:6px 0 0"><button class="btn primary" data-lfgw="${esc(name)}">Whisper</button><button class="btn" data-lfginv="${uid}">Invite to party</button></div>`}</div>`;
+    modal(`<h2>The group board</h2>
+      <p class="savenote" style="margin:0 0 8px">Pin a notice and every hero in Emberwatch can read it while you are online. They see your strength, who you are looking for and what you are doing, and can whisper you straight from the board.</p>
+      <div class="lfgform"><div class="lfgrow"><span>Doing</span><select id="lfgDo">${LFG_DO.map(d => `<option ${mine.doing === d ? 'selected' : ''}>${d}</option>`).join('')}</select><select id="lfgMap">${Object.entries(DATA.maps).map(([k, m]) => `<option value="${k}" ${mine.map === k ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select><label>Level <input type="number" id="lfgLv" min="0" max="99" value="${+mine.lv || 0}" style="width:64px"></label></div>
+        <div class="lfgrow"><span>Looking for</span>${Object.keys(CLASSES).map(k => `<label class="lfgchk"><input type="checkbox" data-lfgwant="${k}" ${(mine.want || []).includes(k) ? 'checked' : ''}> <b style="color:${CC[k]}">${k}</b></label>`).join('')}<span class="muted" style="font-size:12px">(none ticked = anyone)</span></div>
+        <textarea id="lfgTx" maxlength="160" rows="2" placeholder="Your notice: what you are doing, when, what you need... (160 letters)">${esc(mine.tx || '')}</textarea>
+        <div class="row" style="justify-content:flex-start"><button class="btn primary" id="lfgPost">${mine.on ? 'Update my notice' : 'Pin my notice'}</button>${mine.on ? '<button class="btn" id="lfgDown">Take it down</button>' : ''}<span class="muted" style="font-size:12.5px">${on ? (mine.on ? 'Your notice is up.' : 'Nothing pinned yet.') : 'Sign in to pin a notice and to read the board.'}</span></div></div>
+      <h3 style="font-size:19px;margin:12px 0 6px;color:var(--accent)">Notices <span class="muted" style="font-size:14px">${others.length + (mine.on && on ? 1 : 0)}</span></h3>
+      <div class="lfglist">${mine.on && on ? card(c.name, c.cls, exLfgPresence(), true) : ''}${others.map(o => card(o.name, o.cls, o.lfg, false, o.uid, o.hc)).join('') || (mine.on && on ? '' : `<p class="muted" style="margin:0">${on ? 'The board is empty. Be the first to pin a notice.' : 'You are playing offline.'}</p>`)}</div>
+      <div class="row"><button class="btn" id="lfgRef">Refresh</button><button class="btn primary" id="mClose">Close</button></div>`);
+    $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal; $('lfgRef').onclick = openLfg;
+    const read = () => { mine.doing = $('lfgDo').value; mine.map = $('lfgMap').value; mine.lv = Math.max(0, Math.min(99, +$('lfgLv').value || 0)); mine.tx = $('lfgTx').value.trim().slice(0, 160); mine.want = [...$('modalBox').querySelectorAll('[data-lfgwant]')].filter(x => x.checked).map(x => x.dataset.lfgwant); };
+    $('lfgPost').onclick = () => { read(); if (!on) return toast('Sign in (Menu) to pin a notice: the board is shared with the other players online.'); mine.on = true; save(); retrack(true); openLfg(); };
+    if ($('lfgDown')) $('lfgDown').onclick = () => { read(); mine.on = false; save(); if (on) retrack(true); openLfg(); };
+    $('modalBox').querySelectorAll('[data-lfgw]').forEach(b => b.onclick = () => { closeModal(); if (exInside()) { /* stay inside; the chat box is always there */ } const i = $('chatIn'); i.value = '/w ' + b.dataset.lfgw + ' '; i.focus(); });
+    $('modalBox').querySelectorAll('[data-lfginv]').forEach(b => b.onclick = () => { if (typeof invite === 'function') { invite(b.dataset.lfginv); b.disabled = true; b.textContent = 'Invited'; } });
+  }
+  { const st = document.createElement('style'); st.textContent = `
+    .lfgform { border: 1px solid #4a3d28; border-radius: 4px; background: rgba(10,9,8,.45); padding: 10px; display: flex; flex-direction: column; gap: 8px; } .lfgform textarea { width: 100%; resize: vertical; font: inherit; }
+    .lfgrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; } .lfgrow > span:first-child { width: 86px; color: #b9ad96; } .lfgchk { display: inline-flex; gap: 4px; align-items: center; }
+    .lfglist { display: flex; flex-direction: column; gap: 8px; max-height: 38vh; overflow: auto; }
+    .lfgcard { border: 1px solid #4a3d28; border-left: 3px solid var(--mc); border-radius: 4px; background: linear-gradient(#1b1814, #12100d); padding: 8px 10px; } .lfgcard p { margin: 6px 0 0; color: #efe6d2; }
+    .lfgtop { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; } .lfgtop b { font-size: 17px; } .lfgmid { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 5px; font-size: 14px; color: #d8cdb8; } .lfgmid i { font-style: normal; color: #8f8674; margin-right: 4px; } .lfgmid em { font-style: normal; font-weight: 600; }
+  `; document.head.appendChild(st); }
 
   let townReturn = false;
 
@@ -14660,7 +15104,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     const c = CBHub.char(profile, heroKey); if (!c || !window.CB_HEROPUP) return;
     modal(`<h3>The mirror</h3><p class="muted" style="margin:0 0 8px">Change how ${esc(c.name || 'your hero')} looks. It costs nothing and you can come back any time.</p><div id="mirrorPick"></div><div class="row"><button class="btn primary" id="mirOk">Keep this look</button><button class="btn" id="mClose">Cancel</button></div>`);
     const pk = CB_HEROPUP.picker($('mirrorPick'), c.cls, c.app); pk.wear(c.gear); $('mClose').onclick = closeModal;
-    $('mirOk').onclick = () => { c.app = pk.get(); save(); closeModal(); document.querySelectorAll('.dpup').forEach(d => { const f = d.querySelector('.pupfig'); if (f) f.outerHTML = CB_HEROPUP.html('doll' + Date.now(), CB_HEROPUP.lookOf({ app: c.app }, c.cls, c.gear), { view: 's', s: 1 }); }); toast('Your new look is saved.'); };
+    $('mirOk').onclick = () => { c.app = Object.assign({}, c.app, pk.get()); save(); closeModal(); document.querySelectorAll('.dpup').forEach(d => { const f = d.querySelector('.pupfig'); if (f) f.outerHTML = CB_HEROPUP.html('doll' + Date.now(), CB_HEROPUP.lookOf({ app: c.app }, c.cls, c.gear), { view: 's', s: 1 }); }); toast('Your new look is saved.'); };
   }
   document.addEventListener('click', (ev) => { if (ev.target.closest && ev.target.closest('[data-mirror]')) openMirror(); });
   window.__open = (k) => openSheet(k);

@@ -86,8 +86,10 @@
   // seat: where the rider's hips go, from the middle of the horse's feet, in horse pixels; hip: a hero's hips above its feet
   const HORSE = { cell: 128, frames: 6, k: 1.55, hip: 61, s: { row: 0, foot: 108, seat: [1, -70] }, e: { row: 1, foot: 108, seat: [-6, -47] }, n: { row: 2, foot: 119, seat: [1, -68] } };
   const MOVED = new Map();
-  function ride(g, look, key, cx, by, dir, moving, s, t) {
-    const im = P.img('horse'), v = DIRS[dir] || 's', hv = v === 'w' ? 'e' : v, H = HORSE[hv]; if (!im || !P.ready(look, v)) return false;
+  const MOUNTS = { horse: HORSE };   // filled from src/mounts_data.js (tools/heroart/bake_mounts.py): the same layout as the horse, with each beast's own seat
+  if (window.CB_MOUNTS) for (const k in window.CB_MOUNTS) MOUNTS[k] = window.CB_MOUNTS[k];
+  function ride(g, look, key, cx, by, dir, moving, s, t, kind) {
+    const HORSE = MOUNTS[kind] || MOUNTS.horse, im = P.img(HORSE === MOUNTS.horse ? 'horse' : 'mounts/' + kind), v = DIRS[dir] || 's', hv = v === 'w' ? 'e' : v, H = HORSE[hv]; if (!im || !P.ready(look, v)) return false;
     const M = MOVED.get(key) || { x: cx, y: by, at: -1e9 }; if (Math.abs(M.x - cx) + Math.abs(M.y - by) > .01) { M.x = cx; M.y = by; M.at = t; } MOVED.set(key, M); moving = t - M.at < 140;   // a rider is moving while its place changes (no flicker between steps)
     const f = v === 'w' ? -1 : 1, fr = moving ? 1 + Math.floor(t / 80) % HORSE.frames : 0, k = HORSE.k * s, C = HORSE.cell, bob = moving ? Math.sin(t / 240 * Math.PI) * 2.2 * s : 0, sc = 96 * s / 118;
     g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, (hv === 'e' ? 40 : 20) * s, 7 * s, 0, 0, Math.PI * 2); g.fill(); g.restore();
@@ -121,5 +123,5 @@
     const get = () => { const o = {}; for (const k of ['skin', 'eyes', 'eyeCol', 'mouth', 'lipCol', 'hair', 'hairCol', 'beard']) o[k] = L[k] == null ? null : L[k]; return o; };
     paint(); return { get, wear: (gear) => { Object.assign(L, { gear: P.gearOf(gear) }, P.armsOf(gear)); paint(); } };
   }
-  window.CB_HEROPUP = { hold: (ms) => { const t = performance.now(); if (t < holdUntil) return; holdUntil = t + ms; heldFor += ms; }, html, lookOf, appOf, picker, npc, npcLook, HORSE, ride: (g, pal, cx, by, dir, moving, s, t) => ride(g, pal && pal.forge ? lookOf(pal.forge.who || 'me', pal.forge.cls, pal.forge.gear) : npcLook(pal || {}), pal && pal.forge ? pal.forge.who || 'me' : 'npc', cx, by, dir, moving, s, t) };
+  window.CB_HEROPUP = { hold: (ms) => { const t = performance.now(); if (t < holdUntil) return; holdUntil = t + ms; heldFor += ms; }, html, lookOf, appOf, picker, npc, npcLook, HORSE, ride: (g, pal, cx, by, dir, moving, s, t, kind) => ride(g, pal && pal.forge ? lookOf(pal.forge.who || 'me', pal.forge.cls, pal.forge.gear) : npcLook(pal || {}), pal && pal.forge ? pal.forge.who || 'me' : 'npc', cx, by, dir, moving, s, t, kind) };
 })();

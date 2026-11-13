@@ -2,6 +2,7 @@
 (function (root) {
 'use strict';
 const CB = (typeof module !== 'undefined' && module.exports) ? require('./engine.js') : root.CB;
+const bagDrop = (level) => { const n = level >= 12 ? 20 : level >= 6 ? 15 : level >= 3 ? 10 : 5; return { slot: 'Bag', kind: 'bag', bag: n, name: { 5: "Traveler's Pouch", 10: 'Leather Satchel', 15: 'Reinforced Pack', 20: 'Wyvernhide Haversack' }[n], label: n + '-slot bag', rarity: { 5: 'White', 10: 'Green', 15: 'Blue', 20: 'Purple (Epic)' }[n], ilvl: n, level: 0, stats: {} }; }; // Nov 13: bags drop by map level
 const { makeRng, shuffle, ri, rollItem, rollDrops, sumGear, STARTER_GEAR, presetGear, Combat, rollCards, rollNamedCards, KILL_XP } = CB;
 
 const ROWS = 14, COLS = 5;
@@ -312,6 +313,8 @@ class Run {
           drops.push(...rollNamedCards(this.data, this.rng, e.key, m.cls, this.luck(m)));
           const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * goldMult(this.level));
         }
+        { const tier = this.data.enemies[e.key].tier, ch = tier === 'Boss' ? 0.2 : tier === 'Elite' ? 0.04 : 0.006; if (this.rng() < ch) drops.push(bagDrop(this.level)); // Nov 13: a bag (its size goes by the map level; named when it reaches your bags)
+          if (this.rng() < 1 / 1000) (m.pets = m.pets || []).push(e.key); } // Nov 13: 1 in 1000: a miniature of the monster follows you home as a pet
         if (e.enraged) { const pool = this.data.enemies[e.key].pool; if (pool && pool.length) { const it = rollItem(this.data, this.rng, pool[Math.floor(this.rng() * pool.length)], this.rng() < 0.25 * (1 + this.luck(m) / 100) ? 'Purple (Epic)' : 'Blue', this.level); if (it) drops.push(it); } } // plus a guaranteed Blue, 25% Epic
       }
       m.sack.push(...drops); m.gold += gold;

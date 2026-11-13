@@ -84,7 +84,7 @@
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'p' && solid.has(K(x, y)) && PROPS.some(p => p.kind === 'bridge' && x >= p.x && x < p.x + p.w)) solid.delete(K(x, y)); // walk over the bridges
   // where each townsperson stands (in front of their building)
   const CITY_NPC = { wagon: [74, 97, 'down'], tinker: [77, 58, 'left'], qm: [58, 57, 'down'], merchant: [43, 57, 'down'], jeweler: [51, 57, 'down'], scribe: [19, 18, 'down'], archivist: [42, 17, 'down'],
-    chron: [70, 49, 'down'], captain: [19, 81, 'down'], guildmaster: [41, 81, 'down'], raidwarden: [75, 16, 'down'], arena: [99, 91, 'right'], dummy: [18, 92, 'down'], banker: [35, 57, 'down'] };
+    chron: [70, 49, 'down'], barber: [17, 57, 'down'], boutique: [25, 57, 'down'], tavern: [61, 71, 'down'], captain: [19, 81, 'down'], guildmaster: [41, 81, 'down'], raidwarden: [75, 16, 'down'], arena: [99, 91, 'right'], dummy: [18, 92, 'down'], banker: [35, 57, 'down'] };
   // districts: the name shows when you walk in
   const DISTRICTS = [['Ember Square', 61, 49, 88, 71], ['The Grand Bazaar', 93, 47, 141, 73], ['The Colosseum', 97, 77, 137, 105], ['The Wagon Yard', 57, 88, 92, 105], ['Market Row', 4, 50, 60, 62], ['The Old Market', 33, 62, 53, 77],
     ['The Barracks', 4, 72, 47, 105], ['Guild Row', 33, 72, 56, 87], ["Scholars' Quarter", 4, 4, 56, 28], ['The Keep', 57, 4, 92, 24], ['Cathedral Hill', 93, 4, 146, 28], ['The River Ash', 4, 27, 146, 35], ['Riverside', 4, 35, 146, 49], ['The Stables', 93, 94, 106, 105]];

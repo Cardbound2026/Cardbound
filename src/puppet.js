@@ -54,7 +54,7 @@ window.CB_PUPPET = (function () {
   // ---------- one look, painted: a strip of the ten parts for a view (cached)
   const COMP = new Map(), tmp = canvas(S * 10, S), tg = tmp.getContext('2d', { willReadFrequently: true });
   function compose(L, v) {
-    const key = v + JSON.stringify(L); let c = COMP.get(key); if (c) return c;
+    const key = v + JSON.stringify(L, (k, val) => k === 'cos' ? undefined : val); let c = COMP.get(key); if (c) return c;
     const B = D.bodies[L.body][v], body = img(L.body + '_' + v); if (!body) return null;
     const gear = L.gear || {}, sets = SLOTS.map(s => gear[s] || null), need = [...new Set(sets.filter(Boolean))], gi = {};
     let st = null; if (need.length) { st = stencils(L.body, v); if (st === null) return null; for (const n of need) { const im = img('gear/' + n + '_' + L.body + '_' + v); if (im === null) return null; gi[n] = im; } }
@@ -63,7 +63,10 @@ window.CB_PUPPET = (function () {
     const id = g.getImageData(0, 0, S * 10, S), d = id.data, skin = SKIN[L.skin || 0] || SKIN[0], mean = (B.skin[0] + B.skin[1] + B.skin[2]) / 3;
     for (let i = 0; i < d.length; i += 4) if (d[i + 3] && d[i] - d[i + 2] > 22 && d[i] > 70) { const k = Math.pow((d[i] + d[i + 1] + d[i + 2]) / 3 / mean, .9); d[i] = Math.min(250, skin[0] * k); d[i + 1] = Math.min(240, skin[1] * k); d[i + 2] = Math.min(230, skin[2] * k); }   // every body's skin lands on the same tone, keeping its shading
     face(d, B, v, L, skin); g.putImageData(id, 0, 0);
-    const wear = (si) => { const n = sets[si]; if (!n || !gi[n] || !st) return; tg.globalCompositeOperation = 'source-over'; tg.clearRect(0, 0, S * 10, S); tg.drawImage(gi[n], 0, 0); tg.globalCompositeOperation = 'destination-in'; tg.drawImage(st[si], 0, 0); g.drawImage(tmp, 0, 0); };
+    const wear = (si) => { const n = sets[si]; if (!n || !gi[n] || !st) return; tg.globalCompositeOperation = 'source-over'; tg.clearRect(0, 0, S * 10, S); tg.drawImage(gi[n], 0, 0); tg.globalCompositeOperation = 'destination-in'; tg.drawImage(st[si], 0, 0);
+      const dc = L.dye && window.CB_COS ? CB_COS.dyeOf(L, SLOTS[si]) : null;   // Nov 13: a dye recolours the piece, keeping its shading
+      if (dc) { const dd = tg.getImageData(0, 0, S * 10, S), p = dd.data; for (let i = 0; i < p.length; i += 4) { if (!p[i + 3]) continue; const l = (p[i] * .3 + p[i + 1] * .59 + p[i + 2] * .11) / 255, k = l < .5 ? l * 1.9 : .95 + (l - .5) * 1.1; p[i] = Math.min(255, dc[0] * k + (l > .8 ? (l - .8) * 300 : 0)); p[i + 1] = Math.min(255, dc[1] * k + (l > .8 ? (l - .8) * 300 : 0)); p[i + 2] = Math.min(255, dc[2] * k + (l > .8 ? (l - .8) * 300 : 0)); } tg.putImageData(dd, 0, 0); }
+      g.drawImage(tmp, 0, 0); };
     for (const si of [7, 6, 2, 5, 3, 4, 1]) wear(si);
     const vi = H.views.indexOf(v), bi = H.bodies.indexOf(L.body), [hx, hy] = H.at[L.body][v];
     const dye = (im, col, clipY) => {   // hair is painted grey-white; multiply it by the colour
@@ -160,7 +163,9 @@ window.CB_PUPPET = (function () {
   function chain(g, B, P, i) { if (PAR[i] >= 0) chain(g, B, P, PAR[i]); const a = P.parts[i], pv = B.piv[i]; g.translate(pv[0] + a.dx, pv[1] + a.dy); if (a.r) g.rotate(a.r); if (a.sy !== 1) g.scale(1, a.sy); g.translate(-pv[0], -pv[1]); }
   function draw(g, look, view, anim, t, x, footY, scale) {
     const flip = view === 'w', v = flip ? 'e' : view, B = D.bodies[look.body] && D.bodies[look.body][v]; if (!B) return false;
+    const COS = window.CB_COS; if (COS && look.cos) { const ws = COS.weapon(look); if (ws && W && W.types.includes('legend')) look = Object.assign({}, look, { weapon: ws }); }
     const strip = compose(look, v) || img(look.body + '_' + v); if (!strip) return false;
+    if (COS && look.cos) { g.save(); try { COS.draw(g, look, view, anim, t, x, footY, scale, 'back'); } catch (e) {} g.restore(); }
     const len = CLIP[anim] || 1000, p = ONCE[anim] ? Math.min(1, t / len) : (t % len) / len, P = pose(anim, p, v);
     const q = scale >= 1.5 ? 3 : 2, wk = workFor(q), work = wk.c, wg = wk.g;
     wg.setTransform(1, 0, 0, 1, 0, 0); wg.clearRect(0, 0, work.width, work.height); wg.imageSmoothingEnabled = false;
@@ -169,7 +174,7 @@ window.CB_PUPPET = (function () {
       if (!it || !wim) return; const ti = W.types.indexOf(it[0]), gp = W.grip[it[0]] && W.grip[it[0]][it[1]]; if (ti < 0 || !gp) return;
       base(); chain(wg, B, P, part); wg.translate(at ? at[0] : B.hand[hand][0], at ? at[1] : B.hand[hand][1]); wg.rotate(rot); wg.drawImage(wim, it[1] * W.cw, ti * W.ch, W.cw, W.ch, -Math.round(gp[0]), -Math.round(gp[1]), W.cw, W.ch);
     };
-    const wrot = (it, d) => (HELD[it[0]] ? 0 : LONG[it[0]] ? .18 * d : 1.15 * d), mainPart = v === 'n' ? 5 : 3, offPart = v === 'n' ? 3 : 5;
+    const wrot = (it, d) => (HELD[it[0]] ? 0 : LONG[it[0]] || (it[0] === 'legend' && (it[1] === 2 || it[1] === 5)) ? .18 * d : 1.15 * d), mainPart = v === 'n' ? 5 : 3, offPart = v === 'n' ? 3 : 5;
     if (cl && v !== 'n') { base(); chain(wg, B, P, 0); wg.drawImage(cl, 0, 0); }
     if (v === 'e' && look.off && !HELD[look.off[0]]) held(look.off, 0, 0, 1.0, [B.hand[0][0] + 6, B.hand[0][1] - 4]);   // the other hand's weapon shows behind the body
     for (const i of B.order) {
@@ -180,7 +185,9 @@ window.CB_PUPPET = (function () {
       if (look.off && v !== 'e' && i === offPart) held(look.off, i, v === 'n' ? 0 : 1, wrot(look.off, v === 's' ? .26 : -.26));
     }
     g.save(); g.imageSmoothingEnabled = scale !== q; g.imageSmoothingQuality = 'high'; g.translate(x, footY); if (flip) g.scale(-1, 1);
-    g.drawImage(work, -(S / 2 + B.cx) * scale, -(S / 2 + B.foot) * scale, S * 2 * scale, S * 2 * scale); g.restore(); return true;
+    g.drawImage(work, -(S / 2 + B.cx) * scale, -(S / 2 + B.foot) * scale, S * 2 * scale, S * 2 * scale); g.restore();
+    if (COS && look.cos) { g.save(); try { COS.draw(g, look, view, anim, t, x, footY, scale, 'front'); } catch (e) {} g.restore(); }
+    return true;
   }
   // the look a hero starts with, and what its gear looks like: items -> { slot: '<map>_<Plate|Leather|Cloth>' }
   function defaults(cls) { const body = BODY[cls] || 'warrior'; return { body, skin: body === 'mage' ? 0 : body === 'female' ? 1 : 2, eyes: body === 'female' ? 3 : 0, eyeCol: 0, mouth: body === 'female' ? 1 : 0, lipCol: 0, hair: body === 'female' ? 'long' : body === 'mage' ? 'slick' : 'short', hairCol: body === 'female' ? 0 : 1, beard: null }; }

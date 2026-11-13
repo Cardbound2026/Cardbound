@@ -1,0 +1,46 @@
+wolf 147e0a43-fc8d-4eb2-9815-9f4550dd35db
+panther 099de108-2e4e-444f-b718-005cb4c542b7
+bear daad4418-66f1-4bc3-9f8f-79a152ade281
+sabertooth fb7ba9af-f776-4700-9712-78c3cf9de8b0
+nightmare ffe52d98-96bf-4a23-a915-b25bfa6c71e4
+bonesteed 14c737ee-162f-4c2c-a16e-b76873a25f56
+boar 519babe2-040e-41c1-8151-611592b10d31
+stag 8b0551f6-4199-4a85-a67f-a4c71cd5b1cc
+slug 04fd78f5-304b-4812-95bd-c6cc930ebc82
+horse 7cda99e2-706c-4a44-9f91-21af32f62d36
+# interiors (create_image_pro job ids)
+bg armory 852a9408-9b92-452c-bf6e-493841b58efe
+bg library 27de6fd2-5a81-410e-9b12-f3eee6916b3a
+bg scriptorium 1f6f93bb-fb38-4641-963e-9aaa4ef14edf
+bg store 9c79138e-1d74-49ed-b7e5-0929d61f8b3f
+bg bank 7fc791eb-a3bf-4749-beeb-7e5a80ce5c4f
+bg jeweler 0dc3ef94-e67d-44e4-8868-febabfdc45ca
+bg guildhall 38384f92-13a0-40fc-bbdd-201a5e66d317
+bg barracks b0870e8d-2d78-4a2e-b104-f75a723986ea
+bg barber 2717125f-ce9d-41b4-b6d7-3421d9882d0c
+bg warroom 4a09cc42-12b9-4c75-b806-63c70b0156e8
+bg tavern 2c8fa148-9a13-453e-9586-db2c19bdddbb
+# pro_flash rows / singles
+row legend e7f9bf10-663b-4711-9303-ae1a51b39e92
+row ui1 97fca35f-399c-4bac-a8e3-1668d6af5c7b
+row ui2 fb9541e2-5e4f-4c96-9284-d4d1f8129b84
+row bags 69669043-6d08-4ecc-8268-4788345800f8
+wing angel b3f9ca35-b766-4def-8b5f-41d31cbcd671
+wing demon 940b0d57-d28d-452a-9584-2d26485e54c3
+wing dragon 7d64e38b-2e09-46cb-9b78-ee062b3673c4
+wing fairy 3eaa2b97-6670-4c78-aefc-a811a1886711
+wing bone 9457be22-a4cf-4b7b-863d-30400fe7266a
+wing phoenix 51360b33-e26d-4112-b1ad-14b02ace5695
+bg boutique bad6fecd-1662-4ebb-8c95-22196fd9d2bb
+bg records 6140a569-9fbb-4d53-9703-5b02fe54156e
+bg arena 3b6ba164-8e4d-4015-a848-e94c17b9a269
+tal 0 d746aa2f-5f93-4895-8558-1f1ed8f89574
+tal 1 433129bb-9868-4059-96eb-4343e7aebeca
+tal 2 1157b601-c5e6-4e58-8dd0-0cd447479864
+tal 3 eeae8157-ad97-47b4-8eb6-849cac74a14f
+tal 4 3d2b456c-5e8c-4bde-a545-f36666759c18
+tal 5 37401dfc-ec17-4698-944e-512f5ba6bd45
+tal 6 7440d789-02b0-468d-9d59-989ee10a20a6
+tal 7 4a4db819-82f1-4768-aec2-60dcf07f3b8a
+tal 8 08534224-444f-4102-9079-ce18ee7df586
+tal 9 4241d61e-e2b7-420c-80ee-b38f90b598cf

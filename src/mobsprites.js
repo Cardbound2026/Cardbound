@@ -95,7 +95,7 @@
   }
   requestAnimationFrame(draw);
   window.CB_MOBS = {
-    manifest: M, figure, cardPlay, play, has: (k) => !!M[k],
+    manifest: M, figure, cardPlay, play, has: (k) => !!M[k], keyOf: (k) => keyFor({ key: k }),
     preload(keys) { for (const k0 of keys || []) { const f = keyFor({ key: k0 }); if (f) { sheet(f.k); new Image().src = 'img/mobs/' + f.k + '_p.webp'; } } },
   };
   // load a map's sheets along with the ink art the game already preloads
