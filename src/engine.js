@@ -41,11 +41,11 @@ card('throwing_stars', { cls: 'Rogue', name: 'Throwing Stars', rarity: 'White', 
 card('shuriken', { cls: 'Rogue', name: 'Shuriken', rarity: 'Token', type: 'Attack', cost: 0, target: 'enemy', dtype: 'Physical', exhaust: true, text: 'Deal 4 damage. Exhaust.', play: (cb, t) => cb.hit(t, 4, 'Shuriken'), tags: { dmg: 4 } });
 card('garrote', { cls: 'Rogue', name: 'Garrote', rarity: 'Green', type: 'Attack', cost: 10, target: 'enemy', dtype: 'Physical', text: 'Deal 6 damage and apply 8 Bleed.', play: (cb, t) => { cb.hit(t, 6, 'Garrote'); cb.applyDot(t, 'bleed', 8); }, tags: { dmg: 6, dot: 36 } });
 card('blur', { cls: 'Rogue', name: 'Blur', rarity: 'Green', type: 'Skill', cost: 10, target: 'self', text: 'Gain 10 Dodge. Next turn, gain 5 Dodge.', play: (cb) => { cb.gainDef(10); cb.player.defNext += 5; }, tags: { def: 13 } });
-card('hide', { cls: 'Rogue', name: 'Hide', rarity: 'Green', type: 'Skill', cost: 10, target: 'self', text: "Enter Stealth: single-target enemy cards can't find you until you attack. Only 0-cost cards for the rest of this turn.",
-  play: (cb) => { cb.player.stealth = true; cb.player.locked = true; cb.say('player', 'You slip into Stealth.'); }, tags: { hide: 1 } });
+card('hide', { cls: 'Rogue', name: 'Hide', rarity: 'Green', type: 'Skill', cost: 10, target: 'self', text: "Enter Stealth. For the rest of this turn, 0-cost Attacks don't break Stealth.",
+  play: (cb) => { cb.player.stealth = true; cb.player.turn.hideKeep = true; /* Nov 13: was 'only 0-cost cards for the rest of the turn' */ cb.say('player', 'You slip into Stealth.'); }, tags: { hide: 1 } });
 card('evasion', { cls: 'Rogue', name: 'Evasion', rarity: 'Blue', type: 'Skill', cost: 20, target: 'self', text: 'Gain 40 Dodge.', play: (cb) => cb.gainDef(40), tags: { def: 40 } });
 card('coup_de_grace', { cls: 'Rogue', name: 'Coup de Grace', rarity: 'Blue', type: 'Attack', cost: 10, target: 'enemy', dtype: 'Physical', text: 'Deal 10 damage. If the target is below 30% HP, deal 30 instead.', play: (cb, t) => cb.hit(t, t.hp < t.maxHp * 0.3 ? 30 : 10, 'Coup de Grace'), tags: { dmg: 10, execute: 30 } });
-card('assassinate', { cls: 'Rogue', name: 'Assassinate', rarity: 'Gold', type: 'Skill', cost: 0, target: 'self', text: 'Your next card is doubled: its damage, the Bleed, Poison and other damage over time it applies, and the Dodge it gives. Playing it keeps you in Stealth.', play: (cb) => { cb.player.nextAllMult = 2; cb.say('player', 'Your next card is doubled.'); }, tags: { setup: 'attack' } });   // Nov 13: was the next Attack only; Bleed, Poison and Dodge decks get it too
+card('assassinate', { cls: 'Rogue', name: 'Assassinate', rarity: 'Gold', type: 'Skill', cost: 0, target: 'self', text: 'Your next card is doubled: its damage, the Bleed, Poison and other damage over time it applies, and the Dodge it gives.', play: (cb) => { cb.player.nextAllMult = 2; cb.say('player', 'Your next card is doubled.'); }, tags: { setup: 'attack' } });   // Nov 13: was the next Attack only; Bleed, Poison and Dodge decks get it too
 
 // --- Mage
 card('fireball', { cls: 'Mage', name: 'Fireball', rarity: 'White', type: 'Skill', cost: 10, target: 'enemy', dtype: 'Fire', text: 'Deal 7 Fire damage and apply 3 Burn.', play: (cb, t) => { cb.hit(t, 7, 'Fireball'); cb.applyDot(t, 'burn', 3); }, tags: { dmg: 7, dot: 6 } });
@@ -1798,6 +1798,7 @@ class Combat {
     this.rkEnd(); this._rk = null; this._rkCard = null; this._rkHits = this._rkTimed = this._rkAdded = null;
     if (stAtk && tgt && !tgt.isPlayer && tgt.hp > 0 && this.has(p, 'shadow_ambush')) { if (this.raidBoss(tgt)) this.say('player', `${tgt.name} is a raid boss: Shadow Ambush can't Stun it.`); else if ((tgt.ambushUntil || 0) > this.round) this.say('player', `${tgt.name} is still reeling: Shadow Ambush can't Stun it again until next round.`); else { tgt.frozen = true; tgt.ambushUntil = this.round + 2; this.say('crit', `Shadow Ambush: ${tgt.name} is Stunned and loses its next turn.`); } } // Nov 2: a real Stun, bosses too
     if (stAtk && p.stealth === 'atk' && p.stealthKeep > 0) { p.stealthKeep--; p.stealth = true; this.say('player', 'Shadow Dance: you strike and stay in Stealth.'); }
+    if (stAtk && p.stealth === 'atk' && p.turn.hideKeep && !paid) { p.stealth = true; this.say('player', 'Hide: a 0-cost Attack keeps you in Stealth.'); }
     if (stAtk && p.stealth === 'atk') { p.stealth = false; this.say('player', `${this.partySize > 1 ? p.name + ' attacks' : 'You attack'} out of Stealth.`); }
     if (p.powers.length && !this.over) this.fire(p, 'cardPlayed', d);
     if (d.type === 'Skill' && d.tags.dmg && this.has(p, 'elemental_memory')) {
@@ -2359,7 +2360,8 @@ function rankedCard(key, rank) {
   if (u.d35 && rank >= 3) { ms.draw = (rank >= 3 ? 1 : 0) + (rank >= 5 ? 1 : 0); txt = txt.replace(/([Dd])raw 1 card/, (m, D) => `${D}raw ${1 + ms.draw} cards`); } // Nov 2: +1 card at +3, +2 at +5 (Battle Shout)
   if (u.tw && MILESTONE(rank)) { ms.hits = MILESTONE(rank); txt = txt.replace(/\btwice\b/, `${2 + ms.hits} times`); }
   if (u.fr && MILESTONE(rank)) { ms.draw = MILESTONE(rank); v.msFree = true; txt += ` Draw ${ms.draw} card.`; }
-  if (u.r) { rk.all = 1 + u.r * rank / 100; txt += ` (Upgrade: +${u.r * rank}% to its amount.)`; }
+  if (key === 'plague_bloom') { /* Nov 13: each level adds 1 flat Poison, written into the sentence (was a bracketed '+X% to its amount') */ txt = txt.replace(/\.$/, '') + ` + ${rank} more.`; v.play = (cb, t) => { const e = tgtOf(cb, t); if (!e) return; cb.applyDot(e, 'poison', 10); const x = 5 * Math.floor(e.poison / 10) + rank; e.poison += x; say(cb, `+${x} more Poison.`); }; }
+  else if (u.r) { rk.all = 1 + u.r * rank / 100; txt += ` (Upgrade: +${u.r * rank}% to its amount.)`; }
   if (u.c && d.cost != null) v.cost = Math.max(0, d.cost - Math.floor(rank / u.c));
   if (u.cs && d.cost != null) v.cost = Math.max(0, d.cost - u.cs * rank); // Nov 2: -cs mana per level (Shadow Ambush: -2)
   v.rk = rk; v.ms = ms; v.rkMain = main || rk.all || 1; v.text = upgPlural(txt);

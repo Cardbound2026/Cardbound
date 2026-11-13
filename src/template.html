@@ -1191,6 +1191,7 @@ body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust:not([data-n="0"]
 /* Nov 13: status (debuff) cards wear a red line inside the picture's border */
 .cf:not(.rf) .fgem { transform: none; background: none; opacity: 1; z-index: 2; }   /* the cost on enemy and status cards sits on its orb: the class cards' gem glow rule was shifting it up and left */
 .cf.junk .fart { position: absolute; } .cf.junk .fart::after { content: ''; position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 0 2px #d2261c, inset 0 0 0 3px rgba(60,0,0,.8), inset 0 0 16px 2px rgba(210,38,28,.75); border-radius: 6% / 9%; }
+.recap { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; } .recap h4 { margin: 0 0 6px; } .recap .list { max-height: 48vh; } .recap .meter { max-height: 50vh; overflow: auto; } @media (max-width: 800px) { .recap { grid-template-columns: 1fr; } }
 .nmtop { font-size: 15px; line-height: 1.5; } .nmfoe { border-top: 1px solid var(--line); padding-top: 10px; } .nmhead { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; } .nmhead h3 { margin: 0; font-size: 24px; color: var(--accent); }
 .nmpic { width: 110px; height: 110px; object-fit: contain; image-rendering: pixelated; flex: none; filter: drop-shadow(0 4px 6px #000); } .nmfoe h4 { margin: 8px 0 4px; font-size: 16px; } .nmloot summary { cursor: pointer; font-weight: 700; margin: 8px 0 4px; } .nmloot p { margin: 6px 0 4px; }
 /* Nov 13: Engage is the big button: gold, pulsing, as wide as the window allows */
@@ -1776,7 +1777,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   $('hpGear').addEventListener('click', (ev) => {
     const pc = ev.target.closest('[data-dcard]'); if (pc) return upgradeModal(pc.dataset.dcard);
     { const qb = ev.target.closest('[data-qsalv]'); if (qb) { GT.qs = !GT.qs; return keepScroll(() => renderGearTab(CBHub.char(profile, heroKey))); } }
-    if (GT.qs) { const qc = ev.target.closest('[data-bagit]'); if (qc) { const it = profile.stash.find(x => x.id === qc.dataset.bagit); if (!it || it.kind === 'card') return; if (it.slot === 'Codex' || it.bag) return toast('Quick salvage leaves codexes and bags alone. Turn it off to handle this one.'); const gold = CBHub.salvageValue(it); CBHub.salvage(profile, it.id); try { if (window.CB_AUDIO) CB_AUDIO.sfx('coin', .7); } catch (e) {} const gt = document.querySelector('.gtip:not(.bagpop)'); if (gt) gt.hidden = true; toast(`Salvaged ${it.name} for ${gold} gold.`); return keepScroll(() => { save(); renderHub(); }); } }
+    if (GT.qs) { const qc = ev.target.closest('[data-bagit]'); if (qc) { const it = profile.stash.find(x => x.id === qc.dataset.bagit); if (!it || it.kind === 'card') return; if (it.slot === 'Codex' || it.bag) return toast('Quick salvage leaves codexes and bags alone. Turn it off to handle this one.'); const gold = CBHub.salvageValue(it); CBHub.salvage(profile, it.id); try { if (window.CB_AUDIO) CB_AUDIO.sfx('coin', .7); } catch (e) {} const gt = document.querySelector('.gtip:not(.bagpop)'); if (gt) gt.hidden = true; return keepScroll(() => { save(); renderHub(); }); } }
     const bc = ev.target.closest('[data-bagit]'); if (bc) { if (ev.shiftKey) return; const el = document.querySelector('.gtip:not(.bagpop)'); if (el) el.hidden = true; return bagItem(bc.dataset.bagit); }
     const b = ev.target.closest('button'); if (!b) return;
     if (b.dataset.gtab) { GT.tab = b.dataset.gtab; return renderGearTab(CBHub.char(profile, heroKey)); }
@@ -3254,7 +3255,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   document.addEventListener('click', (ev) => {
     const m = ev.target.closest('.meter [data-mmode], .meter [data-mscope], .meter [data-mk]'); if (!m) return;
     if (m.dataset.mmode) MT.mode = m.dataset.mmode; else if (m.dataset.mscope) MT.scope = m.dataset.mscope; else MT.open[m.dataset.mk] = !MT.open[m.dataset.mk];
-    const el = m.closest('.meter'); renderMeter(el, el.id === 'pMeter' ? 'run' : el.id === 'hMeter' ? 'hist' : undefined);
+    const el = m.closest('.meter'); renderMeter(el, el.id === 'pMeter' || el.id === 'vMeter' ? 'run' : el.id === 'hMeter' ? 'hist' : undefined);
   });
 
   // ---------- modals
@@ -3338,9 +3339,9 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     const sub = (run.over === 'victory' ? `${esc(bossName())} is dead. You keep the whole sack.` : run.over === 'extracted' ? `You made it out alive. ${run.kept && run.sack.length && run.kept.items.length / run.sack.length > 0.6 ? '75%' : 'Half'} of the sack survived the trip.` : 'You died on the March. The sack is lost.') + (run.orders.length ? ` ${run.orders.length} merchant order${run.orders.length === 1 ? ' is' : 's are'} waiting in your stash.` : '');
     modal(`<h2 class="${run.over === 'dead' ? 'loss' : ''}">${title}</h2><p>${sub}</p>
       <dl class="kv"><dt>Furthest row</dt><dd>${run.currentRow() > ROWS ? 'Boss' : run.currentRow()}</dd><dt>Fights won</dt><dd>${run.fightsWon}</dd><dt>Items kept</dt><dd>${k.items.length}</dd><dt>Gold kept</dt><dd>${k.gold}</dd></dl>
-      ${sackSplit(run)}
+      ${run.over === 'victory' ? `<div class="recap"><div><h4 class="up">Coming home: ${k.items.length} item${k.items.length === 1 ? '' : 's'}, ${k.gold} gold</h4><div class="list">${k.items.map(it => itemHtml(it)).join('') || '<span class="muted">Nothing.</span>'}</div></div><div><h4>The run: damage meter</h4><div class="meter" id="vMeter"></div></div></div>` : sackSplit(run)}
       <div class="row"><button class="btn primary" id="mNew">Return to camp</button><button class="btn" id="mMap">Look at the map</button></div>`);
-    $('modalBox').classList.add('wide');
+    $('modalBox').classList.add('wide'); if ($('vMeter')) renderMeter($('vMeter'), 'run');   // Nov 13: a win ends on a recap: your loot on the left, the whole run's damage meter on the right
     if (!run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run, run.myMi); save(); if (typeof publishHero === 'function') publishHero(heroKey, true); }
     $('mNew').onclick = backToTown;
     $('mMap').onclick = () => closeModal();
@@ -3351,9 +3352,9 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     const sub = run.over === 'victory' ? `${esc(bossName())} is dead. Everyone keeps their whole sack.` : run.over === 'extracted' ? 'The party made it out alive with part of every sack.' : 'The whole party fell. Every sack is lost.';
     modal(`<h2 class="${run.over === 'dead' ? 'loss' : ''}">${title}</h2><p>${sub} Merchant orders are waiting in the stash.</p>
       <dl class="kv"><dt>Furthest row</dt><dd>${run.currentRow() > ROWS ? 'Boss' : run.currentRow()}</dd><dt>Fights won</dt><dd>${run.fightsWon}</dd></dl>
-      ${run.members.map(m => { const k = m.kept || { items: [], gold: 0 }; return `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${k.items.length} item${k.items.length === 1 ? '' : 's'}, ${k.gold} gold${m.orders.length ? `, ${m.orders.length} order${m.orders.length === 1 ? '' : 's'}` : ''}</div>${sackSplit(m)}`; }).join('')}
+      ${run.over === 'victory' ? '<div class="recap"><div>' : ''}${run.members.map(m => { const k = m.kept || { items: [], gold: 0 }; return `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${k.items.length} item${k.items.length === 1 ? '' : 's'}, ${k.gold} gold${m.orders.length ? `, ${m.orders.length} order${m.orders.length === 1 ? '' : 's'}` : ''}</div>${run.over === 'victory' ? `<div class="list">${k.items.map(it => itemHtml(it)).join('') || '<span class="muted">Nothing.</span>'}</div>` : sackSplit(m)}`; }).join('')}${run.over === 'victory' ? '</div><div><h4>The run: damage meter</h4><div class="meter" id="vMeter"></div></div></div>' : ''}
       <div class="row"><button class="btn primary" id="mNew">Return to camp</button><button class="btn" id="mMap">Look at the map</button></div>`);
-    $('modalBox').classList.add('wide');
+    $('modalBox').classList.add('wide'); if ($('vMeter')) renderMeter($('vMeter'), 'run');
     if (!run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run, run.myMi); save(); if (typeof publishHero === 'function') publishHero(heroKey, true); }
     $('mNew').onclick = backToTown;
     $('mMap').onclick = () => closeModal();

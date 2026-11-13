@@ -2,6 +2,11 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Interface', "Beating the last boss now ends on a recap: the loot you are taking home on the left, and the whole run's damage meter open on the right."],
+      ['Balance', "Hide now reads: Enter Stealth. For the rest of this turn, 0-cost Attacks don't break Stealth. It no longer limits you to 0-cost cards."],
+      ['Balance', "Lift Coin steals 5 mana from its target instead of making 5 mana from nothing."],
+      ['Balance', "Plague Bloom upgrades read plainly: 5 Poison for every 10 on the target + 1 more per level (was a bracketed percentage)."],
+      ['Interface', "Assassinate no longer explains that it keeps you in Stealth (every card that is not an Attack does). Quick salvage no longer pops a message for each item."],
       ['Balance', "Assassinate (Rogue) now doubles your whole next card: its damage, the Bleed, Poison and other damage over time it applies, and the Dodge it gives. It used to double only the next Attack's damage."],
       ['Fix', "Footsteps no longer slow the game down. They are now footprints in the element's colour, left where you walk and fading out."],
       ['Fix', "Cloaks, rings, amulets and codexes each showed the wrong picture (a cloak showed a ring, a codex showed nothing). Each has its own again."],

@@ -1,0 +1,17 @@
+# re-animations (v3) of the first mounts: character id, new animation group
+sabertooth fb7ba9af-f776-4700-9712-78c3cf9de8b0 6f398c3b-725b-4ba0-a5ff-f385cd844184 running forward in a smooth natural big-cat gallop, front and hind legs reaching and gathering in turn, back level, head steady, no hopping, no prancing
+panther 099de108-2e4e-444f-b718-005cb4c542b7 e6825f00-078f-44fe-9ba6-2a3cd2d10c18 running forward in a smooth natural big-cat gallop, front and hind legs reaching and gathering in turn, back level, head steady, no hopping, no twitching
+stag 8b0551f6-4199-4a85-a67f-a4c71cd5b1cc bb2d57fd-29a8-4588-95ac-2054c216574d running forward in a smooth natural deer gallop, long legs reaching forward and pushing back in turn, back level, antlers steady, hooves stay apart, no heel clicking, no hopping
+wolf 147e0a43-fc8d-4eb2-9815-9f4550dd35db efb5f4ed-4bb2-4eb4-9f21-f9d0022030d7 running forward in a smooth natural wolf lope, legs reaching forward and pushing back in turn with full strides, back level, head low and steady, no tiptoeing
+bear daad4418-66f1-4bc3-9f8f-79a152ade281 bdb43aed-f03f-40b2-9bb1-f1c5ee6c06b5 running forward in a heavy rolling bear gallop, big paws landing flat with full strides, shoulders rolling, back level, no tiptoeing
+boar 519babe2-040e-41c1-8151-611592b10d31 447ea940-3fc0-4d1e-a4ea-acd6ecbd289f charging forward at a steady trot, short strong legs moving in diagonal pairs with full strides, back level, head low, no tiptoeing
+# new
+ghosthorse char 85214d4c-1e69-42d3-86c6-f48f70a3d5ef
+dragon obj 7723ae6e-e46c-41c6-905e-d5678072ed2e
+scorpion obj 0545b0a5-5961-44b0-a127-18175ad35ce9
+chicken obj 4ee56d82-e2d4-4a07-9da6-6f155200d1c1
+blackchicken obj f94add0e-01ad-4cde-b91e-f0ce8e8b5a26
+spider obj 96d81607-6f11-45fa-bd60-dd7f84aaf792
+slug obj 204dda23-acb9-4243-a3c3-9c7b343878ff
+gryphon obj 71764e33-8de7-4d9c-b274-ea1bc3204dc7
+raptor obj 838c68ba-fb57-4d3c-8627-08db6c8760de
