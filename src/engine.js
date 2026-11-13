@@ -916,8 +916,9 @@ function intentKind(ops) {
 }
 
 // per-enemy tuning on top of the Map 1 design numbers
-const BOSS_CODEX_CHANCE = 0.25; // Nov 1: was 0.5 and always your own class; now 25%, and the codex is any class's on that boss's table
-const bossCodexPct = (d) => { const n = ((d && d.loot) || []).filter(x => x.type === 'Codex').length; return n ? BOSS_CODEX_CHANCE * 100 / n : 0; }; // chance of one particular codex per kill
+const BOSS_CODEX_CHANCE = 0.25; // Nov 13: a map boss drops YOUR class's codex 25% of the time (50% while you wear no codex); each other class's codex still drops 5% of the time (25% / 5), each on its own roll. Was one roll of 25% for a random class's codex
+const BOSS_CODEX_BARE = 0.5;
+const bossCodexPct = (d, own, bare) => { const n = ((d && d.loot) || []).filter(x => x.type === 'Codex').length; return !n ? 0 : own ? (bare ? BOSS_CODEX_BARE : BOSS_CODEX_CHANCE) * 100 : BOSS_CODEX_CHANCE * 100 / n; }; // chance of one particular codex per kill (own: it is the killer's class; bare: the killer wears no codex)
 const DEBT_CARDS = ['collect_the_debt', 'sanguine_guard', 'pay_in_blood'];
 // enemy card ops that land on heroes (single-target unless the op is marked all)
 const ENEMY_PLAYER_OPS = ['damage', 'execute', 'damageBlock', 'debuff', 'stealMana', 'burnMana', 'drawLess', 'disarm', 'purge', 'shred', 'shredAll', 'tickBleed', 'status'];
@@ -2412,7 +2413,7 @@ function rollNamedCards(data, rng, enemyKey, cls, luck) {
   }
   return out;
 }
-function rollDrops(data, rng, enemyKey, level, luck, cls) {
+function rollDrops(data, rng, enemyKey, level, luck, cls, bare) {
   gearData(data);
   const d = data.enemies[enemyKey], G = data.gear;
   const table = G.drops[d.tier]; const out = [];
@@ -2424,11 +2425,12 @@ function rollDrops(data, rng, enemyKey, level, luck, cls) {
     if (got) out.push(rollItem(data, rng, d.pool[Math.floor(rng() * d.pool.length)], got, level));
   }
   // codexes: bosses list one per class on their loot table (each rolls on its own)
-  // map bosses drop one codex 25% of the time (more with Luck), picked at random from every class's codex on their table (Nov 1)
+  // map bosses (Nov 13): your own class's codex drops 25% of the time (50% while you wear none); every other class's codex on the table rolls on its own at 5%. Luck raises them all
   if (d.tier === 'Boss' && !d.raid) {
-    if (rng() >= Math.min(1, BOSS_CODEX_CHANCE * lk)) return out;
-    const pick = (d.loot || []).filter(x => x.type === 'Codex'); // any class: trade or stash the ones your hero can't use
-    if (pick.length) { const x = pick[Math.floor(rng() * pick.length)], key = Object.keys(CODEX_BY_KEY).find(k => CODEX_BY_KEY[k].name + ' Codex' === x.item); if (key) out.push(makeCodex(data, rng, key, level)); }
+    for (const x of (d.loot || []).filter(q => q.type === 'Codex')) {
+      if (rng() * 100 >= Math.min(100, bossCodexPct(d, x.cls === cls, bare) * lk)) continue;
+      const key = Object.keys(CODEX_BY_KEY).find(k => CODEX_BY_KEY[k].name + ' Codex' === x.item); if (key) out.push(makeCodex(data, rng, key, level));
+    }
     return out;
   }
   for (const x of d.loot || []) if (x.type === 'Codex' && rng() * 100 < (x.pct || 0) * lk) { const key = Object.keys(CODEX_BY_KEY).find(k => CODEX_BY_KEY[k].name + ' Codex' === x.item); if (key) out.push(makeCodex(data, rng, key, level)); }
@@ -2583,6 +2585,6 @@ if (C.pilfer) C.pilfer.cost = 20; // Nov 2
 if (C.twin_verdict) C.twin_verdict.cost = 15; if (C.steel_tempo) C.steel_tempo.cost = 0; if (C.decisive_reprisal) C.decisive_reprisal.cost = 20; // Nov 3
 POWERS.codex_soulbinder.dotDealt = POWERS.codex_soulbinder.dealt;
 CARDS_READY = true; if (DATA && DATA.gear) namedLoot(DATA);
-const API = { STARTER_KITS, staffShieldOk, legalGear, CODEX_NEEDS, codexNeed, weaponSetup, CODEX_TOKEN_CHANCE, bossCodexPct, GROUPS, groupData, itemRules, rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { STARTER_KITS, staffShieldOk, legalGear, CODEX_NEEDS, codexNeed, weaponSetup, CODEX_TOKEN_CHANCE, bossCodexPct, BOSS_CODEX_BARE, GROUPS, groupData, itemRules, rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -61,8 +61,11 @@
     for (const [ek, e] of Object.entries(DATA.enemies)) { if (e.raid || e.map === 'town') continue; for (const x of e.loot || []) if (x.type === 'Card' && x.item === d.name && x.cls === d.cls) out.push({ e, ek, pct: x.pct, map: DATA.maps[e.map || 'physical'] }); }
     return out.sort((a, b) => a.map.num - b.map.num || b.pct - a.pct);
   }
+  // Nov 13: the chance a boss drops one codex for the hero you are playing: your own class's is 25% (50% with no codex on), the others 5%
+  function cxBare() { const c = profile && profile.chars && profile.chars[heroKey]; return !!c && !(c.gear || []).some(g => g.slot === 'Codex'); }
+  function cxPct(b, cls) { const c = profile && profile.chars && profile.chars[heroKey]; return +CB.bossCodexPct(b, !!c && c.cls === cls, cxBare()).toFixed(1); }
   function gCodexSrc(key) { const cx = CB.CODEX_BY_KEY[key]; if (!cx) return []; const name = cx.name + ' Codex', out = [];
-    for (const [mk, M] of Object.entries(DATA.maps)) { const b = DATA.enemies[M.boss]; const x = b && (b.loot || []).find(l => l.type === 'Codex' && l.item === name); if (x) out.push({ M, b, pct: +CB.bossCodexPct(b).toFixed(1) }); }
+    for (const [mk, M] of Object.entries(DATA.maps)) { const b = DATA.enemies[M.boss]; const x = b && (b.loot || []).find(l => l.type === 'Codex' && l.item === name); if (x) out.push({ M, b, pct: cxPct(b, cx.cls) }); }
     return out.sort((a, b) => a.M.num - b.M.num); }
   function gHasCodex(key) { return profile.stash.some(it => it.slot === 'Codex' && it.codex === key) || Object.values(profile.chars).some(c => (c.gear || []).some(g => g.slot === 'Codex' && g.codex === key)); }
   // gear stats to look for, read from the build's cards (and the codex passive)

@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Balance', "Codex drops: a map boss now drops your own class's codex 25% of the time, and 50% while you are wearing no codex at all. Every other class's codex still drops at 5% each. Before, a specific codex was 5% a kill whatever your class."],
       ['Interface', "Enemy intents have two attack pictures now: a blade in a target ring for an attack on one target, and an orange burst for an attack that hits everyone."],
       ['Change', "Thorns striking back no longer make a sound."],
       ['Interface', "The glow on the banded and skull loot chests sits on the line where the lid opens; on the skull chest it breaks behind the skull."],

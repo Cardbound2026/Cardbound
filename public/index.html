@@ -2906,8 +2906,9 @@ function intentKind(ops) {
 }
 
 // per-enemy tuning on top of the Map 1 design numbers
-const BOSS_CODEX_CHANCE = 0.25; // Nov 1: was 0.5 and always your own class; now 25%, and the codex is any class's on that boss's table
-const bossCodexPct = (d) => { const n = ((d && d.loot) || []).filter(x => x.type === 'Codex').length; return n ? BOSS_CODEX_CHANCE * 100 / n : 0; }; // chance of one particular codex per kill
+const BOSS_CODEX_CHANCE = 0.25; // Nov 13: a map boss drops YOUR class's codex 25% of the time (50% while you wear no codex); each other class's codex still drops 5% of the time (25% / 5), each on its own roll. Was one roll of 25% for a random class's codex
+const BOSS_CODEX_BARE = 0.5;
+const bossCodexPct = (d, own, bare) => { const n = ((d && d.loot) || []).filter(x => x.type === 'Codex').length; return !n ? 0 : own ? (bare ? BOSS_CODEX_BARE : BOSS_CODEX_CHANCE) * 100 : BOSS_CODEX_CHANCE * 100 / n; }; // chance of one particular codex per kill (own: it is the killer's class; bare: the killer wears no codex)
 const DEBT_CARDS = ['collect_the_debt', 'sanguine_guard', 'pay_in_blood'];
 // enemy card ops that land on heroes (single-target unless the op is marked all)
 const ENEMY_PLAYER_OPS = ['damage', 'execute', 'damageBlock', 'debuff', 'stealMana', 'burnMana', 'drawLess', 'disarm', 'purge', 'shred', 'shredAll', 'tickBleed', 'status'];
@@ -4402,7 +4403,7 @@ function rollNamedCards(data, rng, enemyKey, cls, luck) {
   }
   return out;
 }
-function rollDrops(data, rng, enemyKey, level, luck, cls) {
+function rollDrops(data, rng, enemyKey, level, luck, cls, bare) {
   gearData(data);
   const d = data.enemies[enemyKey], G = data.gear;
   const table = G.drops[d.tier]; const out = [];
@@ -4414,11 +4415,12 @@ function rollDrops(data, rng, enemyKey, level, luck, cls) {
     if (got) out.push(rollItem(data, rng, d.pool[Math.floor(rng() * d.pool.length)], got, level));
   }
   // codexes: bosses list one per class on their loot table (each rolls on its own)
-  // map bosses drop one codex 25% of the time (more with Luck), picked at random from every class's codex on their table (Nov 1)
+  // map bosses (Nov 13): your own class's codex drops 25% of the time (50% while you wear none); every other class's codex on the table rolls on its own at 5%. Luck raises them all
   if (d.tier === 'Boss' && !d.raid) {
-    if (rng() >= Math.min(1, BOSS_CODEX_CHANCE * lk)) return out;
-    const pick = (d.loot || []).filter(x => x.type === 'Codex'); // any class: trade or stash the ones your hero can't use
-    if (pick.length) { const x = pick[Math.floor(rng() * pick.length)], key = Object.keys(CODEX_BY_KEY).find(k => CODEX_BY_KEY[k].name + ' Codex' === x.item); if (key) out.push(makeCodex(data, rng, key, level)); }
+    for (const x of (d.loot || []).filter(q => q.type === 'Codex')) {
+      if (rng() * 100 >= Math.min(100, bossCodexPct(d, x.cls === cls, bare) * lk)) continue;
+      const key = Object.keys(CODEX_BY_KEY).find(k => CODEX_BY_KEY[k].name + ' Codex' === x.item); if (key) out.push(makeCodex(data, rng, key, level));
+    }
     return out;
   }
   for (const x of d.loot || []) if (x.type === 'Codex' && rng() * 100 < (x.pct || 0) * lk) { const key = Object.keys(CODEX_BY_KEY).find(k => CODEX_BY_KEY[k].name + ' Codex' === x.item); if (key) out.push(makeCodex(data, rng, key, level)); }
@@ -4573,7 +4575,7 @@ if (C.pilfer) C.pilfer.cost = 20; // Nov 2
 if (C.twin_verdict) C.twin_verdict.cost = 15; if (C.steel_tempo) C.steel_tempo.cost = 0; if (C.decisive_reprisal) C.decisive_reprisal.cost = 20; // Nov 3
 POWERS.codex_soulbinder.dotDealt = POWERS.codex_soulbinder.dealt;
 CARDS_READY = true; if (DATA && DATA.gear) namedLoot(DATA);
-const API = { STARTER_KITS, staffShieldOk, legalGear, CODEX_NEEDS, codexNeed, weaponSetup, CODEX_TOKEN_CHANCE, bossCodexPct, GROUPS, groupData, itemRules, rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+const API = { STARTER_KITS, staffShieldOk, legalGear, CODEX_NEEDS, codexNeed, weaponSetup, CODEX_TOKEN_CHANCE, bossCodexPct, BOSS_CODEX_BARE, GROUPS, groupData, itemRules, rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -4889,7 +4891,7 @@ class Run {
       for (const e of cb.enemies) {  // every hero rolls their own loot
         if (e.noLoot) continue; // the rest of a group: the group's first body rolls its loot
         for (let k = 0; k < (e.enraged ? 2 : 1); k++) { // an Enraged elite drops everything twice
-          drops.push(...rollDrops(this.data, this.rng, e.key, this.level, this.luck(m), m.cls));
+          drops.push(...rollDrops(this.data, this.rng, e.key, this.level, this.luck(m), m.cls, !(m.gear || []).some(g => g.slot === 'Codex')));
           drops.push(...rollCards(this.rng, m.cls, this.data.enemies[e.key].tier, this.luck(m)));
           drops.push(...rollNamedCards(this.data, this.rng, e.key, m.cls, this.luck(m)));
           const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * goldMult(this.level));
@@ -4927,7 +4929,7 @@ class Run {
         const pool = Object.entries(this.data.enemies).filter(([k, e]) => e.tier === tier && (e.map || 'physical') === this.mapKey).map(([k]) => k);
         if (pool.length) {
           const k = pool[Math.floor(this.rng() * pool.length)], e = this.data.enemies[k];
-          const drops = [...rollDrops(this.data, this.rng, k, this.level, this.luck(m), m.cls), ...rollCards(this.rng, m.cls, e.tier, this.luck(m)), ...rollNamedCards(this.data, this.rng, k, m.cls, this.luck(m))];
+          const drops = [...rollDrops(this.data, this.rng, k, this.level, this.luck(m), m.cls, !(m.gear || []).some(g => g.slot === 'Codex')), ...rollCards(this.rng, m.cls, e.tier, this.luck(m)), ...rollNamedCards(this.data, this.rng, k, m.cls, this.luck(m))];
           const gold = Math.round(ri(this.rng, e.gold[0], e.gold[1]) * goldMult(this.level));
           m.sack.push(...drops); m.gold += gold; out[i].drops = drops; out[i].gold = gold; out[i].from = e.name;
           this.note(`${this.solo ? 'You rummage' : m.name + ' rummages'} through what the ${e.name} left behind: ${drops.length} drop${drops.length === 1 ? '' : 's'} and ${gold} gold.`);
@@ -7519,8 +7521,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794613147803';
-  const CB_BUILD = '9c99bd81db'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794613535194';
+  const CB_BUILD = '43537b5ed7'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8626,6 +8628,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Balance', "Codex drops: a map boss now drops your own class's codex 25% of the time, and 50% while you are wearing no codex at all. Every other class's codex still drops at 5% each. Before, a specific codex was 5% a kill whatever your class."],
       ['Interface', "Enemy intents have two attack pictures now: a blade in a target ring for an attack on one target, and an orange burst for an attack that hits everyone."],
       ['Change', "Thorns striking back no longer make a sound."],
       ['Interface', "The glow on the banded and skull loot chests sits on the line where the lid opens; on the skull chest it breaks behind the skull."],
@@ -9411,7 +9414,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     modal2(`<h2>${esc(name)} <span class="muted" style="font-size:15px"><span style="color:${CC[cx.cls]}">${esc(cx.cls)}</span> codex</span></h2>
       <p><b style="color:#f0b070">Passive:</b> ${esc(cx.text)}</p>
       <h4 style="margin:10px 0 4px;color:var(--accent)">Where it drops</h4>
-      ${src.length ? `<table class="cxdt"><thead><tr><th>Source</th><th>Map</th><th>Chance</th></tr></thead><tbody>${src.map(({ mk, M, b }) => `<tr><td><b>${esc(b.name)}</b> (boss)</td><td>${M.num}. ${esc(M.name)}</td><td>${+CB.bossCodexPct(b).toFixed(1)}% per kill (a boss drops a codex ${pct}% of the time, any class; more with Luck)</td></tr><tr><td><b>${esc(CB.RAID_NAMES[mk] || 'Raid')}</b> (raid)</td><td>${M.num}. ${esc(M.name)}</td><td>Every kill drops one of this boss's ${(b.loot || []).filter(x => x.type === 'Codex').length} codexes (rolled for the raid)</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Not on any loot table yet.</p>'}
+      ${src.length ? `<table class="cxdt"><thead><tr><th>Source</th><th>Map</th><th>Chance</th></tr></thead><tbody>${src.map(({ mk, M, b }) => `<tr><td><b>${esc(b.name)}</b> (boss)</td><td>${M.num}. ${esc(M.name)}</td><td>${cxPct(b, cx.cls)}% per kill for your hero (your own class's codex: ${pct}%, or ${Math.round(CB.BOSS_CODEX_BARE * 100)}% while you wear no codex; another class's: ${+CB.bossCodexPct(b).toFixed(1)}%; more with Luck)</td></tr><tr><td><b>${esc(CB.RAID_NAMES[mk] || 'Raid')}</b> (raid)</td><td>${M.num}. ${esc(M.name)}</td><td>Every kill drops one of this boss's ${(b.loot || []).filter(x => x.type === 'Codex').length} codexes (rolled for the raid)</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Not on any loot table yet.</p>'}
       <p class="muted" style="font-size:13px">Codexes roll random stats like gear (they are the only source of All Resistances), and they can't be upgraded: farm a better roll. Item level follows the map level it drops on.</p>
       <h4 style="margin:10px 0 4px;color:var(--accent)">Your copies (${mine.length})</h4>
       ${mine.length ? `<div class="list">${mine.map(m => itemHtml(m.it, `<div class="il">${esc(m.where)}</div>`)).join('')}</div>` : '<p class="muted">None yet.</p>'}
@@ -9435,7 +9438,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     modal(`<h2>${esc(M.name)} +${lvl}: what drops</h2>
       <p class="muted" style="margin:0 0 6px">Gear rolls item level ${Math.max(1, 5 * lvl)} to ${5 * lvl + 5}, with a ${esc(M.dropResist || '')} Resistance implicit. Each kill rolls on its own (Luck raises every chance).</p>
       <div class="maploot">
-        <div><h4>Codexes (boss)</h4>${cx.map(x => `<div class="cardrow" style="--rc:${RC.Codex}"><span class="n" style="color:${CC[x.cls]}">${esc(x.cls)}</span><b>${esc(x.item)}</b><span class="cst">${+CB.bossCodexPct(boss).toFixed(1)}% per kill</span></div>`).join('') || '<span class="muted">None.</span>'}
+        <div><h4>Codexes (boss)</h4>${cx.map(x => `<div class="cardrow" style="--rc:${RC.Codex}"><span class="n" style="color:${CC[x.cls]}">${esc(x.cls)}</span><b>${esc(x.item)}</b><span class="cst">${cxPct(boss, x.cls)}% per kill</span></div>`).join('') || '<span class="muted">None.</span>'}
           <h4>${esc(cls)} cards (named drops)</h4>${mine.map(c => `<div class="cardrow" style="--rc:${RC[CARDS[c.key] ? CARDS[c.key].rarity : 'White']}" ${c.key ? `data-cxcard="${c.key}" role="button" tabindex="0"` : ''}><span class="n">${c.x.pct}%</span><b>${esc(c.x.item)}</b><span class="cst">${esc(c.e.name)}</span></div>`).join('') || '<span class="muted">None for your class here.</span>'}
           <p class="muted" style="font-size:12px">Every kill can also roll a random card of your class. ${cards.length - mine.length} more named cards here are for other classes.</p></div>
         <div><h4>Gear by slot (${bases.size} item bases)</h4>${Object.keys(bySlot).sort().map(sl => `<div class="mlslot"><b>${esc(sl)}</b> ${bySlot[sl].map(x => `<span title="Dropped by ${esc(x.from.join(', '))}">${esc(x.b)}</span>`).join(', ')}</div>`).join('')}
@@ -13965,8 +13968,11 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     for (const [ek, e] of Object.entries(DATA.enemies)) { if (e.raid || e.map === 'town') continue; for (const x of e.loot || []) if (x.type === 'Card' && x.item === d.name && x.cls === d.cls) out.push({ e, ek, pct: x.pct, map: DATA.maps[e.map || 'physical'] }); }
     return out.sort((a, b) => a.map.num - b.map.num || b.pct - a.pct);
   }
+  // Nov 13: the chance a boss drops one codex for the hero you are playing: your own class's is 25% (50% with no codex on), the others 5%
+  function cxBare() { const c = profile && profile.chars && profile.chars[heroKey]; return !!c && !(c.gear || []).some(g => g.slot === 'Codex'); }
+  function cxPct(b, cls) { const c = profile && profile.chars && profile.chars[heroKey]; return +CB.bossCodexPct(b, !!c && c.cls === cls, cxBare()).toFixed(1); }
   function gCodexSrc(key) { const cx = CB.CODEX_BY_KEY[key]; if (!cx) return []; const name = cx.name + ' Codex', out = [];
-    for (const [mk, M] of Object.entries(DATA.maps)) { const b = DATA.enemies[M.boss]; const x = b && (b.loot || []).find(l => l.type === 'Codex' && l.item === name); if (x) out.push({ M, b, pct: +CB.bossCodexPct(b).toFixed(1) }); }
+    for (const [mk, M] of Object.entries(DATA.maps)) { const b = DATA.enemies[M.boss]; const x = b && (b.loot || []).find(l => l.type === 'Codex' && l.item === name); if (x) out.push({ M, b, pct: cxPct(b, cx.cls) }); }
     return out.sort((a, b) => a.M.num - b.M.num); }
   function gHasCodex(key) { return profile.stash.some(it => it.slot === 'Codex' && it.codex === key) || Object.values(profile.chars).some(c => (c.gear || []).some(g => g.slot === 'Codex' && g.codex === key)); }
   // gear stats to look for, read from the build's cards (and the codex passive)
@@ -15314,7 +15320,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     const classes = new Set(run.members.map(m => m.cls));
     for (const k of n.enemies || []) { const e = DATA.enemies[k]; if (!e) continue;
       if (has(e.name) || has(e.unit) || has(e.creature)) why.push(e.name + (e.group ? ' (group)' : ''));
-      for (const x of e.loot || []) { if (x.type === 'Card' && !classes.has(x.cls)) continue; if (has(x.item)) why.push(`${e.name} drops ${x.item} (${x.type === 'Codex' ? +CB.bossCodexPct(e).toFixed(1) : x.pct}%)`); }
+      for (const x of e.loot || []) { if (x.type === 'Card' && !classes.has(x.cls)) continue; if (has(x.item)) why.push(`${e.name} drops ${x.item} (${x.type === 'Codex' ? cxPct(e, x.cls) : x.pct}%)`); }
       for (const bn of e.pool || []) { const b = DATA.gear.bases.find(y => y.name === bn), A = b && DATA.gear.arche[b.arch]; if (has(bn) || has(b && b.label) || has(A && A.slot)) why.push(`${e.name} drops ${bn}${b && b.label ? ' (' + b.label + ')' : ''}`); } }
     return [...new Set(why)];
   }
@@ -15489,7 +15495,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       <p class="muted">Luck ${lk}: every chance is multiplied by ${(1 + lk / 100).toFixed(2)}.${t.chance['Purple (Epic)'] ? '' : ' Purples only drop from elites and the boss.'}</p>
       <p><b>Item bases it drops</b> (one picked per roll; stats roll at map +${lvl}):</p><div class="cardlist">${e.pool.map(b => { const bb = G.bases.find(x => x.name === b); return `<div class="cardrow" style="--rc:var(--line)"><span class="n"></span><b>${esc(b)}</b><span class="cst">${esc(bb ? bb.label : '')}</span></div>`; }).join('')}</div>` : '';
     const cards = (e.loot || []).filter(x => x.type === 'Card' || x.type === 'Codex');
-    const cardHtml = cards.length ? `<p><b>Cards and codexes</b> (each card rolls on its own; Gold cards only drop here):</p>${cards.some(x => x.type === 'Codex') ? `<p class="muted" style="margin:0 0 4px">A kill has a <b style="color:#e0802a">${Math.round(CB.BOSS_CODEX_CHANCE * 100)}% chance to drop one codex</b>. Which one is random among the ${cards.filter(x => x.type === 'Codex').length} below, so each shows ${+CB.bossCodexPct(e).toFixed(1)}%.</p>` : ''}<div class="cardlist">${cards.map(x => `<div class="cardrow" style="--rc:${RC[x.rarity] || 'var(--line)'}"><span class="n">${x.type === 'Codex' ? +CB.bossCodexPct(e).toFixed(1) : x.pct}%</span><b>${esc(x.item)} <span class="muted">${esc(x.cls)} ${esc(x.rarity)} ${x.type === 'Codex' ? 'codex' : ''}</span></b><span class="cst"></span><span class="tx">${esc(x.note || '')}</span></div>`).join('')}</div>` : '';
+    const cardHtml = cards.length ? `<p><b>Cards and codexes</b> (each card rolls on its own; Gold cards only drop here):</p>${cards.some(x => x.type === 'Codex') ? `<p class="muted" style="margin:0 0 4px">A kill has a <b style="color:#e0802a">${Math.round((cxBare() ? CB.BOSS_CODEX_BARE : CB.BOSS_CODEX_CHANCE) * 100)}% chance to drop your own class's codex</b>${cxBare() ? ' (50% because you wear no codex; 25% once you do)' : ' (50% while you wear no codex)'}. Each other class's codex rolls on its own at ${+CB.bossCodexPct(e).toFixed(1)}%.</p>` : ''}<div class="cardlist">${cards.map(x => `<div class="cardrow" style="--rc:${RC[x.rarity] || 'var(--line)'}"><span class="n">${x.type === 'Codex' ? cxPct(e, x.cls) : x.pct}%</span><b>${esc(x.item)} <span class="muted">${esc(x.cls)} ${esc(x.rarity)} ${x.type === 'Codex' ? 'codex' : ''}</span></b><span class="cst"></span><span class="tx">${esc(x.note || '')}</span></div>`).join('')}</div>` : '';
     const html = `<p><b>Gold:</b> ${Math.round(e.gold[0] * gm)} to ${Math.round(e.gold[1] * gm)} per kill.</p>${gear}${cardHtml}<p><b>Card drops:</b> ${{ 1: '30% per kill (mostly White)', 2: '40% per kill', 3: '50% per kill', Elite: 'always 1 card, Green or better (10% Gold)', Boss: '2 cards, Blue or Gold' }[e.tier]}, from your class's implemented cards. The named cards above come from the Map 1 design and arrive when more cards are built.</p>`;
     if (asHtml) return html;
     modal(`<h2>${esc(e.name)}: loot</h2>${html}<div class="row"><button class="btn primary" id="mClose">Close</button></div>`);

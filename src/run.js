@@ -308,7 +308,7 @@ class Run {
       for (const e of cb.enemies) {  // every hero rolls their own loot
         if (e.noLoot) continue; // the rest of a group: the group's first body rolls its loot
         for (let k = 0; k < (e.enraged ? 2 : 1); k++) { // an Enraged elite drops everything twice
-          drops.push(...rollDrops(this.data, this.rng, e.key, this.level, this.luck(m), m.cls));
+          drops.push(...rollDrops(this.data, this.rng, e.key, this.level, this.luck(m), m.cls, !(m.gear || []).some(g => g.slot === 'Codex')));
           drops.push(...rollCards(this.rng, m.cls, this.data.enemies[e.key].tier, this.luck(m)));
           drops.push(...rollNamedCards(this.data, this.rng, e.key, m.cls, this.luck(m)));
           const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * goldMult(this.level));
@@ -346,7 +346,7 @@ class Run {
         const pool = Object.entries(this.data.enemies).filter(([k, e]) => e.tier === tier && (e.map || 'physical') === this.mapKey).map(([k]) => k);
         if (pool.length) {
           const k = pool[Math.floor(this.rng() * pool.length)], e = this.data.enemies[k];
-          const drops = [...rollDrops(this.data, this.rng, k, this.level, this.luck(m), m.cls), ...rollCards(this.rng, m.cls, e.tier, this.luck(m)), ...rollNamedCards(this.data, this.rng, k, m.cls, this.luck(m))];
+          const drops = [...rollDrops(this.data, this.rng, k, this.level, this.luck(m), m.cls, !(m.gear || []).some(g => g.slot === 'Codex')), ...rollCards(this.rng, m.cls, e.tier, this.luck(m)), ...rollNamedCards(this.data, this.rng, k, m.cls, this.luck(m))];
           const gold = Math.round(ri(this.rng, e.gold[0], e.gold[1]) * goldMult(this.level));
           m.sack.push(...drops); m.gold += gold; out[i].drops = drops; out[i].gold = gold; out[i].from = e.name;
           this.note(`${this.solo ? 'You rummage' : m.name + ' rummages'} through what the ${e.name} left behind: ${drops.length} drop${drops.length === 1 ? '' : 's'} and ${gold} gold.`);

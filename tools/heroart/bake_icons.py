@@ -40,5 +40,13 @@ for name in ('ring', 'amulet', 'codex'):
     lab, n = ndimage.label(ndimage.binary_closing(cols, np.ones(5)) | cols); runs = [np.nonzero(lab == i)[0] for i in range(1, n + 1)]; runs = [r for r in runs if al[:, r].sum() > 40]
     if len(runs) != 6: print(name, 'pieces', len(runs)); w = a.shape[1] / 6; runs = [np.arange(int(i * w), int((i + 1) * w)) for i in range(6)]
     for i, r in enumerate(runs): put(name.capitalize(), i, a[:, r.min():r.max() + 1])
+# Nov 13: shoulders, bracers and gloves cut from the hero art were unreadable blobs, so they have pictures of their own
+# (icons_over/<Row>_<map>.png, 32 px PixelLab art picked by icons_over/pick.py), shown at twice their size
+import glob
+for f in glob.glob(f'{HERE}/icons_over/*_*_*.png'):
+    row, m = os.path.basename(f)[:-4].rsplit('_', 1)
+    if row not in ROWS or m not in MAPS: continue
+    im = Image.open(f).convert('RGBA'); im = im.crop(im.getbbox()); im = im.resize((im.width * 2, im.height * 2), Image.NEAREST); cell = Image.new('RGBA', (C, C)); cell.paste(im, ((C - im.width) // 2, (C - im.height) // 2))
+    r = ROWS.index(row); mi = MAPS.index(m); atlas[r * C:(r + 1) * C, mi * C:(mi + 1) * C] = np.array(cell)
 Image.fromarray(atlas).save(os.path.dirname(os.path.dirname(HERE)) + '/public/img/items.webp', lossless=True, method=6)
 print(len(ROWS), ROWS)
