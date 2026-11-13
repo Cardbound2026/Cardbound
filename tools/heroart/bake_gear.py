@@ -41,6 +41,23 @@ def bake_slots():
         st = BB.bake(b, {k: as_layer(v) for k, v in slot_layers(b).items()})
         for v, strip in st.items(): Image.fromarray(strip).save(f'{BB.OUT}/slots_{b}_{v}.webp', lossless=True, method=6)
     BB.DARK = .74
+def no_arm(body, im):
+    """The side view is painted on a body without its arm, but the painter often draws an arm anyway. The puppet has its own arm that moves,
+    so a painted one would show as a second arm: paint it out with the armour on either side of it."""
+    J = BB.joints(json.load(open(f'{HERE}/src/{body}/skel.json'))['e']); ar = (6.6 if body in ('warrior', 'paladin') else 4.4) + 3.2; d = np.full((S, S), 99.0); top = 0
+    for sd in ('RIGHT', 'LEFT'):
+        sh, el, wr = J[sd + ' SHOULDER'], J[sd + ' ELBOW'], J[sd + ' ARM']; d = np.minimum(d, np.minimum(BB.seg_d(px, py, sh, el), BB.seg_d(px, py, el, BB.ext(el, wr, .5)))); top = max(top, sh[1])
+    zone = (d < ar) & (py > top + 5); out = im.copy(); a = im[..., 3] > 0; good = a & ~zone; fill = zone & a
+    if not fill.any(): return out
+    import cv2
+    rgb = im[..., :3].copy(); rgb[~a] = 0; hole = (fill | ~a).astype(np.uint8) * 255      # grow the armour beside the arm across it (and off the edge, which is cut away again)
+    sm = cv2.inpaint(rgb, hole, 4, cv2.INPAINT_TELEA)
+    ys, xs = np.nonzero(fill); gy, gx = np.nonzero(good & (np.abs(py - (ys.mean() + .5)) < (ys.max() - ys.min()) / 2 + 6)); pal = im[gy, gx, :3].astype(int)
+    if len(pal):                # then snap every filled pixel to a colour the armour really uses nearby, so it stays crisp pixel art
+        pal = np.unique(pal // 6 * 6, axis=0)
+        for y, x in zip(ys, xs): c = sm[y, x].astype(int); out[y, x, :3] = pal[np.argmin(((pal - c) ** 2).sum(1))]
+    body = np.array(Image.open(f'{HERE}/src/{body}/e.png').convert('RGBA'))[..., 3] > 0; out[fill & ~GS.dil(body, 2)] = 0   # and nothing may stick out past the body where the arm did
+    return out
 def bake_set(name):
     for pk, bodies in GS.PAIRS.items():
         f = f'{HERE}/gear/raw/{name}_{pk}.png'
@@ -53,6 +70,7 @@ def bake_set(name):
             for c, v in enumerate(GS.VIEWS):
                 _, x0, y0 = GS.origin(b, v); im = np.zeros((S, S, 4), np.uint8); cell = lay[r * GS.CH:(r + 1) * GS.CH, c * GS.CW:(c + 1) * GS.CW]
                 im[y0:y0 + GS.CH, max(0, x0):x0 + GS.CW] = cell[:S - y0, max(0, -x0):]; L[v] = im
+            L['e'] = no_arm(b, L['e'])
             for v, strip in BB.bake(b, L).items(): Image.fromarray(strip).save(f'{OUT}/{name}_{b}_{v}.webp', lossless=True, method=6)
     print('gear', name)
 if __name__ == '__main__':

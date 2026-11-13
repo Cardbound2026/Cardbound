@@ -561,6 +561,24 @@ body.inkui:not(.ui-classic) .btn:not(.primary):not(.endturn):hover:not(:disabled
 body.inkui:not(.ui-classic) .btn.primary:not(.endturn):hover:not(:disabled) { border-color: #ffe9b0; color: #fff8e0; background: linear-gradient(180deg, #8f6529, #563917 55%, #402910); filter: none; }
 body.inkui:not(.ui-classic) .btn:not(.endturn):active:not(:disabled) { transform: translateY(1px); }
 body.inkui:not(.ui-classic) .btn:not(.endturn):disabled { filter: grayscale(.7); opacity: .5; color: #9a9184; }
+/* Nov 13: the guide's box, the town bar and talk boxes, in the same voice as the item cards */
+body.inkui:not(.ui-classic) .tutbox:not(.min) { background: rgba(6,5,8,.88); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: 0; border-radius: 0; padding: 0 16px 14px; box-shadow: 0 0 0 1px #000, 0 0 0 2px #6a5230, 0 16px 40px rgba(0,0,0,.75); font-size: 15px; line-height: 1.4; }
+body.inkui:not(.ui-classic) .tutbox:not(.min) .tuthead { margin: 0 -16px 10px; padding: 6px 12px 6px 38px; position: relative; background: linear-gradient(180deg, #6b4a1f, #3a2710 60%, #4a3115); box-shadow: inset 0 1px 0 #f0c56a, inset 0 -1px 0 #1a1008, 0 1px 0 #000; font: 600 14px 'Grenze', serif; font-variant: small-caps; letter-spacing: 1.6px; } body.inkui:not(.ui-classic) .tutbox:not(.min) .tuthead .muted { color: #ffe9b0; }
+body.inkui:not(.ui-classic) .tutbox:not(.min) .tuthead::before { content: ''; position: absolute; left: 14px; top: 50%; width: 11px; height: 11px; margin-top: -6px; transform: rotate(45deg); background: radial-gradient(circle at 35% 35%, #fff, #f0c56a 45%, #7a4a12); box-shadow: 0 0 0 2px #1a1008, 0 0 0 3px #c79a4a, 0 0 10px #f0c56a; }
+body.inkui:not(.ui-classic) .tutbox:not(.min) h3 { font: 600 24px/1.1 'Grenze', serif; font-variant: small-caps; letter-spacing: .8px; color: #ffe9b0; text-shadow: 0 1px 0 #000, 0 0 12px rgba(240,197,106,.35); margin: 0 0 8px; }
+body.inkui:not(.ui-classic) .tutbox:not(.min) p b { color: #fff; } body.inkui:not(.ui-classic) .tutbox .tutx { border: 0; color: #ffe9b0; font-size: 16px; }
+body.inkui:not(.ui-classic) .tutbox.min { border: 0; box-shadow: 0 0 0 1px #000, 0 0 0 2px #6a5230; } body.inkui:not(.ui-classic) .tutbox .tutpill { background: rgba(6,5,8,.88); font: 600 14px 'Grenze', serif; font-variant: small-caps; letter-spacing: .8px; color: #ffe9b0; }
+body.inkui:not(.ui-classic) .townbar b { font: 600 24px/1 'Grenze', serif; font-variant: small-caps; letter-spacing: .8px; text-shadow: 0 1px 0 #000; }
+body.inkui:not(.ui-classic) .chip, body.inkui:not(.ui-classic) .pilebtn { border-radius: 2px; border: 1px solid #40372e; background: linear-gradient(180deg, #221c18, #15110f); box-shadow: inset 0 0 0 1px #000; color: #cfc6b6; font-size: 12.5px; padding: 3px 9px; } body.inkui:not(.ui-classic) .pilebtn { cursor: pointer; } body.inkui:not(.ui-classic) .pilebtn:hover { border-color: #c79a4a; color: #fff1c4; }
+/* entering the city: the screen dips to black with the place's name */
+#veil { position: fixed; inset: 0; z-index: 1900; display: grid; place-items: center; background: #050406; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .35s ease, visibility .35s; }
+#veil.on { opacity: 1; visibility: visible; } #veil b { font: 600 clamp(30px, 5vw, 60px) 'Grenze', serif; font-variant: small-caps; letter-spacing: 6px; color: #ffe9b0; text-shadow: 0 0 24px rgba(240,150,50,.5); } #veil span { display: block; text-align: center; font: 500 15px 'Grenze', serif; font-variant: small-caps; letter-spacing: 4px; color: #8f8779; margin-top: 6px; }
+/* Nov 13: no wall behind the game; it fills the window (Menu > Display can box it to a screen shape or size) */
+html, body, body.inkui, body.inkui:not(.ui-classic) { background: #050406 !important; background-image: none !important; }
+.wrap { max-width: var(--gameW, none) !important; padding: 6px max(10px, env(safe-area-inset-left, 0px)) 10px !important; gap: 8px !important; }
+body.boxed .wrap { min-height: var(--gameH, auto); box-shadow: 0 0 0 1px #1c1815, 0 0 60px rgba(0,0,0,.8); }
+.title { max-width: 1500px; } .selscene { min-height: min(70vh, 720px); }
+.setrow { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 4px 0; } .setrow select { background: #15110f; color: #e8dfcb; border: 1px solid #5c4a34; padding: 4px 8px; font: inherit; border-radius: 2px; }
 .iticon { position: relative; flex: none; display: block; width: var(--isz, 46px); height: var(--isz, 46px); background: url(img/items.webp) calc(var(--ix, 0) * var(--isz, 46px) * -1) calc(var(--iy, 0) * var(--isz, 46px) * -1) / calc(var(--isz, 46px) * 6) auto no-repeat, radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--rc, #6b6258) 22%, #1d1815), #0e0c0b 78%); image-rendering: pixelated; border-radius: 3px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rc, #6b6258) 75%, #000), inset 0 0 0 2px #000, 0 0 0 1px #000; }
 .iticon i { position: absolute; right: 3px; bottom: 1px; font: 600 10px/1.2 'IBM Plex Mono', monospace; color: #e9dfca; text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000; font-style: normal; image-rendering: auto; opacity: .9; }
 /* Item cards (Nov 12, second pass). In lists: a quiet row, picture left, name in its rarity colour. As a tooltip or in a comparison: a card with a rarity-lit header, the picture top right, and bonuses as diamond-bulleted lines. */
@@ -1144,6 +1162,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   </header>
 
   <!-- TITLE: pick or create a hero -->
+  <div id="veil" aria-hidden="true"><div><b id="veilT">Emberwatch</b><span id="veilS">The last city before the March</span></div></div>
   <div id="splash" role="button" tabindex="0" aria-label="Click to start your adventure">
     <div class="spembers" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div class="splogo"><span class="spsup">A dark deckbuilding adventure</span><h1>Cardbound</h1><span class="sprule"></span></div>
@@ -2145,7 +2164,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   function sizeTown() {
     const wrap = $('townWrap'); const w = wrap.clientWidth;
     const TS = w < 600 ? 40 : 48, dpr = Math.min(2, window.devicePixelRatio || 1);
-    const h = Math.max(340, Math.min(window.innerHeight - 150, MH * TS));
+    const h = Math.max(340, Math.min(window.innerHeight * ((settings.size || 100) / 100) - 118, MH * TS));
     cv.style.width = w + 'px'; cv.style.height = h + 'px'; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
     if (TS !== TOWN.TS || dpr !== TOWN.dpr) { TOWN.TS = TS; TOWN.dpr = dpr; TOWN.chunks.clear(); }
     TOWN.vw = w; TOWN.vh = h;
@@ -2443,6 +2462,15 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     cc.addEventListener('pointerup', () => { if (!g) return; g.h.classList.remove('on'); g = null; saveSettings(); });
     cc.addEventListener('dblclick', (ev) => { const h = ev.target.closest('.lgrip'); if (!h) return; if (h.dataset.grip !== 'h') delete settings.chatW; if (h.dataset.grip !== 'w') delete settings.chatH; applyLedgerSize(); saveSettings(); });
   })();
+  // the game fills the window (Nov 13); Menu > Display narrows it to a screen shape or a share of the window
+  function applyDisplay() {
+    const r = settings.ratio && settings.ratio !== 'fill' ? settings.ratio.split(':').map(Number) : null, k = (settings.size || 100) / 100;
+    let w = innerWidth * k; if (r) w = Math.min(w, innerHeight * k * r[0] / r[1]);
+    document.documentElement.style.setProperty('--gameW', r || k < 1 ? Math.round(w) + 'px' : 'none'); document.documentElement.style.setProperty('--gameH', Math.round(innerHeight * k) + 'px');
+    document.body.classList.toggle('boxed', !!r || k < 1); try { window.dispatchEvent(new Event('resize')); } catch (e) {}
+  }
+  window.addEventListener('resize', () => { clearTimeout(applyDisplay.t); applyDisplay.t = setTimeout(() => { const r = settings.ratio && settings.ratio !== 'fill' ? settings.ratio.split(':').map(Number) : null, k = (settings.size || 100) / 100; let w = innerWidth * k; if (r) w = Math.min(w, innerHeight * k * r[0] / r[1]); document.documentElement.style.setProperty('--gameW', r || k < 1 ? Math.round(w) + 'px' : 'none'); }, 60); });
+  setTimeout(() => { try { applyDisplay(); } catch (e) {} }, 0);
   function saveSettings() { try { localStorage.setItem('cb-settings', JSON.stringify(settings)); } catch (e) {} }
 
   // ---------- title screen: pick a hero, or create one (class + name)
@@ -2506,9 +2534,10 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     const d = ev.target.closest('[data-delhero]'); if (d) return deleteHeroFlow(d.dataset.delhero);
     const r = ev.target.closest('[data-sel]'); if (r) { selKey = r.dataset.sel; renderTitle(); return; }
     if (ev.target.closest('#selNew')) { titleMode = 'create'; createCls = null; renderTitle(); return; }
-    const b = ev.target.closest('[data-play]'); if (b) { heroKey = b.dataset.play; profile.last.cls = heroKey; titleMode = 'select'; save(); renderHub(); show('start'); saveCard(); }
+    const b = ev.target.closest('[data-play]'); if (b) { heroKey = b.dataset.play; profile.last.cls = heroKey; titleMode = 'select'; save(); veil('Emberwatch', 'The last city before the March', () => { renderHub(); show('start'); saveCard(); }); }
   });
   $('heroSelect').addEventListener('dblclick', (ev) => { const r = ev.target.closest('[data-sel]'); if (r) { heroKey = r.dataset.sel; profile.last.cls = heroKey; save(); renderHub(); show('start'); saveCard(); } });
+  function veil(title, sub, then) { const v = $('veil'); $('veilT').textContent = title; $('veilS').textContent = sub || ''; v.classList.add('on'); setTimeout(() => { try { then(); } catch (e) { console.error(e); } setTimeout(() => v.classList.remove('on'), 650); }, 380); }
   $('createBack').onclick = () => { titleMode = 'select'; createCls = null; renderTitle(); };
   { const sp = $('splash'), go = () => { if (sp.classList.contains('gone')) return; sp.classList.add('gone'); setTimeout(() => sp.remove(), 900); }; sp.addEventListener('click', go); document.addEventListener('keydown', function k(ev) { if (!document.body.contains(sp)) return document.removeEventListener('keydown', k); if (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); go(); } }, true); }
   $('heroList').addEventListener('click', (ev) => { const b = ev.target.closest('[data-play]'); if (!b) return; heroKey = b.dataset.play; profile.last.cls = heroKey; save(); renderHub(); show('start'); saveCard(); });
@@ -2611,6 +2640,10 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
       <label class="toggle"><input type="checkbox" id="setFast" ${settings.fast ? 'checked' : ''}> Fast enemy turns</label>
       <label class="toggle"><input type="checkbox" id="setClassic" ${settings.classicUi ? 'checked' : ''}> Previous interface (the stone and wood look from before the pixel art)</label>
       <label class="toggle"><input type="checkbox" id="setClassicFoes" ${settings.classicFoes ? 'checked' : ''}> Previous enemy art (the still pictures from before the animated pixel monsters)</label>
+      <h3 style="font-size:20px;margin-top:6px">Display</h3>
+      <label class="setrow">Screen shape <select id="setRatio">${[['fill', 'Fill the window'], ['21:9', 'Ultrawide (21:9)'], ['16:9', 'Widescreen (16:9)'], ['16:10', 'Laptop (16:10)'], ['4:3', 'Classic (4:3)']].map(([v, n]) => `<option value="${v}"${(settings.ratio || 'fill') === v ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
+      <label class="setrow">Game size <select id="setSize">${[100, 90, 80, 70, 60].map(v => `<option value="${v}"${(settings.size || 100) === v ? ' selected' : ''}>${v === 100 ? 'Full (100%)' : v + '% of the window'}</option>`).join('')}</select></label>
+      <button class="btn" id="setFull">${document.fullscreenElement ? 'Leave full screen' : 'Go full screen (hides the browser)'}</button>
     </div>`);
     $('mClose').onclick = closeModal;
     $('mnGloss').onclick = () => openGlossary();
@@ -2619,6 +2652,8 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     if ($('mnAch')) $('mnAch').onclick = () => openAchievements();
     if ($('mnTut')) $('mnTut').onclick = () => { closeModal(); tutStart(); };
     $('setFast').onchange = (e) => { settings.fast = e.target.checked; saveSettings(); };
+    $('setRatio').onchange = (e) => { settings.ratio = e.target.value; saveSettings(); applyDisplay(); }; $('setSize').onchange = (e) => { settings.size = +e.target.value; saveSettings(); applyDisplay(); };
+    $('setFull').onclick = () => { try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); } catch (e) {} closeModal(); };
     $('setClassic').onchange = (e) => { settings.classicUi = e.target.checked; saveSettings(); document.body.classList.toggle('ui-classic', !!settings.classicUi); };
     $('setClassicFoes').onchange = (e) => { settings.classicFoes = e.target.checked; saveSettings(); if (cb && typeof render === 'function') try { render(); } catch (er) {} };
     if ($('mnLeave')) $('mnLeave').onclick = () => {

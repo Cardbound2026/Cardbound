@@ -1,6 +1,12 @@
   // ---------- What's new: the changelog (button bottom-right) and the new-version warning
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
+    { date: '2026-11-13', items: [
+      ['Feature', "A welcome screen greets you when the game opens: click to start your adventure. Choosing a hero is new too: your hero stands in the camp at full size with your roster down the side, and Create a new hero takes you to the campfire."],
+      ['Feature', "The game fills the whole window now, with no wall behind it. Menu, Display lets you pick a screen shape (fill, 21:9, 16:9, 16:10 or 4:3), a game size, and full screen."],
+      ['Polish', "One button style across the whole game (an iron plate lettered in small capitals, gold for the main action), and the tutorial box, town bar and chips match it."],
+      ['Fix', "Heroes seen from the side no longer show a second arm painted on their armour, and a ridden horse no longer stutters between steps."],
+    ] },
     { date: '2026-11-12', items: [
       ['Polish', "Item tooltips have a new look: a see-through dark panel, a header plate in the item's rarity colour with a gem at each end, everything in small capitals, blue bonuses with bright numbers, a gold item power and green passives."],
       ['Art', "Your horse has new pixel art from every side: it faces the way you ride, walking toward you, away from you or sideways, with your hero in the saddle."],
