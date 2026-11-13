@@ -38,3 +38,4 @@ sfx summon https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777
 sfx meteor https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/1c3a47fb-068f-459d-8d4b-68c1e183845f/cb-fx-meteor.wav
 music indoors https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/d180269c-9c97-4472-b614-032ca948fe51/cardbound-indoors.mp3
 music raid https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/90b1777f-fb90-412f-8424-3a98bf4a5224/cardbound-raid.mp3
+sfx dodge https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/53983712-f024-4f94-8623-09b76c1e6fc0/cardbound-dodge-whoosh.wav

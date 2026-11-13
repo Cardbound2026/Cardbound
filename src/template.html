@@ -1034,7 +1034,7 @@ body #scrCombat.bf .stage .uplate .bar span { font-size: 12px; }
   #playerSlot.raid .figure, #playerSlot.raid .figure svg { height: 38px; } #playerSlot.raid .uname b { font-size: 12px; } #playerSlot.raid .tag { font-size: 10px; padding: 0 3px; }
   .order.raid .otile { width: 62px; padding: 2px; } .order.raid .otile .ofig, .order.raid .otile .ofig svg { height: 30px; } .order.raid .otile .onm { font-size: 11px; } .order.raid .otile.now::after { display: none; }
   .cxcods { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; margin-top: 6px; } .cxcod { border-left: 3px solid var(--rc); background: rgba(255,255,255,.03); padding: 8px 10px; border-radius: 6px; display: grid; gap: 4px; } .cxch { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; } .cxch b { color: #f0b070; }
-  #btnUpdates { position: fixed; right: 8px; bottom: 34px; z-index: 40; padding: 5px 12px; font-size: 13px; } #btnUpdates i { display: none; } #btnUpdates.unread i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #e4a93a; margin-left: 6px; box-shadow: 0 0 8px #e4a93a; }
+  #btnUpdates { position: fixed; left: 50%; right: auto; bottom: 6px; transform: translateX(-50%); z-index: 40; padding: 5px 12px; font-size: 13px; } #btnUpdates i { display: none; } #btnUpdates.unread i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #e4a93a; margin-left: 6px; box-shadow: 0 0 8px #e4a93a; }
   .changelog { max-height: 62vh; overflow: auto; padding-right: 6px; } .changelog h3 { color: var(--accent); font-size: 20px; margin: 12px 0 4px; } .changelog ul { margin: 0; padding: 0; list-style: none; } .changelog li { margin: 5px 0; line-height: 1.4; display: grid; grid-template-columns: 100px minmax(0, 1fr); column-gap: 8px; align-items: baseline; } .clcards { margin: 6px 0 0; } .clcards summary { cursor: pointer; font-weight: 700; color: var(--accent); } .clcards ul { margin: 4px 0 8px 4px !important; } .clcards li { display: block !important; margin: 3px 0 !important; font-size: 13.5px; } .clcost { white-space: nowrap; } .clarea { display: block; margin-right: 0; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
   #updBanner .btn { padding: 4px 12px; font-size: 14px; } #updBanner { width: max-content; position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 32px); padding: 8px 14px; background: #2a1f12; border: 1px solid var(--accent); border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,.6); }
   .rlrolls { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; margin: -2px 0 4px 8px; } .rlrolls .win { text-decoration: underline; }
@@ -1044,7 +1044,8 @@ body #scrCombat.bf .stage .uplate .bar span { font-size: 12px; }
   .node .enraged { animation: pulse 1.2s ease-in-out infinite; }
   [data-cardinfo] .card, [data-cardinfo].item { cursor: pointer; }
   .cxbarrow { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); z-index: 3; display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 8px; background: rgba(14,11,8,.82); border: 1px solid var(--line); font-size: 13.5px; white-space: nowrap; max-width: calc(100% - 20px); flex-wrap: wrap; justify-content: center; }
-  .cxbarrow .cxxp { width: 180px; height: 8px; margin: 0; } .cxbarrow .pilebtn { padding: 2px 8px; font-size: 12.5px; }
+  .cxbarrow { width: 50%; box-sizing: border-box; flex-wrap: nowrap !important; } .cxbarrow[hidden] { display: none !important; }
+  .cxbarrow .cxxp { flex: 1 1 auto; min-width: 80px; width: auto; height: 10px; margin: 0; } .cxbarrow .pilebtn { padding: 2px 8px; font-size: 12.5px; }
   .tltabs { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0 8px; } .tltab { background: #1a1612; border: 1px solid var(--line); border-radius: 6px; color: var(--text); padding: 4px 9px; cursor: pointer; font: inherit; font-size: 13px; } .tltab.on { border-color: var(--accent); background: #2a2219; } .tltab small { color: var(--muted); }
   .tlprog { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 8px; font-size: 13.5px; } .tlprog .tlxp { width: 220px; height: 9px; margin: 0; }
   .tltree { display: grid; grid-template-columns: 74px repeat(3, minmax(0, 1fr)); gap: 5px; max-height: 58vh; overflow: auto; padding-right: 4px; }
@@ -1091,7 +1092,7 @@ body:has(#scrCombat.hud3:not([hidden])) { background: #000 !important; overflow:
 body:has(#scrCombat.hud3:not([hidden])) header.top { position: fixed; top: 12px; right: 14px; z-index: 30; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; width: auto; }
 body:has(#scrCombat.hud3:not([hidden])) header.top .brand, body:has(#scrCombat.hud3:not([hidden])) header.top #topInfo { display: none; }
 body:has(#scrCombat.hud3:not([hidden])) #verTag { font-size: 9.5px; right: 26px; bottom: 6px; opacity: .75; }
-body:has(#scrCombat.hud3:not([hidden])) #btnUpdates { right: 42px; bottom: 26px; padding: 3px 10px; font-size: 12px; }
+body:has(#scrCombat.hud3:not([hidden])) #btnUpdates { left: auto; transform: none; right: 42px; bottom: 26px; padding: 3px 10px; font-size: 12px; }
 #scrCombat.hud3 .combatchat:not([hidden]) { position: fixed !important; left: 0 !important; top: 0 !important; bottom: calc(var(--ph) - 14px) !important; width: min(340px, 36vw) !important; height: auto !important; max-height: none !important; margin: 0 !important; z-index: 8; transform: translateX(-105%); transition: transform .2s ease-out; box-shadow: 8px 0 24px rgba(0,0,0,.7); }
 #scrCombat.hud3.chatopen .combatchat:not([hidden]) { transform: none; }
 #scrCombat.hud3 .hudbtns button[hidden] { display: none; }
@@ -1135,6 +1136,40 @@ body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn > em { display: block !impo
 body #scrCombat.bf.hud3 .field-panel > .hud .pi-draw { left: calc(var(--u) * 113) !important; top: calc(var(--u) * 50) !important; width: calc(var(--u) * 34) !important; height: calc(var(--u) * 48) !important; }
 body #scrCombat.bf.hud3 .field-panel > .hud .pi-discard { right: calc(var(--u) * 114) !important; top: calc(var(--u) * 30) !important; width: calc(var(--u) * 30) !important; height: calc(var(--u) * 42) !important; }
 body #scrCombat.bf.hud3 .field-panel > .hud .pi-exhaust { right: calc(var(--u) * 114) !important; top: calc(var(--u) * 92) !important; width: calc(var(--u) * 22) !important; height: calc(var(--u) * 22) !important; }
+/* Nov 13: the piles are cards. Draw: one neat card back. Discard: a loose, untidy heap. Exhaust: a card on fire. The back is your class's, or one from the Skull Shop */
+body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pilebtn { background: none !important; border: 0 !important; box-shadow: none !important; overflow: visible; }
+body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pilebtn > i, body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard::before, body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard::after { content: ''; display: block !important; position: absolute; inset: 0; width: auto; height: auto; border-radius: 6%; background: #1a1512 url(img/cardbacks.webp) var(--cbx, 0%) var(--cby, 0%) / 1000% 200% no-repeat; image-rendering: pixelated; box-shadow: 0 0 0 1px #050404, 2px 3px 5px rgba(0,0,0,.65); }
+body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard > i { transform: rotate(5deg); }
+body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard::before { transform: rotate(-12deg) translate(-9%, 4%); filter: brightness(.72); }
+body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard::after { transform: rotate(-3deg) translate(7%, -3%); filter: brightness(.85); }
+body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard[data-n="0"]::before, body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard[data-n="0"]::after, body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard[data-n="1"]::before, body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard[data-n="1"]::after, body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard[data-n="2"]::before { display: none !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn[data-n="0"] > i { background: none !important; box-shadow: inset 0 0 0 2px #3a2f26 !important; opacity: .7; transform: none; }
+body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust { width: calc(var(--u) * 19) !important; height: calc(var(--u) * 26) !important; top: calc(var(--u) * 88) !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust:not([data-n="0"]) > i { filter: brightness(.5) sepia(.75) saturate(1.5); clip-path: polygon(0 20%, 11% 9%, 24% 17%, 38% 5%, 53% 15%, 68% 3%, 84% 14%, 100% 7%, 100% 100%, 0 100%); box-shadow: none; }
+body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust:not([data-n="0"])::before { content: ''; position: absolute; left: -18%; right: -18%; top: -42%; height: 95%; pointer-events: none; background: radial-gradient(ellipse 34% 58% at 30% 88%, #fff1a8 0, #ffb347 30%, #ff6a1a 55%, transparent 78%), radial-gradient(ellipse 30% 70% at 62% 90%, #ffe58a 0, #ff9a2a 32%, #e2401a 58%, transparent 80%), radial-gradient(ellipse 60% 40% at 50% 100%, rgba(255,120,30,.8) 0, transparent 75%); mix-blend-mode: screen; transform-origin: 50% 100%; animation: exflame .42s steps(4) infinite alternate; }
+body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust:not([data-n="0"])::after { content: ''; position: absolute; left: 0; right: 0; top: 4%; height: 16%; pointer-events: none; background: linear-gradient(180deg, transparent, rgba(255,140,40,.85)); filter: blur(2px); animation: exflame .6s steps(3) infinite alternate-reverse; }
+@keyframes exflame { from { transform: scale(1, .86) skewX(-4deg); opacity: .8; } to { transform: scale(1.06, 1.08) skewX(5deg); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust::before, body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust::after { animation: none !important; } }
+/* Nov 13: the killing-blow banner, then a chest over the dimmed fight. Light the colour of its loot leaks from under the lid */
+#killov { position: fixed; inset: 0; z-index: 900; display: grid; place-items: center; cursor: pointer; background: rgba(4,3,5,0); transition: background .35s ease; }
+#killov .kbanner { max-width: min(880px, 92vw); padding: 14px 30px; text-align: center; font: 500 clamp(17px, 2vw, 25px)/1.3 'Grenze', serif; font-variant: small-caps; letter-spacing: 1px; color: #e9dcc2; background: linear-gradient(90deg, transparent, rgba(8,6,6,.92) 14%, rgba(8,6,6,.92) 86%, transparent); border-top: 1px solid #8a653d; border-bottom: 1px solid #8a653d; text-shadow: 0 2px 0 #000; animation: kbin 2.1s ease both; }
+#killov .kbanner b { color: #fff1c4; } #killov .kbanner .kmob { color: #ff7a5a; } #killov .kbanner .kcard { color: #f0c56a; }
+#killov .knum { display: block; margin-top: 3px; font-size: .82em; color: #b9ad97; } #killov .knum i { font-style: normal; opacity: .5; margin: 0 6px; } #killov .kover { color: #ff5a4a; }
+@keyframes kbin { 0% { opacity: 0; transform: scale(1.12); } 10% { opacity: 1; transform: none; } 86% { opacity: 1; } 100% { opacity: 0; transform: translateY(-8px); } }
+#killov .kchest { display: none; }
+#killov.chest { background: rgba(4,3,5,.78); cursor: default; } #killov.chest .kbanner { display: none; }
+#killov.chest .kchest { position: relative; display: block; width: calc(128px + var(--ci) * 40px); height: calc(128px + var(--ci) * 40px); padding: 0; border: 0; background: none; cursor: pointer; animation: kcin .45s cubic-bezier(.2,1.4,.4,1) both; }
+#killov .kcimg { position: absolute; inset: 0; background: url(img/ui/chests.webp) calc(var(--ci) / 3 * 100%) 0 / 400% 100% no-repeat; image-rendering: pixelated; filter: drop-shadow(0 10px 12px rgba(0,0,0,.8)); }
+#killov .kseam { position: absolute; left: 16%; right: 16%; top: var(--sy, 44%); height: 5%; background: var(--seam); border-radius: 50%; filter: blur(2px) brightness(1.3); mix-blend-mode: screen; animation: kglow 1.5s ease-in-out infinite alternate; }
+#killov .krays { position: absolute; left: 10%; right: 10%; top: calc(var(--sy, 44%) - 30%); height: 32%; background: var(--seam); opacity: .5; filter: blur(7px); -webkit-mask: linear-gradient(0deg, #000, transparent); mask: linear-gradient(0deg, #000, transparent); mix-blend-mode: screen; animation: kglow 1.5s ease-in-out infinite alternate; pointer-events: none; }
+#killov .kchest.t0 { --sy: 44%; } #killov .kchest.t1 { --sy: 36%; } #killov .kchest.t2 { --sy: 41%; } #killov .kchest.t3 { --sy: 41%; }
+#killov .kchest em { position: absolute; left: 50%; top: calc(100% + 10px); transform: translateX(-50%); white-space: nowrap; font: 600 15px 'Grenze', serif; font-style: normal; font-variant: small-caps; letter-spacing: 2px; color: #d9c9a8; text-shadow: 0 1px 0 #000; animation: sppulse 2.2s ease-in-out infinite; }
+#killov .kchest:hover .kcimg, #killov .kchest:focus-visible .kcimg { filter: drop-shadow(0 10px 12px rgba(0,0,0,.8)) brightness(1.18); } #killov .kchest:focus { outline: none; }
+#killov.open .kchest { animation: kcopen .42s ease-in both; } #killov.open { background: rgba(4,3,5,.86); }
+@keyframes kcin { from { opacity: 0; transform: translateY(-40px) scale(.7); } to { opacity: 1; transform: none; } }
+@keyframes kglow { from { opacity: .55; transform: scaleX(.92); } to { opacity: 1; transform: scaleX(1.04); } }
+@keyframes kcopen { 30% { transform: scale(1.12, .9); filter: brightness(1.4); } 100% { transform: scale(1.5); filter: brightness(4) drop-shadow(0 0 40px var(--glow, #ffd98a)); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #killov .kseam, #killov .krays, #killov .kchest em { animation: none; } }
 /* End turn is engraved on the iron plate of the right pillar */
 body #scrCombat.bf.hud3 .field-panel > .hud #btnEnd { position: absolute !important; right: calc(var(--u) * 13) !important; top: calc(var(--u) * 38) !important; width: calc(var(--u) * 59) !important; height: calc(var(--u) * 51) !important; min-width: 0 !important; margin: 0 !important; padding: 0 calc(var(--u) * 4) !important; border: 0 !important; border-image: none !important; background: none !important; display: grid !important; place-items: center; white-space: normal !important; text-align: center; font: 400 calc(var(--u) * 10.5) / 1 var(--cf-name, var(--f-display)) !important; color: #e0c38a !important; text-shadow: 0 2px 0 #000, 0 0 12px rgba(224,176,80,.45) !important; box-shadow: inset 0 0 18px rgba(224,176,80,.22) !important; border-radius: 3px; transform: none !important; }
 body #scrCombat.bf.hud3 .field-panel > .hud #btnEnd .hg { display: none !important; }
@@ -3581,7 +3616,8 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     $('orb').innerHTML = `<i class="orbfill" style="--mf:${Math.max(0, Math.min(1, p.mana / Math.max(1, p.maxMana)))}"></i><span>${p.mana}</span>`;
     $('manaSub').innerHTML = `<span class="m3">${p.mana} / ${p.maxMana} MANA</span><span class="mmax">of ${p.maxMana}</span><span class="mreg">+${p.regen} / turn</span>`;
     const fat = [...p.drawPile, ...p.hand, ...p.discard].filter(c => CARDS[c.key].type === 'Status').length;
-    $('piles').innerHTML = `<button class="pilebtn pi-draw" data-pile="draw" title="Draw pile: ${p.drawPile.length} cards (you draw ${p.draw} a round)"><i></i><b>${p.drawPile.length}</b><em>Draw</em></button><button class="pilebtn pi-discard" data-pile="discard" title="Discard pile: ${p.discard.length} cards"><i></i><b>${p.discard.length}</b><em>Discard</em></button><button class="pilebtn pi-exhaust" data-pile="exhaust" title="Exhausted: ${p.exhaust.length} cards (gone for this fight)"><i></i><b>${p.exhaust.length}</b><em>Exhaust</em></button><span class="hchip">Draws <b>${p.draw}</b>/round</span>${fat ? `<span class="hchip">Status cards <b>${fat}</b></span>` : ''}${cb.pressure() ? `<span class="hchip">Pressure <b>+${Math.round(cb.pressure() * 100)}%</b></span>` : ''}`;
+    { const cb = typeof exCardBack === 'function' ? exCardBack(p.cls) : 0; $('piles').style.setProperty('--cbx', (cb % 10) / 9 * 100 + '%'); $('piles').style.setProperty('--cby', Math.floor(cb / 10) * 100 + '%'); }   // Nov 13: the piles show your card back
+    $('piles').innerHTML = `<button class="pilebtn pi-draw" data-n="${p.drawPile.length}" data-pile="draw" title="Draw pile: ${p.drawPile.length} cards (you draw ${p.draw} a round)"><i></i><b>${p.drawPile.length}</b><em>Draw</em></button><button class="pilebtn pi-discard" data-n="${Math.min(3, p.discard.length)}" data-pile="discard" title="Discard pile: ${p.discard.length} cards"><i></i><b>${p.discard.length}</b><em>Discard</em></button><button class="pilebtn pi-exhaust" data-n="${Math.min(1, p.exhaust.length)}" data-pile="exhaust" title="Exhausted: ${p.exhaust.length} cards (gone for this fight)"><i></i><b>${p.exhaust.length}</b><em>Exhaust</em></button><span class="hchip">Draws <b>${p.draw}</b>/round</span>${fat ? `<span class="hchip">Status cards <b>${fat}</b></span>` : ''}${cb.pressure() ? `<span class="hchip">Pressure <b>+${Math.round(cb.pressure() * 100)}%</b></span>` : ''}`;
     const myTurn = cb.phase === 'player' && !cb.over && (cb.myMi == null || cb.canAct(p));
     $('btnEnd').disabled = !myTurn || busy;
     const hint = $('hint'); hint.classList.remove('alert');
@@ -3710,6 +3746,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     if (result.result === 'loss') { deathScreen(); return; } // stay on the fight so the combat log can be read
     const g = result.gold, d = result.drops;
     const isBoss = run.over === 'victory';
+    const showLoot = () => {
     if (!run.solo) {
       modal(`<h2>${isBoss ? esc(bossName()) + ' falls' : 'Victory'}</h2><p>Won in ${result.rounds} rounds. Each hero rolled their own loot.</p>
         ${run.members.map((m, i) => run.online && i !== run.myMi ? `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${m.hp}/${m.stats.maxHp} HP${result.per[i].fell ? ' (fell)' : ''} &middot; ${result.per[i].drops.length} drop${result.per[i].drops.length === 1 ? '' : 's'}, +${result.per[i].gold} gold</div>` : (() => { const r = result.per[i]; return `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${m.hp}/${m.stats.maxHp} HP${r.fell ? ' (fell: sack lost, back up at half HP)' : ''} &middot; +${r.gold} gold</div><div class="list">${r.drops.map(it => itemHtml(it)).join('') || '<span class="muted">No gear or cards.</span>'}</div>`; })()).join('')}
@@ -3721,6 +3758,28 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
       <p><b>Into the sack:</b> ${g} gold${d.length ? ' and:' : '. No gear or cards dropped.'}</p><div class="list">${d.map(it => itemHtml(it)).join('')}</div>
       <div class="row"><button class="btn primary" id="mBack">${isBoss ? 'See the results' : 'Back to the map'}</button></div>`);
     $('mBack').onclick = () => { closeModal(); show('map'); renderMap(true); };
+      };
+    // Nov 13: a beat between the last hit and the loot. First who landed the killing blow, then a chest to open
+    const mine = run.solo ? d : run.online ? result.per[run.myMi].drops : result.per.flatMap(r => r.drops);
+    killSplash(mine, isBoss, showLoot);
+  }
+  function killSplash(drops, isBoss, then) {
+    const k = cb && cb.lastKill, tiers = cb ? cb.enemies.map(e => String(e.tier || '1')) : [], ti = isBoss || tiers.includes('Boss') ? 3 : tiers.includes('Elite') || tiers.includes('3') ? 2 : tiers.includes('2') ? 1 : 0;
+    const old = $('killov'); if (old) old.remove();
+    const ov = document.createElement('div'); ov.id = 'killov'; ov.className = 'kb';
+    const cardName = k && k.card && CARDS[k.card] ? CARDS[k.card].name : k ? k.label : '';
+    const line = !k ? 'The last foe falls' : k.by ? `<b>${esc(k.by)}</b> landed the killing blow on <b class="kmob">${esc(k.mob)}</b>${cardName ? ` with <b class="kcard">${esc(cardName)}</b>` : ''}` : `<b class="kmob">${esc(k.mob)}</b> fell to <b class="kcard">${esc(cardName)}</b>`;
+    const nums = k ? `<span class="knum"><b>${k.dmg}</b> damage${k.over > 0 ? ` <i>&middot;</i> <b class="kover">${k.over}</b> overkill` : ''}${k.crit ? ' <i>&middot;</i> critical' : ''}</span>` : '';
+    const order = ['White', 'Green', 'Blue', 'Purple (Epic)'], rar = (it) => it.kind === 'card' ? CARDS[it.key].rarity : it.rarity;
+    const cols = [...new Set(drops.map(rar))].sort((x, y) => order.indexOf(x) - order.indexOf(y)).map(r => ({ White: '#f4f1e8', Green: '#3ee05a', Blue: '#3f9bff', 'Purple (Epic)': '#b65cff' }[r] || '#ffc83a'));
+    const seam = cols.length ? `linear-gradient(90deg, transparent 0, ${cols.map((c, i) => `${c} ${Math.round((i + .5) / cols.length * 100)}%`).join(', ')}, transparent 100%)` : '';
+    ov.innerHTML = `<div class="kbanner">${line}${nums}</div><button type="button" class="kchest t${ti}" aria-label="Open the chest" style="--ci:${ti}${seam ? `;--seam:${seam};--glow:${cols[cols.length - 1]}` : ''}"><i class="kcimg"></i>${seam ? '<i class="kseam"></i><i class="krays"></i>' : ''}<em>Click to open</em></button>`;
+    document.body.appendChild(ov);
+    let stage = 0, t1 = null;
+    const toChest = () => { if (stage) return; stage = 1; clearTimeout(t1); ov.className = 'chest'; const b = ov.querySelector('.kchest'); try { b.focus(); } catch (e) {} };
+    const open = () => { if (stage !== 1) return; stage = 2; ov.classList.add('open'); try { if (window.CB_AUDIO) CB_AUDIO.sfx('loot', .9); } catch (e) {} setTimeout(() => { ov.remove(); then(); }, 420); };
+    t1 = setTimeout(toChest, k ? 2100 : 900);
+    ov.addEventListener('click', (ev) => { if (stage === 0) return toChest(); if (ev.target.closest('.kchest')) open(); });
   }
 
   // big readable preview of the hovered card

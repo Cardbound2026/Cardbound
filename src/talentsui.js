@@ -69,7 +69,8 @@
   function renderCodexBar() {
     const el = $('tbCodex'); if (!el || !profile || !profile.chars[heroKey]) return;
     const c = CBHub.char(profile, heroKey), k = CBHub.wornCodex(c);
-    if (!k) { el.innerHTML = `<span class="muted">No codex worn: equip one (Quartermaster) to earn codex XP and talents.</span> <button class="pilebtn" id="tbTal">Talents <span class="muted">N</span></button>`; }
+    el.hidden = !k; if (!k) { el.innerHTML = ''; return; }   // Nov 13: no bar until you wear a codex
+    if (0) {}
     else { const i = CBHub.codexInfo(c, k), unspent = i.rows - i.picks.filter((x, j) => x != null && j < i.rows).length;
       const need = CB.codexNeed(k, c.gear, window.CB_DATA); // Nov 2: weapon requirements
       el.innerHTML = `${need ? `<span class="tag bad" title="The codex passive needs ${esc(need)}. Talents still work.">Inactive: needs ${esc(need)}</span> ` : ''}<b>${esc(CB.CODEX_BY_KEY[k].name)}</b> <span class="muted">Lv</span> <b>${i.level}</b><div class="xpbar cxxp" title="${i.need ? `${i.into} / ${i.need} XP` : 'Max level'}"><i style="width:${i.need ? Math.round(100 * i.into / i.need) : 100}%"></i></div><span class="muted">${i.need ? `${i.into} / ${i.need} XP` : 'Max level'}</span>${unspent > 0 ? ` <span class="tag good">${unspent} talent${unspent > 1 ? 's' : ''} to pick</span>` : ''} <button class="pilebtn" id="tbTal">Talents <span class="muted">N</span></button>`; }

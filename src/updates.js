@@ -2,6 +2,12 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Interface', "Winning a fight no longer jumps straight to the results. A quick banner names who landed the killing blow, on what, with which card, for how much damage and overkill. Then a chest appears over the dimmed fight: small for tier 1, bigger for tier 2 and 3, ornate for a boss. Light the colour of its loot leaks from under the lid. Click it to see the loot."],
+      ['Interface', "The draw, discard and exhaust piles are cards now: one neat card back to draw from, an untidy heap for the discard, and a burning card for the exhaust."],
+      ['Art', "Card backs: each class has its own plain back, and 15 ornate ones are in the Skull Shop under Card backs (Dragon Hoard, Phoenix, Kraken, Blood Moon, Royal Crest and more). Pick one in the Wardrobe."],
+      ['Interface', "No codex bar in town until you wear a codex. When you do, its XP bar is half the screen wide and centred."],
+      ['Interface', "What's new sits at the bottom centre of the screen."],
+      ['Fix', "Dodge has its own airy whoosh, for Dodge cards and for dodging a hit. It used the sword-swing sound, which rang like metal."],
       ['Art', "The Hellhound Alpha's braid no longer whips across its body while it stands idle."],
       ['Art', "Ground effects (smoke, flames at the feet, footsteps) are drawn in front of your hero and see-through."],
       ['Art', "Riding away from the camera, your legs show astride the mount, one down each flank."],
