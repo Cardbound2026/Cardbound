@@ -372,9 +372,10 @@
   }
   function exLeave() { if (!EXIN.n) return; const n = EXIN.n; if (typeof closeTalk === 'function') closeTalk(); veil('Emberwatch', '', () => { EXIN.n = null; $('interior').hidden = true; $('townWrap').classList.remove('indoors'); if (window.CB_AUDIO) { CB_AUDIO.sfx('door'); CB_AUDIO.music('town'); } updatePrompt(); $('town').focus({ preventScroll: true }); }); }
   $('inLeave').onclick = exLeave;
-  const IN_NPCX = 0.7;
-  function exInHint() { const n = EXIN.n; if (!n) return; const near = Math.abs(EXIN.x - IN_NPCX) < 0.13; $('inHint').innerHTML = near ? `<kbd>Space</kbd> Talk to ${esc(n.name)}` : `<kbd>A</kbd><kbd>D</kbd> or click to walk &middot; walk up to ${esc(n.name)} to talk`; }
-  function exInTalk() { const n = EXIN.n; if (!n) return; EXIN.tx = null; EXIN.dir = EXIN.x < IN_NPCX ? 1 : -1; talk(n); }
+  const IN_AT = { store: [0.59, 6] };   // Nov 13: where the keeper stands in a room, when 0.7 across puts them on the furniture: [how far across, px lower]. Dace stood on a chest.
+  const inAt = () => (EXIN.n && IN_AT[EXIN.n.inside]) || [0.7, 0];
+  function exInHint() { const n = EXIN.n; if (!n) return; const near = Math.abs(EXIN.x - inAt()[0]) < 0.13; $('inHint').innerHTML = near ? `<kbd>Space</kbd> Talk to ${esc(n.name)}` : `<kbd>A</kbd><kbd>D</kbd> or click to walk &middot; walk up to ${esc(n.name)} to talk`; }
+  function exInTalk() { const n = EXIN.n; if (!n) return; EXIN.tx = null; EXIN.dir = EXIN.x < inAt()[0] ? 1 : -1; talk(n); }
   function exInFrame(t) {
     const n = EXIN.n; if (!n) return; requestAnimationFrame(exInFrame);
     const cvs = $('inCv'), W = cvs.clientWidth, H = cvs.clientHeight; if (!W || !H) return; const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -387,20 +388,20 @@
     const g = cvs.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.imageSmoothingEnabled = false; g.fillStyle = '#070608'; g.fillRect(0, 0, W, H);
     const im = EXIN.img[n.inside]; let floor = H * 0.9, bx = 0, bw = W;
     if (im && im.complete && im.naturalWidth) { const k = Math.max(W / im.naturalWidth, H / im.naturalHeight), w = im.naturalWidth * k, h = im.naturalHeight * k; g.drawImage(im, (W - w) / 2, H - h, w, h); floor = H - Math.max(h * 0.2, 150); }
-    const s = Math.max(1.2, H * 0.27 / 96), c = profile.chars[heroKey], hx = bx + bw * EXIN.x, nx = bx + bw * IN_NPCX;
-    const draw = [[floor - 6 * s, () => { if (window.CB_HEROPUP) CB_HEROPUP.npc(g, n.pal, nx, floor - 6 * s, hx < nx ? 'left' : 'right', 0, s, t); }],
+    const s = Math.max(1.2, H * 0.27 / 96), c = profile.chars[heroKey], hx = bx + bw * EXIN.x, nx = bx + bw * inAt()[0];
+    const ny = floor - 6 * s + inAt()[1] * s, draw = [[ny, () => { if (window.CB_HEROPUP) CB_HEROPUP.npc(g, n.pal, nx, ny, hx < nx ? 'left' : 'right', 0, s, t); }],
       [floor, () => { if (window.CB_FORGE && CB_FORGE.town && c) CB_FORGE.town(g, c.cls, c.gear, hx, floor, EXIN.dir > 0 ? 'right' : 'left', v ? 1 : 0, s, t, 'me'); const pk = exApp().cos.pet; if (pk) exPetDraw(g, 'me-in', pk, hx, floor, s, t); }]];
     draw.sort((a, b) => a[0] - b[0]); for (const d of draw) d[1]();
     // their name over their head
     g.font = `600 ${Math.round(13 * Math.min(1.6, s / 1.6))}px 'Inter', sans-serif`; g.textAlign = 'center'; g.lineWidth = 3; g.strokeStyle = 'rgba(0,0,0,.85)'; g.fillStyle = '#f4c869'; g.strokeText(n.name, nx, floor - 112 * s); g.fillText(n.name, nx, floor - 112 * s);
   }
-  $('inCv').addEventListener('click', (ev) => { if (!EXIN.n) return; const r = $('inCv').getBoundingClientRect(), x = (ev.clientX - r.left) / r.width; if (Math.abs(x - IN_NPCX) < 0.07) { EXIN.tx = IN_NPCX + (EXIN.x < IN_NPCX ? -0.09 : 0.09); EXIN.talkAfter = true; } else { EXIN.tx = Math.max(0.0, Math.min(0.95, x)); EXIN.talkAfter = false; } });
+  $('inCv').addEventListener('click', (ev) => { if (!EXIN.n) return; const r = $('inCv').getBoundingClientRect(), x = (ev.clientX - r.left) / r.width; if (Math.abs(x - inAt()[0]) < 0.07) { EXIN.tx = inAt()[0] + (EXIN.x < inAt()[0] ? -0.09 : 0.09); EXIN.talkAfter = true; } else { EXIN.tx = Math.max(0.0, Math.min(0.95, x)); EXIN.talkAfter = false; } });
   // keys while indoors: caught before the town sees them, so the hero outside stays put
   { const KD = { a: 'l', A: 'l', ArrowLeft: 'l', d: 'r', D: 'r', ArrowRight: 'r' };
     document.addEventListener('keydown', (ev) => { if (!EXIN.n || ev.target.matches('input, select, textarea') || !$('modal').hidden || !$('sheet').hidden || !$('talk').hidden) return;
       if (KD[ev.key]) { EXIN.keys.add(KD[ev.key]); ev.preventDefault(); ev.stopImmediatePropagation(); return; }
       if (ev.key === 'Escape') { ev.preventDefault(); ev.stopImmediatePropagation(); ev.cbHandled = true; return exLeave(); }
-      if (ev.key === ' ' || ev.key === 'Enter' || ev.key === 'e' || ev.key === 'E') { ev.preventDefault(); ev.stopImmediatePropagation(); if (Math.abs(EXIN.x - IN_NPCX) < 0.13) exInTalk(); return; }
+      if (ev.key === ' ' || ev.key === 'Enter' || ev.key === 'e' || ev.key === 'E') { ev.preventDefault(); ev.stopImmediatePropagation(); if (Math.abs(EXIN.x - inAt()[0]) < 0.13) exInTalk(); return; }
       if (['w', 'W', 's', 'S', 'ArrowUp', 'ArrowDown', 'm', 'M'].includes(ev.key)) { ev.preventDefault(); ev.stopImmediatePropagation(); }
     }, true);
     document.addEventListener('keyup', (ev) => { if (KD[ev.key]) EXIN.keys.delete(KD[ev.key]); }, true); window.addEventListener('blur', () => EXIN.keys.clear()); }

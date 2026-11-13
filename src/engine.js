@@ -45,7 +45,7 @@ card('hide', { cls: 'Rogue', name: 'Hide', rarity: 'Green', type: 'Skill', cost:
   play: (cb) => { cb.player.stealth = true; cb.player.locked = true; cb.say('player', 'You slip into Stealth.'); }, tags: { hide: 1 } });
 card('evasion', { cls: 'Rogue', name: 'Evasion', rarity: 'Blue', type: 'Skill', cost: 20, target: 'self', text: 'Gain 40 Dodge.', play: (cb) => cb.gainDef(40), tags: { def: 40 } });
 card('coup_de_grace', { cls: 'Rogue', name: 'Coup de Grace', rarity: 'Blue', type: 'Attack', cost: 10, target: 'enemy', dtype: 'Physical', text: 'Deal 10 damage. If the target is below 30% HP, deal 30 instead.', play: (cb, t) => cb.hit(t, t.hp < t.maxHp * 0.3 ? 30 : 10, 'Coup de Grace'), tags: { dmg: 10, execute: 30 } });
-card('assassinate', { cls: 'Rogue', name: 'Assassinate', rarity: 'Gold', type: 'Skill', cost: 0, target: 'self', text: 'Your next Attack deals double damage. Playing it keeps you in Stealth.', play: (cb) => { cb.player.nextAttackMult = 2; cb.say('player', 'Your next Attack deals double damage.'); }, tags: { setup: 'attack' } });
+card('assassinate', { cls: 'Rogue', name: 'Assassinate', rarity: 'Gold', type: 'Skill', cost: 0, target: 'self', text: 'Your next card is doubled: its damage, the Bleed, Poison and other damage over time it applies, and the Dodge it gives. Playing it keeps you in Stealth.', play: (cb) => { cb.player.nextAllMult = 2; cb.say('player', 'Your next card is doubled.'); }, tags: { setup: 'attack' } });   // Nov 13: was the next Attack only; Bleed, Poison and Dodge decks get it too
 
 // --- Mage
 card('fireball', { cls: 'Mage', name: 'Fireball', rarity: 'White', type: 'Skill', cost: 10, target: 'enemy', dtype: 'Fire', text: 'Deal 7 Fire damage and apply 3 Burn.', play: (cb, t) => { cb.hit(t, 7, 'Fireball'); cb.applyDot(t, 'burn', 3); }, tags: { dmg: 7, dot: 6 } });
@@ -995,7 +995,7 @@ class Combat {
       crit: g.crit + (buffs.crit || 0), critMult: g.critMult, multiHit: g.multiHit, multiplay: g.multiplay, multicast: g.multicast, bleedChance: g.bleedChance, lifesteal: g.lifesteal,
       thorns: g.thorns, baseInit: g.init, recovery: g.recovery, elem: g.elem, resist: Object.assign({}, g.resist),
       strTurn: 0, strCombat: 0, weak: 0, vulnerable: 0, bleed: 0, slow: 0, initNext: 0, defNext: 0, manaNext: 0, drawLess: 0,
-      stealth: false, locked: false, disarmed: false, disarmNext: false, negateDebuff: false, nextAttackMult: 1, nextSkillMult: 1,
+      stealth: false, locked: false, disarmed: false, disarmNext: false, negateDebuff: false, nextAttackMult: 1, nextSkillMult: 1, nextAllMult: 1,
       attackedThisRound: false, drawPile: [], hand: [], discard: [], exhaust: [], reshuffles: 0, firstTurn: true, dead: false,
       poison: 0, burn: 0, chill: 0, frozen: false, regenDown: [], uid: spec.uid || null, dread: 0, rot: 0, rotQ: [], demons: [], demonDmg: 0,
       unwarded: 0, exposure: 0, weaponDmg: g.weaponDmg || 0,
@@ -1264,7 +1264,7 @@ class Combat {
       if (T.attackDtype && kind === 'Attack') dtype = T.attackDtype;
       const stat = kind === 'Attack' ? p.strength + p.strTurn + p.strCombat : p.intelligence + (p.intTurn || 0);
       const setup = kind === 'Attack' ? (p.nextAttackMult || 1) : (d.tags && d.tags.dmg ? (p.nextSkillMult || 1) : 1);
-      let m = (1 + stat / 100) * (1 + (p.elem[dtype] || 0) / 100) * (1 - Math.min(p.weak, 90) / 100) * setup * (T.nextMult || 1);
+      let m = (1 + stat / 100) * (1 + (p.elem[dtype] || 0) / 100) * (1 - Math.min(p.weak, 90) / 100) * setup * (T.nextMult || 1) * (p.nextAllMult > 1 ? p.nextAllMult : 1);
       if (pow) { try { m *= this.pwProd(p, 'cardMult', d); } catch (x) {} }
       if (e && e.hp > 0) { // aimed at a target: its weakness/resistance, Vulnerable, Condemnation and Unwarded too
         m *= this.typeMod(e, dtype) * (1 + (dtype !== 'Physical' ? 0 : 1) * Math.min(0.5, (e.vulnerable || 0) / 100) * (pow ? Math.max(1, ...this.pws(p).map(([, q]) => q.vulnX || 1)) : 1)); // the cap is shared; vulnX (Sunderer's talent, cards) multiplies after it // Nov 2: Vulnerable caps at +50%
@@ -1486,6 +1486,7 @@ class Combat {
 
   gainDef(n, label) {
     const p = this.player; { const m = this.rkm('def'); if (m !== 1) n = Math.round(n * m); }
+    if (p.isPlayer && this._allX > 1 && this._playing && !this._playing.isPower) n = Math.round(n * this._allX);
     if (p.isPlayer && (p.turn.defX || this.hasTimed(p, 'defX'))) n *= 2;
     if (p.isPlayer && p.powers.length) { n = Math.round(n * this.pwProd(p, 'defMult') * this.pwProd(p, 'defMultFn')); if (n === 0 && this.has(p, 'codex_equilibrium')) { this.say('player', 'Equilibrium: no Block.'); return 0; } }
     if (p.isPlayer && this.has(p, 'balanced_guard')) { if (p.balNext) { const bg = this.upN(p, 'balanced_guard', 0, 50); n = Math.round(n * (1 + bg / 100)); p.balNext = false; this.say('player', `Balanced Guard: +${bg}%.`); } else p.balNext = true; }
@@ -1521,7 +1522,7 @@ class Combat {
   applyDot(e, key, n) {
     if (!e || e.hp <= 0) return;
     const q = this.player, strMult = (key === 'poison' || key === 'bleed') && q.isPlayer ? 1 + (q.strength + q.strTurn + q.strCombat) / 100 : (key === 'dread' || key === 'rot') && q.isPlayer ? 1 + (q.intelligence + (q.intTurn || 0)) / 100 : 1; // Nov 1: Poison and Bleed scale with Strength (50 Strength: 10 Bleed becomes 15); the Warlock's Dread and Rot with Intelligence
-    const v = Math.round(n * strMult * (key === 'dread' ? 0.7 : 1) * this.pwKey(this.player, 'dotMult', key) * (key === 'bleed' && this.player.bleedX ? this.player.bleedX : 1)) + this.pwKey(this.player, 'dotPlus', key, 'sum');
+    const v = Math.round(n * (this._playing && !this._playing.isPower ? this._allX || 1 : 1) * strMult * (key === 'dread' ? 0.7 : 1) * this.pwKey(this.player, 'dotMult', key) * (key === 'bleed' && this.player.bleedX ? this.player.bleedX : 1)) + this.pwKey(this.player, 'dotPlus', key, 'sum');
     if (key === 'rot') { this.fxPush({ t: 'apply', d: e.id, key: 'rot' }); const before = e.rot || 0, w = Math.round(v * this.rkm('rot')); this.addRot(e, w, 4, this.player); if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, w, before); this.say('player', `${e.name} gains ${w} Rot over 4 turns (Rot ${e.rot}).`); return; }
     const before = e[key] || 0; e[key] = before + v; e[key + 'By'] = this.player.id; this.fxPush({ t: 'apply', d: e.id, key });
     if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, v, before);
@@ -1622,7 +1623,7 @@ class Combat {
     const weakMod = 1 - Math.min(p.weak, 90) / 100, vulnMod = 1 + (dtype !== 'Physical' ? 0 : 1) * Math.min(0.5, e.vulnerable / 100) * (pow ? Math.max(1, ...this.pws(p).map(([, d]) => d.vulnX || 1)) : 1); // Nov 2: Vulnerable caps at +50%
     const holyUp = dtype === 'Holy' && p.nextHolyMult > 1 ? p.nextHolyMult : 1; if (holyUp > 1) p.nextHolyMult = 1;
     const curse = (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? (1 + (e.unwarded || 0) / 100) * (1 + Math.min(50, e.magicVuln || 0) / 100) : 1); // Magic Vulnerability caps at +50%
-    const pm = (pow ? this.pwProd(p, 'hitMult', e, ctx) : 1) * (this._cmult || 1) * holyUp * curse * (crit && p.turn && p.turn.killingBlow ? (p.turn.killingBlow === true ? 2 : p.turn.killingBlow) : 1), cmx = pow ? this.pwProd(p, 'critMultX') : 1;
+    const pm = (pow ? this.pwProd(p, 'hitMult', e, ctx) : 1) * (this._cmult || 1) * (this._allX || 1) * holyUp * curse * (crit && p.turn && p.turn.killingBlow ? (p.turn.killingBlow === true ? 2 : p.turn.killingBlow) : 1), cmx = pow ? this.pwProd(p, 'critMultX') : 1;
     if (crit && p.turn && p.turn.killingBlow) { p.turn.killingBlow = false; this.say('crit', 'Killing Blow: the crit hits harder.'); }
     const pvp = e.isPlayer ? (1 - Math.min(75, e.resist[dtype] || 0) / 100) * (1 + this.pressure()) : 1;
     const setup = kind === 'Attack' ? (this._attackMult || 1) : (this._skillMult || 1);
@@ -1765,6 +1766,7 @@ class Combat {
     this._playing = d; this._rankMult = 1; this._rk = d.rk || null; this._rkCard = d; const ms = d.ms || {};
     this._rkHits = ms.hits ? [] : null; this._rkTimed = ms.turns ? [] : null; this._rkAdded = ms.count ? [] : null; this._rkDraw = 0; const dn0 = p.drawNext || 0; this.rkBegin(this._rk);
     this._attackMult = d.type === 'Attack' ? p.nextAttackMult : 1;
+    this._allX = d.type !== 'Power' && p.nextAllMult > 1 ? p.nextAllMult : 1; if (this._allX !== 1) p.nextAllMult = 1;   // Assassinate: everything this card does is multiplied
     this._skillMult = (d.type === 'Skill' && d.tags.dmg) ? p.nextSkillMult : 1;
     this._cmult = (p.powers.length ? this.pwProd(p, 'cardMult', d) : 1) * (T.nextMult && d.type !== 'Power' ? T.nextMult : 1) * (twice && twice.mult ? twice.mult : 1); if (T.nextMult && d.type !== 'Power') T.nextMult = 0;
     if (T.reflux && d.type === 'Skill' && paid) { const per = Math.round(paid / 3); this.timed(p, 'reflux', 3, { each: (cb, q) => { q.manaNext += per; } }); T.reflux = false; this.say('player', `Mana Reflux: ${paid} mana comes back over 3 turns.`); }
@@ -1807,7 +1809,7 @@ class Combat {
     if (d.type === 'Attack' || d.type === 'Skill') p.prevType = d.type;
     if (d.type === 'Attack' && p.nextAttackMult !== 1) p.nextAttackMult = 1;
     if (this._skillMult !== 1) p.nextSkillMult = 1;
-    this._playing = null; this._rankMult = 1; this._attackMult = 1; this._skillMult = 1; this._spentAll = null;
+    this._playing = null; this._rankMult = 1; this._attackMult = 1; this._skillMult = 1; this._spentAll = null; this._allX = 1;
     (d.exhaust ? p.exhaust : p.discard).push(c);
     if (this._pendingDeath) { const q = this._pendingDeath; this._pendingDeath = null; if (q.hp <= 0 && !q.dead) { this.say('loss', `${q.name} paid with their last HP.`); this.onDeath(q); } }
     return true;
@@ -1905,7 +1907,7 @@ class Combat {
         case 'drawLess': p.drawLess += op.n; this.say('enemy', 'You will draw 1 fewer card next round.'); break;
         case 'disarm': if (p.negateDebuff) { p.negateDebuff = false; this.say('player', 'Divine Shield blocks the Disarm.'); } else { p.disarmNext = true; this.say('enemy', 'You are Disarmed: no Attacks on your next turn.'); } break;
         case 'cleanse': e.weak = e.vulnerable = e.bleed = e.poison = e.burn = e.chill = e.slow = e.dread = e.rot = e.magicVuln = 0; e.rotQ = []; e.regenDown = []; this.say('enemy', `${e.name} shakes off every debuff.`); break;
-        case 'purge': { const had = p.strTurn || p.strCombat || p.nextAttackMult !== 1 || p.nextSkillMult !== 1 || p.negateDebuff; p.strTurn = 0; if (op.all) p.strCombat = 0; p.nextAttackMult = 1; p.nextSkillMult = 1; p.negateDebuff = false; this.say('enemy', had ? 'Your buffs are stripped.' : 'You have no buffs to take.'); break; }
+        case 'purge': { const had = p.strTurn || p.strCombat || p.nextAllMult > 1 || p.nextAttackMult !== 1 || p.nextSkillMult !== 1 || p.negateDebuff; p.strTurn = 0; if (op.all) p.strCombat = 0; p.nextAttackMult = 1; p.nextSkillMult = 1; p.nextAllMult = 1; p.negateDebuff = false; this.say('enemy', had ? 'Your buffs are stripped.' : 'You have no buffs to take.'); break; }
         case 'nextBonus': e.nextBonus += op.n; break;
         case 'shred': if (p.until.keepBlock || this.hasTimed(p, 'keepBlock')) { this.say('player', `${p.name}'s Block holds.`); break; } { const s = Math.min(op.n, p.block); p.block -= s; this.say('enemy', `${e.name} removes ${s} of your ${p.defName}.`); break; }
         case 'shredAll': if (p.until.keepBlock || this.hasTimed(p, 'keepBlock')) { this.say('player', `${p.name}'s Block holds.`); break; } this.say('enemy', `${e.name} strips all ${p.block} of your ${p.defName}.`); p.block = 0; break;
@@ -2317,7 +2319,7 @@ const UPG_SPECIAL = { // key -> (N = token values in text order, rank, v, base c
   killing_blow: (N, r, v) => ({ text: v.text.replace('deals double damage', `deals ${100 + 10 * r}% more damage`), play: (cb, t, p) => { cb.player.turn.killingBlow = 2 + 0.1 * r; say(cb, `Your next crit this turn deals ${100 + 10 * r}% more damage.`); } }),
   manaquake: (N, r, v) => ({ text: v.text.replace('equal to the amount consumed', `equal to ${100 + 5 * r}% of the amount consumed`), play: (cb, t, p) => { p = cb.player; const m = Math.floor(p.mana / 2); p.mana -= m; DA(cb, m * (1 + 0.05 * r), 'Manaquake'); } }),
   thousand_cuts: (N, r, v) => { const per = 1 + (r >= 3 ? 1 : 0) + (r >= 4 ? 1 : 0); return { text: v.text.replace('Attack once', ['Attack once', 'Attack twice', 'Attack three times'][per - 1]), play: (cb, t, p) => { const hits = Math.floor(cb.spendAll(cb.player) / 5) * per; for (let i = 0; i < hits && !cb.over; i++) D_(cb, t, 1, 'Thousand Cuts'); } }; },
-  assassinate: (N, r, v) => ({ text: v.text.replace('deals double damage', `deals ${100 + 10 * r}% more damage`), play: (cb) => { cb.player.nextAttackMult = 2 + 0.1 * r; cb.say('player', `Your next Attack deals ${100 + 10 * r}% more damage.`); } }),
+  assassinate: (N, r, v) => ({ text: v.text.replace('Your next card is doubled:', `Your next card is ${100 + 10 * r}% stronger:`), play: (cb) => { cb.player.nextAllMult = 2 + 0.1 * r; cb.say('player', `Your next card is ${100 + 10 * r}% stronger.`); } }),
   ashen_drain: (N, r, v, d) => ({ text: v.text + ` You gain mana equal to ${5 * r}% of the Burn.`, play: (cb, t, p) => { p = cb.player; const e = tgtOf(cb, t); const b = e ? e.burn : 0; d.play(cb, t, p); const g = Math.round(b * 0.05 * r); if (g) { p.mana += g; say(cb, `+${g} mana.`); } } }),
   bait: (N) => ({ play: (cb, t, p) => { p = cb.player; cb.gainDef(N[0]); (p.parryNext = p.parryNext || []).push((c, q, e) => { e.vulnerable += N[1]; c.eDiscard(e, N[2]); c.say('player', `${e.name} takes the bait: ${N[1]} Vulnerable.`); }); } }),
   defiant_roar: (N) => ({ play: (cb, t, p) => { p = cb.player; cb.setTaunt(p); p.until.lessDmg = N[0] / 100; } }),
