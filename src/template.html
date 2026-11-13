@@ -1808,6 +1808,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
 
   // ---------- props (each draws itself relative to its footprint; base y = bottom of footprint)
   function drawProp(g, p, TS, t) {
+    if (window.CB_TOWNART && CB_TOWNART.prop(g, p, TS, t, ARN)) return; // painted pixel-art town (src/townart.js)
     if (CITYDRAW.prop(g, p, TS, t, TOWN.dpr)) return; // the city's buildings (src/city.js)
     if (window.CB_INK && CB_INK.prop && CB_INK.prop(g, p, TS, t)) return; // Gothic Ink art pack
     const x0 = p.x * TS, y0 = p.y * TS, W = p.w * TS, H = p.h * TS, s = TS / 48;

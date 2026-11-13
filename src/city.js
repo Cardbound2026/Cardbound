@@ -4,7 +4,7 @@
   const MW = 150, MH = 110;
   const BAZ = { x0: 94, y0: 48, x1: 140, y1: 72 }; // the Grand Bazaar: set up shop anywhere inside
   const inBazaar = (x, y) => x >= BAZ.x0 && x <= BAZ.x1 && y >= BAZ.y0 && y <= BAZ.y1;
-  const ARN = { x: 118, y: 91, rx: 12, ry: 7.6, RX: 17.5, RY: 12.8 }; // the Colosseum: sand floor and the outer wall (Nov 2: 5x the old ring)
+  const ARN = { x: 118, y: 91, rx: 11.2, ry: 5.3, RX: 17.3, RY: 11.6 }; // the Colosseum: sand floor and the outer wall (Nov 12: measured from the painting, tools/townart)
   const inArena = (x, y) => ((x + .5 - ARN.x) / ARN.RX) ** 2 + ((y + .5 - ARN.y) / ARN.RY) ** 2 <= 1;
   const CITY_SPAWN = { x: 74, y: 64 }, CITY_RETURN = { x: 75, y: 99 }; // log in at Ember Square; come home from a run in the Wagon Yard
   const TOWN = { running: false, last: 0, t: 0, TS: 48, dpr: 1, chunks: new Map(), dark: null, sprites: {}, embers: [], district: '', districtAt: 0 };
@@ -25,7 +25,7 @@
   gRect(94, 48, 140, 72, 'b');                    // the Grand Bazaar
   gRect(97, 86, 105, 96, 'b');                    // the Colosseum's west plaza
   gDisc(ARN.x, ARN.y, ARN.rx, ARN.ry, 'a');       // the Colosseum's sand
-  for (let x = Math.round(ARN.x - ARN.RX); x < ARN.x - ARN.rx + 1; x++) gRect(x, ARN.y - 1, x, ARN.y + 1, 'a'); // the west gate into the ring
+  for (let x = Math.round(ARN.x - ARN.RX); x < ARN.x - ARN.rx + 1; x++) gRect(x, ARN.y - 2, x, ARN.y, 'a'); // the west gate into the ring
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] !== 'a' && ((x + .5 - ARN.x) / (ARN.RX + .6)) ** 2 + ((y + .5 - ARN.y) / (ARN.RY + .6)) ** 2 <= 1) setG(x, y, 'b'); // the stands stand on stone
   gRect(60, 14, 89, 22, 'b');                     // the Keep's courtyard
   gRect(14, 88, 44, 103, 'a');                    // the training yard
@@ -43,7 +43,7 @@
   PROPS.push({ kind: 'tower', x: 68, y: MH - 4, w: 3, h: 2 }, { kind: 'tower', x: 79, y: MH - 4, w: 3, h: 2 }, { kind: 'gatehouse', x: 71, y: MH - 4, w: 8, h: 2 });
   PROPS.push({ kind: 'keep', x: 62, y: 4, w: 26, h: 10 });
   B(58, 12, 4, 6, { roof: 'slate', wall: 'stone' }); B(88, 12, 4, 6, { roof: 'slate', wall: 'stone' });
-  PROPS.push({ kind: 'hall', x: 64, y: 39, w: 21, h: 9, name: 'Hall of Records' });
+  PROPS.push({ kind: 'hall', x: 67, y: 41, w: 15, h: 7, name: 'Hall of Records' });
   B(32, 52, 7, 5, { roof: 'slate', wall: 'stone', sign: 'bank', name: 'The Bank' }); B(40, 52, 7, 5, { roof: 'red', sign: 'Dace' }); B(48, 52, 6, 5, { roof: 'gold', sign: 'gem' }); B(55, 52, 6, 5, { roof: 'slate', wall: 'stone', sign: 'vault' });
   B(22, 52, 7, 5, { roof: 'thatch' }); B(14, 52, 7, 5, { roof: 'red' }); B(7, 52, 6, 5, { roof: 'slate' });
   B(7, 63, 6, 5, { roof: 'thatch' }); B(15, 63, 7, 5, { roof: 'red' }); B(23, 63, 6, 5, { roof: 'slate', sign: 'gear' });
@@ -84,7 +84,7 @@
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'p' && solid.has(K(x, y)) && PROPS.some(p => p.kind === 'bridge' && x >= p.x && x < p.x + p.w)) solid.delete(K(x, y)); // walk over the bridges
   // where each townsperson stands (in front of their building)
   const CITY_NPC = { wagon: [74, 97, 'down'], tinker: [77, 58, 'left'], qm: [58, 57, 'down'], merchant: [43, 57, 'down'], jeweler: [51, 57, 'down'], scribe: [19, 18, 'down'], archivist: [42, 17, 'down'],
-    chron: [70, 49, 'down'], captain: [19, 81, 'down'], guildmaster: [41, 81, 'down'], raidwarden: [75, 16, 'down'], arena: [100, 91, 'right'], dummy: [18, 92, 'down'], banker: [35, 57, 'down'] };
+    chron: [70, 49, 'down'], captain: [19, 81, 'down'], guildmaster: [41, 81, 'down'], raidwarden: [75, 16, 'down'], arena: [99, 91, 'right'], dummy: [18, 92, 'down'], banker: [35, 57, 'down'] };
   // districts: the name shows when you walk in
   const DISTRICTS = [['Ember Square', 61, 49, 88, 71], ['The Grand Bazaar', 93, 47, 141, 73], ['The Colosseum', 97, 77, 137, 105], ['The Wagon Yard', 57, 88, 92, 105], ['Market Row', 4, 50, 60, 62], ['The Old Market', 33, 62, 53, 77],
     ['The Barracks', 4, 72, 47, 105], ['Guild Row', 33, 72, 56, 87], ["Scholars' Quarter", 4, 4, 56, 28], ['The Keep', 57, 4, 92, 24], ['Cathedral Hill', 93, 4, 146, 28], ['The River Ash', 4, 27, 146, 35], ['Riverside', 4, 35, 146, 49], ['The Stables', 93, 94, 106, 105]];
@@ -267,6 +267,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     return c;
   }
   function drawGround(cam) {
+    if (window.CB_TOWNART && CB_TOWNART.ground(gx, cam, TOWN, MW, MH, heroPos(), DIRS[P.dir])) return; // painted pixel-art ground (src/townart.js)
     const TS = TOWN.TS, d = TOWN.dpr, i0 = Math.floor(cam.x / (CH * TS)), j0 = Math.floor(cam.y / (CH * TS)), i1 = Math.floor((cam.x + TOWN.vw) / (CH * TS)), j1 = Math.floor((cam.y + TOWN.vh) / (CH * TS));
     for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { if (i < 0 || j < 0 || i * CH >= MW || j * CH >= MH) continue; gx.drawImage(groundChunk(i, j), Math.round((i * CH * TS - cam.x) * d), Math.round((j * CH * TS - cam.y) * d)); }
     // warm up the next chunks in the direction you're heading, one per frame
@@ -322,7 +323,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     const W2 = Math.min(240, Math.max(150, TOWN.vw * .2)), H2 = W2 * MH / MW, d = TOWN.dpr;
     if (cv2.width !== Math.round(W2 * d)) { cv2.width = Math.round(W2 * d); cv2.height = Math.round(H2 * d); cv2.style.width = W2 + 'px'; cv2.style.height = H2 + 'px'; }
     const g = cv2.getContext('2d'), sx = cv2.width / MW, sy = cv2.height / MH; g.imageSmoothingEnabled = false;
-    g.drawImage(MINI.base, 0, 0, cv2.width, cv2.height);
+    g.drawImage((window.CB_TOWNART && CB_TOWNART.mini()) || MINI.base, 0, 0, cv2.width, cv2.height);
     g.fillStyle = `rgba(6,5,12,${0.35 * nightness(t)})`; g.fillRect(0, 0, cv2.width, cv2.height);
     const cam = camera(); g.strokeStyle = 'rgba(228,194,122,.8)'; g.lineWidth = d; g.strokeRect(cam.x / TOWN.TS * sx, cam.y / TOWN.TS * sy, TOWN.vw / TOWN.TS * sx, TOWN.vh / TOWN.TS * sy);
     for (const n of NPCS) { g.fillStyle = '#d6a14a'; g.fillRect(n.x * sx - d, n.y * sy - d, 3 * d, 3 * d); }

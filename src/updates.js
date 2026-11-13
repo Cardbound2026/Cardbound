@@ -3,6 +3,7 @@
   const CHANGELOG = [
     { date: '2026-11-12', items: [
       ['Art', "Enemy cards are getting paintings: every card a monster plays gets its own pixel illustration in the same style as your cards, starting with the Broken March. More arrive through the day."],
+      ['Art', "Emberwatch has been repainted in pixel art: new ground (grass, cobbles, dirt roads, arena sand and the River Ash), every house, the Keep, the Cathedral, the Hall of Records, the Grand Library, the Guild Hall, the barracks, the stables, the market stalls, the city wall and its towers, the South Gate and the bridges. Everything stands where it did, so the townspeople are where you left them. The Colosseum is a new painting with a slightly narrower sand floor, and the Hall of Records is a smaller building. The minimap shows the painted city."],
       ['Art', "Every enemy card in every map now has its own painting, bosses included, from the Broken March to the Hollow King's crypts, and so do the status cards enemies shuffle into your deck (Dazed, Stun, Fatigue, Venom, Frostbite, Hex and Bomb)."],
     ] },
     { date: '2026-11-11', items: [

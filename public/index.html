@@ -5686,7 +5686,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   const MW = 150, MH = 110;
   const BAZ = { x0: 94, y0: 48, x1: 140, y1: 72 }; // the Grand Bazaar: set up shop anywhere inside
   const inBazaar = (x, y) => x >= BAZ.x0 && x <= BAZ.x1 && y >= BAZ.y0 && y <= BAZ.y1;
-  const ARN = { x: 118, y: 91, rx: 12, ry: 7.6, RX: 17.5, RY: 12.8 }; // the Colosseum: sand floor and the outer wall (Nov 2: 5x the old ring)
+  const ARN = { x: 118, y: 91, rx: 11.2, ry: 5.3, RX: 17.3, RY: 11.6 }; // the Colosseum: sand floor and the outer wall (Nov 12: measured from the painting, tools/townart)
   const inArena = (x, y) => ((x + .5 - ARN.x) / ARN.RX) ** 2 + ((y + .5 - ARN.y) / ARN.RY) ** 2 <= 1;
   const CITY_SPAWN = { x: 74, y: 64 }, CITY_RETURN = { x: 75, y: 99 }; // log in at Ember Square; come home from a run in the Wagon Yard
   const TOWN = { running: false, last: 0, t: 0, TS: 48, dpr: 1, chunks: new Map(), dark: null, sprites: {}, embers: [], district: '', districtAt: 0 };
@@ -5707,7 +5707,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   gRect(94, 48, 140, 72, 'b');                    // the Grand Bazaar
   gRect(97, 86, 105, 96, 'b');                    // the Colosseum's west plaza
   gDisc(ARN.x, ARN.y, ARN.rx, ARN.ry, 'a');       // the Colosseum's sand
-  for (let x = Math.round(ARN.x - ARN.RX); x < ARN.x - ARN.rx + 1; x++) gRect(x, ARN.y - 1, x, ARN.y + 1, 'a'); // the west gate into the ring
+  for (let x = Math.round(ARN.x - ARN.RX); x < ARN.x - ARN.rx + 1; x++) gRect(x, ARN.y - 2, x, ARN.y, 'a'); // the west gate into the ring
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] !== 'a' && ((x + .5 - ARN.x) / (ARN.RX + .6)) ** 2 + ((y + .5 - ARN.y) / (ARN.RY + .6)) ** 2 <= 1) setG(x, y, 'b'); // the stands stand on stone
   gRect(60, 14, 89, 22, 'b');                     // the Keep's courtyard
   gRect(14, 88, 44, 103, 'a');                    // the training yard
@@ -5725,7 +5725,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   PROPS.push({ kind: 'tower', x: 68, y: MH - 4, w: 3, h: 2 }, { kind: 'tower', x: 79, y: MH - 4, w: 3, h: 2 }, { kind: 'gatehouse', x: 71, y: MH - 4, w: 8, h: 2 });
   PROPS.push({ kind: 'keep', x: 62, y: 4, w: 26, h: 10 });
   B(58, 12, 4, 6, { roof: 'slate', wall: 'stone' }); B(88, 12, 4, 6, { roof: 'slate', wall: 'stone' });
-  PROPS.push({ kind: 'hall', x: 64, y: 39, w: 21, h: 9, name: 'Hall of Records' });
+  PROPS.push({ kind: 'hall', x: 67, y: 41, w: 15, h: 7, name: 'Hall of Records' });
   B(32, 52, 7, 5, { roof: 'slate', wall: 'stone', sign: 'bank', name: 'The Bank' }); B(40, 52, 7, 5, { roof: 'red', sign: 'Dace' }); B(48, 52, 6, 5, { roof: 'gold', sign: 'gem' }); B(55, 52, 6, 5, { roof: 'slate', wall: 'stone', sign: 'vault' });
   B(22, 52, 7, 5, { roof: 'thatch' }); B(14, 52, 7, 5, { roof: 'red' }); B(7, 52, 6, 5, { roof: 'slate' });
   B(7, 63, 6, 5, { roof: 'thatch' }); B(15, 63, 7, 5, { roof: 'red' }); B(23, 63, 6, 5, { roof: 'slate', sign: 'gear' });
@@ -5766,7 +5766,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'p' && solid.has(K(x, y)) && PROPS.some(p => p.kind === 'bridge' && x >= p.x && x < p.x + p.w)) solid.delete(K(x, y)); // walk over the bridges
   // where each townsperson stands (in front of their building)
   const CITY_NPC = { wagon: [74, 97, 'down'], tinker: [77, 58, 'left'], qm: [58, 57, 'down'], merchant: [43, 57, 'down'], jeweler: [51, 57, 'down'], scribe: [19, 18, 'down'], archivist: [42, 17, 'down'],
-    chron: [70, 49, 'down'], captain: [19, 81, 'down'], guildmaster: [41, 81, 'down'], raidwarden: [75, 16, 'down'], arena: [100, 91, 'right'], dummy: [18, 92, 'down'], banker: [35, 57, 'down'] };
+    chron: [70, 49, 'down'], captain: [19, 81, 'down'], guildmaster: [41, 81, 'down'], raidwarden: [75, 16, 'down'], arena: [99, 91, 'right'], dummy: [18, 92, 'down'], banker: [35, 57, 'down'] };
   // districts: the name shows when you walk in
   const DISTRICTS = [['Ember Square', 61, 49, 88, 71], ['The Grand Bazaar', 93, 47, 141, 73], ['The Colosseum', 97, 77, 137, 105], ['The Wagon Yard', 57, 88, 92, 105], ['Market Row', 4, 50, 60, 62], ['The Old Market', 33, 62, 53, 77],
     ['The Barracks', 4, 72, 47, 105], ['Guild Row', 33, 72, 56, 87], ["Scholars' Quarter", 4, 4, 56, 28], ['The Keep', 57, 4, 92, 24], ['Cathedral Hill', 93, 4, 146, 28], ['The River Ash', 4, 27, 146, 35], ['Riverside', 4, 35, 146, 49], ['The Stables', 93, 94, 106, 105]];
@@ -5949,6 +5949,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     return c;
   }
   function drawGround(cam) {
+    if (window.CB_TOWNART && CB_TOWNART.ground(gx, cam, TOWN, MW, MH, heroPos(), DIRS[P.dir])) return; // painted pixel-art ground (src/townart.js)
     const TS = TOWN.TS, d = TOWN.dpr, i0 = Math.floor(cam.x / (CH * TS)), j0 = Math.floor(cam.y / (CH * TS)), i1 = Math.floor((cam.x + TOWN.vw) / (CH * TS)), j1 = Math.floor((cam.y + TOWN.vh) / (CH * TS));
     for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { if (i < 0 || j < 0 || i * CH >= MW || j * CH >= MH) continue; gx.drawImage(groundChunk(i, j), Math.round((i * CH * TS - cam.x) * d), Math.round((j * CH * TS - cam.y) * d)); }
     // warm up the next chunks in the direction you're heading, one per frame
@@ -6004,7 +6005,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     const W2 = Math.min(240, Math.max(150, TOWN.vw * .2)), H2 = W2 * MH / MW, d = TOWN.dpr;
     if (cv2.width !== Math.round(W2 * d)) { cv2.width = Math.round(W2 * d); cv2.height = Math.round(H2 * d); cv2.style.width = W2 + 'px'; cv2.style.height = H2 + 'px'; }
     const g = cv2.getContext('2d'), sx = cv2.width / MW, sy = cv2.height / MH; g.imageSmoothingEnabled = false;
-    g.drawImage(MINI.base, 0, 0, cv2.width, cv2.height);
+    g.drawImage((window.CB_TOWNART && CB_TOWNART.mini()) || MINI.base, 0, 0, cv2.width, cv2.height);
     g.fillStyle = `rgba(6,5,12,${0.35 * nightness(t)})`; g.fillRect(0, 0, cv2.width, cv2.height);
     const cam = camera(); g.strokeStyle = 'rgba(228,194,122,.8)'; g.lineWidth = d; g.strokeRect(cam.x / TOWN.TS * sx, cam.y / TOWN.TS * sy, TOWN.vw / TOWN.TS * sx, TOWN.vh / TOWN.TS * sy);
     for (const n of NPCS) { g.fillStyle = '#d6a14a'; g.fillRect(n.x * sx - d, n.y * sy - d, 3 * d, 3 * d); }
@@ -6064,6 +6065,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
 
   // ---------- props (each draws itself relative to its footprint; base y = bottom of footprint)
   function drawProp(g, p, TS, t) {
+    if (window.CB_TOWNART && CB_TOWNART.prop(g, p, TS, t, ARN)) return; // painted pixel-art town (src/townart.js)
     if (CITYDRAW.prop(g, p, TS, t, TOWN.dpr)) return; // the city's buildings (src/city.js)
     if (window.CB_INK && CB_INK.prop && CB_INK.prop(g, p, TS, t)) return; // Gothic Ink art pack
     const x0 = p.x * TS, y0 = p.y * TS, W = p.w * TS, H = p.h * TS, s = TS / 48;
@@ -7080,8 +7082,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794522265065';
-  const CB_BUILD = '827d99951c'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794536504541';
+  const CB_BUILD = '90eb7214e5'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8188,6 +8190,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   const CHANGELOG = [
     { date: '2026-11-12', items: [
       ['Art', "Enemy cards are getting paintings: every card a monster plays gets its own pixel illustration in the same style as your cards, starting with the Broken March. More arrive through the day."],
+      ['Art', "Emberwatch has been repainted in pixel art: new ground (grass, cobbles, dirt roads, arena sand and the River Ash), every house, the Keep, the Cathedral, the Hall of Records, the Grand Library, the Guild Hall, the barracks, the stables, the market stalls, the city wall and its towers, the South Gate and the bridges. Everything stands where it did, so the townspeople are where you left them. The Colosseum is a new painting with a slightly narrower sand floor, and the Hall of Records is a smaller building. The minimap shows the painted city."],
       ['Art', "Every enemy card in every map now has its own painting, bosses included, from the Broken March to the Hollow King's crypts, and so do the status cards enemies shuffle into your deck (Dazed, Stun, Fatigue, Venom, Frostbite, Hex and Bomb)."],
     ] },
     { date: '2026-11-11', items: [
@@ -11213,6 +11216,53 @@ window.CB_MAPART = (function () {
     }
   }
   return { decorate, has: (k) => !!ART[k] };
+})();
+
+// made by tools/townart/compose_town.py: the town sprites and their sizes in art pixels (32 to a tile)
+window.CB_TOWNART_DATA = {"T": 32, "CH": 12, "sprites": {"arenaboard": [49, 74], "awning_blue": [146, 124], "awning_cream": [154, 127], "awning_green": [147, 124], "awning_red": [144, 125], "bld_gold_6": [192, 207], "bld_green_8": [214, 193], "bld_greenstone_12": [384, 288], "bld_red_6": [192, 208], "bld_red_6b": [192, 208], "bld_red_7": [188, 186], "bld_red_8": [210, 203], "bld_slate_6": [192, 208], "bld_slate_7": [188, 190], "bld_slatestone_14": [446, 288], "bld_slatestone_4": [100, 224], "bld_slatestone_6": [165, 179], "bld_slatestone_7": [182, 184], "bld_thatch_10": [316, 190], "bld_thatch_5": [137, 176], "bld_thatch_6": [191, 206], "bld_thatch_7": [186, 186], "board": [54, 71], "brazier": [107, 140], "chest": [26, 26], "colosseum": [560, 416], "fountain": [126, 111], "gatehouse": [256, 128], "hall_cathedral": [531, 416], "hall_guild": [480, 320], "hall_library": [472, 320], "hall_records": [466, 198], "keep": [758, 335], "sign": [33, 68], "stall": [114, 75], "statue": [52, 83], "torch": [19, 71], "tower": [69, 120], "tree_0": [87, 114], "tree_1": [79, 109], "tree_2": [56, 120], "wagon": [101, 88]}};
+
+// ---------- Town art (Nov 12): Emberwatch painted in pixel art. The ground is baked into 12 x 12 tile pictures
+// (public/img/town/g_<i>_<j>.webp) with the city wall, bridges and shadows in it; every building and prop is its own sprite
+// (public/img/town/<name>.webp) standing on its footprint, so collision, doors and townspeople stay where they were.
+// Made by tools/townart/compose_town.py from the layout in src/city.js. Sizes come from src/townart_data.js.
+// TO REMOVE: delete this file and src/townart_data.js (the build skips them) and the town goes back to the ink drawing.
+window.CB_TOWNART = (function () {
+  const D = window.CB_TOWNART_DATA; if (!D) return null;
+  const T = D.T, CH = D.CH, IMG = new Map();
+  function img(name) { let e = IMG.get(name); if (!e) { e = { im: new Image(), ok: false }; e.im.onload = () => { e.ok = true; }; e.im.src = 'img/town/' + name + '.webp'; IMG.set(name, e); } return e.ok ? e.im : null; }
+  const crisp = (g, k) => { g.imageSmoothingEnabled = Math.abs(k - Math.round(k)) > .01; if (g.imageSmoothingEnabled) g.imageSmoothingQuality = 'low'; };
+  // the ground: only the pictures on screen are loaded, plus the next one the way you are heading
+  function ground(g, cam, TOWN, MW, MH, hp, dir) {
+    const TS = TOWN.TS, d = TOWN.dpr, cs = CH * TS, i0 = Math.floor(cam.x / cs), j0 = Math.floor(cam.y / cs), i1 = Math.floor((cam.x + TOWN.vw) / cs), j1 = Math.floor((cam.y + TOWN.vh) / cs);
+    crisp(g, TS * d / T);
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { if (i < 0 || j < 0 || i * CH >= MW || j * CH >= MH) continue;
+      const im = img('g_' + i + '_' + j); if (im) g.drawImage(im, Math.round((i * cs - cam.x) * d), Math.round((j * cs - cam.y) * d), Math.round(cs * d), Math.round(cs * d)); }
+    if (dir) { const ni = Math.floor((hp.x + dir[0] * CH * .8) / CH), nj = Math.floor((hp.y + dir[1] * CH * .8) / CH); if (ni >= 0 && nj >= 0 && ni * CH < MW && nj * CH < MH) img('g_' + ni + '_' + nj); }
+    g.imageSmoothingEnabled = true; return true;
+  }
+  const HALLS = { 'Hall of Records': 'hall_records', 'Grand Library': 'hall_library', 'Cathedral of the Ember': 'hall_cathedral', 'Guild Hall': 'hall_guild' };
+  function nameOf(p) {
+    const k = p.kind;
+    if (k === 'bld') { const n = 'bld_' + (p.roof || 'red') + (p.wall === 'stone' ? 'stone' : '') + '_' + p.w; return n === 'bld_red_6' && (p.x + p.y) % 2 ? 'bld_red_6b' : n; }
+    if (k === 'hall') return HALLS[p.name]; if (k === 'awning') return 'awning_' + p.c; if (k === 'tree') return 'tree_' + (p.v || 0);
+    return k;
+  }
+  const BAKED = { wallseg: 1, bridge: 1 }, DY = { tree: 4, torch: 3, chest: 2, sign: 3, board: 3, arenaboard: 3, statue: 3 }; // art px the foot sits below the footprint
+  const CO = { cx: 281, cy: 217, k: 2, front: 300 }; // the Colosseum picture: where the middle of its sand is, its scale, and the row its near stands start
+  function prop(g, p, TS, t, ARN) {
+    if (BAKED[p.kind]) return true;
+    const s = TS / T;
+    if (p.kind === 'colosseum') { const im = img('colosseum'); if (!im) return true; const k = CO.k * s, x = ARN.x * TS - CO.cx * k, y = ARN.y * TS - CO.cy * k; crisp(g, k);
+      if (p.part === 'front') g.drawImage(im, 0, CO.front, im.width, im.height - CO.front, x, y + CO.front * k, im.width * k, (im.height - CO.front) * k); else g.drawImage(im, x, y, im.width * k, im.height * k);
+      g.imageSmoothingEnabled = true; return true; }
+    const n = nameOf(p), sz = n && D.sprites[n]; if (!sz) return false;
+    const im = img(n); if (!im) return true;
+    crisp(g, s * (window.devicePixelRatio > 1 ? 2 : 1));
+    g.drawImage(im, Math.round((p.x + p.w / 2) * TS - sz[0] * s / 2), Math.round((p.y + p.h) * TS + (DY[p.kind] || 0) * s - sz[1] * s), sz[0] * s, sz[1] * s);
+    g.imageSmoothingEnabled = true; return true;
+  }
+  let miniIm = null; function mini() { if (!miniIm) { miniIm = new Image(); miniIm.src = 'img/town/mini.webp'; } return miniIm.complete && miniIm.naturalWidth ? miniIm : null; }
+  return { ground, prop, mini };
 })();
 
 // ---------- Gothic Ink figures (Nov 1): an art pack for the fight screen, built to be swapped out.
