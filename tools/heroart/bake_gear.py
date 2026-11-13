@@ -75,8 +75,16 @@ def bake_set(name):
         side = set()      # Nov 13: a repainted side torso (no arm, real armour where the arm used to hide it) replaces that box of the sheet
         for r, b in enumerate(bodies):
             sf = f'{HERE}/gear/side/{name}_{b}.png'
-            if os.path.exists(sf):
-                bx = SIDE_BOX[b]; cut = np.array(Image.open(sf).convert('RGBA')).astype(int); res[bx['y']:bx['y'] + bx['h'], bx['x']:bx['x'] + bx['w']] = cut; side.add(b)
+            if os.path.exists(sf) and b in SIDE_BOX:
+                # Nov 13 (later): the repainted side torsos often came back with an arm and hand painted on, which showed as a third arm when the real
+                # arm lifted. The side of the chest piece is now taken from the same armour's front view: its middle band, lined up centre to centre.
+                bx = SIDE_BOX[b]; y0, y1 = bx['y'], bx['y'] + bx['h']; sa = src[y0:y1, 128:192, 3] > 128; fa = src[y0:y1, 0:64, 3] > 128
+                sc = int(round(128 + np.nonzero(sa)[1].mean())); fc = int(round(np.nonzero(fa)[1].mean()))
+                front = res[y0:y1, 0:64].copy(); sd = GS.dil(sa, 1); fg = (np.abs(front - src[y0:y1, 0:64]).sum(-1) > 24) & (front[..., 3] > 128)
+                for x in range(bx['x'], bx['x'] + bx['w']):
+                    q = min(fc + 8, max(fc - 8, x - sc + fc)); col = sd[:, x - 128] if 0 <= x - 128 < 64 else np.zeros(y1 - y0, bool)
+                    res[y0:y1, x] = np.where((col & fg[:, q])[:, None], front[:, q], np.where(col[:, None], res[y0:y1, x], src[y0:y1, x]))
+                side.add(b)
         gear = (np.abs(res - src).sum(-1) > 24) & (res[..., 3] > 128); lay = np.where(gear[..., None], res, 0).astype(np.uint8); lay[..., 3] = gear * 255
         for r, b in enumerate(bodies):
             L = {}

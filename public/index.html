@@ -7378,8 +7378,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794605425836';
-  const CB_BUILD = '7769e79fad'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794606116006';
+  const CB_BUILD = '5bc78bfec2'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8485,6 +8485,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Art', "Town buildings are drawn whole. Fourteen houses, the Guild Hall and the fountains were cut off in straight lines at their sides; each is redrawn with its full roof, walls and corners."],
+      ['Art', "Heroes seen from the side: no more third arm hanging by the hip, the far arm is drawn and holds the off-hand weapon, the near arm has a dark edge so it reads apart from the chest, and wings sit on the back as one wing, not a squeezed pair across the face. Long hair no longer trails out from under a helm."],
       ['Interface', "Your bags are now a grid of slots showing just each item's picture. Hover an item for the same card your character slots show, click it to equip or salvage, double-click to equip right away."],
       ['Interface', "The small item level number is gone from the corner of item pictures."],
       ['Interface', "Guild and Friends are both on the bottom bar (G and O). The Character and Friends buttons at the top are gone."],
@@ -11245,7 +11247,7 @@ window.CB_PUPPET = (function () {
     const vi = H.views.indexOf(v), bi = H.bodies.indexOf(L.body), [hx, hy] = H.at[L.body][v];
     const dye = (im, col, clipY) => {   // hair is painted grey-white; multiply it by the colour
       tg.globalCompositeOperation = 'source-over'; tg.clearRect(0, 0, H.cw, H.ch); tg.drawImage(im, bi * H.cw, vi * H.ch, H.cw, H.ch, 0, 0, H.cw, H.ch);
-      const hd = tg.getImageData(0, 0, H.cw, H.ch), p = hd.data; for (let i = 0; i < p.length; i += 4) { if (!p[i + 3]) continue; if (clipY != null) { const Y = (i / 4 / H.cw | 0) + hy; if (Y < clipY) { p[i + 3] = 0; continue; } if (Y <= clipY + 8) { const X = S + hx + (i / 4) % H.cw, o = Y * S * 10; if (!(d[(o + X) * 4 + 3] || d[(o + X - 1) * 4 + 3] || d[(o + X + 1) * 4 + 3] || d[(o + X - 2) * 4 + 3] || d[(o + X + 2) * 4 + 3])) { p[i + 3] = 0; continue; } } } /* Nov 13: beside the face, hair that sticks out past the head is tucked into the helm; it used to poke out like wings */ const k = Math.min(1.12, p[i] / 215); p[i] = col[0] * k; p[i + 1] = col[1] * k; p[i + 2] = col[2] * k; }
+      const hd = tg.getImageData(0, 0, H.cw, H.ch), p = hd.data; for (let i = 0; i < p.length; i += 4) { if (!p[i + 3]) continue; if (clipY != null) { const Y = (i / 4 / H.cw | 0) + hy; if (Y < clipY || (v === 'e' && Y > clipY + 15)) { p[i + 3] = 0; continue; } if (Y <= clipY + 8) { const X = S + hx + (i / 4) % H.cw, o = Y * S * 10; if (!(d[(o + X) * 4 + 3] || d[(o + X - 1) * 4 + 3] || d[(o + X + 1) * 4 + 3] || d[(o + X - 2) * 4 + 3] || d[(o + X + 2) * 4 + 3])) { p[i + 3] = 0; continue; } } } /* Nov 13: beside the face, hair that sticks out past the head is tucked into the helm; it used to poke out like wings */ const k = Math.min(1.12, p[i] / 215); p[i] = col[0] * k; p[i + 1] = col[1] * k; p[i + 2] = col[2] * k; }
       tg.putImageData(hd, 0, 0); g.drawImage(tmp, 0, 0, H.cw, H.ch, S + hx, hy, H.cw, H.ch);
     };
     const hc = HAIRCOL[L.hairCol || 0] || HAIRCOL[0];
@@ -11335,7 +11337,8 @@ window.CB_PUPPET = (function () {
   // parts are drawn enlarged (each art pixel a block of q x q) and the result shrunk to size, so a turned limb gets clean edges instead of jagged ones
   const WORK = {}, workFor = (q) => WORK[q] || (WORK[q] = (() => { const c = canvas(S * 2 * q, S * 2 * q); return { c, g: c.getContext('2d') }; })());
   function chain(g, B, P, i) { if (PAR[i] >= 0) chain(g, B, P, PAR[i]); const a = P.parts[i], pv = B.piv[i]; g.translate(pv[0] + a.dx, pv[1] + a.dy); if (a.r) g.rotate(a.r); if (a.sy !== 1) g.scale(1, a.sy); g.translate(-pv[0], -pv[1]); }
-  const GRIPR = 3.6;
+  const GRIPR = 3.6, OUTL = new WeakMap();
+  function outline(strip) { let o = OUTL.get(strip); if (o) return o; o = canvas(S * 2, S); const og = o.getContext('2d'); og.drawImage(strip, 2 * S, 0, 2 * S, S, 0, 0, 2 * S, S); og.globalCompositeOperation = 'source-in'; og.fillStyle = '#0c0a10'; og.fillRect(0, 0, 2 * S, S); OUTL.set(strip, o); return o; }
   function draw(g, look, view, anim, t, x, footY, scale) {
     const flip = view === 'w', v = flip ? 'e' : view, B = D.bodies[look.body] && D.bodies[look.body][v]; if (!B) return false;
     const COS = window.CB_COS; if (COS && look.cos) { const ws = COS.weapon(look); if (ws && W && W.types.includes('legend')) look = Object.assign({}, look, { weapon: ws }); }
@@ -11352,10 +11355,20 @@ window.CB_PUPPET = (function () {
       // so fingers wrap the grip instead of the weapon floating in front of an open hand
       if (!at && !HELD[it[0]]) { wg.save(); base(); chain(wg, B, P, part); wg.beginPath(); wg.arc(B.hand[hand][0], B.hand[hand][1], GRIPR, 0, 7); wg.clip(); wg.drawImage(strip, part * S, 0, S, S, 0, 0, S, S); wg.restore(); }
     };
-    const wrot = (it, d) => (HELD[it[0]] ? 0 : LONG[it[0]] || (it[0] === 'legend' && (it[1] === 2 || it[1] === 5)) ? .18 * d : 1.15 * d), mainPart = v === 'n' ? 5 : 3, offPart = v === 'n' ? 3 : 5;
     if (cl && v !== 'n') { base(); chain(wg, B, P, 0); wg.drawImage(cl, 0, 0); }
-    if (v === 'e' && look.off && !HELD[look.off[0]]) held(look.off, 0, 0, 1.0, [B.hand[0][0] + 6, B.hand[0][1] - 4]);   // the other hand's weapon shows behind the body
+    const wrot = (it, d) => (HELD[it[0]] ? 0 : LONG[it[0]] || (it[0] === 'legend' && (it[1] === 2 || it[1] === 5)) ? .18 * d : 1.15 * d), mainPart = v === 'n' ? 5 : 3, offPart = v === 'n' ? 3 : 5;
+    // Nov 13: from the side the far arm is drawn too (the near arm's picture, a shade darker, behind the body), and it is the hand that holds
+    // the off-hand weapon. That weapon used to hang in the air beside the body.
+    if (v === 'e' && anim !== 'sit' && anim !== 'dead') {
+      const a2 = P.parts[2], a3 = P.parts[3], k2 = [a2.r, a2.dx, a2.dy], k3 = a3.r, calm = anim === 'idle' || anim === 'walk';
+      a2.r = anim === 'walk' ? -k2[0] * .9 : anim === 'idle' ? k2[0] : -.72 + k2[0] * .12; a3.r = calm ? Math.min(k3, -.2) : -.7; a2.dx = k2[1] + (anim === 'idle' ? 1 : 3); a2.dy = k2[2] - 1;
+      for (const i of [2, 3]) { base(); chain(wg, B, P, i); wg.drawImage(strip, i * S, 0, S, S, 0, 0, S, S); }
+      if (look.off && !HELD[look.off[0]]) held(look.off, 3, 0, calm ? wrot(look.off, 1) : k2[0] + k3 + wrot(look.off, 1) + P.wr - a2.r - a3.r - .3);
+      wg.setTransform(1, 0, 0, 1, 0, 0); wg.globalCompositeOperation = 'source-atop'; wg.fillStyle = 'rgba(8,6,12,.34)'; wg.fillRect(0, 0, work.width, work.height); wg.globalCompositeOperation = 'source-over';
+      a2.r = k2[0]; a2.dx = k2[1]; a2.dy = k2[2]; a3.r = k3;
+    }
     for (const i of B.order) {
+      if (i === 2 && v === 'e') { const ol = outline(strip); wg.globalAlpha = .6; for (const j of [2, 3]) { base(); chain(wg, B, P, j); for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) wg.drawImage(ol, (j - 2) * S, 0, S, S, ox, oy, S, S); } wg.globalAlpha = 1; }   /* Nov 13: a dark edge around the near arm, so it reads apart from the chest */
       base(); chain(wg, B, P, i); wg.drawImage(strip, i * S, 0, S, S, 0, 0, S, S);
       if (i === 0 && cl && v === 'n') wg.drawImage(cl, 0, 0);
       if (i === 0 && v === 'e' && look.off && HELD[look.off[0]]) held(look.off, 0, 0, 0, [B.piv[0][0] + 13, B.piv[0][1] - (look.off[0] === 'focus' ? 24 : 16)]);
@@ -12100,7 +12113,7 @@ window.CB_MAPART = (function () {
 })();
 
 // made by tools/townart/compose_town.py: the town sprites and their sizes in art pixels (32 to a tile)
-window.CB_TOWNART_DATA = {"T": 32, "CH": 12, "sprites": {"arenaboard": [49, 74], "awning_blue": [146, 124], "awning_cream": [154, 127], "awning_green": [147, 124], "awning_red": [144, 125], "bld_gold_6": [192, 207], "bld_green_8": [214, 193], "bld_greenstone_12": [384, 288], "bld_red_6": [192, 208], "bld_red_6b": [192, 208], "bld_red_7": [188, 186], "bld_red_8": [210, 203], "bld_slate_6": [192, 208], "bld_slate_7": [188, 190], "bld_slatestone_14": [446, 288], "bld_slatestone_4": [100, 224], "bld_slatestone_6": [165, 179], "bld_slatestone_7": [182, 184], "bld_thatch_10": [316, 190], "bld_thatch_5": [137, 176], "bld_thatch_6": [191, 206], "bld_thatch_7": [186, 186], "board": [54, 71], "brazier": [107, 140], "chest": [26, 26], "colosseum": [560, 416], "fountain": [126, 111], "gatehouse": [256, 128], "hall_cathedral": [531, 416], "hall_guild": [480, 320], "hall_library": [472, 320], "hall_records": [466, 198], "keep": [758, 335], "sign": [33, 68], "stall": [114, 75], "statue": [52, 83], "torch": [19, 71], "tower": [69, 120], "tree_0": [87, 114], "tree_1": [79, 109], "tree_2": [56, 120], "wagon": [101, 88]}};
+window.CB_TOWNART_DATA = {"T": 32, "CH": 12, "sprites": {"arenaboard": [49, 74], "awning_blue": [146, 124], "awning_cream": [154, 127], "awning_green": [147, 124], "awning_red": [144, 125], "bld_gold_6": [209, 207], "bld_green_8": [288, 214], "bld_greenstone_12": [384, 288], "bld_red_6": [213, 217], "bld_red_6b": [205, 215], "bld_red_7": [206, 187], "bld_red_8": [288, 244], "bld_slate_6": [206, 213], "bld_slate_7": [202, 190], "bld_slatestone_14": [446, 288], "bld_slatestone_4": [100, 224], "bld_slatestone_6": [178, 183], "bld_slatestone_7": [214, 184], "bld_thatch_10": [316, 190], "bld_thatch_5": [154, 176], "bld_thatch_6": [224, 213], "bld_thatch_7": [230, 186], "board": [54, 71], "brazier": [107, 140], "chest": [26, 26], "colosseum": [560, 416], "fountain": [115, 108], "gatehouse": [256, 128], "hall_cathedral": [531, 416], "hall_guild": [453, 289], "hall_library": [472, 320], "hall_records": [466, 198], "keep": [758, 335], "sign": [33, 68], "stall": [114, 75], "statue": [52, 83], "torch": [19, 71], "tower": [69, 120], "tree_0": [87, 114], "tree_1": [79, 109], "tree_2": [56, 120], "wagon": [101, 88]}};
 
 // ---------- Town art (Nov 12): Emberwatch painted in pixel art. The ground is baked into 12 x 12 tile pictures
 // (public/img/town/g_<i>_<j>.webp) with the city wall, bridges and shadows in it; every building and prop is its own sprite
@@ -14209,9 +14222,14 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
         for (let i = STAMPS.length - 1; i >= 0; i--) { const s = STAMPS[i], u = (now - s.t0) / 1100; if (u >= 1) { STAMPS.splice(i, 1); continue; } if (s.k !== c.trail || s.g !== g) continue; if (Math.abs(s.x - x) + Math.abs(s.y - footY) > 420 * sc) continue; cosBlit(g, T.fx, now - s.t0 + i * 90, s.x, s.y, T.z * s.sc * 1.0, T.tint, 1 - u); }
       }
       if (W && !dead && wingImg.complete && wingImg.naturalWidth && (layer === 'back') === (v !== 'n')) {
-        const flap = 1 + Math.sin(t / 420) * 0.05, k = sc * 0.95, side = v === 'e' || v === 'w', wx = side ? 0.42 : 1, dir = v === 'w' ? 1 : -1;
-        g.save(); g.imageSmoothingEnabled = false; g.translate(Math.round(x + (side ? dir * 9 * sc : 0)), Math.round(footY - 84 * sc)); g.scale(wx * flap, 1);
-        g.drawImage(wingImg, W[4] * 128, 0, 128, 96, -64 * k, -52 * k, 128 * k, 96 * k); g.restore();
+        const flap = 1 + Math.sin(t / 420) * 0.05, k = sc * 0.95, side = v === 'e' || v === 'w';
+        g.save(); g.imageSmoothingEnabled = false;
+        if (side) {   // Nov 13: from the side one wing shows, rooted on the shoulder blade (the pair used to be squeezed thin, with one wing across the face)
+          const dir = v === 'w' ? -1 : 1; g.translate(Math.round(x - dir * 3 * sc), Math.round(footY - 84 * sc)); g.scale(dir, 1);
+          g.save(); g.translate(-3 * k, -3 * k); g.scale(.62 * flap, 1); g.globalAlpha = .75; g.drawImage(wingImg, W[4] * 128, 0, 64, 96, -64 * k, -52 * k, 64 * k, 96 * k); g.restore();
+          g.scale(.78 * flap, 1); g.drawImage(wingImg, W[4] * 128, 0, 64, 96, -64 * k, -52 * k, 64 * k, 96 * k);
+        } else { g.translate(Math.round(x), Math.round(footY - 84 * sc)); g.scale(flap, 1); g.drawImage(wingImg, W[4] * 128, 0, 128, 96, -64 * k, -52 * k, 128 * k, 96 * k); }
+        g.restore();
       }
       if (A && !dead && (layer === 'back') === !!A.back) {
         const y = A.at === 'f' ? footY + 2 * sc : A.at === 'h' ? footY - 108 * sc : footY - 56 * sc;

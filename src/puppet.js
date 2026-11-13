@@ -73,7 +73,7 @@ window.CB_PUPPET = (function () {
     const vi = H.views.indexOf(v), bi = H.bodies.indexOf(L.body), [hx, hy] = H.at[L.body][v];
     const dye = (im, col, clipY) => {   // hair is painted grey-white; multiply it by the colour
       tg.globalCompositeOperation = 'source-over'; tg.clearRect(0, 0, H.cw, H.ch); tg.drawImage(im, bi * H.cw, vi * H.ch, H.cw, H.ch, 0, 0, H.cw, H.ch);
-      const hd = tg.getImageData(0, 0, H.cw, H.ch), p = hd.data; for (let i = 0; i < p.length; i += 4) { if (!p[i + 3]) continue; if (clipY != null) { const Y = (i / 4 / H.cw | 0) + hy; if (Y < clipY) { p[i + 3] = 0; continue; } if (Y <= clipY + 8) { const X = S + hx + (i / 4) % H.cw, o = Y * S * 10; if (!(d[(o + X) * 4 + 3] || d[(o + X - 1) * 4 + 3] || d[(o + X + 1) * 4 + 3] || d[(o + X - 2) * 4 + 3] || d[(o + X + 2) * 4 + 3])) { p[i + 3] = 0; continue; } } } /* Nov 13: beside the face, hair that sticks out past the head is tucked into the helm; it used to poke out like wings */ const k = Math.min(1.12, p[i] / 215); p[i] = col[0] * k; p[i + 1] = col[1] * k; p[i + 2] = col[2] * k; }
+      const hd = tg.getImageData(0, 0, H.cw, H.ch), p = hd.data; for (let i = 0; i < p.length; i += 4) { if (!p[i + 3]) continue; if (clipY != null) { const Y = (i / 4 / H.cw | 0) + hy; if (Y < clipY || (v === 'e' && Y > clipY + 15)) { p[i + 3] = 0; continue; } if (Y <= clipY + 8) { const X = S + hx + (i / 4) % H.cw, o = Y * S * 10; if (!(d[(o + X) * 4 + 3] || d[(o + X - 1) * 4 + 3] || d[(o + X + 1) * 4 + 3] || d[(o + X - 2) * 4 + 3] || d[(o + X + 2) * 4 + 3])) { p[i + 3] = 0; continue; } } } /* Nov 13: beside the face, hair that sticks out past the head is tucked into the helm; it used to poke out like wings */ const k = Math.min(1.12, p[i] / 215); p[i] = col[0] * k; p[i + 1] = col[1] * k; p[i + 2] = col[2] * k; }
       tg.putImageData(hd, 0, 0); g.drawImage(tmp, 0, 0, H.cw, H.ch, S + hx, hy, H.cw, H.ch);
     };
     const hc = HAIRCOL[L.hairCol || 0] || HAIRCOL[0];
@@ -163,7 +163,8 @@ window.CB_PUPPET = (function () {
   // parts are drawn enlarged (each art pixel a block of q x q) and the result shrunk to size, so a turned limb gets clean edges instead of jagged ones
   const WORK = {}, workFor = (q) => WORK[q] || (WORK[q] = (() => { const c = canvas(S * 2 * q, S * 2 * q); return { c, g: c.getContext('2d') }; })());
   function chain(g, B, P, i) { if (PAR[i] >= 0) chain(g, B, P, PAR[i]); const a = P.parts[i], pv = B.piv[i]; g.translate(pv[0] + a.dx, pv[1] + a.dy); if (a.r) g.rotate(a.r); if (a.sy !== 1) g.scale(1, a.sy); g.translate(-pv[0], -pv[1]); }
-  const GRIPR = 3.6;
+  const GRIPR = 3.6, OUTL = new WeakMap();
+  function outline(strip) { let o = OUTL.get(strip); if (o) return o; o = canvas(S * 2, S); const og = o.getContext('2d'); og.drawImage(strip, 2 * S, 0, 2 * S, S, 0, 0, 2 * S, S); og.globalCompositeOperation = 'source-in'; og.fillStyle = '#0c0a10'; og.fillRect(0, 0, 2 * S, S); OUTL.set(strip, o); return o; }
   function draw(g, look, view, anim, t, x, footY, scale) {
     const flip = view === 'w', v = flip ? 'e' : view, B = D.bodies[look.body] && D.bodies[look.body][v]; if (!B) return false;
     const COS = window.CB_COS; if (COS && look.cos) { const ws = COS.weapon(look); if (ws && W && W.types.includes('legend')) look = Object.assign({}, look, { weapon: ws }); }
@@ -180,10 +181,20 @@ window.CB_PUPPET = (function () {
       // so fingers wrap the grip instead of the weapon floating in front of an open hand
       if (!at && !HELD[it[0]]) { wg.save(); base(); chain(wg, B, P, part); wg.beginPath(); wg.arc(B.hand[hand][0], B.hand[hand][1], GRIPR, 0, 7); wg.clip(); wg.drawImage(strip, part * S, 0, S, S, 0, 0, S, S); wg.restore(); }
     };
-    const wrot = (it, d) => (HELD[it[0]] ? 0 : LONG[it[0]] || (it[0] === 'legend' && (it[1] === 2 || it[1] === 5)) ? .18 * d : 1.15 * d), mainPart = v === 'n' ? 5 : 3, offPart = v === 'n' ? 3 : 5;
     if (cl && v !== 'n') { base(); chain(wg, B, P, 0); wg.drawImage(cl, 0, 0); }
-    if (v === 'e' && look.off && !HELD[look.off[0]]) held(look.off, 0, 0, 1.0, [B.hand[0][0] + 6, B.hand[0][1] - 4]);   // the other hand's weapon shows behind the body
+    const wrot = (it, d) => (HELD[it[0]] ? 0 : LONG[it[0]] || (it[0] === 'legend' && (it[1] === 2 || it[1] === 5)) ? .18 * d : 1.15 * d), mainPart = v === 'n' ? 5 : 3, offPart = v === 'n' ? 3 : 5;
+    // Nov 13: from the side the far arm is drawn too (the near arm's picture, a shade darker, behind the body), and it is the hand that holds
+    // the off-hand weapon. That weapon used to hang in the air beside the body.
+    if (v === 'e' && anim !== 'sit' && anim !== 'dead') {
+      const a2 = P.parts[2], a3 = P.parts[3], k2 = [a2.r, a2.dx, a2.dy], k3 = a3.r, calm = anim === 'idle' || anim === 'walk';
+      a2.r = anim === 'walk' ? -k2[0] * .9 : anim === 'idle' ? k2[0] : -.72 + k2[0] * .12; a3.r = calm ? Math.min(k3, -.2) : -.7; a2.dx = k2[1] + (anim === 'idle' ? 1 : 3); a2.dy = k2[2] - 1;
+      for (const i of [2, 3]) { base(); chain(wg, B, P, i); wg.drawImage(strip, i * S, 0, S, S, 0, 0, S, S); }
+      if (look.off && !HELD[look.off[0]]) held(look.off, 3, 0, calm ? wrot(look.off, 1) : k2[0] + k3 + wrot(look.off, 1) + P.wr - a2.r - a3.r - .3);
+      wg.setTransform(1, 0, 0, 1, 0, 0); wg.globalCompositeOperation = 'source-atop'; wg.fillStyle = 'rgba(8,6,12,.34)'; wg.fillRect(0, 0, work.width, work.height); wg.globalCompositeOperation = 'source-over';
+      a2.r = k2[0]; a2.dx = k2[1]; a2.dy = k2[2]; a3.r = k3;
+    }
     for (const i of B.order) {
+      if (i === 2 && v === 'e') { const ol = outline(strip); wg.globalAlpha = .6; for (const j of [2, 3]) { base(); chain(wg, B, P, j); for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) wg.drawImage(ol, (j - 2) * S, 0, S, S, ox, oy, S, S); } wg.globalAlpha = 1; }   /* Nov 13: a dark edge around the near arm, so it reads apart from the chest */
       base(); chain(wg, B, P, i); wg.drawImage(strip, i * S, 0, S, S, 0, 0, S, S);
       if (i === 0 && cl && v === 'n') wg.drawImage(cl, 0, 0);
       if (i === 0 && v === 'e' && look.off && HELD[look.off[0]]) held(look.off, 0, 0, 0, [B.piv[0][0] + 13, B.piv[0][1] - (look.off[0] === 'focus' ? 24 : 16)]);

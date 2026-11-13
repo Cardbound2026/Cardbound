@@ -100,9 +100,14 @@
         for (let i = STAMPS.length - 1; i >= 0; i--) { const s = STAMPS[i], u = (now - s.t0) / 1100; if (u >= 1) { STAMPS.splice(i, 1); continue; } if (s.k !== c.trail || s.g !== g) continue; if (Math.abs(s.x - x) + Math.abs(s.y - footY) > 420 * sc) continue; cosBlit(g, T.fx, now - s.t0 + i * 90, s.x, s.y, T.z * s.sc * 1.0, T.tint, 1 - u); }
       }
       if (W && !dead && wingImg.complete && wingImg.naturalWidth && (layer === 'back') === (v !== 'n')) {
-        const flap = 1 + Math.sin(t / 420) * 0.05, k = sc * 0.95, side = v === 'e' || v === 'w', wx = side ? 0.42 : 1, dir = v === 'w' ? 1 : -1;
-        g.save(); g.imageSmoothingEnabled = false; g.translate(Math.round(x + (side ? dir * 9 * sc : 0)), Math.round(footY - 84 * sc)); g.scale(wx * flap, 1);
-        g.drawImage(wingImg, W[4] * 128, 0, 128, 96, -64 * k, -52 * k, 128 * k, 96 * k); g.restore();
+        const flap = 1 + Math.sin(t / 420) * 0.05, k = sc * 0.95, side = v === 'e' || v === 'w';
+        g.save(); g.imageSmoothingEnabled = false;
+        if (side) {   // Nov 13: from the side one wing shows, rooted on the shoulder blade (the pair used to be squeezed thin, with one wing across the face)
+          const dir = v === 'w' ? -1 : 1; g.translate(Math.round(x - dir * 3 * sc), Math.round(footY - 84 * sc)); g.scale(dir, 1);
+          g.save(); g.translate(-3 * k, -3 * k); g.scale(.62 * flap, 1); g.globalAlpha = .75; g.drawImage(wingImg, W[4] * 128, 0, 64, 96, -64 * k, -52 * k, 64 * k, 96 * k); g.restore();
+          g.scale(.78 * flap, 1); g.drawImage(wingImg, W[4] * 128, 0, 64, 96, -64 * k, -52 * k, 64 * k, 96 * k);
+        } else { g.translate(Math.round(x), Math.round(footY - 84 * sc)); g.scale(flap, 1); g.drawImage(wingImg, W[4] * 128, 0, 128, 96, -64 * k, -52 * k, 128 * k, 96 * k); }
+        g.restore();
       }
       if (A && !dead && (layer === 'back') === !!A.back) {
         const y = A.at === 'f' ? footY + 2 * sc : A.at === 'h' ? footY - 108 * sc : footY - 56 * sc;
