@@ -7358,8 +7358,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794603560381';
-  const CB_BUILD = '082609f63a'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794604115897';
+  const CB_BUILD = '3b778775f2'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8465,6 +8465,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Fix', "With a pet out, your hero dropped off the bottom of the fight screen and the pet did not show. Both now stand where they should, and the pet faces the enemy. Your first pet starts following you as soon as it arrives; swap or dismiss it in the Wardrobe."],
       ['Art', "Clipping pass on the hero. A helm worn on its own no longer has dark wings beside the neck (they were the shoulder tops of the suit, filed under the helm). A chest piece worn without shoulder guards keeps its own shoulders instead of showing torn holes, and trousers or a chest piece carry on over the waist when no belt is worn, so there is no bare strip of skin. Hair that stuck out past a helm beside the face is tucked in. Pieces from different sets now load together, so a mixed outfit appears at once instead of one piece at a time."],
       ['Art', "Armour seen from the side was repainted. Under the arm there used to be a smooth grey patch, because that part of the suit had never been painted; it showed every time the arm swung in an attack or a cast. All 18 armour sets on all four bodies now have a real painted flank there: straps, buckles and plates on plate, lacing and pouches on leather, seams, sashes and trim on cloth."],
       ['Fix', "Every one of the 699 playable cards was played in a test fight and checked against its own text, at every upgrade level. Cards that did not do what they say now do: Crusader Strike hits for 14 (was 12), Raise Shield gives 12 Block (was 10), Righteous Blow does 10 damage and 10 Block (was 8 and 8), Divine Storm hits for 14 (was 12); Death From Above now gets its Stealth bonus (24 instead of 16; it never did); Coated Blade applies 25% of the hit as Bleed and Poison (it always gave 1); Concentrate and Elemental Focus are used up by the next damaging Skill (they lasted all turn), and Elemental Focus only works when the element differs from your last Skill, as it says; Marching Orders gives its first extra card next turn (it came a turn late); Fleetfooted gives 1 Dodge per hit as written (it gave 2); Combustion Threshold triggers on Skills that cost 30 mana or more (no Skill costs more than 30, so it never fired); Purify, Stanch the Wound, Hand of Freedom, Sacred Ash and Cleansing Flame now count as cleansing for Purifying Grace and the Purifier codex."],
@@ -14139,7 +14140,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     #actbar button kbd { position: absolute; right: 2px; bottom: 1px; font: 600 10px/1 sans-serif; color: #f4d89a; text-shadow: 0 1px 0 #000; }
     #actbar button::after { content: attr(data-tip); position: absolute; bottom: 52px; right: 0; white-space: nowrap; background: #0b0a08; border: 1px solid #5a4a2e; color: #efe6d2; font-size: 13px; padding: 3px 8px; border-radius: 3px; opacity: 0; pointer-events: none; transition: opacity .12s; }
     #actbar button:hover::after { opacity: 1; }
-    .petfig { position: absolute; left: -34%; bottom: 4%; height: 34%; image-rendering: pixelated; pointer-events: none; filter: drop-shadow(0 2px 0 rgba(0,0,0,.5)); animation: petbob 1.6s ease-in-out infinite; z-index: 1; }
+    .petfig { position: absolute; left: -34%; bottom: 4%; height: 34%; scale: -1 1; image-rendering: pixelated; pointer-events: none; filter: drop-shadow(0 2px 0 rgba(0,0,0,.5)); animation: petbob 1.6s ease-in-out infinite; z-index: 1; }
     @keyframes petbob { 50% { transform: translateY(-4%); } }
     .bankbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 8px; } .bankbar input[type=search] { flex: 1; min-width: 180px; }
     .bankbar .shoptabs { margin: 0; }
@@ -14197,10 +14198,10 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   setInterval(() => {   // a fight: every hero with a pet gets it standing at their side
     try { if (typeof cb === 'undefined' || !cb || $('scrCombat').hidden) return;
       for (const a of cb.players) { const u = document.querySelector(`#scrCombat .unit[data-id="${a.id}"] .figure`); if (!u) continue; const app = window.CB_PUP_APP ? CB_PUP_APP(a) : null, pet = app && app.cos && app.cos.pet; let im = u.querySelector('.petfig');
-        if (!pet || a.hp <= 0) { if (im) im.remove(); continue; } if (!im) { im = document.createElement('img'); im.className = 'petfig'; im.alt = ''; im.draggable = false; u.style.position = u.style.position || 'relative'; u.appendChild(im); } const src = petSrc(pet); if (im.dataset.k !== pet) { im.dataset.k = pet; im.src = src; } }
+        if (!pet || a.hp <= 0) { if (im) im.remove(); continue; } if (!im) { im = document.createElement('img'); im.className = 'petfig'; im.alt = ''; im.draggable = false; if (getComputedStyle(u).position === 'static') u.style.position = 'relative'; /* Nov 13: the fight figure is already placed by the stage; forcing it to relative dropped the hero off the bottom of the screen */ u.appendChild(im); } const src = petSrc(pet); if (im.dataset.k !== pet) { im.dataset.k = pet; im.src = src; } }
     } catch (e) {} }, 700);
   // a pet that dropped on the last run: say so
-  function exPetNews() { const n = profile.newPets; if (!n || !n.length) return; profile.newPets = []; save(); modal(`<h2>A new pet!</h2><p>${n.map(k => `<b>${esc(petName(k))}</b>`).join(', ')} followed you home. One kill in a thousand does that.</p><div style="display:flex;gap:14px;justify-content:center;margin:10px 0">${n.map(k => `<img src="${petSrc(k)}" alt="" style="height:96px;image-rendering:pixelated">`).join('')}</div><p class="muted">Pets are for show: they trot behind you in town and stand by you in a fight. Choose one in your hero window (C), Wardrobe.</p><div class="row"><button class="btn primary" id="mClose">Lovely</button></div>`); $('mClose').onclick = closeModal; }
+  function exPetNews() { const n = profile.newPets; if (!n || !n.length) return; profile.newPets = []; { const ap = exApp(); if (ap.cos && !ap.cos.pet) ap.cos.pet = n[0]; } /* Nov 13: your first pet starts following you straight away */ save(); modal(`<h2>A new pet!</h2><p>${n.map(k => `<b>${esc(petName(k))}</b>`).join(', ')} followed you home. One kill in a thousand does that.</p><div style="display:flex;gap:14px;justify-content:center;margin:10px 0">${n.map(k => `<img src="${petSrc(k)}" alt="" style="height:96px;image-rendering:pixelated">`).join('')}</div><p class="muted">Pets are for show: they trot behind you in town and stand by you in a fight. Swap or dismiss it in your hero window (C), Wardrobe.</p><div class="row"><button class="btn primary" id="mClose">Lovely</button></div>`); $('mClose').onclick = closeModal; }
   setInterval(() => { try { if (profile && profile.newPets && profile.newPets.length && !$('scrStart').hidden && $('modal').hidden && $('sheet').hidden) exPetNews(); } catch (e) {} }, 2500);
   // ---------- the Shop
   function exBuy(price, fn) { if (exSk() < price) return toast(`That costs ${price} Skull Tokens and you have ${exSk()}.`); profile.skulls = exSk() - price; fn(); save(); if (window.CB_AUDIO) CB_AUDIO.sfx('coin'); return true; }
