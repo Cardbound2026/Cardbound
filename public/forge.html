@@ -2187,7 +2187,7 @@ async function exportTravelPack(){
     fit(); addEventListener('resize', fit);
     const live = []; // { kind, id | from/to, t0, ms, o }
     const now = () => performance.now();
-    function add(kind, o, delay) { try { if (window.CB_AUDIO) CB_AUDIO.fx(kind, delay); } catch (e) {} live.push({ kind, o: o || {}, t0: now() + (delay || 0), ms: (DRAW[kind] && DRAW[kind].ms) || 500 }); if (live.length > 140) live.splice(0, live.length - 140); }
+    function add(kind, o, delay) { o = o || {}; try { if (window.CB_AUDIO) CB_AUDIO.fx(kind, delay); } catch (e) {} if (window.CB_FXPICK && !o.raw) { const v = CB_FXPICK(kind, o, delay); if (v && DRAW[v]) kind = v; } live.push({ kind, o: o || {}, t0: now() + (delay || 0), ms: (DRAW[kind] && DRAW[kind].ms) || 500 }); if (live.length > 140) live.splice(0, live.length - 140); }
     // where a fighter is on screen: centre of the figure, plus a size factor (1 = a 110 px tall figure)
     function spot(id, at) {
       const f = document.querySelector(`.unit[data-id="${id}"] .figure`); if (!f) return null; const r = f.getBoundingClientRect(); if (!r.width) return null;
@@ -2348,7 +2348,7 @@ async function exportTravelPack(){
     const ELEM = (d) => d === 'Fire' ? 'fire' : d === 'Frost' ? 'frost' : d === 'Shadow' ? 'shadow' : d === 'Holy' ? 'holy' : d === 'Arcane' ? 'arcane' : d === 'Nature' ? 'nature' : null;
     const DOT = { bleed: 'bleed', poison: 'poison', burn: 'burn', dread: 'dread', rot: 'rot', chill: 'chill' };
     const DEF_FX = { Rogue: 'dodge', Warrior: 'parry', Paladin: 'block', Mage: 'barrier', Warlock: 'absorb' };
-    let lastStealth = {};
+    let lastStealth = {}, seen = {};
     function consume(cb) {
       if (!cb) return; const F = window.CB_FORGE;
       // persistent looks: Stealth (see-through) and fallen heroes
@@ -2406,6 +2406,19 @@ async function exportTravelPack(){
         else if (e.t === 'heal') add('heal', { id: e.d, seed: Math.random() * 1e9 });
         else if (e.t === 'block') add('block', { id: e.d, col: (cb.actorById(e.d) || {}).cls === 'Mage' ? 'ward' : (cb.actorById(e.d) || {}).cls === 'Warlock' ? 'absorb' : null });
       }
+      // status changes since the last look (Nov 13): Stun stars, buff and debuff arrows, a summoning beam, a puff when something dies
+      for (const a of [...cb.players, ...cb.enemies]) {
+        const was = seen[a.id] || {}, now = { stun: (a.stunned || 0) + (a.frozen ? 1 : 0) + (a.feared || 0), up: (a.strength || 0) + (a.strTurn || 0) + (a.nextBonus || 0) + (a.thorns || 0), down: (a.weak || 0) + (a.vulnerable || 0) + (a.slow || 0) + (a.exposure || 0), dm: (a.demons || []).length, hp: a.hp, mana: a.mana || 0 };
+        if (seen[a.id]) {
+          if (now.stun > was.stun) add('stun', { id: a.id }, 300);
+          if (now.up > was.up && !cards.some((q) => q.id === a.id && q.type === 'Power')) add('buff', { id: a.id }, 150);
+          if (now.down > was.down) add('debuff', { id: a.id }, 300);
+          if (now.dm > was.dm) add('summon', { id: a.id, self: true }, 100);
+          if (now.hp <= 0 && was.hp > 0 && !a.isPlayer) add('poof', { id: a.id, tint: 'dark', z: 1.3 }, 420);
+          if (!a.isPlayer && now.mana < was.mana - 4 && cards.length) add('drain', { id: a.id, tint: 'mana' }, 250);
+        }
+        seen[a.id] = now;
+      }
       // a leap landing kicks up dust
       if (F) for (const v of F.events.splice(0)) if (v.ev === 'land') add('dust', { id: v.id, feet: true });
     }
@@ -2424,7 +2437,7 @@ async function exportTravelPack(){
       }
     }
     requestAnimationFrame(frame);
-    function clear() { live.length = 0; lastStealth = {}; }
+    function clear() { live.length = 0; lastStealth = {}; seen = {}; }
     return { consume, add, clear, DRAW, spot };
   })();
 
