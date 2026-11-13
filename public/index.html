@@ -2783,6 +2783,17 @@ const ENEMY_PLAYER_OPS = ['damage', 'execute', 'damageBlock', 'debuff', 'stealMa
 const RAID = { hp: 1.5, dmg: 1.25, dotResist: 0.25, manaStep: 0.03, min: 2, max: 10, lockMs: 7 * 24 * 3600 * 1000 };
 const RAID_NAMES = { physical: 'Gorrath, the Unbroken Tide', fire: 'Vashkar, the Sunken Sun', frost: 'Sylvaine, the Endless Winter', nature: 'Thornheart, the World-Root', arcane: 'Ilvar, the Shattered Star', shadow: 'The Hollow King Ascendant' };
 // per-boss tuning from the first raid nights (Oct 31): every raid boss needed 30-50% more HP; Vashkar also hits harder
+// Nov 13: each raid boss has a form of its own (a dragon, a root-spider, a frost wyrm, a titan, a star-horror, a lich king) and signature
+// cards on top of its warlord's deck. The texts use the same wording as the map bosses' cards, so parseEnemyCard reads them.
+const RAID_CARDS = {
+  physical: [{ name: "Titan's Cleave", n: 2, cost: 30, kind: 'Attack', text: 'Deal 30 damage.', dtype: 'Physical' }, { name: 'Earthshaker', n: 1, cost: 40, kind: 'Attack', text: 'Deal 16 damage to every player and add a Stun to each of their draw piles.', dtype: 'Physical' }],
+  fire: [{ name: 'Dragonfire Breath', n: 2, cost: 40, kind: 'Attack', text: 'Deal 15 damage to every player and apply 5 Burn to every player.', dtype: 'Fire' }, { name: 'Wing Buffet', n: 1, cost: 20, kind: 'Attack', text: 'Remove all Block from every player, then deal 8 damage to each.', dtype: 'Fire' }, { name: 'Molten Scales', n: 1, cost: 20, kind: 'Defense', text: 'Gain 20 Block.', dtype: 'Fire' }],
+  frost: [{ name: 'Glacial Breath', n: 2, cost: 40, kind: 'Attack', text: 'Deal 14 damage to every player and apply 5 Chill to every player.', dtype: 'Frost' }, { name: 'Tail Sweep', n: 1, cost: 20, kind: 'Attack', text: 'Remove all Block from every player, then deal 8 damage to each.', dtype: 'Frost' }, { name: 'Rime Armor', n: 1, cost: 20, kind: 'Defense', text: 'Gain 20 Block.', dtype: 'Frost' }],
+  nature: [{ name: 'Venom Rain', n: 2, cost: 40, kind: 'Attack', text: 'Deal 12 damage to every player and apply 6 Poison to every player.', dtype: 'Nature' }, { name: 'Web Cocoon', n: 2, cost: 30, kind: 'Attack', text: "Deal 20 damage and add a Stun to the target's draw pile.", dtype: 'Nature' }],
+  arcane: [{ name: 'Shattered Star', n: 2, cost: 40, kind: 'Attack', text: 'Deal 14 damage to every player and apply 15 Unwarded to every player.', dtype: 'Arcane' }, { name: 'Mana Collapse', n: 2, cost: 20, kind: 'Attack', text: "Deal 8 damage and burn 20 of the target's mana.", dtype: 'Arcane' }],
+  shadow: [{ name: 'Army of the Dead', n: 2, cost: 40, kind: 'Attack', text: 'Deal 13 damage to every player and apply 15 Vulnerable to every player.', dtype: 'Shadow' }, { name: 'Soul Harvest', n: 2, cost: 30, kind: 'Attack', text: 'Deal 16 damage and heal for 50% of the damage dealt.', dtype: 'Shadow' }],
+};
+const RAID_FORM = { physical: 'a titan in black iron, taller than the gate he broke', fire: 'a great dragon, molten under black scales', frost: 'a frost wyrm coiled around the winter itself', nature: 'a spider the size of a hall, woven from root and thorn', arcane: 'what is left of an archmage, fused with a fallen star', shadow: 'the lich king on his feet at last, crowned and hollow' };
 const RAID_TUNE = { physical: { hp: 1.3 }, fire: { hp: 1.5, dmg: 1.25 }, frost: { hp: 1.4 }, nature: { hp: 1.4 }, arcane: { hp: 1.4 }, shadow: { hp: 1.4 } };
 function raidKey(mk) { return 'raid_' + mk; }
 function raidBoss(data, mk) {
@@ -2790,6 +2801,8 @@ function raidBoss(data, mk) {
   const m = data.maps && data.maps[mk]; if (!m) return null; const b = data.enemies[m.boss]; if (!b) return null;
   data.enemies[k] = Object.assign(JSON.parse(JSON.stringify(b)), { name: RAID_NAMES[mk] || b.name + ' (Raid)', hp: Math.round(b.hp * RAID.hp * ((RAID_TUNE[mk] || {}).hp || 1)), raidDmg: (RAID_TUNE[mk] || {}).dmg || 1, raid: true, map: mk,
     arch: 'Raid boss: every attack hits every hero', desc: `${b.name.split(',')[0]} returns, raid-sized. Every attack and debuff hits the whole raid. Only one hero a round can land non-damaging debuffs on it.` });
+  for (const c of RAID_CARDS[mk] || []) data.enemies[k].deck.push(Object.assign({ phase2: false }, c));
+  if (RAID_FORM[mk]) data.enemies[k].desc = `${RAID_NAMES[mk] || b.name}: ${RAID_FORM[mk]}. Every attack and debuff hits the whole raid. Only one hero a round can land non-damaging debuffs on it.`;
   return k;
 }
 const ENEMY_TUNE = { warlord_gorrath_the_iron_tide: { dmg: 0.8 } }; // Oct 30: Warlord hit too hard (War Banner +40 Strength); all his damage -20%
@@ -3392,6 +3405,7 @@ class Combat {
     if (tgt.isPlayer && before > tgt.hp) { const lostHp = before - tgt.hp; tgt.dmgRound += lostHp; this.allyLost && this.allyLost.add(tgt.id); if (tgt.debtUser) tgt.bloodDebt += Math.round(lostHp * (this.has(tgt, 'pay_in_blood') ? 1 + this.upN(tgt, 'pay_in_blood', 0, 50) / 100 : 1)); if (tgt.until.storing) tgt.until.stored = (tgt.until.stored || 0) + lostHp; if (tgt.until.grudge && src && !src.isPlayer) tgt.until.grudge[src.id] = (tgt.until.grudge[src.id] || 0) + lostHp; }
     const real = before - tgt.hp, label = o.label || 'Attack';
     if (src) { const m = this.mtr(src).dealt; m[label] = (m[label] || 0) + real; }
+    if (src && src.isPlayer && !tgt.isPlayer && real > 0) { const dk = { Burn: 'Fire', Chill: 'Frost', Poison: 'Nature', Bleed: 'Physical', Dread: 'Shadow', Rot: 'Shadow' }[(String(label).match(/Burn|Chill|Poison|Bleed|Dread|Rot/) || [''])[0]] || o.dtype || 'Physical'; const T = src.fxTypes = src.fxTypes || {}; T[dk] = (T[dk] || 0) + real; if (o.isDot) src.fxDot = (src.fxDot || 0) + real; src.fxDealt = (src.fxDealt || 0) + real; } // Nov 13: what kinds of damage each hero dealt this fight (achievements)
     { const t = this.mtr(tgt); const k = src ? src.name : label; t.taken[k] = (t.taken[k] || 0) + real; t.absorbed += absorbed; }
     if (tgt.isPlayer) { this.stats.taken += dmg; this.stats.blocked += absorbed; } else this.stats.dealt += dmg;
     if (o.isDot && src && src.isPlayer && src.hp > 0 && !tgt.isPlayer && real > 0) this.dotHeal(src, tgt, real);
@@ -4722,7 +4736,7 @@ class Run {
         this.note(`${m.name} fell in the fight: their sack (${m.sack.length} items, ${m.gold} gold) is lost. They get back up at half HP.`);
         m.sack = []; m.gold = 0; m.hp = Math.ceil(m.stats.maxHp / 2); m.mana = 0;
       } else { m.hp = Math.min(pl.hp, m.stats.maxHp); m.mana = pl.mana; } // talent max-HP buffs last for the fight only
-      { const F = m.feat = m.feat || { lost: 0 }; F.lost += pl.fxLost || 0; if (n.type === 'boss') { F.bossClean = !(pl.fxHealed > 0) && !(pl.fxDef > 0); F.bossLost = pl.fxLost || 0; } } // Nov 2: for achievements (HP lost all run; the boss fight with no healing or defense)
+      { const F = m.feat = m.feat || { lost: 0 }; F.lost += pl.fxLost || 0; if (n.type === 'boss') { F.bossClean = !(pl.fxHealed > 0) && !(pl.fxDef > 0); F.bossLost = pl.fxLost || 0; F.bossTypes = Object.assign({}, pl.fxTypes || {}); F.bossDot = pl.fxDot || 0; F.bossDealt = pl.fxDealt || 0; F.bossRounds = cb.round; F.bossHpPct = Math.round(100 * Math.max(0, pl.hp) / Math.max(1, pl.maxHp)); } } // Nov 2: for achievements (HP lost all run; the boss fight with no healing or defense)
       const regen = Math.round((m.stats.healthRegen + this.partyTalent('partyHealthRegen')) * (1 + (m.stats.spirit || 0) / 100)); if (regen && !fell) m.hp = Math.min(m.stats.maxHp, m.hp + regen); // Spirit boosts healing received
       const drops = []; let gold = 0;
       for (const e of cb.enemies) {  // every hero rolls their own loot
@@ -4999,6 +5013,8 @@ const heroes = (p) => Object.values(p.chars || {});
 const bestKill = (c, mk) => { const k = c.mapKills || {}; return mk ? (k[mk] == null ? -1 : k[mk]) : Math.max(-1, ...Object.values(k)); };
 const won = (ev, lvl) => ev.type === 'run' && ev.victory && (ev.level || 0) >= lvl;
 const st = (p, k) => (p.stats || {})[k] || 0;
+const maxedN = (c) => Object.values(c.codexes || {}).filter(x => CB.codexLevel(x.xp || 0).level >= CB.CODEX_MAX).length; // codexes this hero has at top level
+const onlyType = (types, el) => { if (!types) return false; const ks = Object.keys(types).filter(k => types[k] > 0); return ks.length === 1 && ks[0] === el; };
 const ACH = [
   { id: 'first_boss', cat: 'Roads', name: 'Blooded', how: 'Kill a map boss.', title: 'the Blooded', test: (p, ev) => won(ev, 0) || heroes(p).some(c => bestKill(c) >= 0) },
   { id: 'clear5', cat: 'Roads', name: 'Veteran', how: 'Kill a map boss at +5 or higher.', title: 'Veteran', test: (p, ev) => won(ev, 5) || heroes(p).some(c => bestKill(c) >= 5) },
@@ -5026,6 +5042,50 @@ const ACH = [
   { id: 'party4', cat: 'Feats', name: 'Fellowship', how: 'Kill a map boss in a party of four.', title: 'of the Fellowship', test: (p, ev) => won(ev, 0) && ev.party >= 4 },
   { id: 'card10', cat: 'Collection', name: 'Inkbound', how: 'Rank a card up to +10.', title: 'Inkbound', test: (p) => heroes(p).some(c => [...(c.deck || []), ...(c.cards || [])].some(k => (k.rank || 0) >= MAX_RANK)) },
   { id: 'codex20', cat: 'Collection', name: 'Codexmaster', how: 'Take a codex to its top level.', title: 'Codexmaster', test: (p) => heroes(p).some(c => Object.values(c.codexes || {}).some(s => CB.codexLevel(s.xp || 0).level >= CB.CODEX_MAX)) },
+  // ---- Nov 13: achievements for every system in the game. All of them, old and new, are kept on the account (p.ach), so every hero shares them.
+  { id: 'codex3', cat: 'Codexes', name: 'Scholar', how: 'Take three codexes to their top level on one hero.', title: 'Scholar', test: (p) => heroes(p).some(c => maxedN(c) >= 3) },
+  ...Object.entries({ Warrior: 'Grand Marshal', Rogue: 'Shadowmaster', Mage: 'Archmage', Paladin: 'High Crusader', Warlock: 'Demon Lord' }).map(([cls, t]) => ({ id: 'cxcls_' + cls, cat: 'Codexes', name: t, how: `Take all six ${cls} codexes to their top level.`, title: t,
+    n: 6, count: (p) => Math.max(0, ...heroes(p).filter(c => c.cls === cls).map(c => maxedN(c))) })),
+  { id: 'cxall', cat: 'Codexes', name: 'Omniscient', how: 'Take every codex in the game to its top level (all five classes).', title: 'the Omniscient', n: 30, count: (p) => Object.keys(CLASS_TITLES).reduce((s, cls) => s + Math.max(0, ...heroes(p).filter(c => c.cls === cls).map(c => maxedN(c))), 0) },
+  { id: 'cxlv100', cat: 'Codexes', name: 'Well Read', how: 'Earn 100 codex levels in total across all your heroes.', title: 'the Well Read', n: 100, count: (p) => heroes(p).reduce((s, c) => s + Object.values(c.codexes || {}).reduce((t, x) => t + CB.codexLevel(x.xp || 0).level, 0), 0) },
+  { id: 'capstone', cat: 'Codexes', name: 'Capstone', how: 'Pick a capstone talent (the last row of a talent tree).', title: 'the Talented', test: (p) => heroes(p).some(c => Object.values(c.codexes || {}).some(x => x.picks && x.picks[9] != null)) },
+  // one element only against a road's boss: its own element, and the one it hates
+  ...[['fire', 'Fire', 'Fight Fire with Fire', 'the Pyromaniac'], ['fire', 'Frost', 'Quenched', 'the Quencher'], ['frost', 'Frost', 'Cold Shoulder', 'the Cold-Hearted'], ['frost', 'Fire', 'Thawbringer', 'Thawbringer'],
+    ['nature', 'Nature', 'Overgrowth', 'the Overgrown'], ['nature', 'Fire', 'Wildfire', 'Wildfire'], ['arcane', 'Arcane', 'Mirror Match', 'the Mirrored'], ['arcane', 'Shadow', 'Eclipse', 'the Eclipse'],
+    ['shadow', 'Shadow', 'Darker Still', 'the Darker'], ['shadow', 'Holy', 'Light in the Crypt', 'Cryptlight'], ['physical', 'Physical', 'Steel Answers Steel', 'Steelsworn']].map(([mk, el, nm, t]) => ({ id: 'only_' + mk + '_' + el, cat: 'Boss feats', name: nm, title: t,
+    how: `Kill the boss of ${MAP_TITLES[mk][0]} dealing only ${el} damage in the boss fight.`, test: (p, ev) => won(ev, 0) && ev.map === mk && onlyType(ev.types, el) })),
+  { id: 'spellbound', cat: 'Boss feats', name: 'Spellbound', how: 'Kill the boss of The Broken March without dealing any Physical damage in the boss fight.', title: 'the Spellbound', test: (p, ev) => won(ev, 0) && ev.map === 'physical' && ev.types && ev.dealt > 0 && !(ev.types.Physical > 0) },
+  { id: 'rainbow', cat: 'Boss feats', name: 'Rainbow', how: 'Kill a map boss dealing five or more kinds of damage in the boss fight.', title: 'the Prismatic', test: (p, ev) => won(ev, 0) && ev.types && Object.values(ev.types).filter(v => v > 0).length >= 5 },
+  { id: 'slowdeath', cat: 'Boss feats', name: 'Slow Death', how: 'Kill a map boss with more than half of your damage coming from damage over time (Bleed, Poison, Burn, Dread, Rot).', title: 'the Patient', test: (p, ev) => won(ev, 0) && ev.dealt > 0 && ev.dot > ev.dealt / 2 },
+  { id: 'swift', cat: 'Boss feats', name: 'Swift Justice', how: 'Kill a +5 or higher map boss in 5 rounds or fewer.', title: 'the Swift', test: (p, ev) => won(ev, 5) && ev.rounds > 0 && ev.rounds <= 5 },
+  { id: 'edge', cat: 'Boss feats', name: 'On the Edge', how: 'Kill a map boss with 10% of your health or less left.', title: 'the Reckless', test: (p, ev) => won(ev, 0) && ev.hpPct != null && ev.hpPct <= 10 },
+  // raids
+  ...[['physical', 'Titanfall', 'Titanfeller'], ['fire', 'Dragonslayer', 'Dragonslayer'], ['frost', 'Wyrmbane', 'Wyrmbane'], ['nature', 'Spiderbane', 'Spiderbane'], ['arcane', 'Starbreaker', 'Starbreaker'], ['shadow', 'Kingslayer', 'Kingslayer']].map(([mk, nm, t]) => ({ id: 'raid_' + mk, cat: 'Raids', name: nm, title: t,
+    how: `Kill ${CB.RAID_NAMES[mk]} in a raid.`, test: (p, ev) => (ev.type === 'raid' && ev.map === mk) || !!(p.raidDone || {})[mk] })),
+  { id: 'raid_all', cat: 'Raids', name: 'Conqueror', how: 'Kill all six raid bosses.', title: 'the Conqueror', n: 6, count: (p) => Object.keys(p.raidDone || {}).length },
+  { id: 'raid2', cat: 'Raids', name: 'Dynamic Duo', how: 'Kill a raid boss with only two heroes in the raid.', title: 'of the Duo', test: (p, ev) => ev.type === 'raid' && ev.party === 2 },
+  { id: 'raid10', cat: 'Raids', name: 'Full Warband', how: 'Kill a raid boss with ten heroes in the raid.', title: 'of the Warband', test: (p, ev) => ev.type === 'raid' && ev.party >= 10 },
+  { id: 'raidclean', cat: 'Raids', name: 'Flawless Raid', how: 'Kill a raid boss without a single hero falling.', title: 'the Flawless', test: (p, ev) => ev.type === 'raid' && ev.deaths === 0 },
+  { id: 'raid10lv', cat: 'Raids', name: 'Worldbreaker', how: 'Kill a raid boss at +10 or higher.', title: 'Worldbreaker', test: (p, ev) => ev.type === 'raid' && (ev.level || 0) >= 10 },
+  ...[['fire', 'Fire', 'Burn the Burner', 'Flamebrother'], ['fire', 'Frost', 'Dragon on Ice', 'Dragonfreezer'], ['frost', 'Fire', 'Melt the Wyrm', 'Wyrmmelter'], ['nature', 'Fire', 'Burn the Nest', 'Nestburner'], ['shadow', 'Holy', 'Lay Him to Rest', 'Gravelayer'], ['arcane', 'Arcane', 'Star Against Star', 'Starfallen']].map(([mk, el, nm, t]) => ({ id: 'raidonly_' + mk + '_' + el, cat: 'Raids', name: nm, title: t,
+    how: `Kill ${CB.RAID_NAMES[mk]} in a raid while you yourself deal only ${el} damage.`, test: (p, ev) => ev.type === 'raid' && ev.map === mk && onlyType(ev.types, el) })),
+  // slaying
+  { id: 'kills1k', cat: 'Roads', name: 'Slayer', how: 'Kill 1,000 monsters.', title: 'Slayer', n: 1000, count: (p) => st(p, 'kills') },
+  { id: 'kills10k', cat: 'Roads', name: 'Exterminator', how: 'Kill 10,000 monsters.', title: 'Exterminator', n: 10000, count: (p) => st(p, 'kills') },
+  // collection: pets, mounts, looks, bags
+  { id: 'pet1', cat: 'Collection', name: 'Beastfriend', how: 'Have a pet follow you home (1 in 1000 from any kill on a run).', title: 'Beastfriend', n: 1, count: (p) => ((p.own || {}).pets || []).length },
+  { id: 'pet10', cat: 'Collection', name: 'Menagerie', how: 'Own 10 different pets.', title: 'of the Menagerie', n: 10, count: (p) => ((p.own || {}).pets || []).length },
+  { id: 'pet50', cat: 'Collection', name: 'Zookeeper', how: 'Own 50 different pets.', title: 'Zookeeper', n: 50, count: (p) => ((p.own || {}).pets || []).length },
+  { id: 'mount5', cat: 'Collection', name: 'Stablemaster', how: 'Own 5 mounts.', title: 'Stablemaster', n: 5, count: (p) => ((p.own || {}).mounts || ['horse']).length },
+  { id: 'mount10', cat: 'Collection', name: 'Master of Horse', how: 'Own all 10 mounts.', title: 'Master of Horse', n: 10, count: (p) => ((p.own || {}).mounts || ['horse']).length },
+  { id: 'cos10', cat: 'Collection', name: 'Fashionable', how: 'Own 10 looks from the Skull Shop (auras, footsteps, wings, weapon looks, card borders).', title: 'the Fashionable', n: 10, count: (p) => ((p.own || {}).cos || []).length },
+  { id: 'dye8', cat: 'Collection', name: 'Colourful', how: 'Wear a dye on all eight pieces of armour at once.', title: 'the Colourful', test: (p) => heroes(p).some(c => c.app && c.app.dye && Object.keys(c.app.dye).length >= 8) },
+  { id: 'bags4', cat: 'Collection', name: 'Pack Mule', how: 'Fill all four of your bag slots.', title: 'the Pack Mule', n: 4, count: (p) => (p.bags || []).filter(Boolean).length },
+  { id: 'bank10', cat: 'Wealth', name: 'Vault Keeper', how: 'Fill all ten of the bank\'s bag slots.', title: 'Vault Keeper', n: 10, count: (p) => (p.bankBags || []).filter(Boolean).length },
+  // the town
+  { id: 'visit', cat: 'Emberwatch', name: 'Local', how: 'Step inside every building in Emberwatch.', title: 'of Emberwatch', n: 14, count: (p) => Object.keys(p.visited || {}).length },
+  { id: 'barber', cat: 'Emberwatch', name: 'Dapper', how: 'Change your look at Fenwick\'s Barber Shop.', title: 'the Dapper', n: 1, count: (p) => st(p, 'barber') },
+  { id: 'lfg', cat: 'Emberwatch', name: 'Recruiter', how: 'Pin a notice on the group board.', title: 'Recruiter', n: 1, count: (p) => st(p, 'lfgPosts') },
   { id: 'runs100', cat: 'Roads', name: 'Roadworn', how: 'Finish 100 runs (any result, all heroes together).', title: 'the Roadworn', n: 100, count: (p) => heroes(p).reduce((s, c) => s + (c.runs || 0), 0) },
   { id: 'extract10', cat: 'Roads', name: 'Survivor', how: 'Extract from 10 runs at a campfire.', title: 'Survivor', n: 10, count: (p) => st(p, 'extracts') },
   { id: 'deaths25', cat: 'Roads', name: 'Gravewalker', how: 'Die 25 times. It happens.', title: 'Gravewalker', n: 25, count: (p) => st(p, 'deaths') },
@@ -5267,9 +5327,10 @@ function absorbRun(p, run, mi) {
   p.history = p.history.slice(0, 20);
   p.last = Object.assign(p.last || {}, { level: run.level });
   // Nov 2: achievement counters and checks for this hero's run
+  if (!mi) bump(p, 'kills', run.kills || 0); // Nov 13: monsters killed, once per run
   bump(p, 'goldLooted', kept.gold || 0); if (run.over === 'extracted') bump(p, 'extracts'); if (run.over === 'dead') bump(p, 'deaths'); else if (mem.deaths) bump(p, 'deaths', mem.deaths);
   const F = mem.feat || {}, ach = achCheck(p, { type: 'run', victory: run.over === 'victory', level: run.level || 0, map: run.mapKey || 'physical', cls: c.cls, hc: !!c.hardcore, hero: c.name,
-    party: run.members ? run.members.length : 1, lost: F.lost, bossClean: F.bossClean, bossLost: F.bossLost });
+    party: run.members ? run.members.length : 1, lost: F.lost, bossClean: F.bossClean, bossLost: F.bossLost, types: F.bossTypes || null, dot: F.bossDot || 0, dealt: F.bossDealt || 0, rounds: F.bossRounds || 0, hpPct: F.bossHpPct });
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk, ach };
 }
 
@@ -7290,8 +7351,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794593834002';
-  const CB_BUILD = '393fecf938'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794594146797';
+  const CB_BUILD = 'aecc342c7b'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -7799,7 +7860,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       $('mNew').onclick = backToTown; $('mClose').onclick = closeModal; return;
     }
     if (S && S.host === SOC.me && typeof recordRaidKill === 'function') recordRaidKill(cb); // Hall of Records: the raid leader writes the kill
-    if (c && !cb._locked) { cb._locked = true; c.raidLocks = c.raidLocks || {}; c.raidLocks[mk] = Date.now(); c.raidKills = (c.raidKills || 0) + 1; CBHub.achCheck(profile, { type: 'raid', level: cb.level || 0, hero: c.name }); save(); if (typeof publishHero === 'function') publishHero(heroKey, true); }
+    if (c && !cb._locked) { cb._locked = true; c.raidLocks = c.raidLocks || {}; c.raidLocks[mk] = Date.now(); c.raidKills = (c.raidKills || 0) + 1; (profile.raidDone = profile.raidDone || {})[mk] = 1; { const me = cb.players[cb.myMi != null ? cb.myMi : 0] || {}; CBHub.achCheck(profile, { type: 'raid', level: cb.level || 0, hero: c.name, map: mk, party: cb.players.length, deaths: cb.players.filter(q => q.dead || q.hp <= 0).length, types: me.fxTypes || null, rounds: cb.round }); } save(); if (typeof publishHero === 'function') publishHero(heroKey, true); }
     if (!cb.raidLoot) { cb.raidLoot = raidLootRoll(cb); if (S) S.lootAt = Date.now(); sysChat(`${CB.RAID_NAMES[mk]} falls! ${cb.raidLoot.length} items dropped: roll Need, Greed or Pass.`); }
     raidLootModal();
   }
@@ -8397,6 +8458,9 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Art', "Raid bosses have forms of their own, painted large: Gorrath is a titan in black iron, Vashkar a great fire dragon, Sylvaine a frost wyrm, Thornheart a spider the size of a hall woven from root and thorn, Ilvar an archmage fused with a fallen star, and the Hollow King a towering lich. Each raid is fought in its own arena: a volcano's heart, a web-hung forest, a glacier under the aurora, a ruined battlefield, a shattered observatory among the stars and a throne hall of the dead."],
+      ['Feature', "Each raid boss has signature cards on top of its warlord's deck: Dragonfire Breath and Wing Buffet, Glacial Breath and Tail Sweep, Venom Rain and Web Cocoon, Titan's Cleave and Earthshaker, Shattered Star and Mana Collapse, Army of the Dead and Soul Harvest."],
+      ['Feature', "56 new achievements, 91 in all, each with a title. Take three codexes to the top, all six of a class, or all thirty. Kill a road's boss with only one kind of damage (fire against the fire boss, or frost against it, and so on for every road), with five kinds, mostly with damage over time, in five rounds, or with a sliver of health left. Kill each raid boss, all six, with only two heroes, with ten, or without anyone falling. Slay 1,000 and 10,000 monsters. Collect pets, mounts and looks, dye every piece of armour, fill your bag slots, step inside every building. Achievements and their titles belong to your account, so every hero of yours shares them."],
       ['Feature', "Talent trees: every talent has its own picture, and the lower rows were reworked. Within a class, no two trees now share the same talent in the same spot from level 10 down. In place of the repeats there are new defensive and utility talents: hit back when your defence stops an attack, cleanse a debuff every turn, take less damage or heal while below half health, draw a card on every 4th card, drain enemy mana, start enemies with Dazed cards, and more. Every hero's talent picks were refunded once, so you can choose again for free."],
       ['Feature', "You can walk into the buildings of Emberwatch. Most townsfolk now work indoors: walk up to the glowing arrow at a door and press Space, and you step inside the armory, the bank, the library, the jeweler, the guild hall, the barracks, the war room and the rest. Walk with A and D or a click, talk with Space, leave with Esc."],
       ['Feature', "Three new shops. Fenwick's Barber Shop changes your hero's hair, beard and face any time, free. The Ember Mug inn keeps the group board. The Skull Boutique sells mounts and looks for Skull Tokens."],
@@ -11059,7 +11123,7 @@ async function exportTravelPack(){
 window.CB_PUPPET_DATA = {"S": 128, "bodies": {"female": {"s": {"hand": [[42.4, 71.7], [84.6, 71.4]], "skin": [189, 129, 109], "face": [63.2, 18.9, 27.0], "piv": [[63.5, 62.8], [63.3, 28.0], [51.7, 32.9], [47.6, 49.9], [74.9, 32.9], [79.3, 49.6], [56.7, 62.8], [55.6, 91.3], [70.2, 62.8], [71.7, 91.3]], "order": [7, 6, 9, 8, 0, 1, 2, 3, 4, 5], "foot": 124, "top": 4, "cx": 64.0}, "n": {"hand": [[43.4, 71.3], [84.4, 70.9]], "skin": [187, 127, 108], "face": [63.6, 16.7, 26.2], "piv": [[64.0, 63.5], [63.9, 27.2], [51.4, 33.0], [47.9, 50.7], [76.4, 33.3], [79.6, 50.7], [56.3, 63.5], [55.4, 92.8], [71.7, 63.5], [72.3, 92.6]], "order": [7, 6, 9, 8, 2, 3, 4, 5, 0, 1], "foot": 123, "top": 4, "cx": 64.0}, "e": {"hand": [[64.8, 75.3], [64.8, 75.3]], "skin": [196, 136, 115], "face": [72.6, 19.0, 29.1], "piv": [[65.7, 64.6], [64.0, 30.1], [59.4, 37.5], [58.8, 54.2], [62.4, 37.5], [61.8, 54.2], [65.7, 66.6], [65.0, 92.2], [67.7, 66.6], [67.0, 92.2]], "order": [9, 8, 7, 6, 0, 1, 2, 3], "foot": 125, "top": 5, "cx": 65.0}}, "mage": {"s": {"hand": [[45.0, 73.3], [82.4, 73.3]], "skin": [155, 117, 89], "face": [63.6, 19.8, 27.8], "piv": [[63.7, 63.1], [63.7, 28.8], [51.3, 33.5], [47.5, 51.1], [76.2, 33.5], [80.0, 51.1], [57.4, 63.1], [56.8, 91.8], [70.0, 63.1], [70.6, 91.8]], "order": [7, 6, 9, 8, 0, 1, 2, 3, 4, 5], "foot": 124, "top": 4, "cx": 64.0}, "n": {"hand": [[45.8, 72.2], [82.9, 72.4]], "skin": [156, 118, 90], "face": [64.1, 16.7, 26.8], "piv": [[63.7, 65.2], [63.7, 27.8], [50.4, 33.9], [47.5, 51.3], [76.9, 34.2], [80.1, 51.9], [56.5, 65.2], [56.2, 93.1], [70.8, 65.2], [71.4, 93.1]], "order": [7, 6, 9, 8, 2, 3, 4, 5, 0, 1], "foot": 123, "top": 4, "cx": 64.5}, "e": {"hand": [[63.8, 74.8], [63.8, 74.8]], "skin": [161, 122, 92], "face": [72.7, 18.7, 28.1], "piv": [[64.8, 63.2], [63.1, 29.1], [59.4, 36.4], [58.8, 53.6], [62.4, 36.4], [61.8, 53.6], [64.8, 65.2], [64.8, 90.8], [66.8, 65.2], [66.8, 90.8]], "order": [9, 8, 7, 6, 0, 1, 2, 3], "foot": 125, "top": 4, "cx": 65.0}}, "paladin": {"s": {"hand": [[38.5, 76.9], [87.7, 76.9]], "skin": [160, 110, 79], "face": [63.1, 18.6, 28.1], "piv": [[63.3, 67.2], [63.1, 29.1], [46.5, 34.9], [41.0, 54.0], [79.8, 34.9], [85.5, 54.0], [55.5, 67.3], [53.4, 95.5], [71.0, 67.0], [74.0, 95.2]], "order": [7, 6, 9, 8, 0, 1, 2, 3, 4, 5], "foot": 126, "top": 2, "cx": 63.5}, "n": {"hand": [[39.7, 76.2], [87.6, 76.6]], "skin": [158, 108, 77], "face": [63.5, 15.3, 26.5], "piv": [[63.5, 67.6], [63.3, 27.5], [46.5, 34.6], [42.3, 53.7], [80.1, 34.6], [84.7, 53.7], [55.0, 67.6], [53.8, 94.9], [71.9, 67.6], [73.5, 94.9]], "order": [7, 6, 9, 8, 2, 3, 4, 5, 0, 1], "foot": 126, "top": 2, "cx": 64.0}, "e": {"hand": [[63.1, 80.4], [63.1, 80.4]], "skin": [165, 114, 82], "face": [73.6, 17.8, 28.2], "piv": [[63.4, 66.8], [60.8, 29.2], [55.6, 37.3], [56.5, 58.1], [58.6, 37.3], [59.5, 58.1], [63.4, 68.8], [62.3, 93.2], [65.4, 68.8], [64.3, 93.2]], "order": [9, 8, 7, 6, 0, 1, 2, 3], "foot": 127, "top": 2, "cx": 62.5}}, "warrior": {"s": {"hand": [[35.2, 79.2], [91.9, 79.5]], "skin": [161, 110, 82], "face": [63.6, 21.4, 30.6], "piv": [[63.7, 68.3], [63.7, 31.6], [45.2, 37.2], [38.0, 55.6], [82.3, 37.2], [89.5, 55.6], [55.0, 68.3], [52.1, 93.7], [72.5, 68.3], [75.4, 93.4]], "order": [7, 6, 9, 8, 0, 1, 2, 3, 4, 5], "foot": 123, "top": 5, "cx": 64.0}, "n": {"hand": [[37.4, 79.2], [88.6, 79.2]], "skin": [152, 101, 76], "face": [63.5, 18.1, 29.4], "piv": [[63.2, 68.8], [63.3, 30.4], [45.2, 37.5], [39.5, 56.9], [81.5, 37.8], [87.2, 56.9], [54.6, 68.6], [52.4, 93.2], [71.8, 68.9], [74.6, 93.5]], "order": [7, 6, 9, 8, 2, 3, 4, 5, 0, 1], "foot": 122, "top": 5, "cx": 64.0}, "e": {"hand": [[67.4, 82.4], [67.4, 82.4]], "skin": [169, 117, 85], "face": [76.0, 21.1, 30.7], "piv": [[64.8, 68.8], [62.6, 31.7], [56.9, 39.8], [56.9, 60.6], [59.9, 39.8], [59.9, 60.6], [64.8, 70.8], [64.5, 92.5], [66.8, 70.8], [66.5, 92.5]], "order": [9, 8, 7, 6, 0, 1, 2, 3], "foot": 125, "top": 5, "cx": 63.5}}}, "hair": {"cw": 48, "ch": 56, "bodies": ["warrior", "paladin", "mage", "female"], "views": ["s", "e", "n"], "styles": ["bob", "braid", "curls", "long", "mohawk", "ponytail", "short", "slick", "topknot", "wavy", "wild"], "beards": ["beard_braid", "beard_full", "beard_goatee", "beard_short"], "at": {"warrior": {"s": [40, -4], "e": [42, -4], "n": [39, -4]}, "paladin": {"s": [39, -7], "e": [40, -7], "n": [39, -7]}, "mage": {"s": [40, -5], "e": [42, -5], "n": [40, -5]}, "female": {"s": [39, -5], "e": [43, -4], "n": [40, -5]}}}, "weapons": {"cw": 48, "ch": 112, "types": ["sword1h", "axe1h", "mace1h", "dagger", "wand", "sword2h", "axe2h", "maul", "hammer", "scythe", "staff", "kite", "tower", "focus", "legend"], "grip": {"sword1h": [[23.0, 105], [22.5, 105], [23.0, 105], [23.0, 104], [23.0, 104], [23.0, 104]], "axe1h": [[20.0, 103], [19.0, 103], [18.0, 103], [17.5, 103], [19.0, 103], [19.0, 103]], "mace1h": [[23.5, 104], [23.0, 104], [24.0, 104], [23.0, 104], [23.5, 104], [23.5, 104]], "dagger": [[23.0, 105], [23.0, 105], [23.0, 105], [21.5, 104], [23.5, 105], [23.5, 105]], "wand": [[23.5, 105], [23.0, 105], [22.5, 105], [23.5, 105], [23.5, 105], [22.5, 105]], "sword2h": [[23.5, 99], [23.5, 99], [23.0, 99], [23.7, 99], [23.5, 99], [23.0, 99]], "axe2h": [[23.0, 80], [23.0, 79], [23.0, 80], [23.5, 79], [24.0, 80], [23.0, 79]], "maul": [[22.0, 79], [23.0, 79], [22.5, 79], [24.0, 79], [24.0, 79], [23.5, 79]], "hammer": [[23.5, 84], [23.5, 84], [24.0, 83], [21.5, 83], [23.5, 83], [22.0, 82]], "scythe": [[12.0, 68], [14.0, 68], [11.5, 68], [14.0, 67], [12.5, 68], [14.0, 67]], "staff": [[21.5, 70], [22.5, 66], [23.5, 68], [25.3, 68], [23.0, 69], [23.5, 66]], "kite": [[23.5, 86], [23.5, 86], [23.5, 85], [24.0, 84], [23.5, 85], [23.5, 84]], "tower": [[23.5, 81], [23.5, 81], [24.0, 81], [24.0, 81], [23.5, 81], [23.5, 79]], "focus": [[23.5, 99], [23.5, 98], [23.5, 98], [23.5, 98], [23.5, 99], [24.0, 98]], "legend": [[23.0, 101], [24.0, 101], [18.4, 75], [23.0, 84], [26.0, 79], [23.0, 69]]}}};
 
 // made by tools/heroart/bake_mounts.py: where the rider sits on each mount
-window.CB_MOUNTS = {"bear": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 111, "seat": [0, -75]}, "e": {"row": 1, "foot": 107, "seat": [-7, -57]}, "n": {"row": 2, "foot": 116, "seat": [0, -62]}}, "boar": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 111, "seat": [0, -76]}, "e": {"row": 1, "foot": 107, "seat": [-5, -60]}, "n": {"row": 2, "foot": 117, "seat": [0, -65]}}, "nightmare": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 114, "seat": [0, -81]}, "e": {"row": 1, "foot": 109, "seat": [-8, -45]}, "n": {"row": 2, "foot": 120, "seat": [0, -71]}}, "panther": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 108, "seat": [0, -70]}, "e": {"row": 1, "foot": 105, "seat": [-11, -45]}, "n": {"row": 2, "foot": 115, "seat": [0, -61]}}, "sabertooth": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 110, "seat": [0, -73]}, "e": {"row": 1, "foot": 104, "seat": [-9, -49]}, "n": {"row": 2, "foot": 115, "seat": [0, -60]}}, "stag": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 116, "seat": [0, -86]}, "e": {"row": 1, "foot": 118, "seat": [-2, -75]}, "n": {"row": 2, "foot": 121, "seat": [0, -72]}}, "wolf": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 110, "seat": [0, -73]}, "e": {"row": 1, "foot": 104, "seat": [-7, -46]}, "n": {"row": 2, "foot": 117, "seat": [0, -64]}}};
+window.CB_MOUNTS = {"bear": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 111, "seat": [0, -75]}, "e": {"row": 1, "foot": 107, "seat": [-7, -57]}, "n": {"row": 2, "foot": 116, "seat": [0, -62]}}, "boar": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 111, "seat": [0, -76]}, "e": {"row": 1, "foot": 107, "seat": [-5, -60]}, "n": {"row": 2, "foot": 117, "seat": [0, -65]}}, "bonesteed": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 108, "seat": [0, -70]}, "e": {"row": 1, "foot": 106, "seat": [-4, -44]}, "n": {"row": 2, "foot": 119, "seat": [0, -68]}}, "nightmare": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 114, "seat": [0, -81]}, "e": {"row": 1, "foot": 109, "seat": [-8, -45]}, "n": {"row": 2, "foot": 120, "seat": [0, -71]}}, "panther": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 108, "seat": [0, -70]}, "e": {"row": 1, "foot": 105, "seat": [-11, -45]}, "n": {"row": 2, "foot": 115, "seat": [0, -61]}}, "sabertooth": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 110, "seat": [0, -73]}, "e": {"row": 1, "foot": 104, "seat": [-9, -49]}, "n": {"row": 2, "foot": 115, "seat": [0, -60]}}, "slug": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 102, "seat": [0, -57]}, "e": {"row": 1, "foot": 108, "seat": [-10, -41]}, "n": {"row": 2, "foot": 119, "seat": [0, -69]}}, "stag": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 116, "seat": [0, -86]}, "e": {"row": 1, "foot": 118, "seat": [-2, -75]}, "n": {"row": 2, "foot": 121, "seat": [0, -72]}}, "wolf": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 110, "seat": [0, -73]}, "e": {"row": 1, "foot": 104, "seat": [-7, -46]}, "n": {"row": 2, "foot": 117, "seat": [0, -64]}}};
 
 // ---------- Hero puppets (Nov 12): pixel-art heroes built from parts. Each body is cut at the joints (tools/heroart/bake_body.py):
 // torso, head, upper and lower arms, thighs and shins, for three views (s = facing the camera, n = facing away, e = side; west is the
@@ -12327,9 +12391,19 @@ window.CB_TOWNART = (function () {
     if (!M[k] && d && d.art && M[d.art]) { k = d.art; sm = 0.8; }
     return M[k] ? { k, sm, tier: (d && d.tier) || '1' } : null;
   }
+  { const st = document.createElement('style'); st.textContent = `.raidfig { display: inline-block; height: calc(var(--fh, 118px) * 3.3); position: relative; } .raidfig img { height: 100%; width: auto; image-rendering: pixelated; transform-origin: 50% 100%; animation: raidbreath 3.4s ease-in-out infinite; filter: drop-shadow(0 6px 0 rgba(0,0,0,.35)) drop-shadow(0 0 22px rgba(0,0,0,.55)); }
+    @keyframes raidbreath { 50% { transform: scale(1.012, 1.03) translateY(-0.4%); } }
+    .raidfig.ratk img { animation: raidatk .62s cubic-bezier(.2,.7,.2,1); } @keyframes raidatk { 0% { transform: none; } 22% { transform: translateX(5%) rotate(2deg) scale(1.02); } 48% { transform: translateX(-13%) rotate(-4deg) scale(1.06); } 100% { transform: none; } }
+    .raidfig.rhit img { animation: raidhit .42s linear; } @keyframes raidhit { 0% { transform: none; filter: brightness(2.4); } 25% { transform: translateX(2.5%) rotate(1.5deg); filter: brightness(1.6); } 55% { transform: translateX(-1.5%); } 100% { transform: none; } }
+    .raidfig.rbuff img { animation: raidbuff .7s ease-out; } @keyframes raidbuff { 30% { transform: scale(1.06); filter: brightness(1.5) drop-shadow(0 0 26px rgba(255,200,120,.8)); } 100% { transform: none; } }
+    .unit.dead .raidfig img { animation: none; filter: grayscale(1) brightness(.45); transform: rotate(4deg) translateY(4%); transition: all .8s; }`; document.head.appendChild(st); }
+  const raids = {};
+  function raidMove(id, cls) { const el = document.querySelector(`.raidfig[data-raidfig="${id}"]`); if (!el) return false; el.classList.remove('ratk', 'rhit', 'rbuff'); void el.offsetWidth; el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 700); return true; }
   const state = {};                                  // actor id -> { k, anim, t0, dead, phased }
   function figure(a, unit) {
     if (!a || a.isPlayer) return null;
+    { const d0 = D() && D().enemies[a.key];   // Nov 13: raid bosses have their own big painting (img/raid/<map>.webp), moved with CSS
+      if (d0 && d0.raid && d0.map) { if (!unit) return `<img class="inkfig mobstill" src="img/raid/${d0.map}.webp" alt="" draggable="false">`; raids[a.id] = d0.map; return `<span class="raidfig" data-raidfig="${a.id}"><img src="img/raid/${d0.map}.webp" alt="" draggable="false"></span>`; } }
     const f = keyFor(a); if (!f) return null; const m = M[f.k];
     if (!unit) return `<img class="inkfig mobstill" src="img/mobs/${f.k}_p.webp" alt="" draggable="false">`;
     sheet(f.k);
@@ -12346,6 +12420,7 @@ window.CB_TOWNART = (function () {
   function attacks(m) { return m.atk || m.a.map(x => x[0]).filter(n => /^attack/.test(n) && n !== m.aoe); }
   // an enemy plays a card (engine fx event 'eplay': kind attack/defend/buff/debuff/status, aoe, card name)
   function cardPlay(e) {
+    if (raids[e.s] && raidMove(e.s, e.kind === 'attack' ? 'ratk' : 'rbuff')) return;
     const st = state[e.s]; if (!st) return; const m = M[st.k];
     let name = m.card && m.card[e.name];
     if (!name) {
@@ -12365,6 +12440,7 @@ window.CB_TOWNART = (function () {
   function hook() {
     const F = window.CB_FORGE; if (!F || F._mobs) return; F._mobs = true; const orig = F.play;
     F.play = function (id, move, o) {
+      if (raids[id] && document.querySelector(`.raidfig[data-raidfig="${id}"]`)) { if (move === 'ehit' || move === 'eknock') raidMove(id, 'rhit'); return; }
       if (state[id] && document.querySelector(`.mobfig[data-mob="${id}"]`)) {
         if (move === 'elunge') { const st = state[id]; if (!(st.carded && performance.now() - st.carded < 900)) play(id, pick(attacks(M[st.k]))); }
         else if (move === 'ehit' || move === 'eknock') hurt(id, move === 'eknock');
@@ -12724,7 +12800,7 @@ for (const [k, n] of Object.entries(BG_SETS)) BGART[k] = { n, boss: 'img/bg/' + 
 const bgImgs = {};
 function bgFor(map, row) {
   const A = BGART[map]; if (!A || row == null) return null;
-  const src = row === 'boss' ? A.boss : A.at(Math.min(A.n, Math.max(1, Math.ceil(row * A.n / 14))));
+  const src = row === 'raid' ? 'img/bg/raid_' + map + '.webp' : row === 'boss' ? A.boss : A.at(Math.min(A.n, Math.max(1, Math.ceil(row * A.n / 14))));
   return bgImgs[src] || (bgImgs[src] = Object.assign(new Image(), { decoding: 'async', src }));
 }
 function paintArt(cv, img, w, h, dpr) {
@@ -14291,7 +14367,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   function exEnter(n) {
     if (!n || !n.inside) return; if (typeof closeTalk === 'function') closeTalk();
     const im = EXIN.img[n.inside] || (EXIN.img[n.inside] = Object.assign(new Image(), { src: 'img/bg/in_' + n.inside + '.webp' }));
-    veil(n.place, n.name, () => { EXIN.n = n; EXIN.x = 0.12; EXIN.dir = 1; EXIN.tx = null; EXIN.keys.clear(); $('inName').textContent = n.place; $('interior').hidden = false; $('townWrap').classList.add('indoors'); $('prompt').hidden = true; exInHint(); if (window.CB_AUDIO) CB_AUDIO.sfx('door'); requestAnimationFrame(exInFrame); });
+    (profile.visited = profile.visited || {})[n.inside] = 1; veil(n.place, n.name, () => { EXIN.n = n; EXIN.x = 0.12; EXIN.dir = 1; EXIN.tx = null; EXIN.keys.clear(); $('inName').textContent = n.place; $('interior').hidden = false; $('townWrap').classList.add('indoors'); $('prompt').hidden = true; exInHint(); if (window.CB_AUDIO) CB_AUDIO.sfx('door'); requestAnimationFrame(exInFrame); });
   }
   function exLeave() { if (!EXIN.n) return; const n = EXIN.n; if (typeof closeTalk === 'function') closeTalk(); veil('Emberwatch', '', () => { EXIN.n = null; $('interior').hidden = true; $('townWrap').classList.remove('indoors'); if (window.CB_AUDIO) CB_AUDIO.sfx('door'); updatePrompt(); $('town').focus({ preventScroll: true }); }); }
   $('inLeave').onclick = exLeave;
@@ -14348,7 +14424,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       <div class="row"><button class="btn" id="lfgRef">Refresh</button><button class="btn primary" id="mClose">Close</button></div>`);
     $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal; $('lfgRef').onclick = openLfg;
     const read = () => { mine.doing = $('lfgDo').value; mine.map = $('lfgMap').value; mine.lv = Math.max(0, Math.min(99, +$('lfgLv').value || 0)); mine.tx = $('lfgTx').value.trim().slice(0, 160); mine.want = [...$('modalBox').querySelectorAll('[data-lfgwant]')].filter(x => x.checked).map(x => x.dataset.lfgwant); };
-    $('lfgPost').onclick = () => { read(); if (!on) return toast('Sign in (Menu) to pin a notice: the board is shared with the other players online.'); mine.on = true; save(); retrack(true); openLfg(); };
+    $('lfgPost').onclick = () => { read(); if (!on) return toast('Sign in (Menu) to pin a notice: the board is shared with the other players online.'); mine.on = true; CBHub.bump(profile, 'lfgPosts'); save(); retrack(true); openLfg(); };
     if ($('lfgDown')) $('lfgDown').onclick = () => { read(); mine.on = false; save(); if (on) retrack(true); openLfg(); };
     $('modalBox').querySelectorAll('[data-lfgw]').forEach(b => b.onclick = () => { closeModal(); if (exInside()) { /* stay inside; the chat box is always there */ } const i = $('chatIn'); i.value = '/w ' + b.dataset.lfgw + ' '; i.focus(); });
     $('modalBox').querySelectorAll('[data-lfginv]').forEach(b => b.onclick = () => { if (typeof invite === 'function') { invite(b.dataset.lfginv); b.disabled = true; b.textContent = 'Invited'; } });
@@ -15175,10 +15251,11 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     const c = CBHub.char(profile, heroKey); if (!c || !window.CB_HEROPUP) return;
     modal(`<h3>The mirror</h3><p class="muted" style="margin:0 0 8px">Change how ${esc(c.name || 'your hero')} looks. It costs nothing and you can come back any time.</p><div id="mirrorPick"></div><div class="row"><button class="btn primary" id="mirOk">Keep this look</button><button class="btn" id="mClose">Cancel</button></div>`);
     const pk = CB_HEROPUP.picker($('mirrorPick'), c.cls, c.app); pk.wear(c.gear); $('mClose').onclick = closeModal;
-    $('mirOk').onclick = () => { c.app = Object.assign({}, c.app, pk.get()); save(); closeModal(); document.querySelectorAll('.dpup').forEach(d => { const f = d.querySelector('.pupfig'); if (f) f.outerHTML = CB_HEROPUP.html('doll' + Date.now(), CB_HEROPUP.lookOf({ app: c.app }, c.cls, c.gear), { view: 's', s: 1 }); }); toast('Your new look is saved.'); };
+    $('mirOk').onclick = () => { c.app = Object.assign({}, c.app, pk.get()); if (typeof exInside === 'function' && exInside()) CBHub.bump(profile, 'barber'); save(); closeModal(); document.querySelectorAll('.dpup').forEach(d => { const f = d.querySelector('.pupfig'); if (f) f.outerHTML = CB_HEROPUP.html('doll' + Date.now(), CB_HEROPUP.lookOf({ app: c.app }, c.cls, c.gear), { view: 's', s: 1 }); }); toast('Your new look is saved.'); };
   }
   document.addEventListener('click', (ev) => { if (ev.target.closest && ev.target.closest('[data-mirror]')) openMirror(); });
   window.__open = (k) => openSheet(k);
+  window.__raid = (mk, n) => { const o = CBHub.runOpts(profile, heroKey), sp = { cls: o.cls, name: o.name, gear: o.gear, deck: o.deck, talents: o.talents }; cb = new CB.Combat({ raid: true, party: Array.from({ length: n || 3 }, (x, i) => Object.assign({}, sp, { name: i ? 'Ally ' + i : o.name })), enemies: [CB.raidBoss(DATA, mk)], level: 0, seed: 5, data: DATA }); cb.raidMap = mk; $('sheet').hidden = true; startCombatUI(); }; // test hook: look at a raid fight alone
   window.__startDummy = () => startDummy(); window.__npcs = () => NPCS.map(n => [n.id, n.x, n.y]); window.__tp = (x, y) => { P.x = x; P.y = y; P.mv = null; P.path = []; }; // for automated checks
   window.__cbActor = (id) => (cb ? cb.actorById(id) : null); // pixel monsters check HP for a boss's phase change
   function figure(a, unit) {
@@ -15388,7 +15465,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       const fp = st.parentElement, top = Math.round(fp.getBoundingClientRect().top + window.scrollY); if (top > 0 && top < 400) fp.style.setProperty('--fpTop', top + 'px');
     } $('playerSlot').innerHTML = mine.map(unitHtml).join('');
     $('foes').innerHTML = foes.map(unitHtml).join('');
-    if (window.CB_BF) CB_BF.layout(cb, { map: $('scrCombat').dataset.map, row: run && run.at && run.map && run.map.nodes[run.at] ? (run.at === 'boss' ? 'boss' : run.map.nodes[run.at].row) : null, left: cb.duel ? 'You' : cb.raid ? 'The raid' : cb.partySize > 1 ? 'Your party' : esc(hero().name), right: cb.duel ? 'Your rival' : (DATA.maps[$('scrCombat').dataset.map] || {}).name || 'The enemy' });
+    if (window.CB_BF) CB_BF.layout(cb, { map: $('scrCombat').dataset.map, row: cb.raid ? 'raid' : run && run.at && run.map && run.map.nodes[run.at] ? (run.at === 'boss' ? 'boss' : run.map.nodes[run.at].row) : null, left: cb.duel ? 'You' : cb.raid ? 'The raid' : cb.partySize > 1 ? 'Your party' : esc(hero().name), right: cb.duel ? 'Your rival' : (DATA.maps[$('scrCombat').dataset.map] || {}).name || 'The enemy' });
     if (withPops) popups(); else snapshot();
     if (window.CB_FX) CB_FX.consume(cb); // hero moves, hit effects and spell projectiles (src/fx.js, src/forge.js)
     $('pframe').innerHTML = `<div class="pfimg">${window.CB_HEROPUP ? CB_HEROPUP.html('pf' + p.id, CB_HEROPUP.lookOf(p, p.cls, p.look), { view: 's', s: 1 }) : `<img src="img/heroes/${String(p.cls).toLowerCase()}.png" alt="">`}</div><div class="pfr"><div class="pfn">${esc(p.name)} <small>${esc(p.cls)}</small></div><div class="pfrow"><div class="pfhp"><i style="width:${Math.max(0, 100 * p.hp / p.maxHp)}%"></i><span>${p.hp} / ${p.maxHp}</span></div><div class="mkshield${p.block ? '' : ' zero'}" data-tip="${esc(p.defName || 'Block')} ${p.block}: soaks that much damage before HP" style="--si:url(img/ui/status/${({ Dodge: 'dodge', Parry: 'parry', Barrier: 'barrier', Absorb: 'absorb' }[p.defName] || 'block')}.png)"><b>${p.block}</b></div></div><div class="tags">${iconTags(tags(p))}</div></div>`;

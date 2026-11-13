@@ -27,9 +27,19 @@
     if (!M[k] && d && d.art && M[d.art]) { k = d.art; sm = 0.8; }
     return M[k] ? { k, sm, tier: (d && d.tier) || '1' } : null;
   }
+  { const st = document.createElement('style'); st.textContent = `.raidfig { display: inline-block; height: calc(var(--fh, 118px) * 3.3); position: relative; } .raidfig img { height: 100%; width: auto; image-rendering: pixelated; transform-origin: 50% 100%; animation: raidbreath 3.4s ease-in-out infinite; filter: drop-shadow(0 6px 0 rgba(0,0,0,.35)) drop-shadow(0 0 22px rgba(0,0,0,.55)); }
+    @keyframes raidbreath { 50% { transform: scale(1.012, 1.03) translateY(-0.4%); } }
+    .raidfig.ratk img { animation: raidatk .62s cubic-bezier(.2,.7,.2,1); } @keyframes raidatk { 0% { transform: none; } 22% { transform: translateX(5%) rotate(2deg) scale(1.02); } 48% { transform: translateX(-13%) rotate(-4deg) scale(1.06); } 100% { transform: none; } }
+    .raidfig.rhit img { animation: raidhit .42s linear; } @keyframes raidhit { 0% { transform: none; filter: brightness(2.4); } 25% { transform: translateX(2.5%) rotate(1.5deg); filter: brightness(1.6); } 55% { transform: translateX(-1.5%); } 100% { transform: none; } }
+    .raidfig.rbuff img { animation: raidbuff .7s ease-out; } @keyframes raidbuff { 30% { transform: scale(1.06); filter: brightness(1.5) drop-shadow(0 0 26px rgba(255,200,120,.8)); } 100% { transform: none; } }
+    .unit.dead .raidfig img { animation: none; filter: grayscale(1) brightness(.45); transform: rotate(4deg) translateY(4%); transition: all .8s; }`; document.head.appendChild(st); }
+  const raids = {};
+  function raidMove(id, cls) { const el = document.querySelector(`.raidfig[data-raidfig="${id}"]`); if (!el) return false; el.classList.remove('ratk', 'rhit', 'rbuff'); void el.offsetWidth; el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 700); return true; }
   const state = {};                                  // actor id -> { k, anim, t0, dead, phased }
   function figure(a, unit) {
     if (!a || a.isPlayer) return null;
+    { const d0 = D() && D().enemies[a.key];   // Nov 13: raid bosses have their own big painting (img/raid/<map>.webp), moved with CSS
+      if (d0 && d0.raid && d0.map) { if (!unit) return `<img class="inkfig mobstill" src="img/raid/${d0.map}.webp" alt="" draggable="false">`; raids[a.id] = d0.map; return `<span class="raidfig" data-raidfig="${a.id}"><img src="img/raid/${d0.map}.webp" alt="" draggable="false"></span>`; } }
     const f = keyFor(a); if (!f) return null; const m = M[f.k];
     if (!unit) return `<img class="inkfig mobstill" src="img/mobs/${f.k}_p.webp" alt="" draggable="false">`;
     sheet(f.k);
@@ -46,6 +56,7 @@
   function attacks(m) { return m.atk || m.a.map(x => x[0]).filter(n => /^attack/.test(n) && n !== m.aoe); }
   // an enemy plays a card (engine fx event 'eplay': kind attack/defend/buff/debuff/status, aoe, card name)
   function cardPlay(e) {
+    if (raids[e.s] && raidMove(e.s, e.kind === 'attack' ? 'ratk' : 'rbuff')) return;
     const st = state[e.s]; if (!st) return; const m = M[st.k];
     let name = m.card && m.card[e.name];
     if (!name) {
@@ -65,6 +76,7 @@
   function hook() {
     const F = window.CB_FORGE; if (!F || F._mobs) return; F._mobs = true; const orig = F.play;
     F.play = function (id, move, o) {
+      if (raids[id] && document.querySelector(`.raidfig[data-raidfig="${id}"]`)) { if (move === 'ehit' || move === 'eknock') raidMove(id, 'rhit'); return; }
       if (state[id] && document.querySelector(`.mobfig[data-mob="${id}"]`)) {
         if (move === 'elunge') { const st = state[id]; if (!(st.carded && performance.now() - st.carded < 900)) play(id, pick(attacks(M[st.k]))); }
         else if (move === 'ehit' || move === 'eknock') hurt(id, move === 'eknock');

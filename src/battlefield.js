@@ -189,7 +189,7 @@ for (const [k, n] of Object.entries(BG_SETS)) BGART[k] = { n, boss: 'img/bg/' + 
 const bgImgs = {};
 function bgFor(map, row) {
   const A = BGART[map]; if (!A || row == null) return null;
-  const src = row === 'boss' ? A.boss : A.at(Math.min(A.n, Math.max(1, Math.ceil(row * A.n / 14))));
+  const src = row === 'raid' ? 'img/bg/raid_' + map + '.webp' : row === 'boss' ? A.boss : A.at(Math.min(A.n, Math.max(1, Math.ceil(row * A.n / 14))));
   return bgImgs[src] || (bgImgs[src] = Object.assign(new Image(), { decoding: 'async', src }));
 }
 function paintArt(cv, img, w, h, dpr) {

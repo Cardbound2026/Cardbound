@@ -926,6 +926,17 @@ const ENEMY_PLAYER_OPS = ['damage', 'execute', 'damageBlock', 'debuff', 'stealMa
 const RAID = { hp: 1.5, dmg: 1.25, dotResist: 0.25, manaStep: 0.03, min: 2, max: 10, lockMs: 7 * 24 * 3600 * 1000 };
 const RAID_NAMES = { physical: 'Gorrath, the Unbroken Tide', fire: 'Vashkar, the Sunken Sun', frost: 'Sylvaine, the Endless Winter', nature: 'Thornheart, the World-Root', arcane: 'Ilvar, the Shattered Star', shadow: 'The Hollow King Ascendant' };
 // per-boss tuning from the first raid nights (Oct 31): every raid boss needed 30-50% more HP; Vashkar also hits harder
+// Nov 13: each raid boss has a form of its own (a dragon, a root-spider, a frost wyrm, a titan, a star-horror, a lich king) and signature
+// cards on top of its warlord's deck. The texts use the same wording as the map bosses' cards, so parseEnemyCard reads them.
+const RAID_CARDS = {
+  physical: [{ name: "Titan's Cleave", n: 2, cost: 30, kind: 'Attack', text: 'Deal 30 damage.', dtype: 'Physical' }, { name: 'Earthshaker', n: 1, cost: 40, kind: 'Attack', text: 'Deal 16 damage to every player and add a Stun to each of their draw piles.', dtype: 'Physical' }],
+  fire: [{ name: 'Dragonfire Breath', n: 2, cost: 40, kind: 'Attack', text: 'Deal 15 damage to every player and apply 5 Burn to every player.', dtype: 'Fire' }, { name: 'Wing Buffet', n: 1, cost: 20, kind: 'Attack', text: 'Remove all Block from every player, then deal 8 damage to each.', dtype: 'Fire' }, { name: 'Molten Scales', n: 1, cost: 20, kind: 'Defense', text: 'Gain 20 Block.', dtype: 'Fire' }],
+  frost: [{ name: 'Glacial Breath', n: 2, cost: 40, kind: 'Attack', text: 'Deal 14 damage to every player and apply 5 Chill to every player.', dtype: 'Frost' }, { name: 'Tail Sweep', n: 1, cost: 20, kind: 'Attack', text: 'Remove all Block from every player, then deal 8 damage to each.', dtype: 'Frost' }, { name: 'Rime Armor', n: 1, cost: 20, kind: 'Defense', text: 'Gain 20 Block.', dtype: 'Frost' }],
+  nature: [{ name: 'Venom Rain', n: 2, cost: 40, kind: 'Attack', text: 'Deal 12 damage to every player and apply 6 Poison to every player.', dtype: 'Nature' }, { name: 'Web Cocoon', n: 2, cost: 30, kind: 'Attack', text: "Deal 20 damage and add a Stun to the target's draw pile.", dtype: 'Nature' }],
+  arcane: [{ name: 'Shattered Star', n: 2, cost: 40, kind: 'Attack', text: 'Deal 14 damage to every player and apply 15 Unwarded to every player.', dtype: 'Arcane' }, { name: 'Mana Collapse', n: 2, cost: 20, kind: 'Attack', text: "Deal 8 damage and burn 20 of the target's mana.", dtype: 'Arcane' }],
+  shadow: [{ name: 'Army of the Dead', n: 2, cost: 40, kind: 'Attack', text: 'Deal 13 damage to every player and apply 15 Vulnerable to every player.', dtype: 'Shadow' }, { name: 'Soul Harvest', n: 2, cost: 30, kind: 'Attack', text: 'Deal 16 damage and heal for 50% of the damage dealt.', dtype: 'Shadow' }],
+};
+const RAID_FORM = { physical: 'a titan in black iron, taller than the gate he broke', fire: 'a great dragon, molten under black scales', frost: 'a frost wyrm coiled around the winter itself', nature: 'a spider the size of a hall, woven from root and thorn', arcane: 'what is left of an archmage, fused with a fallen star', shadow: 'the lich king on his feet at last, crowned and hollow' };
 const RAID_TUNE = { physical: { hp: 1.3 }, fire: { hp: 1.5, dmg: 1.25 }, frost: { hp: 1.4 }, nature: { hp: 1.4 }, arcane: { hp: 1.4 }, shadow: { hp: 1.4 } };
 function raidKey(mk) { return 'raid_' + mk; }
 function raidBoss(data, mk) {
@@ -933,6 +944,8 @@ function raidBoss(data, mk) {
   const m = data.maps && data.maps[mk]; if (!m) return null; const b = data.enemies[m.boss]; if (!b) return null;
   data.enemies[k] = Object.assign(JSON.parse(JSON.stringify(b)), { name: RAID_NAMES[mk] || b.name + ' (Raid)', hp: Math.round(b.hp * RAID.hp * ((RAID_TUNE[mk] || {}).hp || 1)), raidDmg: (RAID_TUNE[mk] || {}).dmg || 1, raid: true, map: mk,
     arch: 'Raid boss: every attack hits every hero', desc: `${b.name.split(',')[0]} returns, raid-sized. Every attack and debuff hits the whole raid. Only one hero a round can land non-damaging debuffs on it.` });
+  for (const c of RAID_CARDS[mk] || []) data.enemies[k].deck.push(Object.assign({ phase2: false }, c));
+  if (RAID_FORM[mk]) data.enemies[k].desc = `${RAID_NAMES[mk] || b.name}: ${RAID_FORM[mk]}. Every attack and debuff hits the whole raid. Only one hero a round can land non-damaging debuffs on it.`;
   return k;
 }
 const ENEMY_TUNE = { warlord_gorrath_the_iron_tide: { dmg: 0.8 } }; // Oct 30: Warlord hit too hard (War Banner +40 Strength); all his damage -20%
@@ -1535,6 +1548,7 @@ class Combat {
     if (tgt.isPlayer && before > tgt.hp) { const lostHp = before - tgt.hp; tgt.dmgRound += lostHp; this.allyLost && this.allyLost.add(tgt.id); if (tgt.debtUser) tgt.bloodDebt += Math.round(lostHp * (this.has(tgt, 'pay_in_blood') ? 1 + this.upN(tgt, 'pay_in_blood', 0, 50) / 100 : 1)); if (tgt.until.storing) tgt.until.stored = (tgt.until.stored || 0) + lostHp; if (tgt.until.grudge && src && !src.isPlayer) tgt.until.grudge[src.id] = (tgt.until.grudge[src.id] || 0) + lostHp; }
     const real = before - tgt.hp, label = o.label || 'Attack';
     if (src) { const m = this.mtr(src).dealt; m[label] = (m[label] || 0) + real; }
+    if (src && src.isPlayer && !tgt.isPlayer && real > 0) { const dk = { Burn: 'Fire', Chill: 'Frost', Poison: 'Nature', Bleed: 'Physical', Dread: 'Shadow', Rot: 'Shadow' }[(String(label).match(/Burn|Chill|Poison|Bleed|Dread|Rot/) || [''])[0]] || o.dtype || 'Physical'; const T = src.fxTypes = src.fxTypes || {}; T[dk] = (T[dk] || 0) + real; if (o.isDot) src.fxDot = (src.fxDot || 0) + real; src.fxDealt = (src.fxDealt || 0) + real; } // Nov 13: what kinds of damage each hero dealt this fight (achievements)
     { const t = this.mtr(tgt); const k = src ? src.name : label; t.taken[k] = (t.taken[k] || 0) + real; t.absorbed += absorbed; }
     if (tgt.isPlayer) { this.stats.taken += dmg; this.stats.blocked += absorbed; } else this.stats.dealt += dmg;
     if (o.isDot && src && src.isPlayer && src.hp > 0 && !tgt.isPlayer && real > 0) this.dotHeal(src, tgt, real);

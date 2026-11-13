@@ -170,6 +170,8 @@ const heroes = (p) => Object.values(p.chars || {});
 const bestKill = (c, mk) => { const k = c.mapKills || {}; return mk ? (k[mk] == null ? -1 : k[mk]) : Math.max(-1, ...Object.values(k)); };
 const won = (ev, lvl) => ev.type === 'run' && ev.victory && (ev.level || 0) >= lvl;
 const st = (p, k) => (p.stats || {})[k] || 0;
+const maxedN = (c) => Object.values(c.codexes || {}).filter(x => CB.codexLevel(x.xp || 0).level >= CB.CODEX_MAX).length; // codexes this hero has at top level
+const onlyType = (types, el) => { if (!types) return false; const ks = Object.keys(types).filter(k => types[k] > 0); return ks.length === 1 && ks[0] === el; };
 const ACH = [
   { id: 'first_boss', cat: 'Roads', name: 'Blooded', how: 'Kill a map boss.', title: 'the Blooded', test: (p, ev) => won(ev, 0) || heroes(p).some(c => bestKill(c) >= 0) },
   { id: 'clear5', cat: 'Roads', name: 'Veteran', how: 'Kill a map boss at +5 or higher.', title: 'Veteran', test: (p, ev) => won(ev, 5) || heroes(p).some(c => bestKill(c) >= 5) },
@@ -197,6 +199,50 @@ const ACH = [
   { id: 'party4', cat: 'Feats', name: 'Fellowship', how: 'Kill a map boss in a party of four.', title: 'of the Fellowship', test: (p, ev) => won(ev, 0) && ev.party >= 4 },
   { id: 'card10', cat: 'Collection', name: 'Inkbound', how: 'Rank a card up to +10.', title: 'Inkbound', test: (p) => heroes(p).some(c => [...(c.deck || []), ...(c.cards || [])].some(k => (k.rank || 0) >= MAX_RANK)) },
   { id: 'codex20', cat: 'Collection', name: 'Codexmaster', how: 'Take a codex to its top level.', title: 'Codexmaster', test: (p) => heroes(p).some(c => Object.values(c.codexes || {}).some(s => CB.codexLevel(s.xp || 0).level >= CB.CODEX_MAX)) },
+  // ---- Nov 13: achievements for every system in the game. All of them, old and new, are kept on the account (p.ach), so every hero shares them.
+  { id: 'codex3', cat: 'Codexes', name: 'Scholar', how: 'Take three codexes to their top level on one hero.', title: 'Scholar', test: (p) => heroes(p).some(c => maxedN(c) >= 3) },
+  ...Object.entries({ Warrior: 'Grand Marshal', Rogue: 'Shadowmaster', Mage: 'Archmage', Paladin: 'High Crusader', Warlock: 'Demon Lord' }).map(([cls, t]) => ({ id: 'cxcls_' + cls, cat: 'Codexes', name: t, how: `Take all six ${cls} codexes to their top level.`, title: t,
+    n: 6, count: (p) => Math.max(0, ...heroes(p).filter(c => c.cls === cls).map(c => maxedN(c))) })),
+  { id: 'cxall', cat: 'Codexes', name: 'Omniscient', how: 'Take every codex in the game to its top level (all five classes).', title: 'the Omniscient', n: 30, count: (p) => Object.keys(CLASS_TITLES).reduce((s, cls) => s + Math.max(0, ...heroes(p).filter(c => c.cls === cls).map(c => maxedN(c))), 0) },
+  { id: 'cxlv100', cat: 'Codexes', name: 'Well Read', how: 'Earn 100 codex levels in total across all your heroes.', title: 'the Well Read', n: 100, count: (p) => heroes(p).reduce((s, c) => s + Object.values(c.codexes || {}).reduce((t, x) => t + CB.codexLevel(x.xp || 0).level, 0), 0) },
+  { id: 'capstone', cat: 'Codexes', name: 'Capstone', how: 'Pick a capstone talent (the last row of a talent tree).', title: 'the Talented', test: (p) => heroes(p).some(c => Object.values(c.codexes || {}).some(x => x.picks && x.picks[9] != null)) },
+  // one element only against a road's boss: its own element, and the one it hates
+  ...[['fire', 'Fire', 'Fight Fire with Fire', 'the Pyromaniac'], ['fire', 'Frost', 'Quenched', 'the Quencher'], ['frost', 'Frost', 'Cold Shoulder', 'the Cold-Hearted'], ['frost', 'Fire', 'Thawbringer', 'Thawbringer'],
+    ['nature', 'Nature', 'Overgrowth', 'the Overgrown'], ['nature', 'Fire', 'Wildfire', 'Wildfire'], ['arcane', 'Arcane', 'Mirror Match', 'the Mirrored'], ['arcane', 'Shadow', 'Eclipse', 'the Eclipse'],
+    ['shadow', 'Shadow', 'Darker Still', 'the Darker'], ['shadow', 'Holy', 'Light in the Crypt', 'Cryptlight'], ['physical', 'Physical', 'Steel Answers Steel', 'Steelsworn']].map(([mk, el, nm, t]) => ({ id: 'only_' + mk + '_' + el, cat: 'Boss feats', name: nm, title: t,
+    how: `Kill the boss of ${MAP_TITLES[mk][0]} dealing only ${el} damage in the boss fight.`, test: (p, ev) => won(ev, 0) && ev.map === mk && onlyType(ev.types, el) })),
+  { id: 'spellbound', cat: 'Boss feats', name: 'Spellbound', how: 'Kill the boss of The Broken March without dealing any Physical damage in the boss fight.', title: 'the Spellbound', test: (p, ev) => won(ev, 0) && ev.map === 'physical' && ev.types && ev.dealt > 0 && !(ev.types.Physical > 0) },
+  { id: 'rainbow', cat: 'Boss feats', name: 'Rainbow', how: 'Kill a map boss dealing five or more kinds of damage in the boss fight.', title: 'the Prismatic', test: (p, ev) => won(ev, 0) && ev.types && Object.values(ev.types).filter(v => v > 0).length >= 5 },
+  { id: 'slowdeath', cat: 'Boss feats', name: 'Slow Death', how: 'Kill a map boss with more than half of your damage coming from damage over time (Bleed, Poison, Burn, Dread, Rot).', title: 'the Patient', test: (p, ev) => won(ev, 0) && ev.dealt > 0 && ev.dot > ev.dealt / 2 },
+  { id: 'swift', cat: 'Boss feats', name: 'Swift Justice', how: 'Kill a +5 or higher map boss in 5 rounds or fewer.', title: 'the Swift', test: (p, ev) => won(ev, 5) && ev.rounds > 0 && ev.rounds <= 5 },
+  { id: 'edge', cat: 'Boss feats', name: 'On the Edge', how: 'Kill a map boss with 10% of your health or less left.', title: 'the Reckless', test: (p, ev) => won(ev, 0) && ev.hpPct != null && ev.hpPct <= 10 },
+  // raids
+  ...[['physical', 'Titanfall', 'Titanfeller'], ['fire', 'Dragonslayer', 'Dragonslayer'], ['frost', 'Wyrmbane', 'Wyrmbane'], ['nature', 'Spiderbane', 'Spiderbane'], ['arcane', 'Starbreaker', 'Starbreaker'], ['shadow', 'Kingslayer', 'Kingslayer']].map(([mk, nm, t]) => ({ id: 'raid_' + mk, cat: 'Raids', name: nm, title: t,
+    how: `Kill ${CB.RAID_NAMES[mk]} in a raid.`, test: (p, ev) => (ev.type === 'raid' && ev.map === mk) || !!(p.raidDone || {})[mk] })),
+  { id: 'raid_all', cat: 'Raids', name: 'Conqueror', how: 'Kill all six raid bosses.', title: 'the Conqueror', n: 6, count: (p) => Object.keys(p.raidDone || {}).length },
+  { id: 'raid2', cat: 'Raids', name: 'Dynamic Duo', how: 'Kill a raid boss with only two heroes in the raid.', title: 'of the Duo', test: (p, ev) => ev.type === 'raid' && ev.party === 2 },
+  { id: 'raid10', cat: 'Raids', name: 'Full Warband', how: 'Kill a raid boss with ten heroes in the raid.', title: 'of the Warband', test: (p, ev) => ev.type === 'raid' && ev.party >= 10 },
+  { id: 'raidclean', cat: 'Raids', name: 'Flawless Raid', how: 'Kill a raid boss without a single hero falling.', title: 'the Flawless', test: (p, ev) => ev.type === 'raid' && ev.deaths === 0 },
+  { id: 'raid10lv', cat: 'Raids', name: 'Worldbreaker', how: 'Kill a raid boss at +10 or higher.', title: 'Worldbreaker', test: (p, ev) => ev.type === 'raid' && (ev.level || 0) >= 10 },
+  ...[['fire', 'Fire', 'Burn the Burner', 'Flamebrother'], ['fire', 'Frost', 'Dragon on Ice', 'Dragonfreezer'], ['frost', 'Fire', 'Melt the Wyrm', 'Wyrmmelter'], ['nature', 'Fire', 'Burn the Nest', 'Nestburner'], ['shadow', 'Holy', 'Lay Him to Rest', 'Gravelayer'], ['arcane', 'Arcane', 'Star Against Star', 'Starfallen']].map(([mk, el, nm, t]) => ({ id: 'raidonly_' + mk + '_' + el, cat: 'Raids', name: nm, title: t,
+    how: `Kill ${CB.RAID_NAMES[mk]} in a raid while you yourself deal only ${el} damage.`, test: (p, ev) => ev.type === 'raid' && ev.map === mk && onlyType(ev.types, el) })),
+  // slaying
+  { id: 'kills1k', cat: 'Roads', name: 'Slayer', how: 'Kill 1,000 monsters.', title: 'Slayer', n: 1000, count: (p) => st(p, 'kills') },
+  { id: 'kills10k', cat: 'Roads', name: 'Exterminator', how: 'Kill 10,000 monsters.', title: 'Exterminator', n: 10000, count: (p) => st(p, 'kills') },
+  // collection: pets, mounts, looks, bags
+  { id: 'pet1', cat: 'Collection', name: 'Beastfriend', how: 'Have a pet follow you home (1 in 1000 from any kill on a run).', title: 'Beastfriend', n: 1, count: (p) => ((p.own || {}).pets || []).length },
+  { id: 'pet10', cat: 'Collection', name: 'Menagerie', how: 'Own 10 different pets.', title: 'of the Menagerie', n: 10, count: (p) => ((p.own || {}).pets || []).length },
+  { id: 'pet50', cat: 'Collection', name: 'Zookeeper', how: 'Own 50 different pets.', title: 'Zookeeper', n: 50, count: (p) => ((p.own || {}).pets || []).length },
+  { id: 'mount5', cat: 'Collection', name: 'Stablemaster', how: 'Own 5 mounts.', title: 'Stablemaster', n: 5, count: (p) => ((p.own || {}).mounts || ['horse']).length },
+  { id: 'mount10', cat: 'Collection', name: 'Master of Horse', how: 'Own all 10 mounts.', title: 'Master of Horse', n: 10, count: (p) => ((p.own || {}).mounts || ['horse']).length },
+  { id: 'cos10', cat: 'Collection', name: 'Fashionable', how: 'Own 10 looks from the Skull Shop (auras, footsteps, wings, weapon looks, card borders).', title: 'the Fashionable', n: 10, count: (p) => ((p.own || {}).cos || []).length },
+  { id: 'dye8', cat: 'Collection', name: 'Colourful', how: 'Wear a dye on all eight pieces of armour at once.', title: 'the Colourful', test: (p) => heroes(p).some(c => c.app && c.app.dye && Object.keys(c.app.dye).length >= 8) },
+  { id: 'bags4', cat: 'Collection', name: 'Pack Mule', how: 'Fill all four of your bag slots.', title: 'the Pack Mule', n: 4, count: (p) => (p.bags || []).filter(Boolean).length },
+  { id: 'bank10', cat: 'Wealth', name: 'Vault Keeper', how: 'Fill all ten of the bank\'s bag slots.', title: 'Vault Keeper', n: 10, count: (p) => (p.bankBags || []).filter(Boolean).length },
+  // the town
+  { id: 'visit', cat: 'Emberwatch', name: 'Local', how: 'Step inside every building in Emberwatch.', title: 'of Emberwatch', n: 14, count: (p) => Object.keys(p.visited || {}).length },
+  { id: 'barber', cat: 'Emberwatch', name: 'Dapper', how: 'Change your look at Fenwick\'s Barber Shop.', title: 'the Dapper', n: 1, count: (p) => st(p, 'barber') },
+  { id: 'lfg', cat: 'Emberwatch', name: 'Recruiter', how: 'Pin a notice on the group board.', title: 'Recruiter', n: 1, count: (p) => st(p, 'lfgPosts') },
   { id: 'runs100', cat: 'Roads', name: 'Roadworn', how: 'Finish 100 runs (any result, all heroes together).', title: 'the Roadworn', n: 100, count: (p) => heroes(p).reduce((s, c) => s + (c.runs || 0), 0) },
   { id: 'extract10', cat: 'Roads', name: 'Survivor', how: 'Extract from 10 runs at a campfire.', title: 'Survivor', n: 10, count: (p) => st(p, 'extracts') },
   { id: 'deaths25', cat: 'Roads', name: 'Gravewalker', how: 'Die 25 times. It happens.', title: 'Gravewalker', n: 25, count: (p) => st(p, 'deaths') },
@@ -438,9 +484,10 @@ function absorbRun(p, run, mi) {
   p.history = p.history.slice(0, 20);
   p.last = Object.assign(p.last || {}, { level: run.level });
   // Nov 2: achievement counters and checks for this hero's run
+  if (!mi) bump(p, 'kills', run.kills || 0); // Nov 13: monsters killed, once per run
   bump(p, 'goldLooted', kept.gold || 0); if (run.over === 'extracted') bump(p, 'extracts'); if (run.over === 'dead') bump(p, 'deaths'); else if (mem.deaths) bump(p, 'deaths', mem.deaths);
   const F = mem.feat || {}, ach = achCheck(p, { type: 'run', victory: run.over === 'victory', level: run.level || 0, map: run.mapKey || 'physical', cls: c.cls, hc: !!c.hardcore, hero: c.name,
-    party: run.members ? run.members.length : 1, lost: F.lost, bossClean: F.bossClean, bossLost: F.bossLost });
+    party: run.members ? run.members.length : 1, lost: F.lost, bossClean: F.bossClean, bossLost: F.bossLost, types: F.bossTypes || null, dot: F.bossDot || 0, dealt: F.bossDealt || 0, rounds: F.bossRounds || 0, hpPct: F.bossHpPct });
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk, ach };
 }
 

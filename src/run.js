@@ -302,7 +302,7 @@ class Run {
         this.note(`${m.name} fell in the fight: their sack (${m.sack.length} items, ${m.gold} gold) is lost. They get back up at half HP.`);
         m.sack = []; m.gold = 0; m.hp = Math.ceil(m.stats.maxHp / 2); m.mana = 0;
       } else { m.hp = Math.min(pl.hp, m.stats.maxHp); m.mana = pl.mana; } // talent max-HP buffs last for the fight only
-      { const F = m.feat = m.feat || { lost: 0 }; F.lost += pl.fxLost || 0; if (n.type === 'boss') { F.bossClean = !(pl.fxHealed > 0) && !(pl.fxDef > 0); F.bossLost = pl.fxLost || 0; } } // Nov 2: for achievements (HP lost all run; the boss fight with no healing or defense)
+      { const F = m.feat = m.feat || { lost: 0 }; F.lost += pl.fxLost || 0; if (n.type === 'boss') { F.bossClean = !(pl.fxHealed > 0) && !(pl.fxDef > 0); F.bossLost = pl.fxLost || 0; F.bossTypes = Object.assign({}, pl.fxTypes || {}); F.bossDot = pl.fxDot || 0; F.bossDealt = pl.fxDealt || 0; F.bossRounds = cb.round; F.bossHpPct = Math.round(100 * Math.max(0, pl.hp) / Math.max(1, pl.maxHp)); } } // Nov 2: for achievements (HP lost all run; the boss fight with no healing or defense)
       const regen = Math.round((m.stats.healthRegen + this.partyTalent('partyHealthRegen')) * (1 + (m.stats.spirit || 0) / 100)); if (regen && !fell) m.hp = Math.min(m.stats.maxHp, m.hp + regen); // Spirit boosts healing received
       const drops = []; let gold = 0;
       for (const e of cb.enemies) {  // every hero rolls their own loot
