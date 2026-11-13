@@ -94,10 +94,10 @@
     draw(g, look, v, anim, t, x, footY, sc, layer) {
       const c = look && look.cos; if (!c) return; const dead = anim === 'dead';
       const A = c.aura && EX_COSBY[c.aura] && EX_COSBY[c.aura][4], T = c.trail && EX_COSBY[c.trail] && EX_COSBY[c.trail][4], W = c.wings && EX_COSBY[c.wings];
-      if (layer === 'back' && T && !dead) {   // footsteps: stamped where the hero stands, they linger and fade as the hero walks on
+      if (layer === 'front' && T && !dead) {   // footsteps: stamped where the hero stands, they linger and fade as the hero walks on
         const now = performance.now(); let near = false; for (const s of STAMPS) if (s.k === c.trail && Math.abs(s.x - x) + Math.abs(s.y - footY) < 9 * sc && now - s.t0 < 500) { near = true; break; }
         if (!near) { STAMPS.push({ k: c.trail, x, y: footY, t0: now, sc, g }); if (STAMPS.length > 160) STAMPS.splice(0, 40); }
-        for (let i = STAMPS.length - 1; i >= 0; i--) { const s = STAMPS[i], u = (now - s.t0) / 1100; if (u >= 1) { STAMPS.splice(i, 1); continue; } if (s.k !== c.trail || s.g !== g) continue; if (Math.abs(s.x - x) + Math.abs(s.y - footY) > 420 * sc) continue; cosBlit(g, T.fx, now - s.t0 + i * 90, s.x, s.y, T.z * s.sc * 1.0, T.tint, 1 - u); }
+        for (let i = STAMPS.length - 1; i >= 0; i--) { const s = STAMPS[i], u = (now - s.t0) / 1100; if (u >= 1) { STAMPS.splice(i, 1); continue; } if (s.k !== c.trail || s.g !== g) continue; if (Math.abs(s.x - x) + Math.abs(s.y - footY) > 420 * sc) continue; cosBlit(g, T.fx, now - s.t0 + i * 90, s.x, s.y, T.z * s.sc * 1.0, T.tint, (1 - u) * .7); }
       }
       if (W && !dead && wingImg.complete && wingImg.naturalWidth && (layer === 'back') === (v !== 'n')) {
         const flap = 1 + Math.sin(t / 420) * 0.05, k = sc * 0.95, side = v === 'e' || v === 'w';
@@ -109,9 +109,9 @@
         } else { g.translate(Math.round(x), Math.round(footY - 84 * sc)); g.scale(flap, 1); g.drawImage(wingImg, W[4] * 128, 0, 128, 96, -64 * k, -52 * k, 128 * k, 96 * k); }
         g.restore();
       }
-      if (A && !dead && (layer === 'back') === !!A.back) {
+      if (A && !dead && (layer === 'back') === (A.at === 'f' ? false : !!A.back)) {   /* Nov 13: ground effects (smoke, mist, flames at the feet) are always in front of the hero, see-through */
         const y = A.at === 'f' ? footY + 2 * sc : A.at === 'h' ? footY - 108 * sc : footY - 56 * sc;
-        cosBlit(g, A.fx, t, x, y, A.z * sc, A.tint, A.back ? 0.92 : 1);
+        cosBlit(g, A.fx, t, x, y, A.z * sc, A.tint, A.at === 'f' ? 0.62 : A.back ? 0.92 : 1);
       }
     },
     weapon(look) { const c = look && look.cos; return c && c.wskin != null && EX_COSBY[c.wskin] && look.weapon ? ['legend', EX_COSBY[c.wskin][4]] : null; },

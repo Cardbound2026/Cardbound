@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Art', "The Hellhound Alpha's braid no longer whips across its body while it stands idle."],
+      ['Art', "Ground effects (smoke, flames at the feet, footsteps) are drawn in front of your hero and see-through."],
       ['Art', "Riding away from the camera, your legs show astride the mount, one down each flank."],
       ['Interface', "Clicking a bag item shows just its card with Equip, Salvage and Close on it, with no window frame behind."],
       ['Interface', "In town the black top bar is gone: the Cardbound logo sits in the middle, Menu at the right, and the Emberwatch label and walking guide are removed."],
