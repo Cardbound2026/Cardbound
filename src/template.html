@@ -1034,7 +1034,7 @@ body #scrCombat.bf .stage .uplate .bar span { font-size: 12px; }
   #playerSlot.raid .figure, #playerSlot.raid .figure svg { height: 38px; } #playerSlot.raid .uname b { font-size: 12px; } #playerSlot.raid .tag { font-size: 10px; padding: 0 3px; }
   .order.raid .otile { width: 62px; padding: 2px; } .order.raid .otile .ofig, .order.raid .otile .ofig svg { height: 30px; } .order.raid .otile .onm { font-size: 11px; } .order.raid .otile.now::after { display: none; }
   .cxcods { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; margin-top: 6px; } .cxcod { border-left: 3px solid var(--rc); background: rgba(255,255,255,.03); padding: 8px 10px; border-radius: 6px; display: grid; gap: 4px; } .cxch { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; } .cxch b { color: #f0b070; }
-  #btnUpdates { position: fixed; left: 50%; right: auto; bottom: 6px; transform: translateX(-50%); z-index: 40; padding: 5px 12px; font-size: 13px; } #btnUpdates i { display: none; } #btnUpdates.unread i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #e4a93a; margin-left: 6px; box-shadow: 0 0 8px #e4a93a; }
+  #btnUpdates { position: fixed; left: 50%; right: auto; bottom: 6px; transform: translateX(-50%); z-index: 4; padding: 5px 12px; font-size: 13px; } #btnUpdates i { display: none; } #btnUpdates.unread i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #e4a93a; margin-left: 6px; box-shadow: 0 0 8px #e4a93a; }
   .changelog { max-height: 62vh; overflow: auto; padding-right: 6px; } .changelog h3 { color: var(--accent); font-size: 20px; margin: 12px 0 4px; } .changelog ul { margin: 0; padding: 0; list-style: none; } .changelog li { margin: 5px 0; line-height: 1.4; display: grid; grid-template-columns: 100px minmax(0, 1fr); column-gap: 8px; align-items: baseline; } .clcards { margin: 6px 0 0; } .clcards summary { cursor: pointer; font-weight: 700; color: var(--accent); } .clcards ul { margin: 4px 0 8px 4px !important; } .clcards li { display: block !important; margin: 3px 0 !important; font-size: 13.5px; } .clcost { white-space: nowrap; } .clarea { display: block; margin-right: 0; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
   #updBanner .btn { padding: 4px 12px; font-size: 14px; } #updBanner { width: max-content; position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 32px); padding: 8px 14px; background: #2a1f12; border: 1px solid var(--accent); border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,.6); }
   .rlrolls { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; margin: -2px 0 4px 8px; } .rlrolls .win { text-decoration: underline; }
@@ -1170,6 +1170,9 @@ body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust:not([data-n="0"]
 @keyframes kglow { from { opacity: .55; transform: scaleX(.92); } to { opacity: 1; transform: scaleX(1.04); } }
 @keyframes kcopen { 30% { transform: scale(1.12, .9); filter: brightness(1.4); } 100% { transform: scale(1.5); filter: brightness(4) drop-shadow(0 0 40px var(--glow, #ffd98a)); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { #killov .kseam, #killov .krays, #killov .kchest em { animation: none; } }
+.nmtop { font-size: 15px; line-height: 1.5; } .nmfoe { border-top: 1px solid var(--line); padding-top: 10px; } .nmhead { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; } .nmhead h3 { margin: 0; font-size: 24px; color: var(--accent); }
+.nmpic { width: 110px; height: 110px; object-fit: contain; image-rendering: pixelated; flex: none; filter: drop-shadow(0 4px 6px #000); } .nmfoe h4 { margin: 8px 0 4px; font-size: 16px; } .nmloot summary { cursor: pointer; font-weight: 700; margin: 8px 0 4px; } .nmloot p { margin: 6px 0 4px; }
+.nmrow { position: sticky; bottom: -1px; padding: 10px 0 4px; background: linear-gradient(180deg, transparent, #1c1512 35%); z-index: 2; }
 /* End turn is engraved on the iron plate of the right pillar */
 body #scrCombat.bf.hud3 .field-panel > .hud #btnEnd { position: absolute !important; right: calc(var(--u) * 13) !important; top: calc(var(--u) * 38) !important; width: calc(var(--u) * 59) !important; height: calc(var(--u) * 51) !important; min-width: 0 !important; margin: 0 !important; padding: 0 calc(var(--u) * 4) !important; border: 0 !important; border-image: none !important; background: none !important; display: grid !important; place-items: center; white-space: normal !important; text-align: center; font: 400 calc(var(--u) * 10.5) / 1 var(--cf-name, var(--f-display)) !important; color: #e0c38a !important; text-shadow: 0 2px 0 #000, 0 0 12px rgba(224,176,80,.45) !important; box-shadow: inset 0 0 18px rgba(224,176,80,.22) !important; border-radius: 3px; transform: none !important; }
 body #scrCombat.bf.hud3 .field-panel > .hud #btnEnd .hg { display: none !important; }
@@ -2936,8 +2939,22 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   }
   $('mapScroll').addEventListener('click', (ev) => {
     if (MP.on && canPlan()) { const g = ev.target.closest('.node'); if (g) planClick(g.dataset.id); return; }
-    const g = ev.target.closest('.node.reach'); if (g) travel(g.dataset.id);
+    const g = ev.target.closest('.node'); if (g && run.visible(run.map.nodes[g.dataset.id])) nodeModal(g.dataset.id, g.classList.contains('reach'));
   });
+  // Nov 13: clicking a node opens everything about it (what the strip under the map shows on hover, plus each foe's picture, deck and loot), with a button to go there
+  function nodeModal(id, canGo) {
+    const n = run.map.nodes[id], t = NODE[n.type]; nodeInfo(id);
+    const top = $('nodeInfo').innerHTML.replace(/<button class="pilebtn" data-(loot|deck)="[^"]*">[^<]*<\/button>/g, '').replace(/<div style="margin-top:6px" class="muted">Click a glowing node[^<]*<\/div>/, '');
+    const pic = (k) => { const f = window.CB_MOBS && CB_MOBS.keyOf ? CB_MOBS.keyOf(k) : null; return `<img class="nmpic" src="img/mobs/${f ? f.k : k}_p.webp" alt="" onerror="this.style.visibility='hidden'">`; };
+    const foes = (n.enemies || []).filter((k, i, a) => a.indexOf(k) === i).map(k => { const e = DATA.enemies[k], cnt = n.enemies.filter(x => x === k).length;
+      return `<div class="nmfoe"><div class="nmhead">${pic(k)}<div><h3>${esc(e.name)}${cnt > 1 ? ` <span class="muted">x${cnt}</span>` : ''}</h3><span class="muted">${esc(e.arch || '')}. Draws ${e.draw} a round, ${e.maxMana} max mana, +${e.regen} per turn.</span></div></div>
+        <h4>Deck <span class="muted">(damage shown at map +0)</span></h4>${enemyGrid(e.deck.map(c => ({ c, n: c.n, tag: c.phase2 ? 'phase 2' : '' })), k, 118)}
+        <details class="nmloot" open><summary>Loot</summary>${lootModal(k, true)}</details></div>`; }).join('');
+    const go = n.enemies ? 'Engage' : n.type === 'rest' ? 'Go to the campfire' : n.type === 'shrine' ? 'Visit the shrine' : n.type === 'merchant' ? 'Visit the merchant' : 'Go here';
+    modal(`<div class="nmtop">${top}</div>${foes}<div class="row nmrow">${canGo && !run.over ? `<button class="btn primary" id="mGo">${run.online ? 'Vote to go here' : go}</button>` : ''}<button class="btn" id="mClose">Close</button></div>`);
+    $('modalBox').classList.add('wide'); fitCards($('modalBox')); $('mClose').onclick = closeModal;
+    if ($('mGo')) { $('mGo').onclick = () => { closeModal(); travel(id); }; try { $('mGo').focus(); } catch (e) {} }
+  }
   // ---------- route planner: the party leader (or a solo player) clicks nodes to draw up to two routes (A and B) and compare them
   const MP = { on: false, slot: 'A', run: null };
   function planOf(slot) { if (!run) return []; run.plan = run.plan || { A: [], B: [] }; return run.plan[slot]; }
@@ -2992,7 +3009,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
 
   // ---------- loot table and deck list for an enemy (from the Map 1 design files)
   const fmtPct = v => v === 0 ? '0%' : (v < 1 ? v.toFixed(2) : v.toFixed(1)) + '%';
-  function lootModal(key) {
+  function lootModal(key, asHtml) {
     const e = DATA.enemies[key], G = DATA.gear, t = G.drops[e.tier];
     const lk = run ? run.luck() : 0, lvl = run ? run.level : 0, gm = Math.pow(1.5, lvl);
     const rar = ['White', 'Green', 'Blue', 'Purple (Epic)'];
@@ -3001,7 +3018,9 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
       <p><b>Item bases it drops</b> (one picked per roll; stats roll at map +${lvl}):</p><div class="cardlist">${e.pool.map(b => { const bb = G.bases.find(x => x.name === b); return `<div class="cardrow" style="--rc:var(--line)"><span class="n"></span><b>${esc(b)}</b><span class="cst">${esc(bb ? bb.label : '')}</span></div>`; }).join('')}</div>` : '';
     const cards = (e.loot || []).filter(x => x.type === 'Card' || x.type === 'Codex');
     const cardHtml = cards.length ? `<p><b>Cards and codexes</b> (each rolls on its own; Gold cards only drop here):</p><div class="cardlist">${cards.map(x => `<div class="cardrow" style="--rc:${RC[x.rarity] || 'var(--line)'}"><span class="n">${x.type === 'Codex' ? +CB.bossCodexPct(e).toFixed(1) : x.pct}%</span><b>${esc(x.item)} <span class="muted">${esc(x.cls)} ${esc(x.rarity)} ${x.type === 'Codex' ? 'codex' : ''}</span></b><span class="cst"></span><span class="tx">${esc(x.note || '')}</span></div>`).join('')}</div>` : '';
-    modal(`<h2>${esc(e.name)}: loot</h2><p><b>Gold:</b> ${Math.round(e.gold[0] * gm)} to ${Math.round(e.gold[1] * gm)} per kill.</p>${gear}${cardHtml}<p><b>Card drops:</b> ${{ 1: '30% per kill (mostly White)', 2: '40% per kill', 3: '50% per kill', Elite: 'always 1 card, Green or better (10% Gold)', Boss: '2 cards, Blue or Gold' }[e.tier]}, from your class's implemented cards. The named cards above come from the Map 1 design and arrive when more cards are built.</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
+    const html = `<p><b>Gold:</b> ${Math.round(e.gold[0] * gm)} to ${Math.round(e.gold[1] * gm)} per kill.</p>${gear}${cardHtml}<p><b>Card drops:</b> ${{ 1: '30% per kill (mostly White)', 2: '40% per kill', 3: '50% per kill', Elite: 'always 1 card, Green or better (10% Gold)', Boss: '2 cards, Blue or Gold' }[e.tier]}, from your class's implemented cards. The named cards above come from the Map 1 design and arrive when more cards are built.</p>`;
+    if (asHtml) return html;
+    modal(`<h2>${esc(e.name)}: loot</h2>${html}<div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     $('mClose').onclick = closeModal;
   }
   function deckModal(key) {
