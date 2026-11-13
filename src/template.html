@@ -240,6 +240,7 @@ svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
 .tag.good { border-color: #47703a; color: #a8dc8f; }
 .intents { display: flex; flex-wrap: wrap; gap: 4px; min-height: 26px; }
 .intent { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: #2d1d17; border: 1px solid #6a3324; color: #ffbaa6; font-variant-numeric: tabular-nums; }
+.intent.aoe { background: #3a2410; border-color: #b8691f; color: #ffcf8a; } .intent svg { width: 15px !important; height: 15px !important; }
 .intent.defend { background: #172430; border-color: #35546d; color: #a9cdec; }
 .intent.debuff { background: #272033; border-color: #5a4a78; color: #cdb9f2; }
 .intent.buff { background: #2b2614; border-color: #6b5a26; color: #f0d58b; }
@@ -1439,7 +1440,9 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   const RC = { Codex: '#e0802a', White: 'var(--r-white)', Green: 'var(--r-green)', Blue: 'var(--r-blue)', Gold: 'var(--r-gold)', 'Purple (Epic)': 'var(--r-purple)', Status: 'var(--r-status)', Token: 'var(--muted)' };
   const CC = { Warrior: '#c9472f', Rogue: '#64b25b', Mage: '#4f93e6', Paladin: '#e4a93a', Warlock: '#a77be0' };
   const ICON = {
-    attack: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 14l1.2-3.6L11 2.6 13.4 5 5.6 12.8z"/><path d="M10 1.5h4.5V6z"/></svg>',
+    attack: '<svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M6 4.5a5.5 5.5 0 1 0 5.5 5.5h-1.8A3.7 3.7 0 1 1 6 6.3z"/><circle cx="6" cy="10" r="1.5"/><path d="M6.6 8.2L12.2 2.6l1.2 1.2L7.8 9.4z"/><path d="M11.2 1h3.8v3.8z"/></svg>',
+    /* Nov 13: two attack pictures. attack = one target (a blade driven into a target ring); aoe = everyone (a burst) */
+    aoe: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0l1.6 4 3.3-2.6-1 4.1L16 6l-3.4 2.4L15.5 12l-4.2-.6L11 16l-3-3.2L5 16l-.3-4.6-4.2.6L3.4 8.4 0 6l4.1-.5-1-4.1L6.4 4z"/><circle cx="8" cy="8.3" r="2.1" fill="#3a2410"/></svg>',
     defend: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l6 2.2v4.3c0 3.6-2.6 6.3-6 7.5C4.6 13.8 2 11.1 2 7.5V3.2z"/></svg>',
     debuff: '<svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="6"/><rect x="4" y="7" width="8" height="2" fill="#272033"/></svg>',
     buff: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l2 5h5l-4 3 1.5 5L8 11l-4.5 3L5 9 1 6h5z"/></svg>',
@@ -3587,7 +3590,8 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
       else if (blk) num = blk.n;
       const mk = planned && c.mark && cb.partySize > 1 ? cb.actorById(c.mark) : null;
       const tg = mk ? `<span class="itgt" style="color:${CC[mk.cls]}">&rarr; ${mk === hero() && cb.myMi != null ? 'You' : esc(mk.name.split(' ')[0])}</span>` : '';
-      return `<span class="intent ${kind}${planned ? '' : ' skip'}" data-e="${e.id}" data-cu="${c.uid}" title="${esc(c.name)} (${c.cost} mana): ${esc(c.text)}${c.dtype !== 'Physical' && dmg ? ' [' + c.dtype + ']' : ''}${mk ? ' Aimed at ' + esc(mk.name) + '.' : ''}${planned ? '' : ' (not enough mana: discarded)'}">${ICON[kind]}${num !== '' ? num : esc(c.name)}${tg}</span>`;
+      const aoe = kind === 'attack' && !!dmg && (c.ops.some(o => (o.op === 'damage' || o.op === 'execute') && o.all) || /every (player|hero|one)|everyone|all (players|heroes|enemies)|each (player|hero)/i.test(c.text || ''));
+      return `<span class="intent ${kind}${aoe ? ' aoe' : ''}${planned ? '' : ' skip'}" data-e="${e.id}" data-cu="${c.uid}" title="${aoe ? 'Hits everyone. ' : kind === 'attack' ? 'Hits one target. ' : ''}${esc(c.name)} (${c.cost} mana): ${esc(c.text)}${c.dtype !== 'Physical' && dmg ? ' [' + c.dtype + ']' : ''}${mk ? ' Aimed at ' + esc(mk.name) + '.' : ''}${planned ? '' : ' (not enough mana: discarded)'}">${ICON[aoe ? 'aoe' : kind]}${num !== '' ? num : esc(c.name)}${tg}</span>`;
     }).join('') || '<span class="tag">no cards</span>';
   }
   // party fights: shorter status tags (full text on hover)

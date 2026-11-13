@@ -2387,14 +2387,14 @@ async function exportTravelPack(){
             const how = tgt.isPlayer ? DEF_FX[tgt.cls] : 'block';
             if (how === 'dodge') { if (F) F.play(e.d, 'dodge'); add('whoosh', { id: e.d, side: -side }, delay); }
             else if (how === 'barrier' || how === 'absorb') { add('shimmer', { id: e.d, col: how === 'barrier' ? 'ward' : 'absorb' }, delay); if (F) F.play(e.d, 'guard'); }
-            else { add('clank', { id: e.d, side }, delay); if (F && tgt.isPlayer) F.play(e.d, how === 'parry' ? 'parry' : 'guard'); else if (F) F.play(e.d, 'ehit'); }
+            else { add('clank', { id: e.d, side, snd: e.thorn ? 'mute' : null }, delay); if (F && tgt.isPlayer) F.play(e.d, how === 'parry' ? 'parry' : 'guard'); else if (F) F.play(e.d, 'ehit'); }
             continue;
           }
           // the impact: by element, else by the weapon (heroes) or the creature (monsters)
           let fx = ELEM(e.dtype);
           if (!fx) { if (src && src.isPlayer) fx = e.kind === 'Skill' ? 'blunt' : (F ? F.weaponKind(src) : 'slash'); else fx = src && /beast|Beast/.test(src.creature || '') ? 'claw' : 'slash'; }
           const big = !!e.crit || e.lost >= tgt.maxHp * 0.2;
-          add(fx, { id: e.d, ang: -2.4 + (i - 1) * 0.9 * (i % 2 ? 1 : -1), big, side, seed: Math.random() * 1e9 }, delay);
+          add(fx, { id: e.d, ang: -2.4 + (i - 1) * 0.9 * (i % 2 ? 1 : -1), big, side, seed: Math.random() * 1e9, snd: e.thorn ? 'mute' : null }, delay);   /* Nov 13: Thorns and Spikes striking back are silent */
           if (e.crit) { add('crit', { id: e.d }, delay); setTimeout(() => { const st = document.querySelector('#scrCombat .stage') || document.getElementById('scrCombat'); if (st) { st.classList.remove('fxshake'); void st.offsetWidth; st.classList.add('fxshake'); } }, delay); }
           if (F) setTimeout(() => F.play(e.d, tgt.isPlayer ? (big ? 'knock' : 'hit') : (big ? 'eknock' : 'ehit')), delay);
           setTimeout(() => { const u = document.querySelector(`#scrCombat .unit[data-id="${e.d}"]`), st = document.querySelector('#scrCombat .stage') || document.getElementById('scrCombat'); if (u) { u.classList.remove('hitflash'); void u.offsetWidth; u.classList.add('hitflash'); setTimeout(() => u.classList.remove('hitflash'), 140); } if (big && st) { st.classList.remove('fxpunch'); void st.offsetWidth; st.classList.add('fxpunch'); setTimeout(() => st.classList.remove('fxpunch'), 260); if (window.CB_HEROPUP && CB_HEROPUP.hold) CB_HEROPUP.hold(e.crit ? 110 : 70); } }, delay); // impact: a white flash on whoever is struck; a big hit also holds the fight still for an instant and punches the camera

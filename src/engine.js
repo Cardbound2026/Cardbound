@@ -1556,7 +1556,7 @@ class Combat {
     if (tgt.isPlayer) { this.stats.taken += dmg; this.stats.blocked += absorbed; } else this.stats.dealt += dmg;
     if (o.isDot && src && src.isPlayer && src.hp > 0 && !tgt.isPlayer && real > 0) this.dotHeal(src, tgt, real);
     if (o.crit || (o.label && /crit!/.test(o.label))) tgt.critN = (tgt.critN || 0) + 1; // the screen shows this hit's number in red
-    this.fxPush({ t: 'hit', s: src ? src.id : null, d: tgt.id, dot: o.isDot ? (String(o.label || '').match(/Bleed|Poison|Burn|Dread|Rot|Chill/) || [''])[0].toLowerCase() || 'dot' : null, dtype: o.dtype || null, kind: o.kind || null, card: o.card || null, crit: !!(o.crit || (o.label && /crit!/.test(o.label))), lost: real, abs: absorbed, lbl: o.label || '' }); // Nov 1: damage over time counts as damage you deal (Soulbinder, Lifesteal, Soul Beacon)
+    this.fxPush({ t: 'hit', s: src ? src.id : null, d: tgt.id, thorn: /^(Thorns|Spikes)$/.test(o.label || '') || undefined, dot: o.isDot ? (String(o.label || '').match(/Bleed|Poison|Burn|Dread|Rot|Chill/) || [''])[0].toLowerCase() || 'dot' : null, dtype: o.dtype || null, kind: o.kind || null, card: o.card || null, crit: !!(o.crit || (o.label && /crit!/.test(o.label))), lost: real, abs: absorbed, lbl: o.label || '' }); // Nov 1: damage over time counts as damage you deal (Soulbinder, Lifesteal, Soul Beacon)
     if (o.isDot) this.say('dot', `${tgt.isPlayer ? 'You take' : tgt.name + ' takes'} ${amount} ${o.label}` + (absorbed ? ` (${absorbed} absorbed)` : '') + `. HP ${tgt.hp}/${tgt.maxHp}.`);
     if (tgt.hp <= 0 && !o.defer) this.onDeath(tgt);
     return { lost: dmg, absorbed };

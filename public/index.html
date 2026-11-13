@@ -244,6 +244,7 @@ svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
 .tag.good { border-color: #47703a; color: #a8dc8f; }
 .intents { display: flex; flex-wrap: wrap; gap: 4px; min-height: 26px; }
 .intent { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: #2d1d17; border: 1px solid #6a3324; color: #ffbaa6; font-variant-numeric: tabular-nums; }
+.intent.aoe { background: #3a2410; border-color: #b8691f; color: #ffcf8a; } .intent svg { width: 15px !important; height: 15px !important; }
 .intent.defend { background: #172430; border-color: #35546d; color: #a9cdec; }
 .intent.debuff { background: #272033; border-color: #5a4a78; color: #cdb9f2; }
 .intent.buff { background: #2b2614; border-color: #6b5a26; color: #f0d58b; }
@@ -3544,7 +3545,7 @@ class Combat {
     if (tgt.isPlayer) { this.stats.taken += dmg; this.stats.blocked += absorbed; } else this.stats.dealt += dmg;
     if (o.isDot && src && src.isPlayer && src.hp > 0 && !tgt.isPlayer && real > 0) this.dotHeal(src, tgt, real);
     if (o.crit || (o.label && /crit!/.test(o.label))) tgt.critN = (tgt.critN || 0) + 1; // the screen shows this hit's number in red
-    this.fxPush({ t: 'hit', s: src ? src.id : null, d: tgt.id, dot: o.isDot ? (String(o.label || '').match(/Bleed|Poison|Burn|Dread|Rot|Chill/) || [''])[0].toLowerCase() || 'dot' : null, dtype: o.dtype || null, kind: o.kind || null, card: o.card || null, crit: !!(o.crit || (o.label && /crit!/.test(o.label))), lost: real, abs: absorbed, lbl: o.label || '' }); // Nov 1: damage over time counts as damage you deal (Soulbinder, Lifesteal, Soul Beacon)
+    this.fxPush({ t: 'hit', s: src ? src.id : null, d: tgt.id, thorn: /^(Thorns|Spikes)$/.test(o.label || '') || undefined, dot: o.isDot ? (String(o.label || '').match(/Bleed|Poison|Burn|Dread|Rot|Chill/) || [''])[0].toLowerCase() || 'dot' : null, dtype: o.dtype || null, kind: o.kind || null, card: o.card || null, crit: !!(o.crit || (o.label && /crit!/.test(o.label))), lost: real, abs: absorbed, lbl: o.label || '' }); // Nov 1: damage over time counts as damage you deal (Soulbinder, Lifesteal, Soul Beacon)
     if (o.isDot) this.say('dot', `${tgt.isPlayer ? 'You take' : tgt.name + ' takes'} ${amount} ${o.label}` + (absorbed ? ` (${absorbed} absorbed)` : '') + `. HP ${tgt.hp}/${tgt.maxHp}.`);
     if (tgt.hp <= 0 && !o.defer) this.onDeath(tgt);
     return { lost: dmg, absorbed };
@@ -5495,7 +5496,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   const RC = { Codex: '#e0802a', White: 'var(--r-white)', Green: 'var(--r-green)', Blue: 'var(--r-blue)', Gold: 'var(--r-gold)', 'Purple (Epic)': 'var(--r-purple)', Status: 'var(--r-status)', Token: 'var(--muted)' };
   const CC = { Warrior: '#c9472f', Rogue: '#64b25b', Mage: '#4f93e6', Paladin: '#e4a93a', Warlock: '#a77be0' };
   const ICON = {
-    attack: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 14l1.2-3.6L11 2.6 13.4 5 5.6 12.8z"/><path d="M10 1.5h4.5V6z"/></svg>',
+    attack: '<svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M6 4.5a5.5 5.5 0 1 0 5.5 5.5h-1.8A3.7 3.7 0 1 1 6 6.3z"/><circle cx="6" cy="10" r="1.5"/><path d="M6.6 8.2L12.2 2.6l1.2 1.2L7.8 9.4z"/><path d="M11.2 1h3.8v3.8z"/></svg>',
+    /* Nov 13: two attack pictures. attack = one target (a blade driven into a target ring); aoe = everyone (a burst) */
+    aoe: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0l1.6 4 3.3-2.6-1 4.1L16 6l-3.4 2.4L15.5 12l-4.2-.6L11 16l-3-3.2L5 16l-.3-4.6-4.2.6L3.4 8.4 0 6l4.1-.5-1-4.1L6.4 4z"/><circle cx="8" cy="8.3" r="2.1" fill="#3a2410"/></svg>',
     defend: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l6 2.2v4.3c0 3.6-2.6 6.3-6 7.5C4.6 13.8 2 11.1 2 7.5V3.2z"/></svg>',
     debuff: '<svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="6"/><rect x="4" y="7" width="8" height="2" fill="#272033"/></svg>',
     buff: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l2 5h5l-4 3 1.5 5L8 11l-4.5 3L5 9 1 6h5z"/></svg>',
@@ -7515,8 +7518,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794612985837';
-  const CB_BUILD = '7977de048d'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794613056548';
+  const CB_BUILD = '9826275f02'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8622,6 +8625,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Interface', "Enemy intents have two attack pictures now: a blade in a target ring for an attack on one target, and an orange burst for an attack that hits everyone."],
       ['Change', "Thorns striking back no longer make a sound."],
       ['Interface', "The glow on the banded and skull loot chests sits on the line where the lid opens; on the skull chest it breaks behind the skull."],
       ['Interface', "Searching the route map now turns the whole map dark and colourless, and the nodes that match stay bright and in colour."],
@@ -11774,7 +11778,7 @@ window.CB_AUDIO = (function () {
   }
   // fight effects (src/fx.js add(kind...)) -> sounds
   const FXS = { slash: 'swing', slash2: 'swing', combo: 'swing', dash: 'swing', rising: 'swing', heavy: 'swing', spin: 'swing', pierce: 'swing', thrust: 'swing', blunt: 'hit', hitstar: 'hit', claw: 'bite', claw2: 'bite', bite: 'bite',
-    fire: 'fire', fire2: 'fire', meteor: 'meteor', frost: 'frost', ice2: 'frost', icespikes: 'frost', shadow: 'shadow', snare: 'shadow', bats: 'shadow', arcane: 'arcane', zap: 'arcane', lightning: 'lightning', nature: 'nature', vines: 'nature', earth: 'nature', /* Nov 13: thorns striking back make no sound (was thorns2: 'nature') */
+    fire: 'fire', fire2: 'fire', meteor: 'meteor', frost: 'frost', ice2: 'frost', icespikes: 'frost', shadow: 'shadow', snare: 'shadow', bats: 'shadow', arcane: 'arcane', zap: 'arcane', lightning: 'lightning', nature: 'nature', vines: 'nature', earth: 'nature', thorns2: 'nature',
     holy: 'holy', smite: 'holy', crit: 'crit', clank: 'block', block: 'block', whoosh: 'dodge', shimmer: 'block', heal: 'heal', bolt: 'cast', aura: 'cast', smoke: 'cast', stun: 'stun', buff: 'buff', aura2: 'buff', debuff: 'debuff', drain: 'debuff', poof: 'mdeath', summon: 'summon' };
   function fx(kind, delay) { const k = FXS[kind]; if (k) sfx(k, k === 'hit' ? .8 : 1, delay); }
   function scene(which, cb) {
@@ -12009,14 +12013,14 @@ window.CB_AUDIO = (function () {
             const how = tgt.isPlayer ? DEF_FX[tgt.cls] : 'block';
             if (how === 'dodge') { if (F) F.play(e.d, 'dodge'); add('whoosh', { id: e.d, side: -side }, delay); }
             else if (how === 'barrier' || how === 'absorb') { add('shimmer', { id: e.d, col: how === 'barrier' ? 'ward' : 'absorb' }, delay); if (F) F.play(e.d, 'guard'); }
-            else { add('clank', { id: e.d, side }, delay); if (F && tgt.isPlayer) F.play(e.d, how === 'parry' ? 'parry' : 'guard'); else if (F) F.play(e.d, 'ehit'); }
+            else { add('clank', { id: e.d, side, snd: e.thorn ? 'mute' : null }, delay); if (F && tgt.isPlayer) F.play(e.d, how === 'parry' ? 'parry' : 'guard'); else if (F) F.play(e.d, 'ehit'); }
             continue;
           }
           // the impact: by element, else by the weapon (heroes) or the creature (monsters)
           let fx = ELEM(e.dtype);
           if (!fx) { if (src && src.isPlayer) fx = e.kind === 'Skill' ? 'blunt' : (F ? F.weaponKind(src) : 'slash'); else fx = src && /beast|Beast/.test(src.creature || '') ? 'claw' : 'slash'; }
           const big = !!e.crit || e.lost >= tgt.maxHp * 0.2;
-          add(fx, { id: e.d, ang: -2.4 + (i - 1) * 0.9 * (i % 2 ? 1 : -1), big, side, seed: Math.random() * 1e9 }, delay);
+          add(fx, { id: e.d, ang: -2.4 + (i - 1) * 0.9 * (i % 2 ? 1 : -1), big, side, seed: Math.random() * 1e9, snd: e.thorn ? 'mute' : null }, delay);   /* Nov 13: Thorns and Spikes striking back are silent */
           if (e.crit) { add('crit', { id: e.d }, delay); setTimeout(() => { const st = document.querySelector('#scrCombat .stage') || document.getElementById('scrCombat'); if (st) { st.classList.remove('fxshake'); void st.offsetWidth; st.classList.add('fxshake'); } }, delay); }
           if (F) setTimeout(() => F.play(e.d, tgt.isPlayer ? (big ? 'knock' : 'hit') : (big ? 'eknock' : 'ehit')), delay);
           setTimeout(() => { const u = document.querySelector(`#scrCombat .unit[data-id="${e.d}"]`), st = document.querySelector('#scrCombat .stage') || document.getElementById('scrCombat'); if (u) { u.classList.remove('hitflash'); void u.offsetWidth; u.classList.add('hitflash'); setTimeout(() => u.classList.remove('hitflash'), 140); } if (big && st) { st.classList.remove('fxpunch'); void st.offsetWidth; st.classList.add('fxpunch'); setTimeout(() => st.classList.remove('fxpunch'), 260); if (window.CB_HEROPUP && CB_HEROPUP.hold) CB_HEROPUP.hold(e.crit ? 110 : 70); } }, delay); // impact: a white flash on whoever is struck; a big hit also holds the fight still for an instant and punches the camera
@@ -15983,7 +15987,8 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       else if (blk) num = blk.n;
       const mk = planned && c.mark && cb.partySize > 1 ? cb.actorById(c.mark) : null;
       const tg = mk ? `<span class="itgt" style="color:${CC[mk.cls]}">&rarr; ${mk === hero() && cb.myMi != null ? 'You' : esc(mk.name.split(' ')[0])}</span>` : '';
-      return `<span class="intent ${kind}${planned ? '' : ' skip'}" data-e="${e.id}" data-cu="${c.uid}" title="${esc(c.name)} (${c.cost} mana): ${esc(c.text)}${c.dtype !== 'Physical' && dmg ? ' [' + c.dtype + ']' : ''}${mk ? ' Aimed at ' + esc(mk.name) + '.' : ''}${planned ? '' : ' (not enough mana: discarded)'}">${ICON[kind]}${num !== '' ? num : esc(c.name)}${tg}</span>`;
+      const aoe = kind === 'attack' && !!dmg && (c.ops.some(o => (o.op === 'damage' || o.op === 'execute') && o.all) || /every (player|hero|one)|everyone|all (players|heroes|enemies)|each (player|hero)/i.test(c.text || ''));
+      return `<span class="intent ${kind}${aoe ? ' aoe' : ''}${planned ? '' : ' skip'}" data-e="${e.id}" data-cu="${c.uid}" title="${aoe ? 'Hits everyone. ' : kind === 'attack' ? 'Hits one target. ' : ''}${esc(c.name)} (${c.cost} mana): ${esc(c.text)}${c.dtype !== 'Physical' && dmg ? ' [' + c.dtype + ']' : ''}${mk ? ' Aimed at ' + esc(mk.name) + '.' : ''}${planned ? '' : ' (not enough mana: discarded)'}">${ICON[aoe ? 'aoe' : kind]}${num !== '' ? num : esc(c.name)}${tg}</span>`;
     }).join('') || '<span class="tag">no cards</span>';
   }
   // party fights: shorter status tags (full text on hover)
