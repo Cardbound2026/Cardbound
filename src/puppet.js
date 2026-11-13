@@ -109,7 +109,7 @@ window.CB_PUPPET = (function () {
     const b = (Math.sin(p * TAU) + 1) / 2, breathe = (k) => { q[1].dy = -b * .9 * k; q[2].dy = q[4].dy = -b * .6 * k; q[0].sy = 1 + b * .012 * k; };
     if (anim === 'idle') { breathe(1); if (side) { q[2].r = .03 * s; q[4].r = -.03 * s; } return P; }
     const ready = (k) => { if (!side) return; q[2].r += -.45 * k; q[3].r += -.75 * k; P.wr += .55 * k; q[6].r += -.2 * k; q[7].r += .16 * k; q[8].r += .2 * k; q[9].r += .1 * k; q[0].r += .04 * k; P.dy += 1.2 * k; };   // the fighting stance
-    if (anim === 'sit') { breathe(1); if (side) { q[6].r = -.8; q[7].r = 1.05; q[8].r = -.8; q[9].r = 1.05; q[8].sy = q[9].sy = 0; q[2].r = -.45; q[3].r = -.8; q[0].r = .05; } else { q[6].r = .55; q[8].r = -.55; q[7].r = -.35; q[9].r = .35; q[6].sy = q[8].sy = .8; q[7].sy = q[9].sy = .8; } return P; }   // riding
+    if (anim === 'sit') { breathe(1); if (side) { q[6].r = -.8; q[7].r = 1.05; q[8].r = -.8; q[9].r = 1.05; q[8].sy = q[9].sy = 0; q[2].r = -.45; q[3].r = -.8; q[0].r = .05; } else { q[6].r = .85; q[8].r = -.85; q[7].r = -.75; q[9].r = .75; q[6].sy = q[8].sy = .78; q[7].sy = q[9].sy = .85; } return P; }   // riding
     if (anim === 'ready') { breathe(1); ready(1); q[2].r += .03 * s; return P; }
     // the fight moves play once, in the side view: p runs 0..1
     const A = side ? 2 : 4, F = side ? 3 : 5;   // the acting arm (near arm in the side view)

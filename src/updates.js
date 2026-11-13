@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Art', "Riding away from the camera, your legs show astride the mount, one down each flank."],
+      ['Interface', "Clicking a bag item shows just its card with Equip, Salvage and Close on it, with no window frame behind."],
       ['Interface', "In town the black top bar is gone: the Cardbound logo sits in the middle, Menu at the right, and the Emberwatch label and walking guide are removed."],
       ['Art', "Start screen: the castle is redrawn smooth at high resolution, the logo is polished black with firelight on it, and the two extra lines of text are gone."],
       ['Art', "The fire map's route screen has a plain ash ground with a few burning patches, in place of the busy cracked rock."],
