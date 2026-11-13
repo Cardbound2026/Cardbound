@@ -79,16 +79,17 @@
     g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, 15 * s, 5 * s, 0, 0, Math.PI * 2); g.fill(); g.restore();
     return P.draw(g, L, v, step ? 'walk' : 'idle', t + (hash(L.body + L.hair) % 1500), cx, by + 2 * s, 96 * s / 118);
   }
-  // ---------- riding: the pixel horse (img/hero/horse: one row seen from the side; the first cell stands, the next six walk).
-  // A rider always shows from the side: riding up or down the screen keeps the way they last faced.
-  const HORSE = { cell: 136, frames: 6, k: 1.3, foot: 110, saddle: [-14, -63], hip: 61 }, FACE = new Map();   // saddle: from the horse's feet, in horse pixels; hip: a hero's hip above its feet
+  // ---------- riding: the pixel horse (img/hero/horse: rows facing the camera, sideways and away; the first cell stands, the next six walk)
+  // seat: where the rider's hips go, from the middle of the horse's feet, in horse pixels; hip: a hero's hips above its feet
+  const HORSE = { cell: 128, frames: 6, k: 1.3, hip: 61, s: { row: 0, foot: 108, seat: [1, -70] }, e: { row: 1, foot: 108, seat: [-8, -50] }, n: { row: 2, foot: 119, seat: [1, -68] } };
   function ride(g, look, key, cx, by, dir, moving, s, t) {
-    const im = P.img('horse'); if (!im || !P.ready(look, 'e')) return false;
-    if (dir === 'left' || dir === 'right') FACE.set(key, dir); const left = (FACE.get(key) || 'right') === 'left', f = left ? -1 : 1;
-    const fr = moving ? 1 + Math.floor(t / 105) % HORSE.frames : 0, k = HORSE.k * s, C = HORSE.cell, bob = moving ? Math.round(Math.sin(t / 105 * Math.PI) * 1.2 * s) : 0, sc = 96 * s / 118;
-    g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, 36 * s, 7 * s, 0, 0, Math.PI * 2); g.fill();
-    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.translate(cx, by); if (left) g.scale(-1, 1); g.drawImage(im, fr * C, 0, C, C, -C / 2 * k, -HORSE.foot * k, C * k, C * k); g.restore();
-    return P.draw(g, look, left ? 'w' : 'e', 'sit', t, cx + HORSE.saddle[0] * k * f, by + HORSE.saddle[1] * k + HORSE.hip * sc + bob + 3 * s, sc);
+    const im = P.img('horse'), v = DIRS[dir] || 's', hv = v === 'w' ? 'e' : v, H = HORSE[hv]; if (!im || !P.ready(look, v)) return false;
+    const f = v === 'w' ? -1 : 1, fr = moving ? 1 + Math.floor(t / 105) % HORSE.frames : 0, k = HORSE.k * s, C = HORSE.cell, bob = moving ? Math.round(Math.sin(t / 105 * Math.PI) * 1.2 * s) : 0, sc = 96 * s / 118;
+    g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, (hv === 'e' ? 40 : 20) * s, 7 * s, 0, 0, Math.PI * 2); g.fill(); g.restore();
+    const horse = () => { g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.translate(cx, by); if (f < 0) g.scale(-1, 1); g.drawImage(im, fr * C, H.row * C, C, C, -C / 2 * k, -H.foot * k, C * k, C * k); g.restore(); };
+    const hipY = by + H.seat[1] * k + bob, rider = (clip) => { g.save(); if (clip) { g.beginPath(); g.rect(cx - 90 * s, hipY - 200 * s, 180 * s, 200 * s + 8 * sc); g.clip(); } P.draw(g, look, v, 'sit', t, cx + H.seat[0] * k * f, hipY + HORSE.hip * sc + 3 * s, sc); g.restore(); };
+    if (hv === 's') { rider(false); horse(); } else if (hv === 'n') { horse(); rider(true); } else { horse(); rider(false); }
+    return true;
   }
   // ---------- the appearance picker (character creation, and the mirror in the hero window)
   const NAMES = { skin: ['Fair', 'Light', 'Tan', 'Brown', 'Dark', 'Deep'], eyes: ['Round', 'Narrow', 'Wide', 'Lashes', 'Stern'], mouth: ['Plain', 'Full', 'Smirk', 'Small'],
