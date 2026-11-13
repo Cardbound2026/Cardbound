@@ -70,6 +70,7 @@
     #actbar button kbd { position: absolute; right: 2px; bottom: 1px; font: 600 10px/1 sans-serif; color: #f4d89a; text-shadow: 0 1px 0 #000; }
     #actbar button::after { content: attr(data-tip); position: absolute; bottom: 52px; right: 0; white-space: nowrap; background: #0b0a08; border: 1px solid #5a4a2e; color: #efe6d2; font-size: 13px; padding: 3px 8px; border-radius: 3px; opacity: 0; pointer-events: none; transition: opacity .12s; }
     #actbar button:hover::after { opacity: 1; }
+    #actbar button .abadge { position: absolute; left: 1px; top: 1px; min-width: 15px; height: 15px; border-radius: 8px; background: #b3261e; color: #fff; font: 700 10px/15px sans-serif; text-align: center; padding: 0 3px; box-shadow: 0 0 0 1px #000; }
     .petfig { position: absolute; left: -34%; bottom: 4%; height: 34%; scale: -1 1; image-rendering: pixelated; pointer-events: none; filter: drop-shadow(0 2px 0 rgba(0,0,0,.5)); animation: petbob 1.6s ease-in-out infinite; z-index: 1; }
     @keyframes petbob { 50% { transform: translateY(-4%); } }
     .bankbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 8px; } .bankbar input[type=search] { flex: 1; min-width: 180px; }
@@ -279,15 +280,15 @@
   function openShop() { if (!profile || !profile.chars[heroKey]) return; exMenu('shop'); }
   // ---------- the town's action bar (bottom right): every window one click away
   { const bar = document.createElement('div'); bar.id = 'actbar'; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Quick buttons');
-    const B = [['char', 'Character', 0, 'C'], ['bags', 'Bags', 1, 'B'], ['talents', 'Talents', 2, 'N'], ['deck', 'Deck and cards', 3, ''], ['compendium', 'Compendium', 4, ''], ['ach', 'Achievements', 5, ''], ['pvp', 'Arena (PvP)', 6, ''], ['lfg', 'Group finder', 7, 'L'], ['friends', 'Friends', 8, ''], ['shop', 'Skull Shop', 9, ''], ['mount', 'Mount up', 10, 'M'], ['menu', 'Menu', 11, 'Esc']];
-    bar.innerHTML = B.map(([k, n, i, key]) => `<button type="button" data-act="${k}" data-tip="${n}${key ? ' (' + key + ')' : ''}" aria-label="${n}"><i class="uic" style="background-position:${-(i % 6) * 36}px ${-Math.floor(i / 6) * 36}px"></i>${key && key.length === 1 ? `<kbd>${key}</kbd>` : ''}</button>`).join('');
+    const B = [['char', 'Character', 0, 'C'], ['bags', 'Bags', 1, 'B'], ['talents', 'Talents', 2, 'N'], ['deck', 'Deck and cards', 3, ''], ['compendium', 'Compendium', 4, ''], ['ach', 'Achievements', 5, ''], ['pvp', 'Arena (PvP)', 6, ''], ['lfg', 'Group finder', 7, 'L'], ['friends', 'Friends', 8, 'O'], ['guild', 'Guild', -1, 'G'], ['shop', 'Skull Shop', 9, ''], ['mount', 'Mount up', 10, 'M'], ['menu', 'Menu', 11, 'Esc']];
+    bar.innerHTML = B.map(([k, n, i, key]) => `<button type="button" data-act="${k}" data-tip="${n}${key ? ' (' + key + ')' : ''}" aria-label="${n}"><i class="uic" style="${i < 0 ? 'background:url(img/ui/guild.webp) center / 36px 36px no-repeat;image-rendering:pixelated' : `background-position:${-(i % 6) * 36}px ${-Math.floor(i / 6) * 36}px`}"></i>${key && key.length === 1 ? `<kbd>${key}</kbd>` : ''}</button>`).join('');
     $('scrStart').appendChild(bar);
     const act = (k) => { if (typeof closeTalk === 'function') closeTalk();
       if (k === 'char') { GT.tab = 'deck'; openSheet('char'); } else if (k === 'bags') { openSheet('char'); GT.tab = 'stash'; renderHub(); } else if (k === 'talents') openTalents(); else if (k === 'deck') openSheet('deck'); else if (k === 'compendium') openSheet('codex');
-      else if (k === 'ach') openAchievements(); else if (k === 'pvp') openSheet('arena'); else if (k === 'lfg') { if (typeof openLfg === 'function') openLfg(); } else if (k === 'friends') openSheet('friends'); else if (k === 'shop') openShop(); else if (k === 'mount') toggleMount(); else if (k === 'menu') openMenu(); };
+      else if (k === 'ach') openAchievements(); else if (k === 'pvp') openSheet('arena'); else if (k === 'lfg') { if (typeof openLfg === 'function') openLfg(); } else if (k === 'friends') openSheet('friends'); else if (k === 'guild') openSheet('guild'); else if (k === 'shop') openShop(); else if (k === 'mount') toggleMount(); else if (k === 'menu') openMenu(); };
     bar.addEventListener('click', (ev) => { const b = ev.target.closest('[data-act]'); if (b) { act(b.dataset.act); b.blur(); } });
     document.addEventListener('keydown', (ev) => { if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.target.matches('input, select, textarea') || $('scrStart').hidden || !$('modal').hidden || !$('sheet').hidden || (typeof $('talk') !== 'undefined' && $('talk') && !$('talk').hidden)) return;
-      if (ev.key === 'b' || ev.key === 'B') { ev.preventDefault(); act('bags'); } else if (ev.key === 'l' || ev.key === 'L') { ev.preventDefault(); act('lfg'); } });
+      if (ev.key === 'b' || ev.key === 'B') { ev.preventDefault(); act('bags'); } else if (ev.key === 'l' || ev.key === 'L') { ev.preventDefault(); act('lfg'); } else if (ev.key === 'o' || ev.key === 'O') { ev.preventDefault(); act('friends'); } });
   }
   // Nov 13: the talent trees changed (new talents at the bottom of every tree), so every hero gets all their picks back once
   function exTalentRefund() { if (!profile || profile.talV >= 2) return; let n = 0; for (const c of Object.values(profile.chars || {})) for (const st of Object.values(c.codexes || {})) if (st.picks && st.picks.some(x => x != null)) { st.picks = []; n++; } profile.talV = 2; save();

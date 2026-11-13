@@ -26,7 +26,7 @@ window.CB_AUDIO = (function () {
   // fight effects (src/fx.js add(kind...)) -> sounds
   const FXS = { slash: 'swing', slash2: 'swing', combo: 'swing', dash: 'swing', rising: 'swing', heavy: 'swing', spin: 'swing', pierce: 'swing', thrust: 'swing', blunt: 'hit', hitstar: 'hit', claw: 'bite', claw2: 'bite', bite: 'bite',
     fire: 'fire', fire2: 'fire', meteor: 'meteor', frost: 'frost', ice2: 'frost', icespikes: 'frost', shadow: 'shadow', snare: 'shadow', bats: 'shadow', arcane: 'arcane', zap: 'arcane', lightning: 'lightning', nature: 'nature', vines: 'nature', earth: 'nature', thorns2: 'nature',
-    holy: 'holy', smite: 'holy', crit: 'crit', clank: 'block', block: 'block', shimmer: 'block', heal: 'heal', bolt: 'cast', aura: 'cast', smoke: 'cast', stun: 'stun', buff: 'buff', aura2: 'buff', debuff: 'debuff', drain: 'debuff', poof: 'mdeath', summon: 'summon' };
+    holy: 'holy', smite: 'holy', crit: 'crit', clank: 'block', block: 'block', whoosh: 'swing', shimmer: 'block', heal: 'heal', bolt: 'cast', aura: 'cast', smoke: 'cast', stun: 'stun', buff: 'buff', aura2: 'buff', debuff: 'debuff', drain: 'debuff', poof: 'mdeath', summon: 'summon' };
   function fx(kind, delay) { const k = FXS[kind]; if (k) sfx(k, k === 'hit' ? .8 : 1, delay); }
   function scene(which, cb) {
     if (which === 'title') music('title'); else if (which === 'start') music('town'); else if (which === 'map') music('road');

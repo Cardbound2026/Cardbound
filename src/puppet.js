@@ -109,7 +109,7 @@ window.CB_PUPPET = (function () {
     const b = (Math.sin(p * TAU) + 1) / 2, breathe = (k) => { q[1].dy = -b * .9 * k; q[2].dy = q[4].dy = -b * .6 * k; q[0].sy = 1 + b * .012 * k; };
     if (anim === 'idle') { breathe(1); if (side) { q[2].r = .03 * s; q[4].r = -.03 * s; } return P; }
     const ready = (k) => { if (!side) return; q[2].r += -.45 * k; q[3].r += -.75 * k; P.wr += .55 * k; q[6].r += -.2 * k; q[7].r += .16 * k; q[8].r += .2 * k; q[9].r += .1 * k; q[0].r += .04 * k; P.dy += 1.2 * k; };   // the fighting stance
-    if (anim === 'sit') { breathe(1); if (side) { q[6].r = -1.15; q[7].r = 1.3; q[8].r = -1.15; q[9].r = 1.3; q[8].sy = q[9].sy = 0; q[2].r = -.55; q[3].r = -.75; q[0].r = .07; } else { q[6].sy = q[8].sy = .55; q[7].sy = q[9].sy = .7; } return P; }   // riding
+    if (anim === 'sit') { breathe(1); if (side) { q[6].r = -.8; q[7].r = 1.05; q[8].r = -.8; q[9].r = 1.05; q[8].sy = q[9].sy = 0; q[2].r = -.45; q[3].r = -.8; q[0].r = .05; } else { q[6].r = .55; q[8].r = -.55; q[7].r = -.35; q[9].r = .35; q[6].sy = q[8].sy = .8; q[7].sy = q[9].sy = .8; } return P; }   // riding
     if (anim === 'ready') { breathe(1); ready(1); q[2].r += .03 * s; return P; }
     // the fight moves play once, in the side view: p runs 0..1
     const A = side ? 2 : 4, F = side ? 3 : 5;   // the acting arm (near arm in the side view)
@@ -163,6 +163,7 @@ window.CB_PUPPET = (function () {
   // parts are drawn enlarged (each art pixel a block of q x q) and the result shrunk to size, so a turned limb gets clean edges instead of jagged ones
   const WORK = {}, workFor = (q) => WORK[q] || (WORK[q] = (() => { const c = canvas(S * 2 * q, S * 2 * q); return { c, g: c.getContext('2d') }; })());
   function chain(g, B, P, i) { if (PAR[i] >= 0) chain(g, B, P, PAR[i]); const a = P.parts[i], pv = B.piv[i]; g.translate(pv[0] + a.dx, pv[1] + a.dy); if (a.r) g.rotate(a.r); if (a.sy !== 1) g.scale(1, a.sy); g.translate(-pv[0], -pv[1]); }
+  const GRIPR = 3.6;
   function draw(g, look, view, anim, t, x, footY, scale) {
     const flip = view === 'w', v = flip ? 'e' : view, B = D.bodies[look.body] && D.bodies[look.body][v]; if (!B) return false;
     const COS = window.CB_COS; if (COS && look.cos) { const ws = COS.weapon(look); if (ws && W && W.types.includes('legend')) look = Object.assign({}, look, { weapon: ws }); }
@@ -174,7 +175,10 @@ window.CB_PUPPET = (function () {
     const base = () => wg.setTransform(q, 0, 0, q, (S / 2 + Math.round(P.dx)) * q, (S / 2 + Math.round(P.dy)) * q), wim = (look.weapon || look.off) && W ? img('weapons') : null, cl = cloak(look, v);
     const held = (it, part, hand, rot, at) => {   // a weapon or shield: its grip on the hand, turned with the arm
       if (!it || !wim) return; const ti = W.types.indexOf(it[0]), gp = W.grip[it[0]] && W.grip[it[0]][it[1]]; if (ti < 0 || !gp) return;
-      base(); chain(wg, B, P, part); wg.translate(at ? at[0] : B.hand[hand][0], at ? at[1] : B.hand[hand][1]); wg.rotate(rot); wg.drawImage(wim, it[1] * W.cw, ti * W.ch, W.cw, W.ch, -Math.round(gp[0]), -Math.round(gp[1]), W.cw, W.ch);
+      base(); chain(wg, B, P, part); wg.translate(at ? at[0] : B.hand[hand][0], at ? at[1] : B.hand[hand][1]); wg.rotate(rot); wg.drawImage(wim, it[1] * W.cw, ti * W.ch, W.cw, W.ch, -Math.round(gp[0]), -Math.round(gp[1]) + (HELD[it[0]] || LONG[it[0]] || at ? 0 : 2), W.cw, W.ch);
+      // Nov 13: the fist closes over the handle. The weapon is drawn on the hand, then the hand itself is drawn again on top of it,
+      // so fingers wrap the grip instead of the weapon floating in front of an open hand
+      if (!at && !HELD[it[0]]) { wg.save(); base(); chain(wg, B, P, part); wg.beginPath(); wg.arc(B.hand[hand][0], B.hand[hand][1], GRIPR, 0, 7); wg.clip(); wg.drawImage(strip, part * S, 0, S, S, 0, 0, S, S); wg.restore(); }
     };
     const wrot = (it, d) => (HELD[it[0]] ? 0 : LONG[it[0]] || (it[0] === 'legend' && (it[1] === 2 || it[1] === 5)) ? .18 * d : 1.15 * d), mainPart = v === 'n' ? 5 : 3, offPart = v === 'n' ? 3 : 5;
     if (cl && v !== 'n') { base(); chain(wg, B, P, 0); wg.drawImage(cl, 0, 0); }

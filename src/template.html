@@ -1207,13 +1207,13 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
 
   <!-- CAMP: the town overworld -->
   <section id="scrStart" class="camp" aria-label="Town">
-    <div class="townbar"><span id="tbHero"></span><span class="chip" id="tbPower"></span><span class="chip" id="tbGold"></span><button class="pilebtn" id="tbShop" hidden title="Set up your Bazaar shop">Set up shop</button><button class="pilebtn" id="tbChar" title="Your hero's gear and stats (C)">Character <span class="muted">C</span></button><button class="pilebtn" id="tbFriends" hidden>Friends</button><span id="acct"></span><span class="muted tbhelp">Walk: arrow keys or WASD, or click/tap where to go. Talk: Space, or click someone. Ride: M.</span></div>
+    <div class="townbar"><span id="tbHero"></span><span class="chip" id="tbPower"></span><span class="chip" id="tbGold"></span><button class="pilebtn" id="tbShop" hidden title="Set up your Bazaar shop">Set up shop</button><button class="pilebtn" id="tbChar" hidden style="display:none"></button><button class="pilebtn" id="tbFriends" hidden style="display:none"></button><span id="acct"></span><span class="muted tbhelp">Walk: arrow keys or WASD, or click/tap where to go. Talk: Space, or click someone. Ride: M.</span></div>
     <div class="townwrap" id="townWrap">
       <div class="cxbarrow" id="tbCodex"></div>
       <canvas id="town" tabindex="0" aria-label="The town of Emberwatch. Walk to the quartermaster, scribe, chronicler, wagoneer or captain and talk to them."></canvas>
       <div class="prompt" id="prompt" hidden></div>
       <div class="talk" id="talk" hidden role="dialog" aria-live="polite"></div>
-      <div class="chatbox" id="chatBox"><div class="chatlog" id="chatLog" aria-live="polite"></div><input id="chatIn" maxlength="200" placeholder="Press T to chat, Enter to send" autocomplete="off" aria-label="Chat message"></div>
+      <div class="chatbox" id="chatBox"><div class="chatlog" id="chatLog" aria-live="polite"></div><input id="chatIn" maxlength="200" placeholder="Press Enter to chat, Enter again to send" autocomplete="off" aria-label="Chat message"></div>
       <div class="partypanel" id="partyPanel" hidden></div>
     </div>
   </section>
@@ -2336,8 +2336,8 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     if (!$('modal').hidden) return;
     const d = KEYDIR[ev.key];
     if (d) { ev.preventDefault(); P.path = []; P.target = null; P.talkTo = null; if (!P.held.includes(d)) P.held.push(d); if (!P.mv && P.dir !== d && !free(P.x + DIRS[d][0], P.y + DIRS[d][1])) P.dir = d; return; }
-    if (ev.key === ' ' || ev.key === 'Enter' || ev.key === 'e' || ev.key === 'E') { ev.preventDefault(); const n = interactTarget(); if (n) talk(n); }
-    if (ev.key === 't' || ev.key === 'T') { ev.preventDefault(); P.held = []; $('chatIn').focus(); }
+    if (ev.key === ' ' || ev.key === 'e' || ev.key === 'E') { ev.preventDefault(); const n = interactTarget(); if (n) talk(n); }
+    if (ev.key === 'Enter') { ev.preventDefault(); P.held = []; $('chatIn').focus(); }   // Nov 13: Enter opens the chat box (it was T); Space or E talks to people
     if ((ev.key === 'c' || ev.key === 'C') && !ev.ctrlKey && !ev.metaKey) { ev.preventDefault(); P.held = []; closeTalk(); openSheet('char'); }
     if ((ev.key === 'm' || ev.key === 'M') && !ev.ctrlKey && !ev.metaKey && !ev.altKey) { ev.preventDefault(); toggleMount(); }
   });
@@ -2410,7 +2410,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   $('sheetClose').addEventListener('click', closeSheet);
   $('sheet').addEventListener('click', (ev) => { if (ev.target === $('sheet')) closeSheet(); });
   $('chatIn').addEventListener('keydown', (ev) => {
-    if (ev.key === 'Enter') { sendChat(ev.target.value); ev.target.value = ''; }
+    if (ev.key === 'Enter') { sendChat(ev.target.value); ev.target.value = ''; ev.target.blur(); cv.focus({ preventScroll: true }); }   // Nov 13: Enter opens the box, Enter again sends and goes back to the game
     if (ev.key === 'Escape') { ev.cbHandled = true; ev.target.blur(); cv.focus({ preventScroll: true }); }
     ev.stopPropagation();
   });

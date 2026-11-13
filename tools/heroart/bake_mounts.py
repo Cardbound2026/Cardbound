@@ -15,7 +15,7 @@ for f in sorted(glob.glob(HERE + '/mounts/*.png')):
         if v == 'e':
             x0, x1 = xs.min(), xs.max(); mid = m[:, int(x0 + (x1 - x0) * .32):int(x0 + (x1 - x0) * .58)]; back = int(np.median([np.nonzero(col)[0].min() for col in mid.T if col.any()]))
             seat = [int((x0 + (x1 - x0) * .44) - 64), -(foot - back - 23)]
-        elif v == 's': seat = [int(np.nonzero(m)[1].mean() - 64), -(foot - top - 20)]
+        elif v == 's': seat = [int(np.nonzero(m)[1].mean() - 64), -(foot - top - (13 if k in ('bear', 'boar', 'wolf', 'slug', 'panther') else 20))]
         else: seat = [int(np.nonzero(m)[1].mean() - 64), -(foot - top - 43)]
         if k in SEAT and v in SEAT[k]: seat = SEAT[k][v]
         d[v] = {'row': r, 'foot': foot, 'seat': seat}

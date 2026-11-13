@@ -222,7 +222,7 @@
     el.innerHTML = SOC.chat.map((m, i) => { if (m.sys) return `<div class="sys">${esc(m.text)}</div>`; const [tag, cls] = CHAN[m.ch] || CHAN.world;
       const who = m.ch === 'whisper' ? (m.mine ? `To ${esc(m.toName || '?')}` : `From ${esc(m.name)}`) : esc(m.name);
       let body = esc(m.text); (m.items || []).forEach((l, j) => { if (!l || !l.it || !l.tok) return; const r = l.it.kind === 'card' ? (CARDS[l.it.key] || {}).rarity : l.it.rarity; body = body.split(esc(l.tok)).join(`<a class="ilink" data-chatlink="${i}:${j}" style="color:${RC[r] || 'var(--accent)'}" role="button" tabindex="0">${esc(l.tok)}</a>`); });
-      return `<div class="${cls}">${tag}<b>${who}:</b> ${body}</div>`; }).join('') || `<div class="sys">${socOn() ? 'World chat. Say hello. Press T to type, /help for channels.' : 'Sign in to see other players and chat.'}</div>`;
+      return `<div class="${cls}">${tag}<b>${who}:</b> ${body}</div>`; }).join('') || `<div class="sys">${socOn() ? 'World chat. Say hello. Press Enter to type, /help for channels.' : 'Sign in to see other players and chat.'}</div>`;
     el.scrollTop = el.scrollHeight;
   }
 
@@ -345,7 +345,8 @@
   function placeText(st) { return !st ? 'Offline' : st.where ? st.where : st.place === 'town' ? 'In Emberwatch' : st.place === 'run' ? 'On the March' : st.place === 'duel' ? 'In a duel' : 'Online'; }
   function renderSocial() {
     const nOn = SOC.friends.filter(f => SOC.online.has(f.id)).length;
-    if ($('tbFriends')) { $('tbFriends').hidden = !supa; $('tbFriends').innerHTML = `Friends${SOC.requestsIn.length ? ` <b class="badge">${SOC.requestsIn.length}</b>` : ''} <span class="muted">${socOn() ? nOn + ' online' : 'sign in'}</span>`; }
+    { const fb = document.querySelector('#actbar [data-act="friends"]'); if (fb) { let bd = fb.querySelector('.abadge'); if (SOC.requestsIn.length) { if (!bd) { bd = document.createElement('span'); bd.className = 'abadge'; fb.appendChild(bd); } bd.textContent = SOC.requestsIn.length; } else if (bd) bd.remove(); fb.dataset.tip = 'Friends' + (socOn() ? ': ' + nOn + ' online' : '') + ' (O)'; } }   // Nov 13: the Friends button lives on the bottom bar now
+    if ($('tbFriends')) { $('tbFriends').hidden = true; $('tbFriends').innerHTML = `Friends${SOC.requestsIn.length ? ` <b class="badge">${SOC.requestsIn.length}</b>` : ''} <span class="muted">${socOn() ? nOn + ' online' : 'sign in'}</span>`; }
     // party panel
     const pp = $('partyPanel');
     if (pp) {

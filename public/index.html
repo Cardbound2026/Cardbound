@@ -1214,13 +1214,13 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
 
   <!-- CAMP: the town overworld -->
   <section id="scrStart" class="camp" aria-label="Town">
-    <div class="townbar"><span id="tbHero"></span><span class="chip" id="tbPower"></span><span class="chip" id="tbGold"></span><button class="pilebtn" id="tbShop" hidden title="Set up your Bazaar shop">Set up shop</button><button class="pilebtn" id="tbChar" title="Your hero's gear and stats (C)">Character <span class="muted">C</span></button><button class="pilebtn" id="tbFriends" hidden>Friends</button><span id="acct"></span><span class="muted tbhelp">Walk: arrow keys or WASD, or click/tap where to go. Talk: Space, or click someone. Ride: M.</span></div>
+    <div class="townbar"><span id="tbHero"></span><span class="chip" id="tbPower"></span><span class="chip" id="tbGold"></span><button class="pilebtn" id="tbShop" hidden title="Set up your Bazaar shop">Set up shop</button><button class="pilebtn" id="tbChar" hidden style="display:none"></button><button class="pilebtn" id="tbFriends" hidden style="display:none"></button><span id="acct"></span><span class="muted tbhelp">Walk: arrow keys or WASD, or click/tap where to go. Talk: Space, or click someone. Ride: M.</span></div>
     <div class="townwrap" id="townWrap">
       <div class="cxbarrow" id="tbCodex"></div>
       <canvas id="town" tabindex="0" aria-label="The town of Emberwatch. Walk to the quartermaster, scribe, chronicler, wagoneer or captain and talk to them."></canvas>
       <div class="prompt" id="prompt" hidden></div>
       <div class="talk" id="talk" hidden role="dialog" aria-live="polite"></div>
-      <div class="chatbox" id="chatBox"><div class="chatlog" id="chatLog" aria-live="polite"></div><input id="chatIn" maxlength="200" placeholder="Press T to chat, Enter to send" autocomplete="off" aria-label="Chat message"></div>
+      <div class="chatbox" id="chatBox"><div class="chatlog" id="chatLog" aria-live="polite"></div><input id="chatIn" maxlength="200" placeholder="Press Enter to chat, Enter again to send" autocomplete="off" aria-label="Chat message"></div>
       <div class="partypanel" id="partyPanel" hidden></div>
     </div>
   </section>
@@ -6717,8 +6717,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     if (!$('modal').hidden) return;
     const d = KEYDIR[ev.key];
     if (d) { ev.preventDefault(); P.path = []; P.target = null; P.talkTo = null; if (!P.held.includes(d)) P.held.push(d); if (!P.mv && P.dir !== d && !free(P.x + DIRS[d][0], P.y + DIRS[d][1])) P.dir = d; return; }
-    if (ev.key === ' ' || ev.key === 'Enter' || ev.key === 'e' || ev.key === 'E') { ev.preventDefault(); const n = interactTarget(); if (n) talk(n); }
-    if (ev.key === 't' || ev.key === 'T') { ev.preventDefault(); P.held = []; $('chatIn').focus(); }
+    if (ev.key === ' ' || ev.key === 'e' || ev.key === 'E') { ev.preventDefault(); const n = interactTarget(); if (n) talk(n); }
+    if (ev.key === 'Enter') { ev.preventDefault(); P.held = []; $('chatIn').focus(); }   // Nov 13: Enter opens the chat box (it was T); Space or E talks to people
     if ((ev.key === 'c' || ev.key === 'C') && !ev.ctrlKey && !ev.metaKey) { ev.preventDefault(); P.held = []; closeTalk(); openSheet('char'); }
     if ((ev.key === 'm' || ev.key === 'M') && !ev.ctrlKey && !ev.metaKey && !ev.altKey) { ev.preventDefault(); toggleMount(); }
   });
@@ -6791,7 +6791,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   $('sheetClose').addEventListener('click', closeSheet);
   $('sheet').addEventListener('click', (ev) => { if (ev.target === $('sheet')) closeSheet(); });
   $('chatIn').addEventListener('keydown', (ev) => {
-    if (ev.key === 'Enter') { sendChat(ev.target.value); ev.target.value = ''; }
+    if (ev.key === 'Enter') { sendChat(ev.target.value); ev.target.value = ''; ev.target.blur(); cv.focus({ preventScroll: true }); }   // Nov 13: Enter opens the box, Enter again sends and goes back to the game
     if (ev.key === 'Escape') { ev.cbHandled = true; ev.target.blur(); cv.focus({ preventScroll: true }); }
     ev.stopPropagation();
   });
@@ -7039,7 +7039,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     el.innerHTML = SOC.chat.map((m, i) => { if (m.sys) return `<div class="sys">${esc(m.text)}</div>`; const [tag, cls] = CHAN[m.ch] || CHAN.world;
       const who = m.ch === 'whisper' ? (m.mine ? `To ${esc(m.toName || '?')}` : `From ${esc(m.name)}`) : esc(m.name);
       let body = esc(m.text); (m.items || []).forEach((l, j) => { if (!l || !l.it || !l.tok) return; const r = l.it.kind === 'card' ? (CARDS[l.it.key] || {}).rarity : l.it.rarity; body = body.split(esc(l.tok)).join(`<a class="ilink" data-chatlink="${i}:${j}" style="color:${RC[r] || 'var(--accent)'}" role="button" tabindex="0">${esc(l.tok)}</a>`); });
-      return `<div class="${cls}">${tag}<b>${who}:</b> ${body}</div>`; }).join('') || `<div class="sys">${socOn() ? 'World chat. Say hello. Press T to type, /help for channels.' : 'Sign in to see other players and chat.'}</div>`;
+      return `<div class="${cls}">${tag}<b>${who}:</b> ${body}</div>`; }).join('') || `<div class="sys">${socOn() ? 'World chat. Say hello. Press Enter to type, /help for channels.' : 'Sign in to see other players and chat.'}</div>`;
     el.scrollTop = el.scrollHeight;
   }
 
@@ -7162,7 +7162,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   function placeText(st) { return !st ? 'Offline' : st.where ? st.where : st.place === 'town' ? 'In Emberwatch' : st.place === 'run' ? 'On the March' : st.place === 'duel' ? 'In a duel' : 'Online'; }
   function renderSocial() {
     const nOn = SOC.friends.filter(f => SOC.online.has(f.id)).length;
-    if ($('tbFriends')) { $('tbFriends').hidden = !supa; $('tbFriends').innerHTML = `Friends${SOC.requestsIn.length ? ` <b class="badge">${SOC.requestsIn.length}</b>` : ''} <span class="muted">${socOn() ? nOn + ' online' : 'sign in'}</span>`; }
+    { const fb = document.querySelector('#actbar [data-act="friends"]'); if (fb) { let bd = fb.querySelector('.abadge'); if (SOC.requestsIn.length) { if (!bd) { bd = document.createElement('span'); bd.className = 'abadge'; fb.appendChild(bd); } bd.textContent = SOC.requestsIn.length; } else if (bd) bd.remove(); fb.dataset.tip = 'Friends' + (socOn() ? ': ' + nOn + ' online' : '') + ' (O)'; } }   // Nov 13: the Friends button lives on the bottom bar now
+    if ($('tbFriends')) { $('tbFriends').hidden = true; $('tbFriends').innerHTML = `Friends${SOC.requestsIn.length ? ` <b class="badge">${SOC.requestsIn.length}</b>` : ''} <span class="muted">${socOn() ? nOn + ' online' : 'sign in'}</span>`; }
     // party panel
     const pp = $('partyPanel');
     if (pp) {
@@ -7358,8 +7359,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794604115897';
-  const CB_BUILD = '3b778775f2'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794605079770';
+  const CB_BUILD = '4549d1bd95'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -11140,7 +11141,7 @@ async function exportTravelPack(){
 window.CB_PUPPET_DATA = {"S": 128, "bodies": {"female": {"s": {"hand": [[42.4, 71.7], [84.6, 71.4]], "skin": [189, 129, 109], "face": [63.2, 18.9, 27.0], "piv": [[63.5, 62.8], [63.3, 28.0], [51.7, 32.9], [47.6, 49.9], [74.9, 32.9], [79.3, 49.6], [56.7, 62.8], [55.6, 91.3], [70.2, 62.8], [71.7, 91.3]], "order": [7, 6, 9, 8, 0, 1, 2, 3, 4, 5], "foot": 124, "top": 4, "cx": 64.0}, "n": {"hand": [[43.4, 71.3], [84.4, 70.9]], "skin": [187, 127, 108], "face": [63.6, 16.7, 26.2], "piv": [[64.0, 63.5], [63.9, 27.2], [51.4, 33.0], [47.9, 50.7], [76.4, 33.3], [79.6, 50.7], [56.3, 63.5], [55.4, 92.8], [71.7, 63.5], [72.3, 92.6]], "order": [7, 6, 9, 8, 2, 3, 4, 5, 0, 1], "foot": 123, "top": 4, "cx": 64.0}, "e": {"hand": [[64.8, 75.3], [64.8, 75.3]], "skin": [196, 136, 115], "face": [72.6, 19.0, 29.1], "piv": [[65.7, 64.6], [64.0, 30.1], [59.4, 37.5], [58.8, 54.2], [62.4, 37.5], [61.8, 54.2], [65.7, 66.6], [65.0, 92.2], [67.7, 66.6], [67.0, 92.2]], "order": [9, 8, 7, 6, 0, 1, 2, 3], "foot": 125, "top": 5, "cx": 65.0}}, "mage": {"s": {"hand": [[45.0, 73.3], [82.4, 73.3]], "skin": [155, 117, 89], "face": [63.6, 19.8, 27.8], "piv": [[63.7, 63.1], [63.7, 28.8], [51.3, 33.5], [47.5, 51.1], [76.2, 33.5], [80.0, 51.1], [57.4, 63.1], [56.8, 91.8], [70.0, 63.1], [70.6, 91.8]], "order": [7, 6, 9, 8, 0, 1, 2, 3, 4, 5], "foot": 124, "top": 4, "cx": 64.0}, "n": {"hand": [[45.8, 72.2], [82.9, 72.4]], "skin": [156, 118, 90], "face": [64.1, 16.7, 26.8], "piv": [[63.7, 65.2], [63.7, 27.8], [50.4, 33.9], [47.5, 51.3], [76.9, 34.2], [80.1, 51.9], [56.5, 65.2], [56.2, 93.1], [70.8, 65.2], [71.4, 93.1]], "order": [7, 6, 9, 8, 2, 3, 4, 5, 0, 1], "foot": 123, "top": 4, "cx": 64.5}, "e": {"hand": [[63.8, 74.8], [63.8, 74.8]], "skin": [161, 122, 92], "face": [72.7, 18.7, 28.1], "piv": [[64.8, 63.2], [63.1, 29.1], [59.4, 36.4], [58.8, 53.6], [62.4, 36.4], [61.8, 53.6], [64.8, 65.2], [64.8, 90.8], [66.8, 65.2], [66.8, 90.8]], "order": [9, 8, 7, 6, 0, 1, 2, 3], "foot": 125, "top": 4, "cx": 65.0}}, "paladin": {"s": {"hand": [[38.5, 76.9], [87.7, 76.9]], "skin": [160, 110, 79], "face": [63.1, 18.6, 28.1], "piv": [[63.3, 67.2], [63.1, 29.1], [46.5, 34.9], [41.0, 54.0], [79.8, 34.9], [85.5, 54.0], [55.5, 67.3], [53.4, 95.5], [71.0, 67.0], [74.0, 95.2]], "order": [7, 6, 9, 8, 0, 1, 2, 3, 4, 5], "foot": 126, "top": 2, "cx": 63.5}, "n": {"hand": [[39.7, 76.2], [87.6, 76.6]], "skin": [158, 108, 77], "face": [63.5, 15.3, 26.5], "piv": [[63.5, 67.6], [63.3, 27.5], [46.5, 34.6], [42.3, 53.7], [80.1, 34.6], [84.7, 53.7], [55.0, 67.6], [53.8, 94.9], [71.9, 67.6], [73.5, 94.9]], "order": [7, 6, 9, 8, 2, 3, 4, 5, 0, 1], "foot": 126, "top": 2, "cx": 64.0}, "e": {"hand": [[63.1, 80.4], [63.1, 80.4]], "skin": [165, 114, 82], "face": [73.6, 17.8, 28.2], "piv": [[63.4, 66.8], [60.8, 29.2], [55.6, 37.3], [56.5, 58.1], [58.6, 37.3], [59.5, 58.1], [63.4, 68.8], [62.3, 93.2], [65.4, 68.8], [64.3, 93.2]], "order": [9, 8, 7, 6, 0, 1, 2, 3], "foot": 127, "top": 2, "cx": 62.5}}, "warrior": {"s": {"hand": [[35.2, 79.2], [91.9, 79.5]], "skin": [161, 110, 82], "face": [63.6, 21.4, 30.6], "piv": [[63.7, 68.3], [63.7, 31.6], [45.2, 37.2], [38.0, 55.6], [82.3, 37.2], [89.5, 55.6], [55.0, 68.3], [52.1, 93.7], [72.5, 68.3], [75.4, 93.4]], "order": [7, 6, 9, 8, 0, 1, 2, 3, 4, 5], "foot": 123, "top": 5, "cx": 64.0}, "n": {"hand": [[37.4, 79.2], [88.6, 79.2]], "skin": [152, 101, 76], "face": [63.5, 18.1, 29.4], "piv": [[63.2, 68.8], [63.3, 30.4], [45.2, 37.5], [39.5, 56.9], [81.5, 37.8], [87.2, 56.9], [54.6, 68.6], [52.4, 93.2], [71.8, 68.9], [74.6, 93.5]], "order": [7, 6, 9, 8, 2, 3, 4, 5, 0, 1], "foot": 122, "top": 5, "cx": 64.0}, "e": {"hand": [[67.4, 82.4], [67.4, 82.4]], "skin": [169, 117, 85], "face": [76.0, 21.1, 30.7], "piv": [[64.8, 68.8], [62.6, 31.7], [56.9, 39.8], [56.9, 60.6], [59.9, 39.8], [59.9, 60.6], [64.8, 70.8], [64.5, 92.5], [66.8, 70.8], [66.5, 92.5]], "order": [9, 8, 7, 6, 0, 1, 2, 3], "foot": 125, "top": 5, "cx": 63.5}}}, "hair": {"cw": 48, "ch": 56, "bodies": ["warrior", "paladin", "mage", "female"], "views": ["s", "e", "n"], "styles": ["bob", "braid", "curls", "long", "mohawk", "ponytail", "short", "slick", "topknot", "wavy", "wild"], "beards": ["beard_braid", "beard_full", "beard_goatee", "beard_short"], "at": {"warrior": {"s": [40, -4], "e": [42, -4], "n": [39, -4]}, "paladin": {"s": [39, -7], "e": [40, -7], "n": [39, -7]}, "mage": {"s": [40, -5], "e": [42, -5], "n": [40, -5]}, "female": {"s": [39, -5], "e": [43, -4], "n": [40, -5]}}}, "weapons": {"cw": 48, "ch": 112, "types": ["sword1h", "axe1h", "mace1h", "dagger", "wand", "sword2h", "axe2h", "maul", "hammer", "scythe", "staff", "kite", "tower", "focus", "legend"], "grip": {"sword1h": [[23.0, 105], [22.5, 105], [23.0, 105], [23.0, 104], [23.0, 104], [23.0, 104]], "axe1h": [[20.0, 103], [19.0, 103], [18.0, 103], [17.5, 103], [19.0, 103], [19.0, 103]], "mace1h": [[23.5, 104], [23.0, 104], [24.0, 104], [23.0, 104], [23.5, 104], [23.5, 104]], "dagger": [[23.0, 105], [23.0, 105], [23.0, 105], [21.5, 104], [23.5, 105], [23.5, 105]], "wand": [[23.5, 105], [23.0, 105], [22.5, 105], [23.5, 105], [23.5, 105], [22.5, 105]], "sword2h": [[23.5, 99], [23.5, 99], [23.0, 99], [23.7, 99], [23.5, 99], [23.0, 99]], "axe2h": [[23.0, 80], [23.0, 79], [23.0, 80], [23.5, 79], [24.0, 80], [23.0, 79]], "maul": [[22.0, 79], [23.0, 79], [22.5, 79], [24.0, 79], [24.0, 79], [23.5, 79]], "hammer": [[23.5, 84], [23.5, 84], [24.0, 83], [21.5, 83], [23.5, 83], [22.0, 82]], "scythe": [[12.0, 68], [14.0, 68], [11.5, 68], [14.0, 67], [12.5, 68], [14.0, 67]], "staff": [[21.5, 70], [22.5, 66], [23.5, 68], [25.3, 68], [23.0, 69], [23.5, 66]], "kite": [[23.5, 86], [23.5, 86], [23.5, 85], [24.0, 84], [23.5, 85], [23.5, 84]], "tower": [[23.5, 81], [23.5, 81], [24.0, 81], [24.0, 81], [23.5, 81], [23.5, 79]], "focus": [[23.5, 99], [23.5, 98], [23.5, 98], [23.5, 98], [23.5, 99], [24.0, 98]], "legend": [[23.0, 101], [24.0, 101], [18.4, 75], [23.0, 84], [26.0, 79], [23.0, 69]]}}};
 
 // made by tools/heroart/bake_mounts.py: where the rider sits on each mount
-window.CB_MOUNTS = {"bear": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 111, "seat": [0, -75]}, "e": {"row": 1, "foot": 107, "seat": [-7, -57]}, "n": {"row": 2, "foot": 116, "seat": [0, -62]}}, "boar": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 111, "seat": [0, -76]}, "e": {"row": 1, "foot": 107, "seat": [-5, -60]}, "n": {"row": 2, "foot": 117, "seat": [0, -65]}}, "bonesteed": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 108, "seat": [0, -70]}, "e": {"row": 1, "foot": 106, "seat": [-4, -44]}, "n": {"row": 2, "foot": 119, "seat": [0, -68]}}, "nightmare": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 114, "seat": [0, -81]}, "e": {"row": 1, "foot": 109, "seat": [-8, -45]}, "n": {"row": 2, "foot": 120, "seat": [0, -71]}}, "panther": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 108, "seat": [0, -70]}, "e": {"row": 1, "foot": 105, "seat": [-11, -45]}, "n": {"row": 2, "foot": 115, "seat": [0, -61]}}, "sabertooth": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 110, "seat": [0, -73]}, "e": {"row": 1, "foot": 104, "seat": [-9, -49]}, "n": {"row": 2, "foot": 115, "seat": [0, -60]}}, "slug": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 102, "seat": [0, -57]}, "e": {"row": 1, "foot": 108, "seat": [-10, -41]}, "n": {"row": 2, "foot": 119, "seat": [0, -69]}}, "stag": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 116, "seat": [0, -86]}, "e": {"row": 1, "foot": 118, "seat": [-2, -75]}, "n": {"row": 2, "foot": 121, "seat": [0, -72]}}, "wolf": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 110, "seat": [0, -73]}, "e": {"row": 1, "foot": 104, "seat": [-7, -46]}, "n": {"row": 2, "foot": 117, "seat": [0, -64]}}};
+window.CB_MOUNTS = {"bear": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 111, "seat": [0, -82]}, "e": {"row": 1, "foot": 107, "seat": [-13, -73]}, "n": {"row": 2, "foot": 116, "seat": [0, -62]}}, "boar": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 111, "seat": [0, -83]}, "e": {"row": 1, "foot": 107, "seat": [-18, -70]}, "n": {"row": 2, "foot": 117, "seat": [0, -65]}}, "bonesteed": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 108, "seat": [0, -70]}, "e": {"row": 1, "foot": 106, "seat": [-13, -62]}, "n": {"row": 2, "foot": 119, "seat": [0, -68]}}, "nightmare": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 114, "seat": [0, -81]}, "e": {"row": 1, "foot": 109, "seat": [-12, -64]}, "n": {"row": 2, "foot": 120, "seat": [0, -71]}}, "panther": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 108, "seat": [0, -77]}, "e": {"row": 1, "foot": 105, "seat": [-10, -66]}, "n": {"row": 2, "foot": 115, "seat": [0, -61]}}, "sabertooth": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 110, "seat": [0, -73]}, "e": {"row": 1, "foot": 104, "seat": [-12, -67]}, "n": {"row": 2, "foot": 115, "seat": [0, -60]}}, "slug": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 102, "seat": [0, -64]}, "e": {"row": 1, "foot": 108, "seat": [-13, -60]}, "n": {"row": 2, "foot": 119, "seat": [0, -69]}}, "stag": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 116, "seat": [0, -86]}, "e": {"row": 1, "foot": 118, "seat": [-12, -58]}, "n": {"row": 2, "foot": 121, "seat": [0, -72]}}, "wolf": {"cell": 128, "frames": 6, "k": 1.55, "hip": 61, "s": {"row": 0, "foot": 110, "seat": [0, -80]}, "e": {"row": 1, "foot": 104, "seat": [-13, -64]}, "n": {"row": 2, "foot": 117, "seat": [0, -64]}}};
 
 // ---------- Hero puppets (Nov 12): pixel-art heroes built from parts. Each body is cut at the joints (tools/heroart/bake_body.py):
 // torso, head, upper and lower arms, thighs and shins, for three views (s = facing the camera, n = facing away, e = side; west is the
@@ -11253,7 +11254,7 @@ window.CB_PUPPET = (function () {
     const b = (Math.sin(p * TAU) + 1) / 2, breathe = (k) => { q[1].dy = -b * .9 * k; q[2].dy = q[4].dy = -b * .6 * k; q[0].sy = 1 + b * .012 * k; };
     if (anim === 'idle') { breathe(1); if (side) { q[2].r = .03 * s; q[4].r = -.03 * s; } return P; }
     const ready = (k) => { if (!side) return; q[2].r += -.45 * k; q[3].r += -.75 * k; P.wr += .55 * k; q[6].r += -.2 * k; q[7].r += .16 * k; q[8].r += .2 * k; q[9].r += .1 * k; q[0].r += .04 * k; P.dy += 1.2 * k; };   // the fighting stance
-    if (anim === 'sit') { breathe(1); if (side) { q[6].r = -1.15; q[7].r = 1.3; q[8].r = -1.15; q[9].r = 1.3; q[8].sy = q[9].sy = 0; q[2].r = -.55; q[3].r = -.75; q[0].r = .07; } else { q[6].sy = q[8].sy = .55; q[7].sy = q[9].sy = .7; } return P; }   // riding
+    if (anim === 'sit') { breathe(1); if (side) { q[6].r = -.8; q[7].r = 1.05; q[8].r = -.8; q[9].r = 1.05; q[8].sy = q[9].sy = 0; q[2].r = -.45; q[3].r = -.8; q[0].r = .05; } else { q[6].r = .55; q[8].r = -.55; q[7].r = -.35; q[9].r = .35; q[6].sy = q[8].sy = .8; q[7].sy = q[9].sy = .8; } return P; }   // riding
     if (anim === 'ready') { breathe(1); ready(1); q[2].r += .03 * s; return P; }
     // the fight moves play once, in the side view: p runs 0..1
     const A = side ? 2 : 4, F = side ? 3 : 5;   // the acting arm (near arm in the side view)
@@ -11307,6 +11308,7 @@ window.CB_PUPPET = (function () {
   // parts are drawn enlarged (each art pixel a block of q x q) and the result shrunk to size, so a turned limb gets clean edges instead of jagged ones
   const WORK = {}, workFor = (q) => WORK[q] || (WORK[q] = (() => { const c = canvas(S * 2 * q, S * 2 * q); return { c, g: c.getContext('2d') }; })());
   function chain(g, B, P, i) { if (PAR[i] >= 0) chain(g, B, P, PAR[i]); const a = P.parts[i], pv = B.piv[i]; g.translate(pv[0] + a.dx, pv[1] + a.dy); if (a.r) g.rotate(a.r); if (a.sy !== 1) g.scale(1, a.sy); g.translate(-pv[0], -pv[1]); }
+  const GRIPR = 3.6;
   function draw(g, look, view, anim, t, x, footY, scale) {
     const flip = view === 'w', v = flip ? 'e' : view, B = D.bodies[look.body] && D.bodies[look.body][v]; if (!B) return false;
     const COS = window.CB_COS; if (COS && look.cos) { const ws = COS.weapon(look); if (ws && W && W.types.includes('legend')) look = Object.assign({}, look, { weapon: ws }); }
@@ -11318,7 +11320,10 @@ window.CB_PUPPET = (function () {
     const base = () => wg.setTransform(q, 0, 0, q, (S / 2 + Math.round(P.dx)) * q, (S / 2 + Math.round(P.dy)) * q), wim = (look.weapon || look.off) && W ? img('weapons') : null, cl = cloak(look, v);
     const held = (it, part, hand, rot, at) => {   // a weapon or shield: its grip on the hand, turned with the arm
       if (!it || !wim) return; const ti = W.types.indexOf(it[0]), gp = W.grip[it[0]] && W.grip[it[0]][it[1]]; if (ti < 0 || !gp) return;
-      base(); chain(wg, B, P, part); wg.translate(at ? at[0] : B.hand[hand][0], at ? at[1] : B.hand[hand][1]); wg.rotate(rot); wg.drawImage(wim, it[1] * W.cw, ti * W.ch, W.cw, W.ch, -Math.round(gp[0]), -Math.round(gp[1]), W.cw, W.ch);
+      base(); chain(wg, B, P, part); wg.translate(at ? at[0] : B.hand[hand][0], at ? at[1] : B.hand[hand][1]); wg.rotate(rot); wg.drawImage(wim, it[1] * W.cw, ti * W.ch, W.cw, W.ch, -Math.round(gp[0]), -Math.round(gp[1]) + (HELD[it[0]] || LONG[it[0]] || at ? 0 : 2), W.cw, W.ch);
+      // Nov 13: the fist closes over the handle. The weapon is drawn on the hand, then the hand itself is drawn again on top of it,
+      // so fingers wrap the grip instead of the weapon floating in front of an open hand
+      if (!at && !HELD[it[0]]) { wg.save(); base(); chain(wg, B, P, part); wg.beginPath(); wg.arc(B.hand[hand][0], B.hand[hand][1], GRIPR, 0, 7); wg.clip(); wg.drawImage(strip, part * S, 0, S, S, 0, 0, S, S); wg.restore(); }
     };
     const wrot = (it, d) => (HELD[it[0]] ? 0 : LONG[it[0]] || (it[0] === 'legend' && (it[1] === 2 || it[1] === 5)) ? .18 * d : 1.15 * d), mainPart = v === 'n' ? 5 : 3, offPart = v === 'n' ? 3 : 5;
     if (cl && v !== 'n') { base(); chain(wg, B, P, 0); wg.drawImage(cl, 0, 0); }
@@ -11453,18 +11458,18 @@ window.CB_PUPPET = (function () {
   }
   // ---------- riding: the pixel horse (img/hero/horse: rows facing the camera, sideways and away; the first cell stands, the next six walk)
   // seat: where the rider's hips go, from the middle of the horse's feet, in horse pixels; hip: a hero's hips above its feet
-  const HORSE = { cell: 128, frames: 6, k: 1.55, hip: 61, s: { row: 0, foot: 108, seat: [1, -70] }, e: { row: 1, foot: 108, seat: [-6, -47] }, n: { row: 2, foot: 119, seat: [1, -68] } };
+  const HORSE = { cell: 128, frames: 6, k: 1.55, hip: 61, s: { row: 0, foot: 108, seat: [1, -70] }, e: { row: 1, foot: 108, seat: [-10, -62] }, n: { row: 2, foot: 119, seat: [1, -68] } };
   const MOVED = new Map();
   const MOUNTS = { horse: HORSE };   // filled from src/mounts_data.js (tools/heroart/bake_mounts.py): the same layout as the horse, with each beast's own seat
   if (window.CB_MOUNTS) for (const k in window.CB_MOUNTS) MOUNTS[k] = window.CB_MOUNTS[k];
   function ride(g, look, key, cx, by, dir, moving, s, t, kind) {
     const HORSE = MOUNTS[kind] || MOUNTS.horse, im = P.img(HORSE === MOUNTS.horse ? 'horse' : 'mounts/' + kind), v = DIRS[dir] || 's', hv = v === 'w' ? 'e' : v, H = HORSE[hv]; if (!im || !P.ready(look, v)) return false;
     const M = MOVED.get(key) || { x: cx, y: by, at: -1e9 }; if (Math.abs(M.x - cx) + Math.abs(M.y - by) > .01) { M.x = cx; M.y = by; M.at = t; } MOVED.set(key, M); moving = t - M.at < 140;   // a rider is moving while its place changes (no flicker between steps)
-    const f = v === 'w' ? -1 : 1, fr = moving ? 1 + Math.floor(t / 80) % HORSE.frames : 0, k = HORSE.k * s, C = HORSE.cell, bob = moving ? Math.sin(t / 240 * Math.PI) * 2.2 * s : 0, sc = 96 * s / 118;
-    g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, (hv === 'e' ? 40 : 20) * s, 7 * s, 0, 0, Math.PI * 2); g.fill(); g.restore();
+    const f = v === 'w' ? -1 : 1, fr = moving ? 1 + Math.floor(t / 80) % HORSE.frames : 0, k = HORSE.k * s * .7, C = HORSE.cell, bob = moving ? Math.sin(t / 240 * Math.PI) * 2.2 * s : 0, sc = 96 * s / 118;
+    g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, (hv === 'e' ? 30 : 15) * s, 6 * s, 0, 0, Math.PI * 2); g.fill(); g.restore();
     const horse = () => { g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.translate(cx, by); if (f < 0) g.scale(-1, 1); g.drawImage(im, fr * C, H.row * C, C, C, -C / 2 * k, -H.foot * k, C * k, C * k); g.restore(); };
     const hipY = by + H.seat[1] * k + bob, rider = (clip) => { g.save(); if (clip) { g.beginPath(); g.rect(cx - 90 * s, hipY - 200 * s, 180 * s, 200 * s + 8 * sc); g.clip(); } P.draw(g, look, v, 'sit', t, cx + H.seat[0] * k * f, hipY + HORSE.hip * sc + 3 * s, sc); g.restore(); };
-    if (hv === 's') { rider(false); horse(); } else if (hv === 'n') { horse(); rider(true); } else { horse(); rider(false); }
+    if (hv === 's') { rider(false); horse(); } else if (hv === 'n') { rider(false); horse(); rider(true); } else { horse(); rider(false); }
     return true;
   }
   // ---------- the appearance picker (character creation, and the mirror in the hero window)
@@ -11523,7 +11528,7 @@ window.CB_AUDIO = (function () {
   // fight effects (src/fx.js add(kind...)) -> sounds
   const FXS = { slash: 'swing', slash2: 'swing', combo: 'swing', dash: 'swing', rising: 'swing', heavy: 'swing', spin: 'swing', pierce: 'swing', thrust: 'swing', blunt: 'hit', hitstar: 'hit', claw: 'bite', claw2: 'bite', bite: 'bite',
     fire: 'fire', fire2: 'fire', meteor: 'meteor', frost: 'frost', ice2: 'frost', icespikes: 'frost', shadow: 'shadow', snare: 'shadow', bats: 'shadow', arcane: 'arcane', zap: 'arcane', lightning: 'lightning', nature: 'nature', vines: 'nature', earth: 'nature', thorns2: 'nature',
-    holy: 'holy', smite: 'holy', crit: 'crit', clank: 'block', block: 'block', shimmer: 'block', heal: 'heal', bolt: 'cast', aura: 'cast', smoke: 'cast', stun: 'stun', buff: 'buff', aura2: 'buff', debuff: 'debuff', drain: 'debuff', poof: 'mdeath', summon: 'summon' };
+    holy: 'holy', smite: 'holy', crit: 'crit', clank: 'block', block: 'block', whoosh: 'swing', shimmer: 'block', heal: 'heal', bolt: 'cast', aura: 'cast', smoke: 'cast', stun: 'stun', buff: 'buff', aura2: 'buff', debuff: 'debuff', drain: 'debuff', poof: 'mdeath', summon: 'summon' };
   function fx(kind, delay) { const k = FXS[kind]; if (k) sfx(k, k === 'hit' ? .8 : 1, delay); }
   function scene(which, cb) {
     if (which === 'title') music('title'); else if (which === 'start') music('town'); else if (which === 'map') music('road');
@@ -11557,7 +11562,7 @@ window.CB_AUDIO = (function () {
     fit(); addEventListener('resize', fit);
     const live = []; // { kind, id | from/to, t0, ms, o }
     const now = () => performance.now();
-    function add(kind, o, delay) { o = o || {}; if (window.CB_FXPICK && !o.raw) { const v = CB_FXPICK(kind, o, delay); if (v && DRAW[v]) kind = v; } try { if (window.CB_AUDIO) CB_AUDIO.fx(kind, delay); } catch (e) {} live.push({ kind, o: o || {}, t0: now() + (delay || 0), ms: (DRAW[kind] && DRAW[kind].ms) || 500 }); if (live.length > 140) live.splice(0, live.length - 140); }
+    function add(kind, o, delay) { o = o || {}; if (window.CB_FXPICK && !o.raw) { const v = CB_FXPICK(kind, o, delay); if (v && DRAW[v]) kind = v; } try { if (window.CB_AUDIO) CB_AUDIO.fx(o.snd || kind, delay); } catch (e) {} live.push({ kind, o: o || {}, t0: now() + (delay || 0), ms: (DRAW[kind] && DRAW[kind].ms) || 500 }); if (live.length > 140) live.splice(0, live.length - 140); }
     // where a fighter is on screen: centre of the figure, plus a size factor (1 = a 110 px tall figure)
     function spot(id, at) {
       const f = document.querySelector(`.unit[data-id="${id}"] .figure`); if (!f) return null; const r = f.getBoundingClientRect(); if (!r.width) return null;
@@ -11774,7 +11779,7 @@ window.CB_AUDIO = (function () {
         } else if (e.t === 'eplay') { if (window.CB_MOBS) CB_MOBS.cardPlay(e); // an animated monster plays its card's move (src/mobsprites.js)
         } else if (e.t === 'apply') { add(DOT[e.key] || 'bleed', { id: e.d, n: 4, seed: Math.random() * 1e9 }, 260); }
         else if (e.t === 'heal') add('heal', { id: e.d, seed: Math.random() * 1e9 });
-        else if (e.t === 'block') add('block', { id: e.d, col: (cb.actorById(e.d) || {}).cls === 'Mage' ? 'ward' : (cb.actorById(e.d) || {}).cls === 'Warlock' ? 'absorb' : null });
+        else if (e.t === 'block') add('block', { id: e.d, col: (cb.actorById(e.d) || {}).cls === 'Mage' ? 'ward' : (cb.actorById(e.d) || {}).cls === 'Warlock' ? 'absorb' : null, snd: (cb.actorById(e.d) || {}).cls === 'Rogue' ? 'whoosh' : null });   // Nov 13: gaining Dodge sounds like a whoosh, not a shield clink
       }
       // status changes since the last look (Nov 13): Stun stars, buff and debuff arrows, a summoning beam, a puff when something dies
       for (const a of [...cb.players, ...cb.enemies]) {
@@ -14140,6 +14145,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     #actbar button kbd { position: absolute; right: 2px; bottom: 1px; font: 600 10px/1 sans-serif; color: #f4d89a; text-shadow: 0 1px 0 #000; }
     #actbar button::after { content: attr(data-tip); position: absolute; bottom: 52px; right: 0; white-space: nowrap; background: #0b0a08; border: 1px solid #5a4a2e; color: #efe6d2; font-size: 13px; padding: 3px 8px; border-radius: 3px; opacity: 0; pointer-events: none; transition: opacity .12s; }
     #actbar button:hover::after { opacity: 1; }
+    #actbar button .abadge { position: absolute; left: 1px; top: 1px; min-width: 15px; height: 15px; border-radius: 8px; background: #b3261e; color: #fff; font: 700 10px/15px sans-serif; text-align: center; padding: 0 3px; box-shadow: 0 0 0 1px #000; }
     .petfig { position: absolute; left: -34%; bottom: 4%; height: 34%; scale: -1 1; image-rendering: pixelated; pointer-events: none; filter: drop-shadow(0 2px 0 rgba(0,0,0,.5)); animation: petbob 1.6s ease-in-out infinite; z-index: 1; }
     @keyframes petbob { 50% { transform: translateY(-4%); } }
     .bankbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 8px; } .bankbar input[type=search] { flex: 1; min-width: 180px; }
@@ -14349,15 +14355,15 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   function openShop() { if (!profile || !profile.chars[heroKey]) return; exMenu('shop'); }
   // ---------- the town's action bar (bottom right): every window one click away
   { const bar = document.createElement('div'); bar.id = 'actbar'; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Quick buttons');
-    const B = [['char', 'Character', 0, 'C'], ['bags', 'Bags', 1, 'B'], ['talents', 'Talents', 2, 'N'], ['deck', 'Deck and cards', 3, ''], ['compendium', 'Compendium', 4, ''], ['ach', 'Achievements', 5, ''], ['pvp', 'Arena (PvP)', 6, ''], ['lfg', 'Group finder', 7, 'L'], ['friends', 'Friends', 8, ''], ['shop', 'Skull Shop', 9, ''], ['mount', 'Mount up', 10, 'M'], ['menu', 'Menu', 11, 'Esc']];
-    bar.innerHTML = B.map(([k, n, i, key]) => `<button type="button" data-act="${k}" data-tip="${n}${key ? ' (' + key + ')' : ''}" aria-label="${n}"><i class="uic" style="background-position:${-(i % 6) * 36}px ${-Math.floor(i / 6) * 36}px"></i>${key && key.length === 1 ? `<kbd>${key}</kbd>` : ''}</button>`).join('');
+    const B = [['char', 'Character', 0, 'C'], ['bags', 'Bags', 1, 'B'], ['talents', 'Talents', 2, 'N'], ['deck', 'Deck and cards', 3, ''], ['compendium', 'Compendium', 4, ''], ['ach', 'Achievements', 5, ''], ['pvp', 'Arena (PvP)', 6, ''], ['lfg', 'Group finder', 7, 'L'], ['friends', 'Friends', 8, 'O'], ['guild', 'Guild', -1, 'G'], ['shop', 'Skull Shop', 9, ''], ['mount', 'Mount up', 10, 'M'], ['menu', 'Menu', 11, 'Esc']];
+    bar.innerHTML = B.map(([k, n, i, key]) => `<button type="button" data-act="${k}" data-tip="${n}${key ? ' (' + key + ')' : ''}" aria-label="${n}"><i class="uic" style="${i < 0 ? 'background:url(img/ui/guild.webp) center / 36px 36px no-repeat;image-rendering:pixelated' : `background-position:${-(i % 6) * 36}px ${-Math.floor(i / 6) * 36}px`}"></i>${key && key.length === 1 ? `<kbd>${key}</kbd>` : ''}</button>`).join('');
     $('scrStart').appendChild(bar);
     const act = (k) => { if (typeof closeTalk === 'function') closeTalk();
       if (k === 'char') { GT.tab = 'deck'; openSheet('char'); } else if (k === 'bags') { openSheet('char'); GT.tab = 'stash'; renderHub(); } else if (k === 'talents') openTalents(); else if (k === 'deck') openSheet('deck'); else if (k === 'compendium') openSheet('codex');
-      else if (k === 'ach') openAchievements(); else if (k === 'pvp') openSheet('arena'); else if (k === 'lfg') { if (typeof openLfg === 'function') openLfg(); } else if (k === 'friends') openSheet('friends'); else if (k === 'shop') openShop(); else if (k === 'mount') toggleMount(); else if (k === 'menu') openMenu(); };
+      else if (k === 'ach') openAchievements(); else if (k === 'pvp') openSheet('arena'); else if (k === 'lfg') { if (typeof openLfg === 'function') openLfg(); } else if (k === 'friends') openSheet('friends'); else if (k === 'guild') openSheet('guild'); else if (k === 'shop') openShop(); else if (k === 'mount') toggleMount(); else if (k === 'menu') openMenu(); };
     bar.addEventListener('click', (ev) => { const b = ev.target.closest('[data-act]'); if (b) { act(b.dataset.act); b.blur(); } });
     document.addEventListener('keydown', (ev) => { if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.target.matches('input, select, textarea') || $('scrStart').hidden || !$('modal').hidden || !$('sheet').hidden || (typeof $('talk') !== 'undefined' && $('talk') && !$('talk').hidden)) return;
-      if (ev.key === 'b' || ev.key === 'B') { ev.preventDefault(); act('bags'); } else if (ev.key === 'l' || ev.key === 'L') { ev.preventDefault(); act('lfg'); } });
+      if (ev.key === 'b' || ev.key === 'B') { ev.preventDefault(); act('bags'); } else if (ev.key === 'l' || ev.key === 'L') { ev.preventDefault(); act('lfg'); } else if (ev.key === 'o' || ev.key === 'O') { ev.preventDefault(); act('friends'); } });
   }
   // Nov 13: the talent trees changed (new talents at the bottom of every tree), so every hero gets all their picks back once
   function exTalentRefund() { if (!profile || profile.talV >= 2) return; let n = 0; for (const c of Object.values(profile.chars || {})) for (const st of Object.values(c.codexes || {})) if (st.picks && st.picks.some(x => x != null)) { st.picks = []; n++; } profile.talV = 2; save();

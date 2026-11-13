@@ -2187,7 +2187,7 @@ async function exportTravelPack(){
     fit(); addEventListener('resize', fit);
     const live = []; // { kind, id | from/to, t0, ms, o }
     const now = () => performance.now();
-    function add(kind, o, delay) { o = o || {}; if (window.CB_FXPICK && !o.raw) { const v = CB_FXPICK(kind, o, delay); if (v && DRAW[v]) kind = v; } try { if (window.CB_AUDIO) CB_AUDIO.fx(kind, delay); } catch (e) {} live.push({ kind, o: o || {}, t0: now() + (delay || 0), ms: (DRAW[kind] && DRAW[kind].ms) || 500 }); if (live.length > 140) live.splice(0, live.length - 140); }
+    function add(kind, o, delay) { o = o || {}; if (window.CB_FXPICK && !o.raw) { const v = CB_FXPICK(kind, o, delay); if (v && DRAW[v]) kind = v; } try { if (window.CB_AUDIO) CB_AUDIO.fx(o.snd || kind, delay); } catch (e) {} live.push({ kind, o: o || {}, t0: now() + (delay || 0), ms: (DRAW[kind] && DRAW[kind].ms) || 500 }); if (live.length > 140) live.splice(0, live.length - 140); }
     // where a fighter is on screen: centre of the figure, plus a size factor (1 = a 110 px tall figure)
     function spot(id, at) {
       const f = document.querySelector(`.unit[data-id="${id}"] .figure`); if (!f) return null; const r = f.getBoundingClientRect(); if (!r.width) return null;
@@ -2404,7 +2404,7 @@ async function exportTravelPack(){
         } else if (e.t === 'eplay') { if (window.CB_MOBS) CB_MOBS.cardPlay(e); // an animated monster plays its card's move (src/mobsprites.js)
         } else if (e.t === 'apply') { add(DOT[e.key] || 'bleed', { id: e.d, n: 4, seed: Math.random() * 1e9 }, 260); }
         else if (e.t === 'heal') add('heal', { id: e.d, seed: Math.random() * 1e9 });
-        else if (e.t === 'block') add('block', { id: e.d, col: (cb.actorById(e.d) || {}).cls === 'Mage' ? 'ward' : (cb.actorById(e.d) || {}).cls === 'Warlock' ? 'absorb' : null });
+        else if (e.t === 'block') add('block', { id: e.d, col: (cb.actorById(e.d) || {}).cls === 'Mage' ? 'ward' : (cb.actorById(e.d) || {}).cls === 'Warlock' ? 'absorb' : null, snd: (cb.actorById(e.d) || {}).cls === 'Rogue' ? 'whoosh' : null });   // Nov 13: gaining Dodge sounds like a whoosh, not a shield clink
       }
       // status changes since the last look (Nov 13): Stun stars, buff and debuff arrows, a summoning beam, a puff when something dies
       for (const a of [...cb.players, ...cb.enemies]) {
