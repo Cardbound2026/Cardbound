@@ -520,6 +520,21 @@ body.aiming { cursor: grabbing; user-select: none; }
 .dslot .dtx { display: grid; min-width: 0; line-height: 1.15; } .dslot .dtx b { font-size: 13px; color: var(--rc, var(--muted)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .dslot .dtx small { font-size: 11px; color: var(--muted); }
 .dslot.empty { opacity: .55; border-left-color: var(--line); } .dslot.empty .dtx b { color: var(--muted); }
 .dstats { grid-area: s; display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 2px 10px; font-size: 13px; margin: 6px 0 0; padding: 8px 10px; background: var(--panel2); border-radius: 6px; }
+.iticon { position: relative; flex: none; display: inline-block; width: var(--isz, 52px); height: var(--isz, 52px); background: url(img/items.webp) calc(var(--ix, 0) * var(--isz, 52px) * -1) calc(var(--iy, 0) * var(--isz, 52px) * -1) / calc(var(--isz, 52px) * 6) auto no-repeat, radial-gradient(circle at 50% 30%, #3b322b, #191411 70%, #0c0a09); image-rendering: pixelated; border: 2px solid var(--rc, #6b6258); border-radius: 4px; box-shadow: inset 0 0 0 1px #000, 0 0 0 1px #000, inset 0 0 12px color-mix(in srgb, var(--rc, #6b6258) 40%, transparent); }
+.iticon i { position: absolute; right: 2px; bottom: 0; font: 700 11px/1.25 'IBM Plex Mono', monospace; color: #f3e9d2; text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000; font-style: normal; image-rendering: auto; }
+.item.itm { grid-template-columns: auto 1fr; column-gap: 10px; align-items: start; border: 1px solid #3a322a; border-left: 1px solid #3a322a; border-radius: 3px; padding: 7px 9px; background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 13%, #17120f) 0, #17120f 34px, #120e0c 100%); box-shadow: inset 0 0 0 1px #000, inset 0 1px 0 1px color-mix(in srgb, var(--rc) 30%, transparent); }
+.item.itm .itbody { display: grid; gap: 2px; min-width: 0; }
+.item.itm .ih { align-items: baseline; } .item.itm .ih b { font-family: var(--cf-name, 'Grenze', serif); font-weight: 600; font-size: 17px; line-height: 1.1; letter-spacing: .2px; text-shadow: 0 1px 0 #000; } .item.itm .ih span { color: var(--rc); font-size: 11px; text-transform: uppercase; letter-spacing: .8px; opacity: .85; white-space: nowrap; }
+.item.itm .il { color: #a39a8c; font-size: 12px; }
+.item.itm .st { display: flex; flex-wrap: wrap; gap: 1px 14px; } .item.itm .st span { white-space: nowrap; }
+.item.itm .itimp { color: #cfc6b4; padding-bottom: 4px; margin-bottom: 2px; border-bottom: 1px solid transparent; border-image: linear-gradient(90deg, transparent, color-mix(in srgb, var(--rc) 55%, #5a4a36), transparent) 1; }
+.item.itm .itafx { color: #8fa2ff; } .item.itm .itpas { display: block; color: #f0b070; }
+.item.itm .itrolls { display: none; } .item.itm .itrolls em { color: #8d8577; font-style: normal; font-size: 11px; } .item.itm .itrolls span { display: grid; grid-template-columns: 1fr; width: 100%; } .item.itm .itrolls u { display: block; height: 2px; margin-top: 1px; background: linear-gradient(90deg, #8fa2ff calc(var(--q) * 100%), #2a2622 0); text-decoration: none; }
+body.ctrlheld .item.itm.hasrolls .itafx:not(.itrolls) { display: none; } body.ctrlheld .item.itm.hasrolls .itrolls { display: flex; }
+.item.itm .itrr { color: #8d8577; font-size: 12px; font-style: italic; }
+.gtip .item.itm, .cmppop .item.itm, #cmpPop .item.itm { --isz: 64px; padding: 10px 12px; border-color: #5a4a36; } .gtip .item.itm .st, .cmpcols .item.itm .st { display: grid; gap: 1px; } .gtip .item.itm .ih b { font-size: 20px; }
+.gtip { width: 340px; }
+.dslot:has(.iticon) { grid-template-columns: 46px 1fr; } .dslot .dic:has(.iticon) { width: 44px; height: 44px; background: none; box-shadow: none; } .dslot .dic .iticon { --isz: 40px; display: block; } .tritem .iticon { --isz: 34px; }
 .gtip { position: fixed; z-index: 400; width: 300px; pointer-events: none; filter: drop-shadow(0 8px 20px rgba(0,0,0,.7)); }
 .gtip .item { background: #17120f; }
 .upb { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 7px; border-radius: 999px; margin-right: 4px; }
@@ -7088,8 +7103,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794541476102';
-  const CB_BUILD = 'cb758efcff'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794543655932';
+  const CB_BUILD = '13bf2de2ef'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8195,6 +8210,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-12', items: [
+      ['Feature', "Items have pictures and a new look. Every piece of gear shows a picture of the very piece your hero wears, framed in its rarity colour with its item level in the corner, in your hero window, the stash, loot, shops, trades and chat links. Item cards now read like the classics: name in its rarity colour, the kind of item, what it always has, then one line per bonus. Hold Shift to compare with what you wear (as before), and hold Ctrl to see every roll with its range and how high it rolled."],
+      ['Polish', "Heroes' arms, legs and weapons have clean edges when they move instead of jagged ones."],
       ['Art', "The Choose your hero page has a new pixel-art backdrop, and each of your heroes shows on its card the way it really looks."],
       ['Art', "The campfire where you choose a hero is a painted pixel-art night camp, with the five classes standing around it as real heroes. Your horse is pixel art as well, and your hero rides it in the saddle wearing its own gear."],
       ['Art', "The people of Emberwatch are pixel-art characters now too, each with their own face, hair and clothes for their trade, and the training dummies in the yard and in practice fights are new pixel art."],
@@ -10933,14 +10950,16 @@ window.CB_PUPPET = (function () {
   const CLIP = { sit: 1600, ready: 1600, idle: 1600, walk: 760, attack: 560, aoe: 700, cast: 800, guard: 700, hit: 380, dead: 700 }; // ms per loop (or per play)
   const ONCE = { attack: 1, aoe: 1, cast: 1, guard: 1, hit: 1, dead: 1 };
   // ---------- drawing: each part is drawn from the look's strip with its parents' moves applied
-  const work = canvas(S * 2, S * 2), wg = work.getContext('2d');
+  // parts are drawn enlarged (each art pixel a block of q x q) and the result shrunk to size, so a turned limb gets clean edges instead of jagged ones
+  const WORK = {}, workFor = (q) => WORK[q] || (WORK[q] = (() => { const c = canvas(S * 2 * q, S * 2 * q); return { c, g: c.getContext('2d') }; })());
   function chain(g, B, P, i) { if (PAR[i] >= 0) chain(g, B, P, PAR[i]); const a = P.parts[i], pv = B.piv[i]; g.translate(pv[0] + a.dx, pv[1] + a.dy); if (a.r) g.rotate(a.r); if (a.sy !== 1) g.scale(1, a.sy); g.translate(-pv[0], -pv[1]); }
   function draw(g, look, view, anim, t, x, footY, scale) {
     const flip = view === 'w', v = flip ? 'e' : view, B = D.bodies[look.body] && D.bodies[look.body][v]; if (!B) return false;
     const strip = compose(look, v) || img(look.body + '_' + v); if (!strip) return false;
     const len = CLIP[anim] || 1000, p = ONCE[anim] ? Math.min(1, t / len) : (t % len) / len, P = pose(anim, p, v);
+    const q = scale >= 1.5 ? 3 : 2, wk = workFor(q), work = wk.c, wg = wk.g;
     wg.setTransform(1, 0, 0, 1, 0, 0); wg.clearRect(0, 0, work.width, work.height); wg.imageSmoothingEnabled = false;
-    const base = () => wg.setTransform(1, 0, 0, 1, S / 2 + Math.round(P.dx), S / 2 + Math.round(P.dy)), wim = (look.weapon || look.off) && W ? img('weapons') : null, cl = cloak(look, v);
+    const base = () => wg.setTransform(q, 0, 0, q, (S / 2 + Math.round(P.dx)) * q, (S / 2 + Math.round(P.dy)) * q), wim = (look.weapon || look.off) && W ? img('weapons') : null, cl = cloak(look, v);
     const held = (it, part, hand, rot, at) => {   // a weapon or shield: its grip on the hand, turned with the arm
       if (!it || !wim) return; const ti = W.types.indexOf(it[0]), gp = W.grip[it[0]] && W.grip[it[0]][it[1]]; if (ti < 0 || !gp) return;
       base(); chain(wg, B, P, part); wg.translate(at ? at[0] : B.hand[hand][0], at ? at[1] : B.hand[hand][1]); wg.rotate(rot); wg.drawImage(wim, it[1] * W.cw, ti * W.ch, W.cw, W.ch, -Math.round(gp[0]), -Math.round(gp[1]), W.cw, W.ch);
@@ -10955,8 +10974,8 @@ window.CB_PUPPET = (function () {
       if (look.weapon && i === mainPart) held(look.weapon, i, v === 'n' ? 1 : 0, v === 'e' ? wrot(look.weapon, 1) + P.wr : wrot(look.weapon, v === 's' ? -.26 : .26));
       if (look.off && v !== 'e' && i === offPart) held(look.off, i, v === 'n' ? 0 : 1, wrot(look.off, v === 's' ? .26 : -.26));
     }
-    g.save(); g.imageSmoothingEnabled = scale < 1; if (scale < 1) g.imageSmoothingQuality = 'high'; g.translate(x, footY); if (flip) g.scale(-1, 1);
-    g.drawImage(work, -(S / 2 + B.cx) * scale, -(S / 2 + B.foot) * scale, work.width * scale, work.height * scale); g.restore(); return true;
+    g.save(); g.imageSmoothingEnabled = scale !== q; g.imageSmoothingQuality = 'high'; g.translate(x, footY); if (flip) g.scale(-1, 1);
+    g.drawImage(work, -(S / 2 + B.cx) * scale, -(S / 2 + B.foot) * scale, S * 2 * scale, S * 2 * scale); g.restore(); return true;
   }
   // the look a hero starts with, and what its gear looks like: items -> { slot: '<map>_<Plate|Leather|Cloth>' }
   function defaults(cls) { const body = BODY[cls] || 'warrior'; return { body, skin: body === 'mage' ? 0 : body === 'female' ? 1 : 2, eyes: body === 'female' ? 3 : 0, eyeCol: 0, mouth: body === 'female' ? 1 : 0, lipCol: 0, hair: body === 'female' ? 'long' : body === 'mage' ? 'slick' : 'short', hairCol: body === 'female' ? 0 : 1, beard: null }; }
@@ -10975,7 +10994,18 @@ window.CB_PUPPET = (function () {
     }
     return out;
   }
-  return { img, armsOf, draw, pose, compose, defaults, gearOf, len: (a) => CLIP[a] || 1000, once: (a) => !!ONCE[a], loads: () => loads, S, SLOTS, SKIN, HAIRCOL, EYECOL, LIPCOL, EYES, MOUTHS, HAIR: H.styles, BEARDS: H.beards, BODY,
+  // an item's picture: [row, column] in img/items.webp (rows as in tools/heroart/bake_icons.py)
+  const ICONROWS = SLOTS.flatMap(sl => ['Plate', 'Leather', 'Cloth'].map(t => sl + '_' + t)).concat(W ? W.types : [], ['Cloak', 'Ring', 'Amulet', 'Codex']), CODEXCOL = ['Warrior', 'Rogue', 'Mage', 'Paladin', 'Warlock', 'Shaman'];
+  function iconOf(it) {
+    const G = window.CB_DATA && CB_DATA.gear, b = (G && G.bases.find(x => x.name === (it.base || it.name))) || {}, arch = it.arch || b.arch || '', A = (G && G.arche[arch]) || {}, mi = Math.max(0, MAPS.indexOf(it.map || b.map || 'physical'));
+    const slot = /^Ring/.test(it.slot || '') ? 'Ring' : it.slot, row = (k) => Math.max(0, ICONROWS.indexOf(k));
+    if (slot === 'Codex') return [row('Codex'), Math.max(0, CODEXCOL.indexOf(it.cls))];
+    if (slot === 'Ring' || slot === 'Amulet' || slot === 'Cloak') return [row(slot), mi];
+    if (slot === 'Weapon' || slot === 'Off-hand') { if (STAFF[arch] != null) return [row('staff'), STAFF[arch]]; if (/ Staff$/.test(arch)) return [row('staff'), mi]; const g = / (Sword|Blade)/i.test(it.name || '') ? 'sword1h' : /Dirk|Dagger|Knife/i.test(it.name || '') ? 'dagger' : /Wand/i.test(it.name || '') ? 'wand' : /Staff/i.test(it.name || '') ? 'staff' : /Shield|Buckler/i.test(it.name || '') ? 'kite' : /Orb|Focus|Tome/i.test(it.name || '') ? 'focus' : /Mace|Hammer/i.test(it.name || '') ? 'mace1h' : /Axe/i.test(it.name || '') ? 'axe1h' : slot === 'Weapon' ? 'sword1h' : 'kite'; return [row(WTYPE[arch] || g), mi]; }
+    const type = A.type && A.type !== 'None' ? A.type : /Plate|Iron|Steel|Mail/i.test((it.label || '') + (it.name || '')) ? 'Plate' : /Robe|Cloth|Silk|Linen|Wraps|Sash|Slippers|Hood|Mantle/i.test((it.label || '') + (it.name || '')) ? 'Cloth' : 'Leather';
+    return [row(slot + '_' + type), mi];
+  }
+  return { iconOf, img, armsOf, draw, pose, compose, defaults, gearOf, len: (a) => CLIP[a] || 1000, once: (a) => !!ONCE[a], loads: () => loads, S, SLOTS, SKIN, HAIRCOL, EYECOL, LIPCOL, EYES, MOUTHS, HAIR: H.styles, BEARDS: H.beards, BODY,
     ready: (look, view) => !!compose(look, view === 'w' ? 'e' : view) };
 })();
 
@@ -10987,13 +11017,13 @@ window.CB_PUPPET = (function () {
   const P = window.CB_PUPPET; if (!P) return;
   const css = document.createElement('style');
   css.textContent = `.pupfig { display: block; position: relative; height: calc(var(--fh, 118px) * var(--s, 1)); width: calc(var(--fh, 118px) * var(--s, 1) * .6); pointer-events: none; }
-    .pupfig canvas { position: absolute; left: 50%; bottom: 0; image-rendering: pixelated; transform-origin: 50% 100%; }
+    .pupfig canvas { position: absolute; left: 50%; bottom: 0; transform-origin: 50% 100%; }
     .unit.dead .pupfig canvas { filter: grayscale(1) brightness(.6); } .unit.active .pupfig canvas { filter: drop-shadow(0 0 7px rgba(214,161,74,.55)); }
     .order .otile .ofig { position: relative; overflow: hidden; } .order .otile .ofig .pupfig, #scrCombat.bf .order .otile .ofig .pupfig { position: absolute; height: 230%; width: 140%; left: -20%; top: 4%; }
     .pfimg { position: relative; overflow: hidden; } .pfimg .pupfig { position: absolute; height: 250%; width: 150%; left: -25%; top: 2%; }
     #scrCombat.bf .stage .unit .figure .pupfig { height: calc(var(--fh) * var(--s, 1)); }
     .seatfig .pupfig { --fh: 156px; margin: 0 auto; } .seat.soon .pupfig canvas { filter: brightness(.2) saturate(.2); }
-    .campscene { background: #07070d url(img/bg/camp.webp) 50% 84% / cover no-repeat !important; image-rendering: pixelated; } .campscene::before, .campscene .ground, .campscene .fire { display: none !important; } .campscene .seat, .campscene .seat * { image-rendering: auto; } .campscene .pupfig canvas { image-rendering: pixelated; }
+    .campscene { background: #07070d url(img/bg/camp.webp) 50% 84% / cover no-repeat !important; image-rendering: pixelated; } .campscene::before, .campscene .ground, .campscene .fire { display: none !important; } .campscene .seat, .campscene .seat * { image-rendering: auto; }
     .herolist:has(.haspup) { grid-template-columns: repeat(auto-fill, minmax(372px, 1fr)); } .herocard.haspup { position: relative; padding-left: 96px; } .herocard .hcpup { position: absolute; left: 6px; top: 8px; } .herocard .hcpup .pupfig { --fh: 112px; }
     .dpup { display: grid; justify-items: center; gap: 2px; } .dpup .pupfig { --fh: 210px; } .dpup .dmirror { padding: 2px 12px; font-size: 13px; }
     .lookpick { display: grid; grid-template-columns: 150px 1fr; gap: 10px 16px; align-items: center; margin: 4px 0 12px; }
@@ -11010,7 +11040,7 @@ window.CB_PUPPET = (function () {
   // ---------- figures on the page: <span class="pupfig" data-pf="id"><canvas>; one loop draws them all
   const FIG = {}, ANIM = {}, BOX = 124, CW = 230, CH = 180, FX = 100, FY = 168; let ST = {}, n = 0;
   const MOVE = { attack: 'attack', heavy: 'attack', lunge: 'attack', double: 'attack', leap: 'attack', twirl: 'aoe', cast: 'cast', empower: 'cast', vanish: 'cast', guard: 'guard', guard2: 'guard', parry: 'guard', dodge: 'guard', hit: 'hit', knock: 'hit' };
-  function html(id, look, opt) { FIG[id] = { look, view: (opt && opt.view) || 'e', anim: (opt && opt.anim) || 'idle', t0: performance.now() - Math.random() * 1500 }; return `<span class="pupfig" data-pf="${id}" style="--s:${(opt && opt.s) || 1.12}"><canvas width="${CW}" height="${CH}"></canvas></span>`; }
+  function html(id, look, opt) { FIG[id] = { look, view: (opt && opt.view) || 'e', anim: (opt && opt.anim) || 'idle', t0: performance.now() - Math.random() * 1500 }; return `<span class="pupfig" data-pf="${id}" style="--s:${(opt && opt.s) || 1.12}"><canvas width="${CW * 3}" height="${CH * 3}"></canvas></span>`; }
   function loop(now) {
     for (const el of document.querySelectorAll('.pupfig')) {
       const f = FIG[el.dataset.pf], cv = el.firstElementChild; if (!f || !cv) continue;
@@ -11020,7 +11050,7 @@ window.CB_PUPPET = (function () {
       if (sx.dead) { if (!f.dead) f.dead = now; anim = 'dead'; t = now - f.dead; } else { f.dead = 0; if (a) { if (now - a.t0 < P.len(a.anim)) { anim = a.anim; t = now - a.t0; } else delete ANIM[el.dataset.pf]; } }
       const flip = el.closest('#foes') || el.classList.contains('flip') ? 'scaleX(-1)' : ''; if (cv._tf !== flip) { cv._tf = flip; cv.style.transform = flip; }
       const al = sx.stealth ? .4 : 1; if (cv._al !== al) { cv._al = al; cv.style.opacity = al; }
-      const g = cv.getContext('2d'); g.clearRect(0, 0, CW, CH); P.draw(g, f.look, f.view, anim, t, FX, FY, 1);
+      const g = cv.getContext('2d'); g.clearRect(0, 0, CW * 3, CH * 3); P.draw(g, f.look, f.view, anim, t, FX * 3, FY * 3, 3);
     }
     if (++n % 600 === 0) for (const id in FIG) if (!document.querySelector(`.pupfig[data-pf="${id}"]`)) delete FIG[id];
     requestAnimationFrame(loop);
@@ -12664,7 +12694,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       const w2 = sl === 'Off-hand' && !it && ch.gear.find(g => g.slot === 'Weapon' && /^2H/.test(g.hands || ''));
       if (w2) return `<div class="dslot twoh" style="--rc:${RC[w2.rarity] || 'var(--line)'};opacity:.55" ${o.own ? `data-dslot="${sl}" role="button"` : ''} tabindex="0" title="Your two-handed ${esc(w2.label || 'weapon')} takes both hands"><span class="dic">${slotIcon(sl)}</span><span class="dtx"><b>${esc(w2.name)}</b><small>Two-handed</small></span></div>`; // Nov 2
       if (!it) return `<div class="dslot empty" ${o.own ? `data-dslot="${sl}" role="button" tabindex="0"` : ''} title="${sl}: empty${o.own ? ' (click to equip something)' : ''}"><span class="dic">${slotIcon(sl)}</span><span class="dtx"><b>${sl}</b><small>empty</small></span></div>`;
-      return `<div class="dslot" style="--rc:${RC[it.rarity] || 'var(--line)'}" data-tip="${tipKey(it, o.cmp)}" ${o.own ? `data-dslot="${sl}" role="button"` : ''} tabindex="0"><span class="dic">${slotIcon(sl)}</span><span class="dtx"><b>${esc(it.name)}</b><small>${sl} &middot; ilvl ${it.ilvl}</small></span></div>`;
+      return `<div class="dslot" style="--rc:${RC[it.rarity] || 'var(--line)'}" data-tip="${tipKey(it, o.cmp)}" ${o.own ? `data-dslot="${sl}" role="button"` : ''} tabindex="0"><span class="dic">${itemIcon(it, 40)}</span><span class="dtx"><b>${esc(it.name)}</b><small>${sl} &middot; ilvl ${it.ilvl}</small></span></div>`;
     };
     const s = CB.sumGear(ch.gear), res = Object.entries(s.resist || {}).filter(x => x[1]).map(([k, v]) => `${k} ${v}%`).join(', ') || 'none';
     return `<div class="doll">
@@ -12790,7 +12820,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     const S = TR.s; if (!S) return;
     const mine = myOffer(), gear = myGear();
     const avail = profile.stash.filter(x => x.kind !== 'card' && !S.mine.includes(x.id));
-    const row = (it, act) => `<div class="tritem" style="--rc:${RC[it.rarity] || 'var(--line)'}" data-tip="${tipKey(it, gear)}">${slotIcon(it.slot)}<span><b>${esc(it.name)}</b><small>${rarName(it.rarity)} &middot; ilvl ${it.ilvl}</small></span>${act || ''}</div>`;
+    const row = (it, act) => `<div class="tritem" style="--rc:${RC[it.rarity] || 'var(--line)'}" data-tip="${tipKey(it, gear)}">${itemIcon(it, 34)}<span><b>${esc(it.name)}</b><small>${rarName(it.rarity)} &middot; ilvl ${it.ilvl}</small></span>${act || ''}</div>`;
     const both = S.myAcc && S.theirAcc === S.myAcc;
     modal(`<h2>Trade with ${esc(S.name)}</h2>
       <div class="tradegrid">
@@ -14050,14 +14080,20 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       <div class="bankcols">${col(st, 'tovault', 'Stash', CBHub.STASH_MAX)}${col(v, 'fromvault', 'Vault', CBHub.VAULT_MAX)}</div>`;
   }
   $('hpBank').addEventListener('click', (ev) => { const a = ev.target.closest('[data-tovault], [data-fromvault]'); if (!a) return; const r = a.dataset.tovault ? CBHub.toVault(profile, a.dataset.tovault) : CBHub.fromVault(profile, a.dataset.fromvault); if (!r.ok) return toast(r.why); keepScroll(() => { save(); renderBank(); }); });
+  // an item's picture (img/items.webp, cut from the art heroes wear: tools/heroart/bake_icons.py), in a frame of its rarity colour
+  function itemIcon(it, px) { const p = window.CB_PUPPET && CB_PUPPET.iconOf ? CB_PUPPET.iconOf(it) : null; return `<span class="iticon" style="--rc:${RC[it.rarity] || 'var(--r-white)'};${p ? `--iy:${p[0]};--ix:${p[1]};` : 'background-image:none;'}${px ? `--isz:${px}px` : ''}">${it.ilvl != null ? `<i>${it.ilvl}</i>` : ''}</span>`; }
+  { const ck = (on) => document.body.classList.toggle('ctrlheld', on); document.addEventListener('keydown', (ev) => { if (ev.key === 'Control') ck(true); }); document.addEventListener('keyup', (ev) => { if (ev.key === 'Control') ck(false); }); window.addEventListener('blur', () => ck(false)); }
   function itemHtml(it, extra) {
     if (it.kind === 'card') { const d = CARDS[it.key]; return `<div class="item" data-ilink="${linkKey(it)}" style="--rc:${RC[d.rarity]};grid-template-columns:auto 1fr;align-items:center;column-gap:10px">${cardBox(d, 96)}<div><div class="ih"><b>${esc(d.name)}</b></div><div class="il">${d.rarity} card &middot; ${d.cost} mana</div>${extra || ''}</div></div>`; }
     const nice = (k) => k.replace('Elemental/Holy Damage:', '').replace('Resistance:', '') + (k.startsWith('Elemental') ? ' Damage' : k.startsWith('Resistance:') ? ' Resistance' : '');
     const pct = (k) => /Chance|Damage|Resistance|Dexterity|Strength|Intelligence|Spirit|Defense|Lifesteal|Efficiency/.test(k) ? '%' : '';
-    const stats = Object.entries(it.stats || {}).map(([k, v]) => `+${v}${pct(k)} ${nice(k)}`).join(', ');
-    const wf = CB.weaponFlat(it), imp = [wf ? `+${wf} damage per Attack hit` : '', ...Object.entries(it.imp2 || {}).map(([k, v]) => k === 'Draw' ? `${v} draw` : k === 'Regen' ? `${v} regen` : `+${v}${pct(k)} ${nice(k)}`)].filter(Boolean).join(', ');
-    const lines = (it.lines || []).map(l => `${nice(l.stat)} ${l.v} (${l.lo}-${l.hi})`).join(' · ');
-    return `<div class="item" data-ilink="${linkKey(it)}" style="--rc:${RC[it.rarity] || 'var(--r-white)'}" title="${esc((lines ? 'Each roll: ' + lines + '. ' : '') + 'Hold Shift to compare with your gear. Shift-click to link it in chat.')}"><div class="ih"><b>${esc(it.name)}</b><span>${it.rarity === 'Purple (Epic)' ? 'Purple' : it.rarity} &middot; ilvl ${it.ilvl}</span></div><div class="il">${esc(it.label || it.slot)}</div>${it.passive ? `<div class="st" style="color:#f0b070"><b>Passive:</b> ${esc((it.codex && CB.CODEX_BY_KEY[it.codex] && CB.CODEX_BY_KEY[it.codex].text) || it.passive)}</div>` : ''}<div class="st">${esc(stats)}${imp ? '<br><span class="muted">Implicit: ' + esc(imp) + '</span>' : ''}</div>${it.slot === 'Codex' ? `<div class="itrr">Breaks into ${CB.CODEX_TOKENS(it)} Reroll Tokens (Jeweler Rook)</div>` : it.rerolls != null && it.lines && it.lines.length ? `<div class="itrr">Rerolls: ${it.rerolls}</div>` : ''}${extra || ''}</div>`;
+    // Nov 12: the item card, after Diablo, Path of Exile and Warcraft: a picture with a rarity frame, the name in its rarity colour, the kind of item,
+    // what the item always has (implicit), a rule, then one line per bonus. Hold Ctrl to see every roll and its range; hold Shift to compare with what you wear.
+    const stats = Object.entries(it.stats || {}).map(([k, v]) => `<span>+${v}${pct(k)} ${esc(nice(k))}</span>`).join('');
+    const wf = CB.weaponFlat(it), imp = [wf ? `+${wf} damage per Attack hit` : '', ...Object.entries(it.imp2 || {}).map(([k, v]) => k === 'Draw' ? `${v} cards drawn each round` : k === 'Regen' ? `${v} mana regained each turn` : `+${v}${pct(k)} ${nice(k)}`)].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join('');
+    const rolls = (it.lines || []).map(l => { const q = l.hi > l.lo ? Math.max(0, Math.min(1, (l.v - l.lo) / (l.hi - l.lo))) : 1; return `<span>+${l.v}${pct(l.stat)} ${esc(nice(l.stat))} <em>(${l.lo}-${l.hi})</em><u style="--q:${q.toFixed(2)}"></u></span>`; }).join('');
+    const rname = it.rarity === 'Purple (Epic)' ? 'Epic' : it.rarity === 'Blue' ? 'Rare' : it.rarity === 'Green' ? 'Uncommon' : it.rarity === 'White' ? 'Common' : it.rarity;
+    return `<div class="item itm${rolls ? ' hasrolls' : ''}" data-ilink="${linkKey(it)}" style="--rc:${RC[it.rarity] || 'var(--r-white)'}" title="Hold Shift to compare with your gear. Hold Ctrl to see each roll and its range. Shift-click to link it in chat.">${itemIcon(it)}<div class="itbody"><div class="ih"><b>${esc(it.name)}</b><span>${rname}</span></div><div class="il">${esc(it.label || it.slot)}${/^2H/.test(it.hands || '') ? ' &middot; Two-handed' : ''} &middot; Item level ${it.ilvl}</div>${it.passive ? `<div class="st itpas"><b>Passive:</b> ${esc((it.codex && CB.CODEX_BY_KEY[it.codex] && CB.CODEX_BY_KEY[it.codex].text) || it.passive)}</div>` : ''}${imp ? `<div class="st itimp">${imp}</div>` : ''}${stats ? `<div class="st itafx">${stats}</div>` : ''}${rolls ? `<div class="st itafx itrolls">${rolls}</div>` : ''}${it.slot === 'Codex' ? `<div class="itrr">Breaks into ${CB.CODEX_TOKENS(it)} Reroll Tokens (Jeweler Rook)</div>` : it.rerolls != null && it.lines && it.lines.length ? `<div class="itrr">Rerolls: ${it.rerolls}</div>` : ''}${extra || ''}</div></div>`;
   }
 
   function renderSideParty() {
@@ -14268,6 +14304,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     $('mirOk').onclick = () => { c.app = pk.get(); save(); closeModal(); document.querySelectorAll('.dpup').forEach(d => { const f = d.querySelector('.pupfig'); if (f) f.outerHTML = CB_HEROPUP.html('doll' + Date.now(), CB_HEROPUP.lookOf({ app: c.app }, c.cls, c.gear), { view: 's', s: 1 }); }); toast('Your new look is saved.'); };
   }
   document.addEventListener('click', (ev) => { if (ev.target.closest && ev.target.closest('[data-mirror]')) openMirror(); });
+  window.__open = (k) => openSheet(k);
   window.__startDummy = () => startDummy(); window.__npcs = () => NPCS.map(n => [n.id, n.x, n.y]); window.__tp = (x, y) => { P.x = x; P.y = y; P.mv = null; P.path = []; }; // for automated checks
   window.__cbActor = (id) => (cb ? cb.actorById(id) : null); // pixel monsters check HP for a boss's phase change
   function figure(a, unit) {

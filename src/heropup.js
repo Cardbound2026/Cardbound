@@ -6,13 +6,13 @@
   const P = window.CB_PUPPET; if (!P) return;
   const css = document.createElement('style');
   css.textContent = `.pupfig { display: block; position: relative; height: calc(var(--fh, 118px) * var(--s, 1)); width: calc(var(--fh, 118px) * var(--s, 1) * .6); pointer-events: none; }
-    .pupfig canvas { position: absolute; left: 50%; bottom: 0; image-rendering: pixelated; transform-origin: 50% 100%; }
+    .pupfig canvas { position: absolute; left: 50%; bottom: 0; transform-origin: 50% 100%; }
     .unit.dead .pupfig canvas { filter: grayscale(1) brightness(.6); } .unit.active .pupfig canvas { filter: drop-shadow(0 0 7px rgba(214,161,74,.55)); }
     .order .otile .ofig { position: relative; overflow: hidden; } .order .otile .ofig .pupfig, #scrCombat.bf .order .otile .ofig .pupfig { position: absolute; height: 230%; width: 140%; left: -20%; top: 4%; }
     .pfimg { position: relative; overflow: hidden; } .pfimg .pupfig { position: absolute; height: 250%; width: 150%; left: -25%; top: 2%; }
     #scrCombat.bf .stage .unit .figure .pupfig { height: calc(var(--fh) * var(--s, 1)); }
     .seatfig .pupfig { --fh: 156px; margin: 0 auto; } .seat.soon .pupfig canvas { filter: brightness(.2) saturate(.2); }
-    .campscene { background: #07070d url(img/bg/camp.webp) 50% 84% / cover no-repeat !important; image-rendering: pixelated; } .campscene::before, .campscene .ground, .campscene .fire { display: none !important; } .campscene .seat, .campscene .seat * { image-rendering: auto; } .campscene .pupfig canvas { image-rendering: pixelated; }
+    .campscene { background: #07070d url(img/bg/camp.webp) 50% 84% / cover no-repeat !important; image-rendering: pixelated; } .campscene::before, .campscene .ground, .campscene .fire { display: none !important; } .campscene .seat, .campscene .seat * { image-rendering: auto; }
     .herolist:has(.haspup) { grid-template-columns: repeat(auto-fill, minmax(372px, 1fr)); } .herocard.haspup { position: relative; padding-left: 96px; } .herocard .hcpup { position: absolute; left: 6px; top: 8px; } .herocard .hcpup .pupfig { --fh: 112px; }
     .dpup { display: grid; justify-items: center; gap: 2px; } .dpup .pupfig { --fh: 210px; } .dpup .dmirror { padding: 2px 12px; font-size: 13px; }
     .lookpick { display: grid; grid-template-columns: 150px 1fr; gap: 10px 16px; align-items: center; margin: 4px 0 12px; }
@@ -29,7 +29,7 @@
   // ---------- figures on the page: <span class="pupfig" data-pf="id"><canvas>; one loop draws them all
   const FIG = {}, ANIM = {}, BOX = 124, CW = 230, CH = 180, FX = 100, FY = 168; let ST = {}, n = 0;
   const MOVE = { attack: 'attack', heavy: 'attack', lunge: 'attack', double: 'attack', leap: 'attack', twirl: 'aoe', cast: 'cast', empower: 'cast', vanish: 'cast', guard: 'guard', guard2: 'guard', parry: 'guard', dodge: 'guard', hit: 'hit', knock: 'hit' };
-  function html(id, look, opt) { FIG[id] = { look, view: (opt && opt.view) || 'e', anim: (opt && opt.anim) || 'idle', t0: performance.now() - Math.random() * 1500 }; return `<span class="pupfig" data-pf="${id}" style="--s:${(opt && opt.s) || 1.12}"><canvas width="${CW}" height="${CH}"></canvas></span>`; }
+  function html(id, look, opt) { FIG[id] = { look, view: (opt && opt.view) || 'e', anim: (opt && opt.anim) || 'idle', t0: performance.now() - Math.random() * 1500 }; return `<span class="pupfig" data-pf="${id}" style="--s:${(opt && opt.s) || 1.12}"><canvas width="${CW * 3}" height="${CH * 3}"></canvas></span>`; }
   function loop(now) {
     for (const el of document.querySelectorAll('.pupfig')) {
       const f = FIG[el.dataset.pf], cv = el.firstElementChild; if (!f || !cv) continue;
@@ -39,7 +39,7 @@
       if (sx.dead) { if (!f.dead) f.dead = now; anim = 'dead'; t = now - f.dead; } else { f.dead = 0; if (a) { if (now - a.t0 < P.len(a.anim)) { anim = a.anim; t = now - a.t0; } else delete ANIM[el.dataset.pf]; } }
       const flip = el.closest('#foes') || el.classList.contains('flip') ? 'scaleX(-1)' : ''; if (cv._tf !== flip) { cv._tf = flip; cv.style.transform = flip; }
       const al = sx.stealth ? .4 : 1; if (cv._al !== al) { cv._al = al; cv.style.opacity = al; }
-      const g = cv.getContext('2d'); g.clearRect(0, 0, CW, CH); P.draw(g, f.look, f.view, anim, t, FX, FY, 1);
+      const g = cv.getContext('2d'); g.clearRect(0, 0, CW * 3, CH * 3); P.draw(g, f.look, f.view, anim, t, FX * 3, FY * 3, 3);
     }
     if (++n % 600 === 0) for (const id in FIG) if (!document.querySelector(`.pupfig[data-pf="${id}"]`)) delete FIG[id];
     requestAnimationFrame(loop);

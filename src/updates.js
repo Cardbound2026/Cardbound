@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-12', items: [
+      ['Feature', "Items have pictures and a new look. Every piece of gear shows a picture of the very piece your hero wears, framed in its rarity colour with its item level in the corner, in your hero window, the stash, loot, shops, trades and chat links. Item cards now read like the classics: name in its rarity colour, the kind of item, what it always has, then one line per bonus. Hold Shift to compare with what you wear (as before), and hold Ctrl to see every roll with its range and how high it rolled."],
+      ['Polish', "Heroes' arms, legs and weapons have clean edges when they move instead of jagged ones."],
       ['Art', "The Choose your hero page has a new pixel-art backdrop, and each of your heroes shows on its card the way it really looks."],
       ['Art', "The campfire where you choose a hero is a painted pixel-art night camp, with the five classes standing around it as real heroes. Your horse is pixel art as well, and your hero rides it in the saddle wearing its own gear."],
       ['Art', "The people of Emberwatch are pixel-art characters now too, each with their own face, hair and clothes for their trade, and the training dummies in the yard and in practice fights are new pixel art."],

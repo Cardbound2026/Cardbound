@@ -129,14 +129,16 @@ window.CB_PUPPET = (function () {
   const CLIP = { sit: 1600, ready: 1600, idle: 1600, walk: 760, attack: 560, aoe: 700, cast: 800, guard: 700, hit: 380, dead: 700 }; // ms per loop (or per play)
   const ONCE = { attack: 1, aoe: 1, cast: 1, guard: 1, hit: 1, dead: 1 };
   // ---------- drawing: each part is drawn from the look's strip with its parents' moves applied
-  const work = canvas(S * 2, S * 2), wg = work.getContext('2d');
+  // parts are drawn enlarged (each art pixel a block of q x q) and the result shrunk to size, so a turned limb gets clean edges instead of jagged ones
+  const WORK = {}, workFor = (q) => WORK[q] || (WORK[q] = (() => { const c = canvas(S * 2 * q, S * 2 * q); return { c, g: c.getContext('2d') }; })());
   function chain(g, B, P, i) { if (PAR[i] >= 0) chain(g, B, P, PAR[i]); const a = P.parts[i], pv = B.piv[i]; g.translate(pv[0] + a.dx, pv[1] + a.dy); if (a.r) g.rotate(a.r); if (a.sy !== 1) g.scale(1, a.sy); g.translate(-pv[0], -pv[1]); }
   function draw(g, look, view, anim, t, x, footY, scale) {
     const flip = view === 'w', v = flip ? 'e' : view, B = D.bodies[look.body] && D.bodies[look.body][v]; if (!B) return false;
     const strip = compose(look, v) || img(look.body + '_' + v); if (!strip) return false;
     const len = CLIP[anim] || 1000, p = ONCE[anim] ? Math.min(1, t / len) : (t % len) / len, P = pose(anim, p, v);
+    const q = scale >= 1.5 ? 3 : 2, wk = workFor(q), work = wk.c, wg = wk.g;
     wg.setTransform(1, 0, 0, 1, 0, 0); wg.clearRect(0, 0, work.width, work.height); wg.imageSmoothingEnabled = false;
-    const base = () => wg.setTransform(1, 0, 0, 1, S / 2 + Math.round(P.dx), S / 2 + Math.round(P.dy)), wim = (look.weapon || look.off) && W ? img('weapons') : null, cl = cloak(look, v);
+    const base = () => wg.setTransform(q, 0, 0, q, (S / 2 + Math.round(P.dx)) * q, (S / 2 + Math.round(P.dy)) * q), wim = (look.weapon || look.off) && W ? img('weapons') : null, cl = cloak(look, v);
     const held = (it, part, hand, rot, at) => {   // a weapon or shield: its grip on the hand, turned with the arm
       if (!it || !wim) return; const ti = W.types.indexOf(it[0]), gp = W.grip[it[0]] && W.grip[it[0]][it[1]]; if (ti < 0 || !gp) return;
       base(); chain(wg, B, P, part); wg.translate(at ? at[0] : B.hand[hand][0], at ? at[1] : B.hand[hand][1]); wg.rotate(rot); wg.drawImage(wim, it[1] * W.cw, ti * W.ch, W.cw, W.ch, -Math.round(gp[0]), -Math.round(gp[1]), W.cw, W.ch);
@@ -151,8 +153,8 @@ window.CB_PUPPET = (function () {
       if (look.weapon && i === mainPart) held(look.weapon, i, v === 'n' ? 1 : 0, v === 'e' ? wrot(look.weapon, 1) + P.wr : wrot(look.weapon, v === 's' ? -.26 : .26));
       if (look.off && v !== 'e' && i === offPart) held(look.off, i, v === 'n' ? 0 : 1, wrot(look.off, v === 's' ? .26 : -.26));
     }
-    g.save(); g.imageSmoothingEnabled = scale < 1; if (scale < 1) g.imageSmoothingQuality = 'high'; g.translate(x, footY); if (flip) g.scale(-1, 1);
-    g.drawImage(work, -(S / 2 + B.cx) * scale, -(S / 2 + B.foot) * scale, work.width * scale, work.height * scale); g.restore(); return true;
+    g.save(); g.imageSmoothingEnabled = scale !== q; g.imageSmoothingQuality = 'high'; g.translate(x, footY); if (flip) g.scale(-1, 1);
+    g.drawImage(work, -(S / 2 + B.cx) * scale, -(S / 2 + B.foot) * scale, S * 2 * scale, S * 2 * scale); g.restore(); return true;
   }
   // the look a hero starts with, and what its gear looks like: items -> { slot: '<map>_<Plate|Leather|Cloth>' }
   function defaults(cls) { const body = BODY[cls] || 'warrior'; return { body, skin: body === 'mage' ? 0 : body === 'female' ? 1 : 2, eyes: body === 'female' ? 3 : 0, eyeCol: 0, mouth: body === 'female' ? 1 : 0, lipCol: 0, hair: body === 'female' ? 'long' : body === 'mage' ? 'slick' : 'short', hairCol: body === 'female' ? 0 : 1, beard: null }; }
@@ -171,6 +173,17 @@ window.CB_PUPPET = (function () {
     }
     return out;
   }
-  return { img, armsOf, draw, pose, compose, defaults, gearOf, len: (a) => CLIP[a] || 1000, once: (a) => !!ONCE[a], loads: () => loads, S, SLOTS, SKIN, HAIRCOL, EYECOL, LIPCOL, EYES, MOUTHS, HAIR: H.styles, BEARDS: H.beards, BODY,
+  // an item's picture: [row, column] in img/items.webp (rows as in tools/heroart/bake_icons.py)
+  const ICONROWS = SLOTS.flatMap(sl => ['Plate', 'Leather', 'Cloth'].map(t => sl + '_' + t)).concat(W ? W.types : [], ['Cloak', 'Ring', 'Amulet', 'Codex']), CODEXCOL = ['Warrior', 'Rogue', 'Mage', 'Paladin', 'Warlock', 'Shaman'];
+  function iconOf(it) {
+    const G = window.CB_DATA && CB_DATA.gear, b = (G && G.bases.find(x => x.name === (it.base || it.name))) || {}, arch = it.arch || b.arch || '', A = (G && G.arche[arch]) || {}, mi = Math.max(0, MAPS.indexOf(it.map || b.map || 'physical'));
+    const slot = /^Ring/.test(it.slot || '') ? 'Ring' : it.slot, row = (k) => Math.max(0, ICONROWS.indexOf(k));
+    if (slot === 'Codex') return [row('Codex'), Math.max(0, CODEXCOL.indexOf(it.cls))];
+    if (slot === 'Ring' || slot === 'Amulet' || slot === 'Cloak') return [row(slot), mi];
+    if (slot === 'Weapon' || slot === 'Off-hand') { if (STAFF[arch] != null) return [row('staff'), STAFF[arch]]; if (/ Staff$/.test(arch)) return [row('staff'), mi]; const g = / (Sword|Blade)/i.test(it.name || '') ? 'sword1h' : /Dirk|Dagger|Knife/i.test(it.name || '') ? 'dagger' : /Wand/i.test(it.name || '') ? 'wand' : /Staff/i.test(it.name || '') ? 'staff' : /Shield|Buckler/i.test(it.name || '') ? 'kite' : /Orb|Focus|Tome/i.test(it.name || '') ? 'focus' : /Mace|Hammer/i.test(it.name || '') ? 'mace1h' : /Axe/i.test(it.name || '') ? 'axe1h' : slot === 'Weapon' ? 'sword1h' : 'kite'; return [row(WTYPE[arch] || g), mi]; }
+    const type = A.type && A.type !== 'None' ? A.type : /Plate|Iron|Steel|Mail/i.test((it.label || '') + (it.name || '')) ? 'Plate' : /Robe|Cloth|Silk|Linen|Wraps|Sash|Slippers|Hood|Mantle/i.test((it.label || '') + (it.name || '')) ? 'Cloth' : 'Leather';
+    return [row(slot + '_' + type), mi];
+  }
+  return { iconOf, img, armsOf, draw, pose, compose, defaults, gearOf, len: (a) => CLIP[a] || 1000, once: (a) => !!ONCE[a], loads: () => loads, S, SLOTS, SKIN, HAIRCOL, EYECOL, LIPCOL, EYES, MOUTHS, HAIR: H.styles, BEARDS: H.beards, BODY,
     ready: (look, view) => !!compose(look, view === 'w' ? 'e' : view) };
 })();

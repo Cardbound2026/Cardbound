@@ -112,7 +112,7 @@
       const w2 = sl === 'Off-hand' && !it && ch.gear.find(g => g.slot === 'Weapon' && /^2H/.test(g.hands || ''));
       if (w2) return `<div class="dslot twoh" style="--rc:${RC[w2.rarity] || 'var(--line)'};opacity:.55" ${o.own ? `data-dslot="${sl}" role="button"` : ''} tabindex="0" title="Your two-handed ${esc(w2.label || 'weapon')} takes both hands"><span class="dic">${slotIcon(sl)}</span><span class="dtx"><b>${esc(w2.name)}</b><small>Two-handed</small></span></div>`; // Nov 2
       if (!it) return `<div class="dslot empty" ${o.own ? `data-dslot="${sl}" role="button" tabindex="0"` : ''} title="${sl}: empty${o.own ? ' (click to equip something)' : ''}"><span class="dic">${slotIcon(sl)}</span><span class="dtx"><b>${sl}</b><small>empty</small></span></div>`;
-      return `<div class="dslot" style="--rc:${RC[it.rarity] || 'var(--line)'}" data-tip="${tipKey(it, o.cmp)}" ${o.own ? `data-dslot="${sl}" role="button"` : ''} tabindex="0"><span class="dic">${slotIcon(sl)}</span><span class="dtx"><b>${esc(it.name)}</b><small>${sl} &middot; ilvl ${it.ilvl}</small></span></div>`;
+      return `<div class="dslot" style="--rc:${RC[it.rarity] || 'var(--line)'}" data-tip="${tipKey(it, o.cmp)}" ${o.own ? `data-dslot="${sl}" role="button"` : ''} tabindex="0"><span class="dic">${itemIcon(it, 40)}</span><span class="dtx"><b>${esc(it.name)}</b><small>${sl} &middot; ilvl ${it.ilvl}</small></span></div>`;
     };
     const s = CB.sumGear(ch.gear), res = Object.entries(s.resist || {}).filter(x => x[1]).map(([k, v]) => `${k} ${v}%`).join(', ') || 'none';
     return `<div class="doll">
@@ -238,7 +238,7 @@
     const S = TR.s; if (!S) return;
     const mine = myOffer(), gear = myGear();
     const avail = profile.stash.filter(x => x.kind !== 'card' && !S.mine.includes(x.id));
-    const row = (it, act) => `<div class="tritem" style="--rc:${RC[it.rarity] || 'var(--line)'}" data-tip="${tipKey(it, gear)}">${slotIcon(it.slot)}<span><b>${esc(it.name)}</b><small>${rarName(it.rarity)} &middot; ilvl ${it.ilvl}</small></span>${act || ''}</div>`;
+    const row = (it, act) => `<div class="tritem" style="--rc:${RC[it.rarity] || 'var(--line)'}" data-tip="${tipKey(it, gear)}">${itemIcon(it, 34)}<span><b>${esc(it.name)}</b><small>${rarName(it.rarity)} &middot; ilvl ${it.ilvl}</small></span>${act || ''}</div>`;
     const both = S.myAcc && S.theirAcc === S.myAcc;
     modal(`<h2>Trade with ${esc(S.name)}</h2>
       <div class="tradegrid">
