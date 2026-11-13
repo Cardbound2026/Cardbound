@@ -226,7 +226,7 @@ window.CB_PUPPET = (function () {
     return out;
   }
   // an item's picture: [row, column] in img/items.webp (rows as in tools/heroart/bake_icons.py)
-  const ICONROWS = SLOTS.flatMap(sl => ['Plate', 'Leather', 'Cloth'].map(t => sl + '_' + t)).concat(W ? W.types : [], ['Cloak', 'Ring', 'Amulet', 'Codex']), CODEXCOL = ['Warrior', 'Rogue', 'Mage', 'Paladin', 'Warlock', 'Shaman'];
+  const ICONROWS = SLOTS.flatMap(sl => ['Plate', 'Leather', 'Cloth'].map(t => sl + '_' + t)).concat(W ? W.types.filter(t => t !== 'legend') : [], ['Cloak', 'Ring', 'Amulet', 'Codex'])   /* Nov 13: the shop's legendary weapon looks are not in the icon sheet; counting them pushed every cloak, ring, amulet and codex one row down (cloaks showed rings) */, CODEXCOL = ['Warrior', 'Rogue', 'Mage', 'Paladin', 'Warlock', 'Shaman'];
   function iconOf(it) {
     const G = window.CB_DATA && CB_DATA.gear, b = (G && G.bases.find(x => x.name === (it.base || it.name))) || {}, arch = it.arch || b.arch || '', A = (G && G.arche[arch]) || {}, mi = Math.max(0, MAPS.indexOf(it.map || b.map || 'physical'));
     const slot = /^Ring/.test(it.slot || '') ? 'Ring' : it.slot, row = (k) => Math.max(0, ICONROWS.indexOf(k));

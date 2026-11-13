@@ -2,6 +2,15 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Balance', "Assassinate (Rogue) now doubles your whole next card: its damage, the Bleed, Poison and other damage over time it applies, and the Dodge it gives. It used to double only the next Attack's damage."],
+      ['Fix', "Footsteps no longer slow the game down. They are now footprints in the element's colour, left where you walk and fading out."],
+      ['Fix', "Cloaks, rings, amulets and codexes each showed the wrong picture (a cloak showed a ring, a codex showed nothing). Each has its own again."],
+      ['Fix', "A card in your hand no longer jitters up and down when the pointer is at its bottom edge."],
+      ['Fix', "The mana cost on status cards (Dazed) and enemy cards sits on its orb. Status cards have a red line inside the picture so they read as a debuff."],
+      ['Interface', "Quick salvage in your bags: turn it on, the pointer becomes a hammer, and every item you click is salvaged. Codexes and bags are left alone."],
+      ['Interface', "A chest glows only in the colour of the best thing inside, and the glow goes out once it is open."],
+      ['Art', "18 more card backs in the Skull Shop: Ancient Scroll, Iron Bound, Blood Parchment, Stained Glass, Carved Oak, Leather Tome, Dragonscale, Clockwork and more."],
+      ['Art', "Merchant Dace stands on his shop floor, not on a chest."],
       ['Art', "The Ember Whelps' cards (Fire Spit, Singe, Shriek, Flap) have paintings now, and so do the other 22 group-monster cards that were blank: wolves, bandits, magma golems, frostfangs, wights, spiderlings, raptors, ley hounds and animated armour."],
       ['Interface', "An opened chest lays its loot out in front of it: a pile of gold that grows with the amount (a few coins up to a hoard), each item's picture, each card. Click a thing to take it, or Take all. Hover gear to read it."],
       ['Interface', "Foes in a group stand closer together."],
