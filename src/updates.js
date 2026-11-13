@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Feature', "The game has sound. Music for the welcome screen, Emberwatch, the road, battles and bosses, a fanfare when you win and a toll when you fall, and effects for hits, critical hits, spells, blocks, heals, playing a card, buttons and gear. Menu, Sound has sliders for music and effects."],
+      ['Art', "Your horse gallops when you ride, facing whichever way you go."],
       ['Feature', "A welcome screen greets you when the game opens: click to start your adventure. Choosing a hero is new too: your hero stands in the camp at full size with your roster down the side, and Create a new hero takes you to the campfire."],
       ['Feature', "The game fills the whole window now, with no wall behind it. Menu, Display lets you pick a screen shape (fill, 21:9, 16:9, 16:10 or 4:3), a game size, and full screen."],
       ['Polish', "One button style across the whole game (an iron plate lettered in small capitals, gold for the main action), and the tutorial box, town bar and chips match it."],

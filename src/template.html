@@ -578,7 +578,7 @@ html, body, body.inkui, body.inkui:not(.ui-classic) { background: #050406 !impor
 .wrap { max-width: var(--gameW, none) !important; padding: 6px max(10px, env(safe-area-inset-left, 0px)) 10px !important; gap: 8px !important; }
 body.boxed .wrap { min-height: var(--gameH, auto); box-shadow: 0 0 0 1px #1c1815, 0 0 60px rgba(0,0,0,.8); }
 .title { max-width: 1500px; } .selscene { min-height: min(70vh, 720px); }
-.setrow { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 4px 0; } .setrow select { background: #15110f; color: #e8dfcb; border: 1px solid #5c4a34; padding: 4px 8px; font: inherit; border-radius: 2px; }
+.setrow { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 4px 0; } .setrow input[type=range] { flex: 1; max-width: 220px; accent-color: #d6a14a; } .setrow select { background: #15110f; color: #e8dfcb; border: 1px solid #5c4a34; padding: 4px 8px; font: inherit; border-radius: 2px; }
 .iticon { position: relative; flex: none; display: block; width: var(--isz, 46px); height: var(--isz, 46px); background: url(img/items.webp) calc(var(--ix, 0) * var(--isz, 46px) * -1) calc(var(--iy, 0) * var(--isz, 46px) * -1) / calc(var(--isz, 46px) * 6) auto no-repeat, radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--rc, #6b6258) 22%, #1d1815), #0e0c0b 78%); image-rendering: pixelated; border-radius: 3px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rc, #6b6258) 75%, #000), inset 0 0 0 2px #000, 0 0 0 1px #000; }
 .iticon i { position: absolute; right: 3px; bottom: 1px; font: 600 10px/1.2 'IBM Plex Mono', monospace; color: #e9dfca; text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000; font-style: normal; image-rendering: auto; opacity: .9; }
 /* Item cards (Nov 12, second pass). In lists: a quiet row, picture left, name in its rarity colour. As a tooltip or in a comparison: a card with a rarity-lit header, the picture top right, and bonuses as diamond-bulleted lines. */
@@ -2640,6 +2640,9 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
       <label class="toggle"><input type="checkbox" id="setFast" ${settings.fast ? 'checked' : ''}> Fast enemy turns</label>
       <label class="toggle"><input type="checkbox" id="setClassic" ${settings.classicUi ? 'checked' : ''}> Previous interface (the stone and wood look from before the pixel art)</label>
       <label class="toggle"><input type="checkbox" id="setClassicFoes" ${settings.classicFoes ? 'checked' : ''}> Previous enemy art (the still pictures from before the animated pixel monsters)</label>
+      <h3 style="font-size:20px;margin-top:6px">Sound</h3>
+      <label class="setrow">Music <input type="range" id="setMusic" min="0" max="100" value="${window.CB_AUDIO ? Math.round(CB_AUDIO.get().music * 100) : 0}"></label>
+      <label class="setrow">Effects <input type="range" id="setSfx" min="0" max="100" value="${window.CB_AUDIO ? Math.round(CB_AUDIO.get().sfx * 100) : 0}"></label>
       <h3 style="font-size:20px;margin-top:6px">Display</h3>
       <label class="setrow">Screen shape <select id="setRatio">${[['fill', 'Fill the window'], ['21:9', 'Ultrawide (21:9)'], ['16:9', 'Widescreen (16:9)'], ['16:10', 'Laptop (16:10)'], ['4:3', 'Classic (4:3)']].map(([v, n]) => `<option value="${v}"${(settings.ratio || 'fill') === v ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
       <label class="setrow">Game size <select id="setSize">${[100, 90, 80, 70, 60].map(v => `<option value="${v}"${(settings.size || 100) === v ? ' selected' : ''}>${v === 100 ? 'Full (100%)' : v + '% of the window'}</option>`).join('')}</select></label>
@@ -2652,6 +2655,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     if ($('mnAch')) $('mnAch').onclick = () => openAchievements();
     if ($('mnTut')) $('mnTut').onclick = () => { closeModal(); tutStart(); };
     $('setFast').onchange = (e) => { settings.fast = e.target.checked; saveSettings(); };
+    if (window.CB_AUDIO) { $('setMusic').oninput = (e) => CB_AUDIO.vol('music', e.target.value / 100); $('setSfx').oninput = (e) => { CB_AUDIO.vol('sfx', e.target.value / 100); }; $('setSfx').onchange = () => CB_AUDIO.sfx('hit'); }
     $('setRatio').onchange = (e) => { settings.ratio = e.target.value; saveSettings(); applyDisplay(); }; $('setSize').onchange = (e) => { settings.size = +e.target.value; saveSettings(); applyDisplay(); };
     $('setFull').onclick = () => { try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); } catch (e) {} closeModal(); };
     $('setClassic').onchange = (e) => { settings.classicUi = e.target.checked; saveSettings(); document.body.classList.toggle('ui-classic', !!settings.classicUi); };
@@ -2702,7 +2706,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   }
   // Nov 2: the line under the logo says where you are
   function brandLine(which) { const el = $('brandLine'); if (!el) return; el.textContent = which === 'title' ? 'Choose your hero' : which === 'start' ? 'Emberwatch' : run ? `${run.mapName || 'The roads'} +${run.level || 0}` : cb && cb.duel ? 'The Colosseum' : cb && cb.raid ? 'Raid' : cb && cb.practice ? 'Training yard' : 'Emberwatch'; }
-  function show(which) { try { brandLine(which); } catch (e) {} if (which !== 'start' && typeof BZ !== 'undefined' && BZ.open) closeShop(true); placeChat(which); if (typeof retrack === 'function') setTimeout(() => { try { retrack(); } catch (e) {} }, 0); hidePeeks(); $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); retrack(true); }
+  function show(which) { try { brandLine(which); } catch (e) {} try { if (window.CB_AUDIO) CB_AUDIO.scene(which, cb); } catch (e) {} if (which !== 'start' && typeof BZ !== 'undefined' && BZ.open) closeShop(true); placeChat(which); if (typeof retrack === 'function') setTimeout(() => { try { retrack(); } catch (e) {} }, 0); hidePeeks(); $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); retrack(true); }
 
   // ---------- map
   const RH = 50, CW = 96, PADX = 40, PADY = 34; // Nov 11: a little shorter and wider
@@ -3581,6 +3585,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   }
   function combatOver() {
     hidePeeks(); hardcoreCheck();
+    try { if (window.CB_AUDIO && cb && !cb._snd) { cb._snd = 1; const won = cb.enemies.every(e => e.hp <= 0); if (!cb.practice) CB_AUDIO.jingle(won ? 'victory' : 'defeat', won ? 8 : 12); if (won) CB_AUDIO.sfx('death', .7); } } catch (e) {}
     if (cb && cb.duel) { if (!cb._shown) { cb._shown = true; duelOver(); } return; }
     if (cb && cb.raid) { if (!cb._shown) { cb._shown = true; raidOver(); } return; }
     if (cb && cb.practice) { if (!cb._shown) { cb._shown = true; const p = cb.players[0], dmg = cb.enemies.reduce((t, e) => t + (e.maxHp - Math.max(0, e.hp)), 0);
@@ -3630,6 +3635,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   $('hand').addEventListener('click', () => { peek.hidden = true; });
   // ---------- drag a card onto an enemy to play it (click-to-select still works). While aiming, the card's numbers include the target.
   function playCard(c, tgt) {
+    try { if (window.CB_AUDIO) CB_AUDIO.sfx('card', .8); } catch (e) {}
     selected = null;
     if (cb.myMi != null) { netAct({ t: 'play', uid: c.uid, tgt }); render(); return; }
     cb.play(c.uid, tgt); render(true); if (cb.over) combatOver();

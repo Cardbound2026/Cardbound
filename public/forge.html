@@ -2187,7 +2187,7 @@ async function exportTravelPack(){
     fit(); addEventListener('resize', fit);
     const live = []; // { kind, id | from/to, t0, ms, o }
     const now = () => performance.now();
-    function add(kind, o, delay) { live.push({ kind, o: o || {}, t0: now() + (delay || 0), ms: (DRAW[kind] && DRAW[kind].ms) || 500 }); if (live.length > 140) live.splice(0, live.length - 140); }
+    function add(kind, o, delay) { try { if (window.CB_AUDIO) CB_AUDIO.fx(kind, delay); } catch (e) {} live.push({ kind, o: o || {}, t0: now() + (delay || 0), ms: (DRAW[kind] && DRAW[kind].ms) || 500 }); if (live.length > 140) live.splice(0, live.length - 140); }
     // where a fighter is on screen: centre of the figure, plus a size factor (1 = a 110 px tall figure)
     function spot(id, at) {
       const f = document.querySelector(`.unit[data-id="${id}"] .figure`); if (!f) return null; const r = f.getBoundingClientRect(); if (!r.width) return null;

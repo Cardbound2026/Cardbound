@@ -582,7 +582,7 @@ html, body, body.inkui, body.inkui:not(.ui-classic) { background: #050406 !impor
 .wrap { max-width: var(--gameW, none) !important; padding: 6px max(10px, env(safe-area-inset-left, 0px)) 10px !important; gap: 8px !important; }
 body.boxed .wrap { min-height: var(--gameH, auto); box-shadow: 0 0 0 1px #1c1815, 0 0 60px rgba(0,0,0,.8); }
 .title { max-width: 1500px; } .selscene { min-height: min(70vh, 720px); }
-.setrow { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 4px 0; } .setrow select { background: #15110f; color: #e8dfcb; border: 1px solid #5c4a34; padding: 4px 8px; font: inherit; border-radius: 2px; }
+.setrow { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 4px 0; } .setrow input[type=range] { flex: 1; max-width: 220px; accent-color: #d6a14a; } .setrow select { background: #15110f; color: #e8dfcb; border: 1px solid #5c4a34; padding: 4px 8px; font: inherit; border-radius: 2px; }
 .iticon { position: relative; flex: none; display: block; width: var(--isz, 46px); height: var(--isz, 46px); background: url(img/items.webp) calc(var(--ix, 0) * var(--isz, 46px) * -1) calc(var(--iy, 0) * var(--isz, 46px) * -1) / calc(var(--isz, 46px) * 6) auto no-repeat, radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--rc, #6b6258) 22%, #1d1815), #0e0c0b 78%); image-rendering: pixelated; border-radius: 3px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rc, #6b6258) 75%, #000), inset 0 0 0 2px #000, 0 0 0 1px #000; }
 .iticon i { position: absolute; right: 3px; bottom: 1px; font: 600 10px/1.2 'IBM Plex Mono', monospace; color: #e9dfca; text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000; font-style: normal; image-rendering: auto; opacity: .9; }
 /* Item cards (Nov 12, second pass). In lists: a quiet row, picture left, name in its rarity colour. As a tooltip or in a comparison: a card with a rarity-lit header, the picture top right, and bonuses as diamond-bulleted lines. */
@@ -7208,8 +7208,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794545630582';
-  const CB_BUILD = '852b1abc2f'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794545897103';
+  const CB_BUILD = '335b53b2e1'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8315,6 +8315,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Feature', "The game has sound. Music for the welcome screen, Emberwatch, the road, battles and bosses, a fanfare when you win and a toll when you fall, and effects for hits, critical hits, spells, blocks, heals, playing a card, buttons and gear. Menu, Sound has sliders for music and effects."],
+      ['Art', "Your horse gallops when you ride, facing whichever way you go."],
       ['Feature', "A welcome screen greets you when the game opens: click to start your adventure. Choosing a hero is new too: your hero stands in the camp at full size with your roster down the side, and Create a new hero takes you to the campfire."],
       ['Feature', "The game fills the whole window now, with no wall behind it. Menu, Display lets you pick a screen shape (fill, 21:9, 16:9, 16:10 or 4:3), a game size, and full screen."],
       ['Polish', "One button style across the whole game (an iron plate lettered in small capitals, gold for the main action), and the tutorial box, town bar and chips match it."],
@@ -11038,7 +11040,7 @@ window.CB_PUPPET = (function () {
     const b = (Math.sin(p * TAU) + 1) / 2, breathe = (k) => { q[1].dy = -b * .9 * k; q[2].dy = q[4].dy = -b * .6 * k; q[0].sy = 1 + b * .012 * k; };
     if (anim === 'idle') { breathe(1); if (side) { q[2].r = .03 * s; q[4].r = -.03 * s; } return P; }
     const ready = (k) => { if (!side) return; q[2].r += -.45 * k; q[3].r += -.75 * k; P.wr += .55 * k; q[6].r += -.2 * k; q[7].r += .16 * k; q[8].r += .2 * k; q[9].r += .1 * k; q[0].r += .04 * k; P.dy += 1.2 * k; };   // the fighting stance
-    if (anim === 'sit') { breathe(1); if (side) { q[6].r = -1.2; q[7].r = 1.25; q[8].r = -1.2; q[9].r = 1.25; q[2].r = -.5; q[3].r = -.7; } else { q[6].sy = q[8].sy = .55; q[7].sy = q[9].sy = .7; } return P; }   // riding
+    if (anim === 'sit') { breathe(1); if (side) { q[6].r = -1.15; q[7].r = 1.3; q[8].r = -1.15; q[9].r = 1.3; q[8].sy = q[9].sy = 0; q[2].r = -.55; q[3].r = -.75; q[0].r = .07; } else { q[6].sy = q[8].sy = .55; q[7].sy = q[9].sy = .7; } return P; }   // riding
     if (anim === 'ready') { breathe(1); ready(1); q[2].r += .03 * s; return P; }
     // the fight moves play once, in the side view: p runs 0..1
     const A = side ? 2 : 4, F = side ? 3 : 5;   // the acting arm (near arm in the side view)
@@ -11205,12 +11207,12 @@ window.CB_PUPPET = (function () {
   }
   // ---------- riding: the pixel horse (img/hero/horse: rows facing the camera, sideways and away; the first cell stands, the next six walk)
   // seat: where the rider's hips go, from the middle of the horse's feet, in horse pixels; hip: a hero's hips above its feet
-  const HORSE = { cell: 128, frames: 6, k: 1.3, hip: 61, s: { row: 0, foot: 108, seat: [1, -70] }, e: { row: 1, foot: 108, seat: [-8, -50] }, n: { row: 2, foot: 119, seat: [1, -68] } };
+  const HORSE = { cell: 128, frames: 6, k: 1.3, hip: 61, s: { row: 0, foot: 108, seat: [1, -70] }, e: { row: 1, foot: 108, seat: [-6, -47] }, n: { row: 2, foot: 119, seat: [1, -68] } };
   const MOVED = new Map();
   function ride(g, look, key, cx, by, dir, moving, s, t) {
     const im = P.img('horse'), v = DIRS[dir] || 's', hv = v === 'w' ? 'e' : v, H = HORSE[hv]; if (!im || !P.ready(look, v)) return false;
     const M = MOVED.get(key) || { x: cx, y: by, at: -1e9 }; if (Math.abs(M.x - cx) + Math.abs(M.y - by) > .01) { M.x = cx; M.y = by; M.at = t; } MOVED.set(key, M); moving = t - M.at < 140;   // a rider is moving while its place changes (no flicker between steps)
-    const f = v === 'w' ? -1 : 1, fr = moving ? 1 + Math.floor(t / 70) % HORSE.frames : 0, k = HORSE.k * s, C = HORSE.cell, bob = moving ? Math.sin(t / 70 * Math.PI) * 1.4 * s : 0, sc = 96 * s / 118;
+    const f = v === 'w' ? -1 : 1, fr = moving ? 1 + Math.floor(t / 80) % HORSE.frames : 0, k = HORSE.k * s, C = HORSE.cell, bob = moving ? Math.sin(t / 240 * Math.PI) * 2.2 * s : 0, sc = 96 * s / 118;
     g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, (hv === 'e' ? 40 : 20) * s, 7 * s, 0, 0, Math.PI * 2); g.fill(); g.restore();
     const horse = () => { g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.translate(cx, by); if (f < 0) g.scale(-1, 1); g.drawImage(im, fr * C, H.row * C, C, C, -C / 2 * k, -H.foot * k, C * k, C * k); g.restore(); };
     const hipY = by + H.seat[1] * k + bob, rider = (clip) => { g.save(); if (clip) { g.beginPath(); g.rect(cx - 90 * s, hipY - 200 * s, 180 * s, 200 * s + 8 * sc); g.clip(); } P.draw(g, look, v, 'sit', t, cx + H.seat[0] * k * f, hipY + HORSE.hip * sc + 3 * s, sc); g.restore(); };
@@ -11245,6 +11247,45 @@ window.CB_PUPPET = (function () {
   window.CB_HEROPUP = { html, lookOf, appOf, picker, npc, npcLook, HORSE, ride: (g, pal, cx, by, dir, moving, s, t) => ride(g, pal && pal.forge ? lookOf(pal.forge.who || 'me', pal.forge.cls, pal.forge.gear) : npcLook(pal || {}), pal && pal.forge ? pal.forge.who || 'me' : 'npc', cx, by, dir, moving, s, t) };
 })();
 
+// ---------- Sound (Nov 13): background music for each part of the game and effects for hits, spells, blocks, cards and clicks.
+// The music and effects were made for Cardbound with PixelLab (tools/audio/urls.txt lists them). To host them with the game instead,
+// put the files in public/audio/ and change the addresses below. Menu > Sound has the volume sliders; nothing plays until your first click.
+window.CB_AUDIO = (function () {
+  const MUSIC = { "town": "https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/d4461fbf-6664-4b02-ba27-2857400913ce/cardbound-emberwatch.mp3", "title": "https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/8a9acba6-9176-445f-806a-9d52e624e50e/cardbound-title.mp3", "road": "https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/7973ebd3-f127-40c8-b0ae-f6517a0cc083/cardbound-the-road.mp3", "battle": "https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/e6a5c0bd-7501-47ef-90fe-2e1385a3ad56/cardbound-battle.mp3", "boss": "https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/84279f70-7e19-47e6-8985-edf0f5175188/cardbound-boss.mp3", "victory": "https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/29a29e39-5a26-48c5-8888-e3d854e9bb6f/cardbound-victory.mp3", "defeat": "https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/54161a03-c3df-4551-97dd-0e309303032e/cardbound-defeat.mp3" }, SFX = { "hit": "https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/4db5bdb4-6d2b-480d-8715-c3f52136930d/cb-hit.wav", "crit": "https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/a5293a38-b072-4cc3-9b88-85263453e626/cb-crit.wav", "cast": "https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/ac32622e-d337-40ea-90bc-bfb3e07fb2ae/cb-cast.wav", "block": "https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/86c80141-d934-42fc-845d-4504b48e7fb3/cb-block.wav", "heal": "https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/45ac008e-938a-44c6-95c5-c433fdfd8895/cb-heal.wav", "card": "https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/b669b193-1422-482e-b877-aa8daf8293f9/cb-card.wav", "click": "https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/75a9b196-6abc-4344-9740-18574a59f8e7/cb-click.wav", "coins": "https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/669e61b4-8b38-4741-ac6e-d2b0040c3315/cb-coins.wav", "death": "https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/2e03c5b2-6d7b-4bf8-9a85-e0b6c8780366/cb-death.wav", "equip": "https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/02c7aaec-ac2e-4925-997a-7ce9d71845f5/cb-equip.wav", "door": "https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/bf63ebbb-1923-4ff9-90cf-1fb3d69233f9/cb-door.wav", "horn": "https://backblaze.pixellab.ai/file/pixellab-characters/audio/a9b16777-50de-4267-a590-5e77ac4df623/d3f3a6ce-19c5-4870-964b-f373dacb60c6/cb-horn.wav" };
+  let set = { music: .35, sfx: .6 }; try { Object.assign(set, JSON.parse(localStorage.getItem('cb-sound') || '{}')); } catch (e) {}
+  const save = () => { try { localStorage.setItem('cb-sound', JSON.stringify(set)); } catch (e) {} };
+  let unlocked = false, want = null, cur = null, curKey = null, jing = null; const pool = {}, last = {};
+  function fade(a, to, ms, then) { if (!a) return; const from = a.volume, t0 = performance.now(); clearInterval(a._f); a._f = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / ms); a.volume = Math.max(0, Math.min(1, from + (to - from) * k)); if (k >= 1) { clearInterval(a._f); if (then) then(); } }, 40); }
+  function music(key) {
+    want = key; if (!unlocked || key === curKey) return; const old = cur; curKey = key; cur = null;
+    if (old) fade(old, 0, 900, () => { old.pause(); old.src = ''; });
+    if (!key || !MUSIC[key] || set.music <= 0) return;
+    const a = new Audio(MUSIC[key]); a.loop = true; a.volume = 0; a.preload = 'auto'; cur = a; a.play().then(() => fade(a, set.music, 1400)).catch(() => {});
+  }
+  function jingle(key, secs) {   // a short piece over the top: the music ducks under it
+    if (!unlocked || !MUSIC[key] || set.music <= 0) return; if (jing) { jing.pause(); jing = null; }
+    const a = jing = new Audio(MUSIC[key]); a.volume = Math.min(1, set.music * 1.25); if (cur) fade(cur, set.music * .15, 300);
+    a.play().catch(() => {}); setTimeout(() => fade(a, 0, 1500, () => { a.pause(); if (jing === a) jing = null; if (cur) fade(cur, set.music, 900); }), (secs || 9) * 1000);
+  }
+  function sfx(key, vol, delay) {
+    if (!unlocked || !SFX[key] || set.sfx <= 0) return; const now = performance.now() + (delay || 0); if (last[key] && now - last[key] < 70) return; last[key] = now;
+    const go = () => { const p = pool[key] || (pool[key] = []); let a = p.find(x => x.paused || x.ended); if (!a) { if (p.length >= 4) return; a = new Audio(SFX[key]); a.preload = 'auto'; p.push(a); } a.volume = Math.min(1, set.sfx * (vol == null ? 1 : vol)); try { a.currentTime = 0; } catch (e) {} a.play().catch(() => {}); };
+    if (delay) setTimeout(go, delay); else go();
+  }
+  // fight effects (src/fx.js add(kind...)) -> sounds
+  const FXS = { slash: 'hit', blunt: 'hit', claw: 'hit', pierce: 'hit', fire: 'hit', frost: 'hit', shadow: 'hit', arcane: 'hit', nature: 'hit', holy: 'hit', crit: 'crit', clank: 'block', block: 'block', shimmer: 'block', heal: 'heal', bolt: 'cast', aura: 'cast', smoke: 'cast' };
+  function fx(kind, delay) { const k = FXS[kind]; if (k) sfx(k, k === 'hit' ? .8 : 1, delay); }
+  function scene(which, cb) {
+    if (which === 'title') music('title'); else if (which === 'start') music('town'); else if (which === 'map') music('road');
+    else if (which === 'combat') { const boss = cb && cb.enemies && cb.enemies.some(e => e.tier === 'Boss' || e.raid || e.boss); music(boss ? 'boss' : 'battle'); if (cb && !cb.practice) sfx('horn', .5); }
+  }
+  function unlock() { if (unlocked) return; unlocked = true; if (want) { const w = want; curKey = null; music(w); } for (const k of ['click', 'card', 'hit']) { const a = new Audio(SFX[k]); a.preload = 'auto'; (pool[k] = pool[k] || []).push(a); } }
+  document.addEventListener('pointerdown', unlock, true); document.addEventListener('keydown', unlock, true);
+  document.addEventListener('click', (ev) => { const b = ev.target.closest && ev.target.closest('button, .btn, .seat, .selrow, [role="button"], .tabs button'); if (b && !b.disabled) sfx(b.matches('[data-equip], [data-dslot]') ? 'equip' : 'click', .55); }, true);
+  document.addEventListener('visibilitychange', () => { if (cur) { if (document.hidden) cur.pause(); else cur.play().catch(() => {}); } });
+  return { music, jingle, sfx, fx, scene, get: () => Object.assign({}, set), vol: (k, v) => { set[k] = Math.max(0, Math.min(1, v)); save(); if (k === 'music') { if (cur) cur.volume = set.music; if (set.music <= 0) { const w = curKey; music(null); want = w; } else if (!cur && want) { curKey = null; music(want); } } } };
+})();
+
   // ---------- Fight effects (Nov 2): ink-style hit effects, spell projectiles and the move each hero makes, all driven by the engine's events.
   // cb.animQ: one entry per card a hero plays (who, card type, element, target). cb.fxQ: every hit (with element, crit, Block absorbed,
   // damage-over-time type), debuff applied, heal and Block gained. consume(cb) runs after each render: it picks the hero's move (swing, leap,
@@ -11266,7 +11307,7 @@ window.CB_PUPPET = (function () {
     fit(); addEventListener('resize', fit);
     const live = []; // { kind, id | from/to, t0, ms, o }
     const now = () => performance.now();
-    function add(kind, o, delay) { live.push({ kind, o: o || {}, t0: now() + (delay || 0), ms: (DRAW[kind] && DRAW[kind].ms) || 500 }); if (live.length > 140) live.splice(0, live.length - 140); }
+    function add(kind, o, delay) { try { if (window.CB_AUDIO) CB_AUDIO.fx(kind, delay); } catch (e) {} live.push({ kind, o: o || {}, t0: now() + (delay || 0), ms: (DRAW[kind] && DRAW[kind].ms) || 500 }); if (live.length > 140) live.splice(0, live.length - 140); }
     // where a fighter is on screen: centre of the figure, plus a size factor (1 = a 110 px tall figure)
     function spot(id, at) {
       const f = document.querySelector(`.unit[data-id="${id}"] .figure`); if (!f) return null; const r = f.getBoundingClientRect(); if (!r.width) return null;
@@ -13855,6 +13896,9 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       <label class="toggle"><input type="checkbox" id="setFast" ${settings.fast ? 'checked' : ''}> Fast enemy turns</label>
       <label class="toggle"><input type="checkbox" id="setClassic" ${settings.classicUi ? 'checked' : ''}> Previous interface (the stone and wood look from before the pixel art)</label>
       <label class="toggle"><input type="checkbox" id="setClassicFoes" ${settings.classicFoes ? 'checked' : ''}> Previous enemy art (the still pictures from before the animated pixel monsters)</label>
+      <h3 style="font-size:20px;margin-top:6px">Sound</h3>
+      <label class="setrow">Music <input type="range" id="setMusic" min="0" max="100" value="${window.CB_AUDIO ? Math.round(CB_AUDIO.get().music * 100) : 0}"></label>
+      <label class="setrow">Effects <input type="range" id="setSfx" min="0" max="100" value="${window.CB_AUDIO ? Math.round(CB_AUDIO.get().sfx * 100) : 0}"></label>
       <h3 style="font-size:20px;margin-top:6px">Display</h3>
       <label class="setrow">Screen shape <select id="setRatio">${[['fill', 'Fill the window'], ['21:9', 'Ultrawide (21:9)'], ['16:9', 'Widescreen (16:9)'], ['16:10', 'Laptop (16:10)'], ['4:3', 'Classic (4:3)']].map(([v, n]) => `<option value="${v}"${(settings.ratio || 'fill') === v ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
       <label class="setrow">Game size <select id="setSize">${[100, 90, 80, 70, 60].map(v => `<option value="${v}"${(settings.size || 100) === v ? ' selected' : ''}>${v === 100 ? 'Full (100%)' : v + '% of the window'}</option>`).join('')}</select></label>
@@ -13867,6 +13911,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if ($('mnAch')) $('mnAch').onclick = () => openAchievements();
     if ($('mnTut')) $('mnTut').onclick = () => { closeModal(); tutStart(); };
     $('setFast').onchange = (e) => { settings.fast = e.target.checked; saveSettings(); };
+    if (window.CB_AUDIO) { $('setMusic').oninput = (e) => CB_AUDIO.vol('music', e.target.value / 100); $('setSfx').oninput = (e) => { CB_AUDIO.vol('sfx', e.target.value / 100); }; $('setSfx').onchange = () => CB_AUDIO.sfx('hit'); }
     $('setRatio').onchange = (e) => { settings.ratio = e.target.value; saveSettings(); applyDisplay(); }; $('setSize').onchange = (e) => { settings.size = +e.target.value; saveSettings(); applyDisplay(); };
     $('setFull').onclick = () => { try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); } catch (e) {} closeModal(); };
     $('setClassic').onchange = (e) => { settings.classicUi = e.target.checked; saveSettings(); document.body.classList.toggle('ui-classic', !!settings.classicUi); };
@@ -13917,7 +13962,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   }
   // Nov 2: the line under the logo says where you are
   function brandLine(which) { const el = $('brandLine'); if (!el) return; el.textContent = which === 'title' ? 'Choose your hero' : which === 'start' ? 'Emberwatch' : run ? `${run.mapName || 'The roads'} +${run.level || 0}` : cb && cb.duel ? 'The Colosseum' : cb && cb.raid ? 'Raid' : cb && cb.practice ? 'Training yard' : 'Emberwatch'; }
-  function show(which) { try { brandLine(which); } catch (e) {} if (which !== 'start' && typeof BZ !== 'undefined' && BZ.open) closeShop(true); placeChat(which); if (typeof retrack === 'function') setTimeout(() => { try { retrack(); } catch (e) {} }, 0); hidePeeks(); $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); retrack(true); }
+  function show(which) { try { brandLine(which); } catch (e) {} try { if (window.CB_AUDIO) CB_AUDIO.scene(which, cb); } catch (e) {} if (which !== 'start' && typeof BZ !== 'undefined' && BZ.open) closeShop(true); placeChat(which); if (typeof retrack === 'function') setTimeout(() => { try { retrack(); } catch (e) {} }, 0); hidePeeks(); $('scrTitle').hidden = which !== 'title'; $('scrStart').hidden = which !== 'start'; $('scrMap').hidden = which !== 'map'; $('scrCombat').hidden = which !== 'combat'; window.scrollTo(0, 0); if (which === 'start') { renderSaveNote(); townStart(townReturn); townReturn = false; } else townStop(); if (which === 'title') renderTitle(); retrack(true); }
 
   // ---------- map
   const RH = 50, CW = 96, PADX = 40, PADY = 34; // Nov 11: a little shorter and wider
@@ -14796,6 +14841,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   }
   function combatOver() {
     hidePeeks(); hardcoreCheck();
+    try { if (window.CB_AUDIO && cb && !cb._snd) { cb._snd = 1; const won = cb.enemies.every(e => e.hp <= 0); if (!cb.practice) CB_AUDIO.jingle(won ? 'victory' : 'defeat', won ? 8 : 12); if (won) CB_AUDIO.sfx('death', .7); } } catch (e) {}
     if (cb && cb.duel) { if (!cb._shown) { cb._shown = true; duelOver(); } return; }
     if (cb && cb.raid) { if (!cb._shown) { cb._shown = true; raidOver(); } return; }
     if (cb && cb.practice) { if (!cb._shown) { cb._shown = true; const p = cb.players[0], dmg = cb.enemies.reduce((t, e) => t + (e.maxHp - Math.max(0, e.hp)), 0);
@@ -14845,6 +14891,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   $('hand').addEventListener('click', () => { peek.hidden = true; });
   // ---------- drag a card onto an enemy to play it (click-to-select still works). While aiming, the card's numbers include the target.
   function playCard(c, tgt) {
+    try { if (window.CB_AUDIO) CB_AUDIO.sfx('card', .8); } catch (e) {}
     selected = null;
     if (cb.myMi != null) { netAct({ t: 'play', uid: c.uid, tgt }); render(); return; }
     cb.play(c.uid, tgt); render(true); if (cb.over) combatOver();
