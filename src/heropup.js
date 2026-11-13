@@ -13,6 +13,7 @@
     #scrCombat.bf .stage .unit .figure .pupfig { height: calc(var(--fh) * var(--s, 1)); }
     .seatfig .pupfig { --fh: 156px; margin: 0 auto; } .seat.soon .pupfig canvas { filter: brightness(.2) saturate(.2); }
     .campscene { background: #07070d url(img/bg/camp.webp) 50% 84% / cover no-repeat !important; image-rendering: pixelated; } .campscene::before, .campscene .ground, .campscene .fire { display: none !important; } .campscene .seat, .campscene .seat * { image-rendering: auto; } .campscene .pupfig canvas { image-rendering: pixelated; }
+    .herolist:has(.haspup) { grid-template-columns: repeat(auto-fill, minmax(372px, 1fr)); } .herocard.haspup { position: relative; padding-left: 96px; } .herocard .hcpup { position: absolute; left: 6px; top: 8px; } .herocard .hcpup .pupfig { --fh: 112px; }
     .dpup { display: grid; justify-items: center; gap: 2px; } .dpup .pupfig { --fh: 210px; } .dpup .dmirror { padding: 2px 12px; font-size: 13px; }
     .lookpick { display: grid; grid-template-columns: 150px 1fr; gap: 10px 16px; align-items: center; margin: 4px 0 12px; }
     .lookpick .lookview { display: grid; justify-items: center; gap: 4px; } .lookpick .lookview .pupfig { --fh: 190px; }

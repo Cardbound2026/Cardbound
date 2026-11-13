@@ -756,7 +756,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 .btn.primary:hover:not(:disabled) { filter: brightness(1.18) drop-shadow(0 0 6px rgba(255,150,50,.45)); }
 .btn.primary:active:not(:disabled) { transform: translateY(1px); }
 .btn.primary:focus-visible { outline: none; filter: brightness(1.22) drop-shadow(0 0 8px rgba(255,170,70,.7)); }
-#scrTitle { background: linear-gradient(180deg, rgba(12,9,7,.55), rgba(12,9,7,.92) 70%), url(img/ui/bg_physical.webp) center 20% / cover no-repeat; border-radius: 10px; padding: 18px 20px 30px; min-height: calc(100vh - 110px); align-content: start; }
+#scrTitle { background: linear-gradient(180deg, rgba(12,9,7,.55), rgba(12,9,7,.92) 70%), url(img/ui/bg_title.webp) center 30% / cover no-repeat; image-rendering: pixelated; border-radius: 10px; padding: 18px 20px 30px; min-height: calc(100vh - 110px); align-content: start; }
 .btn.primary:disabled { filter: grayscale(.8) brightness(.7); color: #b9ab93; }
 .endturn.btn.primary { border-width: 16px 40px; border-image-width: 16px 40px; padding: 0 12px; font-size: 24px; }
 .btn:not(.primary) { background: linear-gradient(180deg, #2d241b, #1b1611); border-color: #5e4630; color: #e8d8ba; box-shadow: inset 0 1px 0 rgba(255,220,160,.08); }
@@ -2348,7 +2348,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   let createCls = null;
   function renderTitle() {
     const keys = heroKeys(), chars = keys.map(k => profile.chars[k]);
-    $('heroList').innerHTML = keys.map(k => { const c = profile.chars[k]; return `<div class="herocard" style="--cc:${CC[c.cls]}"><b>${esc(c.name)}${c.hardcore ? ' <span class="hcbadge">Hardcore</span>' : c.hcFell ? ' <span class="hcbadge fell" title="Fell as a hardcore hero">Fallen</span>' : ''}</b><small>${c.cls} &middot; Power ${CBHub.powerLevel(c)} &middot; ${c.runs} run${c.runs === 1 ? '' : 's'}${c.bossKills ? ` &middot; ${c.bossKills} boss kill${c.bossKills === 1 ? '' : 's'}` : ''}</small><div class="row" style="display:flex;gap:6px;align-items:center"><button class="btn primary play" data-play="${k}">Enter Emberwatch</button><button class="pilebtn" data-delhero="${k}" title="Delete this hero">Delete</button></div></div>`; }).join('')
+    $('heroList').innerHTML = keys.map(k => { const c = profile.chars[k]; return `<div class="herocard${window.CB_HEROPUP ? ' haspup' : ''}" style="--cc:${CC[c.cls]}">${window.CB_HEROPUP ? `<span class="hcpup">${CB_HEROPUP.html('hc' + k, CB_HEROPUP.lookOf(k, c.cls, c.gear), { view: 's', s: 1 })}</span>` : ''}<b>${esc(c.name)}${c.hardcore ? ' <span class="hcbadge">Hardcore</span>' : c.hcFell ? ' <span class="hcbadge fell" title="Fell as a hardcore hero">Fallen</span>' : ''}</b><small>${c.cls} &middot; Power ${CBHub.powerLevel(c)} &middot; ${c.runs} run${c.runs === 1 ? '' : 's'}${c.bossKills ? ` &middot; ${c.bossKills} boss kill${c.bossKills === 1 ? '' : 's'}` : ''}</small><div class="row" style="display:flex;gap:6px;align-items:center"><button class="btn primary play" data-play="${k}">Enter Emberwatch</button><button class="pilebtn" data-delhero="${k}" title="Delete this hero">Delete</button></div></div>`; }).join('')
       ;
     $('heroHead').hidden = !chars.length;
     openCreate(true);
