@@ -2,6 +2,11 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Change', "Thorns striking back no longer make a sound."],
+      ['Interface', "The glow on the banded and skull loot chests sits on the line where the lid opens; on the skull chest it breaks behind the skull."],
+      ['Interface', "Searching the route map now turns the whole map dark and colourless, and the nodes that match stay bright and in colour."],
+      ['Balance', "Arterial Strike: deals 5 damage and applies 5 Bleed, then the target's Bleed ticks at once (it dealt 10 damage and applied none). Each level adds 1 damage and 2 Bleed."],
+      ['Feature', "Deck Planner (the new button on the town bar, or P): plan a build with its class, codex, talents, cards and your own notes, then name it and save it. Post it for everyone, browse other players' builds, upvote or downvote them, and sort by most upvoted or newest. Set any build as your active guide and a quest-style to-do list on the right of the town and the route map shows which maps to farm and which monsters to look for."],
       ['Fix', "Health bar notches: each notch is 10 HP up to 300 HP, 20 HP up to 600, 40 HP up to 1,200, doubling from there. A 207 HP boss now shows 20 notches (it showed 4)."],
       ['Art', "Mounts: the Dire Wolf, War Boar, Great Stag, Shadow Panther, War Bear and Frost Sabertooth have new, natural running animations (no more tiptoeing or prancing), and the Molten Slug is a real slug now, with no legs. Eight new mounts in the Skull Shop: Giant Chicken, Black Rooster, Green Raptor, Bloodback Spider, Emperor Scorpion, Ghost Horse, Golden Gryphon and Red Dragon."],
       ['Interface', "After Assassinate, the cards in your hand show their doubled Poison, Bleed and Dodge numbers, not only the doubled damage."],

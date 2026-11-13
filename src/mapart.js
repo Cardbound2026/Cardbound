@@ -10,6 +10,7 @@ window.CB_MAPART = (function () {
   const css = document.createElement('style');
   css.textContent = `.mapart { position: relative; margin: 0 auto; background-repeat: no-repeat; background-position: center top; image-rendering: pixelated; }
     .mapart > svg { position: relative; z-index: 1; }
+    .mapscroll.finding .mapart::before { content: ''; position: absolute; inset: 0; z-index: 0; -webkit-backdrop-filter: grayscale(1) brightness(.4); backdrop-filter: grayscale(1) brightness(.4); }
     .mapart > canvas.mapmobs { position: absolute; top: 0; left: 50%; z-index: 2; pointer-events: none; image-rendering: pixelated; }
     .mapart .node .ring { fill-opacity: .55; }
     .mapart .node.artnode .ring { fill: transparent; stroke-opacity: 0; }
@@ -57,7 +58,7 @@ window.CB_MAPART = (function () {
       const tr = /translate\(([-\d.]+),([-\d.]+)\)/.exec(g.getAttribute('transform')); if (!tr) continue;
       const boss = n.id === 'boss', kind = boss ? 'boss' : n.type;
       const pl = run.plan || {}, plan = (pl.A || []).includes(n.id) ? '#4fd1ff' : (pl.B || []).includes(n.id) ? '#c084fc' : null;
-      const e = { x: +tr[1], y: +tr[2], kind, enraged: !!n.enraged, ks: [], prop: PROP[n.type] || null, dim: run.visited.includes(n.id) && run.at !== n.id, done: run.visited.includes(n.id), plan, boss, ph: (n.row * 7 + n.col * 3) % 9 };
+      const e = { id: n.id, x: +tr[1], y: +tr[2], kind, enraged: !!n.enraged, ks: [], prop: PROP[n.type] || null, dim: run.visited.includes(n.id) && run.at !== n.id, done: run.visited.includes(n.id), plan, boss, ph: (n.row * 7 + n.col * 3) % 9 };
       if (n.enemies) { e.ks = n.enemies.map((k) => ({ k: keyFor(k), tier: ((window.CB_DATA && CB_DATA.enemies[k]) || {}).tier || '1' })).filter((x) => x.k).slice(0, 3); for (const x of e.ks) sheet(x.k); }
       if (e.prop) propImg(e.prop);
       if (!e.ks.length && !e.prop) continue;
@@ -77,11 +78,14 @@ window.CB_MAPART = (function () {
     const M = CB_MOBS.manifest;
     for (const b of boxes) {
       const g = b.cv.getContext('2d'); g.setTransform(b.dpr, 0, 0, b.dpr, 0, 0); g.clearRect(0, 0, b.cv.width, b.cv.height); g.imageSmoothingEnabled = false;
+      const FIND = window.CB_MAPFIND || null;   /* Nov 13: while the route map is searched, everything that does not match is drawn dark and colourless */
       for (const s of b.list) {                                          // rings first, so every model stands on top of its own
+        g.filter = !FIND ? 'none' : FIND.has(s.id) ? 'brightness(1.3)' : 'grayscale(1) brightness(.45)';
         const n = s.ks.length, rx = s.boss ? 30 : s.prop ? 22 : Math.max(17, (n - 1) * 8 + 14);
         ring(g, s.x, s.y + (s.prop ? 10 : 8), rx, s.plan || RING[s.kind] || RING.fight, t, s.enraged && !s.plan, s.dim && !s.plan, !!s.plan);
       }
       for (const s of b.list) {
+        g.filter = !FIND ? 'none' : FIND.has(s.id) ? 'brightness(1.25) saturate(1.3)' : 'grayscale(1) brightness(.4)';
         if (s.prop) {
           const img = propImg(s.prop); if (!img.complete || !img.naturalWidth) continue;
           const h = 44, k = h / img.naturalHeight; g.globalAlpha = s.dim ? 0.4 : 1;
@@ -101,10 +105,11 @@ window.CB_MAPART = (function () {
           g.drawImage(img, i * m.w, r * m.h, m.w, m.h, -((x0 + x1) / 2) * k, -y1 * k, m.w * k, m.h * k); g.restore();
         });
       }
+      g.filter = FIND ? 'grayscale(1) brightness(.5)' : 'none';
       for (const s of b.list) if (s.done && skull.complete && skull.naturalWidth) { // a cleared node gets a big red skull, so you can see the road you've walked
         const sz = s.boss ? 40 : 30; g.globalAlpha = 0.95; g.drawImage(skull, s.x - sz / 2, s.y - (s.prop ? 24 : 20) - sz / 2, sz, sz);
       }
-      g.globalAlpha = 1;
+      g.globalAlpha = 1; g.filter = 'none';
     }
   }
   return { decorate, has: (k) => !!ART[k] };

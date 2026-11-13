@@ -338,7 +338,7 @@ const CUSTOM = {
   vanish: { play: (cb, t, p) => { cb.cleanseAll(p, true); p.stealth = true; } },
   eviscerate: { play: (cb, t, p) => { const st = p.stealth; const e = D_(cb, t, 24, 'Eviscerate'); if (st && e && e.hp > 0) cb.applyDot(e, 'bleed', 10); } },
   wound_poison: { play: (cb, t) => { const e = tgtOf(cb, t); if (!e) return; cb.applyDot(e, 'poison', 6); e.noHealRound = cb.round + 1; } },
-  arterial_strike: { play: (cb, t) => { const e = D_(cb, t, 10, 'Arterial Strike'); if (e) cb.extraTick(e, 'bleed'); } },
+  arterial_strike: { play: (cb, t) => { const e = D_(cb, t, 5, 'Arterial Strike'); if (e && e.hp > 0) { cb.applyDot(e, 'bleed', 5); cb.extraTick(e, 'bleed'); } } },   /* Nov 13: was 10 damage and no Bleed of its own */
   ransack: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (e) cb.eExhaust(e, 1); p.drawPile.splice(Math.floor(cb.rng() * (p.drawPile.length + 1)), 0, { uid: 'c' + (cb._uid++), key: 'dazed' }); } },
   sabotage_supplies: { play: (cb) => { for (const e of cb.alive()) cb.eDiscard(e, 1); } },
   disarming_flick: { play: (cb, t) => { const e = D_(cb, t, 8, 'Disarming Flick'); if (e) { e.disarmed = 1; cb.planEnemy(e, true); } } },
@@ -2321,6 +2321,7 @@ const UPG_SPECIAL = { // key -> (N = token values in text order, rank, v, base c
   killing_blow: (N, r, v) => ({ text: v.text.replace('deals double damage', `deals ${100 + 10 * r}% more damage`), play: (cb, t, p) => { cb.player.turn.killingBlow = 2 + 0.1 * r; say(cb, `Your next crit this turn deals ${100 + 10 * r}% more damage.`); } }),
   manaquake: (N, r, v) => ({ text: v.text.replace('equal to the amount consumed', `equal to ${100 + 5 * r}% of the amount consumed`), play: (cb, t, p) => { p = cb.player; const m = Math.floor(p.mana / 2); p.mana -= m; DA(cb, m * (1 + 0.05 * r), 'Manaquake'); } }),
   thousand_cuts: (N, r, v) => { const per = 1 + (r >= 3 ? 1 : 0) + (r >= 4 ? 1 : 0); return { text: v.text.replace('Attack once', ['Attack once', 'Attack twice', 'Attack three times'][per - 1]), play: (cb, t, p) => { const hits = Math.floor(cb.spendAll(cb.player) / 5) * per; for (let i = 0; i < hits && !cb.over; i++) D_(cb, t, 1, 'Thousand Cuts'); } }; },
+  arterial_strike: (N) => ({ play: (cb, t) => { const e = D_(cb, t, N[0], 'Arterial Strike'); if (e && e.hp > 0) { cb.applyDot(e, 'bleed', N[1]); cb.extraTick(e, 'bleed'); } } }),   /* the extra tick uses the upgraded Bleed */
   assassinate: (N, r, v) => ({ text: v.text.replace('Your next card is doubled:', `Your next card is ${100 + 10 * r}% stronger:`), play: (cb) => { cb.player.nextAllMult = 2 + 0.1 * r; cb.say('player', `Your next card is ${100 + 10 * r}% stronger.`); } }),
   ashen_drain: (N, r, v, d) => ({ text: v.text + ` You gain mana equal to ${5 * r}% of the Burn.`, play: (cb, t, p) => { p = cb.player; const e = tgtOf(cb, t); const b = e ? e.burn : 0; d.play(cb, t, p); const g = Math.round(b * 0.05 * r); if (g) { p.mana += g; say(cb, `+${g} mana.`); } } }),
   bait: (N) => ({ play: (cb, t, p) => { p = cb.player; cb.gainDef(N[0]); (p.parryNext = p.parryNext || []).push((c, q, e) => { e.vulnerable += N[1]; c.eDiscard(e, N[2]); c.say('player', `${e.name} takes the bait: ${N[1]} Vulnerable.`); }); } }),
@@ -2513,7 +2514,7 @@ const TEXT_FIX = {
 "vanishing_act": "You cannot be broken out of Stealth next turn. You are immune to damage. Exhaust.",
 "untouchable": "You are immune to damage next turn. Exhaust.",
 "fester": "The target's Poison deals its damage immediately.",
-"arterial_strike": "Deal 10 damage. The target's Bleed deals its damage immediately.",
+"arterial_strike": "Deal 5 damage and apply 5 Bleed. The target's Bleed deals its damage immediately.",
 "dust_in_the_eyes": "Deal 5 damage. Remove Stealth from the target. It can't enter Stealth until the end of its next turn.",
 "grievous_shiv": "Deal 3 damage. Apply Grievous Wound for 2 turns.",
 "quartermaster": "Whenever a card would be added to your full hand, gain 5 mana.",

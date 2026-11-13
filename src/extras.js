@@ -292,7 +292,7 @@
   }
   // ---------- the Menu, in tabs: Game, Settings, Shop, and the reference books
   const _menu0 = openMenu;
-  const MN_TABS = [['game', 'Game', 11], ['settings', 'Settings', 11], ['shop', 'Skull Shop', 9], ['cos', 'Cosmetics', 9], null, ['compendium', 'Compendium', 4], ['glossary', 'Glossary', 4], ['guide', 'Build guide', 2], ['ach', 'Achievements', 5], ['records', 'Hall of Records', 5], ['news', "What's new", 7]];
+  const MN_TABS = [['game', 'Game', 11], ['settings', 'Settings', 11], ['shop', 'Skull Shop', 9], ['cos', 'Cosmetics', 9], null, ['compendium', 'Compendium', 4], ['glossary', 'Glossary', 4], ['guide', 'Build guide', 2], ['planner', 'Deck Planner', 2], ['ach', 'Achievements', 5], ['records', 'Hall of Records', 5], ['news', "What's new", 7]];
   const uic = (i) => `<i class="uic" style="background-position:${-(i % 6) * 24}px ${-Math.floor(i / 6) * 24}px"></i>`;
   function exMenu(tab) {
     EX.menu = tab || 'game'; const hero = profile && profile.chars[heroKey], onTitle = !$('scrTitle').hidden;
@@ -300,7 +300,7 @@
     const old = $('modalBox').querySelector('.menu'); if (!old) return;
     const game = document.createElement('div'), sets = document.createElement('div'); game.className = sets.className = 'menu'; let to = game;
     for (const n of [...old.children]) { if (n.tagName === 'H3' && /Settings/.test(n.textContent)) { to = sets; continue; } if (['mnGloss', 'mnGuide', 'mnAch', 'mnRec', 'mClose'].includes(n.id)) continue; to.appendChild(n); }
-    const nav = MN_TABS.filter(t => !t || !((t[0] === 'shop' || t[0] === 'cos' || t[0] === 'guide' || t[0] === 'ach' || t[0] === 'records') && (!hero || onTitle)) && !(t[0] === 'records' && (typeof run !== 'undefined' && run || typeof cb !== 'undefined' && cb)) && !(t[0] === 'news' && typeof openUpdates !== 'function'))
+    const nav = MN_TABS.filter(t => !t || !((t[0] === 'shop' || t[0] === 'cos' || t[0] === 'guide' || t[0] === 'planner' || t[0] === 'ach' || t[0] === 'records') && (!hero || onTitle)) && !(t[0] === 'records' && (typeof run !== 'undefined' && run || typeof cb !== 'undefined' && cb)) && !(t[0] === 'news' && typeof openUpdates !== 'function'))
       .map(t => t ? `<button type="button" class="${EX.menu === t[0] ? 'on' : ''}" data-mntab="${t[0]}">${uic(t[2])}${t[1]}</button>` : '<hr>').join('');
     $('modalBox').innerHTML = `<div class="mnwrap"><nav class="mnnav" aria-label="Menu">${nav}<hr><button type="button" class="on" id="mClose" style="margin-top:auto">Resume <span class="muted" style="margin-left:auto;font-size:12px">Esc</span></button></nav><div class="mnpane" id="mnPane"></div></div>`;
     $('modalBox').classList.add('wide');
@@ -316,6 +316,7 @@
     if (k === 'compendium') { closeModal(); if (typeof closeTalk === 'function') closeTalk(); return openSheet('codex'); }
     if (k === 'glossary') return openGlossary();
     if (k === 'guide') return openGuide();
+    if (k === 'planner') return openPlanner();
     if (k === 'ach') return openAchievements();
     if (k === 'records') { closeModal(); return openRecords(); }
     if (k === 'news') { closeModal(); return openUpdates(); }
@@ -340,15 +341,15 @@
   function openShop() { if (!profile || !profile.chars[heroKey]) return; exMenu('shop'); }
   // ---------- the town's action bar (bottom right): every window one click away
   { const bar = document.createElement('div'); bar.id = 'actbar'; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Quick buttons');
-    const B = [['char', 'Character', 0, 'C'], ['bags', 'Bags', 1, 'B'], ['talents', 'Talents', 2, 'N'], ['deck', 'Deck and cards', 3, ''], ['compendium', 'Compendium', 4, ''], ['ach', 'Achievements', 5, ''], ['pvp', 'Arena (PvP)', 6, ''], ['lfg', 'Group finder', 7, 'L'], ['friends', 'Friends', 8, 'O'], ['guild', 'Guild', -1, 'G'], ['shop', 'Skull Shop', 9, ''], ['cos', 'Cosmetics', -2, 'K'], ['mount', 'Mount up', 10, 'M'], ['menu', 'Menu', 11, 'Esc']];
-    bar.innerHTML = B.map(([k, n, i, key]) => `<button type="button" data-act="${k}" data-tip="${n}${key ? ' (' + key + ')' : ''}" aria-label="${n}"><i class="uic" style="${i < 0 ? `background:url(img/ui/${i === -2 ? 'cosmetics' : 'guild'}.webp) center / 36px 36px no-repeat;image-rendering:pixelated` : `background-position:${-(i % 6) * 36}px ${-Math.floor(i / 6) * 36}px`}"></i>${key && key.length === 1 ? `<kbd>${key}</kbd>` : ''}</button>`).join('');
+    const B = [['char', 'Character', 0, 'C'], ['bags', 'Bags', 1, 'B'], ['talents', 'Talents', 2, 'N'], ['deck', 'Deck and cards', 3, ''], ['compendium', 'Compendium', 4, ''], ['planner', 'Deck Planner', -3, 'P'], ['ach', 'Achievements', 5, ''], ['pvp', 'Arena (PvP)', 6, ''], ['lfg', 'Group finder', 7, 'L'], ['friends', 'Friends', 8, 'O'], ['guild', 'Guild', -1, 'G'], ['shop', 'Skull Shop', 9, ''], ['cos', 'Cosmetics', -2, 'K'], ['mount', 'Mount up', 10, 'M'], ['menu', 'Menu', 11, 'Esc']];
+    bar.innerHTML = B.map(([k, n, i, key]) => `<button type="button" data-act="${k}" data-tip="${n}${key ? ' (' + key + ')' : ''}" aria-label="${n}"><i class="uic" style="${i < 0 ? `background:url(img/ui/${i === -3 ? 'planner' : i === -2 ? 'cosmetics' : 'guild'}.webp) center / 36px 36px no-repeat;image-rendering:pixelated` : `background-position:${-(i % 6) * 36}px ${-Math.floor(i / 6) * 36}px`}"></i>${key && key.length === 1 ? `<kbd>${key}</kbd>` : ''}</button>`).join('');
     $('scrStart').appendChild(bar);
     const act = (k) => { if (typeof closeTalk === 'function') closeTalk();
       if (k === 'char') { GT.tab = 'deck'; openSheet('char'); } else if (k === 'bags') { openSheet('char'); GT.tab = 'stash'; renderHub(); } else if (k === 'talents') openTalents(); else if (k === 'deck') openSheet('deck'); else if (k === 'compendium') openSheet('codex');
-      else if (k === 'ach') openAchievements(); else if (k === 'pvp') openSheet('arena'); else if (k === 'lfg') { if (typeof openLfg === 'function') openLfg(); } else if (k === 'friends') openSheet('friends'); else if (k === 'guild') openSheet('guild'); else if (k === 'shop') openShop(); else if (k === 'cos') openCosmetics(); else if (k === 'mount') toggleMount(); else if (k === 'menu') openMenu(); };
+      else if (k === 'planner') openPlanner(); else if (k === 'ach') openAchievements(); else if (k === 'pvp') openSheet('arena'); else if (k === 'lfg') { if (typeof openLfg === 'function') openLfg(); } else if (k === 'friends') openSheet('friends'); else if (k === 'guild') openSheet('guild'); else if (k === 'shop') openShop(); else if (k === 'cos') openCosmetics(); else if (k === 'mount') toggleMount(); else if (k === 'menu') openMenu(); };
     bar.addEventListener('click', (ev) => { const b = ev.target.closest('[data-act]'); if (b) { act(b.dataset.act); b.blur(); } });
     document.addEventListener('keydown', (ev) => { if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.target.matches('input, select, textarea') || $('scrStart').hidden || !$('modal').hidden || !$('sheet').hidden || (typeof $('talk') !== 'undefined' && $('talk') && !$('talk').hidden)) return;
-      if (ev.key === 'b' || ev.key === 'B') { ev.preventDefault(); act('bags'); } else if (ev.key === 'l' || ev.key === 'L') { ev.preventDefault(); act('lfg'); } else if (ev.key === 'o' || ev.key === 'O') { ev.preventDefault(); act('friends'); } else if (ev.key === 'k' || ev.key === 'K') { ev.preventDefault(); act('cos'); } });
+      if (ev.key === 'b' || ev.key === 'B') { ev.preventDefault(); act('bags'); } else if (ev.key === 'l' || ev.key === 'L') { ev.preventDefault(); act('lfg'); } else if (ev.key === 'o' || ev.key === 'O') { ev.preventDefault(); act('friends'); } else if (ev.key === 'k' || ev.key === 'K') { ev.preventDefault(); act('cos'); } else if (ev.key === 'p' || ev.key === 'P') { ev.preventDefault(); act('planner'); } });
   }
   // Nov 13: the talent trees changed (new talents at the bottom of every tree), so every hero gets all their picks back once
   function exTalentRefund() { if (!profile || profile.talV >= 2) return; let n = 0; for (const c of Object.values(profile.chars || {})) for (const st of Object.values(c.codexes || {})) if (st.picks && st.picks.some(x => x != null)) { st.picks = []; n++; } profile.talV = 2; save();
