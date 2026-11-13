@@ -13,6 +13,9 @@ window.CB_PUPPET = (function () {
   const EYECOL = [[70, 44, 28], [60, 110, 190], [70, 150, 80], [150, 150, 160], [190, 150, 40], [170, 50, 50], [150, 70, 190]];
   const LIPCOL = [null, [176, 60, 60], [120, 40, 60], [90, 50, 110], [40, 30, 36]];
   const EYES = 5, MOUTHS = 4, BODY = { Warrior: 'warrior', Paladin: 'paladin', Mage: 'mage', Rogue: 'female', Warlock: 'female' };
+  const W = D.weapons, MAPS = ['physical', 'fire', 'frost', 'nature', 'arcane', 'shadow'], CLOAKCOL = [[124, 104, 86], [156, 46, 38], [150, 182, 208], [72, 108, 62], [112, 72, 164], [54, 50, 66]];
+  const WTYPE = { '1H Sword': 'sword1h', '1H Axe': 'axe1h', '1H Mace': 'mace1h', Dagger: 'dagger', Wand: 'wand', '2H Sword': 'sword2h', '2H Axe': 'axe2h', '2H Maul': 'maul', '2H Warhammer': 'hammer', '2H Scythe': 'scythe', 'Kite Shield': 'kite', 'Tower Shield': 'tower', Focus: 'focus' };
+  const STAFF = { 'Fire Staff': 1, 'Frost Staff': 2, 'Nature Staff': 3, 'Arcane Staff': 4, 'Shadow Staff': 5 }, LONG = { staff: 1, scythe: 1 }, HELD = { kite: 1, tower: 1, focus: 1 };
   let loads = 0;   // counts finished image loads, so callers can tell when a look may have changed
   function img(name) { let e = IMG.get(name); if (!e) { e = { im: new Image(), ok: false, bad: false }; e.im.onload = () => { e.ok = true; loads++; COMP.clear(); }; e.im.onerror = () => { e.bad = true; loads++; }; e.im.src = 'img/hero/' + name + '.webp'; IMG.set(name, e); } return e.ok ? e.im : e.bad ? false : null; }
   function canvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
@@ -74,10 +77,18 @@ window.CB_PUPPET = (function () {
     wear(0);
     if (COMP.size > 60) COMP.clear(); COMP.set(key, c); return c;
   }
+  // ---------- the cloak: one grey picture per body and view (img/hero/cloak), dyed by its map
+  const CLOAK = new Map();
+  function cloak(L, v) {
+    if (L.cloak == null) return null; const key = L.body + v + L.cloak; let c = CLOAK.get(key); if (c) return c; const im = img('cloak'); if (!im) return null;
+    c = canvas(S, S); const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(im, H.bodies.indexOf(L.body) * S, H.views.indexOf(v) * S, S, S, 0, 0, S, S);
+    const id = g.getImageData(0, 0, S, S), p = id.data, col = CLOAKCOL[L.cloak] || CLOAKCOL[0]; for (let i = 0; i < p.length; i += 4) if (p[i + 3]) { const k = p[i] / 150; p[i] = Math.min(255, col[0] * k); p[i + 1] = Math.min(255, col[1] * k); p[i + 2] = Math.min(255, col[2] * k); }
+    g.putImageData(id, 0, 0); CLOAK.set(key, c); return c;
+  }
   // ---------- poses: for each part { r: turn (radians, + = clockwise), sy: stretch along the limb, dx, dy }, plus the whole body's dx, dy
   const Z = () => ({ r: 0, sy: 1, dx: 0, dy: 0 }), ease = (x) => x * x * (3 - 2 * x), up = (p, a, b) => Math.max(0, Math.min(1, (p - a) / (b - a)));
   function pose(anim, p, view) {
-    const P = { dx: 0, dy: 0, parts: Array.from({ length: 10 }, Z) }, q = P.parts, s = Math.sin(p * TAU), c = Math.cos(p * TAU), side = view === 'e';
+    const P = { dx: 0, dy: 0, wr: 0, parts: Array.from({ length: 10 }, Z) }, q = P.parts, s = Math.sin(p * TAU), c = Math.cos(p * TAU), side = view === 'e';
     if (anim === 'walk') {
       if (side) {
         q[6].r = -.33 * s; q[7].r = .5 * Math.max(0, c); q[8].r = .33 * s; q[9].r = .5 * Math.max(0, -c);
@@ -92,27 +103,29 @@ window.CB_PUPPET = (function () {
     }
     const b = (Math.sin(p * TAU) + 1) / 2, breathe = (k) => { q[1].dy = -b * .9 * k; q[2].dy = q[4].dy = -b * .6 * k; q[0].sy = 1 + b * .012 * k; };
     if (anim === 'idle') { breathe(1); if (side) { q[2].r = .03 * s; q[4].r = -.03 * s; } return P; }
+    const ready = (k) => { if (!side) return; q[2].r += -.45 * k; q[3].r += -.75 * k; P.wr += .55 * k; q[6].r += -.2 * k; q[7].r += .16 * k; q[8].r += .2 * k; q[9].r += .1 * k; q[0].r += .04 * k; P.dy += 1.2 * k; };   // the fighting stance
+    if (anim === 'ready') { breathe(1); ready(1); q[2].r += .03 * s; return P; }
     // the fight moves play once, in the side view: p runs 0..1
     const A = side ? 2 : 4, F = side ? 3 : 5;   // the acting arm (near arm in the side view)
     if (anim === 'attack' || anim === 'aoe') {
       const w = ease(up(p, 0, .32)), hit = ease(up(p, .32, .5)), back = ease(up(p, .62, 1)), big = anim === 'aoe' ? 1.25 : 1;
       q[A].r = (.9 * w - 2.5 * hit) * big * (1 - back); q[F].r = (-.5 * w + .1 * hit) * (1 - back); q[0].r = (-.07 * w + .16 * hit) * (1 - back);
-      P.dx = (-2 * w + 9 * hit * big) * (1 - back); q[6].r = -.25 * hit * (1 - back); q[8].r = .2 * hit * (1 - back); q[1].r = .05 * hit * (1 - back);
+      P.dx = (-2 * w + 9 * hit * big) * (1 - back); q[6].r = -.25 * hit * (1 - back); q[8].r = .2 * hit * (1 - back); q[1].r = .05 * hit * (1 - back); P.wr = (-1.9 * w * (1 - hit) + 2.75 * hit) * (1 - back); ready(back);
     } else if (anim === 'cast') {
       const w = ease(up(p, 0, .3)), back = ease(up(p, .75, 1)), k = w * (1 - back), fl = Math.sin(p * TAU * 3) * .06 * k;
-      q[A].r = (-2.3 + fl) * k; q[F].r = -.35 * k; q[0].r = -.05 * k; q[1].r = -.1 * k; P.dy = -1.5 * k;
+      q[A].r = (-2.3 + fl) * k; q[F].r = -.35 * k; q[0].r = -.05 * k; q[1].r = -.1 * k; P.dy = -1.5 * k; P.wr = 2.1 * k; ready(1 - k);
     } else if (anim === 'guard') {
       const w = ease(up(p, 0, .25)), back = ease(up(p, .75, 1)), k = w * (1 - back);
-      q[A].r = -1.0 * k; q[F].r = -1.25 * k; q[0].r = .05 * k; P.dx = -1.5 * k; q[6].r = .12 * k; q[8].r = -.12 * k;
+      q[A].r = -1.0 * k; q[F].r = -1.25 * k; q[0].r = .05 * k; P.dx = -1.5 * k; q[6].r = .12 * k; q[8].r = -.12 * k; P.wr = .9 * k; ready(1 - k);
     } else if (anim === 'hit') {
       const k = Math.sin(Math.min(1, p) * Math.PI);
-      q[0].r = -.14 * k; q[1].r = -.1 * k; P.dx = -3.5 * k; q[A].r = .35 * k; q[6].r = .1 * k;
+      ready(1); q[0].r += -.14 * k; q[1].r = -.1 * k; P.dx = -3.5 * k; q[A].r += .35 * k; q[6].r += .1 * k;
     } else if (anim === 'dead') {
       const k = ease(Math.min(1, p)); q[0].r = -1.45 * k; P.dy = 30 * k; P.dx = -10 * k; q[1].r = -.2 * k; q[A].r = .6 * k; q[6].r = .5 * k; q[8].r = .3 * k;
     }
     return P;
   }
-  const CLIP = { idle: 1600, walk: 760, attack: 560, aoe: 700, cast: 800, guard: 700, hit: 380, dead: 700 }; // ms per loop (or per play)
+  const CLIP = { ready: 1600, idle: 1600, walk: 760, attack: 560, aoe: 700, cast: 800, guard: 700, hit: 380, dead: 700 }; // ms per loop (or per play)
   const ONCE = { attack: 1, aoe: 1, cast: 1, guard: 1, hit: 1, dead: 1 };
   // ---------- drawing: each part is drawn from the look's strip with its parents' moves applied
   const work = canvas(S * 2, S * 2), wg = work.getContext('2d');
@@ -122,7 +135,21 @@ window.CB_PUPPET = (function () {
     const strip = compose(look, v) || img(look.body + '_' + v); if (!strip) return false;
     const len = CLIP[anim] || 1000, p = ONCE[anim] ? Math.min(1, t / len) : (t % len) / len, P = pose(anim, p, v);
     wg.setTransform(1, 0, 0, 1, 0, 0); wg.clearRect(0, 0, work.width, work.height); wg.imageSmoothingEnabled = false;
-    for (const i of B.order) { wg.setTransform(1, 0, 0, 1, S / 2 + Math.round(P.dx), S / 2 + Math.round(P.dy)); chain(wg, B, P, i); wg.drawImage(strip, i * S, 0, S, S, 0, 0, S, S); }
+    const base = () => wg.setTransform(1, 0, 0, 1, S / 2 + Math.round(P.dx), S / 2 + Math.round(P.dy)), wim = (look.weapon || look.off) && W ? img('weapons') : null, cl = cloak(look, v);
+    const held = (it, part, hand, rot, at) => {   // a weapon or shield: its grip on the hand, turned with the arm
+      if (!it || !wim) return; const ti = W.types.indexOf(it[0]), gp = W.grip[it[0]] && W.grip[it[0]][it[1]]; if (ti < 0 || !gp) return;
+      base(); chain(wg, B, P, part); wg.translate(at ? at[0] : B.hand[hand][0], at ? at[1] : B.hand[hand][1]); wg.rotate(rot); wg.drawImage(wim, it[1] * W.cw, ti * W.ch, W.cw, W.ch, -Math.round(gp[0]), -Math.round(gp[1]), W.cw, W.ch);
+    };
+    const wrot = (it, d) => (HELD[it[0]] ? 0 : LONG[it[0]] ? .18 * d : 1.15 * d), mainPart = v === 'n' ? 5 : 3, offPart = v === 'n' ? 3 : 5;
+    if (cl && v !== 'n') { base(); chain(wg, B, P, 0); wg.drawImage(cl, 0, 0); }
+    if (v === 'e' && look.off && !HELD[look.off[0]]) held(look.off, 0, 0, 1.0, [B.hand[0][0] + 6, B.hand[0][1] - 4]);   // the other hand's weapon shows behind the body
+    for (const i of B.order) {
+      base(); chain(wg, B, P, i); wg.drawImage(strip, i * S, 0, S, S, 0, 0, S, S);
+      if (i === 0 && cl && v === 'n') wg.drawImage(cl, 0, 0);
+      if (i === 0 && v === 'e' && look.off && HELD[look.off[0]]) held(look.off, 0, 0, 0, [B.piv[0][0] + 13, B.piv[0][1] - (look.off[0] === 'focus' ? 24 : 16)]);
+      if (look.weapon && i === mainPart) held(look.weapon, i, v === 'n' ? 1 : 0, v === 'e' ? wrot(look.weapon, 1) + P.wr : wrot(look.weapon, v === 's' ? -.26 : .26));
+      if (look.off && v !== 'e' && i === offPart) held(look.off, i, v === 'n' ? 0 : 1, wrot(look.off, v === 's' ? .26 : -.26));
+    }
     g.save(); g.imageSmoothingEnabled = scale < 1; if (scale < 1) g.imageSmoothingQuality = 'high'; g.translate(x, footY); if (flip) g.scale(-1, 1);
     g.drawImage(work, -(S / 2 + B.cx) * scale, -(S / 2 + B.foot) * scale, work.width * scale, work.height * scale); g.restore(); return true;
   }
@@ -133,6 +160,16 @@ window.CB_PUPPET = (function () {
     for (const it of items || []) { if (!it || !SLOTS.includes(it.slot)) continue; const b = G.bases.find(x => x.name === (it.base || it.name)) || {}, A = G.arche[it.arch || b.arch] || {}, map = it.map || b.map || 'physical'; if (A.type && A.type !== 'None') out[it.slot] = map + '_' + A.type; }
     return out;
   }
-  return { draw, pose, compose, defaults, gearOf, len: (a) => CLIP[a] || 1000, once: (a) => !!ONCE[a], loads: () => loads, S, SLOTS, SKIN, HAIRCOL, EYECOL, LIPCOL, EYES, MOUTHS, HAIR: H.styles, BEARDS: H.beards, BODY,
+  // weapons, shield and cloak: items -> { weapon: [type, version], off: [type, version], cloak: map number }
+  function armsOf(items) {
+    const G = window.CB_DATA && CB_DATA.gear, out = {}; if (!G) return out;
+    for (const it of items || []) {
+      if (!it) continue; const b = G.bases.find(x => x.name === (it.base || it.name)) || {}, arch = it.arch || b.arch || '', mi = Math.max(0, MAPS.indexOf(it.map || b.map || 'physical'));
+      if (it.slot === 'Cloak') out.cloak = mi;
+      else if (it.slot === 'Weapon' || it.slot === 'Off-hand') { const w = STAFF[arch] != null ? ['staff', STAFF[arch]] : / Staff$/.test(arch) ? ['staff', mi] : WTYPE[arch] ? [WTYPE[arch], mi] : null; if (w) out[it.slot === 'Weapon' ? 'weapon' : 'off'] = w; }
+    }
+    return out;
+  }
+  return { armsOf, draw, pose, compose, defaults, gearOf, len: (a) => CLIP[a] || 1000, once: (a) => !!ONCE[a], loads: () => loads, S, SLOTS, SKIN, HAIRCOL, EYECOL, LIPCOL, EYES, MOUTHS, HAIR: H.styles, BEARDS: H.beards, BODY,
     ready: (look, view) => !!compose(look, view === 'w' ? 'e' : view) };
 })();

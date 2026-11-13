@@ -117,7 +117,7 @@
     const s = CB.sumGear(ch.gear), res = Object.entries(s.resist || {}).filter(x => x[1]).map(([k, v]) => `${k} ${v}%`).join(', ') || 'none';
     return `<div class="doll">
       <div class="dcol">${DOLL_L.map(slot).join('')}</div>
-      <div class="dmid"><canvas class="dportrait" width="220" height="250" data-cls="${cls}" data-rc="${esc(JSON.stringify(rcOf(ch)))}" data-gear="${esc(JSON.stringify((ch.gear || []).map(g => ({ slot: g.slot, name: g.name, arch: g.arch, rarity: g.rarity }))))}"></canvas>
+      <div class="dmid">${window.CB_HEROPUP ? `<div class="dpup">${CB_HEROPUP.html('doll' + (ch.id || ch.name || cls), CB_HEROPUP.lookOf({ app: ch.app, name: ch.name, cls }, cls, ch.gear), { view: 's', s: 1 })}${o.own ? '<button type="button" class="btn dmirror" data-mirror="1" title="Change how your hero looks">Mirror</button>' : ''}</div>` : `<canvas class="dportrait" width="220" height="250" data-cls="${cls}" data-rc="${esc(JSON.stringify(rcOf(ch)))}" data-gear="${esc(JSON.stringify((ch.gear || []).map(g => ({ slot: g.slot, name: g.name, arch: g.arch, rarity: g.rarity }))))}"></canvas>`}
         <div class="dname" style="color:${CC[cls]}">${esc(ch.name || cls)}</div><div class="muted" style="font-size:13px">${cls}${o.acct ? ' &middot; ' + esc(o.acct) : ''}</div>${o.own && typeof titlePicker === 'function' ? titlePicker(ch) : ch.titleText ? `<div class="dtitle">${esc(ch.titleText)}</div>` : ''}
         <div class="dpow"><span><b>${CBHub.powerLevel(ch)}</b>Power</span><span><b>${CBHub.gearScore(ch)}</b>Gear</span><span><b>${CB.deckLevel(ch.deck)}</b>Deck</span></div></div>
       <div class="dcol">${DOLL_R.map(slot).join('')}</div>

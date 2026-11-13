@@ -2082,7 +2082,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     for (const e of TOWN.embers) { gx.fillStyle = `rgba(255,${150 + (e.life * 80 | 0)},70,${e.life})`; gx.fillRect(e.x * TS, e.y * TS, 2.5 * s, 2.5 * s); }
     // name tags over every head: townspeople always, and your own hero with your guild under the name
     for (const n of NV) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.open === 'dummy' ? 52 : n.pal && n.pal.forge ? 80 : null);
-    { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? 72 + MOUNT_RISE : null, CBHub.titleOf(c, profile)); }
+    { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? 72 + MOUNT_RISE : 98, CBHub.titleOf(c, profile)); }
     // night: darken everything, then cut light pools around fires and the hero
     const dk = TOWN.dark, dg = dk.getContext('2d');
     dg.setTransform(1, 0, 0, 1, 0, 0); dg.globalCompositeOperation = 'source-over'; dg.clearRect(0, 0, dk.width, dk.height);
@@ -3068,8 +3068,18 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   }
   const lastCrit = {};
   function snapshot() { for (const a of [...cb.players, ...cb.enemies]) { lastHp[a.id] = a.hp; lastBlock[a.id] = a.block; lastCrit[a.id] = a.critN || 0; } }
+  // the mirror (hero window): change your hero's appearance any time (src/heropup.js)
+  function openMirror() {
+    const c = CBHub.char(profile, heroKey); if (!c || !window.CB_HEROPUP) return;
+    modal(`<h3>The mirror</h3><p class="muted" style="margin:0 0 8px">Change how ${esc(c.name || 'your hero')} looks. It costs nothing and you can come back any time.</p><div id="mirrorPick"></div><div class="row"><button class="btn primary" id="mirOk">Keep this look</button><button class="btn" id="mClose">Cancel</button></div>`);
+    const pk = CB_HEROPUP.picker($('mirrorPick'), c.cls, c.app); pk.wear(c.gear); $('mClose').onclick = closeModal;
+    $('mirOk').onclick = () => { c.app = pk.get(); save(); closeModal(); document.querySelectorAll('.dpup').forEach(d => { const f = d.querySelector('.pupfig'); if (f) f.outerHTML = CB_HEROPUP.html('doll' + Date.now(), CB_HEROPUP.lookOf({ app: c.app }, c.cls, c.gear), { view: 's', s: 1 }); }); toast('Your new look is saved.'); };
+  }
+  document.addEventListener('click', (ev) => { if (ev.target.closest && ev.target.closest('[data-mirror]')) openMirror(); });
+  window.__startDummy = () => startDummy(); // for automated checks
   window.__cbActor = (id) => (cb ? cb.actorById(id) : null); // pixel monsters check HP for a boss's phase change
   function figure(a, unit) {
+    if (a.isPlayer && window.CB_HEROPUP && window.CB_FORGE) return CB_FORGE.figureHtml(a); // Nov 12: pixel-art hero puppets (src/heropup.js)
     if (unit && a.isPlayer && window.CB_FORGE && a.look && !(window.CB_INK && CB_INK.pxHero && CB_INK.pxHero(a.cls))) return CB_FORGE.figureHtml(a, window.CB_INK ? CB_INK.figure(a) || '' : ''); // live sprite from the gear the hero wears (src/forge.js)
     if (window.CB_MOBS && !settings.classicFoes) { const px = CB_MOBS.figure(a, unit); if (px) return px; } // Nov 10: animated pixel monsters (src/mobsprites.js)
     if (window.CB_INK) { const ink = CB_INK.figure(a); if (ink) return ink; } // Gothic Ink art pack (src/inkart.js); without it, the drawn figures below
@@ -3277,7 +3287,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     if (window.CB_BF) CB_BF.layout(cb, { map: $('scrCombat').dataset.map, row: run && run.at && run.map && run.map.nodes[run.at] ? (run.at === 'boss' ? 'boss' : run.map.nodes[run.at].row) : null, left: cb.duel ? 'You' : cb.raid ? 'The raid' : cb.partySize > 1 ? 'Your party' : esc(hero().name), right: cb.duel ? 'Your rival' : (DATA.maps[$('scrCombat').dataset.map] || {}).name || 'The enemy' });
     if (withPops) popups(); else snapshot();
     if (window.CB_FX) CB_FX.consume(cb); // hero moves, hit effects and spell projectiles (src/fx.js, src/forge.js)
-    $('pframe').innerHTML = `<div class="pfimg"><img src="img/heroes/${String(p.cls).toLowerCase()}.png" alt=""></div><div class="pfr"><div class="pfn">${esc(p.name)} <small>${esc(p.cls)}</small></div><div class="pfrow"><div class="pfhp"><i style="width:${Math.max(0, 100 * p.hp / p.maxHp)}%"></i><span>${p.hp} / ${p.maxHp}</span></div><div class="mkshield${p.block ? '' : ' zero'}" data-tip="${esc(p.defName || 'Block')} ${p.block}: soaks that much damage before HP" style="--si:url(img/ui/status/${({ Dodge: 'dodge', Parry: 'parry', Barrier: 'barrier', Absorb: 'absorb' }[p.defName] || 'block')}.png)"><b>${p.block}</b></div></div><div class="tags">${iconTags(tags(p))}</div></div>`;
+    $('pframe').innerHTML = `<div class="pfimg">${window.CB_HEROPUP ? CB_HEROPUP.html('pf' + p.id, CB_HEROPUP.lookOf(p, p.cls, p.look), { view: 's', s: 1 }) : `<img src="img/heroes/${String(p.cls).toLowerCase()}.png" alt="">`}</div><div class="pfr"><div class="pfn">${esc(p.name)} <small>${esc(p.cls)}</small></div><div class="pfrow"><div class="pfhp"><i style="width:${Math.max(0, 100 * p.hp / p.maxHp)}%"></i><span>${p.hp} / ${p.maxHp}</span></div><div class="mkshield${p.block ? '' : ' zero'}" data-tip="${esc(p.defName || 'Block')} ${p.block}: soaks that much damage before HP" style="--si:url(img/ui/status/${({ Dodge: 'dodge', Parry: 'parry', Barrier: 'barrier', Absorb: 'absorb' }[p.defName] || 'block')}.png)"><b>${p.block}</b></div></div><div class="tags">${iconTags(tags(p))}</div></div>`;
     $('orb').innerHTML = `<i class="orbfill" style="--mf:${Math.max(0, Math.min(1, p.mana / Math.max(1, p.maxMana)))}"></i><span>${p.mana}</span>`;
     $('manaSub').innerHTML = `<span class="m3">${p.mana} / ${p.maxMana} MANA</span><span class="mmax">of ${p.maxMana}</span><span class="mreg">+${p.regen} / turn</span>`;
     const fat = [...p.drawPile, ...p.hand, ...p.discard].filter(c => CARDS[c.key].type === 'Status').length;

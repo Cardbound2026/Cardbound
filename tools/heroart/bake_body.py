@@ -74,10 +74,12 @@ def bake(body, layer=None):   # layer: gear to cut the same way as the body ({'s
         ys = np.nonzero(im[..., 3].any(1))[0]; xs = np.nonzero(im[..., 3].any(0))[0]
         sk = base[..., :3].astype(int); skm = (base[..., 3] > 0) & (sk[..., 0] - sk[..., 2] > 22) & (sk[..., 0] > 70)
         face = [round(nose[0], 1), round(nose[1], 1), round(chin, 1)]
-        info[view] = {'skin': [int(v) for v in sk[skm].mean(0)], 'face': face, 'piv': [[round(p[0], 1), round(p[1], 1)] for p in piv], 'order': order, 'foot': int(ys.max()) + 1, 'top': int(ys.min()), 'cx': round((xs.min() + xs.max() + 1) / 2, 1)}
+        if view != 'e': hands = [ext(J[sd + ' ELBOW'], J[sd + ' ARM'], .2) for sd in (A, B)]
+        else: hands = [ext(el, wr, .2)] * 2
+        info[view] = {'hand': [[round(h[0], 1), round(h[1], 1)] for h in hands], 'skin': [int(v) for v in sk[skm].mean(0)], 'face': face, 'piv': [[round(p[0], 1), round(p[1], 1)] for p in piv], 'order': order, 'foot': int(ys.max()) + 1, 'top': int(ys.min()), 'cx': round((xs.min() + xs.max() + 1) / 2, 1)}
     return strips if layer else info
 if __name__ == '__main__':
     data = {}
     for b in sorted(os.listdir(HERE + '/src')):
         if os.path.exists(f'{HERE}/src/{b}/skel.json'): data[b] = bake(b); print('baked', b)
-    open(ROOT + '/src/puppet_data.js', 'w').write('// made by tools/heroart/bake_body.py: hero puppet bodies (pivots per part and view, art size ' + str(S) + ')\nwindow.CB_PUPPET_DATA = ' + json.dumps({'S': S, 'bodies': data, 'hair': json.load(open(HERE + '/hair/cells.json'))}) + ';\n')
+    open(ROOT + '/src/puppet_data.js', 'w').write('// made by tools/heroart/bake_body.py: hero puppet bodies (pivots per part and view, art size ' + str(S) + ')\nwindow.CB_PUPPET_DATA = ' + json.dumps(dict({'S': S, 'bodies': data, 'hair': json.load(open(HERE + '/hair/cells.json'))}, **(json.load(open(HERE + '/weapons/data.json')) if os.path.exists(HERE + '/weapons/data.json') else {}))) + ';\n')

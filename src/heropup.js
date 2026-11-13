@@ -8,9 +8,11 @@
   css.textContent = `.pupfig { display: block; position: relative; height: calc(var(--fh, 118px) * var(--s, 1)); width: calc(var(--fh, 118px) * var(--s, 1) * .6); pointer-events: none; }
     .pupfig canvas { position: absolute; left: 50%; bottom: 0; image-rendering: pixelated; transform-origin: 50% 100%; }
     .unit.dead .pupfig canvas { filter: grayscale(1) brightness(.6); } .unit.active .pupfig canvas { filter: drop-shadow(0 0 7px rgba(214,161,74,.55)); }
-    .order .otile .ofig .pupfig { height: 58px; width: 100%; } .order.raid .otile .ofig .pupfig { height: 30px; } .order.many .otile .ofig .pupfig, #scrCombat.bf .order .otile .ofig .pupfig { height: 40px; }
+    .order .otile .ofig { position: relative; overflow: hidden; } .order .otile .ofig .pupfig, #scrCombat.bf .order .otile .ofig .pupfig { position: absolute; height: 230%; width: 140%; left: -20%; top: 4%; }
+    .pfimg { position: relative; overflow: hidden; } .pfimg .pupfig { position: absolute; height: 250%; width: 150%; left: -25%; top: 2%; }
     #scrCombat.bf .stage .unit .figure .pupfig { height: calc(var(--fh) * var(--s, 1)); }
     .seatfig .pupfig { --fh: 132px; margin: 0 auto; }
+    .dpup { display: grid; justify-items: center; gap: 2px; } .dpup .pupfig { --fh: 210px; } .dpup .dmirror { padding: 2px 12px; font-size: 13px; }
     .lookpick { display: grid; grid-template-columns: 150px 1fr; gap: 10px 16px; align-items: center; margin: 4px 0 12px; }
     .lookpick .lookview { display: grid; justify-items: center; gap: 4px; } .lookpick .lookview .pupfig { --fh: 190px; }
     .lookpick .lookrows { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 6px 18px; }
@@ -21,7 +23,7 @@
   document.head.appendChild(css);
   // ---------- looks: appearance + gear. CB_PUP_APP(who or actor) is set by the game to find a hero's saved appearance.
   const appOf = (key, cls) => { let a = null; try { a = window.CB_PUP_APP ? window.CB_PUP_APP(key) : null; } catch (e) {} return Object.assign(P.defaults(cls), a || {}, { body: P.BODY[cls] || 'warrior' }); };
-  const lookOf = (key, cls, gear) => Object.assign(appOf(key, cls), { gear: P.gearOf(gear) });
+  const lookOf = (key, cls, gear) => Object.assign(appOf(key, cls), { gear: P.gearOf(gear) }, P.armsOf(gear));
   // ---------- figures on the page: <span class="pupfig" data-pf="id"><canvas>; one loop draws them all
   const FIG = {}, ANIM = {}, BOX = 124, CW = 230, CH = 180, FX = 100, FY = 168; let ST = {}, n = 0;
   const MOVE = { attack: 'attack', heavy: 'attack', lunge: 'attack', double: 'attack', leap: 'attack', twirl: 'aoe', cast: 'cast', empower: 'cast', vanish: 'cast', guard: 'guard', guard2: 'guard', parry: 'guard', dodge: 'guard', hit: 'hit', knock: 'hit' };
@@ -45,7 +47,7 @@
   const F = window.CB_FORGE;
   if (F) {
     const play0 = F.play, states0 = F.setStates, town0 = F.town;
-    F.figureHtml = (a) => html(a.id, lookOf(a, a.cls, a.look));
+    F.figureHtml = (a) => html(a.id, lookOf(a, a.cls, a.look), { anim: 'ready' });
     F.play = (id, move, o) => { if (FIG[id] && MOVE[move]) { ANIM[id] = { anim: MOVE[move], t0: performance.now() }; return; } play0(id, move, o); };
     F.setStates = (m) => { ST = Object.assign({}, m); states0(m); };
     F.warm = (cls, gear) => { const L = lookOf('me', cls, gear); P.compose(L, 'e'); return { ready: true }; };
@@ -53,7 +55,7 @@
     F.town = (g, cls, gear, cx, by, dir, step, s, t, who) => {
       const L = lookOf(who || 'me', cls, gear), v = DIR[dir] || 's'; if (!P.ready(L, v)) return town0 ? town0(g, cls, gear, cx, by, dir, step, s, t, who) : false;
       g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, 15 * s, 5 * s, 0, 0, Math.PI * 2); g.fill(); g.restore();
-      return P.draw(g, L, v, step ? 'walk' : 'idle', t, cx, by + 2 * s, 80 * s / 118);
+      return P.draw(g, L, v, step ? 'walk' : 'idle', t, cx, by + 2 * s, 96 * s / 118);
     };
   }
   // ---------- the appearance picker (character creation, and the mirror in the hero window)
@@ -79,7 +81,7 @@
       paint(); if (onChange) onChange(get());
     };
     const get = () => { const o = {}; for (const k of ['skin', 'eyes', 'eyeCol', 'mouth', 'lipCol', 'hair', 'hairCol', 'beard']) o[k] = L[k] == null ? null : L[k]; return o; };
-    paint(); return { get, wear: (gear) => { L.gear = P.gearOf(gear); paint(); } };
+    paint(); return { get, wear: (gear) => { Object.assign(L, { gear: P.gearOf(gear) }, P.armsOf(gear)); paint(); } };
   }
   window.CB_HEROPUP = { html, lookOf, appOf, picker, fig: (id, cls, gear, opt) => html(id, lookOf(opt && opt.who || id, cls, gear), opt) };
 })();

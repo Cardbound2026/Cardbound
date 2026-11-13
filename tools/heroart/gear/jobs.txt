@@ -33,3 +33,4 @@ shadow_Leather_a 99f7fa8d-9ebd-47c7-ba7a-e0b1f39aa9e9
 shadow_Leather_b a6bde81f-5413-468b-91bc-7ec8461de56a
 shadow_Cloth_a 13de7915-956d-42b4-8a4f-4faddf66b4b0
 shadow_Cloth_b dd813c27-ed25-4173-8ab1-90466fe1a92b
+cloak_a 7a22bf82-c5ad-437d-8208-97d3d9d67317

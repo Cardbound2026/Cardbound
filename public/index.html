@@ -1069,6 +1069,8 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
           <div class="classpick deckpick" id="deckPick" role="radiogroup" aria-label="Starting deck"></div>
           <h4 class="createstep">Starting amulet <span class="muted">(6 points split between cards drawn each round and mana regen; you can buy the others later from Jeweler Rook in town)</span></h4>
           <div class="amupick" id="amuPick" role="radiogroup" aria-label="Starting amulet"></div>
+          <h4 class="createstep">Appearance <span class="muted">(yours to change later at the mirror in your hero window)</span></h4>
+          <div id="lookPick"></div>
           <div class="namerow"><div class="field"><label for="heroName">Name</label><input id="heroName" maxlength="16" autocomplete="off" placeholder="Name your hero"></div><label class="hcpick" title="One life: the first time this hero falls in a fight (not duels or the dummy), it becomes a normal hero. Hardcore heroes have their own leaderboard."><input type="checkbox" id="heroHC"> <b>Hardcore</b> <small>one life, own leaderboard</small></label><label class="hcpick tutpick" title="A short guided tour of the town and every system, right after you create your hero. You can also start it from the Menu any time."><input type="checkbox" id="heroTut"> <b>Tutorial</b> <small>show me around</small></label><button class="btn primary" id="btnCreate">Create hero</button><button class="btn" id="btnCancelCreate" hidden>Cancel</button></div>
         </div>
         <aside class="createright" id="createCards" aria-label="Cards this hero can find"></aside>
@@ -6184,6 +6186,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
 
   // ---------- characters: one drawing routine for the hero and every NPC
   const RARC = { White: '#9c968a', Green: '#4f8f48', Blue: '#3f74b8', 'Purple (Epic)': '#8461b8', Gold: '#e4a93a' };
+  window.CB_PUP_APP = (k) => { const me = CBHub.char(profile, heroKey), oth = typeof SOC !== 'undefined' ? SOC.others : null; if (k === 'me') return me && me.app; if (k && typeof k === 'object') { if (k.app) return k.app; if (me && k.name === me.name && k.cls === me.cls) return me.app; if (oth) for (const o of oth.values()) if (o.name === k.name && o.cls === k.cls) return o.ap; return null; } const c = profile.chars && profile.chars[k]; if (c) return c.app; const o = oth && oth.get(k); return o ? o.ap : null; }; // a hero's saved appearance, for the pixel puppets (src/heropup.js)
   function heroPal() { const c = CBHub.char(profile, heroKey); return Object.assign(palFor(c ? c.cls : 'Warrior', c ? rcOf(c) : {}), c ? { forge: { cls: c.cls, gear: c.gear, who: 'me' } } : {}); }
   function palFor(cls, R) {
     R = R || {}; const rc = (k) => R[k] ? RARC[R[k]] || '#9c968a' : null; const heroKey_ = cls || 'Warrior';
@@ -6336,7 +6339,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     for (const e of TOWN.embers) { gx.fillStyle = `rgba(255,${150 + (e.life * 80 | 0)},70,${e.life})`; gx.fillRect(e.x * TS, e.y * TS, 2.5 * s, 2.5 * s); }
     // name tags over every head: townspeople always, and your own hero with your guild under the name
     for (const n of NV) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.open === 'dummy' ? 52 : n.pal && n.pal.forge ? 80 : null);
-    { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? 72 + MOUNT_RISE : null, CBHub.titleOf(c, profile)); }
+    { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? 72 + MOUNT_RISE : 98, CBHub.titleOf(c, profile)); }
     // night: darken everything, then cut light pools around fires and the hero
     const dk = TOWN.dark, dg = dk.getContext('2d');
     dg.setTransform(1, 0, 0, 1, 0, 0); dg.globalCompositeOperation = 'source-over'; dg.clearRect(0, 0, dk.width, dk.height);
@@ -6570,7 +6573,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   function myPresence() {
     const c = profile.chars[heroKey];
     const place = !$('scrStart').hidden ? 'town' : run ? 'run' : cb && cb.duel ? 'duel' : 'menu';
-    return { lk: lookList(c), uid: SOC.me, guild: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), shop: typeof BZ !== 'undefined' && BZ.open ? { t: shopTitle(), n: bzState().items.length } : null, arena: typeof arenaPresence === 'function' ? arenaPresence() : null, x: P.x, y: P.y, dir: P.dir, mount: P.mount || null, title: c ? CBHub.titleOf(c, profile) || null : null, hc: !!(c && c.hardcore), party: SOC.party ? SOC.party.id : null };
+    return { lk: lookList(c), ap: c ? c.app || null : null, uid: SOC.me, guild: typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, name: c ? c.name : (supaUser ? acctName(supaUser) : 'Adventurer'), acct: supaUser ? acctName(supaUser) : '', cls: c ? c.cls : null, rc: c ? rcOf(c) : {}, place, where: whereText(), shop: typeof BZ !== 'undefined' && BZ.open ? { t: shopTitle(), n: bzState().items.length } : null, arena: typeof arenaPresence === 'function' ? arenaPresence() : null, x: P.x, y: P.y, dir: P.dir, mount: P.mount || null, title: c ? CBHub.titleOf(c, profile) || null : null, hc: !!(c && c.hardcore), party: SOC.party ? SOC.party.id : null };
   }
 
   async function socStart() {
@@ -6642,8 +6645,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     for (const [uid, st] of SOC.online) {
       if (uid === SOC.me || st.place !== 'town' || !st.cls) { SOC.others.delete(uid); continue; }
       const o = SOC.others.get(uid);
-      if (!o) SOC.others.set(uid, { uid, x: st.x, y: st.y, fx: st.x, fy: st.y, t: 1, dir: st.dir || 'down', step: 0, name: st.name, guild: st.guild || null, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, party: st.party, shop: st.shop || null, mount: st.mount || null, title: st.title || null, hc: !!st.hc });
-      else Object.assign(o, { guild: st.guild || null, name: st.name, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, party: st.party, shop: st.shop || null, mount: st.mount || null, title: st.title || null, hc: !!st.hc });
+      if (!o) SOC.others.set(uid, { uid, x: st.x, y: st.y, fx: st.x, fy: st.y, t: 1, dir: st.dir || 'down', step: 0, name: st.name, guild: st.guild || null, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, ap: st.ap || null, party: st.party, shop: st.shop || null, mount: st.mount || null, title: st.title || null, hc: !!st.hc });
+      else Object.assign(o, { guild: st.guild || null, name: st.name, cls: st.cls, rc: st.rc || {}, lk: st.lk || null, ap: st.ap || null, party: st.party, shop: st.shop || null, mount: st.mount || null, title: st.title || null, hc: !!st.hc });
     }
     for (const uid of [...SOC.others.keys()]) if (!SOC.online.has(uid)) SOC.others.delete(uid);
   }
@@ -6662,7 +6665,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       out.push({ y: p.y + 0.5, f: () => {
         if (o.mount) drawRider(gx, p.x * TS + TS / 2, p.y * TS + TS * 0.92, o.dir, moving ? ((o.step % 2) + o.t) / 2 : 0, pal, s, t, o.mount, CC[o.cls]);
         else drawChar(gx, p.x * TS + TS / 2, p.y * TS + TS * 0.92, o.dir, moving ? ((o.step + (o.t > 0.5 ? 1 : 0)) % 2 ? 1 : 2) : 0, pal, s, t);
-        const tx = p.x * TS + TS / 2, ty = townTag(gx, tx, p.y * TS + TS * 0.92, o.name, SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0', o.guild, s, o.mount ? 72 + MOUNT_RISE : null, o.title);
+        const tx = p.x * TS + TS / 2, ty = townTag(gx, tx, p.y * TS + TS * 0.92, o.name, SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0', o.guild, s, o.mount ? 72 + MOUNT_RISE : 98, o.title);
         if (o.shop && o.shop.t) drawShopSign(gx, tx, ty - 4, o.shop.t, s);
       } });
     }
@@ -7082,8 +7085,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794536504541';
-  const CB_BUILD = '90eb7214e5'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794540226340';
+  const CB_BUILD = 'b9a82fd154'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8189,6 +8192,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-12', items: [
+      ['Feature', "Heroes are now pixel-art characters you make your own. When you create a hero you pick its skin, hair, hair colour, beard, eyes, eye colour, mouth and lips, and you can change them any time with the Mirror button in your hero window. Warriors are big and strong, Paladins sturdy, Mages slender, and Rogues and Warlocks share a slender female build."],
+      ['Art', "What you wear now shows on your hero, in town and in fights: every helm, shoulders, chest, bracers, gloves, belt, pants and boots in plate, leather and cloth, with its own look for each of the six maps, plus cloaks, every kind of weapon and staff, shields and off-hand orbs. Heroes turn to face the way they walk in town, and swing, cast, guard and flinch in fights."],
       ['Art', "Enemy cards are getting paintings: every card a monster plays gets its own pixel illustration in the same style as your cards, starting with the Broken March. More arrive through the day."],
       ['Art', "Emberwatch has been repainted in pixel art: new ground (grass, cobbles, dirt roads, arena sand and the River Ash), every house, the Keep, the Cathedral, the Hall of Records, the Grand Library, the Guild Hall, the barracks, the stables, the market stalls, the city wall and its towers, the South Gate and the bridges. Everything stands where it did, so the townspeople are where you left them. The Colosseum is a new painting with a slightly narrower sand floor, and the Hall of Records is a smaller building. The minimap shows the painted city."],
       ['Art', "Every enemy card in every map now has its own painting, bosses included, from the Broken March to the Hollow King's crypts, and so do the status cards enemies shuffle into your deck (Dazed, Stun, Fatigue, Venom, Frostbite, Hex and Bomb)."],
@@ -10788,6 +10793,273 @@ async function exportTravelPack(){
     return { applyOverrides, METAL, SOFT, TRIM, BASE, OFF_WEAPON, SLOT_OF, MAP_N, P, town, lookFor, stateFor, sprite, figureHtml, play, setStates, events, weaponKind, twoHanded, warm, cache, ARCH, CLASS_LOOK, MOVES, EMOVES, frameFor, fightFrames };
   })();
 
+// made by tools/heroart/bake_body.py: hero puppet bodies (pivots per part and view, art size 128)
+window.CB_PUPPET_DATA = {"S": 128, "bodies": {"female": {"s": {"hand": [[42.4, 71.7], [84.6, 71.4]], "skin": [189, 129, 109], "face": [63.2, 18.9, 27.0], "piv": [[63.5, 62.8], [63.3, 28.0], [51.7, 32.9], [47.6, 49.9], [74.9, 32.9], [79.3, 49.6], [56.7, 62.8], [55.6, 91.3], [70.2, 62.8], [71.7, 91.3]], "order": [7, 6, 9, 8, 0, 1, 2, 3, 4, 5], "foot": 124, "top": 4, "cx": 64.0}, "n": {"hand": [[43.4, 71.3], [84.4, 70.9]], "skin": [187, 127, 108], "face": [63.6, 16.7, 26.2], "piv": [[64.0, 63.5], [63.9, 27.2], [51.4, 33.0], [47.9, 50.7], [76.4, 33.3], [79.6, 50.7], [56.3, 63.5], [55.4, 92.8], [71.7, 63.5], [72.3, 92.6]], "order": [7, 6, 9, 8, 2, 3, 4, 5, 0, 1], "foot": 123, "top": 4, "cx": 64.0}, "e": {"hand": [[64.8, 75.3], [64.8, 75.3]], "skin": [196, 136, 115], "face": [72.6, 19.0, 29.1], "piv": [[65.7, 64.6], [64.0, 30.1], [59.4, 37.5], [58.8, 54.2], [62.4, 37.5], [61.8, 54.2], [65.7, 66.6], [65.0, 92.2], [67.7, 66.6], [67.0, 92.2]], "order": [9, 8, 7, 6, 0, 1, 2, 3], "foot": 125, "top": 5, "cx": 65.0}}, "mage": {"s": {"hand": [[45.0, 73.3], [82.4, 73.3]], "skin": [155, 117, 89], "face": [63.6, 19.8, 27.8], "piv": [[63.7, 63.1], [63.7, 28.8], [51.3, 33.5], [47.5, 51.1], [76.2, 33.5], [80.0, 51.1], [57.4, 63.1], [56.8, 91.8], [70.0, 63.1], [70.6, 91.8]], "order": [7, 6, 9, 8, 0, 1, 2, 3, 4, 5], "foot": 124, "top": 4, "cx": 64.0}, "n": {"hand": [[45.8, 72.2], [82.9, 72.4]], "skin": [156, 118, 90], "face": [64.1, 16.7, 26.8], "piv": [[63.7, 65.2], [63.7, 27.8], [50.4, 33.9], [47.5, 51.3], [76.9, 34.2], [80.1, 51.9], [56.5, 65.2], [56.2, 93.1], [70.8, 65.2], [71.4, 93.1]], "order": [7, 6, 9, 8, 2, 3, 4, 5, 0, 1], "foot": 123, "top": 4, "cx": 64.5}, "e": {"hand": [[63.8, 74.8], [63.8, 74.8]], "skin": [161, 122, 92], "face": [72.7, 18.7, 28.1], "piv": [[64.8, 63.2], [63.1, 29.1], [59.4, 36.4], [58.8, 53.6], [62.4, 36.4], [61.8, 53.6], [64.8, 65.2], [64.8, 90.8], [66.8, 65.2], [66.8, 90.8]], "order": [9, 8, 7, 6, 0, 1, 2, 3], "foot": 125, "top": 4, "cx": 65.0}}, "paladin": {"s": {"hand": [[38.5, 76.9], [87.7, 76.9]], "skin": [160, 110, 79], "face": [63.1, 18.6, 28.1], "piv": [[63.3, 67.2], [63.1, 29.1], [46.5, 34.9], [41.0, 54.0], [79.8, 34.9], [85.5, 54.0], [55.5, 67.3], [53.4, 95.5], [71.0, 67.0], [74.0, 95.2]], "order": [7, 6, 9, 8, 0, 1, 2, 3, 4, 5], "foot": 126, "top": 2, "cx": 63.5}, "n": {"hand": [[39.7, 76.2], [87.6, 76.6]], "skin": [158, 108, 77], "face": [63.5, 15.3, 26.5], "piv": [[63.5, 67.6], [63.3, 27.5], [46.5, 34.6], [42.3, 53.7], [80.1, 34.6], [84.7, 53.7], [55.0, 67.6], [53.8, 94.9], [71.9, 67.6], [73.5, 94.9]], "order": [7, 6, 9, 8, 2, 3, 4, 5, 0, 1], "foot": 126, "top": 2, "cx": 64.0}, "e": {"hand": [[63.1, 80.4], [63.1, 80.4]], "skin": [165, 114, 82], "face": [73.6, 17.8, 28.2], "piv": [[63.4, 66.8], [60.8, 29.2], [55.6, 37.3], [56.5, 58.1], [58.6, 37.3], [59.5, 58.1], [63.4, 68.8], [62.3, 93.2], [65.4, 68.8], [64.3, 93.2]], "order": [9, 8, 7, 6, 0, 1, 2, 3], "foot": 127, "top": 2, "cx": 62.5}}, "warrior": {"s": {"hand": [[35.2, 79.2], [91.9, 79.5]], "skin": [161, 110, 82], "face": [63.6, 21.4, 30.6], "piv": [[63.7, 68.3], [63.7, 31.6], [45.2, 37.2], [38.0, 55.6], [82.3, 37.2], [89.5, 55.6], [55.0, 68.3], [52.1, 93.7], [72.5, 68.3], [75.4, 93.4]], "order": [7, 6, 9, 8, 0, 1, 2, 3, 4, 5], "foot": 123, "top": 5, "cx": 64.0}, "n": {"hand": [[37.4, 79.2], [88.6, 79.2]], "skin": [152, 101, 76], "face": [63.5, 18.1, 29.4], "piv": [[63.2, 68.8], [63.3, 30.4], [45.2, 37.5], [39.5, 56.9], [81.5, 37.8], [87.2, 56.9], [54.6, 68.6], [52.4, 93.2], [71.8, 68.9], [74.6, 93.5]], "order": [7, 6, 9, 8, 2, 3, 4, 5, 0, 1], "foot": 122, "top": 5, "cx": 64.0}, "e": {"hand": [[67.4, 82.4], [67.4, 82.4]], "skin": [169, 117, 85], "face": [76.0, 21.1, 30.7], "piv": [[64.8, 68.8], [62.6, 31.7], [56.9, 39.8], [56.9, 60.6], [59.9, 39.8], [59.9, 60.6], [64.8, 70.8], [64.5, 92.5], [66.8, 70.8], [66.5, 92.5]], "order": [9, 8, 7, 6, 0, 1, 2, 3], "foot": 125, "top": 5, "cx": 63.5}}}, "hair": {"cw": 48, "ch": 56, "bodies": ["warrior", "paladin", "mage", "female"], "views": ["s", "e", "n"], "styles": ["bob", "braid", "curls", "long", "mohawk", "ponytail", "short", "slick", "topknot", "wavy", "wild"], "beards": ["beard_braid", "beard_full", "beard_goatee", "beard_short"], "at": {"warrior": {"s": [40, -4], "e": [42, -4], "n": [39, -4]}, "paladin": {"s": [39, -7], "e": [40, -7], "n": [39, -7]}, "mage": {"s": [40, -5], "e": [42, -5], "n": [40, -5]}, "female": {"s": [39, -5], "e": [43, -4], "n": [40, -5]}}}, "weapons": {"cw": 48, "ch": 112, "types": ["sword1h", "axe1h", "mace1h", "dagger", "wand", "sword2h", "axe2h", "maul", "hammer", "scythe", "staff", "kite", "tower", "focus"], "grip": {"sword1h": [[23.0, 105], [22.5, 105], [23.0, 105], [23.0, 104], [23.0, 104], [23.0, 104]], "axe1h": [[20.0, 103], [19.0, 103], [18.0, 103], [17.5, 103], [19.0, 103], [19.0, 103]], "mace1h": [[23.5, 104], [23.0, 104], [24.0, 104], [23.0, 104], [23.5, 104], [23.5, 104]], "dagger": [[23.0, 105], [23.0, 105], [23.0, 105], [21.5, 104], [23.5, 105], [23.5, 105]], "wand": [[23.5, 105], [23.0, 105], [22.5, 105], [23.5, 105], [23.5, 105], [22.5, 105]], "sword2h": [[23.5, 99], [23.5, 99], [23.0, 99], [23.7, 99], [23.5, 99], [23.0, 99]], "axe2h": [[23.0, 80], [23.0, 79], [23.0, 80], [23.5, 79], [24.0, 80], [23.0, 79]], "maul": [[22.0, 79], [23.0, 79], [22.5, 79], [24.0, 79], [24.0, 79], [23.5, 79]], "hammer": [[23.5, 84], [23.5, 84], [24.0, 83], [21.5, 83], [23.5, 83], [22.0, 82]], "scythe": [[12.0, 68], [14.0, 68], [11.5, 68], [14.0, 67], [12.5, 68], [14.0, 67]], "staff": [[21.5, 70], [22.5, 66], [23.5, 68], [25.3, 68], [23.0, 69], [23.5, 66]], "kite": [[23.5, 86], [23.5, 86], [23.5, 85], [24.0, 84], [23.5, 85], [23.5, 84]], "tower": [[23.5, 81], [23.5, 81], [24.0, 81], [24.0, 81], [23.5, 81], [23.5, 79]], "focus": [[23.5, 99], [23.5, 98], [23.5, 98], [23.5, 98], [23.5, 99], [24.0, 98]]}}};
+
+// ---------- Hero puppets (Nov 12): pixel-art heroes built from parts. Each body is cut at the joints (tools/heroart/bake_body.py):
+// torso, head, upper and lower arms, thighs and shins, for three views (s = facing the camera, n = facing away, e = side; west is the
+// side view mirrored). What a hero looks like and wears is a "look":
+//   { body, skin, eyes, eyeCol, mouth, lipCol, hair, hairCol, beard, gear: { Helm: 'fire_Plate', Chest: ... }, weapon, off }
+// A look is painted once per view into one strip of the ten parts (skin dyed, face drawn, armour laid on, then beard, hair and helm),
+// and animations move the parts. CB_PUPPET.draw(g, look, view, anim, t, x, footY, scale) draws one frame with the feet at (x, footY).
+window.CB_PUPPET = (function () {
+  const D = window.CB_PUPPET_DATA; if (!D) return null;
+  const S = D.S, IMG = new Map(), PAR = [-1, 0, 0, 2, 0, 4, 0, 6, 0, 8], TAU = Math.PI * 2, H = D.hair;
+  const SLOTS = ['Helm', 'Shoulders', 'Chest', 'Bracers', 'Gloves', 'Belt', 'Pants', 'Boots'];
+  const SKIN = [[218, 178, 146], [204, 156, 120], [184, 132, 96], [154, 104, 72], [114, 74, 52], [82, 54, 40]];   // the average tone of the skin, light to dark
+  const HAIRCOL = [[52, 44, 44], [110, 70, 40], [160, 104, 52], [226, 190, 110], [196, 70, 40], [236, 236, 240], [150, 150, 158], [70, 90, 190], [150, 60, 170], [60, 150, 90]];
+  const EYECOL = [[70, 44, 28], [60, 110, 190], [70, 150, 80], [150, 150, 160], [190, 150, 40], [170, 50, 50], [150, 70, 190]];
+  const LIPCOL = [null, [176, 60, 60], [120, 40, 60], [90, 50, 110], [40, 30, 36]];
+  const EYES = 5, MOUTHS = 4, BODY = { Warrior: 'warrior', Paladin: 'paladin', Mage: 'mage', Rogue: 'female', Warlock: 'female' };
+  const W = D.weapons, MAPS = ['physical', 'fire', 'frost', 'nature', 'arcane', 'shadow'], CLOAKCOL = [[124, 104, 86], [156, 46, 38], [150, 182, 208], [72, 108, 62], [112, 72, 164], [54, 50, 66]];
+  const WTYPE = { '1H Sword': 'sword1h', '1H Axe': 'axe1h', '1H Mace': 'mace1h', Dagger: 'dagger', Wand: 'wand', '2H Sword': 'sword2h', '2H Axe': 'axe2h', '2H Maul': 'maul', '2H Warhammer': 'hammer', '2H Scythe': 'scythe', 'Kite Shield': 'kite', 'Tower Shield': 'tower', Focus: 'focus' };
+  const STAFF = { 'Fire Staff': 1, 'Frost Staff': 2, 'Nature Staff': 3, 'Arcane Staff': 4, 'Shadow Staff': 5 }, LONG = { staff: 1, scythe: 1 }, HELD = { kite: 1, tower: 1, focus: 1 };
+  let loads = 0;   // counts finished image loads, so callers can tell when a look may have changed
+  function img(name) { let e = IMG.get(name); if (!e) { e = { im: new Image(), ok: false, bad: false }; e.im.onload = () => { e.ok = true; loads++; COMP.clear(); }; e.im.onerror = () => { e.bad = true; loads++; }; e.im.src = 'img/hero/' + name + '.webp'; IMG.set(name, e); } return e.ok ? e.im : e.bad ? false : null; }
+  function canvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+  // ---------- which gear slot every pixel of a suit belongs to (img/hero/slots_<body>_<view>: red = slot * 28 + 14): one stencil per slot
+  const STEN = new Map();
+  function stencils(body, v) {
+    const k = body + v; let st = STEN.get(k); if (st) return st; const im = img('slots_' + body + '_' + v); if (!im) return null;
+    const c = canvas(S * 10, S), g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(im, 0, 0); const src = g.getImageData(0, 0, S * 10, S).data;
+    st = SLOTS.map((_, si) => { const m = canvas(S * 10, S), mg = m.getContext('2d'), d = mg.createImageData(S * 10, S); for (let i = 0; i < src.length; i += 4) if (src[i + 3] && Math.round((src[i] - 14) / 28) === si) d.data[i + 3] = 255; mg.putImageData(d, 0, 0); return m; });
+    STEN.set(k, st); return st;
+  }
+  // ---------- the face, a few pixels on the blank head: eyes[style], a mouth, a nose shadow
+  function face(d, B, v, L, skin) {
+    if (v === 'n') return; const [nx0, ny0] = B.face, nx = Math.round(nx0 - .5) + S, ny = Math.round(ny0 - .5), W = S * 10;
+    const put = (x, y, c) => { const i = (y * W + x) * 4; if (!d[i + 3]) return; d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; };
+    const sh = (k) => skin.map(c => Math.round(c * k)), dark = [26, 20, 24], white = [236, 232, 226], iris = EYECOL[L.eyeCol || 0] || EYECOL[0], st = (L.eyes || 0) % EYES, ey = ny - 2;
+    const eye = (x, dir) => {   // x = the pixel nearest the nose; dir = which way is outward
+      if (st === 0) { put(x, ey, iris); put(x + dir, ey, white); put(x, ey - 1, sh(.62)); put(x + dir, ey - 1, sh(.62)); }
+      else if (st === 1) { put(x, ey, dark); put(x + dir, ey, dark); }
+      else if (st === 2) { put(x, ey, iris); put(x + dir, ey, white); put(x, ey - 1, dark); put(x + dir, ey - 1, dark); put(x, ey + 1, sh(.8)); }
+      else if (st === 3) { put(x, ey, iris); put(x + dir, ey, white); put(x + dir * 2, ey - 1, dark); put(x, ey - 1, sh(.7)); put(x + dir, ey - 1, dark); }
+      else { put(x, ey, iris); put(x + dir, ey, sh(.5)); put(x, ey - 1, dark); put(x + dir, ey - 2, dark); put(x + dir, ey - 1, dark); }
+    };
+    const lip = LIPCOL[L.lipCol || 0] || sh(.58), my = ny + 3, m = (L.mouth || 0) % MOUTHS;
+    if (v === 's') {
+      eye(nx - 2, -1); eye(nx + 2, 1); put(nx, ny, sh(.84)); put(nx, ny + 1, sh(.74));
+      if (m === 0) { put(nx - 1, my, lip); put(nx, my, lip); put(nx + 1, my, lip); }
+      else if (m === 1) { put(nx - 1, my, lip); put(nx, my, lip); put(nx + 1, my, lip); put(nx, my + 1, lip.map(c => Math.min(255, c + 40))); }
+      else if (m === 2) { put(nx - 1, my, lip); put(nx, my, lip); put(nx + 1, my - 1, lip); }
+      else { put(nx, my, lip); put(nx - 1, my, lip); }
+    } else {
+      eye(nx - 3, -1); if (m === 3) put(nx - 2, my, lip); else { put(nx - 2, my, lip); put(nx - 1, my, lip); }
+      if (m === 1) put(nx - 2, my + 1, lip.map(c => Math.min(255, c + 40)));
+    }
+  }
+  // ---------- one look, painted: a strip of the ten parts for a view (cached)
+  const COMP = new Map(), tmp = canvas(S * 10, S), tg = tmp.getContext('2d', { willReadFrequently: true });
+  function compose(L, v) {
+    const key = v + JSON.stringify(L); let c = COMP.get(key); if (c) return c;
+    const B = D.bodies[L.body][v], body = img(L.body + '_' + v); if (!body) return null;
+    const gear = L.gear || {}, sets = SLOTS.map(s => gear[s] || null), need = [...new Set(sets.filter(Boolean))], gi = {};
+    let st = null; if (need.length) { st = stencils(L.body, v); if (st === null) return null; for (const n of need) { const im = img('gear/' + n + '_' + L.body + '_' + v); if (im === null) return null; gi[n] = im; } }
+    const hair = L.hair ? img('hair/' + L.hair) : false, beard = L.beard ? img('hair/' + L.beard) : false; if (hair === null || beard === null) return null;
+    c = canvas(S * 10, S); const g = c.getContext('2d', { willReadFrequently: true }); g.imageSmoothingEnabled = false; g.drawImage(body, 0, 0);
+    const id = g.getImageData(0, 0, S * 10, S), d = id.data, skin = SKIN[L.skin || 0] || SKIN[0], mean = (B.skin[0] + B.skin[1] + B.skin[2]) / 3;
+    for (let i = 0; i < d.length; i += 4) if (d[i + 3] && d[i] - d[i + 2] > 22 && d[i] > 70) { const k = Math.pow((d[i] + d[i + 1] + d[i + 2]) / 3 / mean, .9); d[i] = Math.min(250, skin[0] * k); d[i + 1] = Math.min(240, skin[1] * k); d[i + 2] = Math.min(230, skin[2] * k); }   // every body's skin lands on the same tone, keeping its shading
+    face(d, B, v, L, skin); g.putImageData(id, 0, 0);
+    const wear = (si) => { const n = sets[si]; if (!n || !gi[n] || !st) return; tg.globalCompositeOperation = 'source-over'; tg.clearRect(0, 0, S * 10, S); tg.drawImage(gi[n], 0, 0); tg.globalCompositeOperation = 'destination-in'; tg.drawImage(st[si], 0, 0); g.drawImage(tmp, 0, 0); };
+    for (const si of [7, 6, 2, 5, 3, 4, 1]) wear(si);
+    const vi = H.views.indexOf(v), bi = H.bodies.indexOf(L.body), [hx, hy] = H.at[L.body][v];
+    const dye = (im, col, clipY) => {   // hair is painted grey-white; multiply it by the colour
+      tg.globalCompositeOperation = 'source-over'; tg.clearRect(0, 0, H.cw, H.ch); tg.drawImage(im, bi * H.cw, vi * H.ch, H.cw, H.ch, 0, 0, H.cw, H.ch);
+      const hd = tg.getImageData(0, 0, H.cw, H.ch), p = hd.data; for (let i = 0; i < p.length; i += 4) { if (!p[i + 3]) continue; if (clipY != null && (i / 4 / H.cw | 0) + hy < clipY) { p[i + 3] = 0; continue; } const k = Math.min(1.12, p[i] / 215); p[i] = col[0] * k; p[i + 1] = col[1] * k; p[i + 2] = col[2] * k; }
+      tg.putImageData(hd, 0, 0); g.drawImage(tmp, 0, 0, H.cw, H.ch, S + hx, hy, H.cw, H.ch);
+    };
+    const hc = HAIRCOL[L.hairCol || 0] || HAIRCOL[0];
+    if (beard && v !== 'n' && L.body !== 'female') dye(beard, hc);
+    if (hair) dye(hair, hc, sets[0] ? B.face[1] + 1 : null);   // under a helm only the hair below the brow shows
+    wear(0);
+    if (COMP.size > 60) COMP.clear(); COMP.set(key, c); return c;
+  }
+  // ---------- the cloak: one grey picture per body and view (img/hero/cloak), dyed by its map
+  const CLOAK = new Map();
+  function cloak(L, v) {
+    if (L.cloak == null) return null; const key = L.body + v + L.cloak; let c = CLOAK.get(key); if (c) return c; const im = img('cloak'); if (!im) return null;
+    c = canvas(S, S); const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(im, H.bodies.indexOf(L.body) * S, H.views.indexOf(v) * S, S, S, 0, 0, S, S);
+    const id = g.getImageData(0, 0, S, S), p = id.data, col = CLOAKCOL[L.cloak] || CLOAKCOL[0]; for (let i = 0; i < p.length; i += 4) if (p[i + 3]) { const k = p[i] / 150; p[i] = Math.min(255, col[0] * k); p[i + 1] = Math.min(255, col[1] * k); p[i + 2] = Math.min(255, col[2] * k); }
+    g.putImageData(id, 0, 0); CLOAK.set(key, c); return c;
+  }
+  // ---------- poses: for each part { r: turn (radians, + = clockwise), sy: stretch along the limb, dx, dy }, plus the whole body's dx, dy
+  const Z = () => ({ r: 0, sy: 1, dx: 0, dy: 0 }), ease = (x) => x * x * (3 - 2 * x), up = (p, a, b) => Math.max(0, Math.min(1, (p - a) / (b - a)));
+  function pose(anim, p, view) {
+    const P = { dx: 0, dy: 0, wr: 0, parts: Array.from({ length: 10 }, Z) }, q = P.parts, s = Math.sin(p * TAU), c = Math.cos(p * TAU), side = view === 'e';
+    if (anim === 'walk') {
+      if (side) {
+        q[6].r = -.33 * s; q[7].r = .5 * Math.max(0, c); q[8].r = .33 * s; q[9].r = .5 * Math.max(0, -c);
+        q[2].r = .28 * s; q[3].r = -.2 - .1 * s; q[4].r = -.28 * s; q[5].r = -.2 + .1 * s; q[1].r = .02 * c; P.dy = -Math.abs(c) * 1.6;
+      } else {
+        const la = Math.max(0, s), lb = Math.max(0, -s);
+        q[6].sy = 1 - .13 * la; q[7].sy = 1 - .2 * la; q[8].sy = 1 - .13 * lb; q[9].sy = 1 - .2 * lb;
+        q[2].r = .07 * s; q[2].sy = 1 - .05 * s; q[4].r = .07 * s; q[4].sy = 1 + .05 * s; q[3].sy = 1 - .06 * s; q[5].sy = 1 + .06 * s;
+        P.dy = -Math.abs(s) * 1.4; P.dx = s * .7; q[1].dy = -Math.abs(c) * .5;
+      }
+      return P;
+    }
+    const b = (Math.sin(p * TAU) + 1) / 2, breathe = (k) => { q[1].dy = -b * .9 * k; q[2].dy = q[4].dy = -b * .6 * k; q[0].sy = 1 + b * .012 * k; };
+    if (anim === 'idle') { breathe(1); if (side) { q[2].r = .03 * s; q[4].r = -.03 * s; } return P; }
+    const ready = (k) => { if (!side) return; q[2].r += -.45 * k; q[3].r += -.75 * k; P.wr += .55 * k; q[6].r += -.2 * k; q[7].r += .16 * k; q[8].r += .2 * k; q[9].r += .1 * k; q[0].r += .04 * k; P.dy += 1.2 * k; };   // the fighting stance
+    if (anim === 'ready') { breathe(1); ready(1); q[2].r += .03 * s; return P; }
+    // the fight moves play once, in the side view: p runs 0..1
+    const A = side ? 2 : 4, F = side ? 3 : 5;   // the acting arm (near arm in the side view)
+    if (anim === 'attack' || anim === 'aoe') {
+      const w = ease(up(p, 0, .32)), hit = ease(up(p, .32, .5)), back = ease(up(p, .62, 1)), big = anim === 'aoe' ? 1.25 : 1;
+      q[A].r = (.9 * w - 2.5 * hit) * big * (1 - back); q[F].r = (-.5 * w + .1 * hit) * (1 - back); q[0].r = (-.07 * w + .16 * hit) * (1 - back);
+      P.dx = (-2 * w + 9 * hit * big) * (1 - back); q[6].r = -.25 * hit * (1 - back); q[8].r = .2 * hit * (1 - back); q[1].r = .05 * hit * (1 - back); P.wr = (-1.9 * w * (1 - hit) + 2.75 * hit) * (1 - back); ready(back);
+    } else if (anim === 'cast') {
+      const w = ease(up(p, 0, .3)), back = ease(up(p, .75, 1)), k = w * (1 - back), fl = Math.sin(p * TAU * 3) * .06 * k;
+      q[A].r = (-2.3 + fl) * k; q[F].r = -.35 * k; q[0].r = -.05 * k; q[1].r = -.1 * k; P.dy = -1.5 * k; P.wr = 2.1 * k; ready(1 - k);
+    } else if (anim === 'guard') {
+      const w = ease(up(p, 0, .25)), back = ease(up(p, .75, 1)), k = w * (1 - back);
+      q[A].r = -1.0 * k; q[F].r = -1.25 * k; q[0].r = .05 * k; P.dx = -1.5 * k; q[6].r = .12 * k; q[8].r = -.12 * k; P.wr = .9 * k; ready(1 - k);
+    } else if (anim === 'hit') {
+      const k = Math.sin(Math.min(1, p) * Math.PI);
+      ready(1); q[0].r += -.14 * k; q[1].r = -.1 * k; P.dx = -3.5 * k; q[A].r += .35 * k; q[6].r += .1 * k;
+    } else if (anim === 'dead') {
+      const k = ease(Math.min(1, p)); q[0].r = -1.45 * k; P.dy = 30 * k; P.dx = -10 * k; q[1].r = -.2 * k; q[A].r = .6 * k; q[6].r = .5 * k; q[8].r = .3 * k;
+    }
+    return P;
+  }
+  const CLIP = { ready: 1600, idle: 1600, walk: 760, attack: 560, aoe: 700, cast: 800, guard: 700, hit: 380, dead: 700 }; // ms per loop (or per play)
+  const ONCE = { attack: 1, aoe: 1, cast: 1, guard: 1, hit: 1, dead: 1 };
+  // ---------- drawing: each part is drawn from the look's strip with its parents' moves applied
+  const work = canvas(S * 2, S * 2), wg = work.getContext('2d');
+  function chain(g, B, P, i) { if (PAR[i] >= 0) chain(g, B, P, PAR[i]); const a = P.parts[i], pv = B.piv[i]; g.translate(pv[0] + a.dx, pv[1] + a.dy); if (a.r) g.rotate(a.r); if (a.sy !== 1) g.scale(1, a.sy); g.translate(-pv[0], -pv[1]); }
+  function draw(g, look, view, anim, t, x, footY, scale) {
+    const flip = view === 'w', v = flip ? 'e' : view, B = D.bodies[look.body] && D.bodies[look.body][v]; if (!B) return false;
+    const strip = compose(look, v) || img(look.body + '_' + v); if (!strip) return false;
+    const len = CLIP[anim] || 1000, p = ONCE[anim] ? Math.min(1, t / len) : (t % len) / len, P = pose(anim, p, v);
+    wg.setTransform(1, 0, 0, 1, 0, 0); wg.clearRect(0, 0, work.width, work.height); wg.imageSmoothingEnabled = false;
+    const base = () => wg.setTransform(1, 0, 0, 1, S / 2 + Math.round(P.dx), S / 2 + Math.round(P.dy)), wim = (look.weapon || look.off) && W ? img('weapons') : null, cl = cloak(look, v);
+    const held = (it, part, hand, rot, at) => {   // a weapon or shield: its grip on the hand, turned with the arm
+      if (!it || !wim) return; const ti = W.types.indexOf(it[0]), gp = W.grip[it[0]] && W.grip[it[0]][it[1]]; if (ti < 0 || !gp) return;
+      base(); chain(wg, B, P, part); wg.translate(at ? at[0] : B.hand[hand][0], at ? at[1] : B.hand[hand][1]); wg.rotate(rot); wg.drawImage(wim, it[1] * W.cw, ti * W.ch, W.cw, W.ch, -Math.round(gp[0]), -Math.round(gp[1]), W.cw, W.ch);
+    };
+    const wrot = (it, d) => (HELD[it[0]] ? 0 : LONG[it[0]] ? .18 * d : 1.15 * d), mainPart = v === 'n' ? 5 : 3, offPart = v === 'n' ? 3 : 5;
+    if (cl && v !== 'n') { base(); chain(wg, B, P, 0); wg.drawImage(cl, 0, 0); }
+    if (v === 'e' && look.off && !HELD[look.off[0]]) held(look.off, 0, 0, 1.0, [B.hand[0][0] + 6, B.hand[0][1] - 4]);   // the other hand's weapon shows behind the body
+    for (const i of B.order) {
+      base(); chain(wg, B, P, i); wg.drawImage(strip, i * S, 0, S, S, 0, 0, S, S);
+      if (i === 0 && cl && v === 'n') wg.drawImage(cl, 0, 0);
+      if (i === 0 && v === 'e' && look.off && HELD[look.off[0]]) held(look.off, 0, 0, 0, [B.piv[0][0] + 13, B.piv[0][1] - (look.off[0] === 'focus' ? 24 : 16)]);
+      if (look.weapon && i === mainPart) held(look.weapon, i, v === 'n' ? 1 : 0, v === 'e' ? wrot(look.weapon, 1) + P.wr : wrot(look.weapon, v === 's' ? -.26 : .26));
+      if (look.off && v !== 'e' && i === offPart) held(look.off, i, v === 'n' ? 0 : 1, wrot(look.off, v === 's' ? .26 : -.26));
+    }
+    g.save(); g.imageSmoothingEnabled = scale < 1; if (scale < 1) g.imageSmoothingQuality = 'high'; g.translate(x, footY); if (flip) g.scale(-1, 1);
+    g.drawImage(work, -(S / 2 + B.cx) * scale, -(S / 2 + B.foot) * scale, work.width * scale, work.height * scale); g.restore(); return true;
+  }
+  // the look a hero starts with, and what its gear looks like: items -> { slot: '<map>_<Plate|Leather|Cloth>' }
+  function defaults(cls) { const body = BODY[cls] || 'warrior'; return { body, skin: body === 'mage' ? 0 : body === 'female' ? 1 : 2, eyes: body === 'female' ? 3 : 0, eyeCol: 0, mouth: body === 'female' ? 1 : 0, lipCol: 0, hair: body === 'female' ? 'long' : body === 'mage' ? 'slick' : 'short', hairCol: body === 'female' ? 0 : 1, beard: null }; }
+  function gearOf(items) {
+    const G = window.CB_DATA && CB_DATA.gear, out = {}; if (!G) return out;
+    for (const it of items || []) { if (!it || !SLOTS.includes(it.slot)) continue; const b = G.bases.find(x => x.name === (it.base || it.name)) || {}, A = G.arche[it.arch || b.arch] || {}, map = it.map || b.map || 'physical'; if (A.type && A.type !== 'None') out[it.slot] = map + '_' + A.type; }
+    return out;
+  }
+  // weapons, shield and cloak: items -> { weapon: [type, version], off: [type, version], cloak: map number }
+  function armsOf(items) {
+    const G = window.CB_DATA && CB_DATA.gear, out = {}; if (!G) return out;
+    for (const it of items || []) {
+      if (!it) continue; const b = G.bases.find(x => x.name === (it.base || it.name)) || {}, arch = it.arch || b.arch || '', mi = Math.max(0, MAPS.indexOf(it.map || b.map || 'physical'));
+      if (it.slot === 'Cloak') out.cloak = mi;
+      else if (it.slot === 'Weapon' || it.slot === 'Off-hand') { const w = STAFF[arch] != null ? ['staff', STAFF[arch]] : / Staff$/.test(arch) ? ['staff', mi] : WTYPE[arch] ? [WTYPE[arch], mi] : null; if (w) out[it.slot === 'Weapon' ? 'weapon' : 'off'] = w; }
+    }
+    return out;
+  }
+  return { armsOf, draw, pose, compose, defaults, gearOf, len: (a) => CLIP[a] || 1000, once: (a) => !!ONCE[a], loads: () => loads, S, SLOTS, SKIN, HAIRCOL, EYECOL, LIPCOL, EYES, MOUTHS, HAIR: H.styles, BEARDS: H.beards, BODY,
+    ready: (look, view) => !!compose(look, view === 'w' ? 'e' : view) };
+})();
+
+// ---------- Hero puppets in the game (Nov 12): the pixel-art heroes (src/puppet.js) take over from the drawn Forge heroes everywhere:
+// walking in town (four directions), standing in fights (with attack, cast, guard and hit moves), sitting at the campfire, and in the
+// appearance picker at character creation. A hero's appearance (skin, face, hair...) is saved on the hero as "app"; what it wears comes
+// from its gear. The Forge (src/forge.js) still answers what kind of weapon a hero swings; only its pictures are replaced.
+(function () {
+  const P = window.CB_PUPPET; if (!P) return;
+  const css = document.createElement('style');
+  css.textContent = `.pupfig { display: block; position: relative; height: calc(var(--fh, 118px) * var(--s, 1)); width: calc(var(--fh, 118px) * var(--s, 1) * .6); pointer-events: none; }
+    .pupfig canvas { position: absolute; left: 50%; bottom: 0; image-rendering: pixelated; transform-origin: 50% 100%; }
+    .unit.dead .pupfig canvas { filter: grayscale(1) brightness(.6); } .unit.active .pupfig canvas { filter: drop-shadow(0 0 7px rgba(214,161,74,.55)); }
+    .order .otile .ofig { position: relative; overflow: hidden; } .order .otile .ofig .pupfig, #scrCombat.bf .order .otile .ofig .pupfig { position: absolute; height: 230%; width: 140%; left: -20%; top: 4%; }
+    .pfimg { position: relative; overflow: hidden; } .pfimg .pupfig { position: absolute; height: 250%; width: 150%; left: -25%; top: 2%; }
+    #scrCombat.bf .stage .unit .figure .pupfig { height: calc(var(--fh) * var(--s, 1)); }
+    .seatfig .pupfig { --fh: 132px; margin: 0 auto; }
+    .dpup { display: grid; justify-items: center; gap: 2px; } .dpup .pupfig { --fh: 210px; } .dpup .dmirror { padding: 2px 12px; font-size: 13px; }
+    .lookpick { display: grid; grid-template-columns: 150px 1fr; gap: 10px 16px; align-items: center; margin: 4px 0 12px; }
+    .lookpick .lookview { display: grid; justify-items: center; gap: 4px; } .lookpick .lookview .pupfig { --fh: 190px; }
+    .lookpick .lookrows { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 6px 18px; }
+    .lookrow { display: grid; grid-template-columns: 82px 44px minmax(70px, 1fr) 44px; align-items: center; gap: 4px; font-size: 14px; } .lookrow b { text-align: center; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lookrow .btn { padding: 0; min-width: 0; width: 44px; height: 30px; line-height: 1; } .lookview .row { display: flex; gap: 6px; } .lookview .row .btn { padding: 2px 10px; }
+    .lookrow .sw { display: inline-block; width: 12px; height: 12px; border: 1px solid #000; vertical-align: -1px; margin-right: 5px; }
+    @media (max-width: 640px) { .lookpick { grid-template-columns: 1fr; } }`;
+  document.head.appendChild(css);
+  // ---------- looks: appearance + gear. CB_PUP_APP(who or actor) is set by the game to find a hero's saved appearance.
+  const appOf = (key, cls) => { let a = null; try { a = window.CB_PUP_APP ? window.CB_PUP_APP(key) : null; } catch (e) {} return Object.assign(P.defaults(cls), a || {}, { body: P.BODY[cls] || 'warrior' }); };
+  const lookOf = (key, cls, gear) => Object.assign(appOf(key, cls), { gear: P.gearOf(gear) }, P.armsOf(gear));
+  // ---------- figures on the page: <span class="pupfig" data-pf="id"><canvas>; one loop draws them all
+  const FIG = {}, ANIM = {}, BOX = 124, CW = 230, CH = 180, FX = 100, FY = 168; let ST = {}, n = 0;
+  const MOVE = { attack: 'attack', heavy: 'attack', lunge: 'attack', double: 'attack', leap: 'attack', twirl: 'aoe', cast: 'cast', empower: 'cast', vanish: 'cast', guard: 'guard', guard2: 'guard', parry: 'guard', dodge: 'guard', hit: 'hit', knock: 'hit' };
+  function html(id, look, opt) { FIG[id] = { look, view: (opt && opt.view) || 'e', anim: (opt && opt.anim) || 'idle', t0: performance.now() - Math.random() * 1500 }; return `<span class="pupfig" data-pf="${id}" style="--s:${(opt && opt.s) || 1.12}"><canvas width="${CW}" height="${CH}"></canvas></span>`; }
+  function loop(now) {
+    for (const el of document.querySelectorAll('.pupfig')) {
+      const f = FIG[el.dataset.pf], cv = el.firstElementChild; if (!f || !cv) continue;
+      const h = el.clientHeight; if (!h) continue; const k = h / BOX;
+      if (cv._h !== h) { cv._h = h; cv.style.width = CW * k + 'px'; cv.style.height = CH * k + 'px'; cv.style.marginLeft = -FX * k + 'px'; cv.style.bottom = -(CH - FY) * k + 'px'; }
+      const sx = ST[el.dataset.pf] || {}, a = ANIM[el.dataset.pf]; let anim = f.anim, t = now - f.t0;
+      if (sx.dead) { if (!f.dead) f.dead = now; anim = 'dead'; t = now - f.dead; } else { f.dead = 0; if (a) { if (now - a.t0 < P.len(a.anim)) { anim = a.anim; t = now - a.t0; } else delete ANIM[el.dataset.pf]; } }
+      const flip = el.closest('#foes') || el.classList.contains('flip') ? 'scaleX(-1)' : ''; if (cv._tf !== flip) { cv._tf = flip; cv.style.transform = flip; }
+      const al = sx.stealth ? .4 : 1; if (cv._al !== al) { cv._al = al; cv.style.opacity = al; }
+      const g = cv.getContext('2d'); g.clearRect(0, 0, CW, CH); P.draw(g, f.look, f.view, anim, t, FX, FY, 1);
+    }
+    if (++n % 600 === 0) for (const id in FIG) if (!document.querySelector(`.pupfig[data-pf="${id}"]`)) delete FIG[id];
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+  // ---------- the Forge's pictures, replaced
+  const F = window.CB_FORGE;
+  if (F) {
+    const play0 = F.play, states0 = F.setStates, town0 = F.town;
+    F.figureHtml = (a) => html(a.id, lookOf(a, a.cls, a.look), { anim: 'ready' });
+    F.play = (id, move, o) => { if (FIG[id] && MOVE[move]) { ANIM[id] = { anim: MOVE[move], t0: performance.now() }; return; } play0(id, move, o); };
+    F.setStates = (m) => { ST = Object.assign({}, m); states0(m); };
+    F.warm = (cls, gear) => { const L = lookOf('me', cls, gear); P.compose(L, 'e'); return { ready: true }; };
+    const DIR = { down: 's', up: 'n', left: 'w', right: 'e' };
+    F.town = (g, cls, gear, cx, by, dir, step, s, t, who) => {
+      const L = lookOf(who || 'me', cls, gear), v = DIR[dir] || 's'; if (!P.ready(L, v)) return town0 ? town0(g, cls, gear, cx, by, dir, step, s, t, who) : false;
+      g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, 15 * s, 5 * s, 0, 0, Math.PI * 2); g.fill(); g.restore();
+      return P.draw(g, L, v, step ? 'walk' : 'idle', t, cx, by + 2 * s, 96 * s / 118);
+    };
+  }
+  // ---------- the appearance picker (character creation, and the mirror in the hero window)
+  const NAMES = { skin: ['Fair', 'Light', 'Tan', 'Brown', 'Dark', 'Deep'], eyes: ['Round', 'Narrow', 'Wide', 'Lashes', 'Stern'], mouth: ['Plain', 'Full', 'Smirk', 'Small'],
+    eyeCol: ['Brown', 'Blue', 'Green', 'Grey', 'Amber', 'Red', 'Violet'], lipCol: ['Natural', 'Red', 'Wine', 'Plum', 'Black'], hairCol: ['Black', 'Brown', 'Chestnut', 'Blond', 'Red', 'White', 'Grey', 'Blue', 'Violet', 'Green'] };
+  const cap = (s) => s ? s.replace(/^beard_/, '').replace(/^./, c => c.toUpperCase()) : 'None', hex = (c) => '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
+  function picker(box, cls, start, onChange) {
+    const L = Object.assign(P.defaults(cls), start || {}), id = 'pick' + (box.id || 'x'), views = ['s', 'e', 'n', 'w']; let vi = 0;
+    const male = L.body !== 'female', hairs = [null, ...P.HAIR], beards = [null, ...P.BEARDS];
+    const rows = [['Skin', 'skin', P.SKIN.length, (i) => `<i class="sw" style="background:${hex(P.SKIN[i])}"></i>${NAMES.skin[i]}`], ['Hair', 'hair', hairs, (v) => cap(v)], ['Hair colour', 'hairCol', P.HAIRCOL.length, (i) => `<i class="sw" style="background:${hex(P.HAIRCOL[i])}"></i>${NAMES.hairCol[i]}`]]
+      .concat(male ? [['Beard', 'beard', beards, (v) => cap(v)]] : [])
+      .concat([['Eyes', 'eyes', P.EYES, (i) => NAMES.eyes[i]], ['Eye colour', 'eyeCol', P.EYECOL.length, (i) => `<i class="sw" style="background:${hex(P.EYECOL[i])}"></i>${NAMES.eyeCol[i]}`], ['Mouth', 'mouth', P.MOUTHS, (i) => NAMES.mouth[i]], ['Lips', 'lipCol', P.LIPCOL.length, (i) => NAMES.lipCol[i]]]);
+    const val = (r) => Array.isArray(r[2]) ? Math.max(0, r[2].indexOf(L[r[1]] || null)) : (L[r[1]] || 0), size = (r) => Array.isArray(r[2]) ? r[2].length : r[2];
+    function paint() {
+      box.innerHTML = `<div class="lookpick"><div class="lookview">${html(id, L, { view: views[vi], s: 1 })}<div class="row"><button type="button" class="btn" data-turn="-1" title="Turn">&#8630;</button><button type="button" class="btn" data-rand="1">Random</button><button type="button" class="btn" data-turn="1" title="Turn">&#8631;</button></div></div>
+        <div class="lookrows">${rows.map((r, i) => `<div class="lookrow"><span>${r[0]}</span><button type="button" class="btn" data-row="${i}" data-d="-1" aria-label="Previous ${r[0]}">&#8249;</button><b>${r[3](Array.isArray(r[2]) ? r[2][val(r)] : val(r))}</b><button type="button" class="btn" data-row="${i}" data-d="1" aria-label="Next ${r[0]}">&#8250;</button></div>`).join('')}</div></div>`;
+    }
+    box.onclick = (ev) => {
+      const b = ev.target.closest('button'); if (!b) return;
+      if (b.dataset.turn) vi = (vi + +b.dataset.turn + 4) % 4;
+      else if (b.dataset.rand) for (const r of rows) { const k = Math.floor(Math.random() * size(r)); L[r[1]] = Array.isArray(r[2]) ? r[2][k] : k; }
+      else if (b.dataset.row) { const r = rows[+b.dataset.row], k = (val(r) + +b.dataset.d + size(r)) % size(r); L[r[1]] = Array.isArray(r[2]) ? r[2][k] : k; }
+      paint(); if (onChange) onChange(get());
+    };
+    const get = () => { const o = {}; for (const k of ['skin', 'eyes', 'eyeCol', 'mouth', 'lipCol', 'hair', 'hairCol', 'beard']) o[k] = L[k] == null ? null : L[k]; return o; };
+    paint(); return { get, wear: (gear) => { Object.assign(L, { gear: P.gearOf(gear) }, P.armsOf(gear)); paint(); } };
+  }
+  window.CB_HEROPUP = { html, lookOf, appOf, picker, fig: (id, cls, gear, opt) => html(id, lookOf(opt && opt.who || id, cls, gear), opt) };
+})();
+
   // ---------- Fight effects (Nov 2): ink-style hit effects, spell projectiles and the move each hero makes, all driven by the engine's events.
   // cb.animQ: one entry per card a hero plays (who, card type, element, target). cb.fxQ: every hit (with element, crit, Block absorbed,
   // damage-over-time type), debuff applied, heal and Block gained. consume(cb) runs after each render: it picks the hero's move (swing, leap,
@@ -12358,7 +12630,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     const s = CB.sumGear(ch.gear), res = Object.entries(s.resist || {}).filter(x => x[1]).map(([k, v]) => `${k} ${v}%`).join(', ') || 'none';
     return `<div class="doll">
       <div class="dcol">${DOLL_L.map(slot).join('')}</div>
-      <div class="dmid"><canvas class="dportrait" width="220" height="250" data-cls="${cls}" data-rc="${esc(JSON.stringify(rcOf(ch)))}" data-gear="${esc(JSON.stringify((ch.gear || []).map(g => ({ slot: g.slot, name: g.name, arch: g.arch, rarity: g.rarity }))))}"></canvas>
+      <div class="dmid">${window.CB_HEROPUP ? `<div class="dpup">${CB_HEROPUP.html('doll' + (ch.id || ch.name || cls), CB_HEROPUP.lookOf({ app: ch.app, name: ch.name, cls }, cls, ch.gear), { view: 's', s: 1 })}${o.own ? '<button type="button" class="btn dmirror" data-mirror="1" title="Change how your hero looks">Mirror</button>' : ''}</div>` : `<canvas class="dportrait" width="220" height="250" data-cls="${cls}" data-rc="${esc(JSON.stringify(rcOf(ch)))}" data-gear="${esc(JSON.stringify((ch.gear || []).map(g => ({ slot: g.slot, name: g.name, arch: g.arch, rarity: g.rarity }))))}"></canvas>`}
         <div class="dname" style="color:${CC[cls]}">${esc(ch.name || cls)}</div><div class="muted" style="font-size:13px">${cls}${o.acct ? ' &middot; ' + esc(o.acct) : ''}</div>${o.own && typeof titlePicker === 'function' ? titlePicker(ch) : ch.titleText ? `<div class="dtitle">${esc(ch.titleText)}</div>` : ''}
         <div class="dpow"><span><b>${CBHub.powerLevel(ch)}</b>Power</span><span><b>${CBHub.gearScore(ch)}</b>Gear</span><span><b>${CB.deckLevel(ch.deck)}</b>Deck</span></div></div>
       <div class="dcol">${DOLL_R.map(slot).join('')}</div>
@@ -13303,11 +13575,13 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   // the campfire: every class sits around it (one seat per class, plus classes still to come); click one to pick it
   const SEATS = [[13, 4, 1], [27, 24, .86], [40, 36, .74], [60, 36, .74], [73, 24, .86], [87, 4, 1]]; // left %, bottom %, scale
   const SOON = ['Shaman'];
+  const STARTER_LOOK = (k) => [{ slot: 'Chest', arch: k === 'Mage' || k === 'Warlock' ? 'Robe' : k === 'Rogue' ? 'Jerkin' : 'Cuirass', map: k === 'Warlock' ? 'shadow' : k === 'Mage' ? 'arcane' : 'physical' }, { slot: 'Pants', arch: k === 'Mage' || k === 'Warlock' ? 'Leggings' : k === 'Rogue' ? 'Breeches' : 'Greaves', map: k === 'Warlock' ? 'shadow' : k === 'Mage' ? 'arcane' : 'physical' }, { slot: 'Boots', arch: k === 'Mage' || k === 'Warlock' ? 'Slippers' : k === 'Rogue' ? 'Leather Boots' : 'Sabatons', map: k === 'Warlock' ? 'shadow' : k === 'Mage' ? 'arcane' : 'physical' }]; // what a class wears at the campfire
+  let lookPick = null;
   function renderCamp() {
     const n = Object.keys(profile.chars).length, list = [...Object.keys(CLASSES), ...SOON].slice(0, SEATS.length);
     $('classPick').innerHTML = '<div class="ground"></div><div class="fire" aria-hidden="true"><b></b><b></b><i></i><i></i><i></i><em></em><em></em><em></em></div>' + list.map((k, i) => {
       const [x, y, sc] = SEATS[i], flip = x > 50, soon = SOON.includes(k), have = soon ? 0 : Object.values(profile.chars).filter(c => c.cls === k).length;
-      const fig = `<span class="seatfig"><img src="img/ink/hero_${k.toLowerCase()}.webp" class="${flip ? 'flip' : ''}" alt="" draggable="false" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'noart'}))"></span>`;
+      const fig = `<span class="seatfig">${window.CB_HEROPUP && !soon ? CB_HEROPUP.html('seat' + k, CB_HEROPUP.lookOf('seat', k, STARTER_LOOK(k)), { view: flip ? 'w' : 'e', s: 1 }) : `<img src="img/ink/hero_${k.toLowerCase()}.webp" class="${flip ? 'flip' : ''}" alt="" draggable="false" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'noart'}))">`}</span>`;
       const pos = `left:${x}%;bottom:${y}%;--s:${sc};z-index:${50 - y};--cc:${soon ? '#8f8c80' : CC[k]}`;
       return soon ? `<div class="seat soon" style="${pos}" title="${k}: coming in a future expansion">${fig}<span class="seatname">${k}</span><span class="soonnote">Coming in a future expansion</span></div>`
         : `<button class="seat ${k === createCls ? 'on' : ''}" role="radio" aria-checked="${k === createCls}" data-cls="${k}" style="${pos}" title="${esc(k + ': ' + CLASSES[k].blurb)}${have ? ` (you have ${have})` : ''}">${fig}<span class="seatname">${k}</span></button>`;
@@ -13321,14 +13595,14 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if (!quiet) $('createPanel').scrollIntoView({ block: 'start' });
     if (createCls && !quiet) $('heroName').focus();
   }
-  $('classPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-cls]'); if (!b) return; createCls = b.dataset.cls; createDeck = 'balanced'; renderCamp(); renderCreateChoices(); });
+  $('classPick').addEventListener('click', (ev) => { const b = ev.target.closest('[data-cls]'); if (!b) return; createCls = b.dataset.cls; createDeck = 'balanced'; renderCamp(); renderCreateChoices(); if (window.CB_HEROPUP) { lookPick = CB_HEROPUP.picker($('lookPick'), createCls); lookPick.wear(STARTER_LOOK(createCls)); } });
   $('createCards').addEventListener('click', (ev) => { const b = ev.target.closest('[data-zoomcard]'); const zoom = $('cardZoom'); if (!b || !zoom || !CARDS[b.dataset.zoomcard]) return; const c = CARDS[b.dataset.zoomcard];
     zoom.innerHTML = `<div class="zoomin">${cardBox(c, 300)}<p>${esc(c.rarity)} ${esc(c.cls)} card &middot; click anywhere to close</p></div>`; zoom.hidden = false; fitCards(zoom); requestAnimationFrame(() => fitCards(zoom)); });
   const doCreate = () => {
     if (!createCls) { $('createMsg').textContent = 'Pick a class.'; return; }
     const r = CBHub.createChar(profile, createCls, $('heroName').value, createDeck, createAmu, $('heroHC').checked);
     if (!r.ok) { $('createMsg').textContent = r.why; return; }
-    const tut = $('heroTut').checked; heroKey = r.id; $('heroName').value = ''; $('heroHC').checked = false; createCls = null; save(); renderHub(); show('start'); saveCard();
+    const tut = $('heroTut').checked; heroKey = r.id; if (lookPick && profile.chars[r.id]) profile.chars[r.id].app = lookPick.get(); lookPick = null; $('heroName').value = ''; $('heroHC').checked = false; createCls = null; save(); renderHub(); show('start'); saveCard();
     if (tut) tutStart(); else openGuide({ fresh: true }); // new players: the tour (it ends at the build guide), or straight to what kind of hero do you want to play?
   };
   $('btnCreate').onclick = doCreate; $('heroName').addEventListener('keydown', (e) => { if (e.key === 'Enter') doCreate(); });
@@ -13946,8 +14220,18 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   }
   const lastCrit = {};
   function snapshot() { for (const a of [...cb.players, ...cb.enemies]) { lastHp[a.id] = a.hp; lastBlock[a.id] = a.block; lastCrit[a.id] = a.critN || 0; } }
+  // the mirror (hero window): change your hero's appearance any time (src/heropup.js)
+  function openMirror() {
+    const c = CBHub.char(profile, heroKey); if (!c || !window.CB_HEROPUP) return;
+    modal(`<h3>The mirror</h3><p class="muted" style="margin:0 0 8px">Change how ${esc(c.name || 'your hero')} looks. It costs nothing and you can come back any time.</p><div id="mirrorPick"></div><div class="row"><button class="btn primary" id="mirOk">Keep this look</button><button class="btn" id="mClose">Cancel</button></div>`);
+    const pk = CB_HEROPUP.picker($('mirrorPick'), c.cls, c.app); pk.wear(c.gear); $('mClose').onclick = closeModal;
+    $('mirOk').onclick = () => { c.app = pk.get(); save(); closeModal(); document.querySelectorAll('.dpup').forEach(d => { const f = d.querySelector('.pupfig'); if (f) f.outerHTML = CB_HEROPUP.html('doll' + Date.now(), CB_HEROPUP.lookOf({ app: c.app }, c.cls, c.gear), { view: 's', s: 1 }); }); toast('Your new look is saved.'); };
+  }
+  document.addEventListener('click', (ev) => { if (ev.target.closest && ev.target.closest('[data-mirror]')) openMirror(); });
+  window.__startDummy = () => startDummy(); // for automated checks
   window.__cbActor = (id) => (cb ? cb.actorById(id) : null); // pixel monsters check HP for a boss's phase change
   function figure(a, unit) {
+    if (a.isPlayer && window.CB_HEROPUP && window.CB_FORGE) return CB_FORGE.figureHtml(a); // Nov 12: pixel-art hero puppets (src/heropup.js)
     if (unit && a.isPlayer && window.CB_FORGE && a.look && !(window.CB_INK && CB_INK.pxHero && CB_INK.pxHero(a.cls))) return CB_FORGE.figureHtml(a, window.CB_INK ? CB_INK.figure(a) || '' : ''); // live sprite from the gear the hero wears (src/forge.js)
     if (window.CB_MOBS && !settings.classicFoes) { const px = CB_MOBS.figure(a, unit); if (px) return px; } // Nov 10: animated pixel monsters (src/mobsprites.js)
     if (window.CB_INK) { const ink = CB_INK.figure(a); if (ink) return ink; } // Gothic Ink art pack (src/inkart.js); without it, the drawn figures below
@@ -14155,7 +14439,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if (window.CB_BF) CB_BF.layout(cb, { map: $('scrCombat').dataset.map, row: run && run.at && run.map && run.map.nodes[run.at] ? (run.at === 'boss' ? 'boss' : run.map.nodes[run.at].row) : null, left: cb.duel ? 'You' : cb.raid ? 'The raid' : cb.partySize > 1 ? 'Your party' : esc(hero().name), right: cb.duel ? 'Your rival' : (DATA.maps[$('scrCombat').dataset.map] || {}).name || 'The enemy' });
     if (withPops) popups(); else snapshot();
     if (window.CB_FX) CB_FX.consume(cb); // hero moves, hit effects and spell projectiles (src/fx.js, src/forge.js)
-    $('pframe').innerHTML = `<div class="pfimg"><img src="img/heroes/${String(p.cls).toLowerCase()}.png" alt=""></div><div class="pfr"><div class="pfn">${esc(p.name)} <small>${esc(p.cls)}</small></div><div class="pfrow"><div class="pfhp"><i style="width:${Math.max(0, 100 * p.hp / p.maxHp)}%"></i><span>${p.hp} / ${p.maxHp}</span></div><div class="mkshield${p.block ? '' : ' zero'}" data-tip="${esc(p.defName || 'Block')} ${p.block}: soaks that much damage before HP" style="--si:url(img/ui/status/${({ Dodge: 'dodge', Parry: 'parry', Barrier: 'barrier', Absorb: 'absorb' }[p.defName] || 'block')}.png)"><b>${p.block}</b></div></div><div class="tags">${iconTags(tags(p))}</div></div>`;
+    $('pframe').innerHTML = `<div class="pfimg">${window.CB_HEROPUP ? CB_HEROPUP.html('pf' + p.id, CB_HEROPUP.lookOf(p, p.cls, p.look), { view: 's', s: 1 }) : `<img src="img/heroes/${String(p.cls).toLowerCase()}.png" alt="">`}</div><div class="pfr"><div class="pfn">${esc(p.name)} <small>${esc(p.cls)}</small></div><div class="pfrow"><div class="pfhp"><i style="width:${Math.max(0, 100 * p.hp / p.maxHp)}%"></i><span>${p.hp} / ${p.maxHp}</span></div><div class="mkshield${p.block ? '' : ' zero'}" data-tip="${esc(p.defName || 'Block')} ${p.block}: soaks that much damage before HP" style="--si:url(img/ui/status/${({ Dodge: 'dodge', Parry: 'parry', Barrier: 'barrier', Absorb: 'absorb' }[p.defName] || 'block')}.png)"><b>${p.block}</b></div></div><div class="tags">${iconTags(tags(p))}</div></div>`;
     $('orb').innerHTML = `<i class="orbfill" style="--mf:${Math.max(0, Math.min(1, p.mana / Math.max(1, p.maxMana)))}"></i><span>${p.mana}</span>`;
     $('manaSub').innerHTML = `<span class="m3">${p.mana} / ${p.maxMana} MANA</span><span class="mmax">of ${p.maxMana}</span><span class="mreg">+${p.regen} / turn</span>`;
     const fat = [...p.drawPile, ...p.hand, ...p.discard].filter(c => CARDS[c.key].type === 'Status').length;
