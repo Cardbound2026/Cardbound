@@ -318,9 +318,9 @@
   function exEnter(n) {
     if (!n || !n.inside) return; if (typeof closeTalk === 'function') closeTalk();
     const im = EXIN.img[n.inside] || (EXIN.img[n.inside] = Object.assign(new Image(), { src: 'img/bg/in_' + n.inside + '.webp' }));
-    (profile.visited = profile.visited || {})[n.inside] = 1; veil(n.place, n.name, () => { EXIN.n = n; EXIN.x = 0.12; EXIN.dir = 1; EXIN.tx = null; EXIN.keys.clear(); $('inName').textContent = n.place; $('interior').hidden = false; $('townWrap').classList.add('indoors'); $('prompt').hidden = true; exInHint(); if (window.CB_AUDIO) CB_AUDIO.sfx('door'); requestAnimationFrame(exInFrame); });
+    (profile.visited = profile.visited || {})[n.inside] = 1; veil(n.place, n.name, () => { EXIN.n = n; EXIN.x = 0.12; EXIN.dir = 1; EXIN.tx = null; EXIN.keys.clear(); $('inName').textContent = n.place; $('interior').hidden = false; $('townWrap').classList.add('indoors'); $('prompt').hidden = true; exInHint(); if (window.CB_AUDIO) { CB_AUDIO.sfx('door'); CB_AUDIO.music('indoors'); } requestAnimationFrame(exInFrame); });
   }
-  function exLeave() { if (!EXIN.n) return; const n = EXIN.n; if (typeof closeTalk === 'function') closeTalk(); veil('Emberwatch', '', () => { EXIN.n = null; $('interior').hidden = true; $('townWrap').classList.remove('indoors'); if (window.CB_AUDIO) CB_AUDIO.sfx('door'); updatePrompt(); $('town').focus({ preventScroll: true }); }); }
+  function exLeave() { if (!EXIN.n) return; const n = EXIN.n; if (typeof closeTalk === 'function') closeTalk(); veil('Emberwatch', '', () => { EXIN.n = null; $('interior').hidden = true; $('townWrap').classList.remove('indoors'); if (window.CB_AUDIO) { CB_AUDIO.sfx('door'); CB_AUDIO.music('town'); } updatePrompt(); $('town').focus({ preventScroll: true }); }); }
   $('inLeave').onclick = exLeave;
   const IN_NPCX = 0.7;
   function exInHint() { const n = EXIN.n; if (!n) return; const near = Math.abs(EXIN.x - IN_NPCX) < 0.13; $('inHint').innerHTML = near ? `<kbd>Space</kbd> Talk to ${esc(n.name)}` : `<kbd>A</kbd><kbd>D</kbd> or click to walk &middot; walk up to ${esc(n.name)} to talk`; }

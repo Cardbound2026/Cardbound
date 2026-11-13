@@ -13,7 +13,7 @@
     if (ACHQ.busy || !ACHQ.q.length) return; const a = ACHQ.q.shift(); ACHQ.busy = true;
     let b = document.getElementById('achBanner'); if (!b) { b = document.createElement('div'); b.id = 'achBanner'; b.className = 'achbanner'; b.setAttribute('role', 'status'); document.body.appendChild(b); b.onclick = () => openAchievements(); }
     b.innerHTML = `<small>Achievement unlocked</small><b>${esc(a.name)}</b><span>${esc(a.how)}</span><em>Title: ${esc(a.title)}</em>`;
-    b.classList.remove('on'); void b.offsetWidth; b.classList.add('on');
+    b.classList.remove('on'); void b.offsetWidth; b.classList.add('on'); if (window.CB_AUDIO) CB_AUDIO.sfx('achievement');
     setTimeout(() => { b.classList.remove('on'); setTimeout(() => { ACHQ.busy = false; achShowNext(); }, 450); }, 4200);
   }
   setInterval(() => { try { if (profile) { CBHub.achCheck(profile, {}); const f = CBHub.achTake(); if (f.length) { achAnnounce(f); save(); } } } catch (e) {} }, 1500); // unlocks from anywhere (runs, ranks, duels...)

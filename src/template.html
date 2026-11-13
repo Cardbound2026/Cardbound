@@ -3612,7 +3612,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   }
   function combatOver() {
     hidePeeks(); hardcoreCheck();
-    try { if (window.CB_AUDIO && cb && !cb._snd) { cb._snd = 1; const won = cb.enemies.every(e => e.hp <= 0); if (!cb.practice) CB_AUDIO.jingle(won ? 'victory' : 'defeat', won ? 8 : 12); if (won) CB_AUDIO.sfx('death', .7); } } catch (e) {}
+    try { if (window.CB_AUDIO && cb && !cb._snd) { cb._snd = 1; const won = cb.enemies.every(e => e.hp <= 0); if (!cb.practice) CB_AUDIO.jingle(won ? 'victory' : 'defeat', won ? 8 : 12); if (won) { CB_AUDIO.sfx('death', .7); if (!cb.practice) CB_AUDIO.sfx('loot', .9, 900); } } } catch (e) {}
     if (cb && cb.duel) { if (!cb._shown) { cb._shown = true; duelOver(); } return; }
     if (cb && cb.raid) { if (!cb._shown) { cb._shown = true; raidOver(); } return; }
     if (cb && cb.practice) { if (!cb._shown) { cb._shown = true; const p = cb.players[0], dmg = cb.enemies.reduce((t, e) => t + (e.maxHp - Math.max(0, e.hp)), 0);
