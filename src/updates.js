@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Art', "Shoulder, bracer and glove items have proper pictures now: 54 new icons (plate, leather and cloth for each of the six maps) in place of the blurry scraps cut from the hero art."],
+      ['Art', "Mount fixes: the Red Dragon and Golden Gryphon are redrawn in the same fine detail as the other mounts, the Bloodback Spider walks with its legs while its body holds still, and the Ghost Horse is see-through with a proper gallop."],
       ['Balance', "Codex drops: a map boss now drops your own class's codex 25% of the time, and 50% while you are wearing no codex at all. Every other class's codex still drops at 5% each. Before, a specific codex was 5% a kill whatever your class."],
       ['Interface', "Enemy intents have two attack pictures now: a blade in a target ring for an attack on one target, and an orange burst for an attack that hits everyone."],
       ['Change', "Thorns striking back no longer make a sound."],

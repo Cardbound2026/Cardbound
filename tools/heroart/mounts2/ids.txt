@@ -15,3 +15,4 @@ spider obj 96d81607-6f11-45fa-bd60-dd7f84aaf792
 slug obj 204dda23-acb9-4243-a3c3-9c7b343878ff
 gryphon obj 71764e33-8de7-4d9c-b274-ea1bc3204dc7
 raptor obj 838c68ba-fb57-4d3c-8627-08db6c8760de
+dragon2 char f66ccb0a-2d11-4c25-92cc-c37d9e2f0acd ; gryphon2 char b51bcded-0d79-4860-b888-70564ecce971 ; spider walk2 group 64ca9bc0-588a-4116-a8a8-2909d72af877 ; ghost run2 group fc116891-78c1-4d4e-b6f1-4a22ed95e6f5

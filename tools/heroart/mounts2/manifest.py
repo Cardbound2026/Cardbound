@@ -12,7 +12,13 @@ NEW = {'dragon': ('1794611759254-tvujx0', 136, ('1794611832918-oz119q', 136, 3, 
   'scorpion': ('1794611761412-tefl7v', 136, ('1794611847375-ki776y', 136, 0, 6, False)),
   'chicken': ('1794611768397-v5x2nw', 136, ('1794611847375-ki776y', 136, 3, 6, False)),
   'blackchicken': ('1794611770773-frc5c1', 136, ('1794611851841-oylebj', 136, 0, 6, False)),
-  'spider': ('1794611772845-yd0nsf', 136, ('1794611851841-oylebj', 136, 3, 6, False)),
+  'spider': ('1794614181010-fxv201', 136, ('1794611851841-oylebj', 136, 3, 6, False)),
   'gryphon': ('1794611814153-l89b7f', 136, ('1794611854714-rhl8fh', 136, 0, 6, False)),
   'raptor': ('1794611817118-no7vjz', 136, ('1794611854714-rhl8fh', 136, 3, 6, False)),
   'slug': ('1794611819636-6ihndq', 136, ('1794611857549-kpc0df', 136, 0, 3, False))}
+# second pass (Nov 13): runs redone after review. key -> {dir: (blob, cell)}; the standing cells already in the sheet are kept
+RE2 = {'ghost': {'e': ('1794614182577-wdkh9d', 168), 's': ('1794614184804-tpw59t', 148), 'n': ('1794614186536-h0hhm0', 160)}}
+ALPHA = {'ghost': 0.72}   # the ghost horse is see-through
+# third pass (Nov 13): the dragon and gryphon redrawn as detailed characters (the first ones were too coarse). rot: (blob, cell, first column, columns) in order east, south, north
+CH = {'dragon': {'rot': ('1794614288919-bbiw8f', 128, 0, 6), 'e': ('1794614280182-mdhcfs', 172), 's': ('1794614281697-l5uml5', 132), 'n': ('1794614283552-1y3oy8', 160)},
+  'gryphon': {'rot': ('1794614288919-bbiw8f', 128, 3, 6), 'e': ('1794614284656-qw9b17', 180), 's': ('1794614286364-an5cks', 160), 'n': ('1794614287683-1gcrxl', 160)}}

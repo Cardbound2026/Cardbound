@@ -2,7 +2,7 @@
 # Reads the saved preview sheets (flat #1f252c ground, an 18 px label strip on top), copies them to src/, writes ../mounts/<key>.png.
 import os, shutil, numpy as np
 from PIL import Image
-from manifest import B, RE, NEW
+from manifest import B, RE, NEW, RE2, ALPHA, CH
 H = os.path.dirname(os.path.abspath(__file__)); BG = (31, 37, 44)
 def load(blob):
     dst = f'{H}/src/{blob}.png'
@@ -22,6 +22,13 @@ def place(sheet, row, col, f, box, foot, cx):
     px = int(round(cx - w / 2)); px = max(0, min(128 - w, px)); py = max(0, min(128 - h, foot + 1 - h))
     cell = np.zeros((128, 128, 4), np.uint8); cell[py:py + h, px:px + w] = sp; sheet[row * 128:(row + 1) * 128, col * 128:(col + 1) * 128] = cell
 ROWS = {'s': 0, 'e': 1, 'n': 2}; rep = {}
+def redo(k, D):
+    sheet = np.array(Image.open(f'{H}/../mounts/{k}.png').convert('RGBA'))
+    for v, (blob, cell) in D.items():
+        r = ROWS[v]; st = sheet[r * 128:(r + 1) * 128, :128]; m = st[..., 3] > 40; foot = int(np.nonzero(m.any(1))[0].max()); xs = np.nonzero(m.any(0))[0]; cx = (xs.min() + xs.max() + 1) / 2
+        fr = cells(load(blob), cell, 3, 2); box = bbox(fr); rep[k + v] = (box[2] - box[0], box[3] - box[1])
+        for i, f in enumerate(fr): place(sheet, r, 1 + i, f, box, foot, cx)
+    Image.fromarray(sheet).save(f'{H}/../mounts/{k}.png')
 for k, D in RE.items():
     sheet = np.array(Image.open(f'{H}/../mounts/{k}.png').convert('RGBA')); assert sheet.shape[:2] == (384, 896), sheet.shape
     for v, (blob, cell) in D.items():
@@ -38,4 +45,11 @@ for k, (blob, cell, (rb, rc, c0, cols, vert)) in NEW.items():
         place(sheet, r, 0, rot[j], sb, 120, 64)
         for i, f in enumerate(fr): place(sheet, r, 1 + i, f, box, 120, 64)
     Image.fromarray(sheet).save(f'{H}/../mounts/{k}.png')
+for k, D in CH.items():
+    rb, rc, c0, cols = D['rot']; rot = cells(load(rb), rc, cols, 1, 0, c0, 3); sheet = np.zeros((384, 896, 4), np.uint8)
+    for j, v in enumerate('esn'): place(sheet, ROWS[v], 0, rot[j], bbox([rot[j]]), 120, 64)
+    Image.fromarray(sheet).save(f'{H}/../mounts/{k}.png'); redo(k, {v: D[v] for v in 'esn'})
+for k, D in RE2.items(): redo(k, D)
+for k, a in ALPHA.items():
+    sh = np.array(Image.open(f'{H}/../mounts/{k}.png').convert('RGBA')).astype(float); sh[..., 3] *= a; Image.fromarray(sh.astype(np.uint8)).save(f'{H}/../mounts/{k}.png')
 print(rep)
