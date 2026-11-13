@@ -9,7 +9,10 @@
   const exApp = () => { const c = profile.chars[heroKey]; if (!c) return { cos: {}, dye: {} }; c.app = c.app || {}; c.app.cos = c.app.cos || {}; c.app.dye = c.app.dye || {}; return c.app; };
   const EX_MOUNTS = [['horse', 'Emberwatch Horse', 0, 'The steady brown horse every hero starts with.'], ['wolf', 'Dire Wolf', 400, 'A shaggy grey wolf the size of a pony.'], ['boar', 'War Boar', 400, 'Tusks first, questions never.'],
     ['stag', 'Great Stag', 500, 'A forest lord with mossy antlers.'], ['panther', 'Shadow Panther', 600, 'Silent, black, and violet-eyed.'], ['bear', 'War Bear', 600, 'A brown bear in steel barding.'],
-    ['sabertooth', 'Frost Sabertooth', 800, 'White fur, blue stripes, very long teeth.'], ['bonesteed', 'Bone Steed', 1000, 'It stopped needing oats a long time ago.'], ['nightmare', 'Nightmare', 1200, 'A black horse with a mane of fire.'], ['slug', 'Molten Slug', 1500, 'Slow to anger. Fast downhill.']];
+    ['sabertooth', 'Frost Sabertooth', 800, 'White fur, blue stripes, very long teeth.'], ['bonesteed', 'Bone Steed', 1000, 'It stopped needing oats a long time ago.'], ['nightmare', 'Nightmare', 1200, 'A black horse with a mane of fire.'], ['slug', 'Molten Slug', 1500, 'Slow to anger. Fast downhill.'],
+    ['chicken', 'Giant Chicken', 500, 'It has seen things. It kept running.'], ['blackchicken', 'Black Rooster', 700, 'A very large, very angry rooster in spiked tack.'], ['raptor', 'Green Raptor', 800, 'Two legs, many teeth, no patience.'],
+    ['spider', 'Bloodback Spider', 900, 'Eight legs and a saddle. Do not look down.'], ['scorpion', 'Emperor Scorpion', 1000, 'Black chitin, claws out, sting held high.'], ['ghost', 'Ghost Horse', 1200, 'Pale, cold, and not entirely here.'],
+    ['gryphon', 'Golden Gryphon', 1500, 'Half eagle, half lion, all pride.'], ['dragon', 'Red Dragon', 2000, 'A young red dragon that tolerates a saddle.']];
   // cosmetics: [key, name, price, kind, how it is drawn]
   const EX_COS = [
     ['aura_fire', 'Burning Aura', 500, 'aura', { fx: 'flame', at: 'f', back: 1, z: 1.05 }], ['aura_frost', 'Frostfire Aura', 500, 'aura', { fx: 'flame', at: 'f', back: 1, z: 1.05, tint: 'hue-rotate(170deg)' }],

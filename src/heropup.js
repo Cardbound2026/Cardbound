@@ -102,7 +102,7 @@
     g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, (hv === 'e' ? 30 : 15) * s, 6 * s, 0, 0, Math.PI * 2); g.fill(); g.restore();
     const horse = () => { g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.translate(cx, by); if (f < 0) g.scale(-1, 1); g.drawImage(im, fr * C, H.row * C, C, C, -C / 2 * k, -H.foot * k, C * k, C * k); g.restore(); };
     const hipY = by + H.seat[1] * k + bob, rider = (clip) => { g.save(); if (clip) { g.beginPath(); g.rect(cx - 90 * s, hipY - 200 * s, 180 * s, 200 * s + 8 * sc); g.clip(); } P.draw(g, look, v, 'sit', t, cx + H.seat[0] * k * f, hipY + HORSE.hip * sc + 3 * s, sc); g.restore(); };
-    if (hv === 's') { rider(false); horse(); } else if (hv === 'n') { horse(); rider(false); }   /* Nov 13: from behind the legs show, one down each flank */ else { horse(); rider(false); }
+    if (hv === 's') { if (HORSE.sf) { horse(); rider(false); } else { rider(false); horse(); } } else if (hv === 'n') { if (HORSE.nb) { rider(false); horse(); } else { horse(); rider(false); } }   /* Nov 13: from behind the legs show, one down each flank */ else { horse(); rider(false); }
     return true;
   }
   // ---------- the appearance picker (character creation, and the mirror in the hero window)

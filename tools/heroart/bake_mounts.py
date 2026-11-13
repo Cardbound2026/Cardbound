@@ -20,6 +20,8 @@ for f in sorted(glob.glob(HERE + '/mounts/*.png')):
         if k in SEAT and v in SEAT[k]: seat = SEAT[k][v]
         d[v] = {'row': r, 'foot': foot, 'seat': seat}
     if k in SEAT and 'k' in SEAT[k]: d['k'] = SEAT[k]['k']
+    for fl in ('sf', 'nb'):          # sf: facing the camera the rider is drawn over the beast (a saddle in front of a spider's body); nb: facing away the beast is drawn over the rider
+        if k in SEAT and SEAT[k].get(fl): d[fl] = 1
     out[k] = d
 open(ROOT + '/src/mounts_data.js', 'w').write('// made by tools/heroart/bake_mounts.py: where the rider sits on each mount\nwindow.CB_MOUNTS = ' + json.dumps(out) + ';\n')
 print(json.dumps(out))

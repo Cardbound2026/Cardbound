@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Fix', "Health bar notches: each notch is 10 HP up to 300 HP, 20 HP up to 600, 40 HP up to 1,200, doubling from there. A 207 HP boss now shows 20 notches (it showed 4)."],
+      ['Art', "Mounts: the Dire Wolf, War Boar, Great Stag, Shadow Panther, War Bear and Frost Sabertooth have new, natural running animations (no more tiptoeing or prancing), and the Molten Slug is a real slug now, with no legs. Eight new mounts in the Skull Shop: Giant Chicken, Black Rooster, Green Raptor, Bloodback Spider, Emperor Scorpion, Ghost Horse, Golden Gryphon and Red Dragon."],
       ['Interface', "After Assassinate, the cards in your hand show their doubled Poison, Bleed and Dodge numbers, not only the doubled damage."],
       ['Interface', "The glow on a loot chest now runs along the line where the lid opens, so the loot looks like it is peeking out. A card in the chest grows when you point at it."],
       ['Change', "Sound effects are half as loud as before. The Sound slider in the menu still turns them up or down."],
