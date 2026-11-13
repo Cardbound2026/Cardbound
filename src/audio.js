@@ -20,7 +20,7 @@ window.CB_AUDIO = (function () {
   }
   function sfx(key, vol, delay) {
     if (!unlocked || !SFX[key] || set.sfx <= 0) return; const now = performance.now() + (delay || 0); if (last[key] && now - last[key] < 70) return; last[key] = now;
-    const go = () => { const p = pool[key] || (pool[key] = []); let a = p.find(x => x.paused || x.ended); if (!a) { if (p.length >= 4) return; a = new Audio(SFX[key]); a.preload = 'auto'; p.push(a); } a.volume = Math.min(1, set.sfx * (vol == null ? 1 : vol)); try { a.currentTime = 0; } catch (e) {} a.play().catch(() => {}); };
+    const go = () => { const p = pool[key] || (pool[key] = []); let a = p.find(x => x.paused || x.ended); if (!a) { if (p.length >= 4) return; a = new Audio(SFX[key]); a.preload = 'auto'; p.push(a); } a.volume = Math.min(1, set.sfx * .5 * (vol == null ? 1 : vol)  /* Nov 13: every sound effect at half its old loudness, for everyone (the slider still scales it) */); try { a.currentTime = 0; } catch (e) {} a.play().catch(() => {}); };
     if (delay) setTimeout(go, delay); else go();
   }
   // fight effects (src/fx.js add(kind...)) -> sounds

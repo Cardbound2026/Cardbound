@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Interface', "The glow on a loot chest now runs along the line where the lid opens, so the loot looks like it is peeking out. A card in the chest grows when you point at it."],
+      ['Change', "Sound effects are half as loud as before. The Sound slider in the menu still turns them up or down."],
       ['Art', "The mouse cursor is now a pointing steel gauntlet. The Skull Shop has a new Cursors tab with 24 more: gilded, jade, obsidian and spiked gauntlets, daggers, wands, quills, a skeleton finger, dragon claws, swords and a gold key. Pick yours in the Wardrobe or the Cosmetics window."],
       ['Interface', "Beating the last boss now ends on a recap: the loot you are taking home on the left, and the whole run's damage meter open on the right."],
       ['Balance', "Hide now reads: Enter Stealth. For the rest of this turn, 0-cost Attacks don't break Stealth. It no longer limits you to 0-cost cards."],
