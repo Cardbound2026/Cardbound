@@ -15,7 +15,7 @@ for pk, bodies in GS.PAIRS.items():
             j = {k['label']: (k['x'] * S - x0, k['y'] * S - y0) for k in J[v]}; ny = j['NOSE'][1]; kx, ky = j['NECK']; chin = ny + (ky - ny) * .58
             knee = (j['LEFT KNEE'][1] + j['RIGHT KNEE'][1]) / 2; ank = (j['LEFT LEG'][1] + j['RIGHT LEG'][1]) / 2; low = knee + (ank - knee) * .55
             sw = abs(j['LEFT SHOULDER'][0] - j['RIGHT SHOULDER'][0]); band = (yy > chin + 1) & (yy < low)
-            if v == 's': m = (GS.dil(body, 6) & ~body & band & (yy > ky - 1)) | (body & (yy > chin + 1) & (yy < ky + 5) & (abs(xx - kx) < sw * .62) & (abs(xx - kx) > 4))
+            if v == 's': m = (GS.dil(body, 6) & ~body & band & (yy > ky - 1)) | (body & (yy > chin + 1) & (yy < ky + 3) & (abs(xx - kx) < sw * .5) & (abs(xx - kx) > 4))
             elif v == 'n': m = GS.dil(body, 4) & band & (abs(xx - kx) < sw * .5 + 9)
             else: hx = (j['LEFT HIP'][0] + j['RIGHT HIP'][0]) / 2; m = GS.dil(body, 7) & band & (xx < hx + 1) & ((xx < kx + 2) | (yy < ky + 6))
             m[:1] = m[-1:] = False; m[:, :1] = m[:, -1:] = False
