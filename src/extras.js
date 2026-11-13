@@ -47,6 +47,7 @@
     .mnpane { min-width: 0; } .mnpane .menu { display: flex; flex-direction: column; gap: 8px; max-width: 520px; } .mnpane h3 { margin: 10px 0 4px; }
     .uic { display: inline-block; width: 24px; height: 24px; flex: none; background: url(img/ui/icons.webp) 0 0 / 144px 72px no-repeat; image-rendering: pixelated; }
     .shoptabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 10px; } .shoptabs button { background: rgba(10,9,8,.5); border: 1px solid #4a3d28; color: #cfc4ae; font: inherit; padding: 5px 12px; border-radius: 3px; cursor: pointer; } .shoptabs button.on { border-color: #d6a14a; color: #f4d89a; background: rgba(214,161,74,.14); }
+    .cospane { max-height: 72vh; overflow: auto; padding-right: 6px; } .cospane .shopgrid { max-height: none; overflow: visible; } .coshead { font-size: 19px; margin: 14px 0 6px; color: var(--accent); border-bottom: 1px solid var(--line); padding-bottom: 3px; }
     .shopgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 10px; max-height: 56vh; overflow: auto; padding-right: 4px; }
     .shopit { border: 1px solid #4a3d28; border-radius: 4px; background: linear-gradient(#1b1814, #12100d); padding: 8px; display: flex; flex-direction: column; gap: 5px; align-items: center; text-align: center; }
     .shopit.own { border-color: #5f7a4a; } .shopit.worn { border-color: #d6a14a; box-shadow: 0 0 0 1px rgba(214,161,74,.4) inset; }
@@ -259,7 +260,7 @@
   }
   // ---------- the Menu, in tabs: Game, Settings, Shop, and the reference books
   const _menu0 = openMenu;
-  const MN_TABS = [['game', 'Game', 11], ['settings', 'Settings', 11], ['shop', 'Skull Shop', 9], null, ['compendium', 'Compendium', 4], ['glossary', 'Glossary', 4], ['guide', 'Build guide', 2], ['ach', 'Achievements', 5], ['records', 'Hall of Records', 5], ['news', "What's new", 7]];
+  const MN_TABS = [['game', 'Game', 11], ['settings', 'Settings', 11], ['shop', 'Skull Shop', 9], ['cos', 'Cosmetics', 9], null, ['compendium', 'Compendium', 4], ['glossary', 'Glossary', 4], ['guide', 'Build guide', 2], ['ach', 'Achievements', 5], ['records', 'Hall of Records', 5], ['news', "What's new", 7]];
   const uic = (i) => `<i class="uic" style="background-position:${-(i % 6) * 24}px ${-Math.floor(i / 6) * 24}px"></i>`;
   function exMenu(tab) {
     EX.menu = tab || 'game'; const hero = profile && profile.chars[heroKey], onTitle = !$('scrTitle').hidden;
@@ -267,13 +268,14 @@
     const old = $('modalBox').querySelector('.menu'); if (!old) return;
     const game = document.createElement('div'), sets = document.createElement('div'); game.className = sets.className = 'menu'; let to = game;
     for (const n of [...old.children]) { if (n.tagName === 'H3' && /Settings/.test(n.textContent)) { to = sets; continue; } if (['mnGloss', 'mnGuide', 'mnAch', 'mnRec', 'mClose'].includes(n.id)) continue; to.appendChild(n); }
-    const nav = MN_TABS.filter(t => !t || !((t[0] === 'shop' || t[0] === 'guide' || t[0] === 'ach' || t[0] === 'records') && (!hero || onTitle)) && !(t[0] === 'records' && (typeof run !== 'undefined' && run || typeof cb !== 'undefined' && cb)) && !(t[0] === 'news' && typeof openUpdates !== 'function'))
+    const nav = MN_TABS.filter(t => !t || !((t[0] === 'shop' || t[0] === 'cos' || t[0] === 'guide' || t[0] === 'ach' || t[0] === 'records') && (!hero || onTitle)) && !(t[0] === 'records' && (typeof run !== 'undefined' && run || typeof cb !== 'undefined' && cb)) && !(t[0] === 'news' && typeof openUpdates !== 'function'))
       .map(t => t ? `<button type="button" class="${EX.menu === t[0] ? 'on' : ''}" data-mntab="${t[0]}">${uic(t[2])}${t[1]}</button>` : '<hr>').join('');
     $('modalBox').innerHTML = `<div class="mnwrap"><nav class="mnnav" aria-label="Menu">${nav}<hr><button type="button" class="on" id="mClose" style="margin-top:auto">Resume <span class="muted" style="margin-left:auto;font-size:12px">Esc</span></button></nav><div class="mnpane" id="mnPane"></div></div>`;
     $('modalBox').classList.add('wide');
     const pane = $('mnPane'); $('mClose').onclick = closeModal;
     if (EX.menu === 'settings') { const h = document.createElement('h2'); h.textContent = 'Settings'; pane.appendChild(h); pane.appendChild(sets); }
     else if (EX.menu === 'shop' && hero) pane.innerHTML = exShopHtml();
+    else if (EX.menu === 'cos' && hero) { const top = pane.querySelector('.cospane') ? pane.querySelector('.cospane').scrollTop : (EX.cosTop || 0); pane.innerHTML = `<div class="cospane">${exCosHtml()}</div>`; pane.querySelector('.cospane').scrollTop = top; pane.querySelector('.cospane').onscroll = (e) => { EX.cosTop = e.target.scrollTop; }; }
     else { const h = document.createElement('h2'); h.textContent = 'Menu'; pane.appendChild(h); pane.appendChild(game); }
   }
   openMenu = function () { exMenu('game'); };
@@ -287,18 +289,33 @@
     if (k === 'news') { closeModal(); return openUpdates(); }
     exMenu(k);
   });
+  // Nov 13: Cosmetics: everything you own for show in one place (mounts, pets, auras, footsteps, wings, weapon looks, card borders and backs). Click to use, click again to take off
+  function exCosHtml() {
+    const o = exOwn(), app = exApp(), cos = app.cos, mount = app.mount || 'horse';
+    const tile = (pv, name, worn, btn) => `<div class="shopit own ${worn ? 'worn' : ''}"><div class="pv">${pv}</div><b>${esc(name)}</b>${btn}</div>`;
+    const sec = (title, tiles, none) => `<h3 class="coshead">${title}</h3><div class="shopgrid">${tiles || `<p class="muted" style="grid-column:1/-1;margin:0;font-size:13px">${none}</p>`}</div>`;
+    const kind = (k, title, pvf) => sec(title, EX_COS.filter(c => c[3] === k && o.cos.includes(c[0])).map(c => tile(pvf ? pvf(c) : `<canvas data-pvcos="${c[0]}" width="128" height="104"></canvas>`, c[1], cos[k] === c[0], `<button class="btn ${cos[k] === c[0] ? '' : 'primary'}" data-exwear="${c[0]}">${cos[k] === c[0] ? 'Take off' : 'Use'}</button>`)).join(''), 'None yet. The Skull Shop sells them.');
+    return `<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><h2 style="margin:0">Cosmetics</h2><span class="muted" style="font-size:13px">Everything you own for show. Other players see it.</span><button class="btn" data-mntab="shop" style="margin-left:auto">Skull Shop</button></div>
+      ${sec('Mounts', EX_MOUNTS.filter(m => o.mounts.includes(m[0])).map(m => tile(`<canvas data-pvmount="${m[0]}" width="128" height="104"></canvas>`, m[1], mount === m[0], `<button class="btn ${mount === m[0] ? '' : 'primary'}" data-exwear="mount:${m[0]}" ${mount === m[0] ? 'disabled' : ''}>${mount === m[0] ? 'Your mount' : 'Ride this'}</button>`)).join(''), '')}
+      ${sec('Pets', o.pets.map(k => tile(`<img src="${petSrc(k)}" alt="" style="height:88px;image-rendering:pixelated">`, petName(k), cos.pet === k, `<button class="btn ${cos.pet === k ? '' : 'primary'}" data-expet="${k}">${cos.pet === k ? 'Send away' : 'Bring along'}</button>`)).join(''), 'No pets yet. Any monster you kill on a run has a 1 in 1000 chance to follow you home.')}
+      ${kind('aura', 'Auras')}${kind('trail', 'Footsteps')}${kind('wings', 'Wings')}${kind('wskin', 'Weapon looks')}
+      ${kind('border', 'Card borders', c => `<i class="sw" style="border-radius:6px;width:60px;height:84px;background:#1a1612;box-shadow:0 0 0 3px ${c[4]},0 0 16px ${c[4]}"></i>`)}
+      ${kind('cback', 'Card backs', c => cbackPv(c[4])).replace('None yet. The Skull Shop sells them.', 'You are using your class card back. The Skull Shop sells more.')}`;
+  }
+  document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-expet]'); if (!b || !profile) return; const app = exApp(); app.cos.pet = app.cos.pet === b.dataset.expet ? null : b.dataset.expet; save(); if (typeof retrack === 'function') retrack(true); exRefresh(); });
+  function openCosmetics() { if (!profile || !profile.chars[heroKey]) return; exMenu('cos'); }
   function openShop() { if (!profile || !profile.chars[heroKey]) return; exMenu('shop'); }
   // ---------- the town's action bar (bottom right): every window one click away
   { const bar = document.createElement('div'); bar.id = 'actbar'; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Quick buttons');
-    const B = [['char', 'Character', 0, 'C'], ['bags', 'Bags', 1, 'B'], ['talents', 'Talents', 2, 'N'], ['deck', 'Deck and cards', 3, ''], ['compendium', 'Compendium', 4, ''], ['ach', 'Achievements', 5, ''], ['pvp', 'Arena (PvP)', 6, ''], ['lfg', 'Group finder', 7, 'L'], ['friends', 'Friends', 8, 'O'], ['guild', 'Guild', -1, 'G'], ['shop', 'Skull Shop', 9, ''], ['mount', 'Mount up', 10, 'M'], ['menu', 'Menu', 11, 'Esc']];
-    bar.innerHTML = B.map(([k, n, i, key]) => `<button type="button" data-act="${k}" data-tip="${n}${key ? ' (' + key + ')' : ''}" aria-label="${n}"><i class="uic" style="${i < 0 ? 'background:url(img/ui/guild.webp) center / 36px 36px no-repeat;image-rendering:pixelated' : `background-position:${-(i % 6) * 36}px ${-Math.floor(i / 6) * 36}px`}"></i>${key && key.length === 1 ? `<kbd>${key}</kbd>` : ''}</button>`).join('');
+    const B = [['char', 'Character', 0, 'C'], ['bags', 'Bags', 1, 'B'], ['talents', 'Talents', 2, 'N'], ['deck', 'Deck and cards', 3, ''], ['compendium', 'Compendium', 4, ''], ['ach', 'Achievements', 5, ''], ['pvp', 'Arena (PvP)', 6, ''], ['lfg', 'Group finder', 7, 'L'], ['friends', 'Friends', 8, 'O'], ['guild', 'Guild', -1, 'G'], ['shop', 'Skull Shop', 9, ''], ['cos', 'Cosmetics', -2, 'K'], ['mount', 'Mount up', 10, 'M'], ['menu', 'Menu', 11, 'Esc']];
+    bar.innerHTML = B.map(([k, n, i, key]) => `<button type="button" data-act="${k}" data-tip="${n}${key ? ' (' + key + ')' : ''}" aria-label="${n}"><i class="uic" style="${i < 0 ? `background:url(img/ui/${i === -2 ? 'cosmetics' : 'guild'}.webp) center / 36px 36px no-repeat;image-rendering:pixelated` : `background-position:${-(i % 6) * 36}px ${-Math.floor(i / 6) * 36}px`}"></i>${key && key.length === 1 ? `<kbd>${key}</kbd>` : ''}</button>`).join('');
     $('scrStart').appendChild(bar);
     const act = (k) => { if (typeof closeTalk === 'function') closeTalk();
       if (k === 'char') { GT.tab = 'deck'; openSheet('char'); } else if (k === 'bags') { openSheet('char'); GT.tab = 'stash'; renderHub(); } else if (k === 'talents') openTalents(); else if (k === 'deck') openSheet('deck'); else if (k === 'compendium') openSheet('codex');
-      else if (k === 'ach') openAchievements(); else if (k === 'pvp') openSheet('arena'); else if (k === 'lfg') { if (typeof openLfg === 'function') openLfg(); } else if (k === 'friends') openSheet('friends'); else if (k === 'guild') openSheet('guild'); else if (k === 'shop') openShop(); else if (k === 'mount') toggleMount(); else if (k === 'menu') openMenu(); };
+      else if (k === 'ach') openAchievements(); else if (k === 'pvp') openSheet('arena'); else if (k === 'lfg') { if (typeof openLfg === 'function') openLfg(); } else if (k === 'friends') openSheet('friends'); else if (k === 'guild') openSheet('guild'); else if (k === 'shop') openShop(); else if (k === 'cos') openCosmetics(); else if (k === 'mount') toggleMount(); else if (k === 'menu') openMenu(); };
     bar.addEventListener('click', (ev) => { const b = ev.target.closest('[data-act]'); if (b) { act(b.dataset.act); b.blur(); } });
     document.addEventListener('keydown', (ev) => { if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.target.matches('input, select, textarea') || $('scrStart').hidden || !$('modal').hidden || !$('sheet').hidden || (typeof $('talk') !== 'undefined' && $('talk') && !$('talk').hidden)) return;
-      if (ev.key === 'b' || ev.key === 'B') { ev.preventDefault(); act('bags'); } else if (ev.key === 'l' || ev.key === 'L') { ev.preventDefault(); act('lfg'); } else if (ev.key === 'o' || ev.key === 'O') { ev.preventDefault(); act('friends'); } });
+      if (ev.key === 'b' || ev.key === 'B') { ev.preventDefault(); act('bags'); } else if (ev.key === 'l' || ev.key === 'L') { ev.preventDefault(); act('lfg'); } else if (ev.key === 'o' || ev.key === 'O') { ev.preventDefault(); act('friends'); } else if (ev.key === 'k' || ev.key === 'K') { ev.preventDefault(); act('cos'); } });
   }
   // Nov 13: the talent trees changed (new talents at the bottom of every tree), so every hero gets all their picks back once
   function exTalentRefund() { if (!profile || profile.talV >= 2) return; let n = 0; for (const c of Object.values(profile.chars || {})) for (const st of Object.values(c.codexes || {})) if (st.picks && st.picks.some(x => x != null)) { st.picks = []; n++; } profile.talV = 2; save();

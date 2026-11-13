@@ -2,6 +2,13 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Interface', "Cosmetics window (K, or the wings button on the bottom bar, or the Menu): every mount, pet, aura, footsteps, wings, weapon look, card border and card back you own, in one place. Click to use, click again to take off."],
+      ['Interface', "The loot chest now opens when you click it: the lid lifts, the chest fades back, and the loot is laid out in front of it. Rummaging at a campfire gives a chest too."],
+      ['Interface', "Engage on the node window is a big gold button."],
+      ['Interface', "In the Ink shop, click a card to open its page with the rank slider and where it drops."],
+      ['Interface', "The exhaust pile only shows once a card has been exhausted."],
+      ['Art', "Walking in town: no more waddle. The body stays on its line and the knees lift in turn."],
+      ['Art', "The last cut-off building, the big green-roofed stone hall, is redrawn whole."],
       ['Interface', "On the route map, clicking a node opens a window with everything about it: each foe's picture, stats, deck and loot. Engage (or the visit button for camps, shrines and merchants) takes you there."],
       ['Interface', "Winning a fight no longer jumps straight to the results. A quick banner names who landed the killing blow, on what, with which card, for how much damage and overkill. Then a chest appears over the dimmed fight: small for tier 1, bigger for tier 2 and 3, ornate for a boss. Light the colour of its loot leaks from under the lid. Click it to see the loot."],
       ['Interface', "The draw, discard and exhaust piles are cards now: one neat card back to draw from, an untidy heap for the discard, and a burning card for the exhaust."],

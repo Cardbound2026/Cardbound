@@ -99,10 +99,12 @@ window.CB_PUPPET = (function () {
         q[6].r = -.33 * s; q[7].r = .5 * Math.max(0, c); q[8].r = .33 * s; q[9].r = .5 * Math.max(0, -c);
         q[2].r = .28 * s; q[3].r = -.2 - .1 * s; q[4].r = -.28 * s; q[5].r = -.2 + .1 * s; q[1].r = .02 * c; P.dy = -Math.abs(c) * 1.6;
       } else {
-        const la = Math.max(0, s), lb = Math.max(0, -s);
-        q[6].sy = 1 - .13 * la; q[7].sy = 1 - .2 * la; q[8].sy = 1 - .13 * lb; q[9].sy = 1 - .2 * lb;
-        q[2].r = .07 * s; q[2].sy = 1 - .05 * s; q[4].r = .07 * s; q[4].sy = 1 + .05 * s; q[3].sy = 1 - .06 * s; q[5].sy = 1 + .06 * s;
-        P.dy = -Math.abs(s) * 1.4; P.dx = s * .7; q[1].dy = -Math.abs(c) * .5;
+        // Nov 13: no more waddle. The body stays on its line (it used to slide left and right and both arms leaned the same way);
+        // each knee lifts in turn, the arms swing against the legs (seen from the front that is an arm getting shorter and longer), and the bob is small
+        const la = ease(Math.max(0, s)), lb = ease(Math.max(0, -s));
+        q[6].sy = 1 - .15 * la; q[7].sy = 1 - .26 * la; q[8].sy = 1 - .15 * lb; q[9].sy = 1 - .26 * lb;
+        q[2].sy = 1 + .045 * s; q[3].sy = 1 + .07 * s; q[4].sy = 1 - .045 * s; q[5].sy = 1 - .07 * s;
+        P.dy = -Math.abs(s) * .9;
       }
       return P;
     }

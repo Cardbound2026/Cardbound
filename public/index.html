@@ -142,7 +142,7 @@ body .modal .box.bare { border: 0 !important; border-image: none !important; bac
 .uptrack.flash { animation: upflash .45s ease-out; } @keyframes upflash { 0% { box-shadow: 0 0 0 2px #9be884, 0 0 16px #9be884; } 100% { box-shadow: inset 0 2px 3px rgba(0,0,0,.8); } }
 .inkbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 0 0 8px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: rgba(20,16,12,.5); font-size: 13px; } .inkbar b { font-size: 16px; color: #b9a6ff; } .inkbar .muted { flex: 1; min-width: 200px; }
 .inkscroll { max-height: 58vh; overflow: auto; padding-right: 4px; } .inklist { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 4px; }
-.inkrow { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; padding: 3px 4px 3px 8px; border-left: 3px solid var(--rc); background: var(--panel2); border-radius: 4px; font-size: 13px; } .inkrow .nm { cursor: help; } .inkrow.unseen .nm { color: var(--muted); font-style: italic; } .inkrow .btn { padding: 2px 10px; font-size: 13px; }
+.inkrow { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; padding: 3px 4px 3px 8px; border-left: 3px solid var(--rc); background: var(--panel2); border-radius: 4px; font-size: 13px; } .inkrow { cursor: pointer; } .inkrow:hover { filter: brightness(1.25); } .inkrow .nm { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; } .inkrow.unseen .nm { color: var(--muted); font-style: italic; } .inkrow .btn { padding: 2px 10px; font-size: 13px; }
 .feedlist { display: grid; gap: 4px; max-height: 300px; overflow: auto; }
 .feedlist label { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; padding: 4px 8px; background: var(--panel2); border-left: 3px solid var(--rc); border-radius: 4px; font-size: 13px; }
 .savenote { font-size: 12px; color: var(--muted); }
@@ -1150,6 +1150,7 @@ body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard::after { transfo
 body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard[data-n="0"]::before, body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard[data-n="0"]::after, body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard[data-n="1"]::before, body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard[data-n="1"]::after, body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard[data-n="2"]::before { display: none !important; }
 body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn[data-n="0"] > i { background: none !important; box-shadow: inset 0 0 0 2px #3a2f26 !important; opacity: .7; transform: none; }
 body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust { width: calc(var(--u) * 19) !important; height: calc(var(--u) * 26) !important; top: calc(var(--u) * 88) !important; }
+body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust[data-n="0"] { display: none !important; }
 body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust:not([data-n="0"]) > i { filter: brightness(.5) sepia(.75) saturate(1.5); clip-path: polygon(0 20%, 11% 9%, 24% 17%, 38% 5%, 53% 15%, 68% 3%, 84% 14%, 100% 7%, 100% 100%, 0 100%); box-shadow: none; }
 body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust:not([data-n="0"])::before { content: ''; position: absolute; left: -18%; right: -18%; top: -42%; height: 95%; pointer-events: none; background: radial-gradient(ellipse 34% 58% at 30% 88%, #fff1a8 0, #ffb347 30%, #ff6a1a 55%, transparent 78%), radial-gradient(ellipse 30% 70% at 62% 90%, #ffe58a 0, #ff9a2a 32%, #e2401a 58%, transparent 80%), radial-gradient(ellipse 60% 40% at 50% 100%, rgba(255,120,30,.8) 0, transparent 75%); mix-blend-mode: screen; transform-origin: 50% 100%; animation: exflame .42s steps(4) infinite alternate; }
 body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust:not([data-n="0"])::after { content: ''; position: absolute; left: 0; right: 0; top: 4%; height: 16%; pointer-events: none; background: linear-gradient(180deg, transparent, rgba(255,140,40,.85)); filter: blur(2px); animation: exflame .6s steps(3) infinite alternate-reverse; }
@@ -1164,19 +1165,27 @@ body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust:not([data-n="0"]
 #killov .kchest { display: none; }
 #killov.chest { background: rgba(4,3,5,.78); cursor: default; } #killov.chest .kbanner { display: none; }
 #killov.chest .kchest { position: relative; display: block; width: calc(128px + var(--ci) * 40px); height: calc(128px + var(--ci) * 40px); padding: 0; border: 0; background: none; cursor: pointer; animation: kcin .45s cubic-bezier(.2,1.4,.4,1) both; }
-#killov .kcimg { position: absolute; inset: 0; background: url(img/ui/chests.webp) calc(var(--ci) / 3 * 100%) 0 / 400% 100% no-repeat; image-rendering: pixelated; filter: drop-shadow(0 10px 12px rgba(0,0,0,.8)); }
+#killov .kcimg { position: absolute; inset: 0; background: url(img/ui/chests.webp) calc(var(--ci) / 3 * 100%) 0 / 400% 200% no-repeat; image-rendering: pixelated; filter: drop-shadow(0 10px 12px rgba(0,0,0,.8)); }
 #killov .kseam { position: absolute; left: 16%; right: 16%; top: var(--sy, 44%); height: 5%; background: var(--seam); border-radius: 50%; filter: blur(2px) brightness(1.3); mix-blend-mode: screen; animation: kglow 1.5s ease-in-out infinite alternate; }
 #killov .krays { position: absolute; left: 10%; right: 10%; top: calc(var(--sy, 44%) - 30%); height: 32%; background: var(--seam); opacity: .5; filter: blur(7px); -webkit-mask: linear-gradient(0deg, #000, transparent); mask: linear-gradient(0deg, #000, transparent); mix-blend-mode: screen; animation: kglow 1.5s ease-in-out infinite alternate; pointer-events: none; }
 #killov .kchest.t0 { --sy: 44%; } #killov .kchest.t1 { --sy: 36%; } #killov .kchest.t2 { --sy: 41%; } #killov .kchest.t3 { --sy: 41%; }
 #killov .kchest em { position: absolute; left: 50%; top: calc(100% + 10px); transform: translateX(-50%); white-space: nowrap; font: 600 15px 'Grenze', serif; font-style: normal; font-variant: small-caps; letter-spacing: 2px; color: #d9c9a8; text-shadow: 0 1px 0 #000; animation: sppulse 2.2s ease-in-out infinite; }
 #killov .kchest:hover .kcimg, #killov .kchest:focus-visible .kcimg { filter: drop-shadow(0 10px 12px rgba(0,0,0,.8)) brightness(1.18); } #killov .kchest:focus { outline: none; }
-#killov.open .kchest { animation: kcopen .42s ease-in both; } #killov.open { background: rgba(4,3,5,.86); }
+#killov.open { background: rgba(4,3,5,.84); z-index: 19; } #killov.open .kchest { animation: none; cursor: default; opacity: .55; transform: translateY(-30vh) scale(1.3); transition: opacity .5s ease .25s, transform .5s ease; } #killov.open .kchest em, #killov.open .kseam { display: none; }
+#killov.open .kcimg { background-position-y: 100%; animation: kcpop .3s ease; } #killov.open .krays { top: calc(var(--sy, 44%) - 60%); height: 62%; opacity: .9; transition: all .4s ease; }
+@keyframes kcpop { 0% { transform: scale(1.1, .88); filter: brightness(2.2); } 100% { transform: none; } }
+.modal:has(.lootpop) { background: transparent !important; } body .modal .box.lootpop { width: min(620px, 94vw); text-align: center; text-shadow: 0 2px 0 #000, 0 0 12px #000; gap: 10px; animation: kcin .35s ease both; }
+.lootpop h2 { font-size: 44px; margin: 0; } .lootpop .list { text-align: left; text-shadow: none; max-height: 46vh; } .lootpop .row { justify-content: center; } .lootpop .sackhead { text-shadow: 0 1px 0 #000; }
 @keyframes kcin { from { opacity: 0; transform: translateY(-40px) scale(.7); } to { opacity: 1; transform: none; } }
 @keyframes kglow { from { opacity: .55; transform: scaleX(.92); } to { opacity: 1; transform: scaleX(1.04); } }
-@keyframes kcopen { 30% { transform: scale(1.12, .9); filter: brightness(1.4); } 100% { transform: scale(1.5); filter: brightness(4) drop-shadow(0 0 40px var(--glow, #ffd98a)); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { #killov .kseam, #killov .krays, #killov .kchest em { animation: none; } }
 .nmtop { font-size: 15px; line-height: 1.5; } .nmfoe { border-top: 1px solid var(--line); padding-top: 10px; } .nmhead { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; } .nmhead h3 { margin: 0; font-size: 24px; color: var(--accent); }
 .nmpic { width: 110px; height: 110px; object-fit: contain; image-rendering: pixelated; flex: none; filter: drop-shadow(0 4px 6px #000); } .nmfoe h4 { margin: 8px 0 4px; font-size: 16px; } .nmloot summary { cursor: pointer; font-weight: 700; margin: 8px 0 4px; } .nmloot p { margin: 6px 0 4px; }
+/* Nov 13: Engage is the big button: gold, pulsing, as wide as the window allows */
+.nmrow #mGo { flex: 1 1 auto; min-height: 64px; padding: 12px 40px; font-size: 30px; letter-spacing: 3px; color: #1a0d05; background: linear-gradient(180deg, #ffe7a3, #f0b93f 45%, #c5781f); border: 2px solid #fff1c4; box-shadow: 0 0 0 2px #1a0d05, 0 0 22px rgba(255,170,60,.75), inset 0 1px 0 rgba(255,255,255,.6); text-shadow: 0 1px 0 rgba(255,255,255,.45); animation: gopulse 1.4s ease-in-out infinite; }
+.nmrow #mGo:hover, .nmrow #mGo:focus-visible { filter: brightness(1.12); transform: translateY(-1px); } .nmrow #mClose { flex: none; align-self: center; }
+@keyframes gopulse { 0%, 100% { box-shadow: 0 0 0 2px #1a0d05, 0 0 14px rgba(255,170,60,.55), inset 0 1px 0 rgba(255,255,255,.6); } 50% { box-shadow: 0 0 0 2px #1a0d05, 0 0 34px rgba(255,190,80,1), inset 0 1px 0 rgba(255,255,255,.6); } }
+@media (prefers-reduced-motion: reduce) { .nmrow #mGo { animation: none; } }
 .nmrow { position: sticky; bottom: -1px; padding: 10px 0 4px; background: linear-gradient(180deg, transparent, #1c1512 35%); z-index: 2; }
 /* End turn is engraved on the iron plate of the right pillar */
 body #scrCombat.bf.hud3 .field-panel > .hud #btnEnd { position: absolute !important; right: calc(var(--u) * 13) !important; top: calc(var(--u) * 38) !important; width: calc(var(--u) * 59) !important; height: calc(var(--u) * 51) !important; min-width: 0 !important; margin: 0 !important; padding: 0 calc(var(--u) * 4) !important; border: 0 !important; border-image: none !important; background: none !important; display: grid !important; place-items: center; white-space: normal !important; text-align: center; font: 400 calc(var(--u) * 10.5) / 1 var(--cf-name, var(--f-display)) !important; color: #e0c38a !important; text-shadow: 0 2px 0 #000, 0 0 12px rgba(224,176,80,.45) !important; box-shadow: inset 0 0 18px rgba(224,176,80,.22) !important; border-radius: 3px; transform: none !important; }
@@ -5866,7 +5875,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const all = Object.keys(CARDS).filter(k => CARDS[k].cls === c.cls && !CARDS[k].designOnly && ['White', 'Green', 'Blue', 'Gold'].includes(CARDS[k].rarity)), ql = q.toLowerCase();
     const unseen = all.filter(k => !(c.seen || {})[k]).length;
     const rows = ['Gold', 'Blue', 'Green', 'White'].map(r => { const ks = all.filter(k => CARDS[k].rarity === r && (!ql || CARDS[k].name.toLowerCase().includes(ql) || (CARDS[k].text || '').toLowerCase().includes(ql))).sort((a, b) => (+!(c.seen || {})[a]) - (+!(c.seen || {})[b]) || CARDS[a].name.localeCompare(CARDS[b].name)); if (!ks.length) return '';
-      return `<h3 style="font-size:18px;margin:10px 0 4px;color:${RC[r]}">${r} &middot; ${CBHub.INK_COST[r]} Ink (${CBHub.INK_COST[r] * CBHub.INK_UNSEEN} if not found yet)</h3><div class="inklist">${ks.map(k => { const seen = (c.seen || {})[k], cost = CBHub.inkCost(k, c); return `<div class="inkrow${seen ? '' : ' unseen'}" style="--rc:${RC[r]}"><span class="nm" title="${esc(CARDS[k].text || '')}">${esc(CARDS[k].name)}</span><span class="muted">${seen ? `owned ${own[k] || 0}` : 'not found yet'}</span><button class="btn" data-buy="${k}" ${(profile.ink || 0) >= cost ? '' : 'disabled'}>${cost}</button></div>`; }).join('')}</div>`; }).join('');
+      return `<h3 style="font-size:18px;margin:10px 0 4px;color:${RC[r]}">${r} &middot; ${CBHub.INK_COST[r]} Ink (${CBHub.INK_COST[r] * CBHub.INK_UNSEEN} if not found yet)</h3><div class="inklist">${ks.map(k => { const seen = (c.seen || {})[k], cost = CBHub.inkCost(k, c); return `<div class="inkrow${seen ? '' : ' unseen'}" style="--rc:${RC[r]}"><span class="nm" data-ck="${k}" title="${esc(CARDS[k].text || '')} (click for the card, its ranks and where it drops)">${esc(CARDS[k].name)}</span><span class="muted">${seen ? `owned ${own[k] || 0}` : 'not found yet'}</span><button class="btn" data-buy="${k}" ${(profile.ink || 0) >= cost ? '' : 'disabled'}>${cost}</button></div>`; }).join('')}</div>`; }).join('');
     modal(`<h2>Buy cards with Ink <span class="muted" style="font-size:18px">you have ${profile.ink || 0} Ink</span></h2>
       <p class="muted" style="margin:0 0 6px">Any ${c.cls} card. Cards you have owned before cost the normal price; the ${unseen} you haven't found yet cost ${CBHub.INK_UNSEEN}x. Hover a name for its text.</p>
       ${msg ? `<p class="up" style="margin:0 0 6px">${esc(msg)}</p>` : ''}<input id="inkQ" placeholder="Search by name or text" value="${esc(q)}" style="width:100%;box-sizing:border-box;margin-bottom:4px">
@@ -5875,6 +5884,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     $('mClose').onclick = () => { closeModal(); renderHub(); };
     const qi = $('inkQ'); qi.oninput = () => { const v = qi.value, pos = qi.selectionStart; inkShop(v, msg); const n = $('inkQ'); n.focus(); n.setSelectionRange(pos, pos); };
     $('modalBox').querySelector('.inkscroll').onclick = (ev) => {
+      const nm = !ev.target.closest('button') && ev.target.closest('.inkrow'); if (nm) { const k = nm.querySelector('[data-ck]').dataset.ck, q = $('inkQ').value, top = $('modalBox').querySelector('.inkscroll').scrollTop; cardDetail(k, 0); if ($('mClose')) { $('mClose').textContent = 'Back to the Ink shop'; $('mClose').onclick = () => { inkShop(q); const sc = $('modalBox').querySelector('.inkscroll'); if (sc) sc.scrollTop = top; }; } return; }   // Nov 13: click a card for its page (rank slider, drops), then back to the shop
       const b = ev.target.closest('[data-buy]'); if (b && !b.disabled) { const r = CBHub.craftCard(profile, heroKey, b.dataset.buy); if (!r.ok) return toast(r.why); save(); renderHub(); return inkShop($('inkQ').value, `Bought ${CARDS[b.dataset.buy].name} for ${r.cost} Ink. It is in your collection.`); }
     };
   }
@@ -7441,8 +7451,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794607354294';
-  const CB_BUILD = 'ab0a0d2ee1'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794608169260';
+  const CB_BUILD = 'fb41128ec3'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8548,6 +8558,13 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Interface', "Cosmetics window (K, or the wings button on the bottom bar, or the Menu): every mount, pet, aura, footsteps, wings, weapon look, card border and card back you own, in one place. Click to use, click again to take off."],
+      ['Interface', "The loot chest now opens when you click it: the lid lifts, the chest fades back, and the loot is laid out in front of it. Rummaging at a campfire gives a chest too."],
+      ['Interface', "Engage on the node window is a big gold button."],
+      ['Interface', "In the Ink shop, click a card to open its page with the rank slider and where it drops."],
+      ['Interface', "The exhaust pile only shows once a card has been exhausted."],
+      ['Art', "Walking in town: no more waddle. The body stays on its line and the knees lift in turn."],
+      ['Art', "The last cut-off building, the big green-roofed stone hall, is redrawn whole."],
       ['Interface', "On the route map, clicking a node opens a window with everything about it: each foe's picture, stats, deck and loot. Engage (or the visit button for camps, shrines and merchants) takes you there."],
       ['Interface', "Winning a fight no longer jumps straight to the results. A quick banner names who landed the killing blow, on what, with which card, for how much damage and overkill. Then a chest appears over the dimmed fight: small for tier 1, bigger for tier 2 and 3, ornate for a boss. Light the colour of its loot leaks from under the lid. Click it to see the loot."],
       ['Interface', "The draw, discard and exhaust piles are cards now: one neat card back to draw from, an untidy heap for the discard, and a burning card for the exhaust."],
@@ -11351,10 +11368,12 @@ window.CB_PUPPET = (function () {
         q[6].r = -.33 * s; q[7].r = .5 * Math.max(0, c); q[8].r = .33 * s; q[9].r = .5 * Math.max(0, -c);
         q[2].r = .28 * s; q[3].r = -.2 - .1 * s; q[4].r = -.28 * s; q[5].r = -.2 + .1 * s; q[1].r = .02 * c; P.dy = -Math.abs(c) * 1.6;
       } else {
-        const la = Math.max(0, s), lb = Math.max(0, -s);
-        q[6].sy = 1 - .13 * la; q[7].sy = 1 - .2 * la; q[8].sy = 1 - .13 * lb; q[9].sy = 1 - .2 * lb;
-        q[2].r = .07 * s; q[2].sy = 1 - .05 * s; q[4].r = .07 * s; q[4].sy = 1 + .05 * s; q[3].sy = 1 - .06 * s; q[5].sy = 1 + .06 * s;
-        P.dy = -Math.abs(s) * 1.4; P.dx = s * .7; q[1].dy = -Math.abs(c) * .5;
+        // Nov 13: no more waddle. The body stays on its line (it used to slide left and right and both arms leaned the same way);
+        // each knee lifts in turn, the arms swing against the legs (seen from the front that is an arm getting shorter and longer), and the bob is small
+        const la = ease(Math.max(0, s)), lb = ease(Math.max(0, -s));
+        q[6].sy = 1 - .15 * la; q[7].sy = 1 - .26 * la; q[8].sy = 1 - .15 * lb; q[9].sy = 1 - .26 * lb;
+        q[2].sy = 1 + .045 * s; q[3].sy = 1 + .07 * s; q[4].sy = 1 - .045 * s; q[5].sy = 1 - .07 * s;
+        P.dy = -Math.abs(s) * .9;
       }
       return P;
     }
@@ -12191,7 +12210,7 @@ window.CB_MAPART = (function () {
 })();
 
 // made by tools/townart/compose_town.py: the town sprites and their sizes in art pixels (32 to a tile)
-window.CB_TOWNART_DATA = {"T": 32, "CH": 12, "sprites": {"arenaboard": [49, 74], "awning_blue": [146, 124], "awning_cream": [154, 127], "awning_green": [147, 124], "awning_red": [144, 125], "bld_gold_6": [209, 207], "bld_green_8": [288, 214], "bld_greenstone_12": [384, 288], "bld_red_6": [213, 217], "bld_red_6b": [205, 215], "bld_red_7": [206, 187], "bld_red_8": [288, 244], "bld_slate_6": [206, 213], "bld_slate_7": [202, 190], "bld_slatestone_14": [446, 288], "bld_slatestone_4": [100, 224], "bld_slatestone_6": [178, 183], "bld_slatestone_7": [214, 184], "bld_thatch_10": [316, 190], "bld_thatch_5": [154, 176], "bld_thatch_6": [224, 213], "bld_thatch_7": [230, 186], "board": [54, 71], "brazier": [107, 140], "chest": [26, 26], "colosseum": [560, 416], "fountain": [115, 108], "gatehouse": [256, 128], "hall_cathedral": [531, 416], "hall_guild": [453, 289], "hall_library": [472, 320], "hall_records": [466, 198], "keep": [758, 335], "sign": [33, 68], "stall": [114, 75], "statue": [52, 83], "torch": [19, 71], "tower": [69, 120], "tree_0": [87, 114], "tree_1": [79, 109], "tree_2": [56, 120], "wagon": [101, 88]}};
+window.CB_TOWNART_DATA = {"T": 32, "CH": 12, "sprites": {"arenaboard": [49, 74], "awning_blue": [146, 124], "awning_cream": [154, 127], "awning_green": [147, 124], "awning_red": [144, 125], "bld_gold_6": [209, 207], "bld_green_8": [288, 214], "bld_greenstone_12": [353, 270], "bld_red_6": [213, 217], "bld_red_6b": [205, 215], "bld_red_7": [206, 187], "bld_red_8": [288, 244], "bld_slate_6": [206, 213], "bld_slate_7": [202, 190], "bld_slatestone_14": [446, 288], "bld_slatestone_4": [100, 224], "bld_slatestone_6": [178, 183], "bld_slatestone_7": [214, 184], "bld_thatch_10": [316, 190], "bld_thatch_5": [154, 176], "bld_thatch_6": [224, 213], "bld_thatch_7": [230, 186], "board": [54, 71], "brazier": [107, 140], "chest": [26, 26], "colosseum": [560, 416], "fountain": [115, 108], "gatehouse": [256, 128], "hall_cathedral": [531, 416], "hall_guild": [453, 289], "hall_library": [472, 320], "hall_records": [466, 198], "keep": [758, 335], "sign": [33, 68], "stall": [114, 75], "statue": [52, 83], "torch": [19, 71], "tower": [69, 120], "tree_0": [87, 114], "tree_1": [79, 109], "tree_2": [56, 120], "wagon": [101, 88]}};
 
 // ---------- Town art (Nov 12): Emberwatch painted in pixel art. The ground is baked into 12 x 12 tile pictures
 // (public/img/town/g_<i>_<j>.webp) with the city wall, bridges and shadows in it; every building and prop is its own sprite
@@ -14247,6 +14266,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     .mnpane { min-width: 0; } .mnpane .menu { display: flex; flex-direction: column; gap: 8px; max-width: 520px; } .mnpane h3 { margin: 10px 0 4px; }
     .uic { display: inline-block; width: 24px; height: 24px; flex: none; background: url(img/ui/icons.webp) 0 0 / 144px 72px no-repeat; image-rendering: pixelated; }
     .shoptabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 10px; } .shoptabs button { background: rgba(10,9,8,.5); border: 1px solid #4a3d28; color: #cfc4ae; font: inherit; padding: 5px 12px; border-radius: 3px; cursor: pointer; } .shoptabs button.on { border-color: #d6a14a; color: #f4d89a; background: rgba(214,161,74,.14); }
+    .cospane { max-height: 72vh; overflow: auto; padding-right: 6px; } .cospane .shopgrid { max-height: none; overflow: visible; } .coshead { font-size: 19px; margin: 14px 0 6px; color: var(--accent); border-bottom: 1px solid var(--line); padding-bottom: 3px; }
     .shopgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 10px; max-height: 56vh; overflow: auto; padding-right: 4px; }
     .shopit { border: 1px solid #4a3d28; border-radius: 4px; background: linear-gradient(#1b1814, #12100d); padding: 8px; display: flex; flex-direction: column; gap: 5px; align-items: center; text-align: center; }
     .shopit.own { border-color: #5f7a4a; } .shopit.worn { border-color: #d6a14a; box-shadow: 0 0 0 1px rgba(214,161,74,.4) inset; }
@@ -14459,7 +14479,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   }
   // ---------- the Menu, in tabs: Game, Settings, Shop, and the reference books
   const _menu0 = openMenu;
-  const MN_TABS = [['game', 'Game', 11], ['settings', 'Settings', 11], ['shop', 'Skull Shop', 9], null, ['compendium', 'Compendium', 4], ['glossary', 'Glossary', 4], ['guide', 'Build guide', 2], ['ach', 'Achievements', 5], ['records', 'Hall of Records', 5], ['news', "What's new", 7]];
+  const MN_TABS = [['game', 'Game', 11], ['settings', 'Settings', 11], ['shop', 'Skull Shop', 9], ['cos', 'Cosmetics', 9], null, ['compendium', 'Compendium', 4], ['glossary', 'Glossary', 4], ['guide', 'Build guide', 2], ['ach', 'Achievements', 5], ['records', 'Hall of Records', 5], ['news', "What's new", 7]];
   const uic = (i) => `<i class="uic" style="background-position:${-(i % 6) * 24}px ${-Math.floor(i / 6) * 24}px"></i>`;
   function exMenu(tab) {
     EX.menu = tab || 'game'; const hero = profile && profile.chars[heroKey], onTitle = !$('scrTitle').hidden;
@@ -14467,13 +14487,14 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     const old = $('modalBox').querySelector('.menu'); if (!old) return;
     const game = document.createElement('div'), sets = document.createElement('div'); game.className = sets.className = 'menu'; let to = game;
     for (const n of [...old.children]) { if (n.tagName === 'H3' && /Settings/.test(n.textContent)) { to = sets; continue; } if (['mnGloss', 'mnGuide', 'mnAch', 'mnRec', 'mClose'].includes(n.id)) continue; to.appendChild(n); }
-    const nav = MN_TABS.filter(t => !t || !((t[0] === 'shop' || t[0] === 'guide' || t[0] === 'ach' || t[0] === 'records') && (!hero || onTitle)) && !(t[0] === 'records' && (typeof run !== 'undefined' && run || typeof cb !== 'undefined' && cb)) && !(t[0] === 'news' && typeof openUpdates !== 'function'))
+    const nav = MN_TABS.filter(t => !t || !((t[0] === 'shop' || t[0] === 'cos' || t[0] === 'guide' || t[0] === 'ach' || t[0] === 'records') && (!hero || onTitle)) && !(t[0] === 'records' && (typeof run !== 'undefined' && run || typeof cb !== 'undefined' && cb)) && !(t[0] === 'news' && typeof openUpdates !== 'function'))
       .map(t => t ? `<button type="button" class="${EX.menu === t[0] ? 'on' : ''}" data-mntab="${t[0]}">${uic(t[2])}${t[1]}</button>` : '<hr>').join('');
     $('modalBox').innerHTML = `<div class="mnwrap"><nav class="mnnav" aria-label="Menu">${nav}<hr><button type="button" class="on" id="mClose" style="margin-top:auto">Resume <span class="muted" style="margin-left:auto;font-size:12px">Esc</span></button></nav><div class="mnpane" id="mnPane"></div></div>`;
     $('modalBox').classList.add('wide');
     const pane = $('mnPane'); $('mClose').onclick = closeModal;
     if (EX.menu === 'settings') { const h = document.createElement('h2'); h.textContent = 'Settings'; pane.appendChild(h); pane.appendChild(sets); }
     else if (EX.menu === 'shop' && hero) pane.innerHTML = exShopHtml();
+    else if (EX.menu === 'cos' && hero) { const top = pane.querySelector('.cospane') ? pane.querySelector('.cospane').scrollTop : (EX.cosTop || 0); pane.innerHTML = `<div class="cospane">${exCosHtml()}</div>`; pane.querySelector('.cospane').scrollTop = top; pane.querySelector('.cospane').onscroll = (e) => { EX.cosTop = e.target.scrollTop; }; }
     else { const h = document.createElement('h2'); h.textContent = 'Menu'; pane.appendChild(h); pane.appendChild(game); }
   }
   openMenu = function () { exMenu('game'); };
@@ -14487,18 +14508,33 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if (k === 'news') { closeModal(); return openUpdates(); }
     exMenu(k);
   });
+  // Nov 13: Cosmetics: everything you own for show in one place (mounts, pets, auras, footsteps, wings, weapon looks, card borders and backs). Click to use, click again to take off
+  function exCosHtml() {
+    const o = exOwn(), app = exApp(), cos = app.cos, mount = app.mount || 'horse';
+    const tile = (pv, name, worn, btn) => `<div class="shopit own ${worn ? 'worn' : ''}"><div class="pv">${pv}</div><b>${esc(name)}</b>${btn}</div>`;
+    const sec = (title, tiles, none) => `<h3 class="coshead">${title}</h3><div class="shopgrid">${tiles || `<p class="muted" style="grid-column:1/-1;margin:0;font-size:13px">${none}</p>`}</div>`;
+    const kind = (k, title, pvf) => sec(title, EX_COS.filter(c => c[3] === k && o.cos.includes(c[0])).map(c => tile(pvf ? pvf(c) : `<canvas data-pvcos="${c[0]}" width="128" height="104"></canvas>`, c[1], cos[k] === c[0], `<button class="btn ${cos[k] === c[0] ? '' : 'primary'}" data-exwear="${c[0]}">${cos[k] === c[0] ? 'Take off' : 'Use'}</button>`)).join(''), 'None yet. The Skull Shop sells them.');
+    return `<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><h2 style="margin:0">Cosmetics</h2><span class="muted" style="font-size:13px">Everything you own for show. Other players see it.</span><button class="btn" data-mntab="shop" style="margin-left:auto">Skull Shop</button></div>
+      ${sec('Mounts', EX_MOUNTS.filter(m => o.mounts.includes(m[0])).map(m => tile(`<canvas data-pvmount="${m[0]}" width="128" height="104"></canvas>`, m[1], mount === m[0], `<button class="btn ${mount === m[0] ? '' : 'primary'}" data-exwear="mount:${m[0]}" ${mount === m[0] ? 'disabled' : ''}>${mount === m[0] ? 'Your mount' : 'Ride this'}</button>`)).join(''), '')}
+      ${sec('Pets', o.pets.map(k => tile(`<img src="${petSrc(k)}" alt="" style="height:88px;image-rendering:pixelated">`, petName(k), cos.pet === k, `<button class="btn ${cos.pet === k ? '' : 'primary'}" data-expet="${k}">${cos.pet === k ? 'Send away' : 'Bring along'}</button>`)).join(''), 'No pets yet. Any monster you kill on a run has a 1 in 1000 chance to follow you home.')}
+      ${kind('aura', 'Auras')}${kind('trail', 'Footsteps')}${kind('wings', 'Wings')}${kind('wskin', 'Weapon looks')}
+      ${kind('border', 'Card borders', c => `<i class="sw" style="border-radius:6px;width:60px;height:84px;background:#1a1612;box-shadow:0 0 0 3px ${c[4]},0 0 16px ${c[4]}"></i>`)}
+      ${kind('cback', 'Card backs', c => cbackPv(c[4])).replace('None yet. The Skull Shop sells them.', 'You are using your class card back. The Skull Shop sells more.')}`;
+  }
+  document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-expet]'); if (!b || !profile) return; const app = exApp(); app.cos.pet = app.cos.pet === b.dataset.expet ? null : b.dataset.expet; save(); if (typeof retrack === 'function') retrack(true); exRefresh(); });
+  function openCosmetics() { if (!profile || !profile.chars[heroKey]) return; exMenu('cos'); }
   function openShop() { if (!profile || !profile.chars[heroKey]) return; exMenu('shop'); }
   // ---------- the town's action bar (bottom right): every window one click away
   { const bar = document.createElement('div'); bar.id = 'actbar'; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Quick buttons');
-    const B = [['char', 'Character', 0, 'C'], ['bags', 'Bags', 1, 'B'], ['talents', 'Talents', 2, 'N'], ['deck', 'Deck and cards', 3, ''], ['compendium', 'Compendium', 4, ''], ['ach', 'Achievements', 5, ''], ['pvp', 'Arena (PvP)', 6, ''], ['lfg', 'Group finder', 7, 'L'], ['friends', 'Friends', 8, 'O'], ['guild', 'Guild', -1, 'G'], ['shop', 'Skull Shop', 9, ''], ['mount', 'Mount up', 10, 'M'], ['menu', 'Menu', 11, 'Esc']];
-    bar.innerHTML = B.map(([k, n, i, key]) => `<button type="button" data-act="${k}" data-tip="${n}${key ? ' (' + key + ')' : ''}" aria-label="${n}"><i class="uic" style="${i < 0 ? 'background:url(img/ui/guild.webp) center / 36px 36px no-repeat;image-rendering:pixelated' : `background-position:${-(i % 6) * 36}px ${-Math.floor(i / 6) * 36}px`}"></i>${key && key.length === 1 ? `<kbd>${key}</kbd>` : ''}</button>`).join('');
+    const B = [['char', 'Character', 0, 'C'], ['bags', 'Bags', 1, 'B'], ['talents', 'Talents', 2, 'N'], ['deck', 'Deck and cards', 3, ''], ['compendium', 'Compendium', 4, ''], ['ach', 'Achievements', 5, ''], ['pvp', 'Arena (PvP)', 6, ''], ['lfg', 'Group finder', 7, 'L'], ['friends', 'Friends', 8, 'O'], ['guild', 'Guild', -1, 'G'], ['shop', 'Skull Shop', 9, ''], ['cos', 'Cosmetics', -2, 'K'], ['mount', 'Mount up', 10, 'M'], ['menu', 'Menu', 11, 'Esc']];
+    bar.innerHTML = B.map(([k, n, i, key]) => `<button type="button" data-act="${k}" data-tip="${n}${key ? ' (' + key + ')' : ''}" aria-label="${n}"><i class="uic" style="${i < 0 ? `background:url(img/ui/${i === -2 ? 'cosmetics' : 'guild'}.webp) center / 36px 36px no-repeat;image-rendering:pixelated` : `background-position:${-(i % 6) * 36}px ${-Math.floor(i / 6) * 36}px`}"></i>${key && key.length === 1 ? `<kbd>${key}</kbd>` : ''}</button>`).join('');
     $('scrStart').appendChild(bar);
     const act = (k) => { if (typeof closeTalk === 'function') closeTalk();
       if (k === 'char') { GT.tab = 'deck'; openSheet('char'); } else if (k === 'bags') { openSheet('char'); GT.tab = 'stash'; renderHub(); } else if (k === 'talents') openTalents(); else if (k === 'deck') openSheet('deck'); else if (k === 'compendium') openSheet('codex');
-      else if (k === 'ach') openAchievements(); else if (k === 'pvp') openSheet('arena'); else if (k === 'lfg') { if (typeof openLfg === 'function') openLfg(); } else if (k === 'friends') openSheet('friends'); else if (k === 'guild') openSheet('guild'); else if (k === 'shop') openShop(); else if (k === 'mount') toggleMount(); else if (k === 'menu') openMenu(); };
+      else if (k === 'ach') openAchievements(); else if (k === 'pvp') openSheet('arena'); else if (k === 'lfg') { if (typeof openLfg === 'function') openLfg(); } else if (k === 'friends') openSheet('friends'); else if (k === 'guild') openSheet('guild'); else if (k === 'shop') openShop(); else if (k === 'cos') openCosmetics(); else if (k === 'mount') toggleMount(); else if (k === 'menu') openMenu(); };
     bar.addEventListener('click', (ev) => { const b = ev.target.closest('[data-act]'); if (b) { act(b.dataset.act); b.blur(); } });
     document.addEventListener('keydown', (ev) => { if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.target.matches('input, select, textarea') || $('scrStart').hidden || !$('modal').hidden || !$('sheet').hidden || (typeof $('talk') !== 'undefined' && $('talk') && !$('talk').hidden)) return;
-      if (ev.key === 'b' || ev.key === 'B') { ev.preventDefault(); act('bags'); } else if (ev.key === 'l' || ev.key === 'L') { ev.preventDefault(); act('lfg'); } else if (ev.key === 'o' || ev.key === 'O') { ev.preventDefault(); act('friends'); } });
+      if (ev.key === 'b' || ev.key === 'B') { ev.preventDefault(); act('bags'); } else if (ev.key === 'l' || ev.key === 'L') { ev.preventDefault(); act('lfg'); } else if (ev.key === 'o' || ev.key === 'O') { ev.preventDefault(); act('friends'); } else if (ev.key === 'k' || ev.key === 'K') { ev.preventDefault(); act('cos'); } });
   }
   // Nov 13: the talent trees changed (new talents at the bottom of every tree), so every hero gets all their picks back once
   function exTalentRefund() { if (!profile || profile.talV >= 2) return; let n = 0; for (const c of Object.values(profile.chars || {})) for (const st of Object.values(c.codexes || {})) if (st.picks && st.picks.some(x => x != null)) { st.picks = []; n++; } profile.talV = 2; save();
@@ -15349,7 +15385,8 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     const idx = run.online ? [run.myMi] : run.members.map((m, i) => i);
     const parts = idx.map(i => { const m = run.members[i], o = out[i]; return `<div><b style="color:${CC[m.cls]}">${esc(m.name)}</b>: ${o.heal ? `healed ${o.heal} HP` : 'no healing'}${choices[i] === 'rummage' ? `, rummaged${o.from ? ' (' + esc(o.from) + ')' : ''}: ${o.gold} gold${o.drops.length ? ' and:' : ', nothing else.'}` : ''}</div>${o.drops.length ? `<div class="list">${o.drops.map(d => itemHtml(d)).join('')}</div>` : ''}`; });
     if (!idx.some(i => choices[i] === 'rummage') && !run.online) return; // a plain rest needs no popup
-    modal(`<h2>At the fire</h2>${parts.join('')}<div class="row"><button class="btn primary" id="mClose">Back to the map</button></div>`); $('mClose').onclick = closeModal;
+    const show = () => { modal(`<h2>At the fire</h2>${parts.join('')}<div class="row"><button class="btn primary" id="mClose">Back to the map</button></div>`); $('mClose').onclick = closeModal; };
+    if (idx.some(i => choices[i] === 'rummage')) killSplash(idx.filter(i => choices[i] === 'rummage').flatMap(i => out[i].drops), false, show, true); else show();   // Nov 13: what you rummage up comes in a chest too
   }
   function pendingModal() {
     const p = run.pending; redrawShop = null;
@@ -15892,8 +15929,8 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     const mine = run.solo ? d : run.online ? result.per[run.myMi].drops : result.per.flatMap(r => r.drops);
     killSplash(mine, isBoss, showLoot);
   }
-  function killSplash(drops, isBoss, then) {
-    const k = cb && cb.lastKill, tiers = cb ? cb.enemies.map(e => String(e.tier || '1')) : [], ti = isBoss || tiers.includes('Boss') ? 3 : tiers.includes('Elite') || tiers.includes('3') ? 2 : tiers.includes('2') ? 1 : 0;
+  function killSplash(drops, isBoss, then, camp) {   // camp: a chest found by rummaging at a campfire, with no killing blow to announce
+    const k = !camp && cb && cb.lastKill, tiers = !camp && cb ? cb.enemies.map(e => String(e.tier || '1')) : [], ti = isBoss || tiers.includes('Boss') ? 3 : tiers.includes('Elite') || tiers.includes('3') ? 2 : tiers.includes('2') ? 1 : 0;
     const old = $('killov'); if (old) old.remove();
     const ov = document.createElement('div'); ov.id = 'killov'; ov.className = 'kb';
     const cardName = k && k.card && CARDS[k.card] ? CARDS[k.card].name : k ? k.label : '';
@@ -15906,8 +15943,10 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     document.body.appendChild(ov);
     let stage = 0, t1 = null;
     const toChest = () => { if (stage) return; stage = 1; clearTimeout(t1); ov.className = 'chest'; const b = ov.querySelector('.kchest'); try { b.focus(); } catch (e) {} };
-    const open = () => { if (stage !== 1) return; stage = 2; ov.classList.add('open'); try { if (window.CB_AUDIO) CB_AUDIO.sfx('loot', .9); } catch (e) {} setTimeout(() => { ov.remove(); then(); }, 420); };
-    t1 = setTimeout(toChest, k ? 2100 : 900);
+    const open = () => { if (stage !== 1) return; stage = 2; ov.classList.add('open'); try { if (window.CB_AUDIO) CB_AUDIO.sfx('loot', .9); } catch (e) {}
+      // Nov 13 (later): the lid opens, the chest fades back, and the loot is laid out in front of it
+      setTimeout(() => { then(); const mb = $('modalBox'); mb.classList.add('bare', 'lootpop'); const gone = () => $('modal').hidden || !mb.classList.contains('lootpop'); const iv = setInterval(() => { if (gone()) { clearInterval(iv); ov.remove(); } }, 80); }, 520); };
+    if (camp) { ov.querySelector('.kbanner').remove(); toChest(); } else t1 = setTimeout(toChest, k ? 2100 : 900);
     ov.addEventListener('click', (ev) => { if (stage === 0) return toChest(); if (ev.target.closest('.kchest')) open(); });
   }
 
