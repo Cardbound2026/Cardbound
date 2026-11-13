@@ -16,6 +16,7 @@ bg = Image.new('RGB', (W, H))
 for x in range(0, W + 8, t.width):
     for y in range(0, H, t.height): bg.paste(t, (x - 8, y))
 bg = ImageEnhance.Brightness(bg).enhance(float(os.environ.get('GB', '0.62'))); bg = ImageEnhance.Color(bg).enhance(float(os.environ.get('GC', '0.8')))
+if os.path.exists(os.path.join(src, 'ground_full.png')): bg = Image.open(os.path.join(src, 'ground_full.png')).convert('RGB')   # Nov 13: a map may bring its whole ground, painted plain (fire: ash with a few burning patches)
 bg = bg.convert('RGBA')
 props = [Image.open(f).convert('RGBA') for f in sorted(glob.glob(os.path.join(src, 'p*.png')))]
 PS = int(os.environ.get('PS', '2')); props = [p.crop(p.getbbox()) for p in props if p.getbbox()]; props = [p.resize((p.width * PS, p.height * PS), Image.NEAREST) for p in props]

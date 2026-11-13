@@ -56,6 +56,14 @@ h1, h2, h3 { font-family: var(--f-display); font-weight: 400; margin: 0; text-wr
 
 /* town */
 .townbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 14px; }
+/* Nov 13: in town the black top bar is gone. The logo sits in the middle of the hero row, Menu at its right end; no "Emberwatch", no walking guide */
+body:has(#scrStart:not([hidden])) header.top { position: relative; display: block; height: 0; margin: 0; padding: 0; border: 0; z-index: 25; }
+body:has(#scrStart:not([hidden])) header.top .brand { position: absolute; left: 50%; top: 0; transform: translateX(-50%); pointer-events: none; }
+body:has(#scrStart:not([hidden])) header.top .brand h1 { font-size: 32px; line-height: 34px; text-shadow: 0 2px 0 #000, 0 0 14px rgba(0,0,0,.8); }
+body:has(#scrStart:not([hidden])) header.top #brandLine, body:has(#scrStart:not([hidden])) header.top #topInfo, #scrStart .tbhelp { display: none; }
+body:has(#scrStart:not([hidden])) header.top #btnMenu { position: absolute; right: 0; top: 1px; padding: 4px 14px; }
+#scrStart .townbar { min-height: 34px; padding-right: 96px; }
+@media (max-width: 900px) { body:has(#scrStart:not([hidden])) header.top .brand { display: none; } }
 .townbar b { font-family: var(--f-display); font-weight: 400; font-size: 22px; }
 .tbhelp { font-size: 12px; margin-left: auto; }
 .townwrap { position: relative; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #0b0907; }
@@ -527,12 +535,22 @@ body.aiming { cursor: grabbing; user-select: none; }
 .dslot.empty { opacity: .55; border-left-color: var(--line); } .dslot.empty .dtx b { color: var(--muted); }
 .dstats { grid-area: s; display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 2px 10px; font-size: 13px; margin: 6px 0 0; padding: 8px 10px; background: var(--panel2); border-radius: 6px; }
 /* ===== Nov 13: the welcome screen, the hero select, and one button style for the whole game ===== */
-#splash { position: fixed; inset: 0; z-index: 2000; display: grid; grid-template-rows: 1fr auto 1fr; justify-items: center; align-items: center; cursor: pointer; background: #050406 url(img/ui/bg_title.webp) center 40% / cover no-repeat; image-rendering: pixelated; overflow: hidden; transition: opacity .7s ease, visibility .7s; }
+#splash { position: fixed; inset: 0; z-index: 2000; display: grid; grid-template-rows: 1fr auto 1fr; justify-items: center; align-items: center; cursor: pointer; background: #050406 url(img/ui/bg_title_hd.webp) center 40% / cover no-repeat; overflow: hidden; transition: opacity .7s ease, visibility .7s; }
 #splash::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 60% at 50% 45%, transparent 0, rgba(5,4,6,.35) 55%, rgba(5,4,6,.92) 100%), linear-gradient(180deg, rgba(5,4,6,.55), transparent 30%, transparent 60%, rgba(5,4,6,.9)); }
 #splash.gone { opacity: 0; visibility: hidden; pointer-events: none; }
 #splash > * { position: relative; image-rendering: auto; }
 #splash .splogo { grid-row: 2; display: grid; justify-items: center; gap: 6px; animation: sprise 1.6s ease both; }
-#splash h1 { margin: 0; font: 400 clamp(64px, 13vw, 168px)/.9 'Pirata One', 'New Rocker', serif; letter-spacing: 2px; color: #f3d48a; background: linear-gradient(180deg, #fff1c4 0%, #f0c56a 38%, #b7742a 72%, #6a3a12 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 3px 0 #1a0d05) drop-shadow(0 0 26px rgba(240,150,50,.45)); }
+#splash h1 { margin: 0; padding: 0 .08em .06em; font: 400 clamp(64px, 13vw, 168px)/.9 'Pirata One', 'New Rocker', serif; letter-spacing: 2px; color: #08080a;
+  /* Nov 13: polished black, lit from below by the fires: a gloss along the top, a slow sheen across, and firelight climbing the letters */
+  background: linear-gradient(180deg, rgba(255,255,255,.5) 0%, rgba(255,255,255,.06) 13%, transparent 24%),
+    linear-gradient(105deg, transparent 40%, rgba(255,236,200,.5) 49%, transparent 57%) 0 0 / 300% 100% no-repeat,
+    radial-gradient(ellipse 46% 78% at 28% 104%, #ffe08a 0%, #ff8a2a 22%, #c2360e 44%, transparent 72%),
+    radial-gradient(ellipse 42% 70% at 74% 106%, #ffd070 0%, #f0661c 24%, #9a2608 46%, transparent 72%),
+    linear-gradient(180deg, #34343c 0%, #0b0b0e 34%, #020203 58%, #140c08 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; -webkit-text-stroke: 1px rgba(255,170,90,.28);
+  filter: drop-shadow(0 3px 0 #000) drop-shadow(0 0 3px rgba(255,170,80,.75)) drop-shadow(0 0 30px rgba(255,100,30,.5)); animation: splogofire 5.5s ease-in-out infinite; }
+@keyframes splogofire { 0%, 100% { background-position: 0 0, 120% 0, 0 0, 0 0, 0 0; background-size: auto, 300% 100%, 100% 100%, 100% 100%, auto; } 22% { background-size: auto, 300% 100%, 108% 112%, 96% 92%, auto; } 47% { background-position: 0 0, -40% 0, 0 0, 0 0, 0 0; background-size: auto, 300% 100%, 94% 90%, 110% 114%, auto; } 71% { background-size: auto, 300% 100%, 104% 106%, 100% 96%, auto; } }
+@media (prefers-reduced-motion: reduce) { #splash h1 { animation: none; } }
 #splash .spsup { font: 600 clamp(13px, 1.5vw, 19px) 'Grenze', serif; font-variant: small-caps; letter-spacing: 6px; color: #d9c9a8; text-shadow: 0 1px 0 #000, 0 0 10px #000; }
 #splash .sprule { width: min(520px, 70vw); height: 2px; margin-top: 10px; background: linear-gradient(90deg, transparent, #d6a14a 30%, #fff1c4 50%, #d6a14a 70%, transparent); box-shadow: 0 0 12px rgba(214,161,74,.6); }
 #splash .spgo { grid-row: 3; align-self: start; margin-top: 4vh; font: 600 clamp(18px, 2.2vw, 28px) 'Grenze', serif; font-variant: small-caps; letter-spacing: 3px; color: #fff1c4; text-shadow: 0 2px 0 #000, 0 0 16px rgba(240,150,50,.7); animation: sppulse 2.2s ease-in-out infinite; }
@@ -1189,9 +1207,8 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   <div id="veil" aria-hidden="true"><div><b id="veilT">Emberwatch</b><span id="veilS">The last city before the March</span></div></div>
   <div id="splash" role="button" tabindex="0" aria-label="Click to start your adventure">
     <div class="spembers" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-    <div class="splogo"><span class="spsup">A dark deckbuilding adventure</span><h1>Cardbound</h1><span class="sprule"></span></div>
+    <div class="splogo"><h1>Cardbound</h1><span class="sprule"></span></div>
     <div class="spgo">Click to start your adventure</div>
-    <div class="spfoot">Emberwatch awaits</div>
   </div>
   <section id="scrTitle" class="title" aria-label="Choose your hero" hidden>
     <div class="titlehead"><h2 id="titleH">Choose your hero</h2><span id="titleAcct"></span></div>
@@ -7378,8 +7395,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794606218849';
-  const CB_BUILD = '30e65629a6'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794606433489';
+  const CB_BUILD = '17f41ff640'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8485,6 +8502,9 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Interface', "In town the black top bar is gone: the Cardbound logo sits in the middle, Menu at the right, and the Emberwatch label and walking guide are removed."],
+      ['Art', "Start screen: the castle is redrawn smooth at high resolution, the logo is polished black with firelight on it, and the two extra lines of text are gone."],
+      ['Art', "The fire map's route screen has a plain ash ground with a few burning patches, in place of the busy cracked rock."],
       ['Art', "Town buildings are drawn whole. Fourteen houses, the Guild Hall and the fountains were cut off in straight lines at their sides; each is redrawn with its full roof, walls and corners."],
       ['Art', "Heroes seen from the side: no more third arm hanging by the hip, the far arm is drawn and holds the off-hand weapon, the near arm has a dark edge so it reads apart from the chest, and wings sit on the back as one wing, not a squeezed pair across the face. Long hair no longer trails out from under a helm."],
       ['Interface', "Your bags are now a grid of slots showing just each item's picture. Hover an item for the same card your character slots show, click it to equip or salvage, double-click to equip right away."],

@@ -2,6 +2,9 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Interface', "In town the black top bar is gone: the Cardbound logo sits in the middle, Menu at the right, and the Emberwatch label and walking guide are removed."],
+      ['Art', "Start screen: the castle is redrawn smooth at high resolution, the logo is polished black with firelight on it, and the two extra lines of text are gone."],
+      ['Art', "The fire map's route screen has a plain ash ground with a few burning patches, in place of the busy cracked rock."],
       ['Art', "Town buildings are drawn whole. Fourteen houses, the Guild Hall and the fountains were cut off in straight lines at their sides; each is redrawn with its full roof, walls and corners."],
       ['Art', "Heroes seen from the side: no more third arm hanging by the hip, the far arm is drawn and holds the off-hand weapon, the near arm has a dark edge so it reads apart from the chest, and wings sit on the back as one wing, not a squeezed pair across the face. Long hair no longer trails out from under a helm."],
       ['Interface', "Your bags are now a grid of slots showing just each item's picture. Hover an item for the same card your character slots show, click it to equip or salvage, double-click to equip right away."],
