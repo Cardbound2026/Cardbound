@@ -1143,6 +1143,7 @@ body #scrCombat.bf.hud3 .field-panel > .hud .pi-exhaust { right: calc(var(--u) *
 /* Nov 13: the piles are cards. Draw: one neat card back. Discard: a loose, untidy heap. Exhaust: a card on fire. The back is your class's, or one from the Skull Shop */
 body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pilebtn { background: none !important; border: 0 !important; box-shadow: none !important; overflow: visible; }
 body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pilebtn > i, body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard::before, body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard::after { content: ''; display: block !important; position: absolute; inset: 0; width: auto; height: auto; border-radius: 6%; background: #1a1512 url(img/cardbacks.webp) var(--cbx, 0%) var(--cby, 0%) / 1000% 200% no-repeat; image-rendering: pixelated; box-shadow: 0 0 0 1px #050404, 2px 3px 5px rgba(0,0,0,.65); }
+body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pilebtn > i { z-index: 2; } body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pilebtn > b { z-index: 5; } body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard::before { z-index: 0; } body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard::after { z-index: 1; } body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust::before, body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust::after { z-index: 3; }
 body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard > i { transform: rotate(5deg); }
 body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard::before { transform: rotate(-12deg) translate(-9%, 4%); filter: brightness(.72); }
 body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-discard::after { transform: rotate(-3deg) translate(7%, -3%); filter: brightness(.85); }
@@ -7440,8 +7441,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794607197144';
-  const CB_BUILD = 'da12782ed8'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794607354294';
+  const CB_BUILD = 'ab0a0d2ee1'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
