@@ -8232,8 +8232,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794689839711';
-  const CB_BUILD = '9f13f92d6b'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794690685198';
+  const CB_BUILD = '46238fcf2e'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -9350,6 +9350,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Fix', "Full bags no longer destroy loot. If the gear you bring home from a run will not fit, a sorting screen opens before you return to camp: mark gear to salvage, from the run or from your bags, until everything fits. Cards and gold never use bag space."],
       ['Interface', "Following a build: the tracker now lists what to go after in order. The codex comes first, then the Gold cards, then the maps, starting with the map that has the most different cards you still need (the count is shown next to the map's name)."],
       ['Balance', "Bleed Chance (one-handed axes, and anything else that gives it): when it triggers, the Bleed is now half the damage that hit dealt, with a minimum of 3. It used to be a flat 3 Bleed however hard you hit."],
       ['Balance', "Shaman, Skybreaker: a Multi-hit now plays the last Skill you played again, free, whatever it was (a heal, Guard, card draw, Static), not only a damaging spell. Damage on the repeat is still halved. Held Breath, Thunder Debt, Borrowed Thunder and the echo cards are never repeated."],
@@ -16369,6 +16370,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if ($('mnBackups')) $('mnBackups').onclick = () => { closeModal(); openBackups(); };
   }
   function toTown() {
+    if (bagSortNeeded() > 0) return bagSort(toTown);
     if (run && run.over && !run._absorbed) { run._absorbed = true; lastResult = CBHub.absorbRun(profile, run, run.myMi); save(); if (typeof publishHero === 'function') publishHero(heroKey, true); }
     backToTown();
   }
@@ -16894,7 +16896,30 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     return `<div class="sacksplit"><div><h4 class="up">Coming home: ${k.items.length} item${k.items.length === 1 ? '' : 's'}, ${k.gold} gold</h4><div class="list">${k.items.map(it => itemHtml(it)).join('') || '<span class="muted">Nothing.</span>'}</div></div>
       <div class="lostcol"><h4 class="down">Lost: ${lost.length} item${lost.length === 1 ? '' : 's'}${goldLost ? `, ${goldLost} gold` : ''}</h4><div class="list">${lost.map(it => itemHtml(it)).join('') || '<span class="muted">Nothing lost.</span>'}</div></div></div>`;
   }
+  // Nov 14: the sack does not fit in the bags: nothing is thrown away any more. You sort it first, and can salvage right there.
+  const BSORT = { bag: new Set() };
+  function bagSortMem() { if (!run || !run.over || run._absorbed) return null; const m = run.members ? run.members[run.myMi || 0] : run; if (!m || !m.kept) return null; const c = profile.chars[heroKey]; return c && (m.key || m.cls) === (m.key ? heroKey : c.cls) ? m : null; }
+  function bagSortNeeded() { const m = bagSortMem(); if (!m) return 0; const gear = (x) => x.kind !== 'card';
+    return m.kept.items.filter(x => gear(x) && !x.autoSalvage).length + (m.orders || []).filter(gear).length - (CBHub.STASH_MAX - (profile.stash.length - BSORT.bag.size)); }
+  function bagSort(then) {
+    const m = bagSortMem(); if (!m) return then();
+    const over = bagSortNeeded(), runGear = m.kept.items.filter(x => x.kind !== 'card');
+    let gold = 0; for (const it of runGear) if (it.autoSalvage) gold += CBHub.salvageValue(it); for (const it of profile.stash) if (BSORT.bag.has(it.id)) gold += CBHub.salvageValue(it);
+    const btn = (on, attr, it) => `<button class="pilebtn${on ? ' on' : ''}" ${attr}>${on ? 'Keep instead' : 'Salvage +' + CBHub.salvageValue(it) + ' gold'}</button>`;
+    modal(`<h2>Your bags are full</h2><p>${over > 0 ? `<b style="color:#e0a45a">${over} more item${over === 1 ? '' : 's'}</b> will not fit. Mark gear to salvage, from this run or from your bags, until everything fits.` : '<b style="color:#8fd27f">Everything fits now.</b>'} Cards and gold are safe: they do not use bag space.${gold ? ` Marked for salvage: <b>+${gold} gold</b>.` : ''}</p>
+      <div class="sacksplit"><div><h4>From this run: ${runGear.length} item${runGear.length === 1 ? '' : 's'}</h4><div class="list">${runGear.map((it, i) => `<div style="${it.autoSalvage ? 'opacity:.45' : ''}">${itemHtml(it, btn(it.autoSalvage, `data-bsrun="${i}"`, it))}</div>`).join('') || '<span class="muted">Nothing.</span>'}</div></div>
+      <div><h4>In your bags: ${profile.stash.length - BSORT.bag.size} / ${CBHub.STASH_MAX}</h4><div class="list">${profile.stash.map(it => `<div style="${BSORT.bag.has(it.id) ? 'opacity:.45' : ''}">${itemHtml(it, btn(BSORT.bag.has(it.id), `data-bsbag="${it.id}"`, it))}</div>`).join('') || '<span class="muted">Empty.</span>'}</div></div></div>
+      <div class="row"><button class="btn primary" id="bsGo"${over > 0 ? ' disabled' : ''}>${over > 0 ? `Free ${over} more slot${over === 1 ? '' : 's'}` : 'Continue'}</button></div>`);
+    $('modalBox').classList.add('wide');
+    const sc = [...$('modalBox').querySelectorAll('.list')], keep = BSORT.scroll || []; sc.forEach((el, i) => { el.scrollTop = keep[i] || 0; });
+    $('modalBox').onclick = (ev) => { const b = ev.target.closest('[data-bsrun],[data-bsbag]'); if (!b) return; BSORT.scroll = sc.map(el => el.scrollTop);
+      if (b.dataset.bsrun != null) { const it = runGear[+b.dataset.bsrun]; if (it) it.autoSalvage = !it.autoSalvage; } else { const id = b.dataset.bsbag; if (BSORT.bag.has(id)) BSORT.bag.delete(id); else BSORT.bag.add(id); }
+      bagSort(then); };
+    $('bsGo').onclick = () => { if (bagSortNeeded() > 0) return; let g = 0, n = 0; for (const id of [...BSORT.bag]) { const v = CBHub.salvage(profile, id); if (v) { g += v; n++; } } BSORT.bag.clear(); BSORT.scroll = null; $('modalBox').onclick = null;
+      if (n) { save(); if (typeof sysChat === 'function') sysChat(`Salvaged ${n} item${n === 1 ? '' : 's'} from your bags: +${g} gold.`); } then(); };
+  }
   function endScreen() {
+    if (bagSortNeeded() > 0) return bagSort(endScreen);
     if (!run.solo) return endScreenParty();
     const k = run.kept || { items: [], gold: 0 };
     const title = run.over === 'victory' ? 'Victory' : run.over === 'extracted' ? 'Extracted' : 'Fallen';
