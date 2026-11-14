@@ -2,7 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
-      ['Feature', "New Shaman card: Stormfire (Gold, 30 mana). Consume all Static on a target and apply 5 Burn for each one: 10 Static becomes 50 Burn."],
+      ['Feature', "New Shaman card: Electric Burn (Blue Skill, 20 mana). Consume all Static on a target and apply 5 Burn for each one: 10 Static becomes 50 Burn."],
       ['Interface', "Every hit gets its own damage number. A Multi-hit, a card that strikes twice or a spell that is cast again now shows each number a beat apart, fanned out, instead of one total."],
       ['Fix', "Deck Planner: the talent tree showed only nine rows. The tenth, the Lv 20 capstone, is there now, both when you plan a build and when you read one."],
       ['Feature', "Two new Shaman defence cards: Ride the Wind (Green, 10 mana: gain 20 Guard) and Become the Storm (Blue, 20 mana: gain 40 Guard)."],

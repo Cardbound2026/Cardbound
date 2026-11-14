@@ -2308,7 +2308,7 @@ function install(K) {
   LIT('electrocute', 'Electrocute', 'Blue', 0, 'enemy', 'Consume 10 Static from an enemy and Stun it for 1 turn.', (cb, t) => { const e = tgtOf(cb, t); if (!e) return; if ((e.static || 0) < 10) { say(cb, `${e.name} has only ${e.static || 0} Static: Electrocute needs 10.`); return; } if (cb.raidBoss(e)) { say(cb, `${e.name} is a raid boss: it can't be Stunned. The Static stays.`); return; } eat(cb, e, 10); stunFor(cb, e, 1); }, { noEcho: 1, lit: 0 });
   LIT('mass_electrocute', 'Mass Electrocute', 'Blue', 10, 'all', 'Consume all Static from all enemies. Each is Stunned 1 turn for every 10 Static consumed.', (cb) => { for (const e of cb.alive()) { if (cb.raidBoss(e)) { say(cb, `${e.name} is a raid boss: it can't be Stunned.`); continue; } const turns = Math.floor((e.static || 0) / 10); if (!turns) continue; eat(cb, e); stunFor(cb, e, turns); } }, { noEcho: 1, lit: 0 });
   LIT('discharge', 'Discharge', 'Green', 10, 'enemy', 'Consume all Static on the target. Deal 3 Nature damage per Static consumed.', (cb, t) => { const e = tgtOf(cb, t); if (!e) return; const k = eat(cb, e); say(cb, `Discharge consumes ${k} Static.`); if (k) D_(cb, e, 3 * k, 'Discharge'); }, { dmg: 15 });
-  LIT('stormfire', 'Stormfire', 'Gold', 30, 'enemy', 'Consume all Static on the target. Apply 5 Burn for each Static consumed.', (cb, t) => { const e = tgtOf(cb, t); if (!e) return; const k = eat(cb, e); if (!k) { say(cb, `${e.name} has no Static to set alight.`); return; } say(cb, `Stormfire turns ${k} Static into fire.`); cb.applyDot(e, 'burn', 5 * k); }, { noEcho: 1, lit: 0 });
+  LIT('electric_burn', 'Electric Burn', 'Blue', 20, 'enemy', 'Consume all Static on the target. Apply 5 Burn for each Static consumed.', (cb, t) => { const e = tgtOf(cb, t); if (!e) return; const k = eat(cb, e); if (!k) { say(cb, `${e.name} has no Static to set alight.`); return; } say(cb, `Electric Burn turns ${k} Static into fire.`); cb.applyDot(e, 'burn', 5 * k); }, { noEcho: 1, lit: 0 });
   W('grounded', 'Grounded', 'White', 'Skill', 10, 'enemy', null, 'Gain 1 Guard for each Static on the target (not consumed).', (cb, t) => { const e = tgtOf(cb, t), k = (e && e.static) || 0; if (k) cb.gainDef(k); else say(cb, 'No Static to ground.'); }, { def: 5 });
   LIT('short_circuit', 'Short Circuit', 'Green', 10, 'enemy', "Consume 5 Static. The target's next card costs 20 more.", (cb, t) => { const e = tgtOf(cb, t); if (!e) return; if ((e.static || 0) < 5) { say(cb, `${e.name} needs 5 Static.`); return; } eat(cb, e, 5); if (e.isPlayer) e.exposure = (e.exposure || 0) + 4; else { e.costUp = (e.costUp || 0) + 20; cb.planEnemy(e, true); } say(cb, `${e.name}'s next card costs 20 more.`); }, { noEcho: 1, lit: 0 });
   LIT('feedback', 'Feedback', 'Green', 10, 'enemy', "Consume up to 6 Static. Burn 5 of the target's mana for each.", (cb, t) => { const e = tgtOf(cb, t); if (!e) return; const k = eat(cb, e, 6); const s = k ? cb.drainMana(e, 5 * k) : 0; say(cb, `Feedback burns ${s} mana.`); }, { noEcho: 1, lit: 0 });
@@ -8224,8 +8224,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794687113628';
-  const CB_BUILD = 'f9b992317d'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794687271158';
+  const CB_BUILD = '2f6b5d064c'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -9342,7 +9342,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
-      ['Feature', "New Shaman card: Stormfire (Gold, 30 mana). Consume all Static on a target and apply 5 Burn for each one: 10 Static becomes 50 Burn."],
+      ['Feature', "New Shaman card: Electric Burn (Blue Skill, 20 mana). Consume all Static on a target and apply 5 Burn for each one: 10 Static becomes 50 Burn."],
       ['Interface', "Every hit gets its own damage number. A Multi-hit, a card that strikes twice or a spell that is cast again now shows each number a beat apart, fanned out, instead of one total."],
       ['Fix', "Deck Planner: the talent tree showed only nine rows. The tenth, the Lv 20 capstone, is there now, both when you plan a build and when you read one."],
       ['Feature', "Two new Shaman defence cards: Ride the Wind (Green, 10 mana: gain 20 Guard) and Become the Storm (Blue, 20 mana: gain 40 Guard)."],
