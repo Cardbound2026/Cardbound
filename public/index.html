@@ -5366,6 +5366,15 @@ function useStash(p, key) {
 let VAULT_MAX = 40;
 function toVault(p, itemId) { p.vault = p.vault || []; const i = p.stash.findIndex(x => x.id === itemId); if (i < 0) return { ok: false, why: 'Not in your stash.' }; if (p.vault.length >= VAULT_MAX) return { ok: false, why: `Your vault is full (${VAULT_MAX}).` }; p.vault.unshift(p.stash.splice(i, 1)[0]); return { ok: true }; }
 function fromVault(p, itemId) { p.vault = p.vault || []; const i = p.vault.findIndex(x => x.id === itemId); if (i < 0) return { ok: false, why: 'Not in your vault.' }; if (p.stash.length >= STASH_MAX) return { ok: false, why: 'Your stash is full.' }; p.stash.unshift(p.vault.splice(i, 1)[0]); return { ok: true }; }
+// ---------- Nov 14: Arena rating (per hero). Standard Elo: everyone starts at 1000; a win moves you by 32 x (1 - your expected chance), so beating
+// someone rated far above you is worth close to 32, an even match 16, and beating someone far below you 1 or 2. The loser drops by the same amount.
+// A draw moves both toward each other. Both games work it out from the two ratings exchanged when the duel starts.
+const PVP_START = 1000, PVP_K = 32;
+const PVP_RANKS = [[1800, 'Champion'], [1600, 'Gladiator'], [1400, 'Veteran'], [1200, 'Duelist'], [1000, 'Contender'], [0, 'Novice']];
+function pvpOf(c) { const P = (c.pvp = c.pvp || { r: PVP_START, w: 0, l: 0, d: 0, peak: PVP_START }); return P; }
+function pvpRank(r) { return (PVP_RANKS.find(x => r >= x[0]) || PVP_RANKS[PVP_RANKS.length - 1])[1]; }
+function pvpDelta(mine, theirs, score) { const exp = 1 / (1 + Math.pow(10, (theirs - mine) / 400)); let d = Math.round(PVP_K * (score - exp)); if (score === 1 && d < 1) d = 1; if (score === 0 && d > -1) d = -1; return d; }
+function pvpApply(c, theirs, score) { const P = pvpOf(c), d = pvpDelta(P.r, +theirs || PVP_START, score); P.r = Math.max(0, P.r + d); if (score === 1) P.w++; else if (score === 0) P.l++; else P.d = (P.d || 0) + 1; P.peak = Math.max(P.peak || PVP_START, P.r); return d; }
 function stashFor(p, c) { p.stashOther = p.stashOther || []; const key = Object.keys(p.chars || {}).find(k => p.chars[k] === c); return !p.stashHero || key === p.stashHero ? p.stash : p.stashOther.filter(it => it.own === key); }
 // one time: the old account-wide bags (one normal set, one hardcore set) go to one hero each: the one you are playing if it is of that kind, else the hero of that kind with the most runs
 function bagsSplit(p, key) { if (p.invSplit) return; p.invSplit = 1; const keys = Object.keys(p.chars), of = (mode) => { const k = keys.filter(k2 => stashMode(p.chars[k2]) === mode); return stashMode(p.chars[key]) === mode ? key : k.sort((a, b) => (p.chars[b].runs || 0) - (p.chars[a].runs || 0))[0]; };
@@ -5622,7 +5631,7 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk, ach };
 }
 
-const API = { lifeOf, lifeSeed, LIFE_MAPS, shopCards, buyShopCard, makeBag, bagSizeFor, syncCaps, equipBag, unequipBag, own, grantPet, BAG_BASE, BANK_BASE, BAG_SLOTS, BANK_BAG_SLOTS, defWord, defText, titleAfter, titled, staffShield, toVault, fromVault, ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { pvpOf, pvpRank, pvpDelta, pvpApply, PVP_START, lifeOf, lifeSeed, LIFE_MAPS, shopCards, buyShopCard, makeBag, bagSizeFor, syncCaps, equipBag, unequipBag, own, grantPet, BAG_BASE, BANK_BASE, BAG_SLOTS, BANK_BAG_SLOTS, defWord, defText, titleAfter, titled, staffShield, toVault, fromVault, ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 Object.defineProperty(API, 'STASH_MAX', { get: () => STASH_MAX, enumerable: true }); Object.defineProperty(API, 'VAULT_MAX', { get: () => VAULT_MAX, enumerable: true });
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -7708,8 +7717,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794678694699';
-  const CB_BUILD = 'b7dca175b2'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794678948547';
+  const CB_BUILD = 'b07a384e90'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -7729,6 +7738,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     if (req && req.kind === 'raid') { const why = raidBlock(c, req.map, req.level); if (why) return { err: why }; }
     const chk = CBHub.deckCheck(c.deck); if (!chk.ok) return { err: `needs to fix their deck (it ${chk.problems.join(', ')})` };
     const o = CBHub.runOpts(profile, heroKey); delete o.members;
+    o.pvp = CBHub.pvpOf(c).r; // Nov 14: Arena rating travels with the hero so both sides can score the duel
     return Object.assign(o, { uid: SOC.me, firstBoss: !!(req && req.map) && !CBHub.beatMap(c, req.map) });
   }
 
@@ -7761,7 +7771,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   function netBegin(go) {
     const S = NET.s = { sid: go.sid, kind: go.kind, host: go.host, uids: go.uids, mi: go.uids.indexOf(SOC.me), seq: 1, next: 1, buf: new Map(), log: [], votes: {}, camp: {}, gone: {}, voteAt: 0, turnKey: '', turnAt: 0, missing: {} };
     if (TR.s) cancelTrade(); closeModal(); $('sheet').hidden = true; if ($('talk')) $('talk').hidden = true;
-    if (go.kind === 'duel') {
+    if (go.kind === 'duel') { S.pvp = Object.fromEntries((go.specs || []).map(s => [s.uid, +s.pvp || CBHub.PVP_START]));
       run = null;
       cb = new CB.Combat({ duel: true, party: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, uid: s.uid, talents: s.talents })), seed: go.seed, data: DATA });
       cb.myMi = S.mi; if (typeof arenaDuelBegan === 'function') arenaDuelBegan(go); startCombatUI();
@@ -8040,11 +8050,11 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   }
   function duelOver() {
     const S = NET.s, me = cb.players[cb.myMi], won = cb.winner === me;
-    const c = profile.chars[heroKey]; if (c && S && !S.counted) { S.counted = true; c.duels = c.duels || { w: 0, l: 0 }; if (won) c.duels.w++; else c.duels.l++; try { CBHub.achCheck(profile, { type: 'duel', won, rounds: cb.round, hp: me ? me.hp : null, hero: c.name }); } catch (e) {} save(); }
+    const c = profile.chars[heroKey]; if (c && S && !S.counted) { S.counted = true; c.duels = c.duels || { w: 0, l: 0 }; if (won) c.duels.w++; else c.duels.l++; { const fu = S.uids.find(u => u !== SOC.me); S.pvpD = CBHub.pvpApply(c, (S.pvp || {})[fu], won ? 1 : cb.winner ? 0 : 0.5); S.pvpFoe = (S.pvp || {})[fu] || CBHub.PVP_START; if (typeof publishHero === 'function') setTimeout(() => publishHero(heroKey, true), 1500); } try { CBHub.achCheck(profile, { type: 'duel', won, rounds: cb.round, hp: me ? me.hp : null, hero: c.name }); } catch (e) {} save(); }
     const foe = cb.players.find(p => p !== me);
     const wager = typeof arenaSettle === 'function' ? arenaSettle(foe, won ? 'won' : cb.winner ? 'lost' : 'draw') : null;
     modal(`<h2 class="${won ? '' : 'loss'}">${won ? 'Victory' : cb.winner ? 'Defeat' : 'Draw'}</h2><p>${won ? `You beat ${esc(foe.name)} in ${cb.round} rounds.` : cb.winner ? `${esc(cb.winner.name)} wins in ${cb.round} rounds.` : 'Nobody is left standing.'} ${wager ? '' : 'Duels are for glory: nobody loses gear, gold or HP.'}</p>${wager || ''}
-      <dl class="kv"><dt>Your duel record</dt><dd>${c && c.duels ? c.duels.w + ' won, ' + c.duels.l + ' lost' : '-'}</dd></dl>
+      <dl class="kv"><dt>Arena rating</dt><dd>${c && S && S.pvpD != null ? `<b style="color:${S.pvpD > 0 ? '#7cc261' : S.pvpD < 0 ? '#e06a5a' : 'inherit'}">${S.pvpD > 0 ? '+' : ''}${S.pvpD}</b> &rarr; <b>${CBHub.pvpOf(c).r}</b> ${CBHub.pvpRank(CBHub.pvpOf(c).r)} <span class="muted">(${esc(foe.name)} was rated ${S.pvpFoe})</span>` : '-'}</dd><dt>Your duel record</dt><dd>${c && c.duels ? c.duels.w + ' won, ' + c.duels.l + ' lost' : '-'}</dd></dl>
       <div class="row"><button class="btn primary" id="mNew">Back to Emberwatch</button><button class="btn" id="mClose">Look at the fight</button></div>`);
     $('mNew').onclick = backToTown; $('mClose').onclick = closeModal;
   }
@@ -8281,7 +8291,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     const gear = c.gear.map(g => { const o = Object.assign({}, g); delete o.id; delete o.lines; return o; });
     return { gear, deck: c.deck.map(k => [k.key, k.rank || 0]), codex: cx ? { key: cx, level: info.level, picks: info.picks.slice(0, info.rows) } : null,
       codexLv: Object.fromEntries(Object.entries(c.codexes || {}).map(([k, st]) => [k, CB.codexLevel(st.xp || 0).level]).filter(x => x[1] > 0)),
-      title: CBHub.titleOf(c, profile) || null, runs: c.runs || 0, bossKills: c.bossKills || 0, raidKills: c.raidKills || 0, gearScore: CBHub.gearScore(c), deckLevel: CB.deckLevel(c.deck), starter: c.starter, hardcore: !!c.hardcore, hcFell: c.hcFell || null };
+      pvp: c.pvp && (c.pvp.w || c.pvp.l || c.pvp.d) ? { r: c.pvp.r, w: c.pvp.w || 0, l: c.pvp.l || 0, d: c.pvp.d || 0, peak: c.pvp.peak || c.pvp.r } : null, title: CBHub.titleOf(c, profile) || null, runs: c.runs || 0, bossKills: c.bossKills || 0, raidKills: c.raidKills || 0, gearScore: CBHub.gearScore(c), deckLevel: CB.deckLevel(c.deck), starter: c.starter, hardcore: !!c.hardcore, hcFell: c.hcFell || null };
   }
   // publish one hero (throttled to once a minute unless forced)
   async function publishHero(key, force) {
@@ -8338,7 +8348,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   const bestMapOf = (h) => { let best = null; for (const M of mapsInOrder()) { const d = doneOf((h.maps || {})[M.key]); if (d >= 0 && (!best || d * 100 + M.num > best.score)) best = { M, d, score: d * 100 + M.num }; } return best; }; // highest map level completed
   function renderRecords() {
     const el = $('hpRec'); if (!el) return;
-    const tabs = [['heroes', 'Heroes'], ['hardcore', 'Hardcore'], ['maps', 'Map records'], ['raids', 'Raid records']].map(([k, n]) => `<button role="tab" data-rectab="${k}" aria-selected="${REC.tab === k}">${n}</button>`).join('');
+    const tabs = [['heroes', 'Heroes'], ['hardcore', 'Hardcore'], ['arena', 'Arena'], ['maps', 'Map records'], ['raids', 'Raid records']].map(([k, n]) => `<button role="tab" data-rectab="${k}" aria-selected="${REC.tab === k}">${n}</button>`).join('');
     let body = '';
     if (REC.err === 'offline') body = '<p class="muted">Sign in to see the Hall of Records: it lists every player\'s heroes.</p>';
     else if (REC.err === 'setup') body = '<p class="down">The Hall of Records needs a one-time database update: run supabase/records.sql, then supabase/seasons.sql, in the Supabase SQL editor.</p>';
@@ -8346,6 +8356,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     else if (!REC.heroes) body = '<p class="muted">Reading the records...</p>';
     else if (REC.tab === 'heroes') body = recHeroes();
     else if (REC.tab === 'hardcore') body = recHardcore();
+    else if (REC.tab === 'arena') body = recArena();
     else if (REC.tab === 'maps') body = recMaps();
     else body = recRaids();
     const seas = CBHub.SEASONS.slice().reverse().map(S => `<button class="chip ${REC.season === S.id ? 'on' : ''}" data-recseason="${S.id}">${esc(S.name)}${S.id === CBHub.SEASON ? ' (now)' : ''}</button>`).join('');
@@ -8382,6 +8393,15 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     return `<p class="savenote" style="margin:0 0 6px">For each road: the highest map level any hero has completed (beaten the boss), first to do it ranked higher, then who has killed that map\'s boss the most times (any level).</p><div class="recgrid">${mapsInOrder().map(M => {
       const top = REC.heroes.filter(h => h.maps && doneOf(h.maps[M.key]) >= 0).map(h => ({ h, b: h.maps[M.key], d: doneOf(h.maps[M.key]) })).sort((x, y) => y.d - x.d || ((x.b.doneAt || x.b.at || 0) - (y.b.doneAt || y.b.at || 0))).slice(0, 5);
       return `<div class="reccard" style="--ec:${ELC[M.element] || 'var(--accent)'}"><h4>${M.num}. ${esc(M.name)}</h4><h5 class="recsub">Highest clear</h5>${top.length ? `<ol>${top.map(({ h, b, d }, i) => `<li data-rechero="${h.user_id}|${esc(h.hero_key)}"><b style="color:${CC[h.hero_class]}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.guild_name || '')}</span><span class="rv">+${d} cleared</span></li>`).join('')}</ol>` : '<p class="muted">Nobody has beaten this road\'s boss yet.</p>'}${killsList(M)}</div>`; }).join('')}</div>`;
+  }
+  // Nov 14: the Arena ladder: heroes by duel rating (everyone starts at 1000; see pvpDelta in hub.js)
+  function recArena() {
+    const list = REC.heroes.filter(h => h.snapshot && h.snapshot.pvp && (REC.cls === 'All' || h.hero_class === REC.cls)).sort((a, b) => b.snapshot.pvp.r - a.snapshot.pvp.r || b.snapshot.pvp.w - a.snapshot.pvp.w);
+    const filt = `<div class="recfilt"><span class="muted">Class</span>${['All', ...Object.keys(CLASSES)].map(k => `<button class="chip ${REC.cls === k ? 'on' : ''}" data-reccls="${k}">${k}</button>`).join('')}</div>
+      <p class="savenote" style="margin:0 0 6px">Every hero starts at 1000. Win a duel and your rating goes up, lose and it goes down. How much depends on who you fought: beating a higher-rated hero is worth up to 32 points, an even match 16, and beating someone far below you only a point or two. The loser drops by the same amount. A hero appears here after its first duel.</p>`;
+    if (!list.length) return filt + '<p class="muted">No duels fought yet this season. Challenge someone in Emberwatch or at the Arena.</p>';
+    const rows = list.slice(0, 100).map((h, i) => { const p = h.snapshot.pvp, n = p.w + p.l; return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td>${recName(h.hero_name, h.snapshot.title, CC[h.hero_class] || 'var(--text)')} <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num"><b>${p.r}</b></td><td>${CBHub.pvpRank(p.r)}</td><td class="num">${p.w}</td><td class="num">${p.l}</td><td class="num">${n ? Math.round(100 * p.w / n) + '%' : '-'}</td><td class="num">${p.peak || p.r}</td></tr>`; }).join('');
+    return filt + `<div class="rectable"><table><thead><tr><th>#</th><th>Hero</th><th>Guild</th><th class="num">Rating</th><th>Rank</th><th class="num">Won</th><th class="num">Lost</th><th class="num">Win rate</th><th class="num">Peak</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
   function recRaids() {
     const who = (k) => k.guild_name ? esc(k.guild_name) : `<span class="muted">No guild</span> (${esc((k.heroes[0] || {}).name || '?')}'s party)`;
@@ -8815,6 +8835,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Feature', "Arena rating: every hero starts at 1000 and every duel moves it. Beat a higher-rated hero and you climb a lot while they drop; beat someone near your rating and you climb a little; beat someone far below you and you barely move. Your rating shows after each duel, on your character sheet and in your Chronicle."],
+      ['Feature', "The Hall of Records has an Arena tab: every hero that has fought a duel, ranked by rating, with wins, losses, win rate and peak rating. Ranks run Novice, Contender, Duelist, Veteran, Gladiator, Champion."],
       ['Interface', "Pointing at a buff or debuff in a fight now shows one short line, such as \"Bleed for 68 damage next turn\". Hold Alt while pointing at it for the full glossary entry."],
       ['Fix', "The shadows left on the ground where town torches used to stand are gone."],
       ['Interface', "The box that opens when you talk to someone in town sits higher, clear of the bottom bar."],
@@ -13749,7 +13771,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       <div class="dbot">${DOLL_B.map(slot).join('')}</div>
       <dl class="kv dstats"><dt>Max HP</dt><dd>${s.maxHp}</dd><dt>Mana</dt><dd ${s.manaOver ? `title="Gear adds at most +${CB.MANA_GEAR_CAP} max mana: ${s.manaOver} of yours is wasted"` : ''}>${s.maxMana}${s.manaOver ? ' <span class="down">(capped)</span>' : ''}, +${s.regen}/turn</dd><dt>Draw</dt><dd>${s.draw}/round</dd>
         <dt>Strength / Int</dt><dd>+${s.strength}% / +${s.intelligence}%</dd><dt>Dexterity</dt><dd>+${s.dexterity + s.defGain}% ${(o.own && profile.chars[heroKey] && CBHub.defWord(profile.chars[heroKey])) || CLASSES[cls].defense}</dd><dt>Crit</dt><dd>${s.crit}% x${s.critMult.toFixed(2)}</dd>${s.weaponDmg ? `<dt>Weapon damage</dt><dd>+${s.weaponDmg} per Attack hit</dd>` : ''}
-        <dt>Initiative</dt><dd>${s.init}</dd>${s.luck ? `<dt>Luck</dt><dd>${s.luck}</dd>` : ''}${ch.duels ? `<dt>Duels</dt><dd>${ch.duels.w} won, ${ch.duels.l} lost</dd>` : ''}${res}</dl>
+        <dt>Initiative</dt><dd>${s.init}</dd>${s.luck ? `<dt>Luck</dt><dd>${s.luck}</dd>` : ''}${ch.duels ? `<dt>Duels</dt><dd>${ch.duels.w} won, ${ch.duels.l} lost</dd>` : ''}${ch.pvp ? `<dt>Arena rating</dt><dd>${ch.pvp.r} ${CBHub.pvpRank(ch.pvp.r)}</dd>` : ''}${res}</dl>
     </div>`;
   }
   window.addEventListener('forge-ready', () => paintPortraits()); // a Forge sprite finished drawing: repaint the dolls with it
@@ -13790,7 +13812,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     modal(`<h2>Inspecting ${esc(nameOfUid(uid))}...</h2><p class="muted">Asking their game for their hero.</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`); $('mClose').onclick = closeModal;
     setTimeout(() => { if (INS.waiting === uid) { INS.waiting = null; if (!$('modal').hidden && /Inspecting/.test($('modalBox').innerText)) toast(`${nameOfUid(uid)} didn't answer. They may have just gone offline.`); } }, 6000);
   }
-  function inspectCard() { const c = profile.chars[heroKey]; if (!c) return null; return { name: c.name, cls: c.cls, gear: c.gear.map(g => { const x = Object.assign({}, g); delete x.id; return x; }), deck: c.deck.map(k => ({ key: k.key, rank: k.rank || 0 })), runs: c.runs, best: c.best, bossKills: c.bossKills, duels: c.duels || null, titleText: CBHub.titleOf(c, profile), acct: supaUser ? acctName(supaUser) : '', chron: (() => { try { return chronicleCard(true); } catch (e) { return null; } })() }; }
+  function inspectCard() { const c = profile.chars[heroKey]; if (!c) return null; return { name: c.name, cls: c.cls, gear: c.gear.map(g => { const x = Object.assign({}, g); delete x.id; return x; }), deck: c.deck.map(k => ({ key: k.key, rank: k.rank || 0 })), runs: c.runs, best: c.best, bossKills: c.bossKills, duels: c.duels || null, pvp: c.pvp || null, titleText: CBHub.titleOf(c, profile), acct: supaUser ? acctName(supaUser) : '', chron: (() => { try { return chronicleCard(true); } catch (e) { return null; } })() }; }
   function showInspect(ch) {
     const deck = ch.deck.slice().sort((a, b) => RAR_ORDER[CARDS[a.key].rarity] - RAR_ORDER[CARDS[b.key].rarity] || CARDS[a.key].name.localeCompare(CARDS[b.key].name));
     const groups = []; for (const k of deck) { const g = groups.find(x => x.key === k.key && x.rank === k.rank); if (g) g.n++; else groups.push({ key: k.key, rank: k.rank, n: 1 }); }
@@ -14586,7 +14608,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   // what the book reads: my own hero, or the same bundle sent by another player's game
   function chronicleCard(lite) { const c = profile.chars[heroKey]; if (!c) return null; const L = CBHub.lifeSeed(profile, c), cut = (o, n) => Object.fromEntries(bkTop(o, n));
     const cx = (c.gear.find(g => g && g.slot === 'Codex') || {}).codex || null;
-    return { name: c.name, cls: c.cls, hc: !!c.hardcore, title: CBHub.titleOf(c, profile) || '', created: c.created || 0, runs: c.runs || 0, best: c.best || 0, bossKills: c.bossKills || 0, bossKillsBy: c.bossKillsBy || {}, mapKills: c.mapKills || {}, duels: c.duels || null,
+    return { name: c.name, cls: c.cls, hc: !!c.hardcore, title: CBHub.titleOf(c, profile) || '', created: c.created || 0, runs: c.runs || 0, best: c.best || 0, bossKills: c.bossKills || 0, bossKillsBy: c.bossKillsBy || {}, mapKills: c.mapKills || {}, duels: c.duels || null, pvp: c.pvp || null,
       codex: cx, cxLevels: Object.fromEntries(Object.entries(c.codexes || {}).map(([k, v]) => [k, CB.codexLevel((v && v.xp) || 0).level]).filter(x => x[1] > 0)), ach: Object.keys(profile.ach || {}).length, achAll: (CBHub.ACH || []).length,
       deck: c.deck.map(k => [k.key, k.rank || 0]), acct: { kills: (profile.stats || {}).kills || 0, deaths: (profile.stats || {}).deaths || 0, gold: (profile.stats || {}).goldLooted || 0, salvaged: (profile.stats || {}).salvaged || 0, duelGold: (profile.stats || {}).duelGold || 0 },
       life: lite ? Object.assign({}, L, { runs: L.runs.slice(-160), mobs: cut(L.mobs, 150), dealt: cut(L.dealt, 40), healed: cut(L.healed, 20), taken: cut(L.taken, 30), plays: cut(L.plays, 60) }) : L }; }
@@ -14603,7 +14625,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       <p class="bknote">${L.runs.length ? `The fine detail in this book (cards, damage, monsters) has been kept since ${bkDate(Math.min(...R.map(r => r.at)))}. Older deeds are counted but not itemised.` : 'This book fills in as you play: finish a run and come back.'}</p>`,
       `<h4>In numbers</h4><div class="bkgrid">${bkStat('fights won', bkN(L.fights))}${bkStat('monsters slain', bkN(bkSum(L.mobs)))}${bkStat('rounds fought', bkN(L.rounds))}${bkStat('deaths', bkN(L.deaths))}
         ${bkStat('damage dealt', bkN(L.dmg))}${bkStat('healing done', bkN(L.heal))}${bkStat('damage taken', bkN(L.hurt), L.absorbed ? bkN(L.absorbed) + ' more soaked by defences' : '')}${bkStat('biggest hit', L.big ? bkN(L.big[0]) : '0', L.big ? esc(L.big[1]) : '')}
-        ${bkStat('gold carried home', bkN(L.gold))}${bkStat('gear / cards looted', bkN(L.items) + ' / ' + bkN(L.cards))}${bkStat('duels', (d.w || 0) + ' won, ' + (d.l || 0) + ' lost')}${bkStat('achievements', (ch.ach || 0) + ' of ' + (ch.achAll || 0), 'whole account')}</div>
+        ${bkStat('gold carried home', bkN(L.gold))}${bkStat('gear / cards looted', bkN(L.items) + ' / ' + bkN(L.cards))}${bkStat('duels', (d.w || 0) + ' won, ' + (d.l || 0) + ' lost', ch.pvp ? 'Arena rating ' + ch.pvp.r + ' (' + CBHub.pvpRank(ch.pvp.r) + '), peak ' + (ch.pvp.peak || ch.pvp.r) : '')}${bkStat('achievements', (ch.ach || 0) + ' of ' + (ch.achAll || 0), 'whole account')}</div>
       ${lv.length ? `<h4>Codexes</h4><p class="bkline">${lv.map(([k, v]) => `${esc((CB.CODEX_BY_KEY[k] || {}).name || k)} <b>${v}</b>`).join(' &middot; ')}</p>` : ''}`]; }
   function bkChart(R) { if (R.length < 2) return '<p class="bkempty">Two or more runs are needed to draw the road.</p>'; const W = 440, H = 230, pl = 30, pr = 8, pt = 10, pb = 22, mx = Math.max(3, ...R.map(r => r.lvl)), X = (i) => pl + (W - pl - pr) * i / (R.length - 1), Y = (v) => pt + (H - pt - pb) * (1 - v / mx);
     let best = -1; const step = R.map((r, i) => { if (r.res === 2) best = Math.max(best, r.lvl); return [X(i), best < 0 ? null : Y(best)]; }).filter(p => p[1] != null);

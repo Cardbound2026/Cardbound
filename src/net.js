@@ -24,6 +24,7 @@
     if (req && req.kind === 'raid') { const why = raidBlock(c, req.map, req.level); if (why) return { err: why }; }
     const chk = CBHub.deckCheck(c.deck); if (!chk.ok) return { err: `needs to fix their deck (it ${chk.problems.join(', ')})` };
     const o = CBHub.runOpts(profile, heroKey); delete o.members;
+    o.pvp = CBHub.pvpOf(c).r; // Nov 14: Arena rating travels with the hero so both sides can score the duel
     return Object.assign(o, { uid: SOC.me, firstBoss: !!(req && req.map) && !CBHub.beatMap(c, req.map) });
   }
 
@@ -56,7 +57,7 @@
   function netBegin(go) {
     const S = NET.s = { sid: go.sid, kind: go.kind, host: go.host, uids: go.uids, mi: go.uids.indexOf(SOC.me), seq: 1, next: 1, buf: new Map(), log: [], votes: {}, camp: {}, gone: {}, voteAt: 0, turnKey: '', turnAt: 0, missing: {} };
     if (TR.s) cancelTrade(); closeModal(); $('sheet').hidden = true; if ($('talk')) $('talk').hidden = true;
-    if (go.kind === 'duel') {
+    if (go.kind === 'duel') { S.pvp = Object.fromEntries((go.specs || []).map(s => [s.uid, +s.pvp || CBHub.PVP_START]));
       run = null;
       cb = new CB.Combat({ duel: true, party: go.specs.map(s => ({ cls: s.cls, name: s.name, gear: s.gear, deck: s.deck, uid: s.uid, talents: s.talents })), seed: go.seed, data: DATA });
       cb.myMi = S.mi; if (typeof arenaDuelBegan === 'function') arenaDuelBegan(go); startCombatUI();
@@ -335,11 +336,11 @@
   }
   function duelOver() {
     const S = NET.s, me = cb.players[cb.myMi], won = cb.winner === me;
-    const c = profile.chars[heroKey]; if (c && S && !S.counted) { S.counted = true; c.duels = c.duels || { w: 0, l: 0 }; if (won) c.duels.w++; else c.duels.l++; try { CBHub.achCheck(profile, { type: 'duel', won, rounds: cb.round, hp: me ? me.hp : null, hero: c.name }); } catch (e) {} save(); }
+    const c = profile.chars[heroKey]; if (c && S && !S.counted) { S.counted = true; c.duels = c.duels || { w: 0, l: 0 }; if (won) c.duels.w++; else c.duels.l++; { const fu = S.uids.find(u => u !== SOC.me); S.pvpD = CBHub.pvpApply(c, (S.pvp || {})[fu], won ? 1 : cb.winner ? 0 : 0.5); S.pvpFoe = (S.pvp || {})[fu] || CBHub.PVP_START; if (typeof publishHero === 'function') setTimeout(() => publishHero(heroKey, true), 1500); } try { CBHub.achCheck(profile, { type: 'duel', won, rounds: cb.round, hp: me ? me.hp : null, hero: c.name }); } catch (e) {} save(); }
     const foe = cb.players.find(p => p !== me);
     const wager = typeof arenaSettle === 'function' ? arenaSettle(foe, won ? 'won' : cb.winner ? 'lost' : 'draw') : null;
     modal(`<h2 class="${won ? '' : 'loss'}">${won ? 'Victory' : cb.winner ? 'Defeat' : 'Draw'}</h2><p>${won ? `You beat ${esc(foe.name)} in ${cb.round} rounds.` : cb.winner ? `${esc(cb.winner.name)} wins in ${cb.round} rounds.` : 'Nobody is left standing.'} ${wager ? '' : 'Duels are for glory: nobody loses gear, gold or HP.'}</p>${wager || ''}
-      <dl class="kv"><dt>Your duel record</dt><dd>${c && c.duels ? c.duels.w + ' won, ' + c.duels.l + ' lost' : '-'}</dd></dl>
+      <dl class="kv"><dt>Arena rating</dt><dd>${c && S && S.pvpD != null ? `<b style="color:${S.pvpD > 0 ? '#7cc261' : S.pvpD < 0 ? '#e06a5a' : 'inherit'}">${S.pvpD > 0 ? '+' : ''}${S.pvpD}</b> &rarr; <b>${CBHub.pvpOf(c).r}</b> ${CBHub.pvpRank(CBHub.pvpOf(c).r)} <span class="muted">(${esc(foe.name)} was rated ${S.pvpFoe})</span>` : '-'}</dd><dt>Your duel record</dt><dd>${c && c.duels ? c.duels.w + ' won, ' + c.duels.l + ' lost' : '-'}</dd></dl>
       <div class="row"><button class="btn primary" id="mNew">Back to Emberwatch</button><button class="btn" id="mClose">Look at the fight</button></div>`);
     $('mNew').onclick = backToTown; $('mClose').onclick = closeModal;
   }

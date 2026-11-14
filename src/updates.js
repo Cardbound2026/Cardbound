@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Feature', "Arena rating: every hero starts at 1000 and every duel moves it. Beat a higher-rated hero and you climb a lot while they drop; beat someone near your rating and you climb a little; beat someone far below you and you barely move. Your rating shows after each duel, on your character sheet and in your Chronicle."],
+      ['Feature', "The Hall of Records has an Arena tab: every hero that has fought a duel, ranked by rating, with wins, losses, win rate and peak rating. Ranks run Novice, Contender, Duelist, Veteran, Gladiator, Champion."],
       ['Interface', "Pointing at a buff or debuff in a fight now shows one short line, such as \"Bleed for 68 damage next turn\". Hold Alt while pointing at it for the full glossary entry."],
       ['Fix', "The shadows left on the ground where town torches used to stand are gone."],
       ['Interface', "The box that opens when you talk to someone in town sits higher, clear of the bottom bar."],

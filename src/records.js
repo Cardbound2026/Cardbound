@@ -11,7 +11,7 @@
     const gear = c.gear.map(g => { const o = Object.assign({}, g); delete o.id; delete o.lines; return o; });
     return { gear, deck: c.deck.map(k => [k.key, k.rank || 0]), codex: cx ? { key: cx, level: info.level, picks: info.picks.slice(0, info.rows) } : null,
       codexLv: Object.fromEntries(Object.entries(c.codexes || {}).map(([k, st]) => [k, CB.codexLevel(st.xp || 0).level]).filter(x => x[1] > 0)),
-      title: CBHub.titleOf(c, profile) || null, runs: c.runs || 0, bossKills: c.bossKills || 0, raidKills: c.raidKills || 0, gearScore: CBHub.gearScore(c), deckLevel: CB.deckLevel(c.deck), starter: c.starter, hardcore: !!c.hardcore, hcFell: c.hcFell || null };
+      pvp: c.pvp && (c.pvp.w || c.pvp.l || c.pvp.d) ? { r: c.pvp.r, w: c.pvp.w || 0, l: c.pvp.l || 0, d: c.pvp.d || 0, peak: c.pvp.peak || c.pvp.r } : null, title: CBHub.titleOf(c, profile) || null, runs: c.runs || 0, bossKills: c.bossKills || 0, raidKills: c.raidKills || 0, gearScore: CBHub.gearScore(c), deckLevel: CB.deckLevel(c.deck), starter: c.starter, hardcore: !!c.hardcore, hcFell: c.hcFell || null };
   }
   // publish one hero (throttled to once a minute unless forced)
   async function publishHero(key, force) {
@@ -68,7 +68,7 @@
   const bestMapOf = (h) => { let best = null; for (const M of mapsInOrder()) { const d = doneOf((h.maps || {})[M.key]); if (d >= 0 && (!best || d * 100 + M.num > best.score)) best = { M, d, score: d * 100 + M.num }; } return best; }; // highest map level completed
   function renderRecords() {
     const el = $('hpRec'); if (!el) return;
-    const tabs = [['heroes', 'Heroes'], ['hardcore', 'Hardcore'], ['maps', 'Map records'], ['raids', 'Raid records']].map(([k, n]) => `<button role="tab" data-rectab="${k}" aria-selected="${REC.tab === k}">${n}</button>`).join('');
+    const tabs = [['heroes', 'Heroes'], ['hardcore', 'Hardcore'], ['arena', 'Arena'], ['maps', 'Map records'], ['raids', 'Raid records']].map(([k, n]) => `<button role="tab" data-rectab="${k}" aria-selected="${REC.tab === k}">${n}</button>`).join('');
     let body = '';
     if (REC.err === 'offline') body = '<p class="muted">Sign in to see the Hall of Records: it lists every player\'s heroes.</p>';
     else if (REC.err === 'setup') body = '<p class="down">The Hall of Records needs a one-time database update: run supabase/records.sql, then supabase/seasons.sql, in the Supabase SQL editor.</p>';
@@ -76,6 +76,7 @@
     else if (!REC.heroes) body = '<p class="muted">Reading the records...</p>';
     else if (REC.tab === 'heroes') body = recHeroes();
     else if (REC.tab === 'hardcore') body = recHardcore();
+    else if (REC.tab === 'arena') body = recArena();
     else if (REC.tab === 'maps') body = recMaps();
     else body = recRaids();
     const seas = CBHub.SEASONS.slice().reverse().map(S => `<button class="chip ${REC.season === S.id ? 'on' : ''}" data-recseason="${S.id}">${esc(S.name)}${S.id === CBHub.SEASON ? ' (now)' : ''}</button>`).join('');
@@ -112,6 +113,15 @@
     return `<p class="savenote" style="margin:0 0 6px">For each road: the highest map level any hero has completed (beaten the boss), first to do it ranked higher, then who has killed that map\'s boss the most times (any level).</p><div class="recgrid">${mapsInOrder().map(M => {
       const top = REC.heroes.filter(h => h.maps && doneOf(h.maps[M.key]) >= 0).map(h => ({ h, b: h.maps[M.key], d: doneOf(h.maps[M.key]) })).sort((x, y) => y.d - x.d || ((x.b.doneAt || x.b.at || 0) - (y.b.doneAt || y.b.at || 0))).slice(0, 5);
       return `<div class="reccard" style="--ec:${ELC[M.element] || 'var(--accent)'}"><h4>${M.num}. ${esc(M.name)}</h4><h5 class="recsub">Highest clear</h5>${top.length ? `<ol>${top.map(({ h, b, d }, i) => `<li data-rechero="${h.user_id}|${esc(h.hero_key)}"><b style="color:${CC[h.hero_class]}">${esc(h.hero_name)}</b> <span class="muted">${esc(h.guild_name || '')}</span><span class="rv">+${d} cleared</span></li>`).join('')}</ol>` : '<p class="muted">Nobody has beaten this road\'s boss yet.</p>'}${killsList(M)}</div>`; }).join('')}</div>`;
+  }
+  // Nov 14: the Arena ladder: heroes by duel rating (everyone starts at 1000; see pvpDelta in hub.js)
+  function recArena() {
+    const list = REC.heroes.filter(h => h.snapshot && h.snapshot.pvp && (REC.cls === 'All' || h.hero_class === REC.cls)).sort((a, b) => b.snapshot.pvp.r - a.snapshot.pvp.r || b.snapshot.pvp.w - a.snapshot.pvp.w);
+    const filt = `<div class="recfilt"><span class="muted">Class</span>${['All', ...Object.keys(CLASSES)].map(k => `<button class="chip ${REC.cls === k ? 'on' : ''}" data-reccls="${k}">${k}</button>`).join('')}</div>
+      <p class="savenote" style="margin:0 0 6px">Every hero starts at 1000. Win a duel and your rating goes up, lose and it goes down. How much depends on who you fought: beating a higher-rated hero is worth up to 32 points, an even match 16, and beating someone far below you only a point or two. The loser drops by the same amount. A hero appears here after its first duel.</p>`;
+    if (!list.length) return filt + '<p class="muted">No duels fought yet this season. Challenge someone in Emberwatch or at the Arena.</p>';
+    const rows = list.slice(0, 100).map((h, i) => { const p = h.snapshot.pvp, n = p.w + p.l; return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td>${recName(h.hero_name, h.snapshot.title, CC[h.hero_class] || 'var(--text)')} <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num"><b>${p.r}</b></td><td>${CBHub.pvpRank(p.r)}</td><td class="num">${p.w}</td><td class="num">${p.l}</td><td class="num">${n ? Math.round(100 * p.w / n) + '%' : '-'}</td><td class="num">${p.peak || p.r}</td></tr>`; }).join('');
+    return filt + `<div class="rectable"><table><thead><tr><th>#</th><th>Hero</th><th>Guild</th><th class="num">Rating</th><th>Rank</th><th class="num">Won</th><th class="num">Lost</th><th class="num">Win rate</th><th class="num">Peak</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
   function recRaids() {
     const who = (k) => k.guild_name ? esc(k.guild_name) : `<span class="muted">No guild</span> (${esc((k.heroes[0] || {}).name || '?')}'s party)`;
