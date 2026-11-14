@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Art', "Two-handed swords (Spellwoven Greatsword and the rest): the item picture showed only the blade, cut off at the bottom of its frame. It now shows the whole sword, hilt and all."],
       ['Interface', "Card text: the line \"Breaks Stealth\" is gone from every area card (Dark Cleave and the rest). Every area attack breaks Stealth, so the cards no longer repeat it."],
       ['Interface', "Following a build: on the deck screen and at the Scribe, every card your build uses now wears a gold Build marker (with the number of copies when it wants more than one), in your deck and in your collection."],
       ['Interface', "Following a build: on the talent screen, the talent your build picks on each row now wears a gold Build marker, so you know which one to take when you level."],

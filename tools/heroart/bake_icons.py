@@ -15,6 +15,9 @@ def fit(sp):
     k = max(1, min(3, 56 / max(h, w))); k = int(k * 2) / 2; W2, H2 = int(w * k), int(h * k); im = Image.fromarray(sp).resize((W2, H2), Image.NEAREST); out = Image.new('RGBA', (C, C)); out.paste(im, ((C - W2) // 2, (C - H2) // 2)); return np.array(out)
 atlas = np.zeros((C * len(ROWS), C * 6, 4), np.uint8)
 def put(row, col, sp): r = ROWS.index(row); atlas[r * C:(r + 1) * C, col * C:(col + 1) * C] = fit(sp)
+def whole(sp):   # Nov 14: a two-handed sword cut to its top 58 px was a blade with no hilt, sunk into the frame: show all of it, smaller
+    a = sp[..., 3] > 40; ys = np.nonzero(a.any(1))[0]; xs = np.nonzero(a.any(0))[0]; sp = sp[ys.min():ys.max() + 1, xs.min():xs.max() + 1]; h, w = sp.shape[:2]; k = 60 / h
+    im = Image.fromarray(sp).resize((max(1, round(w * k)), 60), Image.LANCZOS); out = Image.new('RGBA', (C, C)); out.paste(im, ((C - im.width) // 2, 2)); return np.array(out)
 sl = BG.slot_layers('paladin')['s']; _, x0, y0 = GS.origin('paladin', 's'); src = np.array(Image.open(f'{HERE}/gear/bodies_a.png').convert('RGBA')).astype(int)[GS.CH:, :GS.CW]
 slc = np.zeros((GS.CH, GS.CW), np.uint8); slc[:, max(0, -x0):] = sl[y0:y0 + GS.CH, max(0, x0):x0 + GS.CW][:, :GS.CW - max(0, -x0)]
 for mi, m in enumerate(MAPS):
@@ -27,7 +30,10 @@ for mi, m in enumerate(MAPS):
             sp = np.where(pm[..., None], res, 0).astype(np.uint8); put(f'{s}_{t}', mi, sp)
 wa = np.array(Image.open(f'{BW.OUT}/weapons.webp').convert('RGBA'))
 for ti, t in enumerate(BW.TYPES):
-    for i in range(6): put(t, i, wa[ti * BW.CH:(ti + 1) * BW.CH, i * BW.CW:(i + 1) * BW.CW])
+    for i in range(6):
+        cell = wa[ti * BW.CH:(ti + 1) * BW.CH, i * BW.CW:(i + 1) * BW.CW]
+        if t == 'sword2h': r = ROWS.index(t); atlas[r * C:(r + 1) * C, i * C:(i + 1) * C] = whole(cell)
+        else: put(t, i, cell)
 cl = np.array(Image.open(f'{BW.OUT}/cloak.webp').convert('RGBA'))[256:384, 128:256]   # the paladin's cloak from behind
 COL = [[124, 104, 86], [156, 46, 38], [150, 182, 208], [72, 108, 62], [112, 72, 164], [54, 50, 66]]
 ys = np.nonzero((cl[..., 3] > 0).any(1))[0]; xs = np.nonzero((cl[..., 3] > 0).any(0))[0]; cl = cl[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
