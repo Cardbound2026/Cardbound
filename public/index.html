@@ -8224,8 +8224,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794687271158';
-  const CB_BUILD = '2f6b5d064c'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794687480104';
+  const CB_BUILD = 'df1d1d2af5'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -9342,6 +9342,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Feature', "When a Hardcore hero dies, everyone online sees it in chat: the hero's name, the map and its level, and the row (or the boss) where they fell."],
       ['Feature', "New Shaman card: Electric Burn (Blue Skill, 20 mana). Consume all Static on a target and apply 5 Burn for each one: 10 Static becomes 50 Burn."],
       ['Interface', "Every hit gets its own damage number. A Multi-hit, a card that strikes twice or a spell that is cast again now shows each number a beat apart, fanned out, instead of one total."],
       ['Fix', "Deck Planner: the talent tree showed only nine rows. The tenth, the Lv 20 capstone, is there now, both when you plan a build and when you read one."],
@@ -17339,6 +17340,10 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     for (const [c, p] of pairs) if (c && c.hardcore && p && (p.dead || p.hp <= 0)) {
       c.hardcore = false; c.hcFell = { at: Date.now(), where: run ? `${run.mapName} +${run.level}` : cb.raid ? `${CB.RAID_NAMES[cb.raidMap] || 'a raid'} +${cb.level}` : '', progress: CBHub.progressScore(c) };
       if (typeof sysChat === 'function') sysChat(`${c.name} has fallen. Their hardcore life is over: they live on as a normal hero.`);
+      // Nov 14: everyone hears of it in world chat
+      { let row = 0; try { row = run ? ((run.map.nodes[run.at] || {}).row || 0) : 0; } catch (e) {} const boss = row > ROWS || (cb.enemies || []).some(e => e.d && e.d.tier === 'Boss');
+        const where = run ? `on ${run.mapName} +${run.level}, ${boss ? 'at the boss' : 'row ' + (row || 1)}` : cb.raid ? `in the ${CB.RAID_NAMES[cb.raidMap] || 'raid'} +${cb.level}` : '';
+        if (typeof socOn === 'function' && socOn()) { try { SOC.ch.send({ type: 'broadcast', event: 'chat', payload: { sys: true, uid: SOC.me, name: '', ch: 'world', text: `${c.name} died in Hardcore${where ? ' ' + where : ''}.` } }); } catch (e) {} } }
       c.hcNotice = true;
     }
     if (pairs.some(([c]) => c && c.hcFell && c.hcNotice)) { save(); if (typeof publishAllHeroes === 'function') publishAllHeroes(true).catch(() => {}); }

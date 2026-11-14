@@ -3893,6 +3893,10 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     for (const [c, p] of pairs) if (c && c.hardcore && p && (p.dead || p.hp <= 0)) {
       c.hardcore = false; c.hcFell = { at: Date.now(), where: run ? `${run.mapName} +${run.level}` : cb.raid ? `${CB.RAID_NAMES[cb.raidMap] || 'a raid'} +${cb.level}` : '', progress: CBHub.progressScore(c) };
       if (typeof sysChat === 'function') sysChat(`${c.name} has fallen. Their hardcore life is over: they live on as a normal hero.`);
+      // Nov 14: everyone hears of it in world chat
+      { let row = 0; try { row = run ? ((run.map.nodes[run.at] || {}).row || 0) : 0; } catch (e) {} const boss = row > ROWS || (cb.enemies || []).some(e => e.d && e.d.tier === 'Boss');
+        const where = run ? `on ${run.mapName} +${run.level}, ${boss ? 'at the boss' : 'row ' + (row || 1)}` : cb.raid ? `in the ${CB.RAID_NAMES[cb.raidMap] || 'raid'} +${cb.level}` : '';
+        if (typeof socOn === 'function' && socOn()) { try { SOC.ch.send({ type: 'broadcast', event: 'chat', payload: { sys: true, uid: SOC.me, name: '', ch: 'world', text: `${c.name} died in Hardcore${where ? ' ' + where : ''}.` } }); } catch (e) {} } }
       c.hcNotice = true;
     }
     if (pairs.some(([c]) => c && c.hcFell && c.hcNotice)) { save(); if (typeof publishAllHeroes === 'function') publishAllHeroes(true).catch(() => {}); }
