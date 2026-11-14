@@ -15,7 +15,7 @@
   // the build a hero follows: one from the planner (c.plan), or one tracked on the old Build guide (c.build)
   function plActive(c) { if (!c) return null; if (c.plan && c.plan.cards) return c.plan; const d = c.build && GDECKS.find(x => x.id === c.build); return d ? { id: 'g' + d.id, name: d.name, cls: d.cls, codex: d.codex, cards: d.cards, talents: [], desc: d.plan || '', guide: d.id } : null; }
   function openPlanner(tab) { PL.tab = tab || 'mine'; PL.err = ''; if (PL.tab === 'browse') plFetch(); plRender(); }
-  function plNew() { const c = profile.chars[heroKey]; PL.edit = { id: CBHub.uid ? CBHub.uid('b') : 'b' + Date.now().toString(36), name: '', cls: (c && c.cls) || 'Warrior', codex: null, cards: [], talents: [], desc: '' }; PL.tab = 'edit'; plRender(); }
+  function plNew() { const c = profile.chars[heroKey]; PL.edit = { id: CBHub.uid ? CBHub.uid('b') : 'b' + Date.now().toString(36), name: '', cls: (c && c.cls) || 'Warrior', codex: null, cards: [], talents: [], desc: '' }; PL.tab = 'edit'; PL.step = 1; PL.reach = 1; PL.pick = { q: '', type: '', rar: 'Blue' }; plRender(); }
   // ---- what is missing and where it drops (the same sources the Build guide reads)
   function plTodo(c, b) {
     const mine = c && c.cls === b.cls, { own } = gOwned(mine ? c : null), missing = [], farm = {};
@@ -67,26 +67,47 @@
       <div class="row">${b.cls === (c && c.cls) ? `<button class="btn ${isAct ? '' : 'primary'}" data-plact="1">${isAct ? 'Stop following' : 'Set as my active guide'}</button>` : ''}${mineB ? `<button class="btn" data-pledit="${b.id}">Edit</button><button class="btn" data-plpost="1" ${PL.busy ? 'disabled' : ''}>${b.rid ? 'Update the posted build' : 'Post it for everyone'}</button>${b.rid ? '<button class="btn" data-plunpost="1">Take the post down</button>' : ''}` : b.guide ? '' : '<button class="btn" data-plcopy="1">Save a copy to my builds</button>'}<button class="btn" data-pltab="${PL.back}">Back</button><button class="btn" id="mClose">Close</button></div>`);
     $('modalBox').classList.add('wide', 'guidebox', 'plbox'); $('mClose').onclick = closeModal;
   }
+  // Nov 13 (later): a new build is made in steps, like a flow chart: 1 the class, 2 the codex, 3 the Gold cards it is built around,
+  // 4 the rest of the deck (Blue, Green and White, each with its counter), with the talent tree one button away. PL.step holds the step;
+  // editing a saved build opens at step 4, and the steps at the top can be clicked to go back.
+  const PL_STEPS = [[1, 'Class'], [2, 'Codex'], [3, 'Gold cards'], [4, 'The deck'], [5, 'Talents']];
+  function plRarN(b) { const r = { Gold: 0, Blue: 0, Green: 0, White: 0 }; for (const [k, x] of b.cards) if (r[CARDS[k].rarity] != null) r[CARDS[k].rarity] += x; return r; }
+  function plCounters(b) { const r = plRarN(b), caps = CB.DECK_CAPS || {}, n = plCount(b);
+    return `<div class="plcount">${PL_RAR.map(k => `<span style="--rc:${RC[k]}" class="${caps[k] && r[k] >= caps[k] ? 'full' : ''}"><i></i>${k} <b>${r[k]}</b>${caps[k] ? ' / ' + caps[k] : ''}</span>`).join('')}<span class="${n < CB.DECK_MIN || n > CB.DECK_MAX ? 'short' : 'ok'}">Deck <b>${n}</b> / ${CB.DECK_MIN}-${CB.DECK_MAX}</span>${PL.note ? `<span class="plnote">${esc(PL.note)}</span>` : ''}</div>`; }
+  function plStepBar(b, isNew) { const st = PL.step || 4, reach = isNew ? Math.max(st, PL.reach || 1) : 5;
+    return `<div class="plsteps">${PL_STEPS.map(([n, t], i) => `${i ? '<em>&rsaquo;</em>' : ''}<button type="button" class="${st === n ? 'on' : n < st ? 'done' : ''}" ${n <= reach && n !== st ? `data-plstep="${n}"` : 'disabled'}><i>${n < st ? '&#10003;' : n}</i>${t}${n === 1 && st > 1 ? `: <b style="color:${CC[b.cls]}">${esc(b.cls)}</b>` : n === 2 && st > 2 ? `: <b>${b.codex ? esc(CB.CODEX_BY_KEY[b.codex].name) : 'none'}</b>` : ''}</button>`).join('')}</div>`; }
   function plEditPage() {
-    const b = PL.edit, pool = plPool(b.cls), q = PL.pick.q.toLowerCase(), n = plCount(b), inB = Object.fromEntries(b.cards), rar = { Gold: 0, Blue: 0, Green: 0 };
-    for (const [k, x] of b.cards) if (rar[CARDS[k].rarity] != null) rar[CARDS[k].rarity] += x;
-    const caps = CB.DECK_CAPS || {}, over = Object.keys(rar).filter(r => caps[r] && rar[r] > caps[r]);
-    const list = pool.filter(p => (!q || p.d.name.toLowerCase().includes(q) || (p.d.text || '').toLowerCase().includes(q)) && (!PL.pick.type || p.d.type === PL.pick.type));
-    modal(`<h2>${plBuilds().some(x => x.id === b.id) ? 'Edit build' : 'New build'}</h2>
-      <div class="pledit"><div class="plform"><label>Name<input id="plName" type="text" maxlength="60" placeholder="Name your build" value="${esc(b.name)}"></label>
-        <label>Class<select id="plECls">${PL_CLS.map(k => `<option ${b.cls === k ? 'selected' : ''}>${k}</option>`).join('')}</select></label>
-        <label>Codex<select id="plECodex"><option value="">None yet</option>${plCodexes(b.cls).map(x => `<option value="${x.key}" ${b.codex === x.key ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label></div>
+    const b = PL.edit, isNew = !plBuilds().some(x => x.id === b.id), st = PL.step || 4, caps = CB.DECK_CAPS || {}; PL.reach = Math.max(PL.reach || 1, st);
+    const noteNow = PL.note; setTimeout(() => { if (PL.note === noteNow) PL.note = ''; }, 0);   /* a cap warning shows for one draw */
+    const head = `<h2>${isNew ? 'New build' : 'Edit build'}</h2>${plStepBar(b, isNew)}`, foot = (next, label) => `<div class="row">${st > 1 ? `<button class="btn" data-plstep="${st - 1}">&lsaquo; Back</button>` : ''}${next ? `<button class="btn primary" data-plstep="${next}">${label}</button>` : ''}<button class="btn" data-pltab="mine">Cancel</button></div>`;
+    let body = '';
+    if (st === 1) body = `<h3 class="plq">What class are you creating this for?</h3><div class="plpick cls">${PL_CLS.map(k => `<button type="button" data-plcls="${k}" class="${b.cls === k && !isNew ? 'on' : ''}" style="--rc:${CC[k]}"><b>${k}</b><span>${plCodexes(k).length} codexes &middot; ${plPool(k).length} cards</span></button>`).join('')}</div>${foot()}`;
+    else if (st === 2) body = `<h3 class="plq">What codex are you basing this around?</h3><div class="plpick cx">${plCodexes(b.cls).map(x => `<button type="button" data-plcx="${x.key}" class="${b.codex === x.key ? 'on' : ''}" style="--rc:${CC[b.cls]}"><b>${esc(x.name)}</b><span>${esc(x.text)}</span></button>`).join('')}<button type="button" data-plcx="" class="${b.codex ? '' : 'on'}" style="--rc:#8f8674"><b>No codex yet</b><span>Decide later. Talents need a codex.</span></button></div>${foot()}`;
+    else if (st === 3) { const inB = Object.fromEntries(b.cards), r = plRarN(b), golds = plPool(b.cls).filter(x => x.d.rarity === 'Gold');
+      body = `<h3 class="plq">What Gold cards are you building the deck around? <span class="muted">a deck holds at most ${caps.Gold || 2}</span></h3>${plCounters(b)}
+        <div class="plgold">${golds.map(x => `<div class="plgcard ${inB[x.k] ? 'on' : ''}"><button type="button" data-pladd="${x.k}" title="Add ${esc(x.d.name)}">${cardBox(x.d, 150)}</button>${inB[x.k] ? `<div class="plgn"><button type="button" data-plsub="${x.k}" title="Take one out">&minus;</button><b>x${inB[x.k]}</b></div>` : ''}</div>`).join('') || '<p class="muted">This class has no Gold cards yet.</p>'}</div>${foot(4, r.Gold ? 'Next: the rest of the deck &rsaquo;' : 'Skip: no Gold cards &rsaquo;')}`; }
+    else if (st === 5) body = `<h3 class="plq">Talents <span class="muted">one per row${b.codex ? ' &middot; ' + esc(CB.CODEX_BY_KEY[b.codex].name) : ''}</span></h3>${b.codex ? `<div class="pltalfull">${plTalentsFull(b)}</div>` : '<p class="muted">Pick a codex first (step 2): the talent tree belongs to the codex.</p>'}<div class="row"><button class="btn" data-plstep="4">&lsaquo; Back to the deck</button><button class="btn primary" data-plsave="1">Save build</button><button class="btn" data-pltab="mine">Cancel</button></div>`;
+    else { const pool = plPool(b.cls), q = PL.pick.q.toLowerCase(), inB = Object.fromEntries(b.cards), r = plRarN(b), rr = PL.pick.rar || 'Blue', n = plCount(b);
+      const list = pool.filter(x => x.d.rarity === rr && (!q || x.d.name.toLowerCase().includes(q) || (x.d.text || '').toLowerCase().includes(q)) && (!PL.pick.type || x.d.type === PL.pick.type)), full = (caps[rr] && r[rr] >= caps[rr]) || n >= CB.DECK_MAX;
+      const tpicks = (b.talents || []).filter(x => x != null).length;
+      body = `<div class="pledit"><div class="plform"><label>Name<input id="plName" type="text" maxlength="60" placeholder="Name your build" value="${esc(b.name)}"></label></div>
         ${b.codex ? `<p class="gdcx" style="margin:4px 0 0"><b style="color:#f0b070">${esc(CB.CODEX_BY_KEY[b.codex].name)}:</b> ${esc(CB.CODEX_BY_KEY[b.codex].text)}</p>` : ''}
-        <label class="pldesclab">Description and notes <span class="muted">(how it plays, the cards you are looking for, what to rank up)</span><textarea id="plDesc" maxlength="4000" rows="4" placeholder="Write out the plan: what the deck does, which cards matter most, what you are still hunting for...">${esc(b.desc)}</textarea></label>
-        <div class="plcols"><div><h3>Cards to pick from <span class="muted" style="font-size:12.5px">click to add</span></h3>
-            <div class="plfilt"><input id="plPickQ" type="text" placeholder="Search cards" value="${esc(PL.pick.q)}"><select id="plPickT"><option value="">Every type</option>${['Attack', 'Skill', 'Power'].map(t => `<option ${PL.pick.type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-            <div class="plpool">${list.map(p => `<button type="button" data-pladd="${p.k}" title="${esc(p.d.text)}" style="--rc:${RC[p.d.rarity]}"><b>${esc(p.d.name)}</b><i>${p.d.cost == null ? '' : p.d.cost} ${p.d.type}</i>${inB[p.k] ? `<em>x${inB[p.k]}</em>` : ''}<span>${esc(p.d.text)}</span></button>`).join('') || '<p class="muted">No cards match.</p>'}</div></div>
-          <div><h3>The deck <span class="${n < CB.DECK_MIN || n > CB.DECK_MAX ? 'down' : 'up'}" style="font-size:13px">${n} card${n === 1 ? '' : 's'}</span> <span class="muted" style="font-size:12.5px">a deck holds ${CB.DECK_MIN} to ${CB.DECK_MAX}${over.length ? `</span> <span class="down" style="font-size:12.5px">too many ${over.join(' and ')} cards (at most ${Object.entries(caps).map(([r, v]) => v + ' ' + r).join(', ')})` : ''}</span></h3>
+        ${plCounters(b)}
+        <div class="plcols"><div><div class="shoptabs plrar">${PL_RAR.slice(1).concat(['Gold']).map(k => `<button type="button" class="${rr === k ? 'on' : ''}" data-plrar="${k}" style="--rc:${RC[k]}">${k} <span>${r[k]}${caps[k] ? '/' + caps[k] : ''}</span></button>`).join('')}</div>
+            <div class="plfilt"><input id="plPickQ" type="text" placeholder="Search ${rr} cards" value="${esc(PL.pick.q)}"><select id="plPickT"><option value="">Every type</option>${['Attack', 'Skill', 'Power'].map(t => `<option ${PL.pick.type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+            ${full ? `<p class="down" style="margin:0 0 4px;font-size:12.5px">${n >= CB.DECK_MAX ? `The deck is full (${CB.DECK_MAX} cards).` : `You have all ${caps[rr]} ${rr} cards a deck can hold. Take one out to swap it.`}</p>` : ''}
+            <div class="plpool ${full ? 'capped' : ''}">${list.map(x => `<button type="button" data-pladd="${x.k}" title="${esc(x.d.text)}" style="--rc:${RC[x.d.rarity]}"><b>${esc(x.d.name)}</b><i>${x.d.cost == null ? '' : x.d.cost} ${x.d.type}</i>${inB[x.k] ? `<em>x${inB[x.k]}</em>` : ''}<span>${esc(x.d.text)}</span></button>`).join('') || '<p class="muted">No cards match.</p>'}</div></div>
+          <div><h3>The deck</h3>
             <div class="pldeck">${b.cards.slice().sort((x, y) => PL_RAR.indexOf(CARDS[x[0]].rarity) - PL_RAR.indexOf(CARDS[y[0]].rarity) || CARDS[x[0]].name.localeCompare(CARDS[y[0]].name)).map(([k, x]) => `<div style="--rc:${RC[CARDS[k].rarity]}" title="${esc(CARDS[k].text)}"><b>${esc(CARDS[k].name)}</b><em>x${x}</em><button type="button" data-plsub="${k}" title="Take one out">&minus;</button><button type="button" data-pladd="${k}" title="Add another">+</button></div>`).join('') || '<p class="muted" style="margin:0">Empty. Click cards on the left.</p>'}</div>
-            <h3 style="margin-top:10px">Talents <span class="muted" style="font-size:12.5px">one per row</span></h3>${plTalentsHtml(b, true)}</div></div></div>
-      <div class="row"><button class="btn primary" data-plsave="1">Save build</button><button class="btn" data-pltab="mine">Cancel</button></div>`);
-    $('modalBox').classList.add('wide', 'guidebox', 'plbox');
+            <button type="button" class="btn pltalbtn" data-plstep="5">Talent tree${b.codex ? ` <span class="muted">${tpicks} of 10 picked</span>` : ' <span class="muted">needs a codex</span>'} &rsaquo;</button>
+            <label class="pldesclab" style="margin-top:8px">Description and notes <span class="muted">(how it plays, the cards you are looking for, what to rank up)</span><textarea id="plDesc" maxlength="4000" rows="4" placeholder="Write out the plan: what the deck does, which cards matter most, what you are still hunting for...">${esc(b.desc)}</textarea></label></div></div></div>
+      <div class="row">${isNew ? '<button class="btn" data-plstep="3">&lsaquo; Back</button>' : ''}<button class="btn primary" data-plsave="1">Save build</button><button class="btn" data-pltab="mine">Cancel</button></div>`; }
+    modal(head + body);
+    $('modalBox').classList.add('wide', 'guidebox', 'plbox'); if (typeof fitCards === 'function') { try { fitCards($('modalBox')); } catch (e) {} }
   }
+  // the talent tree at full width, with what each talent does written out
+  function plTalentsFull(b) { const tr = window.CB_TALENTS && CB_TALENTS[b.codex]; if (!tr) return '';
+    return `<div class="pltal big"><div class="pltrow head"><i></i>${['Offense', 'Defense', 'Support'].map((n, ci) => `<span style="color:${TCOL[ci][1]}">${n}</span>`).join('')}</div>${tr.rows.map((row, ri) => `<div class="pltrow"><i>Lv ${(ri + 1) * 2}</i>${row.map((t, ci) => { const on = (b.talents || [])[ri] === ci; return `<button type="button" class="${on ? 'on' : ''}" data-pltal="${ri}:${ci}" style="--tc:${TCOL[ci][1]}"><b>${esc(t.n)}</b><span>${esc(talentText(t.t, b.cls))}</span></button>`; }).join('')}</div>`).join('')}</div>`; }
   // ---- posted builds
   async function plFetch() {
     PL.list = null; PL.err = ''; if (!(supa && supaUser)) return;
@@ -127,7 +148,7 @@
   $('modalBox').addEventListener('keydown', (ev) => { if ($('modalBox').classList.contains('plbox') && ev.target.id === 'plQ' && ev.key === 'Enter') { plFetch(); plRender(); } });
   $('modalBox').addEventListener('click', (ev) => {
     if (!$('modalBox').classList.contains('plbox')) return;
-    const t = ev.target.closest('[data-pltab],[data-plnew],[data-plview],[data-pledit],[data-pldel],[data-plstop],[data-plguide],[data-plgo],[data-plvote],[data-plrow],[data-plact],[data-plpost],[data-plunpost],[data-plcopy],[data-pladd],[data-plsub],[data-pltal],[data-plsave]'); if (!t) return;
+    const t = ev.target.closest('[data-pltab],[data-plnew],[data-plview],[data-pledit],[data-pldel],[data-plstop],[data-plguide],[data-plgo],[data-plvote],[data-plrow],[data-plact],[data-plpost],[data-plunpost],[data-plcopy],[data-pladd],[data-plsub],[data-pltal],[data-plsave],[data-plstep],[data-plcls],[data-plcx],[data-plrar]'); if (!t) return;
     const D = t.dataset, c = profile.chars[heroKey], L = plBuilds(), b = PL.edit;
     const keep = (fn) => { const sc = [...$('modalBox').querySelectorAll('.plpool, .pldeck')].map(e => e.scrollTop), top = $('modalBox').scrollTop; fn(); [...$('modalBox').querySelectorAll('.plpool, .pldeck')].forEach((e, i) => { e.scrollTop = sc[i] || 0; }); $('modalBox').scrollTop = top; };
     if (D.pltab) { PL.tab = D.pltab; PL.edit = null; if (PL.tab === 'browse' && PL.list == null) plFetch(); return plRender(); }
@@ -136,7 +157,7 @@
     if (D.plgo) { plFetch(); return plRender(); }
     if (D.plview) { const v = D.plview === 'active' ? plActive(c) : L.find(x => x.id === D.plview); if (!v) return; PL.view = v; PL.back = 'mine'; PL.tab = 'view'; return plRender(); }
     if (D.plrow) { const r = (PL.list || []).find(x => x.id === D.plrow); if (!r) return; const own = L.find(x => x.rid === r.id); PL.view = own || plFromRow(r); PL.back = 'browse'; PL.tab = 'view'; return plRender(); }
-    if (D.pledit) { const v = L.find(x => x.id === D.pledit); if (!v) return; PL.edit = JSON.parse(JSON.stringify(v)); PL.tab = 'edit'; return plRender(); }
+    if (D.pledit) { const v = L.find(x => x.id === D.pledit); if (!v) return; PL.edit = JSON.parse(JSON.stringify(v)); PL.tab = 'edit'; PL.step = 4; PL.reach = 5; PL.pick = { q: '', type: '', rar: 'Blue' }; return plRender(); }
     if (D.pldel) { const i = L.findIndex(x => x.id === D.pldel); if (i < 0) return; if (t.dataset.sure !== '1') { t.dataset.sure = '1'; t.textContent = 'Really delete?'; return; } L.splice(i, 1); save(); return plRender(); }
     if (D.plstop) { if (c) { c.plan = null; c.build = null; save(); plTrack(true); } return plRender(); }
     if (D.plvote) { const [id, v] = D.plvote.split(':'); return plVote(id, +v); }
@@ -145,10 +166,16 @@
     if (D.plunpost) return plUnpost(PL.view);
     if (D.plcopy) { const v = plClean(PL.view); v.id = CBHub.uid ? CBHub.uid('b') : 'b' + Date.now().toString(36); v.rid = null; v.name = (v.name + ' (copy)').slice(0, 60); L.unshift(v); save(); PL.view = v; PL.back = 'mine'; return plRender(); }
     if (!b) return;
-    if (D.pladd) { const e = b.cards.find(x => x[0] === D.pladd); if (e) e[1] = Math.min(9, e[1] + 1); else b.cards.push([D.pladd, 1]); return keep(plEditPage); }
+    if (D.plstep) { PL.step = +D.plstep; return plEditPage(); }
+    if (D.plcls != null && 'plcls' in D) { if (b.cls !== D.plcls) { b.cards = []; b.codex = null; b.talents = []; } b.cls = D.plcls; PL.step = 2; return plEditPage(); }
+    if ('plcx' in D) { const k = D.plcx || null; if (b.codex !== k) b.talents = []; b.codex = k; PL.step = 3; return plEditPage(); }
+    if (D.plrar) { PL.pick.rar = D.plrar; PL.pick.q = ''; return plEditPage(); }
+    if (D.pladd) { const rr = CARDS[D.pladd].rarity, caps = CB.DECK_CAPS || {}, have = b.cards.reduce((n, x) => n + (CARDS[x[0]].rarity === rr ? x[1] : 0), 0);
+      if (caps[rr] && have >= caps[rr]) { PL.note = `A deck holds at most ${caps[rr]} ${rr} cards. Take one out first.`; return keep(plEditPage); } if (plCount(b) >= CB.DECK_MAX) { PL.note = `A deck holds at most ${CB.DECK_MAX} cards.`; return keep(plEditPage); }
+      const e = b.cards.find(x => x[0] === D.pladd); if (e) e[1] = Math.min(9, e[1] + 1); else b.cards.push([D.pladd, 1]); return keep(plEditPage); }
     if (D.plsub) { const i = b.cards.findIndex(x => x[0] === D.plsub); if (i >= 0 && --b.cards[i][1] <= 0) b.cards.splice(i, 1); return keep(plEditPage); }
     if (D.pltal) { const [ri, ci] = D.pltal.split(':').map(Number); b.talents = b.talents || []; while (b.talents.length < 10) b.talents.push(null); b.talents[ri] = b.talents[ri] === ci ? null : ci; return keep(plEditPage); }
-    if (D.plsave) { if (!b.name.trim()) { const n = $('plName'); if (n) { n.focus(); n.placeholder = 'Give it a name first'; } return; } const v = plClean(b), i = L.findIndex(x => x.id === v.id); if (i >= 0) { v.rid = L[i].rid; L[i] = v; } else L.unshift(v);
+    if (D.plsave) { if (!b.name.trim() && PL.step !== 4) { PL.step = 4; plEditPage(); } if (!b.name.trim()) { const n = $('plName'); if (n) { n.focus(); n.placeholder = 'Give it a name first'; } return; } const v = plClean(b), i = L.findIndex(x => x.id === v.id); if (i >= 0) { v.rid = L[i].rid; L[i] = v; } else L.unshift(v);
       for (const h of Object.values(profile.chars)) if (h.plan && h.plan.id === v.id) h.plan = JSON.parse(JSON.stringify(v));     /* heroes following it follow the new version */
       save(); PL.edit = null; PL.view = v; PL.back = 'mine'; PL.tab = 'view'; plTrack(true); return plRender(); }
   });

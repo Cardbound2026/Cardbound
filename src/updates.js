@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Fix', "Bloodletter's From the Shadows gives the full 25% (it was being halved to 13% by the rule that halves every talent)."],
+      ['Interface', "Deck Planner: a new build is now made in steps. Pick the class, then the codex, then the Gold cards you are building around, then fill in the Blue, Green and White cards with a counter for each. A button opens the full talent tree, and the steps along the top let you go back."],
       ['Art', "Five more mounts in the Skull Shop: Praying Mantis, Bone Spider, Great Worm, Flying Carpet and Great Cobra."],
       ['Art', "New pictures for belts and boots (Molten Sash and the rest): every belt is redrawn as a proper belt in place of the thin strip, and every pair of boots is redrawn larger."],
       ['Balance', "Bloodletter, level 6: Serrated Start (3 Bleed to all enemies at the start of a fight) is replaced by From the Shadows: Bleed you apply from Stealth is increased by 25%. If you had Serrated Start picked, you now have the new talent."],
