@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Balance', "Harder maps level your codex faster: +10% codex XP per map level, so a +3 map gives 1.3 times the XP."],
       ['Interface', "The codex bar at the top of town is just a bar with the level beside it. Point at it for the XP numbers."],
       ['Art', "Sixteen more weapon looks in the Skull Shop (28 in all), among them a baguette, a butcher's cleaver, a miner's pickaxe, a roast drumstick, a frying pan, a wooden spoon and a finger-bone wand."],
       ['Art', "Five more mounts in the Skull Shop: Striped Tiger, Royal Lion, Felhound, Demon Brute and Bone Dragon."],
