@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Interface', "The fire on the exhaust pile is much quieter: narrower, lower and see-through. The light on loot chests no longer pulses."],
       ['Feature', "The merchant now sells 5 items and 5 cards for your class. The cards are mostly White, sometimes a Green, and rarely a Blue (25, 80 and 220 gold). Items are on the left half of the screen, cards on the right. You will see the new layout at once; the item count changes at the next restock."],
       ['Interface', "Your gold has its own box on the character screen, beside the bag slots."],
       ['Interface', "The light on loot chests is softer: no hard line where it starts, and a fifth dimmer."],
