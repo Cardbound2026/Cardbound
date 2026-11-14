@@ -1,6 +1,9 @@
   // ---------- What's new: the changelog (button bottom-right) and the new-version warning
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
+    { date: '2026-11-14', items: [
+      ['Fix', "The small scroll bar that sometimes appeared on chest loot (even with a single pile of gold) is gone for good."],
+    ] },
     { date: '2026-11-13', items: [
       ['Balance', "Multi-hit Chance and Multicast Chance on all weapons and gear are 30% lower, to make room for rings rolling them. Items you already own were reduced to match. Starter weapons are unchanged."],
       ['Balance', "Rings can now roll Multi-hit Chance and Multicast Chance."],
