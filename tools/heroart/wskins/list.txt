@@ -48,3 +48,9 @@ staff_crystal|staff|Crystal Staff|400||
 kite_gold|kite|Golden Lion Shield|400||
 kite_blood|kite|Blood-spattered Shield|300||
 kite_lid|kite|Pot Lid|400||
+tower_door|tower|Wooden Door|500||
+tower_gold|tower|Golden Bulwark|500||
+focus_skull|focus|Yorick's Skull|400||
+focus_crystalball|focus|Crystal Ball|300||
+focus_lantern|focus|Soul Lantern|300||
+focus_mug|focus|Mug of Ale|400||
