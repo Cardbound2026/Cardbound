@@ -173,7 +173,7 @@ Stormheart was dropped (the third hit stays with the Healer's guaranteed Multi-h
 | Thunder Without End | 30, Skill | Cast every lightning spell in your discard pile at half strength. Exhaust. | Caster |
 | Bottled Lightning | 10, Skill | Take all Static off a target and store it. Your next spell deals 4 more damage for each. | Caster |
 | Unbroken Circuit | 30, Power | When you consume Static, half of it (rounded down) goes back on the target. | Caster, Control |
-| Hundred Blows | 30, Attack | Deal 4 damage 8 times. Each hit rolls Multi-hit on its own. | Melee |
+| Hundred Blows | X, Attack | Spend all your mana. Deal 4 damage once for every 3 mana spent. Each hit rolls Multi-hit on its own. | Melee |
 | Thunder God's Hammer | 30, Attack | Deal 30 damage. If it Multi-hits, Stun the target for 1 turn. | Melee |
 | Rain of Maces | 30, Power | When an Attack Multi-hits, it also hits a second random enemy for half. | Melee |
 | Twin Thunder | 20, Skill | This turn, every Attack you play also counts as a Skill and every Skill as an Attack. | Hybrid |

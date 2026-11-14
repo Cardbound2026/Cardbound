@@ -45,7 +45,7 @@ const DECKS = [
     'tempest, thunder_king, gale_fury, echoing_blow, thunderfall, relentless, rolling_thunder, hammer_and_anvil, charged_blow, windmill, war_chant, skull_ringer, mace_strike x3, twin_strike x3, backswing x2, wind_step x2'],
   ['skybreaker', 'Hundred Blows', 'Many small hits', 'Hundred Blows rolls Multi-hit eight times. With Charged Maces and Rain of Maces every roll that lands spreads Static and damage.',
     ['Gale Fury and Rolling Thunder before Hundred Blows.', 'Double Time makes the next Attack hit twice.', 'Skybreaker repeats your last Skill: make it Chain Lightning, or Surge for free spells.'],
-    { hundred_blows: 'Eight hits, each with its own Multi-hit roll.', rain_of_maces: 'Multi-hits also strike a second enemy.', charged_maces: 'Attacks apply Static.', double_time: 'Next Attack hits twice.' },
+    { hundred_blows: 'Spends all your mana: one hit per 3 mana, each with its own Multi-hit roll.', rain_of_maces: 'Multi-hits also strike a second enemy.', charged_maces: 'Attacks apply Static.', double_time: 'Next Attack hits twice.' },
     'hundred_blows, rain_of_maces, gale_fury, charged_maces, double_time, stormbreaker, rolling_thunder, crackling_swing, charged_blow, chain_lightning, knee_breaker, surge, twin_strike x3, mace_strike x2, backswing x2, lightning_weapon, wind_step x2'],
   ['skybreaker', 'Hammer of the Storm', 'Melee with a Stun', "Thunder God's Hammer Stuns when it Multi-hits. Twin Soul turns Multicast gear into Multi-hit, and Spellstrike repeats your bolt on its own.",
     ['Save Rolling Thunder for the Hammer turn.', 'Skybreaker repeats your last Skill: Lightning Burst is a good one to leave last.', 'Discharge the Static your repeated spells leave behind.'],
