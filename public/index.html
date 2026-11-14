@@ -706,6 +706,7 @@ body.inkui:not(.ui-classic) .item.itm .acts .btn:disabled { opacity: .45; filter
 .chatlog b { color: var(--accent); font-weight: 700; } .chatlog .sys { color: var(--muted); font-style: italic; }
 .chatlog .cparty { color: #9fd0ff; } .chatlog .cparty b { color: #6fb6ff; }
 .chatlog .cguild { color: #a8e29a; } .chatlog .cguild b { color: #7fd36a; }
+.chatlog .csay { color: #f3ead6; } .chatlog .csay b { color: #fff; } .chatlog .cyell { color: #ff8a7a; font-weight: 600; } .chatlog .cyell b { color: #ff5a48; }
 .chatlog .cwhisper { color: #f0b4e6; } .chatlog .cwhisper b { color: #e889d8; }
 /* in a fight the chat docks in a column on the left, like the combat log on the right */
 #scrCombat.withchat { grid-template-columns: var(--chatW, 260px) minmax(0, 1fr) var(--ledgerW, 340px); }
@@ -6912,7 +6913,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     for (const e of TOWN.embers) { gx.fillStyle = `rgba(255,${150 + (e.life * 80 | 0)},70,${e.life})`; gx.fillRect(e.x * TS, e.y * TS, 2.5 * s, 2.5 * s); }
     // name tags over every head: townspeople always, and your own hero with your guild under the name
     for (const n of NV) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.inside ? n.place : n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.inside ? 58 : n.open === 'dummy' ? 84 : window.CB_HEROPUP ? 98 : n.pal && n.pal.forge ? 80 : null);
-    { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? (window.CB_HEROPUP ? 150 : 72 + MOUNT_RISE) : 98, CBHub.titleOf(c, profile)); }
+    { const c = profile.chars[heroKey]; if (c) { const sy = townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? (window.CB_HEROPUP ? 150 : 72 + MOUNT_RISE) : 98, CBHub.titleOf(c, profile)); if (typeof sayOver === 'function') { if (SOC.me) sayOver(SOC.me, hp.x * TS + TS / 2, sy, s); drawSays(gx); } } }
     // night: darken everything, then cut light pools around fires and the hero
     const dk = TOWN.dark, dg = dk.getContext('2d');
     dg.setTransform(1, 0, 0, 1, 0, 0); dg.globalCompositeOperation = 'source-over'; dg.clearRect(0, 0, dk.width, dk.height);
@@ -7244,6 +7245,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
         if (typeof exPetDraw === 'function' && o.ap && o.ap.cos && o.ap.cos.pet) exPetDraw(gx, o.uid, o.ap.cos.pet, p.x * TS + TS / 2, p.y * TS + TS * 0.92, s, t); // Nov 13: their pet
         const tx = p.x * TS + TS / 2, ty = townTag(gx, tx, p.y * TS + TS * 0.92, o.name, SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0', o.guild, s, o.mount ? (window.CB_HEROPUP ? 150 : 72 + MOUNT_RISE) : 98, o.title);
         if (o.shop && o.shop.t) drawShopSign(gx, tx, ty - 4, o.shop.t, s);
+        sayOver(o.uid, tx, ty - (o.shop && o.shop.t ? 24 * s : 0), s);
       } });
     }
     return out;
@@ -7251,10 +7253,23 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
 
   // ---------- world chat
   // channels: world (default), /p party, /g guild, /w Name whisper, /r reply to the last whisper
+  // ---------- Nov 14: /s (say) and /y (yell): a speech box over your head in town, parchment for say and red for yell. Every other channel stays in the chat log only.
+  const SAYS = new Map(); let sayQ = [];
+  function sayOver(uid, tx, top, s) { const b = SAYS.get(uid); if (!b) return; if (Date.now() - b.at > 4500 + Math.min(4000, b.text.length * 45)) { SAYS.delete(uid); return; } sayQ.push([b, tx, top, s]); }
+  function drawSays(g) { const q = sayQ; sayQ = []; for (const [b, tx, top, s] of q) { const k = Math.max(0.9, s), life = 4500 + Math.min(4000, b.text.length * 45), age = Date.now() - b.at, fs = Math.round((b.yell ? 14.5 : 13) * k), lh = Math.round(fs * 1.25), maxW = (b.yell ? 230 : 200) * k, pad = 7 * k;
+      g.save(); g.globalAlpha = Math.max(0, Math.min(1, age / 120, (life - age) / 500)); g.font = `${b.yell ? 700 : 600} ${fs}px "Barlow Semi Condensed", sans-serif`; g.textAlign = 'center';
+      const words = (b.yell ? b.text.toUpperCase() : b.text).split(/\s+/), lines = []; let cur = '';
+      for (let w of words) { while (g.measureText(w).width > maxW) { let n = w.length; while (n > 1 && g.measureText(w.slice(0, n)).width > maxW) n--; if (cur) { lines.push(cur); cur = ''; } lines.push(w.slice(0, n)); w = w.slice(n); } const t = cur ? cur + ' ' + w : w; if (g.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t; }
+      if (cur) lines.push(cur); if (lines.length > 4) { lines.length = 4; lines[3] = lines[3].replace(/.{0,3}$/, '...'); }
+      const w = Math.max(...lines.map(l => g.measureText(l).width)) + pad * 2, h = lines.length * lh + pad * 1.4, tail = 7 * k, x = Math.round(tx - w / 2), y = Math.round(top - 5 * k - tail - h), r = 5 * k;
+      g.beginPath(); g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r); g.lineTo(x + w, y + h - r); g.quadraticCurveTo(x + w, y + h, x + w - r, y + h); g.lineTo(tx + tail * .8, y + h); g.lineTo(tx, y + h + tail); g.lineTo(tx - tail * .8, y + h); g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r); g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y); g.closePath();
+      g.fillStyle = b.yell ? '#a3201a' : '#efe3c8'; g.fill(); g.lineWidth = Math.max(1.5, 2 * k); g.strokeStyle = b.yell ? '#3a0806' : '#2a1c10'; g.stroke();
+      g.fillStyle = b.yell ? '#fff3e6' : '#2a1c10'; lines.forEach((l, i) => g.fillText(l, tx, y + pad * .7 + lh * (i + .78))); g.restore(); } }
   function addChat(m) {
     if (!m || !m.text) return;
     SOC.chat.push({ from: m.uid, name: String(m.name || '?').slice(0, 24), text: String(m.text).slice(0, 200), sys: !!m.sys, at: m.at || Date.now(), ch: m.ch || 'world', toName: m.toName, mine: m.uid === SOC.me, items: Array.isArray(m.items) ? m.items.slice(0, 3) : undefined });
     SOC.chat = SOC.chat.slice(-80); renderChat();
+    if (!m.sys && (m.ch === 'say' || m.ch === 'yell') && m.uid) SAYS.set(m.uid, { text: String(m.text).slice(0, 200), at: Date.now(), yell: m.ch === 'yell' }); // Nov 14: only /s and /y float over the speaker's head
   }
   function sysChat(text) { addChat({ sys: true, name: '', text }); }
   function chatIn(m) {
@@ -7262,6 +7277,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     const ch = m.ch || 'world';
     if (ch === 'whisper') { if (m.to !== SOC.me) return; SOC.lastWhisper = { uid: m.uid, name: m.name }; }
     else if (ch === 'party') { if (!SOC.party || SOC.party.id !== m.pid) return; }
+    else if (ch === 'say' || ch === 'yell') { if (!inTownNow() || !SOC.others.has(m.uid)) return; } // heard only by people in town who can see the speaker
     else if (ch === 'guild') { const g = myGuild(); if (!g || g.id !== m.gid) return; }
     addChat(m);
   }
@@ -7279,9 +7295,10 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     if (!cmd) m = Object.assign(me, { ch: 'world', text });
     else {
       const [, k, rest] = cmd, key = k.toLowerCase();
-      if (key === 'help' || key === '?') { sysChat('Chat: just type for world chat. /p party, /g guild, /w Name message to whisper, /r reply to the last whisper, /world (or /s) world.'); return; }
+      if (key === 'help' || key === '?') { sysChat('Chat: just type for world chat, seen everywhere. /s say (a speech box over your head in town), /y yell (a red one), /p party, /g guild, /w Name message to whisper, /r reply to the last whisper.'); return; }
       if (!rest.trim() && key !== 'help') { sysChat(`Type a message after /${k}.`); return; }
-      if (key === 'world' || key === 's' || key === 'y') m = Object.assign(me, { ch: 'world', text: rest });
+      if (key === 'world') m = Object.assign(me, { ch: 'world', text: rest });
+      else if (key === 's' || key === 'say' || key === 'y' || key === 'yell') { if (!inTownNow()) { sysChat('You can only /s and /y while standing in Emberwatch.'); return; } m = Object.assign(me, { ch: key[0] === 'y' ? 'yell' : 'say', text: rest }); }
       else if (key === 'p' || key === 'party') { if (!SOC.party) { sysChat('You are not in a party.'); return; } m = Object.assign(me, { ch: 'party', pid: SOC.party.id, text: rest }); }
       else if (key === 'g' || key === 'guild') { const g = myGuild(); if (!g) { sysChat('You are not in a guild. Visit Guildmaster Strecks in town.'); return; } m = Object.assign(me, { ch: 'guild', gid: g.id, text: rest }); }
       else if (key === 'w' || key === 'whisper' || key === 'tell' || key === 'r') {
@@ -7337,7 +7354,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     modal(`<h2>${esc(linkName(it))}</h2><div class="linkview">${body}</div><p class="muted" style="font-size:13px">Linked in chat. Shift-click your own items to link them.</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     fitCards($('modalBox')); $('mClose').onclick = closeModal;
   }
-  const CHAN = { world: ['', ''], party: ['[Party] ', 'cparty'], guild: ['[Guild] ', 'cguild'], whisper: ['', 'cwhisper'] };
+  const CHAN = { world: ['', ''], party: ['[Party] ', 'cparty'], guild: ['[Guild] ', 'cguild'], whisper: ['', 'cwhisper'], say: ['[Say] ', 'csay'], yell: ['[Yell] ', 'cyell'] };
   function renderChat() {
     const el = $('chatLog'); if (!el) return;
     el.innerHTML = SOC.chat.map((m, i) => { if (m.sys) return `<div class="sys">${esc(m.text)}</div>`; const [tag, cls] = CHAN[m.ch] || CHAN.world;
@@ -7663,8 +7680,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794673021386';
-  const CB_BUILD = 'af515e034c'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794673511805';
+  const CB_BUILD = 'dbe69391fd'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8770,6 +8787,9 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Feature', "The Chronicle: a book of everything your hero has done. Open it from the new book button on the bottom bar (J) or the Menu. Six spreads: time played and lifetime totals, a line chart of every run with your highest boss kill, a bestiary of every monster slain, lifetime damage by card with healing and damage taken, your most played cards, and The Reckoning, which points out anything a hero leans on too hard. Detail is counted from today; older runs are filled in where the game has them."],
+      ['Feature', "Inspect another player and you can open their Chronicle too. The last page has a Copy report button that puts the whole record into text for balance review."],
+      ['Feature', "New chat commands: /s to say something in a speech box over your head in town, and /y to yell it in a red one. Only people in Emberwatch who can see you hear them. Plain chat is still world chat, seen everywhere, and no other channel pops a box."],
       ['Balance', "Stealth is a little less safe: more monsters carry an attack that hits everyone. Half of all elites now have one (was a third), 40% of tier 3 monsters, 30% of tier 2 and 20% of tier 1 (which had none). That is 20 new monster cards, each with its own painting; every one replaces two copies of a single-target hit, so decks are the same size."],
       ['Change', "Monsters now spend their mana in a set order: buffs first, then any attack that hits everyone, then defence or a single-target card. Before, an area attack was often left unplayed behind cheaper cards."],
       ['Art', "Town torches tidied: four stand square around the bonfire, and the ones around the plaza now sit on the grass at the edge of the paving, evenly spaced."],
@@ -13735,15 +13755,15 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     modal(`<h2>Inspecting ${esc(nameOfUid(uid))}...</h2><p class="muted">Asking their game for their hero.</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`); $('mClose').onclick = closeModal;
     setTimeout(() => { if (INS.waiting === uid) { INS.waiting = null; if (!$('modal').hidden && /Inspecting/.test($('modalBox').innerText)) toast(`${nameOfUid(uid)} didn't answer. They may have just gone offline.`); } }, 6000);
   }
-  function inspectCard() { const c = profile.chars[heroKey]; if (!c) return null; return { name: c.name, cls: c.cls, gear: c.gear.map(g => { const x = Object.assign({}, g); delete x.id; return x; }), deck: c.deck.map(k => ({ key: k.key, rank: k.rank || 0 })), runs: c.runs, best: c.best, bossKills: c.bossKills, duels: c.duels || null, titleText: CBHub.titleOf(c, profile), acct: supaUser ? acctName(supaUser) : '' }; }
+  function inspectCard() { const c = profile.chars[heroKey]; if (!c) return null; return { name: c.name, cls: c.cls, gear: c.gear.map(g => { const x = Object.assign({}, g); delete x.id; return x; }), deck: c.deck.map(k => ({ key: k.key, rank: k.rank || 0 })), runs: c.runs, best: c.best, bossKills: c.bossKills, duels: c.duels || null, titleText: CBHub.titleOf(c, profile), acct: supaUser ? acctName(supaUser) : '', chron: (() => { try { return chronicleCard(true); } catch (e) { return null; } })() }; }
   function showInspect(ch) {
     const deck = ch.deck.slice().sort((a, b) => RAR_ORDER[CARDS[a.key].rarity] - RAR_ORDER[CARDS[b.key].rarity] || CARDS[a.key].name.localeCompare(CARDS[b.key].name));
     const groups = []; for (const k of deck) { const g = groups.find(x => x.key === k.key && x.rank === k.rank); if (g) g.n++; else groups.push({ key: k.key, rank: k.rank, n: 1 }); }
     modal(`<h2>${esc(ch.name)}</h2>${paperdoll(ch, ch.cls, { cmp: myGear(), acct: ch.acct })}
       <p class="muted" style="font-size:13px">Hover their gear to compare it with yours. Runs ${ch.runs || 0}, best row ${ch.best > ROWS ? 'Boss' : ch.best || 0}, Warlord kills ${ch.bossKills || 0}.</p>
       <h3 style="font-size:18px;color:var(--accent)">Deck (${ch.deck.length})</h3><div class="pilegrid">${groups.map(g => `<div class="pilecard">${cardBox(CB.rankedCard(g.key, g.rank), 130)}${g.n > 1 ? `<span class="pilecount">x${g.n}</span>` : ''}</div>`).join('')}</div>
-      <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
-    $('modalBox').classList.add('wide'); paintPortraits($('modalBox')); fitCards($('modalBox')); $('mClose').onclick = closeModal;
+      <div class="row">${ch.chron && ch.chron.life ? '<button class="btn" id="insStats">Open their Chronicle</button>' : ''}<button class="btn primary" id="mClose">Close</button></div>`);
+    $('modalBox').classList.add('wide'); paintPortraits($('modalBox')); fitCards($('modalBox')); $('mClose').onclick = closeModal; if ($('insStats')) $('insStats').onclick = () => { ch.chron._other = 1; openChronicle(ch.chron); };
   }
 
   // ---------- trading: both players pick items from their stash (and gold); when both accept the same offer, both games swap
@@ -14508,6 +14528,143 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   }
   setInterval(() => { try { plTrack(false); } catch (e) {} }, 1200);
 
+  // ---------- The Chronicle (Nov 14): a hero's lifetime numbers as a book you page through. Opened from the bottom bar (J), the Menu, and the
+  // Inspect window of another player (their game sends the same numbers: chronicleCard()). The numbers are kept by hub.js (c.life, see
+  // "The Chronicle" there) from Nov 14 on; the last 20 runs before that are filled in from the account's run history the first time it opens.
+  // The last page, "The Reckoning", is for balance review: it points out anything lopsided and has a Copy report button whose text can be
+  // pasted to whoever is tuning the game.
+  // TO REMOVE: delete this file and its include in build.js, the 'stats' entries in extras.js (bar, menu, act), the two lines in gearui.js
+  // (inspectCard life, insStats button), and chronicle()/lifeSeed() in hub.js.
+  const SBK = { page: 0, ch: null };
+  const BK_MAPN = { physical: 'The Broken March', fire: 'The Cinder Reach', frost: 'The Rimewatch', nature: 'The Tanglewild', arcane: 'The Shattered Spire', shadow: 'The Hollow Crypts' };
+  const BK_PAGES = ['The Hero', 'The Road', 'Bestiary', 'Damage', 'Cards', 'The Reckoning'];
+  const bkN = (v) => Math.round(v || 0).toLocaleString();
+  const bkTime = (s) => { s = Math.round(s || 0); const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60); return d ? `${d}d ${h}h ${m}m` : h ? `${h}h ${m}m` : m ? `${m}m` : s ? `${s}s` : 'none yet'; };
+  const bkDate = (ms) => ms ? new Date(ms).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'unknown';
+  const bkTop = (o, n) => Object.entries(o || {}).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, n || 999);
+  const bkSum = (o) => Object.values(o || {}).reduce((t, v) => t + (v > 0 ? v : 0), 0);
+  // time played: ticked while the page is visible and a hero is chosen (saved along with everything else, not on its own)
+  setInterval(() => { try { if (document.visibilityState !== 'visible' || typeof profile === 'undefined' || !profile || !profile.chars) return; const c = profile.chars[heroKey]; if (!c) return; const L = CBHub.lifeOf(c); L.t += 20; if (typeof run !== 'undefined' && run) L.tr += 20; } catch (e) {} }, 20000);
+
+  // what the book reads: my own hero, or the same bundle sent by another player's game
+  function chronicleCard(lite) { const c = profile.chars[heroKey]; if (!c) return null; const L = CBHub.lifeSeed(profile, c), cut = (o, n) => Object.fromEntries(bkTop(o, n));
+    const cx = (c.gear.find(g => g && g.slot === 'Codex') || {}).codex || null;
+    return { name: c.name, cls: c.cls, hc: !!c.hardcore, title: CBHub.titleOf(c, profile) || '', created: c.created || 0, runs: c.runs || 0, best: c.best || 0, bossKills: c.bossKills || 0, bossKillsBy: c.bossKillsBy || {}, mapKills: c.mapKills || {}, duels: c.duels || null,
+      codex: cx, cxLevels: Object.fromEntries(Object.entries(c.codexes || {}).map(([k, v]) => [k, CB.codexLevel((v && v.xp) || 0).level]).filter(x => x[1] > 0)), ach: Object.keys(profile.ach || {}).length, achAll: (CBHub.ACH || []).length,
+      deck: c.deck.map(k => [k.key, k.rank || 0]), acct: { kills: (profile.stats || {}).kills || 0, deaths: (profile.stats || {}).deaths || 0, gold: (profile.stats || {}).goldLooted || 0, salvaged: (profile.stats || {}).salvaged || 0, duelGold: (profile.stats || {}).duelGold || 0 },
+      life: lite ? Object.assign({}, L, { runs: L.runs.slice(-160), mobs: cut(L.mobs, 150), dealt: cut(L.dealt, 40), healed: cut(L.healed, 20), taken: cut(L.taken, 30), plays: cut(L.plays, 60) }) : L }; }
+  function openChronicle(ch, page) { ch = ch || chronicleCard(); if (!ch) return; SBK.ch = ch; SBK.page = page || 0; SBK.mine = ch === SBK.ch && !ch._other; bkRender(); }
+  function bkRuns(ch) { return (ch.life.runs || []).map(r => ({ at: r[0] * 60000, map: CBHub.LIFE_MAPS[r[1]] || 'physical', lvl: r[2], res: r[3], row: r[4], party: r[5], br: r[6], dmg: r[7], secs: r[8], kills: r[9] })); }
+
+  // ---- the pages. Each returns [left page, right page]
+  const bkStat = (label, v, sub) => `<div class="bkst"><b>${v}</b><span>${label}</span>${sub ? `<i>${sub}</i>` : ''}</div>`;
+  const bkBars = (rows, total, unit, colour) => { const mx = Math.max(1, ...rows.map(r => r[1])); return `<div class="bkbars">${rows.map(([k, v, extra]) => `<div><span title="${esc(k)}">${esc(k)}</span><i><u style="width:${(100 * v / mx).toFixed(1)}%;background:${colour}"></u></i><b>${bkN(v)}${unit || ''}</b><em>${extra != null ? extra : total ? (100 * v / total).toFixed(1) + '%' : ''}</em></div>`).join('') || '<p class="bkempty">Nothing written here yet.</p>'}</div>`; };
+  function bkHero(ch) { const L = ch.life, R = bkRuns(ch), wins = R.filter(r => r.res === 2).length, cc = (typeof CC !== 'undefined' && CC[ch.cls]) || '#8a5a1c', d = ch.duels || {};
+    const cx = ch.codex && CB.CODEX_BY_KEY[ch.codex], lv = Object.entries(ch.cxLevels || {}).sort((a, b) => b[1] - a[1]);
+    return [`<div class="bkname"><h3 style="color:${cc}">${esc(ch.name)}</h3><p>${ch.title ? esc(ch.title) + ' &middot; ' : ''}${ch.hc ? 'Hardcore ' : ''}${esc(ch.cls)}${cx ? ' &middot; ' + esc(cx.name) : ''}</p></div>
+      <div class="bkgrid">${bkStat('time played', bkTime(L.t), L.tr ? bkTime(L.tr) + ' of it in runs' : '')}${bkStat('first seen', bkDate(ch.created))}${bkStat('runs', bkN(ch.runs), R.length ? `${wins} of the last ${R.length} ended with the boss dead` : '')}${bkStat('bosses killed', bkN(ch.bossKills))}</div>
+      <p class="bknote">${L.runs.length ? `The fine detail in this book (cards, damage, monsters) has been kept since ${bkDate(Math.min(...R.map(r => r.at)))}. Older deeds are counted but not itemised.` : 'This book fills in as you play: finish a run and come back.'}</p>`,
+      `<h4>In numbers</h4><div class="bkgrid">${bkStat('fights won', bkN(L.fights))}${bkStat('monsters slain', bkN(bkSum(L.mobs)))}${bkStat('rounds fought', bkN(L.rounds))}${bkStat('deaths', bkN(L.deaths))}
+        ${bkStat('damage dealt', bkN(L.dmg))}${bkStat('healing done', bkN(L.heal))}${bkStat('damage taken', bkN(L.hurt), L.absorbed ? bkN(L.absorbed) + ' more soaked by defences' : '')}${bkStat('biggest hit', L.big ? bkN(L.big[0]) : '0', L.big ? esc(L.big[1]) : '')}
+        ${bkStat('gold carried home', bkN(L.gold))}${bkStat('gear / cards looted', bkN(L.items) + ' / ' + bkN(L.cards))}${bkStat('duels', (d.w || 0) + ' won, ' + (d.l || 0) + ' lost')}${bkStat('achievements', (ch.ach || 0) + ' of ' + (ch.achAll || 0), 'whole account')}</div>
+      ${lv.length ? `<h4>Codexes</h4><p class="bkline">${lv.map(([k, v]) => `${esc((CB.CODEX_BY_KEY[k] || {}).name || k)} <b>${v}</b>`).join(' &middot; ')}</p>` : ''}`]; }
+  function bkChart(R) { if (R.length < 2) return '<p class="bkempty">Two or more runs are needed to draw the road.</p>'; const W = 440, H = 230, pl = 30, pr = 8, pt = 10, pb = 22, mx = Math.max(3, ...R.map(r => r.lvl)), X = (i) => pl + (W - pl - pr) * i / (R.length - 1), Y = (v) => pt + (H - pt - pb) * (1 - v / mx);
+    let best = -1; const step = R.map((r, i) => { if (r.res === 2) best = Math.max(best, r.lvl); return [X(i), best < 0 ? null : Y(best)]; }).filter(p => p[1] != null);
+    const ticks = []; for (let v = 0; v <= mx; v += Math.max(1, Math.ceil(mx / 6))) ticks.push(v);
+    return `<svg class="bkchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Map level of each run, and the highest boss killed so far">
+      ${ticks.map(v => `<line x1="${pl}" x2="${W - pr}" y1="${Y(v)}" y2="${Y(v)}" class="g"/><text x="${pl - 5}" y="${Y(v) + 4}" text-anchor="end">+${v}</text>`).join('')}
+      <polyline class="ln" points="${R.map((r, i) => X(i).toFixed(1) + ',' + Y(r.lvl).toFixed(1)).join(' ')}"/>
+      ${step.length ? `<polyline class="hi" points="${step.map((p, i) => (i ? step[i][0].toFixed(1) + ',' + step[i - 1][1].toFixed(1) + ' ' : '') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ')}"/>` : ''}
+      ${R.map((r, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y(r.lvl).toFixed(1)}" r="${R.length > 80 ? 1.8 : 2.8}" class="d${r.res}"><title>Run ${i + 1}: ${BK_MAPN[r.map]} +${r.lvl}, ${r.res === 2 ? 'boss killed' : r.res === 1 ? 'walked out on row ' + r.row : 'died on row ' + r.row}</title></circle>`).join('')}
+      <text x="${pl}" y="${H - 5}">oldest</text><text x="${W - pr}" y="${H - 5}" text-anchor="end">latest (${R.length} runs)</text></svg>
+      <p class="bkkey"><i class="d2"></i>boss killed <i class="d1"></i>walked out <i class="d0"></i>died <i class="hi"></i>highest boss killed so far</p>`; }
+  function bkRoad(ch) { const R = bkRuns(ch), by = {}; for (const r of R) { const b = by[r.map] = by[r.map] || { n: 0, w: 0, d: 0, fast: 0 }; b.n++; if (r.res === 2) { b.w++; if (r.br && (!b.fast || r.br < b.fast)) b.fast = r.br; } if (r.res === 0) b.d++; }
+    const secs = R.filter(r => r.secs > 0 && r.res === 2).map(r => r.secs).sort((a, b) => a - b);
+    return [`<h4>Every run, by map level</h4>${bkChart(R)}`,
+      `<h4>The six roads</h4><table class="bktab"><tr><th>Map</th><th>Best boss</th><th>Boss kills</th><th>Runs</th><th>Won</th><th>Fastest boss</th></tr>${CBHub.LIFE_MAPS.map(mk => { const b = by[mk] || { n: 0, w: 0 }, top = (ch.mapKills || {})[mk]; return `<tr><td>${BK_MAPN[mk]}</td><td>${top == null || top < 0 ? '&ndash;' : '+' + top}</td><td>${(ch.bossKillsBy || {})[mk] || 0}</td><td>${b.n || '&ndash;'}</td><td>${b.n ? Math.round(100 * b.w / b.n) + '%' : '&ndash;'}</td><td>${b.fast ? b.fast + (b.fast === 1 ? ' round' : ' rounds') : '&ndash;'}</td></tr>`; }).join('')}</table>
+      <div class="bkgrid">${bkStat('boss runs, typical time', secs.length ? bkTime(secs[Math.floor(secs.length / 2)]) : '&ndash;')}${bkStat('quickest boss run', secs.length ? bkTime(secs[0]) : '&ndash;')}${bkStat('played with others', R.length ? Math.round(100 * R.filter(r => r.party > 1).length / R.length) + '%' : '&ndash;', 'of recorded runs')}${bkStat('furthest row', ch.best > 14 ? 'Boss' : bkN(ch.best))}</div>`]; }
+  function bkBeasts(ch) { const E = DATA.enemies, rows = bkTop(ch.life.mobs).map(([k, n]) => ({ k, n, e: E[k] })).filter(x => x.e), TR = { 1: 'Tier 1', 2: 'Tier 2', 3: 'Tier 3', Elite: 'Elite', Boss: 'Boss' };
+    const all = rows.reduce((t, r) => t + r.n, 0), byT = {}; for (const r of rows) byT[r.e.tier] = (byT[r.e.tier] || 0) + r.n;
+    const list = (a) => `<div class="bkmobs">${a.map(r => `<div class="t${r.e.tier}"><span>${esc(r.e.name)}</span><em>${TR[r.e.tier] || ''}</em><b>${bkN(r.n)}</b></div>`).join('')}</div>`, half = Math.ceil(Math.min(rows.length, 44) / 2);
+    if (!rows.length) return ['<h4>Monsters slain</h4><p class="bkempty">No kills written down yet. They are counted from your next run.</p>', ''];
+    return [`<h4>Monsters slain <span>${bkN(all)} in all, ${rows.length} kinds of ${Object.keys(E).length}</span></h4>${list(rows.slice(0, half))}`,
+      `<p class="bkline">${['1', '2', '3', 'Elite', 'Boss'].filter(t => byT[t]).map(t => `${TR[t]} <b>${bkN(byT[t])}</b>`).join(' &middot; ')}</p>${list(rows.slice(half, 44))}${rows.length > 44 ? `<p class="bknote">and ${rows.length - 44} rarer kinds.</p>` : ''}`]; }
+  function bkDamage(ch) { const L = ch.life, d = bkTop(L.dealt, 14), h = bkTop(L.healed, 7), t = bkTop(L.taken, 8);
+    return [`<h4>Damage dealt, by card <span>${bkN(L.dmg)} in all</span></h4>${bkBars(d, bkSum(L.dealt), '', '#9a2b22')}`,
+      `<h4>Healing done <span>${bkN(L.heal)}</span></h4>${bkBars(h, bkSum(L.healed), '', '#3f6b2a')}<h4>Damage taken, by attacker <span>${bkN(L.hurt)}</span></h4>${bkBars(t, bkSum(L.taken), '', '#5a4a7a')}`]; }
+  function bkCards(ch) { const L = ch.life, p = bkTop(L.plays, 14), tot = bkSum(L.plays), per = Object.entries(L.dealt || {}).filter(([k, v]) => (L.plays[k] || 0) >= 5 && v > 0).map(([k, v]) => [k, v / L.plays[k], bkN(L.plays[k]) + ' plays']).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    return [`<h4>Most played cards <span>${bkN(tot)} cards played</span></h4>${bkBars(p, tot, '', '#a8791c')}`,
+      `<h4>Damage for each play <span>cards played 5 times or more</span></h4>${bkBars(per, 0, '', '#9a2b22')}<div class="bkgrid">${bkStat('cards played per fight', L.fights ? (tot / L.fights).toFixed(1) : '&ndash;')}${bkStat('damage per round', L.rounds ? bkN(L.dmg / L.rounds) : '&ndash;')}</div>`]; }
+  // what stands out, in plain words: used on the last page and in the copied report
+  function bkFlags(ch) { const L = ch.life, R = bkRuns(ch), F = [], dT = bkSum(L.dealt), d = bkTop(L.dealt, 3), pT = bkSum(L.plays), p = bkTop(L.plays, 2);
+    if (dT > 2000 && d[0] && d[0][1] / dT > 0.45) F.push(`<b>${esc(d[0][0])}</b> is ${Math.round(100 * d[0][1] / dT)}% of all damage dealt.`);
+    if (dT > 2000 && d.length > 1 && (d[0][1] + d[1][1]) / dT > 0.7 && !(d[0][1] / dT > 0.45)) F.push(`Two cards, <b>${esc(d[0][0])}</b> and <b>${esc(d[1][0])}</b>, are ${Math.round(100 * (d[0][1] + d[1][1]) / dT)}% of all damage.`);
+    if (pT > 200 && p[0] && p[0][1] / pT > 0.3) F.push(`<b>${esc(p[0][0])}</b> is ${Math.round(100 * p[0][1] / pT)}% of every card played.`);
+    const per = Object.entries(L.dealt || {}).filter(([k]) => (L.plays[k] || 0) >= 8).map(([k, v]) => [k, v / L.plays[k]]).sort((a, b) => b[1] - a[1]); if (per.length >= 4 && per[0][1] > 3 * per[Math.floor(per.length / 2)][1]) F.push(`<b>${esc(per[0][0])}</b> deals ${bkN(per[0][1])} a play, ${(per[0][1] / per[Math.floor(per.length / 2)][1]).toFixed(1)} times this hero's typical card.`);
+    const hi = R.filter(r => r.lvl >= 5), hw = hi.filter(r => r.res === 2); if (hi.length >= 8 && hw.length / hi.length > 0.9) F.push(`${hw.length} of ${hi.length} runs at +5 or higher ended with the boss dead (${Math.round(100 * hw.length / hi.length)}%).`);
+    const br = R.filter(r => r.res === 2 && r.br > 0 && r.lvl >= 5).map(r => r.br).sort((a, b) => a - b); if (br.length >= 4 && br[Math.floor(br.length / 2)] <= 3) F.push(`Bosses at +5 or higher usually die in ${br[Math.floor(br.length / 2)]} rounds or fewer (${br.length} kills).`);
+    if (L.fights >= 30 && L.hurt / L.fights < 4) F.push(`Takes very little damage: ${(L.hurt / L.fights).toFixed(1)} a fight over ${bkN(L.fights)} fights.`);
+    if (L.fights >= 30 && L.deaths === 0 && R.some(r => r.lvl >= 5)) F.push(`No deaths on record over ${bkN(L.fights)} fights.`);
+    const sc = R.filter(r => r.res === 2 && r.secs > 0).map(r => r.secs).sort((a, b) => a - b); if (sc.length >= 5 && sc[Math.floor(sc.length / 2)] < 240) F.push(`A typical full boss run takes ${bkTime(sc[Math.floor(sc.length / 2)])}.`);
+    return F; }
+  function bkReport(ch) { const L = ch.life, R = bkRuns(ch), strip = (s) => s.replace(/<[^>]+>/g, ''), cx = ch.codex && CB.CODEX_BY_KEY[ch.codex], dT = bkSum(L.dealt), pT = bkSum(L.plays), deck = {};
+    for (const [k, r] of ch.deck || []) { const n = (CARDS[k] || {}).name || k, id = n + (r ? ' +' + r : ''); deck[id] = (deck[id] || 0) + 1; }
+    const lv = {}; for (const r of R) { const b = lv[r.lvl] = lv[r.lvl] || [0, 0, 0]; b[r.res === 2 ? 0 : r.res === 1 ? 1 : 2]++; }
+    return [`CARDBOUND CHRONICLE: ${ch.name}, ${ch.hc ? 'Hardcore ' : ''}${ch.cls}${cx ? ', codex ' + cx.name : ''}${ch.title ? ' (' + ch.title + ')' : ''}`,
+      `Played ${bkTime(L.t)} (${bkTime(L.tr)} in runs). Runs ${ch.runs}, bosses killed ${ch.bossKills}, fights won ${L.fights}, rounds ${L.rounds}, deaths ${L.deaths}.`,
+      `Damage dealt ${bkN(L.dmg)}, healing ${bkN(L.heal)}, damage taken ${bkN(L.hurt)} (+${bkN(L.absorbed)} soaked). Biggest hit ${L.big ? bkN(L.big[0]) + ' (' + L.big[1] + ')' : 'none'}. Damage per round ${L.rounds ? bkN(L.dmg / L.rounds) : '-'}, cards per fight ${L.fights ? (pT / L.fights).toFixed(1) : '-'}.`,
+      `Best boss by map: ${CBHub.LIFE_MAPS.map(mk => mk + ' ' + ((ch.mapKills || {})[mk] >= 0 ? '+' + ch.mapKills[mk] : '-')).join(', ')}.`,
+      '', 'STANDS OUT:', ...(bkFlags(ch).map(f => '- ' + strip(f))), ...(bkFlags(ch).length ? [] : ['- nothing lopsided found']),
+      '', 'DAMAGE BY CARD (total, share, plays, damage per play):', ...bkTop(L.dealt, 20).map(([k, v]) => `- ${k}: ${bkN(v)}, ${(100 * v / dT).toFixed(1)}%, ${L.plays[k] || 0} plays, ${L.plays[k] ? bkN(v / L.plays[k]) : '-'} each`),
+      '', 'MOST PLAYED:', ...bkTop(L.plays, 15).map(([k, v]) => `- ${k}: ${v} (${(100 * v / pT).toFixed(1)}%)`),
+      '', 'HEALING BY CARD:', ...bkTop(L.healed, 8).map(([k, v]) => `- ${k}: ${bkN(v)}`), '', 'DAMAGE TAKEN FROM:', ...bkTop(L.taken, 10).map(([k, v]) => `- ${k}: ${bkN(v)}`),
+      '', 'RUNS BY MAP LEVEL (boss killed / walked out / died):', ...Object.keys(lv).sort((a, b) => a - b).map(k => `- +${k}: ${lv[k].join(' / ')}`),
+      `Boss fights at +5 or higher, rounds to kill: ${R.filter(r => r.res === 2 && r.br > 0 && r.lvl >= 5).map(r => r.br).join(', ') || 'none recorded'}.`,
+      `Boss run times: ${R.filter(r => r.res === 2 && r.secs > 0).slice(-15).map(r => bkTime(r.secs)).join(', ') || 'none recorded'}.`,
+      '', `DECK (${(ch.deck || []).length}): ${Object.entries(deck).map(([k, n]) => (n > 1 ? n + 'x ' : '') + k).join(', ')}`,
+      `Codex levels: ${Object.entries(ch.cxLevels || {}).map(([k, v]) => ((CB.CODEX_BY_KEY[k] || {}).name || k) + ' ' + v).join(', ') || 'none'}.`].join('\n'); }
+  function bkReckon(ch) { const F = bkFlags(ch), L = ch.life;
+    return [`<h4>What stands out</h4>${F.length ? `<ul class="bkflags">${F.map(f => `<li>${f}</li>`).join('')}</ul>` : `<p class="bkempty">${L.fights >= 20 ? 'Nothing lopsided: no single card or habit carries this hero.' : 'Too little on record to judge. This page needs about 20 fights.'}</p>`}
+      <p class="bknote">This page looks for a hero leaning on one thing: a card that does most of the damage, bosses dying in a round or two, runs that never fail. It is a pointer for balance, not an accusation.</p>`,
+      `<h4>For balance review</h4><p class="bkline">Copy this hero's whole record as text (deck, damage by card, cards played, every run) and paste it to whoever is tuning the game.</p><div class="row" style="justify-content:flex-start"><button type="button" class="btn primary" data-bkcopy="1">Copy report</button></div><textarea class="bkrep" readonly rows="11">${esc(bkReport(ch))}</textarea>`]; }
+
+  function bkRender() { const ch = SBK.ch, pg = [bkHero, bkRoad, bkBeasts, bkDamage, bkCards, bkReckon][SBK.page](ch);
+    modal(`<div class="book" data-pg="${SBK.page}"><div class="bktabs">${BK_PAGES.map((n, i) => `<button type="button" class="${i === SBK.page ? 'on' : ''}" data-bkpg="${i}">${n}</button>`).join('')}</div>
+      <div class="bkspread"><div class="bkpage l"><div class="bkhd">${esc(ch.name)}'s Chronicle</div>${pg[0]}<div class="bkno">${SBK.page * 2 + 1}</div></div><div class="bkpage r"><div class="bkhd">${BK_PAGES[SBK.page]}</div>${pg[1]}<div class="bkno">${SBK.page * 2 + 2}</div></div></div>
+      <button type="button" class="bkturn prev" data-bkpg="${SBK.page - 1}" ${SBK.page ? '' : 'disabled'} aria-label="Previous page">&lsaquo;</button><button type="button" class="bkturn next" data-bkpg="${SBK.page + 1}" ${SBK.page < BK_PAGES.length - 1 ? '' : 'disabled'} aria-label="Next page">&rsaquo;</button></div>
+      <div class="row"><button class="btn primary" id="mClose">Close the book</button></div>`);
+    const box = $('modalBox'); box.classList.add('wide', 'bookbox'); $('mClose').onclick = closeModal; }
+  document.addEventListener('click', (ev) => { const t = ev.target.closest && ev.target.closest('.book [data-bkpg], .book [data-bkcopy]'); if (!t || !SBK.ch) return;
+    if (t.dataset.bkcopy) { const txt = bkReport(SBK.ch), done = () => { t.textContent = 'Copied'; setTimeout(() => { t.textContent = 'Copy report'; }, 1600); }; try { navigator.clipboard.writeText(txt).then(done, () => { const ta = document.querySelector('.bkrep'); ta.select(); document.execCommand('copy'); done(); }); } catch (e) { const ta = document.querySelector('.bkrep'); ta.select(); try { document.execCommand('copy'); done(); } catch (e2) {} } return; }
+    const n = +t.dataset.bkpg; if (n >= 0 && n < BK_PAGES.length && n !== SBK.page) { SBK.page = n; bkRender(); } });
+  document.addEventListener('keydown', (ev) => { if (!SBK.ch || $('modal').hidden || !document.querySelector('#modalBox .book') || /INPUT|TEXTAREA/.test((document.activeElement || {}).tagName || '')) return; const d = ev.key === 'ArrowRight' ? 1 : ev.key === 'ArrowLeft' ? -1 : 0; if (!d) return; const n = SBK.page + d; if (n >= 0 && n < BK_PAGES.length) { SBK.page = n; bkRender(); ev.preventDefault(); ev.stopPropagation(); } }, true);
+  { const st = document.createElement('style'); st.textContent = `
+    #modalBox.bookbox { width: min(1040px, 96vw); background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; }
+    #modalBox.bookbox::before, #modalBox.bookbox::after { display: none !important; }
+    .book { position: relative; padding: 34px 14px 14px; background: linear-gradient(#4a2c1a, #2e1a0f); border: 2px solid #1c0f08; border-radius: 10px; box-shadow: 0 18px 50px rgba(0,0,0,.75), inset 0 0 0 3px #6b4226, inset 0 0 0 4px #1c0f08; }
+    .bktabs { position: absolute; left: 26px; top: 6px; display: flex; gap: 3px; } .bktabs button { padding: 4px 11px 5px; border: 1px solid #1c0f08; border-bottom: 0; border-radius: 6px 6px 0 0; background: #8a6a44; color: #2a1a0c; font: 600 14px 'Grenze', serif; cursor: pointer; } .bktabs button.on { background: #ead9b4; padding-top: 7px; margin-top: -3px; } .bktabs button:hover { background: #d9c49a; }
+    .bkspread { display: grid; grid-template-columns: 1fr 1fr; min-height: 520px; border-radius: 4px; background: #ead9b4; box-shadow: inset 0 0 40px rgba(110,70,20,.35); position: relative; animation: bkin .28s ease-out; }
+    .bkspread::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 46px; margin-left: -23px; background: linear-gradient(90deg, transparent, rgba(70,40,10,.32) 46%, rgba(40,20,5,.5) 50%, rgba(70,40,10,.32) 54%, transparent); pointer-events: none; }
+    @keyframes bkin { from { opacity: .35; transform: perspective(1400px) rotateY(-7deg); } to { opacity: 1; transform: none; } }
+    .bkpage { position: relative; padding: 16px 30px 30px 24px; color: #2b1d10; font: 14px/1.4 'Inter', sans-serif; text-shadow: none; min-width: 0; } .bkpage.r { padding: 16px 24px 30px 30px; }
+    .bkhd { font: 600 12px/1 'Inter', sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #8a6a44; border-bottom: 1px solid rgba(90,60,25,.35); padding-bottom: 6px; margin-bottom: 10px; } .bkpage.r .bkhd { text-align: right; }
+    .bkno { position: absolute; bottom: 8px; left: 24px; font: 600 12px 'Grenze', serif; color: #8a6a44; } .bkpage.r .bkno { left: auto; right: 24px; }
+    .bkpage h3 { margin: 0; font: 700 36px/1.05 'Grenze', serif; } .bkname p { margin: 2px 0 12px; color: #5a4024; font: 600 16px 'Grenze', serif; }
+    .bkpage h4 { margin: 4px 0 8px; font: 700 20px 'Grenze', serif; color: #5a2a14; } .bkpage h4 span { font: 400 12px 'Inter', sans-serif; color: #7a5c38; margin-left: 6px; }
+    .bkgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin: 6px 0 10px; } .bkst { display: grid; padding: 6px 0 5px; border-bottom: 1px dotted rgba(90,60,25,.45); } .bkst b { font: 700 22px/1.1 'Grenze', serif; color: #2b1d10; } .bkst span { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: #7a5c38; } .bkst i { font-style: italic; font-size: 12px; color: #6a4e2c; }
+    .bkpage p { color: #3a2814 !important; opacity: 1 !important; } .bkpage p.bknote, .bkpage p.bkempty { color: #6a4e2c !important; } .bkpage p.bkkey { color: #5a4024 !important; } #modalBox.bookbox > .row { justify-content: center; margin-top: 10px; }
+    .bknote { font-style: italic; font-size: 12.5px; color: #6a4e2c; margin: 10px 0 0; } .bkline { margin: 0 0 8px; color: #3a2814; } .bkline b { color: #5a2a14; } .bkempty { font-style: italic; color: #7a5c38; }
+    .bkbars > div { display: grid; grid-template-columns: minmax(0, 132px) 1fr 62px 46px; gap: 8px; align-items: center; padding: 2.5px 0; } .bkbars span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; } .bkbars i { height: 9px; background: rgba(90,60,25,.16); border-radius: 2px; overflow: hidden; } .bkbars u { display: block; height: 100%; border-radius: 2px; } .bkbars b { text-align: right; font-variant-numeric: tabular-nums; } .bkbars em { text-align: right; font-style: normal; font-size: 12px; color: #6a4e2c; font-variant-numeric: tabular-nums; }
+    .bkmobs > div { display: grid; grid-template-columns: 1fr auto 56px; gap: 8px; padding: 2px 0; border-bottom: 1px dotted rgba(90,60,25,.3); } .bkmobs em { font-style: normal; font-size: 11.5px; color: #7a5c38; } .bkmobs b { text-align: right; font-variant-numeric: tabular-nums; } .bkmobs .tElite span { color: #7a3a10; font-weight: 700; } .bkmobs .tBoss span { color: #8a1c14; font-weight: 700; }
+    .bktab { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 13px; } .bktab th { text-align: left; font: 600 11px 'Inter', sans-serif; letter-spacing: .05em; text-transform: uppercase; color: #7a5c38; padding: 3px 4px; border-bottom: 1px solid rgba(90,60,25,.45); } .bktab td { padding: 4px; border-bottom: 1px dotted rgba(90,60,25,.3); font-variant-numeric: tabular-nums; } .bktab td:first-child { font-weight: 600; }
+    .bkchart { width: 100%; height: auto; display: block; } .bkchart .g { stroke: rgba(90,60,25,.22); stroke-width: 1; } .bkchart text { font: 10px 'Inter', sans-serif; fill: #7a5c38; } .bkchart .ln { fill: none; stroke: rgba(60,40,20,.45); stroke-width: 1.2; } .bkchart .hi { fill: none; stroke: #a8791c; stroke-width: 2.2; } .bkchart .d2, .bkkey .d2 { fill: #3f6b2a; background: #3f6b2a; } .bkchart .d1, .bkkey .d1 { fill: #8a7a5a; background: #8a7a5a; } .bkchart .d0, .bkkey .d0 { fill: #9a2b22; background: #9a2b22; } .bkchart circle { stroke: #ead9b4; stroke-width: .8; }
+    .bkkey { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: #5a4024; margin: 6px 0 0; } .bkkey i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; } .bkkey i.hi { width: 16px; height: 3px; border-radius: 0; background: #a8791c; vertical-align: 3px; }
+    .bkflags { margin: 0; padding-left: 18px; } .bkflags li { margin: 0 0 7px; } .bkflags b { color: #8a1c14; }
+    .bkrep { box-sizing: border-box; background: rgba(255,250,235,.55) !important; color: #2b1d10 !important; width: 100%; margin-top: 8px; padding: 8px; border: 1px solid rgba(90,60,25,.5); border-radius: 4px; background: rgba(255,250,235,.55); color: #2b1d10; font: 11.5px/1.4 ui-monospace, Menlo, Consolas, monospace; resize: vertical; }
+    .bkturn { position: absolute; top: 50%; width: 30px; height: 64px; margin-top: -20px; border: 1px solid #1c0f08; background: #6b4226; color: #ead9b4; font: 700 26px/1 'Grenze', serif; cursor: pointer; border-radius: 6px; } .bkturn.prev { left: -15px; } .bkturn.next { right: -15px; } .bkturn:hover:not([disabled]) { background: #8a5a34; } .bkturn[disabled] { opacity: .3; cursor: default; }
+    @media (max-width: 780px) { .bkspread { grid-template-columns: 1fr; } .bkspread::after { display: none; } .bktabs { position: static; flex-wrap: wrap; margin-bottom: 6px; } .book { padding-top: 10px; } }
+    @media (prefers-reduced-motion: reduce) { .bkspread { animation: none; } }`; document.head.appendChild(st); }
+
   // ---------- Tutorial (Nov 2): an optional guided tour of Emberwatch, offered when a hero is created (and from the Menu any time).
   // A small panel walks through every system; "Show me" walks the hero to the townsperson and drops an arrow over them,
   // "Open it" opens what they run. The panel shrinks to a pill while a sheet or a window is open, and hides outside town.
@@ -15108,7 +15265,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   }
   // ---------- the Menu, in tabs: Game, Settings, Shop, and the reference books
   const _menu0 = openMenu;
-  const MN_TABS = [['game', 'Game', 11], ['settings', 'Settings', 11], ['shop', 'Skull Shop', 9], ['cos', 'Cosmetics', 9], null, ['compendium', 'Compendium', 4], ['glossary', 'Glossary', 4], ['guide', 'Build guide', 2], ['planner', 'Deck Planner', 2], ['ach', 'Achievements', 5], ['records', 'Hall of Records', 5], ['news', "What's new", 7]];
+  const MN_TABS = [['game', 'Game', 11], ['settings', 'Settings', 11], ['shop', 'Skull Shop', 9], ['cos', 'Cosmetics', 9], null, ['compendium', 'Compendium', 4], ['glossary', 'Glossary', 4], ['guide', 'Build guide', 2], ['planner', 'Deck Planner', 2], ['stats', 'Chronicle', 5], ['ach', 'Achievements', 5], ['records', 'Hall of Records', 5], ['news', "What's new", 7]];
   const uic = (i) => `<i class="uic" style="background-position:${-(i % 6) * 24}px ${-Math.floor(i / 6) * 24}px"></i>`;
   function exMenu(tab) {
     EX.menu = tab || 'game'; const hero = profile && profile.chars[heroKey], onTitle = !$('scrTitle').hidden;
@@ -15116,7 +15273,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     const old = $('modalBox').querySelector('.menu'); if (!old) return;
     const game = document.createElement('div'), sets = document.createElement('div'); game.className = sets.className = 'menu'; let to = game;
     for (const n of [...old.children]) { if (n.tagName === 'H3' && /Settings/.test(n.textContent)) { to = sets; continue; } if (['mnGloss', 'mnGuide', 'mnAch', 'mnRec', 'mClose'].includes(n.id)) continue; to.appendChild(n); }
-    const nav = MN_TABS.filter(t => !t || !((t[0] === 'shop' || t[0] === 'cos' || t[0] === 'guide' || t[0] === 'planner' || t[0] === 'ach' || t[0] === 'records') && (!hero || onTitle)) && !(t[0] === 'records' && (typeof run !== 'undefined' && run || typeof cb !== 'undefined' && cb)) && !(t[0] === 'news' && typeof openUpdates !== 'function'))
+    const nav = MN_TABS.filter(t => !t || !((t[0] === 'shop' || t[0] === 'cos' || t[0] === 'guide' || t[0] === 'planner' || t[0] === 'stats' || t[0] === 'ach' || t[0] === 'records') && (!hero || onTitle)) && !(t[0] === 'records' && (typeof run !== 'undefined' && run || typeof cb !== 'undefined' && cb)) && !(t[0] === 'news' && typeof openUpdates !== 'function'))
       .map(t => t ? `<button type="button" class="${EX.menu === t[0] ? 'on' : ''}" data-mntab="${t[0]}">${uic(t[2])}${t[1]}</button>` : '<hr>').join('');
     $('modalBox').innerHTML = `<div class="mnwrap"><nav class="mnnav" aria-label="Menu">${nav}<hr><button type="button" class="on" id="mClose" style="margin-top:auto">Resume <span class="muted" style="margin-left:auto;font-size:12px">Esc</span></button></nav><div class="mnpane" id="mnPane"></div></div>`;
     $('modalBox').classList.add('wide');
@@ -15132,7 +15289,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if (k === 'compendium') { closeModal(); if (typeof closeTalk === 'function') closeTalk(); return openSheet('codex'); }
     if (k === 'glossary') return openGlossary();
     if (k === 'guide') return openGuide();
-    if (k === 'planner') return openPlanner();
+    if (k === 'planner') return openPlanner(); if (k === 'stats') return openChronicle();
     if (k === 'ach') return openAchievements();
     if (k === 'records') { closeModal(); return openRecords(); }
     if (k === 'news') { closeModal(); return openUpdates(); }
@@ -15157,15 +15314,15 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   function openShop() { if (!profile || !profile.chars[heroKey]) return; exMenu('shop'); }
   // ---------- the town's action bar (bottom right): every window one click away
   { const bar = document.createElement('div'); bar.id = 'actbar'; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Quick buttons');
-    const B = [['char', 'Character', 0, 'C'], ['bags', 'Bags', 1, 'B'], ['talents', 'Talents', 2, 'N'], ['deck', 'Deck and cards', 3, ''], ['compendium', 'Compendium', 4, ''], ['planner', 'Deck Planner', -3, 'P'], ['ach', 'Achievements', 5, ''], ['pvp', 'Arena (PvP)', 6, ''], ['lfg', 'Group finder', 7, 'L'], ['friends', 'Friends', 8, 'O'], ['guild', 'Guild', -1, 'G'], ['shop', 'Skull Shop', 9, ''], ['cos', 'Cosmetics', -2, 'K'], ['mount', 'Mount up', 10, 'M'], ['menu', 'Menu', 11, 'Esc']];
-    bar.innerHTML = B.map(([k, n, i, key]) => `<button type="button" data-act="${k}" data-tip="${n}${key ? ' (' + key + ')' : ''}" aria-label="${n}"><i class="uic" style="${i < 0 ? `background:url(img/ui/${i === -3 ? 'planner' : i === -2 ? 'cosmetics' : 'guild'}.webp) center / 36px 36px no-repeat;image-rendering:pixelated` : `background-position:${-(i % 6) * 36}px ${-Math.floor(i / 6) * 36}px`}"></i>${key && key.length === 1 ? `<kbd>${key}</kbd>` : ''}</button>`).join('');
+    const B = [['char', 'Character', 0, 'C'], ['bags', 'Bags', 1, 'B'], ['talents', 'Talents', 2, 'N'], ['deck', 'Deck and cards', 3, ''], ['compendium', 'Compendium', 4, ''], ['planner', 'Deck Planner', -3, 'P'], ['stats', 'Chronicle: character stats', -4, 'J'], ['ach', 'Achievements', 5, ''], ['pvp', 'Arena (PvP)', 6, ''], ['lfg', 'Group finder', 7, 'L'], ['friends', 'Friends', 8, 'O'], ['guild', 'Guild', -1, 'G'], ['shop', 'Skull Shop', 9, ''], ['cos', 'Cosmetics', -2, 'K'], ['mount', 'Mount up', 10, 'M'], ['menu', 'Menu', 11, 'Esc']];
+    bar.innerHTML = B.map(([k, n, i, key]) => `<button type="button" data-act="${k}" data-tip="${n}${key ? ' (' + key + ')' : ''}" aria-label="${n}"><i class="uic" style="${i < 0 ? `background:url(img/ui/${i === -4 ? 'stats' : i === -3 ? 'planner' : i === -2 ? 'cosmetics' : 'guild'}.webp) center / 36px 36px no-repeat;image-rendering:pixelated` : `background-position:${-(i % 6) * 36}px ${-Math.floor(i / 6) * 36}px`}"></i>${key && key.length === 1 ? `<kbd>${key}</kbd>` : ''}</button>`).join('');
     $('scrStart').appendChild(bar);
     const act = (k) => { if (typeof closeTalk === 'function') closeTalk();
       if (k === 'char') { GT.tab = 'deck'; openSheet('char'); } else if (k === 'bags') { openSheet('char'); GT.tab = 'stash'; renderHub(); } else if (k === 'talents') openTalents(); else if (k === 'deck') openSheet('deck'); else if (k === 'compendium') openSheet('codex');
-      else if (k === 'planner') openPlanner(); else if (k === 'ach') openAchievements(); else if (k === 'pvp') openSheet('arena'); else if (k === 'lfg') { if (typeof openLfg === 'function') openLfg(); } else if (k === 'friends') openSheet('friends'); else if (k === 'guild') openSheet('guild'); else if (k === 'shop') openShop(); else if (k === 'cos') openCosmetics(); else if (k === 'mount') toggleMount(); else if (k === 'menu') openMenu(); };
+      else if (k === 'planner') openPlanner(); else if (k === 'stats') openChronicle(); else if (k === 'ach') openAchievements(); else if (k === 'pvp') openSheet('arena'); else if (k === 'lfg') { if (typeof openLfg === 'function') openLfg(); } else if (k === 'friends') openSheet('friends'); else if (k === 'guild') openSheet('guild'); else if (k === 'shop') openShop(); else if (k === 'cos') openCosmetics(); else if (k === 'mount') toggleMount(); else if (k === 'menu') openMenu(); };
     bar.addEventListener('click', (ev) => { const b = ev.target.closest('[data-act]'); if (b) { act(b.dataset.act); b.blur(); } });
     document.addEventListener('keydown', (ev) => { if (ev.ctrlKey || ev.metaKey || ev.altKey || ev.target.matches('input, select, textarea') || $('scrStart').hidden || !$('modal').hidden || !$('sheet').hidden || (typeof $('talk') !== 'undefined' && $('talk') && !$('talk').hidden)) return;
-      if (ev.key === 'b' || ev.key === 'B') { ev.preventDefault(); act('bags'); } else if (ev.key === 'l' || ev.key === 'L') { ev.preventDefault(); act('lfg'); } else if (ev.key === 'o' || ev.key === 'O') { ev.preventDefault(); act('friends'); } else if (ev.key === 'k' || ev.key === 'K') { ev.preventDefault(); act('cos'); } else if (ev.key === 'p' || ev.key === 'P') { ev.preventDefault(); act('planner'); } });
+      if (ev.key === 'b' || ev.key === 'B') { ev.preventDefault(); act('bags'); } else if (ev.key === 'l' || ev.key === 'L') { ev.preventDefault(); act('lfg'); } else if (ev.key === 'o' || ev.key === 'O') { ev.preventDefault(); act('friends'); } else if (ev.key === 'k' || ev.key === 'K') { ev.preventDefault(); act('cos'); } else if (ev.key === 'p' || ev.key === 'P') { ev.preventDefault(); act('planner'); } else if (ev.key === 'j' || ev.key === 'J') { ev.preventDefault(); act('stats'); } });
   }
   // Nov 13: the talent trees changed (new talents at the bottom of every tree), so every hero gets all their picks back once
   function exTalentRefund() { if (!profile || profile.talV >= 2) return; let n = 0; for (const c of Object.values(profile.chars || {})) for (const st of Object.values(c.codexes || {})) if (st.picks && st.picks.some(x => x != null)) { st.picks = []; n++; } profile.talV = 2; save();
@@ -16011,7 +16168,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
 
   // ---------- modals
   function modal(html) { hidePeeks(); modal2(html); }
-  function modal2(html) { $('modalBox').classList.remove('wide', 'tlbox', 'bare'); $('modalBox').innerHTML = html; $('modal').hidden = false; fitCards($('modalBox')); const f = $('modalBox').querySelector('button'); if (f) f.focus(); }
+  function modal2(html) { $('modalBox').classList.remove('wide', 'tlbox', 'bare', 'bookbox'); $('modalBox').innerHTML = html; $('modal').hidden = false; fitCards($('modalBox')); const f = $('modalBox').querySelector('button'); if (f) f.focus(); }
   function closeModal() { $('modal').hidden = true; }
   let redrawShop = null;
   // what the campfire gave: rummage finds and heals (yours, or the whole hot-seat party's)

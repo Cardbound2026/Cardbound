@@ -123,6 +123,7 @@
         if (typeof exPetDraw === 'function' && o.ap && o.ap.cos && o.ap.cos.pet) exPetDraw(gx, o.uid, o.ap.cos.pet, p.x * TS + TS / 2, p.y * TS + TS * 0.92, s, t); // Nov 13: their pet
         const tx = p.x * TS + TS / 2, ty = townTag(gx, tx, p.y * TS + TS * 0.92, o.name, SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0', o.guild, s, o.mount ? (window.CB_HEROPUP ? 150 : 72 + MOUNT_RISE) : 98, o.title);
         if (o.shop && o.shop.t) drawShopSign(gx, tx, ty - 4, o.shop.t, s);
+        sayOver(o.uid, tx, ty - (o.shop && o.shop.t ? 24 * s : 0), s);
       } });
     }
     return out;
@@ -130,10 +131,23 @@
 
   // ---------- world chat
   // channels: world (default), /p party, /g guild, /w Name whisper, /r reply to the last whisper
+  // ---------- Nov 14: /s (say) and /y (yell): a speech box over your head in town, parchment for say and red for yell. Every other channel stays in the chat log only.
+  const SAYS = new Map(); let sayQ = [];
+  function sayOver(uid, tx, top, s) { const b = SAYS.get(uid); if (!b) return; if (Date.now() - b.at > 4500 + Math.min(4000, b.text.length * 45)) { SAYS.delete(uid); return; } sayQ.push([b, tx, top, s]); }
+  function drawSays(g) { const q = sayQ; sayQ = []; for (const [b, tx, top, s] of q) { const k = Math.max(0.9, s), life = 4500 + Math.min(4000, b.text.length * 45), age = Date.now() - b.at, fs = Math.round((b.yell ? 14.5 : 13) * k), lh = Math.round(fs * 1.25), maxW = (b.yell ? 230 : 200) * k, pad = 7 * k;
+      g.save(); g.globalAlpha = Math.max(0, Math.min(1, age / 120, (life - age) / 500)); g.font = `${b.yell ? 700 : 600} ${fs}px "Barlow Semi Condensed", sans-serif`; g.textAlign = 'center';
+      const words = (b.yell ? b.text.toUpperCase() : b.text).split(/\s+/), lines = []; let cur = '';
+      for (let w of words) { while (g.measureText(w).width > maxW) { let n = w.length; while (n > 1 && g.measureText(w.slice(0, n)).width > maxW) n--; if (cur) { lines.push(cur); cur = ''; } lines.push(w.slice(0, n)); w = w.slice(n); } const t = cur ? cur + ' ' + w : w; if (g.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t; }
+      if (cur) lines.push(cur); if (lines.length > 4) { lines.length = 4; lines[3] = lines[3].replace(/.{0,3}$/, '...'); }
+      const w = Math.max(...lines.map(l => g.measureText(l).width)) + pad * 2, h = lines.length * lh + pad * 1.4, tail = 7 * k, x = Math.round(tx - w / 2), y = Math.round(top - 5 * k - tail - h), r = 5 * k;
+      g.beginPath(); g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r); g.lineTo(x + w, y + h - r); g.quadraticCurveTo(x + w, y + h, x + w - r, y + h); g.lineTo(tx + tail * .8, y + h); g.lineTo(tx, y + h + tail); g.lineTo(tx - tail * .8, y + h); g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r); g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y); g.closePath();
+      g.fillStyle = b.yell ? '#a3201a' : '#efe3c8'; g.fill(); g.lineWidth = Math.max(1.5, 2 * k); g.strokeStyle = b.yell ? '#3a0806' : '#2a1c10'; g.stroke();
+      g.fillStyle = b.yell ? '#fff3e6' : '#2a1c10'; lines.forEach((l, i) => g.fillText(l, tx, y + pad * .7 + lh * (i + .78))); g.restore(); } }
   function addChat(m) {
     if (!m || !m.text) return;
     SOC.chat.push({ from: m.uid, name: String(m.name || '?').slice(0, 24), text: String(m.text).slice(0, 200), sys: !!m.sys, at: m.at || Date.now(), ch: m.ch || 'world', toName: m.toName, mine: m.uid === SOC.me, items: Array.isArray(m.items) ? m.items.slice(0, 3) : undefined });
     SOC.chat = SOC.chat.slice(-80); renderChat();
+    if (!m.sys && (m.ch === 'say' || m.ch === 'yell') && m.uid) SAYS.set(m.uid, { text: String(m.text).slice(0, 200), at: Date.now(), yell: m.ch === 'yell' }); // Nov 14: only /s and /y float over the speaker's head
   }
   function sysChat(text) { addChat({ sys: true, name: '', text }); }
   function chatIn(m) {
@@ -141,6 +155,7 @@
     const ch = m.ch || 'world';
     if (ch === 'whisper') { if (m.to !== SOC.me) return; SOC.lastWhisper = { uid: m.uid, name: m.name }; }
     else if (ch === 'party') { if (!SOC.party || SOC.party.id !== m.pid) return; }
+    else if (ch === 'say' || ch === 'yell') { if (!inTownNow() || !SOC.others.has(m.uid)) return; } // heard only by people in town who can see the speaker
     else if (ch === 'guild') { const g = myGuild(); if (!g || g.id !== m.gid) return; }
     addChat(m);
   }
@@ -158,9 +173,10 @@
     if (!cmd) m = Object.assign(me, { ch: 'world', text });
     else {
       const [, k, rest] = cmd, key = k.toLowerCase();
-      if (key === 'help' || key === '?') { sysChat('Chat: just type for world chat. /p party, /g guild, /w Name message to whisper, /r reply to the last whisper, /world (or /s) world.'); return; }
+      if (key === 'help' || key === '?') { sysChat('Chat: just type for world chat, seen everywhere. /s say (a speech box over your head in town), /y yell (a red one), /p party, /g guild, /w Name message to whisper, /r reply to the last whisper.'); return; }
       if (!rest.trim() && key !== 'help') { sysChat(`Type a message after /${k}.`); return; }
-      if (key === 'world' || key === 's' || key === 'y') m = Object.assign(me, { ch: 'world', text: rest });
+      if (key === 'world') m = Object.assign(me, { ch: 'world', text: rest });
+      else if (key === 's' || key === 'say' || key === 'y' || key === 'yell') { if (!inTownNow()) { sysChat('You can only /s and /y while standing in Emberwatch.'); return; } m = Object.assign(me, { ch: key[0] === 'y' ? 'yell' : 'say', text: rest }); }
       else if (key === 'p' || key === 'party') { if (!SOC.party) { sysChat('You are not in a party.'); return; } m = Object.assign(me, { ch: 'party', pid: SOC.party.id, text: rest }); }
       else if (key === 'g' || key === 'guild') { const g = myGuild(); if (!g) { sysChat('You are not in a guild. Visit Guildmaster Strecks in town.'); return; } m = Object.assign(me, { ch: 'guild', gid: g.id, text: rest }); }
       else if (key === 'w' || key === 'whisper' || key === 'tell' || key === 'r') {
@@ -216,7 +232,7 @@
     modal(`<h2>${esc(linkName(it))}</h2><div class="linkview">${body}</div><p class="muted" style="font-size:13px">Linked in chat. Shift-click your own items to link them.</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
     fitCards($('modalBox')); $('mClose').onclick = closeModal;
   }
-  const CHAN = { world: ['', ''], party: ['[Party] ', 'cparty'], guild: ['[Guild] ', 'cguild'], whisper: ['', 'cwhisper'] };
+  const CHAN = { world: ['', ''], party: ['[Party] ', 'cparty'], guild: ['[Guild] ', 'cguild'], whisper: ['', 'cwhisper'], say: ['[Say] ', 'csay'], yell: ['[Yell] ', 'cyell'] };
   function renderChat() {
     const el = $('chatLog'); if (!el) return;
     el.innerHTML = SOC.chat.map((m, i) => { if (m.sys) return `<div class="sys">${esc(m.text)}</div>`; const [tag, cls] = CHAN[m.ch] || CHAN.world;

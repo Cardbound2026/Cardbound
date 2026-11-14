@@ -702,6 +702,7 @@ body.inkui:not(.ui-classic) .item.itm .acts .btn:disabled { opacity: .45; filter
 .chatlog b { color: var(--accent); font-weight: 700; } .chatlog .sys { color: var(--muted); font-style: italic; }
 .chatlog .cparty { color: #9fd0ff; } .chatlog .cparty b { color: #6fb6ff; }
 .chatlog .cguild { color: #a8e29a; } .chatlog .cguild b { color: #7fd36a; }
+.chatlog .csay { color: #f3ead6; } .chatlog .csay b { color: #fff; } .chatlog .cyell { color: #ff8a7a; font-weight: 600; } .chatlog .cyell b { color: #ff5a48; }
 .chatlog .cwhisper { color: #f0b4e6; } .chatlog .cwhisper b { color: #e889d8; }
 /* in a fight the chat docks in a column on the left, like the combat log on the right */
 #scrCombat.withchat { grid-template-columns: var(--chatW, 260px) minmax(0, 1fr) var(--ledgerW, 340px); }
@@ -2401,7 +2402,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     for (const e of TOWN.embers) { gx.fillStyle = `rgba(255,${150 + (e.life * 80 | 0)},70,${e.life})`; gx.fillRect(e.x * TS, e.y * TS, 2.5 * s, 2.5 * s); }
     // name tags over every head: townspeople always, and your own hero with your guild under the name
     for (const n of NV) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.inside ? n.place : n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.inside ? 58 : n.open === 'dummy' ? 84 : window.CB_HEROPUP ? 98 : n.pal && n.pal.forge ? 80 : null);
-    { const c = profile.chars[heroKey]; if (c) townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? (window.CB_HEROPUP ? 150 : 72 + MOUNT_RISE) : 98, CBHub.titleOf(c, profile)); }
+    { const c = profile.chars[heroKey]; if (c) { const sy = townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? (window.CB_HEROPUP ? 150 : 72 + MOUNT_RISE) : 98, CBHub.titleOf(c, profile)); if (typeof sayOver === 'function') { if (SOC.me) sayOver(SOC.me, hp.x * TS + TS / 2, sy, s); drawSays(gx); } } }
     // night: darken everything, then cut light pools around fires and the hero
     const dk = TOWN.dark, dg = dk.getContext('2d');
     dg.setTransform(1, 0, 0, 1, 0, 0); dg.globalCompositeOperation = 'source-over'; dg.clearRect(0, 0, dk.width, dk.height);
@@ -3327,7 +3328,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
 
   // ---------- modals
   function modal(html) { hidePeeks(); modal2(html); }
-  function modal2(html) { $('modalBox').classList.remove('wide', 'tlbox', 'bare'); $('modalBox').innerHTML = html; $('modal').hidden = false; fitCards($('modalBox')); const f = $('modalBox').querySelector('button'); if (f) f.focus(); }
+  function modal2(html) { $('modalBox').classList.remove('wide', 'tlbox', 'bare', 'bookbox'); $('modalBox').innerHTML = html; $('modal').hidden = false; fitCards($('modalBox')); const f = $('modalBox').querySelector('button'); if (f) f.focus(); }
   function closeModal() { $('modal').hidden = true; }
   let redrawShop = null;
   // what the campfire gave: rummage finds and heals (yours, or the whole hot-seat party's)

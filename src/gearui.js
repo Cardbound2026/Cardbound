@@ -165,15 +165,15 @@
     modal(`<h2>Inspecting ${esc(nameOfUid(uid))}...</h2><p class="muted">Asking their game for their hero.</p><div class="row"><button class="btn primary" id="mClose">Close</button></div>`); $('mClose').onclick = closeModal;
     setTimeout(() => { if (INS.waiting === uid) { INS.waiting = null; if (!$('modal').hidden && /Inspecting/.test($('modalBox').innerText)) toast(`${nameOfUid(uid)} didn't answer. They may have just gone offline.`); } }, 6000);
   }
-  function inspectCard() { const c = profile.chars[heroKey]; if (!c) return null; return { name: c.name, cls: c.cls, gear: c.gear.map(g => { const x = Object.assign({}, g); delete x.id; return x; }), deck: c.deck.map(k => ({ key: k.key, rank: k.rank || 0 })), runs: c.runs, best: c.best, bossKills: c.bossKills, duels: c.duels || null, titleText: CBHub.titleOf(c, profile), acct: supaUser ? acctName(supaUser) : '' }; }
+  function inspectCard() { const c = profile.chars[heroKey]; if (!c) return null; return { name: c.name, cls: c.cls, gear: c.gear.map(g => { const x = Object.assign({}, g); delete x.id; return x; }), deck: c.deck.map(k => ({ key: k.key, rank: k.rank || 0 })), runs: c.runs, best: c.best, bossKills: c.bossKills, duels: c.duels || null, titleText: CBHub.titleOf(c, profile), acct: supaUser ? acctName(supaUser) : '', chron: (() => { try { return chronicleCard(true); } catch (e) { return null; } })() }; }
   function showInspect(ch) {
     const deck = ch.deck.slice().sort((a, b) => RAR_ORDER[CARDS[a.key].rarity] - RAR_ORDER[CARDS[b.key].rarity] || CARDS[a.key].name.localeCompare(CARDS[b.key].name));
     const groups = []; for (const k of deck) { const g = groups.find(x => x.key === k.key && x.rank === k.rank); if (g) g.n++; else groups.push({ key: k.key, rank: k.rank, n: 1 }); }
     modal(`<h2>${esc(ch.name)}</h2>${paperdoll(ch, ch.cls, { cmp: myGear(), acct: ch.acct })}
       <p class="muted" style="font-size:13px">Hover their gear to compare it with yours. Runs ${ch.runs || 0}, best row ${ch.best > ROWS ? 'Boss' : ch.best || 0}, Warlord kills ${ch.bossKills || 0}.</p>
       <h3 style="font-size:18px;color:var(--accent)">Deck (${ch.deck.length})</h3><div class="pilegrid">${groups.map(g => `<div class="pilecard">${cardBox(CB.rankedCard(g.key, g.rank), 130)}${g.n > 1 ? `<span class="pilecount">x${g.n}</span>` : ''}</div>`).join('')}</div>
-      <div class="row"><button class="btn primary" id="mClose">Close</button></div>`);
-    $('modalBox').classList.add('wide'); paintPortraits($('modalBox')); fitCards($('modalBox')); $('mClose').onclick = closeModal;
+      <div class="row">${ch.chron && ch.chron.life ? '<button class="btn" id="insStats">Open their Chronicle</button>' : ''}<button class="btn primary" id="mClose">Close</button></div>`);
+    $('modalBox').classList.add('wide'); paintPortraits($('modalBox')); fitCards($('modalBox')); $('mClose').onclick = closeModal; if ($('insStats')) $('insStats').onclick = () => { ch.chron._other = 1; openChronicle(ch.chron); };
   }
 
   // ---------- trading: both players pick items from their stash (and gold); when both accept the same offer, both games swap

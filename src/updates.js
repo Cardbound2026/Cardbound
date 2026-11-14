@@ -2,6 +2,9 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Feature', "The Chronicle: a book of everything your hero has done. Open it from the new book button on the bottom bar (J) or the Menu. Six spreads: time played and lifetime totals, a line chart of every run with your highest boss kill, a bestiary of every monster slain, lifetime damage by card with healing and damage taken, your most played cards, and The Reckoning, which points out anything a hero leans on too hard. Detail is counted from today; older runs are filled in where the game has them."],
+      ['Feature', "Inspect another player and you can open their Chronicle too. The last page has a Copy report button that puts the whole record into text for balance review."],
+      ['Feature', "New chat commands: /s to say something in a speech box over your head in town, and /y to yell it in a red one. Only people in Emberwatch who can see you hear them. Plain chat is still world chat, seen everywhere, and no other channel pops a box."],
       ['Balance', "Stealth is a little less safe: more monsters carry an attack that hits everyone. Half of all elites now have one (was a third), 40% of tier 3 monsters, 30% of tier 2 and 20% of tier 1 (which had none). That is 20 new monster cards, each with its own painting; every one replaces two copies of a single-target hit, so decks are the same size."],
       ['Change', "Monsters now spend their mana in a set order: buffs first, then any attack that hits everyone, then defence or a single-target card. Before, an area attack was often left unplayed behind cheaper cards."],
       ['Art', "Town torches tidied: four stand square around the bonfire, and the ones around the plaza now sit on the grass at the edge of the paving, evenly spaced."],
