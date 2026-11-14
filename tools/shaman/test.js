@@ -94,6 +94,7 @@ T('stormcallers_rhythm', () => { const a = hit1('sh_lightning_bolt').dmg(); cons
 T('charged_maces', () => { const f = fresh(); pw(f.cb, 'charged_maces'); play(f.cb, 'sh_mace_strike', f.e); eq(f.e.static, 1); play(f.cb, 'sh_twin_strike', f.e); eq(f.e.static, 2, 'once a card'); });
 T('overload', () => { const f = fresh(); play(f.cb, 'sh_overload'); play(f.cb, 'sh_lightning_bolt', f.e); eq(f.e.static, 4); play(f.cb, 'sh_lightning_bolt', f.e); eq(f.e.static, 6); });
 T('double_time', () => { const f = fresh(); play(f.cb, 'sh_double_time'); play(f.cb, 'sh_mace_strike', f.e); eq(f.cb.log.filter(l => /Mace Strike hits/.test(l.text)).length, 2); });
+T('double_time_with_multihit', () => { const f = fresh(); f.p.multiHit = 100; play(f.cb, 'sh_double_time'); play(f.cb, 'sh_mace_strike', f.e); eq(f.cb.log.filter(l => /Mace Strike hits/.test(l.text)).length, 3); });
 T('thunder_mend', () => { const f = fresh(); f.p.hp = 100; play(f.cb, 'sh_thunder_mend', f.p); ok(f.p.hp > 100); eq(f.p.nextAttackFlat, 8); });
 T('twin_soul', () => { const f = fresh({ mc: 200 }); pw(f.cb, 'twin_soul'); play(f.cb, 'sh_mace_strike', f.e); eq(f.cb.log.filter(l => /Mace Strike hits/.test(l.text)).length, 2, 'half of Multicast counts as Multi-hit'); });
 T('twin_thunder', () => { const f = fresh({ codex: 'twinstorm' }); play(f.cb, 'sh_twin_thunder'); const mh0 = f.p.shMH || 0, mc0 = f.p.shMC || 0; play(f.cb, 'sh_mace_strike', f.e); ok((f.p.shMC || 0) > mc0 && (f.p.shMH || 0) >= mh0, 'an Attack counts as both'); });

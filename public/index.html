@@ -4290,7 +4290,7 @@ class Combat {
     let times = 1;
     if (twice || echoArc) { times++; this.say('crit', `${d.name} is played twice.`); }
     const SX = SHX && p.isPlayer && p.cls === 'Shaman' ? SHX.pre(this, p, d) : null; let mhIdx = -1, mcIdx = -1; // Shaman: stored chances, sure hits, heals that Multicast (src/shaman.js)
-    if (d.type === 'Attack' && this.rng() * 100 < p.multiHit + (SX ? SX.mh : 0)) { times = 2; mhIdx = 1; this.say('crit', `Multi-hit! ${d.name} strikes again.`); }
+    if (d.type === 'Attack' && this.rng() * 100 < p.multiHit + (SX ? SX.mh : 0)) { times++; mhIdx = times - 1; this.say('crit', `Multi-hit! ${d.name} strikes again.`); }   /* Nov 14: was times = 2, so a Multi-hit swallowed Double Time / Double Strike (a card already played twice gained nothing) */
     if ((d.tags.dmg || (SX && SX.healMC && d.tags.heal)) && this.rng() * 100 < (d.type === 'Attack' ? p.multiplay : p.multicast + (SX ? SX.mc : 0))) { times++; mcIdx = times - 1; this.say('crit', `${d.type === 'Attack' ? 'Multiplay' : 'Multicast'}! ${d.name} is played again for free.`); }
     const xtra = SX ? SHX.rolled(this, p, d, SX, mhIdx > 0, mcIdx > 0) : [];
     { const third = xtra.filter(x => x.kind === 'mh').length, mcs = (mcIdx > 0 ? 1 : 0) + xtra.filter(x => x.kind === 'mc').length;   // Nov 14: a big call-out over whoever the card is aimed at (the fight screen reads multiN / multiWord)
@@ -8252,8 +8252,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794694755392';
-  const CB_BUILD = '2a93f7c2da'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794694920164';
+  const CB_BUILD = '0ec3fa8c56'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -9372,6 +9372,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Fix', "Double Time (Shaman) did nothing whenever the Attack also Multi-hit: the Multi-hit replaced the second hit instead of adding to it. They now stack, so a Double Time Attack that Multi-hits strikes three times. The same fix applies to every \"next card is played twice\" effect (Double Strike, Shadow Echo, Divine Favor)."],
       ['Balance', "Shaman, Hundred Blows: now an X card. It spends all your mana and hits for 4 once for every 3 mana spent (30 mana is 10 hits; it was a flat 30 mana for 8). Each hit still rolls Multi-hit on its own, and now every one that lands shows the MULTI-HIT call-out and the log counts them, so you can see it working."],
       ['Feature', "The Chronicle has a new page, The Arena: your rating and rank, record, win streak and best streak, the highest-rated hero you have beaten, wagers won and lost, a chart of your rating after every duel, your record against each class, and your latest duels one by one. Duels fought before today are counted but not listed."],
       ['Interface', "Duels now use the same fight screen as the roads: the stone panel, the mana orb, your frame top left. Your rival gets a matching frame top right with their HP, block, hand, mana, statuses and Arena rating."],

@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Fix', "Double Time (Shaman) did nothing whenever the Attack also Multi-hit: the Multi-hit replaced the second hit instead of adding to it. They now stack, so a Double Time Attack that Multi-hits strikes three times. The same fix applies to every \"next card is played twice\" effect (Double Strike, Shadow Echo, Divine Favor)."],
       ['Balance', "Shaman, Hundred Blows: now an X card. It spends all your mana and hits for 4 once for every 3 mana spent (30 mana is 10 hits; it was a flat 30 mana for 8). Each hit still rolls Multi-hit on its own, and now every one that lands shows the MULTI-HIT call-out and the log counts them, so you can see it working."],
       ['Feature', "The Chronicle has a new page, The Arena: your rating and rank, record, win streak and best streak, the highest-rated hero you have beaten, wagers won and lost, a chart of your rating after every duel, your record against each class, and your latest duels one by one. Duels fought before today are counted but not listed."],
       ['Interface', "Duels now use the same fight screen as the roads: the stone panel, the mana orb, your frame top left. Your rival gets a matching frame top right with their HP, block, hand, mana, statuses and Arena rating."],

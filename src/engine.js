@@ -1817,7 +1817,7 @@ class Combat {
     let times = 1;
     if (twice || echoArc) { times++; this.say('crit', `${d.name} is played twice.`); }
     const SX = SHX && p.isPlayer && p.cls === 'Shaman' ? SHX.pre(this, p, d) : null; let mhIdx = -1, mcIdx = -1; // Shaman: stored chances, sure hits, heals that Multicast (src/shaman.js)
-    if (d.type === 'Attack' && this.rng() * 100 < p.multiHit + (SX ? SX.mh : 0)) { times = 2; mhIdx = 1; this.say('crit', `Multi-hit! ${d.name} strikes again.`); }
+    if (d.type === 'Attack' && this.rng() * 100 < p.multiHit + (SX ? SX.mh : 0)) { times++; mhIdx = times - 1; this.say('crit', `Multi-hit! ${d.name} strikes again.`); }   /* Nov 14: was times = 2, so a Multi-hit swallowed Double Time / Double Strike (a card already played twice gained nothing) */
     if ((d.tags.dmg || (SX && SX.healMC && d.tags.heal)) && this.rng() * 100 < (d.type === 'Attack' ? p.multiplay : p.multicast + (SX ? SX.mc : 0))) { times++; mcIdx = times - 1; this.say('crit', `${d.type === 'Attack' ? 'Multiplay' : 'Multicast'}! ${d.name} is played again for free.`); }
     const xtra = SX ? SHX.rolled(this, p, d, SX, mhIdx > 0, mcIdx > 0) : [];
     { const third = xtra.filter(x => x.kind === 'mh').length, mcs = (mcIdx > 0 ? 1 : 0) + xtra.filter(x => x.kind === 'mc').length;   // Nov 14: a big call-out over whoever the card is aimed at (the fight screen reads multiN / multiWord)
