@@ -49,3 +49,11 @@ kite_gold 891b8cb4-27ae-498e-ba3a-5b05ecc980ad 36x56 c25
 kite_blood 1b344626-f961-4bd8-ba26-1140d281417c 36x56 c25
 kite_lid 7bba8f02-1de4-4583-87b7-72b32fdbab38 36x56 c25
 # not launched yet: tower_door, tower_gold, focus_skull, focus_crystalball, focus_lantern, focus_mug
+# batch 4
+tower_door 40ec3169-9631-473c-a0b4-d4c479be17f9 32x64 c25
+tower_gold e2a0fbff-2ee8-44de-a1b1-7726d38c797a 32x64 c25
+focus_skull ccdb4915-20b9-40dc-bcb4-d4f4566cd301 36x36 c36
+focus_crystalball 0f8125fb-a303-4f1f-875c-2310c764cb86 36x36 c36
+focus_lantern e61a3e36-1405-4661-95cd-ecf94b6badcb 36x36 c36
+focus_mug ce49df84-4a6b-4fc2-8193-8d8ae947874d 36x36 c36
+sword1h_toy(redo) 35eb9733-00d7-4435-8a1f-a7ab3ad537db 28x60 c16

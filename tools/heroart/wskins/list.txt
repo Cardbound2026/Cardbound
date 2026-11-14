@@ -27,3 +27,24 @@ wand_bone|wand|Finger Bone Wand|300||
 wand_spoon|wand|Wooden Spoon|400||
 sword2h_blood|sword2h|Blood-soaked Greatsword|400||
 sword2h_frost|sword2h|Glacier Greatsword|400||
+
+sword2h_shadow|sword2h|Voidedge Greatsword|400||
+sword2h_swordfish|sword2h|Swordfish|500||
+axe2h_frost|axe2h|Glacier Greataxe|400||
+axe2h_blood|axe2h|Executioner's Greataxe|400||
+axe2h_gold|axe2h|Golden Greataxe|500||
+axe2h_lute|axe2h|Bard's Battle Lute|500||
+maul_gold|maul|Golden Maul|500||
+maul_log|maul|Tree Trunk|400||
+hammer_gold|hammer|Golden Warhammer|500||
+hammer_frost|hammer|Glacier Hammer|400||
+hammer_mallet|hammer|Carnival Mallet|500||
+scythe_blood|scythe|Blood Reaper|400||
+scythe_gold|scythe|Golden Scythe|500||
+scythe_bone|scythe|Bone Reaper|400||
+staff_broom|staff|Witch's Broom|500||
+staff_crook|staff|Lantern Crook|400||
+staff_crystal|staff|Crystal Staff|400||
+kite_gold|kite|Golden Lion Shield|400||
+kite_blood|kite|Blood-spattered Shield|300||
+kite_lid|kite|Pot Lid|400||
