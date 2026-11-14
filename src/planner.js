@@ -22,7 +22,7 @@
     for (const [k, n] of b.cards) { const have = own[k] || 0; if (have < n) missing.push({ k, n: n - have, src: gSources(k) }); }
     for (const m of missing) { const s = m.src[0]; if (!s) continue; const mk = s.e.map || 'physical', F = farm[mk] || (farm[mk] = { M: s.map, mobs: {} }); const X = F.mobs[s.e.name] || (F.mobs[s.e.name] = { e: s.e, cards: [] }); X.cards.push(m); }
     const cx = b.codex && CB.CODEX_BY_KEY[b.codex], hasCx = !cx || gHasCodex(b.codex), cxSrc = cx && !hasCx ? gCodexSrc(b.codex) : [];
-    return { mine, own, missing, farm: Object.values(farm).sort((a, b2) => a.M.num - b2.M.num), anywhere: missing.filter(m => !m.src.length), cx, hasCx, cxSrc, pr: gProgress(mine ? c : null, b) };
+    return { mine, own, missing, farm: Object.values(farm).sort((a, b2) => Object.values(b2.mobs).reduce((t, x) => t + x.cards.length, 0) - Object.values(a.mobs).reduce((t, x) => t + x.cards.length, 0) || a.M.num - b2.M.num), anywhere: missing.filter(m => !m.src.length), cx, hasCx, cxSrc, pr: gProgress(mine ? c : null, b) };
   }
   // ---- pages
   function plTabs() { return `<div class="shoptabs" style="margin:6px 0 10px">${[['mine', 'My builds'], ['browse', 'Browse builds']].map(([k, n]) => `<button class="${PL.tab === k ? 'on' : ''}" data-pltab="${k}">${n}</button>`).join('')}<button data-plnew="1">+ New build</button></div>`; }
@@ -198,10 +198,13 @@
     if (!el) { el = document.createElement('div'); el.id = 'questTrk'; document.body.appendChild(el); el.addEventListener('click', (ev) => { if (ev.target.closest('[data-qfold]')) { PL.fold = !PL.fold; return plTrack(true); } if (ev.target.closest('[data-qopen]')) { const a = plActive(profile.chars[heroKey]); if (a) { PL.view = a; PL.back = 'mine'; PL.tab = 'view'; plRender(); } } }); }
     { const home = where === 'map' ? $('scrMap').querySelector('aside.side') || document.body : document.body; if (el.parentNode !== home) home.appendChild(el); }   /* on the route map it sits in the right column, under the loot sack */
     el.hidden = false; el.className = where; if (sig === PL.sig && !force) return; PL.sig = sig;
-    const lines = [];
-    if (T.cx && !T.hasCx) for (const s of T.cxSrc.slice(0, 2)) lines.push([`Map ${s.M.num}: ${s.M.name}`, `<li><i></i><span><b>${esc(s.b.name)}</b> <em>boss</em><br>${esc(T.cx.name)} Codex <em>${s.pct}%</em></span></li>`]);
-    for (const F of T.farm) for (const x of Object.values(F.mobs)) lines.push([`Map ${F.M.num}: ${F.M.name}`, `<li><i></i><span><b>${esc(x.e.name)}</b> <em>${gRows(x.e.tier)}</em><br>${x.cards.map(m => `<u style="color:${RC[CARDS[m.k].rarity]}">${esc(CARDS[m.k].name)}</u>${m.n > 1 ? ' x' + m.n : ''}`).join(', ')}</span></li>`]);
-    lines.sort((a, z) => parseInt(a[0].slice(4)) - parseInt(z[0].slice(4)));
+    // Nov 14: in the order to go and get things: the codex first, then the Gold cards, then the maps, the one with the most different cards you need first
+    const lines = [], cardU = (m) => `<u style="color:${RC[CARDS[m.k].rarity]}">${esc(CARDS[m.k].name)}</u>${m.n > 1 ? ' x' + m.n : ''}`;
+    if (T.cx && !T.hasCx) for (const s of T.cxSrc.slice(0, 2)) lines.push(['First: the codex', `<li><i></i><span><b>${esc(s.b.name)}</b> <em>boss, Map ${s.M.num}</em><br>${esc(T.cx.name)} Codex <em>${s.pct}%</em></span></li>`]);
+    { const gold = T.missing.filter(m => CARDS[m.k].rarity === 'Gold' && m.src.length), by = {}; for (const m of gold) { const s0 = m.src[0], id = s0.e.name; (by[id] = by[id] || { s: s0, cards: [] }).cards.push(m); }
+      for (const g of Object.values(by).sort((a, z) => a.s.map.num - z.s.map.num)) lines.push([T.cx && !T.hasCx ? 'Then: Gold cards' : 'First: Gold cards', `<li><i></i><span><b>${esc(g.s.e.name)}</b> <em>${gRows(g.s.e.tier)}, Map ${g.s.map.num}</em><br>${g.cards.map(cardU).join(', ')}</span></li>`]); }
+    { const maps = {}; for (const m of T.missing) { if (CARDS[m.k].rarity === 'Gold' || !m.src.length) continue; const s0 = m.src[0], mk = s0.e.map || 'physical', F = maps[mk] || (maps[mk] = { M: s0.map, n: 0, mobs: {} }); F.n++; (F.mobs[s0.e.name] = F.mobs[s0.e.name] || { e: s0.e, cards: [] }).cards.push(m); }
+      for (const F of Object.values(maps).sort((a, z) => z.n - a.n || a.M.num - z.M.num)) for (const x of Object.values(F.mobs).sort((a, z) => z.cards.length - a.cards.length)) lines.push([`Map ${F.M.num}: ${F.M.name} (${F.n} card${F.n === 1 ? '' : 's'})`, `<li><i></i><span><b>${esc(x.e.name)}</b> <em>${gRows(x.e.tier)}</em><br>${x.cards.map(cardU).join(', ')}</span></li>`]); }
     const MAXL = 7; let html = '', last = '';
     for (const [m, li] of lines.slice(0, MAXL)) { if (m !== last) { html += `${last ? '</ul>' : ''}<h5>${esc(m)}</h5><ul>`; last = m; } html += li; } if (last) html += '</ul>';
     if (lines.length > MAXL) html += `<p>and ${lines.length - MAXL} more</p>`;

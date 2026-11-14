@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Interface', "Following a build: the tracker now lists what to go after in order. The codex comes first, then the Gold cards, then the maps, starting with the map that has the most different cards you still need (the count is shown next to the map's name)."],
       ['Balance', "Bleed Chance (one-handed axes, and anything else that gives it): when it triggers, the Bleed is now half the damage that hit dealt, with a minimum of 3. It used to be a flat 3 Bleed however hard you hit."],
       ['Balance', "Shaman, Skybreaker: a Multi-hit now plays the last Skill you played again, free, whatever it was (a heal, Guard, card draw, Static), not only a damaging spell. Damage on the repeat is still halved. Held Breath, Thunder Debt, Borrowed Thunder and the echo cards are never repeated."],
       ['Interface', "The Strength and Intelligence buff tips are shorter: \"12 Strength\". Hold Alt for what the stat does."],
