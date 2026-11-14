@@ -65,7 +65,7 @@
   PROPS.push({ kind: 'brazier', x: 73, y: 57, w: 3, h: 3 });
   PROPS.push({ kind: 'statue', x: 68, y: 55, w: 1, h: 1 });
   PROPS.push({ kind: 'board', x: 73, y: 49, w: 1, h: 1 }, { kind: 'board', x: 76, y: 49, w: 1, h: 1 });
-  PROPS.push({ kind: 'arenaboard', x: 99, y: 88, w: 1, h: 1 });
+  /* Nov 13: the Wager Board moved inside, onto the arena floor (extras.js: exArFrame) */
   PROPS.push({ kind: 'fountain', x: 63, y: 61, w: 4, h: 3 }, { kind: 'fountain', x: 82, y: 61, w: 4, h: 3 });
   PROPS.push({ kind: 'sign', x: 79, y: 102, w: 1, h: 1 }, { kind: 'chest', x: 61, y: 57, w: 1, h: 1 });
   for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2 + .3; const x = Math.round(74.5 + Math.cos(a) * 12), y = Math.round(60 + Math.sin(a) * 9.4); if (ground[y][x] === 'b') PROPS.push({ kind: 'torch', x, y, w: 1, h: 1 }); }

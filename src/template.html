@@ -2093,7 +2093,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   for (const n of NPCS) n.pal.ink = 'npc_' + (/^dummy/.test(n.id) ? 'dummy' : n.id); // town art pack key (src/inkart.js)
   // Nov 13: most townsfolk now work indoors. Their spot at the door is where you walk in (src/extras.js exEnter): [room painting, the name over the door]
   const IN_PLACES = { qm: ['armory', "Old Arthur's Armory"], scribe: ['scriptorium', 'The Scriptorium'], chron: ['records', 'Hall of Records'], captain: ['barracks', 'The Barracks'], merchant: ['store', "Dace's Wares"], guildmaster: ['guildhall', 'The Guild Hall'],
-    jeweler: ['jeweler', "Rook's Jewels"], banker: ['bank', 'The Bank'], archivist: ['library', 'The Archive'], raidwarden: ['warroom', 'The War Room'], arena: ['arena', 'Arena Office'], barber: ['barber', "Fenwick's Barber Shop"], tavern: ['tavern', 'The Ember Mug'], boutique: ['boutique', 'The Skull Boutique'] };
+    jeweler: ['jeweler', "Rook's Jewels"], banker: ['bank', 'The Bank'], archivist: ['library', 'The Archive'], raidwarden: ['warroom', 'The War Room'], arena: ['arenafloor', 'The Colosseum'], barber: ['barber', "Fenwick's Barber Shop"], tavern: ['tavern', 'The Ember Mug'], boutique: ['boutique', 'The Skull Boutique'] };
   for (const n of NPCS) if (IN_PLACES[n.id]) { n.inside = IN_PLACES[n.id][0]; n.place = IN_PLACES[n.id][1]; }
   for (const n of NPCS) { n.home = n.dir; solid.add(K(n.x, n.y)); }
   // Nov 2: Tinker Pip (free test goods) only stands in town for admins (supabase/trust.sql: add your user id to public.admins)

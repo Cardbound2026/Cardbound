@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Feature', "The Colosseum has a floor you can walk on. Arenamaster Kord's gate now leads onto the sand: a new place to walk around, with the stands behind you. The Wager Board and Kord are inside, by the far gate; the near gate (or Esc) takes you back to town."],
+      ['Art', "Talent pictures fill their frames: the pale strip under each one is gone."],
       ['Fix', "Enemy card pictures that showed as blurry stripes (Frozen Bite, Stalk, Snow Wall, Ice Bolt and most other Frost cards, 81 in all) are repaired."],
       ['Interface', "Your gear panel now lists resistances as a table: an icon, the name and the number for each element."],
       ['Change', "Summoned demons stand on the ground and breathe instead of bobbing up and down."],
