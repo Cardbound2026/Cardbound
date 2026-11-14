@@ -1082,6 +1082,7 @@ body #scrCombat.bf .stage .uplate .bar span { font-size: 12px; }
   .cxbarrow { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); z-index: 3; display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 8px; background: rgba(14,11,8,.82); border: 1px solid var(--line); font-size: 13.5px; white-space: nowrap; max-width: calc(100% - 20px); flex-wrap: wrap; justify-content: center; }
   .cxbarrow { width: 50%; box-sizing: border-box; flex-wrap: nowrap !important; } .cxbarrow[hidden] { display: none !important; }
   body .cxbarrow, body.inkui .cxbarrow { background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; gap: 12px; top: 5px; } .cxbarrow .cxxp { cursor: help; } .cxbarrow .cxlv { order: -1; font: 700 30px/1 'Grenze', serif; color: #fff; text-shadow: 0 2px 0 #000, 0 0 8px rgba(0,0,0,.9); cursor: help; position: relative; top: -4px; }
+  .cxbarrow .cxbang { order: -1; flex: none; margin: -6px 0 0 -4px; padding: 0 4px; border: 0; background: none; cursor: pointer; font: 800 38px/1 'Grenze', serif; color: #ffd24a; text-shadow: 0 2px 0 #000, 0 0 10px rgba(255,190,60,.85), 0 0 2px #000; animation: cxbang 1.1s ease-in-out infinite; } .cxbarrow .cxbang:hover { color: #fff3c4; } @keyframes cxbang { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-3px) scale(1.14); } }
   .cxbarrow .cxxp { flex: 1 1 auto; min-width: 80px; width: auto; height: 10px; margin: 0; } .cxbarrow .pilebtn { padding: 2px 8px; font-size: 12.5px; }
   .tltabs { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0 8px; } .tltab { background: #1a1612; border: 1px solid var(--line); border-radius: 6px; color: var(--text); padding: 4px 9px; cursor: pointer; font: inherit; font-size: 13px; } .tltab.on { border-color: var(--accent); background: #2a2219; } .tltab small { color: var(--muted); }
   .tlprog { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 8px; font-size: 13.5px; } .tlprog .tlxp { width: 220px; height: 9px; margin: 0; }
@@ -7598,8 +7599,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794623053131';
-  const CB_BUILD = 'a8a0dd1e73'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794623132787';
+  const CB_BUILD = 'f58845ec72'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8705,6 +8706,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Interface', "A big gold ! appears next to your codex level whenever you have a talent point to spend. Point at it for the reminder (push N), or click it to open your talents."],
       ['Art', "Six new mounts in the Skull Shop: Horned Beetle, Soldier Ant, Giant Rabbit, Swamp Toad, Phoenix and Giant Raven."],
       ['Fix', "Bag pictures (Leather Satchel and the rest) sit in the middle of their tile instead of the bottom-right corner."],
       ['Art', "Thorns striking back has a new look: a green briar with short hooked rose thorns and a few petals, in place of the long grey spikes."],
@@ -9656,7 +9658,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     else { const i = CBHub.codexInfo(c, k), unspent = i.rows - i.picks.filter((x, j) => x != null && j < i.rows).length;
       const need = CB.codexNeed(k, c.gear, window.CB_DATA); // Nov 2: weapon requirements
       const tip = `${CB.CODEX_BY_KEY[k].name} Codex, level ${i.level}: ${i.need ? `${i.into} / ${i.need} XP` : 'max level'}`;   /* Nov 13: just a bar and the level; the XP numbers show when you point at it */
-      el.innerHTML = `${need ? `<span class="tag bad" title="The codex passive needs ${esc(need)}. Talents still work.">Inactive: needs ${esc(need)}</span>` : ''}<div class="xpbar cxxp" title="${esc(tip)}" data-tip="${esc(tip)}"><i style="width:${i.need ? Math.round(100 * i.into / i.need) : 100}%"></i></div><b class="cxlv" title="${esc(tip)}">${i.level}</b>`; }
+      el.innerHTML = `${need ? `<span class="tag bad" title="The codex passive needs ${esc(need)}. Talents still work.">Inactive: needs ${esc(need)}</span>` : ''}<div class="xpbar cxxp" title="${esc(tip)}" data-tip="${esc(tip)}"><i style="width:${i.need ? Math.round(100 * i.into / i.need) : 100}%"></i></div><b class="cxlv" title="${esc(tip)}">${i.level}</b>${unspent > 0 ? `<button type="button" class="cxbang" data-cxtal="1" title="Push N to allocate your talent points" data-tip="Push N to allocate your talent points">!</button>` : ''}`; const bg = el.querySelector('[data-cxtal]'); if (bg) bg.onclick = () => openTalents(); }   /* Nov 13: a big ! by the level while a talent point is unspent */
   }
   // N: the talent tree, from town, the character screen, the map or a fight (closes it again if it is open)
   document.addEventListener('keydown', (ev) => {

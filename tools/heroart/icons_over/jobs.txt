@@ -52,3 +52,15 @@ Gloves_Cloth_fire 50290ceb-0e60-4d52-baaf-8d1610f58799
 Gloves_Cloth_frost b8fe467c-2a52-4a82-8491-4f1daeca0f11
 Gloves_Cloth_nature cdce4a7e-6b71-4914-b8f1-de487390a919
 Gloves_Cloth_arcane 6982ffa5-b72b-4d0a-a434-00b4ddd2c052
+Chest_Leather_physical 0cd8d1fb-6b36-41c0-8119-0206164d80cc
+Chest_Leather_fire 6cda316c-80ea-41a1-82ae-6f9d4f9b7eec
+Chest_Leather_frost 6feac3de-3b42-471e-9491-c9c7f88d6aa5
+Chest_Leather_nature 220f72cb-8c66-462f-a8b6-5232e35f424a
+Chest_Leather_arcane dc82018f-388e-48a4-931d-b5d838f84cb7
+Chest_Leather_shadow 0235baed-952c-4f18-9736-d0a98eca2c32
+Chest_Plate_physical d75731af-1f3e-4007-ac39-8a8ffda0f07d
+Chest_Plate_fire 8dfc8806-734a-49b5-ab3d-f84e158ec415
+Chest_Plate_frost 862310d0-0cad-4fde-a343-3bb059a283bf
+Chest_Plate_nature b45cb7e2-0b23-4254-ba43-b7ca72e7eb2b
+Chest_Plate_arcane 8e2a9039-3c0a-4051-94f2-06ce072b2d2d
+Chest_Plate_shadow b70accab-1237-41ee-8557-e6bf342fd2c2

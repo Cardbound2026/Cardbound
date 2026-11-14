@@ -74,7 +74,7 @@
     else { const i = CBHub.codexInfo(c, k), unspent = i.rows - i.picks.filter((x, j) => x != null && j < i.rows).length;
       const need = CB.codexNeed(k, c.gear, window.CB_DATA); // Nov 2: weapon requirements
       const tip = `${CB.CODEX_BY_KEY[k].name} Codex, level ${i.level}: ${i.need ? `${i.into} / ${i.need} XP` : 'max level'}`;   /* Nov 13: just a bar and the level; the XP numbers show when you point at it */
-      el.innerHTML = `${need ? `<span class="tag bad" title="The codex passive needs ${esc(need)}. Talents still work.">Inactive: needs ${esc(need)}</span>` : ''}<div class="xpbar cxxp" title="${esc(tip)}" data-tip="${esc(tip)}"><i style="width:${i.need ? Math.round(100 * i.into / i.need) : 100}%"></i></div><b class="cxlv" title="${esc(tip)}">${i.level}</b>`; }
+      el.innerHTML = `${need ? `<span class="tag bad" title="The codex passive needs ${esc(need)}. Talents still work.">Inactive: needs ${esc(need)}</span>` : ''}<div class="xpbar cxxp" title="${esc(tip)}" data-tip="${esc(tip)}"><i style="width:${i.need ? Math.round(100 * i.into / i.need) : 100}%"></i></div><b class="cxlv" title="${esc(tip)}">${i.level}</b>${unspent > 0 ? `<button type="button" class="cxbang" data-cxtal="1" title="Push N to allocate your talent points" data-tip="Push N to allocate your talent points">!</button>` : ''}`; const bg = el.querySelector('[data-cxtal]'); if (bg) bg.onclick = () => openTalents(); }   /* Nov 13: a big ! by the level while a talent point is unspent */
   }
   // N: the talent tree, from town, the character screen, the map or a fight (closes it again if it is open)
   document.addEventListener('keydown', (ev) => {
