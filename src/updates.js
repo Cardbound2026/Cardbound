@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Art', "Two new mounts in the Skull Shop: the Horned Beetle and the Soldier Ant."],
       ['Fix', "Bag pictures (Leather Satchel and the rest) sit in the middle of their tile instead of the bottom-right corner."],
       ['Art', "Thorns striking back has a new look: a green briar with short hooked rose thorns and a few petals, in place of the long grey spikes."],
       ['Interface', "Skull Shop: click any picture (a mount, card back, cursor, aura, weapon look...) to see it big. Click again or press Esc to close."],
