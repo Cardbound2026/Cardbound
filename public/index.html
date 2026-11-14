@@ -244,7 +244,7 @@ svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
 .tag.good { border-color: #47703a; color: #a8dc8f; }
 .intents { display: flex; flex-wrap: wrap; gap: 4px; min-height: 26px; }
 .intent { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: #2d1d17; border: 1px solid #6a3324; color: #ffbaa6; font-variant-numeric: tabular-nums; }
-.intent.aoe { background: #3a2410; border-color: #b8691f; color: #ffcf8a; } .intent svg { width: 15px !important; height: 15px !important; }
+/* Nov 13 (later): the area attack is red like the single-target one; only the picture differs */ .intent svg { width: 15px !important; height: 15px !important; }
 .intent.defend { background: #172430; border-color: #35546d; color: #a9cdec; }
 .intent.debuff { background: #272033; border-color: #5a4a78; color: #cdb9f2; }
 .intent.buff { background: #2b2614; border-color: #6b5a26; color: #f0d58b; }
@@ -1201,7 +1201,7 @@ body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust:not([data-n="0"]
 #killov .kcimg { position: absolute; inset: 0; background: url(img/ui/chests.webp) calc(var(--ci) / 3 * 100%) 0 / 400% 200% no-repeat; image-rendering: pixelated; filter: drop-shadow(0 10px 12px rgba(0,0,0,.8)); }
 /* Nov 13: the light follows the line where the lid opens (an L: down the side to the front corner, then along the front), so the loot looks like it is peeking out */
 #killov .kseam, #killov .krays { position: absolute; inset: 0; mix-blend-mode: screen; pointer-events: none; animation: kglow 1.5s ease-in-out infinite alternate; }
-#killov .kseam { filter: blur(1.2px) brightness(1.35); } #killov .krays { filter: blur(5px); opacity: .55; }
+#killov .kseam { filter: blur(3.2px) brightness(1.2); opacity: .62; } #killov .krays { filter: blur(6px); opacity: .44; }   /* Nov 13 (later): no hard line where the light starts, and the whole glow a fifth dimmer */
 #killov .kseam::before, #killov .krays::before { content: ""; position: absolute; inset: 0; background: var(--seam); }
 #killov .kseam::before { clip-path: polygon(var(--sl) var(--yl), var(--sc) var(--yc), var(--sr) var(--yr), var(--sr) calc(var(--yr) + 3.5%), var(--sc) calc(var(--yc) + 3.5%), var(--sl) calc(var(--yl) + 3.5%)); }
 #killov .krays::before { clip-path: polygon(var(--sl) calc(var(--yl) + 2%), var(--sc) calc(var(--yc) + 2%), var(--sr) calc(var(--yr) + 2%), var(--sr) calc(var(--yr) - 13%), var(--sc) calc(var(--yc) - 13%), var(--sl) calc(var(--yl) - 13%)); }
@@ -5501,7 +5501,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   const ICON = {
     attack: '<svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M6 4.5a5.5 5.5 0 1 0 5.5 5.5h-1.8A3.7 3.7 0 1 1 6 6.3z"/><circle cx="6" cy="10" r="1.5"/><path d="M6.6 8.2L12.2 2.6l1.2 1.2L7.8 9.4z"/><path d="M11.2 1h3.8v3.8z"/></svg>',
     /* Nov 13: two attack pictures. attack = one target (a blade driven into a target ring); aoe = everyone (a burst) */
-    aoe: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0l1.6 4 3.3-2.6-1 4.1L16 6l-3.4 2.4L15.5 12l-4.2-.6L11 16l-3-3.2L5 16l-.3-4.6-4.2.6L3.4 8.4 0 6l4.1-.5-1-4.1L6.4 4z"/><circle cx="8" cy="8.3" r="2.1" fill="#3a2410"/></svg>',
+    aoe: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0l1.6 4 3.3-2.6-1 4.1L16 6l-3.4 2.4L15.5 12l-4.2-.6L11 16l-3-3.2L5 16l-.3-4.6-4.2.6L3.4 8.4 0 6l4.1-.5-1-4.1L6.4 4z"/><circle cx="8" cy="8.3" r="2.1" fill="#2d1d17"/></svg>',
     defend: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l6 2.2v4.3c0 3.6-2.6 6.3-6 7.5C4.6 13.8 2 11.1 2 7.5V3.2z"/></svg>',
     debuff: '<svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="6"/><rect x="4" y="7" width="8" height="2" fill="#272033"/></svg>',
     buff: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1l2 5h5l-4 3 1.5 5L8 11l-4.5 3L5 9 1 6h5z"/></svg>',
@@ -7521,8 +7521,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794615007349';
-  const CB_BUILD = 'ecc31a6146'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794615087826';
+  const CB_BUILD = '0b09821d40'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8628,13 +8628,14 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Interface', "The light on loot chests is softer: no hard line where it starts, and a fifth dimmer."],
       ['Interface', "Poison, Bleed, Burn and Dread each explain themselves in full when you hover them, with an example, instead of saying 'like Bleed' or 'like Poison'."],
       ['Art', "Skull Shop: four new auras (Circling Skull, Poison Cloud, Blood Rain, Golden Orb), Poison and Holy footsteps, and Wings are now Back cosmetics with eight new things to carry: a gravestone, a poison flask, bloody crossed swords, a chained coffin, a skull war banner, a sack of loot, a rusty anchor and an ale keg."],
       ['Feature', "Weapon looks by weapon type in the Skull Shop: pick a look for your daggers, another for your greatsword, and so on. The first few are in (Frost Fang, a Slippery Fish for a dagger, a Giant's Femur for a maul, a Golden Greatsword); many more are on the way."],
       ['Art', "Shoulder, bracer and glove items have proper pictures now: 54 new icons (plate, leather and cloth for each of the six maps) in place of the blurry scraps cut from the hero art."],
       ['Art', "Mount fixes: the Red Dragon and Golden Gryphon are redrawn in the same fine detail as the other mounts, the Bloodback Spider walks with its legs while its body holds still, and the Ghost Horse is see-through with a proper gallop."],
       ['Balance', "Codex drops: a map boss now drops your own class's codex 25% of the time, and 50% while you are wearing no codex at all. Every other class's codex still drops at 5% each. Before, a specific codex was 5% a kill whatever your class."],
-      ['Interface', "Enemy intents have two attack pictures now: a blade in a target ring for an attack on one target, and an orange burst for an attack that hits everyone."],
+      ['Interface', "Enemy intents have two attack pictures now: a blade in a target ring for an attack on one target, and a burst for an attack that hits everyone (both red)."],
       ['Change', "Thorns striking back no longer make a sound."],
       ['Interface', "The glow on the banded and skull loot chests sits on the line where the lid opens; on the skull chest it breaks behind the skull."],
       ['Interface', "Searching the route map now turns the whole map dark and colourless, and the nodes that match stay bright and in colour."],
