@@ -1541,7 +1541,9 @@ class Combat {
     if (a.isPlayer && this._playing && !this._inPw && HEAL_FLAT[this._playing.key] && !['Bloodthirst', 'Lifesteal'].includes(label)) n += HEAL_FLAT[this._playing.key]; // Nov 3: flat early-game heal boost
     if (a.isPlayer && a.healIn) n = Math.round(n * (1 + a.healIn / 100)); // talent: healing received
     const caster = a.isPlayer && this._playing && this.player && this.player.isPlayer ? this.player : a;
-    const mult = a.isPlayer ? 1 + (a.spirit || 0) / 100 : 1; // Nov 3: Spirit is healing RECEIVED, from every source (yours, allies', Recovery, Lifesteal...)
+    // Spirit is healing RECEIVED, from every source (yours, allies', Recovery, Lifesteal...), and since Nov 14 also healing DONE:
+    // a heal you cast on another hero is raised by your Spirit as well as theirs. A heal on yourself counts your Spirit once.
+    const mult = a.isPlayer ? (1 + (a.spirit || 0) / 100) * (caster !== a && caster.isPlayer && this._playing ? 1 + (caster.spirit || 0) / 100 : 1) : 1;
     if (!a.isPlayer && a.noHealRound >= this.round) { this.say('player', `${a.name} cannot heal.`); return 0; }
     if (!a.isPlayer && a.grievous > 0) n = Math.round(n * 0.5);
     if (caster.isPlayer && caster.powers && caster.powers.length) n = Math.round(n * this.pwProd(caster, 'healMult'));
