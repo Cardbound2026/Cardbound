@@ -18,8 +18,24 @@ another 25% (75% in all). Remember the standing rule that halves talent numbers:
 
 ## Static (agreed Nov 14)
 
-Lightning spells build Static on the target, the way Frost builds Chill. At 10 Static the target is Stunned.
-The Shaman has no Bleed and no Poison.
+Lightning spells build Static on the target. Static does nothing by itself: cards consume it to deal damage and to stun
+(changed later on Nov 14 from "auto-stun at 10"). The Shaman has no Bleed and no Poison.
+
+## Cards agreed so far (Nov 14, chat only, nothing in the game)
+
+- **Electrocute** (Blue, 0): consume 10 Static from a monster and Stun it for 1 turn.
+- **Mass Electrocute** (Blue, 10): consume all Static from all monsters; each is Stunned 1 turn per 10 Static consumed.
+- Power: each spell cast applies 1 extra Static.
+- Power: when a target reaches 15 Static, Electrocute is put into your hand from anywhere (deck, discard, exhaust).
+- Power: Multicasts apply 1 extra Static.
+- Power: if a Skill does not Multicast, roll again at 50% of your Multicast chance (30% chance: a 15% second roll).
+- **Living Lightning** (Healer): heal a target; if it Multicasts, it also casts Chain Lightning.
+- **Spirit Link** (Gold Power): all damage is shared evenly between the party.
+- Tank: something that gives All Resistance (talent or card, to confirm).
+- **Lightning Shield** (Tank): hits against the Shaman build Static on the attacker.
+- The cards first called Windfury and Stormstrike need new names.
+- Draft families from chat: lightning spells, Static payoffs, mace Attacks, weapon charges, heals, Shaman debuffs
+  (Soaked, Deafened, Unsteady, Hex, mana burn, cost increase), defence.
 
 ## Look (agreed Nov 14)
 
@@ -46,8 +62,8 @@ Theme: lightning, rain and storm, nature. Class colour: a dark, deep blue, clear
 ## Open questions
 
 - Support tank: taunt chance per Attack (number, and which talent row)? Is the 5% per debuff capped?
-- Static: does it drop by 1 a turn like Chill, reset to 0 after the stun, and does it lower anything on the way up?
-  Under the Support tank codex it would never drop.
+- Static: does it drop over time? Under the Support tank codex it would never drop.
+- Stun-lock on map bosses through Electrocute and its auto-return Power; Spirit Link before or after each hero's defences.
 - Penetration does not exist in the engine yet.
 - Cards: being worked out in chat (Nov 14), nothing generated in the game.
 - Gear: maces give both stats, and since Nov 13 rings can roll Multi-hit and Multicast for every class.
