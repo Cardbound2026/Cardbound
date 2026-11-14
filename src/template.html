@@ -2544,6 +2544,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     P.held = []; P.path = []; P.target = null;
     if (n.warp && Math.abs(n.x - P.x) + Math.abs(n.y - P.y) <= 2) { const w = n.warp; return veil(w[3], w[4], () => { P.x = w[0]; P.y = w[1]; P.dir = w[2]; P.mv = null; P.path = []; P.held = []; P.target = null; TOWN.district = ''; if (typeof socPos === 'function') socPos(); if (typeof retrack === 'function') retrack(true); updatePrompt(); if (window.CB_AUDIO) CB_AUDIO.sfx('door'); }); }   // Nov 13: a gate to somewhere else on the grid (the arena floor)
     if (n.inside && typeof exEnter === 'function' && !exInside() && Math.abs(n.x - P.x) + Math.abs(n.y - P.y) <= 2) return exEnter(n); // Nov 13: walk in; you talk to them inside
+    if (n.id === 'statue' && profile && !((profile.stats || {}).juss)) { CBHub.bump(profile, 'juss'); save(); }   /* Nov 13: the "Threatening" achievement */
     if (!n.fixed) n.dir = n.x > P.x ? 'left' : n.x < P.x ? 'right' : n.y > P.y ? 'up' : 'down';
     n.lineN = ((n.lineN == null ? -1 : n.lineN) + 1) % n.lines.length;
     { const c = profile.chars[heroKey]; if (n.id === 'wagon' && c && !c.tutRoad && !(c.runs > 0)) { c.tutRoad = 1; save(); closeTalk(); tutStart('road'); return; } } // Nov 2: the first talk with Arisha is the road and fight tutorial

@@ -2,6 +2,9 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Feature', "22 new achievements and titles: Booster, Hard Carry, Hitman, The Notorious, Comeback King, The Unshakeable, Aggressive, the Sleepy, Risky, Thick, Slippery, Brother, Useless, The Undying, The Immortal, The Unkillable, Theorycrafter, Moneybags, Shiny, Threatening, the Salvager and The One and Only (earn every other achievement)."],
+      ['Change', "Raid-boss titles (Titanfeller, Dragonslayer, Wyrmbane, Spiderbane, Starbreaker, Kingslayer) now need a +6 or higher raid, and each has a second title for +11 or higher. Titles you already earned are kept."],
+      ['Change', "Boss feats (one-element kills, Spellbound, Rainbow, Slow Death, Swift Justice, On the Edge, The Unburned, Frozen) now need a +7 or higher map. Wherever an achievement names a level, that level or higher counts."],
       ['Art', "Calmer route maps for the Tanglewild and Rimewatch: plain dirt with a few roots, and plain snow with a few cracks, in place of the busy repeating patterns. The other maps were checked and left as they are."],
       ['Interface', "Cards a merchant is selling grow when you point at them, and clicking one opens its rank page (every upgrade and where it drops)."],
       ['Change', "You can no longer walk over the top of the Colosseum in town: the way in is Arenamaster Kord's gate on its west side."],

@@ -177,7 +177,7 @@ const ACH = [
   { id: 'clear5', cat: 'Roads', name: 'Veteran', how: 'Kill a map boss at +5 or higher.', title: 'Veteran', test: (p, ev) => won(ev, 5) || heroes(p).some(c => bestKill(c) >= 5) },
   { id: 'clear10', cat: 'Roads', name: 'Champion', how: 'Kill a map boss at +10 or higher.', title: 'Champion', test: (p, ev) => won(ev, 10) || heroes(p).some(c => bestKill(c) >= 10) },
   { id: 'clear15', cat: 'Roads', name: 'Legend', how: 'Kill a map boss at +15 or higher.', title: 'Legend', test: (p, ev) => won(ev, 15) || heroes(p).some(c => bestKill(c) >= 15) },
-  { id: 'clear19', cat: 'Roads', name: 'Mythic', how: 'Kill a map boss at +19.', title: 'the Mythic', test: (p, ev) => won(ev, 19) || heroes(p).some(c => bestKill(c) >= 19) },
+  { id: 'clear19', cat: 'Roads', name: 'Mythic', how: 'Kill a map boss at +19 or higher.', title: 'the Mythic', test: (p, ev) => won(ev, 19) || heroes(p).some(c => bestKill(c) >= 19) },
   ...Object.entries(CLASS_TITLES).map(([cls, t]) => ({ id: 'cls_' + cls, cat: 'Classes', name: t, how: `Kill a map boss at +12 or higher as a ${cls}.`, title: t,
     test: (p, ev) => (won(ev, 12) && ev.cls === cls) || heroes(p).some(c => c.cls === cls && bestKill(c) >= 12) })),
   ...Object.entries(MAP_TITLES).map(([mk, [nm, t]]) => ({ id: 'map_' + mk, cat: 'Roads', name: t, how: `Kill the boss of ${nm} at +10 or higher.`, title: t,
@@ -192,9 +192,9 @@ const ACH = [
   { id: 'gold1m', cat: 'Wealth', name: 'Tycoon', how: 'Bring home 1,000,000 gold from the roads.', title: 'Tycoon', n: 1000000, count: (p) => st(p, 'goldLooted') },
   { id: 'sale1', cat: 'Wealth', name: 'Merchant', how: 'Sell an item at the Bazaar.', title: 'Merchant', n: 1, count: (p) => st(p, 'bazaarSales') },
   { id: 'sale100k', cat: 'Wealth', name: 'Businessman', how: 'Sell one item at the Bazaar for 100,000 gold or more.', title: 'Businessman', test: (p) => st(p, 'bazaarBest') >= 100000 },
-  { id: 'unburned', cat: 'Feats', name: 'The Unburned', how: 'Kill the boss of a +5 or higher Cinder Reach without healing or gaining any Block (or Dodge, Barrier, Absorb) in the boss fight.', title: 'the Unburned',
-    test: (p, ev) => won(ev, 5) && ev.map === 'fire' && ev.bossClean },
-  { id: 'frozen', cat: 'Feats', name: 'Frozen', how: 'Clear a +5 or higher Rimewatch run without losing a single point of HP.', title: 'the Frozen', test: (p, ev) => won(ev, 5) && ev.map === 'frost' && ev.lost === 0 },
+  { id: 'unburned', cat: 'Feats', name: 'The Unburned', how: 'Kill the boss of a +7 or higher Cinder Reach without healing or gaining any Block (or Dodge, Barrier, Absorb) in the boss fight.', title: 'the Unburned',
+    test: (p, ev) => won(ev, 7) && ev.map === 'fire' && ev.bossClean },
+  { id: 'frozen', cat: 'Feats', name: 'Frozen', how: 'Clear a +7 or higher Rimewatch run without losing a single point of HP.', title: 'the Frozen', test: (p, ev) => won(ev, 7) && ev.map === 'frost' && ev.lost === 0 },
   { id: 'untouchable', cat: 'Feats', name: 'Untouchable', how: 'Kill a +10 or higher map boss without losing any HP in the boss fight.', title: 'the Untouchable', test: (p, ev) => won(ev, 10) && ev.bossLost === 0 },
   { id: 'party4', cat: 'Feats', name: 'Fellowship', how: 'Kill a map boss in a party of four.', title: 'of the Fellowship', test: (p, ev) => won(ev, 0) && ev.party >= 4 },
   { id: 'card10', cat: 'Collection', name: 'Inkbound', how: 'Rank a card up to +10.', title: 'Inkbound', test: (p) => heroes(p).some(c => [...(c.deck || []), ...(c.cards || [])].some(k => (k.rank || 0) >= MAX_RANK)) },
@@ -210,15 +210,17 @@ const ACH = [
   ...[['fire', 'Fire', 'Fight Fire with Fire', 'the Pyromaniac'], ['fire', 'Frost', 'Quenched', 'the Quencher'], ['frost', 'Frost', 'Cold Shoulder', 'the Cold-Hearted'], ['frost', 'Fire', 'Thawbringer', 'Thawbringer'],
     ['nature', 'Nature', 'Overgrowth', 'the Overgrown'], ['nature', 'Fire', 'Wildfire', 'Wildfire'], ['arcane', 'Arcane', 'Mirror Match', 'the Mirrored'], ['arcane', 'Shadow', 'Eclipse', 'the Eclipse'],
     ['shadow', 'Shadow', 'Darker Still', 'the Darker'], ['shadow', 'Holy', 'Light in the Crypt', 'Cryptlight'], ['physical', 'Physical', 'Steel Answers Steel', 'Steelsworn']].map(([mk, el, nm, t]) => ({ id: 'only_' + mk + '_' + el, cat: 'Boss feats', name: nm, title: t,
-    how: `Kill the boss of ${MAP_TITLES[mk][0]} dealing only ${el} damage in the boss fight.`, test: (p, ev) => won(ev, 0) && ev.map === mk && onlyType(ev.types, el) })),
-  { id: 'spellbound', cat: 'Boss feats', name: 'Spellbound', how: 'Kill the boss of The Broken March without dealing any Physical damage in the boss fight.', title: 'the Spellbound', test: (p, ev) => won(ev, 0) && ev.map === 'physical' && ev.types && ev.dealt > 0 && !(ev.types.Physical > 0) },
-  { id: 'rainbow', cat: 'Boss feats', name: 'Rainbow', how: 'Kill a map boss dealing five or more kinds of damage in the boss fight.', title: 'the Prismatic', test: (p, ev) => won(ev, 0) && ev.types && Object.values(ev.types).filter(v => v > 0).length >= 5 },
-  { id: 'slowdeath', cat: 'Boss feats', name: 'Slow Death', how: 'Kill a map boss with more than half of your damage coming from damage over time (Bleed, Poison, Burn, Dread, Rot).', title: 'the Patient', test: (p, ev) => won(ev, 0) && ev.dealt > 0 && ev.dot > ev.dealt / 2 },
-  { id: 'swift', cat: 'Boss feats', name: 'Swift Justice', how: 'Kill a +5 or higher map boss in 5 rounds or fewer.', title: 'the Swift', test: (p, ev) => won(ev, 5) && ev.rounds > 0 && ev.rounds <= 5 },
-  { id: 'edge', cat: 'Boss feats', name: 'On the Edge', how: 'Kill a map boss with 10% of your health or less left.', title: 'the Reckless', test: (p, ev) => won(ev, 0) && ev.hpPct != null && ev.hpPct <= 10 },
+    how: `Kill the boss of ${MAP_TITLES[mk][0]} at +7 or higher dealing only ${el} damage in the boss fight.`, test: (p, ev) => won(ev, 7) && ev.map === mk && onlyType(ev.types, el) })),
+  { id: 'spellbound', cat: 'Boss feats', name: 'Spellbound', how: 'Kill the boss of The Broken March at +7 or higher without dealing any Physical damage in the boss fight.', title: 'the Spellbound', test: (p, ev) => won(ev, 7) && ev.map === 'physical' && ev.types && ev.dealt > 0 && !(ev.types.Physical > 0) },
+  { id: 'rainbow', cat: 'Boss feats', name: 'Rainbow', how: 'Kill a +7 or higher map boss dealing five or more kinds of damage in the boss fight.', title: 'the Prismatic', test: (p, ev) => won(ev, 7) && ev.types && Object.values(ev.types).filter(v => v > 0).length >= 5 },
+  { id: 'slowdeath', cat: 'Boss feats', name: 'Slow Death', how: 'Kill a +7 or higher map boss with more than half of your damage coming from damage over time (Bleed, Poison, Burn, Dread, Rot).', title: 'the Patient', test: (p, ev) => won(ev, 7) && ev.dealt > 0 && ev.dot > ev.dealt / 2 },
+  { id: 'swift', cat: 'Boss feats', name: 'Swift Justice', how: 'Kill a +7 or higher map boss in 5 rounds or fewer.', title: 'the Swift', test: (p, ev) => won(ev, 7) && ev.rounds > 0 && ev.rounds <= 5 },
+  { id: 'edge', cat: 'Boss feats', name: 'On the Edge', how: 'Kill a +7 or higher map boss with 10% of your health or less left.', title: 'the Reckless', test: (p, ev) => won(ev, 7) && ev.hpPct != null && ev.hpPct <= 10 },
   // raids
-  ...[['physical', 'Titanfall', 'Titanfeller'], ['fire', 'Dragonslayer', 'Dragonslayer'], ['frost', 'Wyrmbane', 'Wyrmbane'], ['nature', 'Spiderbane', 'Spiderbane'], ['arcane', 'Starbreaker', 'Starbreaker'], ['shadow', 'Kingslayer', 'Kingslayer']].map(([mk, nm, t]) => ({ id: 'raid_' + mk, cat: 'Raids', name: nm, title: t,
-    how: `Kill ${CB.RAID_NAMES[mk]} in a raid.`, test: (p, ev) => (ev.type === 'raid' && ev.map === mk) || !!(p.raidDone || {})[mk] })),
+  // Nov 13: the six raid-boss titles need a +6 raid (they were any level; titles already earned are kept), and each has a second one at +11
+  ...[['physical', 'Titanfall', 'Titanfeller', "Titan's Doom", 'Titansdoom'], ['fire', 'Dragonslayer', 'Dragonslayer', "Dragon's Doom", 'Dragonlord'], ['frost', 'Wyrmbane', 'Wyrmbane', "Wyrm's End", 'Wyrmlord'], ['nature', 'Spiderbane', 'Spiderbane', 'Broodbreaker', 'Broodbreaker'], ['arcane', 'Starbreaker', 'Starbreaker', 'Skyfall', 'Starlord'], ['shadow', 'Kingslayer', 'Kingslayer', 'Regicide', 'the Regicide']].flatMap(([mk, nm, t, nm2, t2]) => [
+    { id: 'raid_' + mk, cat: 'Raids', name: nm, title: t, how: `Kill ${CB.RAID_NAMES[mk]} in a +6 or higher raid.`, test: (p, ev) => (ev.type === 'raid' && ev.map === mk && (ev.level || 0) >= 6) || ((p.raidBest || {})[mk] || 0) >= 6 },
+    { id: 'raid11_' + mk, cat: 'Raids', name: nm2, title: t2, how: `Kill ${CB.RAID_NAMES[mk]} in a +11 or higher raid.`, test: (p, ev) => (ev.type === 'raid' && ev.map === mk && (ev.level || 0) >= 11) || ((p.raidBest || {})[mk] || 0) >= 11 }]),
   { id: 'raid_all', cat: 'Raids', name: 'Conqueror', how: 'Kill all six raid bosses.', title: 'the Conqueror', n: 6, count: (p) => Object.keys(p.raidDone || {}).length },
   { id: 'raid2', cat: 'Raids', name: 'Dynamic Duo', how: 'Kill a raid boss with only two heroes in the raid.', title: 'of the Duo', test: (p, ev) => ev.type === 'raid' && ev.party === 2 },
   { id: 'raid10', cat: 'Raids', name: 'Full Warband', how: 'Kill a raid boss with ten heroes in the raid.', title: 'of the Warband', test: (p, ev) => ev.type === 'raid' && ev.party >= 10 },
@@ -246,7 +248,33 @@ const ACH = [
   { id: 'runs100', cat: 'Roads', name: 'Roadworn', how: 'Finish 100 runs (any result, all heroes together).', title: 'the Roadworn', n: 100, count: (p) => heroes(p).reduce((s, c) => s + (c.runs || 0), 0) },
   { id: 'extract10', cat: 'Roads', name: 'Survivor', how: 'Extract from 10 runs at a campfire.', title: 'Survivor', n: 10, count: (p) => st(p, 'extracts') },
   { id: 'deaths25', cat: 'Roads', name: 'Gravewalker', how: 'Die 25 times. It happens.', title: 'Gravewalker', n: 25, count: (p) => st(p, 'deaths') },
+  // ---- Nov 13 (later): 22 more. Every "+5" here means +5 or higher. The per-boss ones are ticked off in p.feats (featMark) as each boss falls.
+  { id: 'booster', cat: 'Raids', name: 'Booster', how: 'Kill a +5 or higher raid boss as the only hero who dealt any damage to it (in a raid of two or more).', title: 'Booster', test: (p, ev) => ev.type === 'raid' && (ev.level || 0) >= 5 && ev.party >= 2 && ev.dealt > 0 && ev.othersDealt === 0 },
+  { id: 'hardcarry', cat: 'Raids', name: 'Hard Carry', how: 'Kill a +5 or higher raid boss without dealing a single point of damage to it yourself.', title: 'Hard Carry', test: (p, ev) => ev.type === 'raid' && (ev.level || 0) >= 5 && ev.party >= 2 && ev.dealt === 0 },
+  { id: 'hitman', cat: 'Arena', name: 'Hitman', how: 'Win 100,000 gold from wagered duels.', title: 'Hitman', n: 100000, count: (p) => st(p, 'duelGold') },
+  { id: 'notorious', cat: 'Arena', name: 'Notorious', how: 'Win a duel on the first turn.', title: 'The Notorious', test: (p, ev) => ev.type === 'duel' && ev.won && ev.rounds <= 1 },
+  { id: 'comeback', cat: 'Arena', name: 'Comeback King', how: 'Win a duel with exactly 1 HP left.', title: 'Comeback King', test: (p, ev) => ev.type === 'duel' && ev.won && ev.hp === 1 },
+  { id: 'unshakeable', cat: 'Boss feats', name: 'Unshakeable', how: 'Kill a map boss after starting the boss fight on 1 HP.', title: 'The Unshakeable', test: (p, ev) => won(ev, 0) && ev.startHp === 1 },
+  { id: 'aggressive', cat: 'Boss feats', name: 'Aggressive', how: 'Kill the boss of every map at +5 or higher on your first turn.', title: 'Aggressive', n: 6, count: (p) => featN(p, 't1') },
+  { id: 'sleepy', cat: 'Boss feats', name: 'Sleepy', how: 'Kill a +5 or higher map boss after round 50.', title: 'the Sleepy', test: (p, ev) => won(ev, 5) && ev.rounds > 50 },
+  { id: 'risky', cat: 'Hardcore', name: 'Risky', how: 'Kill a +5 or higher map boss with a Hardcore hero who has no resistance to that map\'s element.', title: 'Risky', test: (p, ev) => won(ev, 5) && ev.hc && ev.res === 0 },
+  { id: 'thick', cat: 'Boss feats', name: 'Thick', how: 'Kill the boss of every map at +5 or higher without losing a point of HP in the boss fight.', title: 'Thick', n: 6, count: (p) => featN(p, 'thick') },
+  { id: 'slippery', cat: 'Boss feats', name: 'Slippery', how: 'Kill the boss of every map at +5 or higher, ending each fight with less than 10% of your HP.', title: 'Slippery', n: 6, count: (p) => featN(p, 'slip') },
+  { id: 'brother', cat: 'Feats', name: 'Brother', how: 'Kill the boss of every map at +10 or higher in a party of exactly two.', title: 'Brother', n: 6, count: (p) => featN(p, 'duo') },
+  { id: 'useless', cat: 'Feats', name: 'Useless', how: 'Fall on the first turn of a +5 or higher boss fight, and have your party kill the boss anyway.', title: 'Useless', test: (p, ev) => won(ev, 5) && ev.diedRound != null && ev.diedRound <= 1 },
+  { id: 'undying', cat: 'Hardcore', name: 'Undying', how: 'Kill a +5 or higher map boss with a Hardcore hero of every class.', title: 'The Undying', n: 5, count: (p) => new Set(Object.keys((p.feats || {}).hc5 || {}).map(k => k.split(':')[0])).size },
+  { id: 'immortal', cat: 'Hardcore', name: 'Immortal', how: 'Kill the boss of every map at +5 or higher with a Hardcore hero of every class (30 kills).', title: 'The Immortal', n: 30, count: (p) => featN(p, 'hc5') },
+  { id: 'unkillable', cat: 'Hardcore', name: 'Unkillable', how: 'Kill the boss of every map with a Hardcore hero of every class (30 kills, any level).', title: 'The Unkillable', n: 30, count: (p) => featN(p, 'hc0') },
+  { id: 'theory', cat: 'Emberwatch', name: 'Theorycrafter', how: 'Post a build in the Deck Planner.', title: 'Theorycrafter', n: 1, count: (p) => st(p, 'buildPosts') },
+  { id: 'moneybags', cat: 'Wealth', name: 'Moneybags', how: 'Buy something with Skull Tokens.', title: 'Moneybags', n: 1, count: (p) => st(p, 'skullBuys') },
+  { id: 'shiny', cat: 'Wealth', name: 'Shiny', how: 'Buy an Epic (purple) item at the Bazaar.', title: 'Shiny', n: 1, count: (p) => st(p, 'bazaarEpics') },
+  { id: 'juss', cat: 'Emberwatch', name: 'Threatening', how: 'Find Juss in Emberwatch.', title: 'Threatening', n: 1, count: (p) => st(p, 'juss') },
+  { id: 'salvager', cat: 'Wealth', name: 'Salvager', how: 'Salvage 100,000 items.', title: 'the Salvager', n: 100000, count: (p) => st(p, 'salvaged') },
+  { id: 'all', cat: 'Feats', name: 'The One and Only', how: 'Earn every other achievement.', title: 'The One and Only', n: 999, count: (p) => ACH.filter(a => a.id !== 'all' && (p.ach || {})[a.id]).length },
 ];
+ACH.find(a => a.id === 'all').n = ACH.length - 1;
+const featN = (p, k) => Object.keys((p.feats || {})[k] || {}).length;
+function featMark(p, k, key) { p.feats = p.feats || {}; (p.feats[k] = p.feats[k] || {})[key] = 1; }
 const ACH_BY = Object.fromEntries(ACH.map(a => [a.id, a]));
 const ACH_FRESH = []; // unlocks waiting to be announced by the page (achTake)
 function achTake() { return ACH_FRESH.splice(0); }
@@ -258,7 +286,7 @@ function achCheck(p, ev, who, quiet) {
 }
 function bump(p, k, n) { p.stats = p.stats || {}; p.stats[k] = (p.stats[k] || 0) + (n == null ? 1 : n); }
 // Nov 2: titles that read as a description ("the Blooded", "of the Fellowship") follow the name; ranks ("Veteran") come first
-const titleAfter = (t) => /^(the|of) /i.test(t || '');
+const titleAfter = (t) => /^(the|of) /.test(t || '');   // Nov 13: lower case only, so "The Notorious" is worn before the name
 const titled = (name, t) => !t ? name : titleAfter(t) ? `${name} ${t}` : `${t} ${name}`;
 // Nov 2: Warriors and Paladins call their defense Block with a shield in hand and Parry without one
 function defWord(c) { if (!c) return null; const cls = CLASSES[c.cls]; if (!cls) return null; if (c.cls !== 'Warrior' && c.cls !== 'Paladin') return cls.defense;
@@ -323,7 +351,7 @@ function unequip(p, cls, slot) {
 }
 const SALVAGE = { White: 2, Green: 6, Blue: 15, 'Purple (Epic)': 40 };
 function salvageValue(it) { return Math.round((SALVAGE[it.rarity] || 2) * Math.pow(1.05, it.level || 0)); } // Nov 2: +5% per map level (was 1.5x), like monster gold
-function salvage(p, itemId) { const i = p.stash.findIndex(x => x.id === itemId); if (i < 0) return 0; const g = salvageValue(p.stash[i]); p.stash.splice(i, 1); p.gold += g; return g; }
+function salvage(p, itemId) { const i = p.stash.findIndex(x => x.id === itemId); if (i < 0) return 0; const g = salvageValue(p.stash[i]); p.stash.splice(i, 1); p.gold += g; bump(p, 'salvaged'); return g; }
 
 // ---------- deck and cards
 function deckCheck(deck) {
@@ -478,7 +506,7 @@ function absorbRun(p, run, mi) {
   for (const o of mem.orders || []) { if (o.kind === 'card') { c.cards.push({ id: uid('k'), key: o.key, rank: 0 }); (c.seen = c.seen || {})[o.key] = 1; ordered++; continue; } if (ST.length < STASH_MAX) { ST.unshift(Object.assign({ id: uid('g') }, o, { slot: /^Ring/.test(o.slot) ? 'Ring' : o.slot })); ordered++; } }
   let salvaged = 0, salvGold = 0, salvInk = 0;
   for (const it of kept.items) {
-    if (it.autoSalvage) { salvaged++; if (it.kind === 'card') { const v = inkValue(it); p.ink = (p.ink || 0) + v; salvInk += v; (c.seen = c.seen || {})[it.key] = 1; } else { const v = salvageValue(it); p.gold += v; salvGold += v; } continue; } // marked in the sack during the run
+    if (it.autoSalvage) { salvaged++; bump(p, 'salvaged'); if (it.kind === 'card') { const v = inkValue(it); p.ink = (p.ink || 0) + v; salvInk += v; (c.seen = c.seen || {})[it.key] = 1; } else { const v = salvageValue(it); p.gold += v; salvGold += v; } continue; } // marked in the sack during the run
     if (it.kind === 'card') { c.cards.push({ id: uid('k'), key: it.key, rank: 0 }); (c.seen = c.seen || {})[it.key] = 1; cards++; }
     else if (ST.length < STASH_MAX) { ST.unshift(Object.assign({ id: uid('g') }, it, { slot: /^Ring/.test(it.slot) ? 'Ring' : it.slot })); items++; }
     else lost++;
@@ -501,7 +529,12 @@ function absorbRun(p, run, mi) {
   // Nov 2: achievement counters and checks for this hero's run
   if (!mi) bump(p, 'kills', run.kills || 0); // Nov 13: monsters killed, once per run
   bump(p, 'goldLooted', kept.gold || 0); if (run.over === 'extracted') bump(p, 'extracts'); if (run.over === 'dead') bump(p, 'deaths'); else if (mem.deaths) bump(p, 'deaths', mem.deaths);
-  const F = mem.feat || {}, ach = achCheck(p, { type: 'run', victory: run.over === 'victory', level: run.level || 0, map: run.mapKey || 'physical', cls: c.cls, hc: !!c.hardcore, hero: c.name,
+  { const F0 = mem.feat || {}, lv = run.level || 0, mk = run.mapKey || 'physical';   // Nov 13: per-boss feats, kept on the account
+    if (run.over === 'victory') { const n = run.members ? run.members.length : 1;
+      if (c.hardcore) { featMark(p, 'hc0', c.cls + ':' + mk); if (lv >= 5) featMark(p, 'hc5', c.cls + ':' + mk); }
+      if (lv >= 5) { if (F0.bossRounds > 0 && F0.bossRounds <= 1) featMark(p, 't1', mk); if (F0.bossLost === 0) featMark(p, 'thick', mk); if (F0.bossHpPct != null && F0.bossHpPct < 10 && F0.bossHpPct > 0) featMark(p, 'slip', mk); }
+      if (lv >= 10 && n === 2) featMark(p, 'duo', mk); } }
+  const F = mem.feat || {}, ach = achCheck(p, { type: 'run', startHp: (mem.feat || {}).bossStartHp, res: (mem.feat || {}).bossRes, diedRound: (mem.feat || {}).bossDiedRound, victory: run.over === 'victory', level: run.level || 0, map: run.mapKey || 'physical', cls: c.cls, hc: !!c.hardcore, hero: c.name,
     party: run.members ? run.members.length : 1, lost: F.lost, bossClean: F.bossClean, bossLost: F.bossLost, types: F.bossTypes || null, dot: F.bossDot || 0, dealt: F.bossDealt || 0, rounds: F.bossRounds || 0, hpPct: F.bossHpPct });
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk, ach };
 }

@@ -111,7 +111,7 @@
     PL.busy = true; plRender();
     try { if (b.rid) { const { data, error } = await supa.from('builds').update(row).eq('id', b.rid).eq('user_id', supaUser.id).select('id'); if (error) throw error; if (!data || !data.length) b.rid = null; }
       if (!b.rid) { const { data, error } = await supa.from('builds').insert(Object.assign({ user_id: supaUser.id }, row)).select('id').single(); if (error) throw error; b.rid = data.id; }
-      save(); PL.busy = false; plRender(); sysChat(`Posted "${b.name}". Other players can find it in the Deck Planner under Browse builds.`);
+      CBHub.bump(profile, 'buildPosts'); save(); PL.busy = false; plRender(); sysChat(`Posted "${b.name}". Other players can find it in the Deck Planner under Browse builds.`);
     } catch (e) { PL.busy = false; plRender(); toast(recSetupErr(e) ? 'Posted builds are not switched on yet: supabase/builds.sql needs to be run once.' : 'Could not post: ' + (e.message || e)); }
   }
   async function plUnpost(b) { if (!(supa && supaUser) || !b.rid) return; try { const { error } = await supa.from('builds').delete().eq('id', b.rid).eq('user_id', supaUser.id); if (error) throw error; b.rid = null; save(); PL.list = null; plRender(); } catch (e) { toast('Could not take it down: ' + (e.message || e)); } }

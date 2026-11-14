@@ -1568,7 +1568,7 @@ class Combat {
     if (a.isPlayer) {
       if (a.dead) return;
       { const tp = a.powers.find(x => x.def && x.def.cheat && !x.cheatUsed); if (tp) { tp.cheatUsed = true; const [n, mode] = tp.def.cheat; a.hp = 1; const was = this.player; this.player = a; if (mode === 'heal') this.heal(a, Math.round(a.maxHp * n / 100), tp.def.label); else this.gainDef(n); this.player = was; this.say('crit', `${tp.def.label}: ${a.name} refuses to fall!`); return; } }
-      a.dead = true; a.block = 0; a.bleed = 0; if (a.demons && a.demons.length) { this.say('player', `${a.name}'s demons vanish.`); a.demons = []; } a.discard.push(...a.hand.splice(0));
+      a.dead = true; a.diedRound = this.round; a.block = 0; a.bleed = 0; if (a.demons && a.demons.length) { this.say('player', `${a.name}'s demons vanish.`); a.demons = []; } a.discard.push(...a.hand.splice(0));
       if (this.duel) { this.winner = this.alivePlayers()[0] || null; this.say('win', `${a.name} falls. ${this.winner ? this.winner.name + ' wins the duel' : 'The duel is a draw'} in ${this.round} round${this.round > 1 ? 's' : ''}.`); this.over = 'duel'; this.phase = 'over'; return; }
       if (!this.alivePlayers().length) { this.say('loss', this.partySize > 1 ? 'The whole party falls.' : 'You fall.'); this.over = 'loss'; this.phase = 'over'; return; }
       this.say('loss', `${a.name} falls! The rest of the party fights on.`);

@@ -335,7 +335,7 @@
   }
   function duelOver() {
     const S = NET.s, me = cb.players[cb.myMi], won = cb.winner === me;
-    const c = profile.chars[heroKey]; if (c && S && !S.counted) { S.counted = true; c.duels = c.duels || { w: 0, l: 0 }; if (won) c.duels.w++; else c.duels.l++; save(); }
+    const c = profile.chars[heroKey]; if (c && S && !S.counted) { S.counted = true; c.duels = c.duels || { w: 0, l: 0 }; if (won) c.duels.w++; else c.duels.l++; try { CBHub.achCheck(profile, { type: 'duel', won, rounds: cb.round, hp: me ? me.hp : null, hero: c.name }); } catch (e) {} save(); }
     const foe = cb.players.find(p => p !== me);
     const wager = typeof arenaSettle === 'function' ? arenaSettle(foe, won ? 'won' : cb.winner ? 'lost' : 'draw') : null;
     modal(`<h2 class="${won ? '' : 'loss'}">${won ? 'Victory' : cb.winner ? 'Defeat' : 'Draw'}</h2><p>${won ? `You beat ${esc(foe.name)} in ${cb.round} rounds.` : cb.winner ? `${esc(cb.winner.name)} wins in ${cb.round} rounds.` : 'Nobody is left standing.'} ${wager ? '' : 'Duels are for glory: nobody loses gear, gold or HP.'}</p>${wager || ''}

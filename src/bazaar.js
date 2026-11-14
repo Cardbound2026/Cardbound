@@ -141,7 +141,7 @@
       delete BZ.pend[p.rid]; delete BZ.refunded[p.rid];
       if (p.ok && p.it) {
         if (late) profile.gold = Math.max(0, profile.gold - (p.price || late.price)); // the answer came after we gave the gold back
-        profile.stash.unshift(Object.assign({}, p.it, { id: 'g' + Math.random().toString(36).slice(2, 10), slot: /^Ring/.test(p.it.slot) ? 'Ring' : p.it.slot }));
+        profile.stash.unshift(Object.assign({}, p.it, { id: 'g' + Math.random().toString(36).slice(2, 10), slot: /^Ring/.test(p.it.slot) ? 'Ring' : p.it.slot })); if (/Purple|Epic/.test(p.it.rarity || '')) CBHub.bump(profile, 'bazaarEpics');
         save(); renderTownBar(); sysChat(`You bought ${p.it.name} for ${p.price || (pend || late).price} gold. It is in your stash.`);
         if (BZ.view && BZ.view.uid === p.from) browseShop(p.from);
       } else if (pend) { profile.gold += pend.price; save(); renderTownBar(); toast(`Couldn't buy ${pend.name}: ${p.why || 'the sale failed'}. Your gold is back.`); if (BZ.view && BZ.view.uid === p.from) browseShop(p.from); }

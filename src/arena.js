@@ -132,7 +132,7 @@
     const a = arMe(); if (!a || a.status !== 'dueling' || !a.deal || !foe || foe.uid !== a.deal.foe) return null;
     const theirs = a.deal.foeStake, mine = a.stake, foeName = a.deal.foeName;
     const c = profile.chars[heroKey]; if (c) { c.wagers = c.wagers || { w: 0, l: 0 }; if (how === 'won') c.wagers.w++; else if (how === 'lost') c.wagers.l++; }
-    if (how === 'won') { const pid = a.pid, foeUid = a.deal.foe; giveBack(mine); profile.gold += theirs.gold || 0; for (const it of theirs.items || []) profile.stash.unshift(Object.assign({}, it, { id: 'g' + Math.random().toString(36).slice(2, 10) })); profile.arena = null;
+    if (how === 'won') { const pid = a.pid, foeUid = a.deal.foe; giveBack(mine); profile.gold += theirs.gold || 0; CBHub.bump(profile, 'duelGold', theirs.gold || 0); for (const it of theirs.items || []) profile.stash.unshift(Object.assign({}, it, { id: 'g' + Math.random().toString(36).slice(2, 10) })); profile.arena = null;
       AR.offers = {}; retrack(true); trustRpc('wager_claim', { p_loser: foeUid, p_pid: pid }).catch(() => {}).then(() => save()); } // the ledger first, then the save that holds the winnings
     else if (how === 'lost') { a.status = 'settling'; AR.offers = {}; concede(a).then(() => { if (profile.arena === a) { profile.arena = null; save(); retrack(true); } }); }
     else { giveBack(mine); profile.arena = null; AR.offers = {}; save(); retrack(true); }

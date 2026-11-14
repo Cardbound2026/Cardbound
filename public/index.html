@@ -3564,7 +3564,7 @@ class Combat {
     if (a.isPlayer) {
       if (a.dead) return;
       { const tp = a.powers.find(x => x.def && x.def.cheat && !x.cheatUsed); if (tp) { tp.cheatUsed = true; const [n, mode] = tp.def.cheat; a.hp = 1; const was = this.player; this.player = a; if (mode === 'heal') this.heal(a, Math.round(a.maxHp * n / 100), tp.def.label); else this.gainDef(n); this.player = was; this.say('crit', `${tp.def.label}: ${a.name} refuses to fall!`); return; } }
-      a.dead = true; a.block = 0; a.bleed = 0; if (a.demons && a.demons.length) { this.say('player', `${a.name}'s demons vanish.`); a.demons = []; } a.discard.push(...a.hand.splice(0));
+      a.dead = true; a.diedRound = this.round; a.block = 0; a.bleed = 0; if (a.demons && a.demons.length) { this.say('player', `${a.name}'s demons vanish.`); a.demons = []; } a.discard.push(...a.hand.splice(0));
       if (this.duel) { this.winner = this.alivePlayers()[0] || null; this.say('win', `${a.name} falls. ${this.winner ? this.winner.name + ' wins the duel' : 'The duel is a draw'} in ${this.round} round${this.round > 1 ? 's' : ''}.`); this.over = 'duel'; this.phase = 'over'; return; }
       if (!this.alivePlayers().length) { this.say('loss', this.partySize > 1 ? 'The whole party falls.' : 'You fall.'); this.over = 'loss'; this.phase = 'over'; return; }
       this.say('loss', `${a.name} falls! The rest of the party fights on.`);
@@ -4850,6 +4850,7 @@ class Run {
     this.at = nodeId; this.visited.push(nodeId);
     if (['fight', 'elite', 'boss'].includes(n.type)) {
       const buffs = this.activeBuffs();
+      if (n.type === 'boss') for (const m of this.members) (m.feat = m.feat || { lost: 0 }).bossStartHp = m.hp;   // Nov 13: for achievements
       const party = this.members.map(m => ({ cls: m.cls, name: m.name, gear: m.gear, deck: m.deck || undefined, hp: m.hp, mana: m.mana, buffs, talents: m.talents || undefined }));
       this.combat = new Combat({ party, enemies: n.enemies, enraged: !!n.enraged, firstBoss: n.type === 'boss' && !!this.opts.firstBoss, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : this.opts.partyStep, mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * (this.members.length - 1) : 1 });
       this.note(`Row ${n.row}: ${n.type === 'boss' ? 'the boss' : n.type === 'elite' ? 'an elite' : 'a fight'} against ${n.enemies.map(k => this.data.enemies[k].name).join(', ')}.`);
@@ -4891,7 +4892,7 @@ class Run {
         this.note(`${m.name} fell in the fight: their sack (${m.sack.length} items, ${m.gold} gold) is lost. They get back up at half HP.`);
         m.sack = []; m.gold = 0; m.hp = Math.ceil(m.stats.maxHp / 2); m.mana = 0;
       } else { m.hp = Math.min(pl.hp, m.stats.maxHp); m.mana = pl.mana; } // talent max-HP buffs last for the fight only
-      { const F = m.feat = m.feat || { lost: 0 }; F.lost += pl.fxLost || 0; if (n.type === 'boss') { F.bossClean = !(pl.fxHealed > 0) && !(pl.fxDef > 0); F.bossLost = pl.fxLost || 0; F.bossTypes = Object.assign({}, pl.fxTypes || {}); F.bossDot = pl.fxDot || 0; F.bossDealt = pl.fxDealt || 0; F.bossRounds = cb.round; F.bossHpPct = Math.round(100 * Math.max(0, pl.hp) / Math.max(1, pl.maxHp)); } } // Nov 2: for achievements (HP lost all run; the boss fight with no healing or defense)
+      { const F = m.feat = m.feat || { lost: 0 }; F.lost += pl.fxLost || 0; if (n.type === 'boss') { F.bossClean = !(pl.fxHealed > 0) && !(pl.fxDef > 0); F.bossLost = pl.fxLost || 0; F.bossTypes = Object.assign({}, pl.fxTypes || {}); F.bossDot = pl.fxDot || 0; F.bossDealt = pl.fxDealt || 0; F.bossRounds = cb.round; F.bossHpPct = Math.round(100 * Math.max(0, pl.hp) / Math.max(1, pl.maxHp)); F.bossRes = (pl.resist || {})[((this.data.maps || {})[this.mapKey || 'physical'] || {}).element] || 0; F.bossDiedRound = pl.diedRound == null ? null : pl.diedRound; } } // Nov 2: for achievements (HP lost all run; the boss fight with no healing or defense)
       const regen = Math.round((m.stats.healthRegen + this.partyTalent('partyHealthRegen')) * (1 + (m.stats.spirit || 0) / 100)); if (regen && !fell) m.hp = Math.min(m.stats.maxHp, m.hp + regen); // Spirit boosts healing received
       const drops = []; let gold = 0;
       for (const e of cb.enemies) {  // every hero rolls their own loot
@@ -5182,7 +5183,7 @@ const ACH = [
   { id: 'clear5', cat: 'Roads', name: 'Veteran', how: 'Kill a map boss at +5 or higher.', title: 'Veteran', test: (p, ev) => won(ev, 5) || heroes(p).some(c => bestKill(c) >= 5) },
   { id: 'clear10', cat: 'Roads', name: 'Champion', how: 'Kill a map boss at +10 or higher.', title: 'Champion', test: (p, ev) => won(ev, 10) || heroes(p).some(c => bestKill(c) >= 10) },
   { id: 'clear15', cat: 'Roads', name: 'Legend', how: 'Kill a map boss at +15 or higher.', title: 'Legend', test: (p, ev) => won(ev, 15) || heroes(p).some(c => bestKill(c) >= 15) },
-  { id: 'clear19', cat: 'Roads', name: 'Mythic', how: 'Kill a map boss at +19.', title: 'the Mythic', test: (p, ev) => won(ev, 19) || heroes(p).some(c => bestKill(c) >= 19) },
+  { id: 'clear19', cat: 'Roads', name: 'Mythic', how: 'Kill a map boss at +19 or higher.', title: 'the Mythic', test: (p, ev) => won(ev, 19) || heroes(p).some(c => bestKill(c) >= 19) },
   ...Object.entries(CLASS_TITLES).map(([cls, t]) => ({ id: 'cls_' + cls, cat: 'Classes', name: t, how: `Kill a map boss at +12 or higher as a ${cls}.`, title: t,
     test: (p, ev) => (won(ev, 12) && ev.cls === cls) || heroes(p).some(c => c.cls === cls && bestKill(c) >= 12) })),
   ...Object.entries(MAP_TITLES).map(([mk, [nm, t]]) => ({ id: 'map_' + mk, cat: 'Roads', name: t, how: `Kill the boss of ${nm} at +10 or higher.`, title: t,
@@ -5197,9 +5198,9 @@ const ACH = [
   { id: 'gold1m', cat: 'Wealth', name: 'Tycoon', how: 'Bring home 1,000,000 gold from the roads.', title: 'Tycoon', n: 1000000, count: (p) => st(p, 'goldLooted') },
   { id: 'sale1', cat: 'Wealth', name: 'Merchant', how: 'Sell an item at the Bazaar.', title: 'Merchant', n: 1, count: (p) => st(p, 'bazaarSales') },
   { id: 'sale100k', cat: 'Wealth', name: 'Businessman', how: 'Sell one item at the Bazaar for 100,000 gold or more.', title: 'Businessman', test: (p) => st(p, 'bazaarBest') >= 100000 },
-  { id: 'unburned', cat: 'Feats', name: 'The Unburned', how: 'Kill the boss of a +5 or higher Cinder Reach without healing or gaining any Block (or Dodge, Barrier, Absorb) in the boss fight.', title: 'the Unburned',
-    test: (p, ev) => won(ev, 5) && ev.map === 'fire' && ev.bossClean },
-  { id: 'frozen', cat: 'Feats', name: 'Frozen', how: 'Clear a +5 or higher Rimewatch run without losing a single point of HP.', title: 'the Frozen', test: (p, ev) => won(ev, 5) && ev.map === 'frost' && ev.lost === 0 },
+  { id: 'unburned', cat: 'Feats', name: 'The Unburned', how: 'Kill the boss of a +7 or higher Cinder Reach without healing or gaining any Block (or Dodge, Barrier, Absorb) in the boss fight.', title: 'the Unburned',
+    test: (p, ev) => won(ev, 7) && ev.map === 'fire' && ev.bossClean },
+  { id: 'frozen', cat: 'Feats', name: 'Frozen', how: 'Clear a +7 or higher Rimewatch run without losing a single point of HP.', title: 'the Frozen', test: (p, ev) => won(ev, 7) && ev.map === 'frost' && ev.lost === 0 },
   { id: 'untouchable', cat: 'Feats', name: 'Untouchable', how: 'Kill a +10 or higher map boss without losing any HP in the boss fight.', title: 'the Untouchable', test: (p, ev) => won(ev, 10) && ev.bossLost === 0 },
   { id: 'party4', cat: 'Feats', name: 'Fellowship', how: 'Kill a map boss in a party of four.', title: 'of the Fellowship', test: (p, ev) => won(ev, 0) && ev.party >= 4 },
   { id: 'card10', cat: 'Collection', name: 'Inkbound', how: 'Rank a card up to +10.', title: 'Inkbound', test: (p) => heroes(p).some(c => [...(c.deck || []), ...(c.cards || [])].some(k => (k.rank || 0) >= MAX_RANK)) },
@@ -5215,15 +5216,17 @@ const ACH = [
   ...[['fire', 'Fire', 'Fight Fire with Fire', 'the Pyromaniac'], ['fire', 'Frost', 'Quenched', 'the Quencher'], ['frost', 'Frost', 'Cold Shoulder', 'the Cold-Hearted'], ['frost', 'Fire', 'Thawbringer', 'Thawbringer'],
     ['nature', 'Nature', 'Overgrowth', 'the Overgrown'], ['nature', 'Fire', 'Wildfire', 'Wildfire'], ['arcane', 'Arcane', 'Mirror Match', 'the Mirrored'], ['arcane', 'Shadow', 'Eclipse', 'the Eclipse'],
     ['shadow', 'Shadow', 'Darker Still', 'the Darker'], ['shadow', 'Holy', 'Light in the Crypt', 'Cryptlight'], ['physical', 'Physical', 'Steel Answers Steel', 'Steelsworn']].map(([mk, el, nm, t]) => ({ id: 'only_' + mk + '_' + el, cat: 'Boss feats', name: nm, title: t,
-    how: `Kill the boss of ${MAP_TITLES[mk][0]} dealing only ${el} damage in the boss fight.`, test: (p, ev) => won(ev, 0) && ev.map === mk && onlyType(ev.types, el) })),
-  { id: 'spellbound', cat: 'Boss feats', name: 'Spellbound', how: 'Kill the boss of The Broken March without dealing any Physical damage in the boss fight.', title: 'the Spellbound', test: (p, ev) => won(ev, 0) && ev.map === 'physical' && ev.types && ev.dealt > 0 && !(ev.types.Physical > 0) },
-  { id: 'rainbow', cat: 'Boss feats', name: 'Rainbow', how: 'Kill a map boss dealing five or more kinds of damage in the boss fight.', title: 'the Prismatic', test: (p, ev) => won(ev, 0) && ev.types && Object.values(ev.types).filter(v => v > 0).length >= 5 },
-  { id: 'slowdeath', cat: 'Boss feats', name: 'Slow Death', how: 'Kill a map boss with more than half of your damage coming from damage over time (Bleed, Poison, Burn, Dread, Rot).', title: 'the Patient', test: (p, ev) => won(ev, 0) && ev.dealt > 0 && ev.dot > ev.dealt / 2 },
-  { id: 'swift', cat: 'Boss feats', name: 'Swift Justice', how: 'Kill a +5 or higher map boss in 5 rounds or fewer.', title: 'the Swift', test: (p, ev) => won(ev, 5) && ev.rounds > 0 && ev.rounds <= 5 },
-  { id: 'edge', cat: 'Boss feats', name: 'On the Edge', how: 'Kill a map boss with 10% of your health or less left.', title: 'the Reckless', test: (p, ev) => won(ev, 0) && ev.hpPct != null && ev.hpPct <= 10 },
+    how: `Kill the boss of ${MAP_TITLES[mk][0]} at +7 or higher dealing only ${el} damage in the boss fight.`, test: (p, ev) => won(ev, 7) && ev.map === mk && onlyType(ev.types, el) })),
+  { id: 'spellbound', cat: 'Boss feats', name: 'Spellbound', how: 'Kill the boss of The Broken March at +7 or higher without dealing any Physical damage in the boss fight.', title: 'the Spellbound', test: (p, ev) => won(ev, 7) && ev.map === 'physical' && ev.types && ev.dealt > 0 && !(ev.types.Physical > 0) },
+  { id: 'rainbow', cat: 'Boss feats', name: 'Rainbow', how: 'Kill a +7 or higher map boss dealing five or more kinds of damage in the boss fight.', title: 'the Prismatic', test: (p, ev) => won(ev, 7) && ev.types && Object.values(ev.types).filter(v => v > 0).length >= 5 },
+  { id: 'slowdeath', cat: 'Boss feats', name: 'Slow Death', how: 'Kill a +7 or higher map boss with more than half of your damage coming from damage over time (Bleed, Poison, Burn, Dread, Rot).', title: 'the Patient', test: (p, ev) => won(ev, 7) && ev.dealt > 0 && ev.dot > ev.dealt / 2 },
+  { id: 'swift', cat: 'Boss feats', name: 'Swift Justice', how: 'Kill a +7 or higher map boss in 5 rounds or fewer.', title: 'the Swift', test: (p, ev) => won(ev, 7) && ev.rounds > 0 && ev.rounds <= 5 },
+  { id: 'edge', cat: 'Boss feats', name: 'On the Edge', how: 'Kill a +7 or higher map boss with 10% of your health or less left.', title: 'the Reckless', test: (p, ev) => won(ev, 7) && ev.hpPct != null && ev.hpPct <= 10 },
   // raids
-  ...[['physical', 'Titanfall', 'Titanfeller'], ['fire', 'Dragonslayer', 'Dragonslayer'], ['frost', 'Wyrmbane', 'Wyrmbane'], ['nature', 'Spiderbane', 'Spiderbane'], ['arcane', 'Starbreaker', 'Starbreaker'], ['shadow', 'Kingslayer', 'Kingslayer']].map(([mk, nm, t]) => ({ id: 'raid_' + mk, cat: 'Raids', name: nm, title: t,
-    how: `Kill ${CB.RAID_NAMES[mk]} in a raid.`, test: (p, ev) => (ev.type === 'raid' && ev.map === mk) || !!(p.raidDone || {})[mk] })),
+  // Nov 13: the six raid-boss titles need a +6 raid (they were any level; titles already earned are kept), and each has a second one at +11
+  ...[['physical', 'Titanfall', 'Titanfeller', "Titan's Doom", 'Titansdoom'], ['fire', 'Dragonslayer', 'Dragonslayer', "Dragon's Doom", 'Dragonlord'], ['frost', 'Wyrmbane', 'Wyrmbane', "Wyrm's End", 'Wyrmlord'], ['nature', 'Spiderbane', 'Spiderbane', 'Broodbreaker', 'Broodbreaker'], ['arcane', 'Starbreaker', 'Starbreaker', 'Skyfall', 'Starlord'], ['shadow', 'Kingslayer', 'Kingslayer', 'Regicide', 'the Regicide']].flatMap(([mk, nm, t, nm2, t2]) => [
+    { id: 'raid_' + mk, cat: 'Raids', name: nm, title: t, how: `Kill ${CB.RAID_NAMES[mk]} in a +6 or higher raid.`, test: (p, ev) => (ev.type === 'raid' && ev.map === mk && (ev.level || 0) >= 6) || ((p.raidBest || {})[mk] || 0) >= 6 },
+    { id: 'raid11_' + mk, cat: 'Raids', name: nm2, title: t2, how: `Kill ${CB.RAID_NAMES[mk]} in a +11 or higher raid.`, test: (p, ev) => (ev.type === 'raid' && ev.map === mk && (ev.level || 0) >= 11) || ((p.raidBest || {})[mk] || 0) >= 11 }]),
   { id: 'raid_all', cat: 'Raids', name: 'Conqueror', how: 'Kill all six raid bosses.', title: 'the Conqueror', n: 6, count: (p) => Object.keys(p.raidDone || {}).length },
   { id: 'raid2', cat: 'Raids', name: 'Dynamic Duo', how: 'Kill a raid boss with only two heroes in the raid.', title: 'of the Duo', test: (p, ev) => ev.type === 'raid' && ev.party === 2 },
   { id: 'raid10', cat: 'Raids', name: 'Full Warband', how: 'Kill a raid boss with ten heroes in the raid.', title: 'of the Warband', test: (p, ev) => ev.type === 'raid' && ev.party >= 10 },
@@ -5251,7 +5254,33 @@ const ACH = [
   { id: 'runs100', cat: 'Roads', name: 'Roadworn', how: 'Finish 100 runs (any result, all heroes together).', title: 'the Roadworn', n: 100, count: (p) => heroes(p).reduce((s, c) => s + (c.runs || 0), 0) },
   { id: 'extract10', cat: 'Roads', name: 'Survivor', how: 'Extract from 10 runs at a campfire.', title: 'Survivor', n: 10, count: (p) => st(p, 'extracts') },
   { id: 'deaths25', cat: 'Roads', name: 'Gravewalker', how: 'Die 25 times. It happens.', title: 'Gravewalker', n: 25, count: (p) => st(p, 'deaths') },
+  // ---- Nov 13 (later): 22 more. Every "+5" here means +5 or higher. The per-boss ones are ticked off in p.feats (featMark) as each boss falls.
+  { id: 'booster', cat: 'Raids', name: 'Booster', how: 'Kill a +5 or higher raid boss as the only hero who dealt any damage to it (in a raid of two or more).', title: 'Booster', test: (p, ev) => ev.type === 'raid' && (ev.level || 0) >= 5 && ev.party >= 2 && ev.dealt > 0 && ev.othersDealt === 0 },
+  { id: 'hardcarry', cat: 'Raids', name: 'Hard Carry', how: 'Kill a +5 or higher raid boss without dealing a single point of damage to it yourself.', title: 'Hard Carry', test: (p, ev) => ev.type === 'raid' && (ev.level || 0) >= 5 && ev.party >= 2 && ev.dealt === 0 },
+  { id: 'hitman', cat: 'Arena', name: 'Hitman', how: 'Win 100,000 gold from wagered duels.', title: 'Hitman', n: 100000, count: (p) => st(p, 'duelGold') },
+  { id: 'notorious', cat: 'Arena', name: 'Notorious', how: 'Win a duel on the first turn.', title: 'The Notorious', test: (p, ev) => ev.type === 'duel' && ev.won && ev.rounds <= 1 },
+  { id: 'comeback', cat: 'Arena', name: 'Comeback King', how: 'Win a duel with exactly 1 HP left.', title: 'Comeback King', test: (p, ev) => ev.type === 'duel' && ev.won && ev.hp === 1 },
+  { id: 'unshakeable', cat: 'Boss feats', name: 'Unshakeable', how: 'Kill a map boss after starting the boss fight on 1 HP.', title: 'The Unshakeable', test: (p, ev) => won(ev, 0) && ev.startHp === 1 },
+  { id: 'aggressive', cat: 'Boss feats', name: 'Aggressive', how: 'Kill the boss of every map at +5 or higher on your first turn.', title: 'Aggressive', n: 6, count: (p) => featN(p, 't1') },
+  { id: 'sleepy', cat: 'Boss feats', name: 'Sleepy', how: 'Kill a +5 or higher map boss after round 50.', title: 'the Sleepy', test: (p, ev) => won(ev, 5) && ev.rounds > 50 },
+  { id: 'risky', cat: 'Hardcore', name: 'Risky', how: 'Kill a +5 or higher map boss with a Hardcore hero who has no resistance to that map\'s element.', title: 'Risky', test: (p, ev) => won(ev, 5) && ev.hc && ev.res === 0 },
+  { id: 'thick', cat: 'Boss feats', name: 'Thick', how: 'Kill the boss of every map at +5 or higher without losing a point of HP in the boss fight.', title: 'Thick', n: 6, count: (p) => featN(p, 'thick') },
+  { id: 'slippery', cat: 'Boss feats', name: 'Slippery', how: 'Kill the boss of every map at +5 or higher, ending each fight with less than 10% of your HP.', title: 'Slippery', n: 6, count: (p) => featN(p, 'slip') },
+  { id: 'brother', cat: 'Feats', name: 'Brother', how: 'Kill the boss of every map at +10 or higher in a party of exactly two.', title: 'Brother', n: 6, count: (p) => featN(p, 'duo') },
+  { id: 'useless', cat: 'Feats', name: 'Useless', how: 'Fall on the first turn of a +5 or higher boss fight, and have your party kill the boss anyway.', title: 'Useless', test: (p, ev) => won(ev, 5) && ev.diedRound != null && ev.diedRound <= 1 },
+  { id: 'undying', cat: 'Hardcore', name: 'Undying', how: 'Kill a +5 or higher map boss with a Hardcore hero of every class.', title: 'The Undying', n: 5, count: (p) => new Set(Object.keys((p.feats || {}).hc5 || {}).map(k => k.split(':')[0])).size },
+  { id: 'immortal', cat: 'Hardcore', name: 'Immortal', how: 'Kill the boss of every map at +5 or higher with a Hardcore hero of every class (30 kills).', title: 'The Immortal', n: 30, count: (p) => featN(p, 'hc5') },
+  { id: 'unkillable', cat: 'Hardcore', name: 'Unkillable', how: 'Kill the boss of every map with a Hardcore hero of every class (30 kills, any level).', title: 'The Unkillable', n: 30, count: (p) => featN(p, 'hc0') },
+  { id: 'theory', cat: 'Emberwatch', name: 'Theorycrafter', how: 'Post a build in the Deck Planner.', title: 'Theorycrafter', n: 1, count: (p) => st(p, 'buildPosts') },
+  { id: 'moneybags', cat: 'Wealth', name: 'Moneybags', how: 'Buy something with Skull Tokens.', title: 'Moneybags', n: 1, count: (p) => st(p, 'skullBuys') },
+  { id: 'shiny', cat: 'Wealth', name: 'Shiny', how: 'Buy an Epic (purple) item at the Bazaar.', title: 'Shiny', n: 1, count: (p) => st(p, 'bazaarEpics') },
+  { id: 'juss', cat: 'Emberwatch', name: 'Threatening', how: 'Find Juss in Emberwatch.', title: 'Threatening', n: 1, count: (p) => st(p, 'juss') },
+  { id: 'salvager', cat: 'Wealth', name: 'Salvager', how: 'Salvage 100,000 items.', title: 'the Salvager', n: 100000, count: (p) => st(p, 'salvaged') },
+  { id: 'all', cat: 'Feats', name: 'The One and Only', how: 'Earn every other achievement.', title: 'The One and Only', n: 999, count: (p) => ACH.filter(a => a.id !== 'all' && (p.ach || {})[a.id]).length },
 ];
+ACH.find(a => a.id === 'all').n = ACH.length - 1;
+const featN = (p, k) => Object.keys((p.feats || {})[k] || {}).length;
+function featMark(p, k, key) { p.feats = p.feats || {}; (p.feats[k] = p.feats[k] || {})[key] = 1; }
 const ACH_BY = Object.fromEntries(ACH.map(a => [a.id, a]));
 const ACH_FRESH = []; // unlocks waiting to be announced by the page (achTake)
 function achTake() { return ACH_FRESH.splice(0); }
@@ -5263,7 +5292,7 @@ function achCheck(p, ev, who, quiet) {
 }
 function bump(p, k, n) { p.stats = p.stats || {}; p.stats[k] = (p.stats[k] || 0) + (n == null ? 1 : n); }
 // Nov 2: titles that read as a description ("the Blooded", "of the Fellowship") follow the name; ranks ("Veteran") come first
-const titleAfter = (t) => /^(the|of) /i.test(t || '');
+const titleAfter = (t) => /^(the|of) /.test(t || '');   // Nov 13: lower case only, so "The Notorious" is worn before the name
 const titled = (name, t) => !t ? name : titleAfter(t) ? `${name} ${t}` : `${t} ${name}`;
 // Nov 2: Warriors and Paladins call their defense Block with a shield in hand and Parry without one
 function defWord(c) { if (!c) return null; const cls = CLASSES[c.cls]; if (!cls) return null; if (c.cls !== 'Warrior' && c.cls !== 'Paladin') return cls.defense;
@@ -5328,7 +5357,7 @@ function unequip(p, cls, slot) {
 }
 const SALVAGE = { White: 2, Green: 6, Blue: 15, 'Purple (Epic)': 40 };
 function salvageValue(it) { return Math.round((SALVAGE[it.rarity] || 2) * Math.pow(1.05, it.level || 0)); } // Nov 2: +5% per map level (was 1.5x), like monster gold
-function salvage(p, itemId) { const i = p.stash.findIndex(x => x.id === itemId); if (i < 0) return 0; const g = salvageValue(p.stash[i]); p.stash.splice(i, 1); p.gold += g; return g; }
+function salvage(p, itemId) { const i = p.stash.findIndex(x => x.id === itemId); if (i < 0) return 0; const g = salvageValue(p.stash[i]); p.stash.splice(i, 1); p.gold += g; bump(p, 'salvaged'); return g; }
 
 // ---------- deck and cards
 function deckCheck(deck) {
@@ -5483,7 +5512,7 @@ function absorbRun(p, run, mi) {
   for (const o of mem.orders || []) { if (o.kind === 'card') { c.cards.push({ id: uid('k'), key: o.key, rank: 0 }); (c.seen = c.seen || {})[o.key] = 1; ordered++; continue; } if (ST.length < STASH_MAX) { ST.unshift(Object.assign({ id: uid('g') }, o, { slot: /^Ring/.test(o.slot) ? 'Ring' : o.slot })); ordered++; } }
   let salvaged = 0, salvGold = 0, salvInk = 0;
   for (const it of kept.items) {
-    if (it.autoSalvage) { salvaged++; if (it.kind === 'card') { const v = inkValue(it); p.ink = (p.ink || 0) + v; salvInk += v; (c.seen = c.seen || {})[it.key] = 1; } else { const v = salvageValue(it); p.gold += v; salvGold += v; } continue; } // marked in the sack during the run
+    if (it.autoSalvage) { salvaged++; bump(p, 'salvaged'); if (it.kind === 'card') { const v = inkValue(it); p.ink = (p.ink || 0) + v; salvInk += v; (c.seen = c.seen || {})[it.key] = 1; } else { const v = salvageValue(it); p.gold += v; salvGold += v; } continue; } // marked in the sack during the run
     if (it.kind === 'card') { c.cards.push({ id: uid('k'), key: it.key, rank: 0 }); (c.seen = c.seen || {})[it.key] = 1; cards++; }
     else if (ST.length < STASH_MAX) { ST.unshift(Object.assign({ id: uid('g') }, it, { slot: /^Ring/.test(it.slot) ? 'Ring' : it.slot })); items++; }
     else lost++;
@@ -5506,7 +5535,12 @@ function absorbRun(p, run, mi) {
   // Nov 2: achievement counters and checks for this hero's run
   if (!mi) bump(p, 'kills', run.kills || 0); // Nov 13: monsters killed, once per run
   bump(p, 'goldLooted', kept.gold || 0); if (run.over === 'extracted') bump(p, 'extracts'); if (run.over === 'dead') bump(p, 'deaths'); else if (mem.deaths) bump(p, 'deaths', mem.deaths);
-  const F = mem.feat || {}, ach = achCheck(p, { type: 'run', victory: run.over === 'victory', level: run.level || 0, map: run.mapKey || 'physical', cls: c.cls, hc: !!c.hardcore, hero: c.name,
+  { const F0 = mem.feat || {}, lv = run.level || 0, mk = run.mapKey || 'physical';   // Nov 13: per-boss feats, kept on the account
+    if (run.over === 'victory') { const n = run.members ? run.members.length : 1;
+      if (c.hardcore) { featMark(p, 'hc0', c.cls + ':' + mk); if (lv >= 5) featMark(p, 'hc5', c.cls + ':' + mk); }
+      if (lv >= 5) { if (F0.bossRounds > 0 && F0.bossRounds <= 1) featMark(p, 't1', mk); if (F0.bossLost === 0) featMark(p, 'thick', mk); if (F0.bossHpPct != null && F0.bossHpPct < 10 && F0.bossHpPct > 0) featMark(p, 'slip', mk); }
+      if (lv >= 10 && n === 2) featMark(p, 'duo', mk); } }
+  const F = mem.feat || {}, ach = achCheck(p, { type: 'run', startHp: (mem.feat || {}).bossStartHp, res: (mem.feat || {}).bossRes, diedRound: (mem.feat || {}).bossDiedRound, victory: run.over === 'victory', level: run.level || 0, map: run.mapKey || 'physical', cls: c.cls, hc: !!c.hardcore, hero: c.name,
     party: run.members ? run.members.length : 1, lost: F.lost, bossClean: F.bossClean, bossLost: F.bossLost, types: F.bossTypes || null, dot: F.bossDot || 0, dealt: F.bossDealt || 0, rounds: F.bossRounds || 0, hpPct: F.bossHpPct });
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk, ach };
 }
@@ -6964,6 +6998,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     P.held = []; P.path = []; P.target = null;
     if (n.warp && Math.abs(n.x - P.x) + Math.abs(n.y - P.y) <= 2) { const w = n.warp; return veil(w[3], w[4], () => { P.x = w[0]; P.y = w[1]; P.dir = w[2]; P.mv = null; P.path = []; P.held = []; P.target = null; TOWN.district = ''; if (typeof socPos === 'function') socPos(); if (typeof retrack === 'function') retrack(true); updatePrompt(); if (window.CB_AUDIO) CB_AUDIO.sfx('door'); }); }   // Nov 13: a gate to somewhere else on the grid (the arena floor)
     if (n.inside && typeof exEnter === 'function' && !exInside() && Math.abs(n.x - P.x) + Math.abs(n.y - P.y) <= 2) return exEnter(n); // Nov 13: walk in; you talk to them inside
+    if (n.id === 'statue' && profile && !((profile.stats || {}).juss)) { CBHub.bump(profile, 'juss'); save(); }   /* Nov 13: the "Threatening" achievement */
     if (!n.fixed) n.dir = n.x > P.x ? 'left' : n.x < P.x ? 'right' : n.y > P.y ? 'up' : 'down';
     n.lineN = ((n.lineN == null ? -1 : n.lineN) + 1) % n.lines.length;
     { const c = profile.chars[heroKey]; if (n.id === 'wagon' && c && !c.tutRoad && !(c.runs > 0)) { c.tutRoad = 1; save(); closeTalk(); tutStart('road'); return; } } // Nov 2: the first talk with Arisha is the road and fight tutorial
@@ -7563,8 +7598,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794620570614';
-  const CB_BUILD = '1637fe6e25'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794622144523';
+  const CB_BUILD = '449bac9fb2'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -7895,7 +7930,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   }
   function duelOver() {
     const S = NET.s, me = cb.players[cb.myMi], won = cb.winner === me;
-    const c = profile.chars[heroKey]; if (c && S && !S.counted) { S.counted = true; c.duels = c.duels || { w: 0, l: 0 }; if (won) c.duels.w++; else c.duels.l++; save(); }
+    const c = profile.chars[heroKey]; if (c && S && !S.counted) { S.counted = true; c.duels = c.duels || { w: 0, l: 0 }; if (won) c.duels.w++; else c.duels.l++; try { CBHub.achCheck(profile, { type: 'duel', won, rounds: cb.round, hp: me ? me.hp : null, hero: c.name }); } catch (e) {} save(); }
     const foe = cb.players.find(p => p !== me);
     const wager = typeof arenaSettle === 'function' ? arenaSettle(foe, won ? 'won' : cb.winner ? 'lost' : 'draw') : null;
     modal(`<h2 class="${won ? '' : 'loss'}">${won ? 'Victory' : cb.winner ? 'Defeat' : 'Draw'}</h2><p>${won ? `You beat ${esc(foe.name)} in ${cb.round} rounds.` : cb.winner ? `${esc(cb.winner.name)} wins in ${cb.round} rounds.` : 'Nobody is left standing.'} ${wager ? '' : 'Duels are for glory: nobody loses gear, gold or HP.'}</p>${wager || ''}
@@ -8072,7 +8107,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       $('mNew').onclick = backToTown; $('mClose').onclick = closeModal; return;
     }
     if (S && S.host === SOC.me && typeof recordRaidKill === 'function') recordRaidKill(cb); // Hall of Records: the raid leader writes the kill
-    if (c && !cb._locked) { cb._locked = true; c.raidLocks = c.raidLocks || {}; c.raidLocks[mk] = Date.now(); c.raidKills = (c.raidKills || 0) + 1; (profile.raidDone = profile.raidDone || {})[mk] = 1; { const me = cb.players[cb.myMi != null ? cb.myMi : 0] || {}; CBHub.achCheck(profile, { type: 'raid', level: cb.level || 0, hero: c.name, map: mk, party: cb.players.length, deaths: cb.players.filter(q => q.dead || q.hp <= 0).length, types: me.fxTypes || null, rounds: cb.round }); } save(); if (typeof publishHero === 'function') publishHero(heroKey, true); }
+    if (c && !cb._locked) { cb._locked = true; c.raidLocks = c.raidLocks || {}; c.raidLocks[mk] = Date.now(); c.raidKills = (c.raidKills || 0) + 1; (profile.raidDone = profile.raidDone || {})[mk] = 1; (profile.raidBest = profile.raidBest || {})[mk] = Math.max(profile.raidBest[mk] || 0, cb.level || 0); { const me = cb.players[cb.myMi != null ? cb.myMi : 0] || {}; CBHub.achCheck(profile, { type: 'raid', dealt: Math.round(me.fxDealt || 0), othersDealt: Math.round(cb.players.filter(q => q !== me).reduce((t, q) => t + (q.fxDealt || 0), 0)), level: cb.level || 0, hero: c.name, map: mk, party: cb.players.length, deaths: cb.players.filter(q => q.dead || q.hp <= 0).length, types: me.fxTypes || null, rounds: cb.round }); } save(); if (typeof publishHero === 'function') publishHero(heroKey, true); }
     if (!cb.raidLoot) { cb.raidLoot = raidLootRoll(cb); if (S) S.lootAt = Date.now(); sysChat(`${CB.RAID_NAMES[mk]} falls! ${cb.raidLoot.length} items dropped: roll Need, Greed or Pass.`); }
     raidLootModal();
   }
@@ -8436,7 +8471,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       delete BZ.pend[p.rid]; delete BZ.refunded[p.rid];
       if (p.ok && p.it) {
         if (late) profile.gold = Math.max(0, profile.gold - (p.price || late.price)); // the answer came after we gave the gold back
-        profile.stash.unshift(Object.assign({}, p.it, { id: 'g' + Math.random().toString(36).slice(2, 10), slot: /^Ring/.test(p.it.slot) ? 'Ring' : p.it.slot }));
+        profile.stash.unshift(Object.assign({}, p.it, { id: 'g' + Math.random().toString(36).slice(2, 10), slot: /^Ring/.test(p.it.slot) ? 'Ring' : p.it.slot })); if (/Purple|Epic/.test(p.it.rarity || '')) CBHub.bump(profile, 'bazaarEpics');
         save(); renderTownBar(); sysChat(`You bought ${p.it.name} for ${p.price || (pend || late).price} gold. It is in your stash.`);
         if (BZ.view && BZ.view.uid === p.from) browseShop(p.from);
       } else if (pend) { profile.gold += pend.price; save(); renderTownBar(); toast(`Couldn't buy ${pend.name}: ${p.why || 'the sale failed'}. Your gold is back.`); if (BZ.view && BZ.view.uid === p.from) browseShop(p.from); }
@@ -8579,7 +8614,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     const a = arMe(); if (!a || a.status !== 'dueling' || !a.deal || !foe || foe.uid !== a.deal.foe) return null;
     const theirs = a.deal.foeStake, mine = a.stake, foeName = a.deal.foeName;
     const c = profile.chars[heroKey]; if (c) { c.wagers = c.wagers || { w: 0, l: 0 }; if (how === 'won') c.wagers.w++; else if (how === 'lost') c.wagers.l++; }
-    if (how === 'won') { const pid = a.pid, foeUid = a.deal.foe; giveBack(mine); profile.gold += theirs.gold || 0; for (const it of theirs.items || []) profile.stash.unshift(Object.assign({}, it, { id: 'g' + Math.random().toString(36).slice(2, 10) })); profile.arena = null;
+    if (how === 'won') { const pid = a.pid, foeUid = a.deal.foe; giveBack(mine); profile.gold += theirs.gold || 0; CBHub.bump(profile, 'duelGold', theirs.gold || 0); for (const it of theirs.items || []) profile.stash.unshift(Object.assign({}, it, { id: 'g' + Math.random().toString(36).slice(2, 10) })); profile.arena = null;
       AR.offers = {}; retrack(true); trustRpc('wager_claim', { p_loser: foeUid, p_pid: pid }).catch(() => {}).then(() => save()); } // the ledger first, then the save that holds the winnings
     else if (how === 'lost') { a.status = 'settling'; AR.offers = {}; concede(a).then(() => { if (profile.arena === a) { profile.arena = null; save(); retrack(true); } }); }
     else { giveBack(mine); profile.arena = null; AR.offers = {}; save(); retrack(true); }
@@ -8670,6 +8705,9 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Feature', "22 new achievements and titles: Booster, Hard Carry, Hitman, The Notorious, Comeback King, The Unshakeable, Aggressive, the Sleepy, Risky, Thick, Slippery, Brother, Useless, The Undying, The Immortal, The Unkillable, Theorycrafter, Moneybags, Shiny, Threatening, the Salvager and The One and Only (earn every other achievement)."],
+      ['Change', "Raid-boss titles (Titanfeller, Dragonslayer, Wyrmbane, Spiderbane, Starbreaker, Kingslayer) now need a +6 or higher raid, and each has a second title for +11 or higher. Titles you already earned are kept."],
+      ['Change', "Boss feats (one-element kills, Spellbound, Rainbow, Slow Death, Swift Justice, On the Edge, The Unburned, Frozen) now need a +7 or higher map. Wherever an achievement names a level, that level or higher counts."],
       ['Art', "Calmer route maps for the Tanglewild and Rimewatch: plain dirt with a few roots, and plain snow with a few cracks, in place of the busy repeating patterns. The other maps were checked and left as they are."],
       ['Interface', "Cards a merchant is selling grow when you point at them, and clicking one opens its rank page (every upgrade and where it drops)."],
       ['Change', "You can no longer walk over the top of the Colosseum in town: the way in is Arenamaster Kord's gate on its west side."],
@@ -14287,7 +14325,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     PL.busy = true; plRender();
     try { if (b.rid) { const { data, error } = await supa.from('builds').update(row).eq('id', b.rid).eq('user_id', supaUser.id).select('id'); if (error) throw error; if (!data || !data.length) b.rid = null; }
       if (!b.rid) { const { data, error } = await supa.from('builds').insert(Object.assign({ user_id: supaUser.id }, row)).select('id').single(); if (error) throw error; b.rid = data.id; }
-      save(); PL.busy = false; plRender(); sysChat(`Posted "${b.name}". Other players can find it in the Deck Planner under Browse builds.`);
+      CBHub.bump(profile, 'buildPosts'); save(); PL.busy = false; plRender(); sysChat(`Posted "${b.name}". Other players can find it in the Deck Planner under Browse builds.`);
     } catch (e) { PL.busy = false; plRender(); toast(recSetupErr(e) ? 'Posted builds are not switched on yet: supabase/builds.sql needs to be run once.' : 'Could not post: ' + (e.message || e)); }
   }
   async function plUnpost(b) { if (!(supa && supaUser) || !b.rid) return; try { const { error } = await supa.from('builds').delete().eq('id', b.rid).eq('user_id', supaUser.id); if (error) throw error; b.rid = null; save(); PL.list = null; plRender(); } catch (e) { toast('Could not take it down: ' + (e.message || e)); } }
@@ -14803,7 +14841,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   function exPetNews() { const n = profile.newPets; if (!n || !n.length) return; profile.newPets = []; { const ap = exApp(); if (ap.cos && !ap.cos.pet) ap.cos.pet = n[0]; } /* Nov 13: your first pet starts following you straight away */ save(); modal(`<h2>A new pet!</h2><p>${n.map(k => `<b>${esc(petName(k))}</b>`).join(', ')} followed you home. One kill in a thousand does that.</p><div style="display:flex;gap:14px;justify-content:center;margin:10px 0">${n.map(k => `<img src="${petSrc(k)}" alt="" style="height:96px;image-rendering:pixelated">`).join('')}</div><p class="muted">Pets are for show: they trot behind you in town and stand by you in a fight. Swap or dismiss it in your hero window (C), Wardrobe.</p><div class="row"><button class="btn primary" id="mClose">Lovely</button></div>`); $('mClose').onclick = closeModal; }
   setInterval(() => { try { if (profile && profile.newPets && profile.newPets.length && !$('scrStart').hidden && $('modal').hidden && $('sheet').hidden) exPetNews(); } catch (e) {} }, 2500);
   // ---------- the Shop
-  function exBuy(price, fn) { if (exSk() < price) return toast(`That costs ${price} Skull Tokens and you have ${exSk()}.`); profile.skulls = exSk() - price; fn(); save(); if (window.CB_AUDIO) CB_AUDIO.sfx('coin'); return true; }
+  function exBuy(price, fn) { if (exSk() < price) return toast(`That costs ${price} Skull Tokens and you have ${exSk()}.`); profile.skulls = exSk() - price; fn(); CBHub.bump(profile, 'skullBuys'); save(); if (window.CB_AUDIO) CB_AUDIO.sfx('coin'); return true; }
   function exShopHtml() {
     const o = exOwn(), app = exApp(), tabs = [['mounts', 'Mounts'], ['aura', 'Auras'], ['trail', 'Footsteps'], ['wings', 'Back cosmetics'], ['wskin', 'Weapon looks'], ['border', 'Card borders'], ['cback', 'Card backs'], ['cursor', 'Cursors'], ['dyes', 'Dyes'], ['bags', 'Bags']];
     let items = '';
