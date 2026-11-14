@@ -24,3 +24,8 @@ ant char edb2f7c0-7f82-4ed6-9f6f-dc44914d6c31
 phoenix char 844da71e-3418-4ac3-8e5f-d2e21261ec91
 raven char 41369e86-ee56-4c46-a8de-262339a08cae
 # still to make: worm, bone spider, flying carpet, mantis, snake
+mantis char c96bff0f-4907-4343-8bcf-d0aa2725d2b0
+bonespider char df5a1035-8739-41e0-951a-00722a9fcb54
+snake char e46c8432-6c9d-44a8-a435-51fe6afe8884
+worm char 80d0d6a3-6e94-4748-b71b-95c41a340607
+carpet char e62c3564-dae8-41cf-9bcc-b489bd05d837

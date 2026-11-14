@@ -7600,8 +7600,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794623556917';
-  const CB_BUILD = '8d22c93374'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794624759723';
+  const CB_BUILD = '97951d8b2c'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8707,6 +8707,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Art', "New pictures for belts (Molten Sash and the rest): every cloth sash and leather belt is redrawn as a proper belt in place of the thin strip."],
       ['Balance', "Bloodletter, level 6: Serrated Start (3 Bleed to all enemies at the start of a fight) is replaced by From the Shadows: Bleed you apply from Stealth is increased by 25%. If you had Serrated Start picked, you now have the new talent."],
       ['Art', "New pictures for every chest piece (Cinder Jerkin and the rest): 18 redrawn icons for plate, leather and cloth chests on all six maps."],
       ['Interface', "A big gold ! appears next to your codex level whenever you have a talent point to spend. Point at it for the reminder (push N), or click it to open your talents."],
