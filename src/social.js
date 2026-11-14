@@ -131,18 +131,18 @@
 
   // ---------- world chat
   // channels: world (default), /p party, /g guild, /w Name whisper, /r reply to the last whisper
-  // ---------- Nov 14: /s (say) and /y (yell): a speech box over your head in town, parchment for say and red for yell. Every other channel stays in the chat log only.
+  // ---------- Nov 14: /s (say) and /y (yell): a speech box over your head in town, the same dark box as a name tag, pale text for say and red text for yell. Every other channel stays in the chat log only.
   const SAYS = new Map(); let sayQ = [];
   function sayOver(uid, tx, top, s) { const b = SAYS.get(uid); if (!b) return; if (Date.now() - b.at > 4500 + Math.min(4000, b.text.length * 45)) { SAYS.delete(uid); return; } sayQ.push([b, tx, top, s]); }
   function drawSays(g) { const q = sayQ; sayQ = []; for (const [b, tx, top, s] of q) { const k = Math.max(0.9, s), life = 4500 + Math.min(4000, b.text.length * 45), age = Date.now() - b.at, fs = Math.round((b.yell ? 14.5 : 13) * k), lh = Math.round(fs * 1.25), maxW = (b.yell ? 230 : 200) * k, pad = 7 * k;
       g.save(); g.globalAlpha = Math.max(0, Math.min(1, age / 120, (life - age) / 500)); g.font = `${b.yell ? 700 : 600} ${fs}px "Barlow Semi Condensed", sans-serif`; g.textAlign = 'center';
-      const words = (b.yell ? b.text.toUpperCase() : b.text).split(/\s+/), lines = []; let cur = '';
+      const words = b.text.split(/\s+/), lines = []; let cur = '';
       for (let w of words) { while (g.measureText(w).width > maxW) { let n = w.length; while (n > 1 && g.measureText(w.slice(0, n)).width > maxW) n--; if (cur) { lines.push(cur); cur = ''; } lines.push(w.slice(0, n)); w = w.slice(n); } const t = cur ? cur + ' ' + w : w; if (g.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t; }
       if (cur) lines.push(cur); if (lines.length > 4) { lines.length = 4; lines[3] = lines[3].replace(/.{0,3}$/, '...'); }
       const w = Math.max(...lines.map(l => g.measureText(l).width)) + pad * 2, h = lines.length * lh + pad * 1.4, tail = 7 * k, x = Math.round(tx - w / 2), y = Math.round(top - 5 * k - tail - h), r = 5 * k;
       g.beginPath(); g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r); g.lineTo(x + w, y + h - r); g.quadraticCurveTo(x + w, y + h, x + w - r, y + h); g.lineTo(tx + tail * .8, y + h); g.lineTo(tx, y + h + tail); g.lineTo(tx - tail * .8, y + h); g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r); g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y); g.closePath();
-      g.fillStyle = b.yell ? '#a3201a' : '#efe3c8'; g.fill(); g.lineWidth = Math.max(1.5, 2 * k); g.strokeStyle = b.yell ? '#3a0806' : '#2a1c10'; g.stroke();
-      g.fillStyle = b.yell ? '#fff3e6' : '#2a1c10'; lines.forEach((l, i) => g.fillText(l, tx, y + pad * .7 + lh * (i + .78))); g.restore(); } }
+      g.fillStyle = 'rgba(10,8,6,.86)'; g.fill();
+      g.fillStyle = b.yell ? '#ff5a48' : '#f3ead6'; lines.forEach((l, i) => g.fillText(l, tx, y + pad * .7 + lh * (i + .78))); g.restore(); } }
   function addChat(m) {
     if (!m || !m.text) return;
     SOC.chat.push({ from: m.uid, name: String(m.name || '?').slice(0, 24), text: String(m.text).slice(0, 200), sys: !!m.sys, at: m.at || Date.now(), ch: m.ch || 'world', toName: m.toName, mine: m.uid === SOC.me, items: Array.isArray(m.items) ? m.items.slice(0, 3) : undefined });

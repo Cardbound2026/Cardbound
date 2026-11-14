@@ -242,7 +242,10 @@
     document.addEventListener('pointerdown', (ev) => { if (ev.button !== 0 || D.el) return; const el = ev.target.closest && ev.target.closest(SEL); if (!el) return; const t = ev.target;
       if (t.closest('input, textarea, select, [contenteditable], [draggable="true"], canvas.nodrag')) return;
       if (t.clientWidth && (ev.offsetX > t.clientWidth || ev.offsetY > t.clientHeight)) return;   /* a scroll bar */
+      if (!onEdge(el, ev)) return;   /* Nov 14: only the outer edge of a window moves it */
       D.el = el; D.x = ev.clientX; D.y = ev.clientY; D.dx = el._dx || 0; D.dy = el._dy || 0; D.on = false; D.id = ev.pointerId; }, true);
+    const EDGE = 16, onEdge = (el, ev) => { const r = el.getBoundingClientRect(), x = ev.clientX, y = ev.clientY; return x - r.left < EDGE || r.right - x < EDGE || y - r.top < EDGE + 6 || r.bottom - y < EDGE; };
+    document.addEventListener('pointermove', (ev) => { if (D.el) return; const el = ev.target.closest && ev.target.closest(SEL), on = !!(el && onEdge(el, ev) && !ev.target.closest('button, a, input, textarea, select')); if (D.hov && D.hov !== el) D.hov.classList.remove('wedge'); if (el) el.classList.toggle('wedge', on); D.hov = el; });
     document.addEventListener('pointermove', (ev) => { const el = D.el; if (!el || ev.pointerId !== D.id) return; const mx = ev.clientX - D.x, my = ev.clientY - D.y;
       if (!D.on) { if (Math.hypot(mx, my) < 6) return; D.on = true; el.style.translate = `${D.dx}px ${D.dy}px`; D.r = el.getBoundingClientRect(); document.documentElement.classList.add('wdrag'); try { getSelection().removeAllRanges(); } catch (e) {} }
       const r = D.r, W = innerWidth, H = innerHeight, keep = 70;   /* always leave a piece on screen to grab */
@@ -253,7 +256,21 @@
       const eat = (e) => { e.stopPropagation(); e.preventDefault(); }; document.addEventListener('click', eat, { capture: true, once: true }); setTimeout(() => document.removeEventListener('click', eat, true), 0); };
     document.addEventListener('pointerup', end, true); document.addEventListener('pointercancel', end, true);
     document.addEventListener('dblclick', (ev) => { const el = ev.target.closest && ev.target.closest(SEL); if (!el || ev.target !== el || !(el._dx || el._dy)) return; el._dx = el._dy = 0; put(el); if (el.id === 'questTrk') { try { localStorage.removeItem('cb_trkpos'); } catch (e) {} } });
-    const st = document.createElement('style'); st.textContent = 'html.wdrag, html.wdrag * { user-select: none !important; cursor: grabbing !important; } #questTrk:not(.map) { cursor: grab; }'; document.head.appendChild(st); }
+    const st = document.createElement('style'); st.textContent = 'html.wdrag, html.wdrag * { user-select: none !important; cursor: grabbing !important; } #modalBox.wedge, #sheet .sheetbox.wedge, #questTrk.wedge:not(.map) { cursor: grab; }'; document.head.appendChild(st); }
+  // ---------- Nov 14: drag gear around the bag. Press on an item and move (6 px): it lifts, the slot under the pointer lights up, and letting go
+  // drops it there (two items swap). A plain click still opens the item. Slots are it.sl on each stash item (see renderGearTab).
+  { const B = { cell: null };
+    document.addEventListener('pointerdown', (ev) => { if (ev.button !== 0) return; const c = ev.target.closest && ev.target.closest('.baggrid:not(.qsalv) .bagcell[data-bagit][data-bslot]'); if (!c || ev.shiftKey) return; B.cell = c; B.x = ev.clientX; B.y = ev.clientY; B.on = false; B.id = ev.pointerId; }, true);
+    const over = (ev) => { const e = document.elementFromPoint(ev.clientX, ev.clientY), c = e && e.closest && e.closest('.bagcell[data-bslot]'); return c && c.parentNode === B.cell.parentNode ? c : null; };
+    document.addEventListener('pointermove', (ev) => { if (!B.cell || ev.pointerId !== B.id) return;
+      if (!B.on) { if (Math.hypot(ev.clientX - B.x, ev.clientY - B.y) < 6) return; B.on = true; B.cell.classList.add('bdrag'); const g = document.createElement('div'); g.id = 'bagGhost'; g.innerHTML = B.cell.innerHTML; document.body.appendChild(g); B.g = g; document.documentElement.classList.add('wdrag'); if (typeof hideTip === 'function') hideTip(); }
+      B.g.style.left = ev.clientX + 'px'; B.g.style.top = ev.clientY + 'px'; const c = over(ev); if (B.tgt && B.tgt !== c) B.tgt.classList.remove('bdrop'); if (c && c !== B.cell) c.classList.add('bdrop'); B.tgt = c; ev.preventDefault(); }, true);
+    const end = (ev) => { const cell = B.cell; if (!cell) return; B.cell = null; if (!B.on) return; document.documentElement.classList.remove('wdrag'); if (B.g) B.g.remove(); cell.classList.remove('bdrag'); if (B.tgt) B.tgt.classList.remove('bdrop');
+      const eat = (e) => { e.stopPropagation(); e.preventDefault(); }; document.addEventListener('click', eat, { capture: true, once: true }); setTimeout(() => document.removeEventListener('click', eat, true), 0);
+      const t = ev.type === 'pointerup' ? B.tgt : null; B.tgt = null; if (!t || t === cell) return;
+      const a = profile.stash.find(x => x.id === cell.dataset.bagit), b = t.dataset.bagit && profile.stash.find(x => x.id === t.dataset.bagit); if (!a) return;
+      const to = +t.dataset.bslot; if (b) b.sl = a.sl; a.sl = to; if (typeof save === 'function') save(); if (typeof renderHub === 'function') renderHub(); };
+    document.addEventListener('pointerup', end, true); document.addEventListener('pointercancel', end, true); }
   // Nov 13: click a shop picture to see it big (the same preview, four times the size, still moving). Click again, or Esc, to close.
   { const st = document.createElement('style'); st.textContent = `.shopit .pv { cursor: zoom-in; } #exZoom { position: fixed; inset: 0; z-index: 9000; background: rgba(6,5,8,.86); display: grid; place-items: center; cursor: zoom-out; }
     #exZoom .zbox { display: grid; justify-items: center; gap: 10px; } #exZoom .zpv { width: 512px; height: 416px; max-width: 92vw; display: grid; place-items: center; border: 1px solid #5a4a2e; border-radius: 6px; background: radial-gradient(#2a2420, #14110f); overflow: hidden; }

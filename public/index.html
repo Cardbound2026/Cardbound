@@ -123,12 +123,14 @@ body.sheetopen #btnUpdates, body.modalopen #btnUpdates { display: none; }
 .baggrid { display: grid; grid-template-columns: repeat(auto-fill, 54px); gap: 5px; align-content: start; padding: 8px; border: 1px solid #2b2521; border-radius: 6px; background: rgba(8, 7, 9, .55); }
 .bagcell { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 4px; background: #0c0a0b; box-shadow: inset 0 0 0 1px #2f2822, inset 0 0 0 2px #000; cursor: pointer; }
 .baggrid.qsalv { box-shadow: inset 0 0 0 2px #b0352a; } :root { --hammer: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg transform='rotate(-40 16 16)'%3E%3Crect x='14' y='10' width='4' height='20' rx='1' fill='%237a5432' stroke='%23000' stroke-width='1.5'/%3E%3Crect x='6' y='3' width='20' height='10' rx='2' fill='%23b9bcc4' stroke='%23000' stroke-width='1.5'/%3E%3Crect x='6' y='3' width='20' height='3' rx='1' fill='%23e6e8ee'/%3E%3C/g%3E%3C/svg%3E") 6 6, crosshair; } .baggrid.qsalv .bagcell:not(.empty) { cursor: var(--hammer); } .baggrid.qsalv .bagcell:not(.empty):hover { box-shadow: inset 0 0 0 2px #e06a5a, 0 0 12px #e06a5a; }
+.bagcell.bdrag { opacity: .3; } .bagcell.bdrop { box-shadow: inset 0 0 0 2px var(--accent), 0 0 10px rgba(214,161,74,.5) !important; } #bagGhost { position: fixed; z-index: 9500; width: 54px; height: 54px; margin: -27px 0 0 -27px; pointer-events: none; display: grid; place-items: center; border-radius: 4px; background: #0c0a0b; box-shadow: 0 0 0 1px var(--accent), 0 6px 16px #000; } #bagGhost .iticon { --isz: 46px; }
 .bagcell.empty { cursor: default; background: #0a0809; box-shadow: inset 0 0 0 1px #221d19, inset 0 2px 6px #000; }
 .bagcell:not(.empty):hover, .bagcell:focus-visible { box-shadow: inset 0 0 0 1px var(--rc), inset 0 0 0 2px #000, 0 0 10px color-mix(in srgb, var(--rc) 55%, transparent); outline: none; }
 .bagcell .iticon { --isz: 46px; } .bagcard { font-size: 12px; letter-spacing: .5px; color: color-mix(in srgb, var(--rc) 60%, #fff); }
 body .modal .box.bare { border: 0 !important; border-image: none !important; background: none !important; padding: 0 !important; width: auto; overflow: visible; gap: 0; image-rendering: auto; }
 .bagpop .bagacts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 10px 12px 0; }
 .bagpop .bagcmp { text-align: center; margin: 8px 0 0; font-size: 14px; }
+#bagPeek { position: fixed; z-index: 9400; pointer-events: none; filter: drop-shadow(0 10px 26px rgba(0,0,0,.8)); } #bagPeek .gtip.bagpop { pointer-events: none; } #bagPeek .bagcmp { padding-bottom: 10px; }
 .gtip.bagpop { position: static; width: 330px; margin: 0 auto; pointer-events: auto; filter: none; }
 .stashgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 6px; align-content: start; } .stashgrid > .muted { grid-column: 1 / -1; }
 .item .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
@@ -5970,8 +5972,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     if (run && !(cb && cb.practice)) c = Object.assign({}, c, { gear: wornGear() }); // out on a run: show what the hero actually wears there
     const eq = CBHub.SLOTS.map(sl => { const it = c.gear.find(g => g.slot === sl); return it ? itemHtml(it, `<div class="acts"><button class="btn" data-unequip="${sl}">Unequip</button></div>`) : `<div class="item" style="--rc:var(--line)"><span class="muted">${sl}: empty</span></div>`; }).join('');
     // Nov 13: the bags are a grid of slots with just each item's picture; hover for the same card the character slots show, click for what you can do with it
-    const st = profile.stash.map(it => `<div class="bagcell" style="--rc:${RC[it.kind === 'card' ? CARDS[it.key].rarity : it.rarity] || 'var(--line)'}" data-tip="${tipKey(it, c.gear)}" data-bagit="${it.id}" role="button" tabindex="0" aria-label="${esc(it.kind === 'card' ? CARDS[it.key].name : it.name)}">${it.kind === 'card' ? '<span class="bagcard">Card</span>' : itemIcon(it, 46)}</div>`).join('')
-      + Array.from({ length: Math.max(0, CBHub.STASH_MAX - profile.stash.length) }, () => '<div class="bagcell empty"></div>').join('');
+    // Nov 14: every item keeps its own slot (it.sl), so you can drag gear around the bag and it stays where you put it; new loot takes the first free slot
+    const bagN = Math.max(CBHub.STASH_MAX, profile.stash.length), slots = new Array(bagN).fill(null);
+    for (const it of profile.stash) { if (Number.isInteger(it.sl) && it.sl >= 0 && it.sl < bagN && !slots[it.sl]) slots[it.sl] = it; else it.sl = -1; }
+    for (const it of profile.stash) if (it.sl === -1) { const f = slots.indexOf(null); it.sl = f; slots[f] = it; }
+    const st = slots.map((it, n) => it ? `<div class="bagcell" style="--rc:${RC[it.kind === 'card' ? CARDS[it.key].rarity : it.rarity] || 'var(--line)'}" data-tip="${tipKey(it, c.gear)}" data-bagit="${it.id}" data-bslot="${n}" role="button" tabindex="0" aria-label="${esc(it.kind === 'card' ? CARDS[it.key].name : it.name)}">${it.kind === 'card' ? '<span class="bagcard">Card</span>' : itemIcon(it, 46)}</div>` : `<div class="bagcell empty" data-bslot="${n}"></div>`).join('');
     const multi = Object.keys(profile.chars).length > 1;
     const heroRow = multi ? `<div class="cxchips" role="tablist" aria-label="Hero" style="margin:0 0 8px">${heroKeys().map(k => `<button class="cxchip ${k === heroKey ? 'on' : ''}" data-hero="${k}"><b style="color:${CC[profile.chars[k].cls]}">${esc(profile.chars[k].name)}</b> <span class="muted">${profile.chars[k].cls}</span></button>`).join('')}</div>` : '';
     $('hpGear').innerHTML = `${heroRow}<div class="gearwrap"><div>${paperdoll(c, c.cls, { own: true })}<p class="muted" style="font-size:12px;margin:6px 0 0">Hover a slot for the item, click it to swap or unequip.</p></div>
@@ -5980,6 +5985,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     fitCards($('hpGear'));
     paintPortraits($('hpGear'));
   }
+  // Nov 14: rest the mouse on a bag item for a second and the same card as clicking it shows (item power, what it replaces), without the buttons; any mouse movement puts it away
+  function bagPeek(id) { const c = CBHub.char(profile, heroKey), it = profile.stash.find(x => x.id === id); if (!it || !c) return '';
+    const opts = it.kind === 'card' ? [] : CBHub.slotOptions(it), cur = opts.map(sl => c.gear.find(g => g.slot === sl)).filter(Boolean), vs = cur.length ? cur.map(g => esc(g.name)).join(', ') : 'an empty slot';
+    const cmp = it.kind === 'card' ? '' : it.bag ? `<div class="bagcmp muted">Adds ${it.bag} slots while it sits in a bag slot (yours, or the bank's).</div>` : `<div class="bagcmp">${upBadge(it, c.gear)} <span class="muted">Replaces ${vs}</span></div>`;
+    return `<div class="gtip bagpop">${itemHtml(it, `${it.kind === 'card' ? '' : `<div class="il"><b>${itemPower(it)}</b>Item Power</div>`}${cmp}`)}</div>`; }
+  { let tm = 0, cell = null, box = null; const off = () => { clearTimeout(tm); tm = 0; if (box) { box.remove(); box = null; } };
+    document.addEventListener('mousemove', (ev) => { off(); const c = ev.target.closest && ev.target.closest('.baggrid:not(.qsalv) .bagcell[data-bagit]'); cell = c; if (!c || ev.buttons || !$('modal').hidden) return; const x = ev.clientX, y = ev.clientY;
+      tm = setTimeout(() => { if (!cell || !cell.isConnected || !$('modal').hidden) return; const h = bagPeek(cell.dataset.bagit); if (!h) return; hidePeeks(); box = document.createElement('div'); box.id = 'bagPeek'; box.innerHTML = h; document.body.appendChild(box); paintPortraits(box);
+        const r = box.getBoundingClientRect(); box.style.left = Math.max(8, Math.min(innerWidth - r.width - 8, x + 18)) + 'px'; box.style.top = Math.max(8, Math.min(innerHeight - r.height - 8, y - r.height / 2)) + 'px'; }, 1000); }, true);
+    for (const e of ['mousedown', 'keydown', 'wheel', 'blur']) addEventListener(e, off, true); }
   // a bag item: its card, and what you can do with it
   function bagItem(id) {
     const c = CBHub.char(profile, heroKey), it = profile.stash.find(x => x.id === id); if (!it) return;
@@ -6621,7 +6636,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   for (const n of NPCS) { n.home = n.dir; solid.add(K(n.x, n.y)); }
   // Nov 2: Tinker Pip (free test goods) only stands in town for admins (supabase/trust.sql: add your user id to public.admins)
   const TINKER = NPCS.find(n => n.id === 'tinker');
-  function setAdmin(on) { if (!TINKER) return; const i = NPCS.indexOf(TINKER); if (on && i < 0) { NPCS.push(TINKER); solid.add(K(TINKER.x, TINKER.y)); } else if (!on && i >= 0) { NPCS.splice(i, 1); solid.delete(K(TINKER.x, TINKER.y)); } }
+  function setAdmin(on) { window.CB_ADMIN = !!on; if (!TINKER) return; const i = NPCS.indexOf(TINKER); if (on && i < 0) { NPCS.push(TINKER); solid.add(K(TINKER.x, TINKER.y)); } else if (!on && i >= 0) { NPCS.splice(i, 1); solid.delete(K(TINKER.x, TINKER.y)); } }
   setAdmin(false);
 
 
@@ -7253,18 +7268,18 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
 
   // ---------- world chat
   // channels: world (default), /p party, /g guild, /w Name whisper, /r reply to the last whisper
-  // ---------- Nov 14: /s (say) and /y (yell): a speech box over your head in town, parchment for say and red for yell. Every other channel stays in the chat log only.
+  // ---------- Nov 14: /s (say) and /y (yell): a speech box over your head in town, the same dark box as a name tag, pale text for say and red text for yell. Every other channel stays in the chat log only.
   const SAYS = new Map(); let sayQ = [];
   function sayOver(uid, tx, top, s) { const b = SAYS.get(uid); if (!b) return; if (Date.now() - b.at > 4500 + Math.min(4000, b.text.length * 45)) { SAYS.delete(uid); return; } sayQ.push([b, tx, top, s]); }
   function drawSays(g) { const q = sayQ; sayQ = []; for (const [b, tx, top, s] of q) { const k = Math.max(0.9, s), life = 4500 + Math.min(4000, b.text.length * 45), age = Date.now() - b.at, fs = Math.round((b.yell ? 14.5 : 13) * k), lh = Math.round(fs * 1.25), maxW = (b.yell ? 230 : 200) * k, pad = 7 * k;
       g.save(); g.globalAlpha = Math.max(0, Math.min(1, age / 120, (life - age) / 500)); g.font = `${b.yell ? 700 : 600} ${fs}px "Barlow Semi Condensed", sans-serif`; g.textAlign = 'center';
-      const words = (b.yell ? b.text.toUpperCase() : b.text).split(/\s+/), lines = []; let cur = '';
+      const words = b.text.split(/\s+/), lines = []; let cur = '';
       for (let w of words) { while (g.measureText(w).width > maxW) { let n = w.length; while (n > 1 && g.measureText(w.slice(0, n)).width > maxW) n--; if (cur) { lines.push(cur); cur = ''; } lines.push(w.slice(0, n)); w = w.slice(n); } const t = cur ? cur + ' ' + w : w; if (g.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t; }
       if (cur) lines.push(cur); if (lines.length > 4) { lines.length = 4; lines[3] = lines[3].replace(/.{0,3}$/, '...'); }
       const w = Math.max(...lines.map(l => g.measureText(l).width)) + pad * 2, h = lines.length * lh + pad * 1.4, tail = 7 * k, x = Math.round(tx - w / 2), y = Math.round(top - 5 * k - tail - h), r = 5 * k;
       g.beginPath(); g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r); g.lineTo(x + w, y + h - r); g.quadraticCurveTo(x + w, y + h, x + w - r, y + h); g.lineTo(tx + tail * .8, y + h); g.lineTo(tx, y + h + tail); g.lineTo(tx - tail * .8, y + h); g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r); g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y); g.closePath();
-      g.fillStyle = b.yell ? '#a3201a' : '#efe3c8'; g.fill(); g.lineWidth = Math.max(1.5, 2 * k); g.strokeStyle = b.yell ? '#3a0806' : '#2a1c10'; g.stroke();
-      g.fillStyle = b.yell ? '#fff3e6' : '#2a1c10'; lines.forEach((l, i) => g.fillText(l, tx, y + pad * .7 + lh * (i + .78))); g.restore(); } }
+      g.fillStyle = 'rgba(10,8,6,.86)'; g.fill();
+      g.fillStyle = b.yell ? '#ff5a48' : '#f3ead6'; lines.forEach((l, i) => g.fillText(l, tx, y + pad * .7 + lh * (i + .78))); g.restore(); } }
   function addChat(m) {
     if (!m || !m.text) return;
     SOC.chat.push({ from: m.uid, name: String(m.name || '?').slice(0, 24), text: String(m.text).slice(0, 200), sys: !!m.sys, at: m.at || Date.now(), ch: m.ch || 'world', toName: m.toName, mine: m.uid === SOC.me, items: Array.isArray(m.items) ? m.items.slice(0, 3) : undefined });
@@ -7680,8 +7695,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794673511805';
-  const CB_BUILD = 'dbe69391fd'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794674128425';
+  const CB_BUILD = '390aeaedf6'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8787,9 +8802,12 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
-      ['Feature', "The Chronicle: a book of everything your hero has done. Open it from the new book button on the bottom bar (J) or the Menu. Six spreads: time played and lifetime totals, a line chart of every run with your highest boss kill, a bestiary of every monster slain, lifetime damage by card with healing and damage taken, your most played cards, and The Reckoning, which points out anything a hero leans on too hard. Detail is counted from today; older runs are filled in where the game has them."],
-      ['Feature', "Inspect another player and you can open their Chronicle too. The last page has a Copy report button that puts the whole record into text for balance review."],
-      ['Feature', "New chat commands: /s to say something in a speech box over your head in town, and /y to yell it in a red one. Only people in Emberwatch who can see you hear them. Plain chat is still world chat, seen everywhere, and no other channel pops a box."],
+      ['Interface', "Rest the mouse on a bag item for a second and its full card shows, with item power and what it would replace, the same as clicking it but without the buttons. Move the mouse and it goes away."],
+      ['Interface', "Organise your bags: press and hold an item, drag it to any slot and let go. Two items swap places. Everything stays where you put it, and new loot takes the first free slot."],
+      ['Change', "Windows now move only when you grab their outer edge (the cursor turns into a hand there), so dragging inside a window never moves it by accident."],
+      ['Feature', "The Chronicle: a book of everything your hero has done. Open it from the new book button on the bottom bar (J) or the Menu. Five spreads: time played and lifetime totals, a line chart of every run with your highest boss kill, a bestiary of every monster slain, lifetime damage by card with healing and damage taken and your most played cards. Detail is counted from today; older runs are filled in where the game has them."],
+      ['Feature', "Inspect another player and you can open their Chronicle too."],
+      ['Feature', "New chat commands: /s to say something in a text box over your head in town, and /y to yell it in red letters. Only people in Emberwatch who can see you hear them. Plain chat is still world chat, seen everywhere, and no other channel pops a box."],
       ['Balance', "Stealth is a little less safe: more monsters carry an attack that hits everyone. Half of all elites now have one (was a third), 40% of tier 3 monsters, 30% of tier 2 and 20% of tier 1 (which had none). That is 20 new monster cards, each with its own painting; every one replaces two copies of a single-target hit, so decks are the same size."],
       ['Change', "Monsters now spend their mana in a set order: buffs first, then any attack that hits everyone, then defence or a single-target card. Before, an area attack was often left unplayed behind cheaper cards."],
       ['Art', "Town torches tidied: four stand square around the bonfire, and the ones around the plaza now sit on the grass at the edge of the paving, evenly spaced."],
@@ -14538,6 +14556,8 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   const SBK = { page: 0, ch: null };
   const BK_MAPN = { physical: 'The Broken March', fire: 'The Cinder Reach', frost: 'The Rimewatch', nature: 'The Tanglewild', arcane: 'The Shattered Spire', shadow: 'The Hollow Crypts' };
   const BK_PAGES = ['The Hero', 'The Road', 'Bestiary', 'Damage', 'Cards', 'The Reckoning'];
+  // The Reckoning (balance review) is test only: it shows for admins, the same people who see Tinker Pip (public.admins)
+  const bkPages = () => window.CB_ADMIN ? BK_PAGES : BK_PAGES.slice(0, 5);
   const bkN = (v) => Math.round(v || 0).toLocaleString();
   const bkTime = (s) => { s = Math.round(s || 0); const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60); return d ? `${d}d ${h}h ${m}m` : h ? `${h}h ${m}m` : m ? `${m}m` : s ? `${s}s` : 'none yet'; };
   const bkDate = (ms) => ms ? new Date(ms).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'unknown';
@@ -14628,18 +14648,18 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       <p class="bknote">This page looks for a hero leaning on one thing: a card that does most of the damage, bosses dying in a round or two, runs that never fail. It is a pointer for balance, not an accusation.</p>`,
       `<h4>For balance review</h4><p class="bkline">Copy this hero's whole record as text (deck, damage by card, cards played, every run) and paste it to whoever is tuning the game.</p><div class="row" style="justify-content:flex-start"><button type="button" class="btn primary" data-bkcopy="1">Copy report</button></div><textarea class="bkrep" readonly rows="11">${esc(bkReport(ch))}</textarea>`]; }
 
-  function bkRender() { const ch = SBK.ch, pg = [bkHero, bkRoad, bkBeasts, bkDamage, bkCards, bkReckon][SBK.page](ch);
-    modal(`<div class="book" data-pg="${SBK.page}"><div class="bktabs">${BK_PAGES.map((n, i) => `<button type="button" class="${i === SBK.page ? 'on' : ''}" data-bkpg="${i}">${n}</button>`).join('')}</div>
+  function bkRender() { if (SBK.page >= bkPages().length) SBK.page = 0; const ch = SBK.ch, pg = [bkHero, bkRoad, bkBeasts, bkDamage, bkCards, bkReckon][SBK.page](ch);
+    modal(`<div class="book" data-pg="${SBK.page}"><div class="bktabs">${bkPages().map((n, i) => `<button type="button" class="${i === SBK.page ? 'on' : ''}" data-bkpg="${i}">${n}</button>`).join('')}</div>
       <div class="bkspread"><div class="bkpage l"><div class="bkhd">${esc(ch.name)}'s Chronicle</div>${pg[0]}<div class="bkno">${SBK.page * 2 + 1}</div></div><div class="bkpage r"><div class="bkhd">${BK_PAGES[SBK.page]}</div>${pg[1]}<div class="bkno">${SBK.page * 2 + 2}</div></div></div>
-      <button type="button" class="bkturn prev" data-bkpg="${SBK.page - 1}" ${SBK.page ? '' : 'disabled'} aria-label="Previous page">&lsaquo;</button><button type="button" class="bkturn next" data-bkpg="${SBK.page + 1}" ${SBK.page < BK_PAGES.length - 1 ? '' : 'disabled'} aria-label="Next page">&rsaquo;</button></div>
+      <button type="button" class="bkturn prev" data-bkpg="${SBK.page - 1}" ${SBK.page ? '' : 'disabled'} aria-label="Previous page">&lsaquo;</button><button type="button" class="bkturn next" data-bkpg="${SBK.page + 1}" ${SBK.page < bkPages().length - 1 ? '' : 'disabled'} aria-label="Next page">&rsaquo;</button></div>
       <div class="row"><button class="btn primary" id="mClose">Close the book</button></div>`);
     const box = $('modalBox'); box.classList.add('wide', 'bookbox'); $('mClose').onclick = closeModal; }
   document.addEventListener('click', (ev) => { const t = ev.target.closest && ev.target.closest('.book [data-bkpg], .book [data-bkcopy]'); if (!t || !SBK.ch) return;
     if (t.dataset.bkcopy) { const txt = bkReport(SBK.ch), done = () => { t.textContent = 'Copied'; setTimeout(() => { t.textContent = 'Copy report'; }, 1600); }; try { navigator.clipboard.writeText(txt).then(done, () => { const ta = document.querySelector('.bkrep'); ta.select(); document.execCommand('copy'); done(); }); } catch (e) { const ta = document.querySelector('.bkrep'); ta.select(); try { document.execCommand('copy'); done(); } catch (e2) {} } return; }
-    const n = +t.dataset.bkpg; if (n >= 0 && n < BK_PAGES.length && n !== SBK.page) { SBK.page = n; bkRender(); } });
-  document.addEventListener('keydown', (ev) => { if (!SBK.ch || $('modal').hidden || !document.querySelector('#modalBox .book') || /INPUT|TEXTAREA/.test((document.activeElement || {}).tagName || '')) return; const d = ev.key === 'ArrowRight' ? 1 : ev.key === 'ArrowLeft' ? -1 : 0; if (!d) return; const n = SBK.page + d; if (n >= 0 && n < BK_PAGES.length) { SBK.page = n; bkRender(); ev.preventDefault(); ev.stopPropagation(); } }, true);
+    const n = +t.dataset.bkpg; if (n >= 0 && n < bkPages().length && n !== SBK.page) { SBK.page = n; bkRender(); } });
+  document.addEventListener('keydown', (ev) => { if (!SBK.ch || $('modal').hidden || !document.querySelector('#modalBox .book') || /INPUT|TEXTAREA/.test((document.activeElement || {}).tagName || '')) return; const d = ev.key === 'ArrowRight' ? 1 : ev.key === 'ArrowLeft' ? -1 : 0; if (!d) return; const n = SBK.page + d; if (n >= 0 && n < bkPages().length) { SBK.page = n; bkRender(); ev.preventDefault(); ev.stopPropagation(); } }, true);
   { const st = document.createElement('style'); st.textContent = `
-    #modalBox.bookbox { width: min(1040px, 96vw); background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; }
+    #modalBox.bookbox { width: min(1040px, 96vw); background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 18px !important; box-sizing: border-box; overflow-x: hidden !important; }
     #modalBox.bookbox::before, #modalBox.bookbox::after { display: none !important; }
     .book { position: relative; padding: 34px 14px 14px; background: linear-gradient(#4a2c1a, #2e1a0f); border: 2px solid #1c0f08; border-radius: 10px; box-shadow: 0 18px 50px rgba(0,0,0,.75), inset 0 0 0 3px #6b4226, inset 0 0 0 4px #1c0f08; }
     .bktabs { position: absolute; left: 26px; top: 6px; display: flex; gap: 3px; } .bktabs button { padding: 4px 11px 5px; border: 1px solid #1c0f08; border-bottom: 0; border-radius: 6px 6px 0 0; background: #8a6a44; color: #2a1a0c; font: 600 14px 'Grenze', serif; cursor: pointer; } .bktabs button.on { background: #ead9b4; padding-top: 7px; margin-top: -3px; } .bktabs button:hover { background: #d9c49a; }
@@ -15150,7 +15170,10 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     document.addEventListener('pointerdown', (ev) => { if (ev.button !== 0 || D.el) return; const el = ev.target.closest && ev.target.closest(SEL); if (!el) return; const t = ev.target;
       if (t.closest('input, textarea, select, [contenteditable], [draggable="true"], canvas.nodrag')) return;
       if (t.clientWidth && (ev.offsetX > t.clientWidth || ev.offsetY > t.clientHeight)) return;   /* a scroll bar */
+      if (!onEdge(el, ev)) return;   /* Nov 14: only the outer edge of a window moves it */
       D.el = el; D.x = ev.clientX; D.y = ev.clientY; D.dx = el._dx || 0; D.dy = el._dy || 0; D.on = false; D.id = ev.pointerId; }, true);
+    const EDGE = 16, onEdge = (el, ev) => { const r = el.getBoundingClientRect(), x = ev.clientX, y = ev.clientY; return x - r.left < EDGE || r.right - x < EDGE || y - r.top < EDGE + 6 || r.bottom - y < EDGE; };
+    document.addEventListener('pointermove', (ev) => { if (D.el) return; const el = ev.target.closest && ev.target.closest(SEL), on = !!(el && onEdge(el, ev) && !ev.target.closest('button, a, input, textarea, select')); if (D.hov && D.hov !== el) D.hov.classList.remove('wedge'); if (el) el.classList.toggle('wedge', on); D.hov = el; });
     document.addEventListener('pointermove', (ev) => { const el = D.el; if (!el || ev.pointerId !== D.id) return; const mx = ev.clientX - D.x, my = ev.clientY - D.y;
       if (!D.on) { if (Math.hypot(mx, my) < 6) return; D.on = true; el.style.translate = `${D.dx}px ${D.dy}px`; D.r = el.getBoundingClientRect(); document.documentElement.classList.add('wdrag'); try { getSelection().removeAllRanges(); } catch (e) {} }
       const r = D.r, W = innerWidth, H = innerHeight, keep = 70;   /* always leave a piece on screen to grab */
@@ -15161,7 +15184,21 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       const eat = (e) => { e.stopPropagation(); e.preventDefault(); }; document.addEventListener('click', eat, { capture: true, once: true }); setTimeout(() => document.removeEventListener('click', eat, true), 0); };
     document.addEventListener('pointerup', end, true); document.addEventListener('pointercancel', end, true);
     document.addEventListener('dblclick', (ev) => { const el = ev.target.closest && ev.target.closest(SEL); if (!el || ev.target !== el || !(el._dx || el._dy)) return; el._dx = el._dy = 0; put(el); if (el.id === 'questTrk') { try { localStorage.removeItem('cb_trkpos'); } catch (e) {} } });
-    const st = document.createElement('style'); st.textContent = 'html.wdrag, html.wdrag * { user-select: none !important; cursor: grabbing !important; } #questTrk:not(.map) { cursor: grab; }'; document.head.appendChild(st); }
+    const st = document.createElement('style'); st.textContent = 'html.wdrag, html.wdrag * { user-select: none !important; cursor: grabbing !important; } #modalBox.wedge, #sheet .sheetbox.wedge, #questTrk.wedge:not(.map) { cursor: grab; }'; document.head.appendChild(st); }
+  // ---------- Nov 14: drag gear around the bag. Press on an item and move (6 px): it lifts, the slot under the pointer lights up, and letting go
+  // drops it there (two items swap). A plain click still opens the item. Slots are it.sl on each stash item (see renderGearTab).
+  { const B = { cell: null };
+    document.addEventListener('pointerdown', (ev) => { if (ev.button !== 0) return; const c = ev.target.closest && ev.target.closest('.baggrid:not(.qsalv) .bagcell[data-bagit][data-bslot]'); if (!c || ev.shiftKey) return; B.cell = c; B.x = ev.clientX; B.y = ev.clientY; B.on = false; B.id = ev.pointerId; }, true);
+    const over = (ev) => { const e = document.elementFromPoint(ev.clientX, ev.clientY), c = e && e.closest && e.closest('.bagcell[data-bslot]'); return c && c.parentNode === B.cell.parentNode ? c : null; };
+    document.addEventListener('pointermove', (ev) => { if (!B.cell || ev.pointerId !== B.id) return;
+      if (!B.on) { if (Math.hypot(ev.clientX - B.x, ev.clientY - B.y) < 6) return; B.on = true; B.cell.classList.add('bdrag'); const g = document.createElement('div'); g.id = 'bagGhost'; g.innerHTML = B.cell.innerHTML; document.body.appendChild(g); B.g = g; document.documentElement.classList.add('wdrag'); if (typeof hideTip === 'function') hideTip(); }
+      B.g.style.left = ev.clientX + 'px'; B.g.style.top = ev.clientY + 'px'; const c = over(ev); if (B.tgt && B.tgt !== c) B.tgt.classList.remove('bdrop'); if (c && c !== B.cell) c.classList.add('bdrop'); B.tgt = c; ev.preventDefault(); }, true);
+    const end = (ev) => { const cell = B.cell; if (!cell) return; B.cell = null; if (!B.on) return; document.documentElement.classList.remove('wdrag'); if (B.g) B.g.remove(); cell.classList.remove('bdrag'); if (B.tgt) B.tgt.classList.remove('bdrop');
+      const eat = (e) => { e.stopPropagation(); e.preventDefault(); }; document.addEventListener('click', eat, { capture: true, once: true }); setTimeout(() => document.removeEventListener('click', eat, true), 0);
+      const t = ev.type === 'pointerup' ? B.tgt : null; B.tgt = null; if (!t || t === cell) return;
+      const a = profile.stash.find(x => x.id === cell.dataset.bagit), b = t.dataset.bagit && profile.stash.find(x => x.id === t.dataset.bagit); if (!a) return;
+      const to = +t.dataset.bslot; if (b) b.sl = a.sl; a.sl = to; if (typeof save === 'function') save(); if (typeof renderHub === 'function') renderHub(); };
+    document.addEventListener('pointerup', end, true); document.addEventListener('pointercancel', end, true); }
   // Nov 13: click a shop picture to see it big (the same preview, four times the size, still moving). Click again, or Esc, to close.
   { const st = document.createElement('style'); st.textContent = `.shopit .pv { cursor: zoom-in; } #exZoom { position: fixed; inset: 0; z-index: 9000; background: rgba(6,5,8,.86); display: grid; place-items: center; cursor: zoom-out; }
     #exZoom .zbox { display: grid; justify-items: center; gap: 10px; } #exZoom .zpv { width: 512px; height: 416px; max-width: 92vw; display: grid; place-items: center; border: 1px solid #5a4a2e; border-radius: 6px; background: radial-gradient(#2a2420, #14110f); overflow: hidden; }

@@ -119,12 +119,14 @@ body.sheetopen #btnUpdates, body.modalopen #btnUpdates { display: none; }
 .baggrid { display: grid; grid-template-columns: repeat(auto-fill, 54px); gap: 5px; align-content: start; padding: 8px; border: 1px solid #2b2521; border-radius: 6px; background: rgba(8, 7, 9, .55); }
 .bagcell { width: 54px; height: 54px; display: grid; place-items: center; border-radius: 4px; background: #0c0a0b; box-shadow: inset 0 0 0 1px #2f2822, inset 0 0 0 2px #000; cursor: pointer; }
 .baggrid.qsalv { box-shadow: inset 0 0 0 2px #b0352a; } :root { --hammer: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg transform='rotate(-40 16 16)'%3E%3Crect x='14' y='10' width='4' height='20' rx='1' fill='%237a5432' stroke='%23000' stroke-width='1.5'/%3E%3Crect x='6' y='3' width='20' height='10' rx='2' fill='%23b9bcc4' stroke='%23000' stroke-width='1.5'/%3E%3Crect x='6' y='3' width='20' height='3' rx='1' fill='%23e6e8ee'/%3E%3C/g%3E%3C/svg%3E") 6 6, crosshair; } .baggrid.qsalv .bagcell:not(.empty) { cursor: var(--hammer); } .baggrid.qsalv .bagcell:not(.empty):hover { box-shadow: inset 0 0 0 2px #e06a5a, 0 0 12px #e06a5a; }
+.bagcell.bdrag { opacity: .3; } .bagcell.bdrop { box-shadow: inset 0 0 0 2px var(--accent), 0 0 10px rgba(214,161,74,.5) !important; } #bagGhost { position: fixed; z-index: 9500; width: 54px; height: 54px; margin: -27px 0 0 -27px; pointer-events: none; display: grid; place-items: center; border-radius: 4px; background: #0c0a0b; box-shadow: 0 0 0 1px var(--accent), 0 6px 16px #000; } #bagGhost .iticon { --isz: 46px; }
 .bagcell.empty { cursor: default; background: #0a0809; box-shadow: inset 0 0 0 1px #221d19, inset 0 2px 6px #000; }
 .bagcell:not(.empty):hover, .bagcell:focus-visible { box-shadow: inset 0 0 0 1px var(--rc), inset 0 0 0 2px #000, 0 0 10px color-mix(in srgb, var(--rc) 55%, transparent); outline: none; }
 .bagcell .iticon { --isz: 46px; } .bagcard { font-size: 12px; letter-spacing: .5px; color: color-mix(in srgb, var(--rc) 60%, #fff); }
 body .modal .box.bare { border: 0 !important; border-image: none !important; background: none !important; padding: 0 !important; width: auto; overflow: visible; gap: 0; image-rendering: auto; }
 .bagpop .bagacts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 10px 12px 0; }
 .bagpop .bagcmp { text-align: center; margin: 8px 0 0; font-size: 14px; }
+#bagPeek { position: fixed; z-index: 9400; pointer-events: none; filter: drop-shadow(0 10px 26px rgba(0,0,0,.8)); } #bagPeek .gtip.bagpop { pointer-events: none; } #bagPeek .bagcmp { padding-bottom: 10px; }
 .gtip.bagpop { position: static; width: 330px; margin: 0 auto; pointer-events: auto; filter: none; }
 .stashgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 6px; align-content: start; } .stashgrid > .muted { grid-column: 1 / -1; }
 .item .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
@@ -1803,8 +1805,11 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     if (run && !(cb && cb.practice)) c = Object.assign({}, c, { gear: wornGear() }); // out on a run: show what the hero actually wears there
     const eq = CBHub.SLOTS.map(sl => { const it = c.gear.find(g => g.slot === sl); return it ? itemHtml(it, `<div class="acts"><button class="btn" data-unequip="${sl}">Unequip</button></div>`) : `<div class="item" style="--rc:var(--line)"><span class="muted">${sl}: empty</span></div>`; }).join('');
     // Nov 13: the bags are a grid of slots with just each item's picture; hover for the same card the character slots show, click for what you can do with it
-    const st = profile.stash.map(it => `<div class="bagcell" style="--rc:${RC[it.kind === 'card' ? CARDS[it.key].rarity : it.rarity] || 'var(--line)'}" data-tip="${tipKey(it, c.gear)}" data-bagit="${it.id}" role="button" tabindex="0" aria-label="${esc(it.kind === 'card' ? CARDS[it.key].name : it.name)}">${it.kind === 'card' ? '<span class="bagcard">Card</span>' : itemIcon(it, 46)}</div>`).join('')
-      + Array.from({ length: Math.max(0, CBHub.STASH_MAX - profile.stash.length) }, () => '<div class="bagcell empty"></div>').join('');
+    // Nov 14: every item keeps its own slot (it.sl), so you can drag gear around the bag and it stays where you put it; new loot takes the first free slot
+    const bagN = Math.max(CBHub.STASH_MAX, profile.stash.length), slots = new Array(bagN).fill(null);
+    for (const it of profile.stash) { if (Number.isInteger(it.sl) && it.sl >= 0 && it.sl < bagN && !slots[it.sl]) slots[it.sl] = it; else it.sl = -1; }
+    for (const it of profile.stash) if (it.sl === -1) { const f = slots.indexOf(null); it.sl = f; slots[f] = it; }
+    const st = slots.map((it, n) => it ? `<div class="bagcell" style="--rc:${RC[it.kind === 'card' ? CARDS[it.key].rarity : it.rarity] || 'var(--line)'}" data-tip="${tipKey(it, c.gear)}" data-bagit="${it.id}" data-bslot="${n}" role="button" tabindex="0" aria-label="${esc(it.kind === 'card' ? CARDS[it.key].name : it.name)}">${it.kind === 'card' ? '<span class="bagcard">Card</span>' : itemIcon(it, 46)}</div>` : `<div class="bagcell empty" data-bslot="${n}"></div>`).join('');
     const multi = Object.keys(profile.chars).length > 1;
     const heroRow = multi ? `<div class="cxchips" role="tablist" aria-label="Hero" style="margin:0 0 8px">${heroKeys().map(k => `<button class="cxchip ${k === heroKey ? 'on' : ''}" data-hero="${k}"><b style="color:${CC[profile.chars[k].cls]}">${esc(profile.chars[k].name)}</b> <span class="muted">${profile.chars[k].cls}</span></button>`).join('')}</div>` : '';
     $('hpGear').innerHTML = `${heroRow}<div class="gearwrap"><div>${paperdoll(c, c.cls, { own: true })}<p class="muted" style="font-size:12px;margin:6px 0 0">Hover a slot for the item, click it to swap or unequip.</p></div>
@@ -1813,6 +1818,16 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     fitCards($('hpGear'));
     paintPortraits($('hpGear'));
   }
+  // Nov 14: rest the mouse on a bag item for a second and the same card as clicking it shows (item power, what it replaces), without the buttons; any mouse movement puts it away
+  function bagPeek(id) { const c = CBHub.char(profile, heroKey), it = profile.stash.find(x => x.id === id); if (!it || !c) return '';
+    const opts = it.kind === 'card' ? [] : CBHub.slotOptions(it), cur = opts.map(sl => c.gear.find(g => g.slot === sl)).filter(Boolean), vs = cur.length ? cur.map(g => esc(g.name)).join(', ') : 'an empty slot';
+    const cmp = it.kind === 'card' ? '' : it.bag ? `<div class="bagcmp muted">Adds ${it.bag} slots while it sits in a bag slot (yours, or the bank's).</div>` : `<div class="bagcmp">${upBadge(it, c.gear)} <span class="muted">Replaces ${vs}</span></div>`;
+    return `<div class="gtip bagpop">${itemHtml(it, `${it.kind === 'card' ? '' : `<div class="il"><b>${itemPower(it)}</b>Item Power</div>`}${cmp}`)}</div>`; }
+  { let tm = 0, cell = null, box = null; const off = () => { clearTimeout(tm); tm = 0; if (box) { box.remove(); box = null; } };
+    document.addEventListener('mousemove', (ev) => { off(); const c = ev.target.closest && ev.target.closest('.baggrid:not(.qsalv) .bagcell[data-bagit]'); cell = c; if (!c || ev.buttons || !$('modal').hidden) return; const x = ev.clientX, y = ev.clientY;
+      tm = setTimeout(() => { if (!cell || !cell.isConnected || !$('modal').hidden) return; const h = bagPeek(cell.dataset.bagit); if (!h) return; hidePeeks(); box = document.createElement('div'); box.id = 'bagPeek'; box.innerHTML = h; document.body.appendChild(box); paintPortraits(box);
+        const r = box.getBoundingClientRect(); box.style.left = Math.max(8, Math.min(innerWidth - r.width - 8, x + 18)) + 'px'; box.style.top = Math.max(8, Math.min(innerHeight - r.height - 8, y - r.height / 2)) + 'px'; }, 1000); }, true);
+    for (const e of ['mousedown', 'keydown', 'wheel', 'blur']) addEventListener(e, off, true); }
   // a bag item: its card, and what you can do with it
   function bagItem(id) {
     const c = CBHub.char(profile, heroKey), it = profile.stash.find(x => x.id === id); if (!it) return;
@@ -2110,7 +2125,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   for (const n of NPCS) { n.home = n.dir; solid.add(K(n.x, n.y)); }
   // Nov 2: Tinker Pip (free test goods) only stands in town for admins (supabase/trust.sql: add your user id to public.admins)
   const TINKER = NPCS.find(n => n.id === 'tinker');
-  function setAdmin(on) { if (!TINKER) return; const i = NPCS.indexOf(TINKER); if (on && i < 0) { NPCS.push(TINKER); solid.add(K(TINKER.x, TINKER.y)); } else if (!on && i >= 0) { NPCS.splice(i, 1); solid.delete(K(TINKER.x, TINKER.y)); } }
+  function setAdmin(on) { window.CB_ADMIN = !!on; if (!TINKER) return; const i = NPCS.indexOf(TINKER); if (on && i < 0) { NPCS.push(TINKER); solid.add(K(TINKER.x, TINKER.y)); } else if (!on && i >= 0) { NPCS.splice(i, 1); solid.delete(K(TINKER.x, TINKER.y)); } }
   setAdmin(false);
 
 

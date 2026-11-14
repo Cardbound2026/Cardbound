@@ -8,6 +8,8 @@
   const SBK = { page: 0, ch: null };
   const BK_MAPN = { physical: 'The Broken March', fire: 'The Cinder Reach', frost: 'The Rimewatch', nature: 'The Tanglewild', arcane: 'The Shattered Spire', shadow: 'The Hollow Crypts' };
   const BK_PAGES = ['The Hero', 'The Road', 'Bestiary', 'Damage', 'Cards', 'The Reckoning'];
+  // The Reckoning (balance review) is test only: it shows for admins, the same people who see Tinker Pip (public.admins)
+  const bkPages = () => window.CB_ADMIN ? BK_PAGES : BK_PAGES.slice(0, 5);
   const bkN = (v) => Math.round(v || 0).toLocaleString();
   const bkTime = (s) => { s = Math.round(s || 0); const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60); return d ? `${d}d ${h}h ${m}m` : h ? `${h}h ${m}m` : m ? `${m}m` : s ? `${s}s` : 'none yet'; };
   const bkDate = (ms) => ms ? new Date(ms).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'unknown';
@@ -98,18 +100,18 @@
       <p class="bknote">This page looks for a hero leaning on one thing: a card that does most of the damage, bosses dying in a round or two, runs that never fail. It is a pointer for balance, not an accusation.</p>`,
       `<h4>For balance review</h4><p class="bkline">Copy this hero's whole record as text (deck, damage by card, cards played, every run) and paste it to whoever is tuning the game.</p><div class="row" style="justify-content:flex-start"><button type="button" class="btn primary" data-bkcopy="1">Copy report</button></div><textarea class="bkrep" readonly rows="11">${esc(bkReport(ch))}</textarea>`]; }
 
-  function bkRender() { const ch = SBK.ch, pg = [bkHero, bkRoad, bkBeasts, bkDamage, bkCards, bkReckon][SBK.page](ch);
-    modal(`<div class="book" data-pg="${SBK.page}"><div class="bktabs">${BK_PAGES.map((n, i) => `<button type="button" class="${i === SBK.page ? 'on' : ''}" data-bkpg="${i}">${n}</button>`).join('')}</div>
+  function bkRender() { if (SBK.page >= bkPages().length) SBK.page = 0; const ch = SBK.ch, pg = [bkHero, bkRoad, bkBeasts, bkDamage, bkCards, bkReckon][SBK.page](ch);
+    modal(`<div class="book" data-pg="${SBK.page}"><div class="bktabs">${bkPages().map((n, i) => `<button type="button" class="${i === SBK.page ? 'on' : ''}" data-bkpg="${i}">${n}</button>`).join('')}</div>
       <div class="bkspread"><div class="bkpage l"><div class="bkhd">${esc(ch.name)}'s Chronicle</div>${pg[0]}<div class="bkno">${SBK.page * 2 + 1}</div></div><div class="bkpage r"><div class="bkhd">${BK_PAGES[SBK.page]}</div>${pg[1]}<div class="bkno">${SBK.page * 2 + 2}</div></div></div>
-      <button type="button" class="bkturn prev" data-bkpg="${SBK.page - 1}" ${SBK.page ? '' : 'disabled'} aria-label="Previous page">&lsaquo;</button><button type="button" class="bkturn next" data-bkpg="${SBK.page + 1}" ${SBK.page < BK_PAGES.length - 1 ? '' : 'disabled'} aria-label="Next page">&rsaquo;</button></div>
+      <button type="button" class="bkturn prev" data-bkpg="${SBK.page - 1}" ${SBK.page ? '' : 'disabled'} aria-label="Previous page">&lsaquo;</button><button type="button" class="bkturn next" data-bkpg="${SBK.page + 1}" ${SBK.page < bkPages().length - 1 ? '' : 'disabled'} aria-label="Next page">&rsaquo;</button></div>
       <div class="row"><button class="btn primary" id="mClose">Close the book</button></div>`);
     const box = $('modalBox'); box.classList.add('wide', 'bookbox'); $('mClose').onclick = closeModal; }
   document.addEventListener('click', (ev) => { const t = ev.target.closest && ev.target.closest('.book [data-bkpg], .book [data-bkcopy]'); if (!t || !SBK.ch) return;
     if (t.dataset.bkcopy) { const txt = bkReport(SBK.ch), done = () => { t.textContent = 'Copied'; setTimeout(() => { t.textContent = 'Copy report'; }, 1600); }; try { navigator.clipboard.writeText(txt).then(done, () => { const ta = document.querySelector('.bkrep'); ta.select(); document.execCommand('copy'); done(); }); } catch (e) { const ta = document.querySelector('.bkrep'); ta.select(); try { document.execCommand('copy'); done(); } catch (e2) {} } return; }
-    const n = +t.dataset.bkpg; if (n >= 0 && n < BK_PAGES.length && n !== SBK.page) { SBK.page = n; bkRender(); } });
-  document.addEventListener('keydown', (ev) => { if (!SBK.ch || $('modal').hidden || !document.querySelector('#modalBox .book') || /INPUT|TEXTAREA/.test((document.activeElement || {}).tagName || '')) return; const d = ev.key === 'ArrowRight' ? 1 : ev.key === 'ArrowLeft' ? -1 : 0; if (!d) return; const n = SBK.page + d; if (n >= 0 && n < BK_PAGES.length) { SBK.page = n; bkRender(); ev.preventDefault(); ev.stopPropagation(); } }, true);
+    const n = +t.dataset.bkpg; if (n >= 0 && n < bkPages().length && n !== SBK.page) { SBK.page = n; bkRender(); } });
+  document.addEventListener('keydown', (ev) => { if (!SBK.ch || $('modal').hidden || !document.querySelector('#modalBox .book') || /INPUT|TEXTAREA/.test((document.activeElement || {}).tagName || '')) return; const d = ev.key === 'ArrowRight' ? 1 : ev.key === 'ArrowLeft' ? -1 : 0; if (!d) return; const n = SBK.page + d; if (n >= 0 && n < bkPages().length) { SBK.page = n; bkRender(); ev.preventDefault(); ev.stopPropagation(); } }, true);
   { const st = document.createElement('style'); st.textContent = `
-    #modalBox.bookbox { width: min(1040px, 96vw); background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; }
+    #modalBox.bookbox { width: min(1040px, 96vw); background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 18px !important; box-sizing: border-box; overflow-x: hidden !important; }
     #modalBox.bookbox::before, #modalBox.bookbox::after { display: none !important; }
     .book { position: relative; padding: 34px 14px 14px; background: linear-gradient(#4a2c1a, #2e1a0f); border: 2px solid #1c0f08; border-radius: 10px; box-shadow: 0 18px 50px rgba(0,0,0,.75), inset 0 0 0 3px #6b4226, inset 0 0 0 4px #1c0f08; }
     .bktabs { position: absolute; left: 26px; top: 6px; display: flex; gap: 3px; } .bktabs button { padding: 4px 11px 5px; border: 1px solid #1c0f08; border-bottom: 0; border-radius: 6px 6px 0 0; background: #8a6a44; color: #2a1a0c; font: 600 14px 'Grenze', serif; cursor: pointer; } .bktabs button.on { background: #ead9b4; padding-top: 7px; margin-top: -3px; } .bktabs button:hover { background: #d9c49a; }
