@@ -1,0 +1,12 @@
+# Nov 13, third batch of mounts. key kind id
+armorhorse char 06939163-56b7-4665-997a-cf7db9c14bc7
+holycharger char 16004c5c-514f-4dcb-8510-d843419eb0ee
+tiger char 3bca35c2-93ab-4524-92f3-03e194862da8
+rhino char 432f3f7b-90f3-4f71-856c-6ee343338842
+moose char ea433bc0-1a5d-441d-9029-1ac2c6a1f6e7
+hyena char 23564e96-90da-4704-80a3-4fdf38728aaa
+sabertawny char a6828a08-f08a-4224-a8a6-06497325fbf9
+lion char eca52679-a885-4d31-99d8-960ff7f30577
+bonedragon char f6ef4170-16eb-4623-b488-f423ba4957bf
+felhound char ee3f920e-d15e-42f7-a32a-282708f01c3c
+demonbrute char ff329ea4-9a73-46c4-9e13-f08c8a2cbbdc

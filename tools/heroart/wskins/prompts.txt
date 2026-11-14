@@ -1,0 +1,51 @@
+# key|type|name|price|w|h|what
+dagger_poison|dagger|Venom Fang|300|20|44|a dagger, blade pointing straight up, handle at the bottom: a wavy dark green blade dripping glowing green poison, snake-skin grip
+dagger_blood|dagger|Bloody Shiv|300|20|44|a dagger, blade pointing straight up, handle at the bottom: a crude steel blade soaked in dripping red blood, rag-wrapped grip
+dagger_gold|dagger|Golden Dagger|400|20|44|a dagger, blade pointing straight up, handle at the bottom: a gleaming golden blade with an ornate gold guard and a ruby pommel
+dagger_shadow|dagger|Shadow Fang|300|20|44|a dagger, blade pointing straight up, handle at the bottom: a black obsidian blade wreathed in violet shadow smoke, dark purple grip
+dagger_carrot|dagger|Sharpened Carrot|400|20|44|a big orange carrot held like a dagger, pointed tip straight up, green leafy top at the bottom as the handle
+dagger_crystal|dagger|Arcane Shard|300|20|44|a dagger, blade pointing straight up, handle at the bottom: a glowing purple crystal shard blade bound to a silver grip
+sword1h_blood|sword1h|Bloodletter|300|28|60|a one-handed sword, blade pointing straight up, hilt at the bottom: a steel blade streaked and dripping with red blood, dark crossguard
+sword1h_gold|sword1h|Golden Sword|400|28|60|a one-handed sword, blade pointing straight up, hilt at the bottom: a gleaming golden blade, ornate gold crossguard, ruby pommel
+sword1h_crystal|sword1h|Crystal Blade|300|28|60|a one-handed sword, blade pointing straight up, hilt at the bottom: a blade of translucent glowing blue crystal, silver crossguard
+sword1h_toy|sword1h|Wooden Practice Sword|300|28|60|a child's toy wooden sword, blade pointing straight up, hilt at the bottom: rough carved wood, a string-wrapped handle, a few nicks
+sword1h_baguette|sword1h|Stale Baguette|400|28|60|a long golden-brown baguette loaf of bread held like a sword, standing upright, crusty with diagonal score marks, a cloth wrapped around the bottom as a grip
+sword1h_cleaver|sword1h|Butcher's Cleaver|300|28|60|a big butcher's meat cleaver, wide rectangular blade at the top with a hole in the corner and blood on the edge, wooden handle at the bottom
+axe1h_blood|axe1h|Bloody Hatchet|300|32|60|a one-handed hatchet axe, axe head at the top, wooden handle at the bottom: a chipped steel head dripping with red blood
+axe1h_gold|axe1h|Golden Axe|400|32|60|a one-handed axe, axe head at the top, handle at the bottom: a gleaming engraved golden axe head, gold-banded handle
+axe1h_frost|axe1h|Frost Hatchet|300|32|60|a one-handed axe, axe head at the top, handle at the bottom: an axe head of jagged pale blue ice with frost crystals
+axe1h_pick|axe1h|Miner's Pickaxe|300|32|60|a miner's pickaxe, the double-pointed iron pick head at the top, worn wooden handle at the bottom
+mace1h_gold|mace1h|Golden Mace|400|28|56|a one-handed flanged mace, the heavy head at the top, handle at the bottom: gleaming gold with a ruby set in the head
+mace1h_drumstick|mace1h|Roast Drumstick|400|28|56|a huge roasted chicken drumstick held like a club: the big juicy browned meat end at the top, the clean white bone at the bottom as the handle
+mace1h_pan|mace1h|Frying Pan|400|28|56|a black cast iron frying pan held like a mace, the round pan at the top facing the viewer, the handle straight down at the bottom
+wand_gold|wand|Sunburst Wand|300|20|46|a magic wand, tip at the top, handle at the bottom: a golden rod topped with a glowing sun star
+wand_bone|wand|Finger Bone Wand|300|20|46|a magic wand made of a long skeletal finger bone pointing straight up, knuckle joints visible, a leather wrap at the bottom
+wand_spoon|wand|Wooden Spoon|400|20|46|a wooden kitchen spoon held like a wand, the bowl of the spoon at the top, the handle at the bottom
+sword2h_blood|sword2h|Blood-soaked Greatsword|400|28|92|a two-handed greatsword, blade pointing straight up, long hilt at the bottom: a wide dark steel blade running with red blood
+sword2h_frost|sword2h|Glacier Greatsword|400|28|92|a two-handed greatsword, blade pointing straight up, long hilt at the bottom: a huge blade of jagged pale blue ice with frost crystals
+sword2h_shadow|sword2h|Voidedge Greatsword|400|28|92|a two-handed greatsword, blade pointing straight up, long hilt at the bottom: a black blade with a glowing violet edge and shadow smoke
+sword2h_swordfish|sword2h|Swordfish|500|28|92|a whole swordfish held upright like a greatsword: its long pointed bill straight up at the top, blue-silver body, tail fin at the bottom as the handle
+axe2h_frost|axe2h|Glacier Greataxe|400|40|88|a two-handed double-bladed greataxe, the axe head at the top, long handle at the bottom: blades of jagged pale blue ice with frost crystals
+axe2h_blood|axe2h|Executioner's Greataxe|400|40|88|a two-handed executioner's greataxe, the wide axe head at the top, long handle at the bottom: dark steel dripping with red blood
+axe2h_gold|axe2h|Golden Greataxe|500|40|88|a two-handed double-bladed greataxe, the axe head at the top, long handle at the bottom: gleaming engraved gold blades
+axe2h_lute|axe2h|Bard's Battle Lute|500|40|88|a wooden lute musical instrument held upside down like a two-handed axe: the round body with strings at the top, with an axe blade fixed to its side, the neck pointing down as the handle
+maul_gold|maul|Golden Maul|500|32|92|a two-handed maul, the huge block head at the top, long handle at the bottom: gleaming gold with engraved bands
+maul_log|maul|Tree Trunk|400|32|92|a thick knotty tree trunk log used as a two-handed club, the wide end at the top with a broken branch stub and a few leaves, the narrow end at the bottom wrapped in rope
+hammer_gold|hammer|Golden Warhammer|500|36|80|a two-handed warhammer, the hammer head at the top, long handle at the bottom: gleaming gold with a sun emblem
+hammer_frost|hammer|Glacier Hammer|400|36|80|a two-handed warhammer, the hammer head at the top, long handle at the bottom: a head made of a block of pale blue ice with frost crystals
+hammer_mallet|hammer|Carnival Mallet|500|36|80|a huge round wooden carnival mallet with red and white painted stripes, the big barrel head at the top, a long wooden handle at the bottom
+scythe_blood|scythe|Blood Reaper|400|40|100|a tall scythe, the long curved blade at the top, the long shaft straight down: a dark blade dripping with red blood
+scythe_gold|scythe|Golden Scythe|500|40|100|a tall scythe, the long curved blade at the top, the long shaft straight down: a gleaming golden blade and gold-banded shaft
+scythe_bone|scythe|Bone Reaper|400|40|100|a tall scythe made of bones: a curved blade of sharpened rib bone at the top, a shaft made of a spine straight down, a small skull where they join
+staff_broom|staff|Witch's Broom|500|28|92|a witch's broomstick standing upright like a staff: the bristly straw broom head at the top, a crooked wooden shaft straight down
+staff_crook|staff|Lantern Crook|400|28|92|a shepherd's crook staff standing upright: the hooked top with a small glowing lantern hanging from it, the wooden shaft straight down
+staff_crystal|staff|Crystal Staff|400|28|92|a wizard's staff standing upright: a large glowing cyan crystal held in silver claws at the top, a silver shaft straight down
+kite_gold|kite|Golden Lion Shield|400|36|56|a kite shield seen from the front: gleaming gold with an embossed lion head in the middle
+kite_blood|kite|Blood-spattered Shield|300|36|56|a battered steel kite shield seen from the front, dented, spattered and dripping with red blood
+kite_lid|kite|Pot Lid|400|36|56|a round dented iron cooking pot lid with a knob handle in the middle, seen from the front, used as a shield
+tower_door|tower|Wooden Door|500|32|64|a small wooden door with iron hinges, a round iron knocker and a keyhole, seen from the front, carried as a tower shield
+tower_gold|tower|Golden Bulwark|500|32|64|a tall tower shield seen from the front: gleaming gold with a sun emblem and riveted edges
+focus_skull|focus|Yorick's Skull|400|36|36|a human skull held as a magic focus, facing the viewer, bone white with a candle stub melted on top
+focus_crystalball|focus|Crystal Ball|300|36|36|a fortune teller's crystal ball on a small gold stand, swirling purple mist inside
+focus_lantern|focus|Soul Lantern|300|36|36|a small iron lantern with a ghostly green flame inside
+focus_mug|focus|Mug of Ale|400|36|36|a wooden tankard mug of ale with a handle and white foam spilling over the top

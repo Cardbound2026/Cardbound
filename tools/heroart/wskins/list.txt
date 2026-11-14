@@ -1,0 +1,5 @@
+# key|type|name|price|job|pick
+dagger_frost|dagger|Frost Fang|300|fcb6d892-bf7a-42f6-aaaa-1d24fbec50d7|
+dagger_fish|dagger|Slippery Fish|400|2092dc08-8e13-490b-b2b8-b9985ee5b117|
+maul_femur|maul|Giant's Femur|500|74569a1a-a7e9-4c0e-8131-ee844547439a|
+sword2h_gold|sword2h|Golden Greatsword|500|10b8a2b9-4343-4582-87dd-452b9e60835e|

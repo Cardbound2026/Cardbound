@@ -177,8 +177,10 @@ window.CB_PUPPET = (function () {
     wg.setTransform(1, 0, 0, 1, 0, 0); wg.clearRect(0, 0, work.width, work.height); wg.imageSmoothingEnabled = false;
     const base = () => wg.setTransform(q, 0, 0, q, (S / 2 + Math.round(P.dx)) * q, (S / 2 + Math.round(P.dy)) * q), wim = (look.weapon || look.off) && W ? img('weapons') : null, cl = cloak(look, v);
     const held = (it, part, hand, rot, at) => {   // a weapon or shield: its grip on the hand, turned with the arm
-      if (!it || !wim) return; const ti = W.types.indexOf(it[0]), gp = W.grip[it[0]] && W.grip[it[0]][it[1]]; if (ti < 0 || !gp) return;
-      base(); chain(wg, B, P, part); wg.translate(at ? at[0] : B.hand[hand][0], at ? at[1] : B.hand[hand][1]); wg.rotate(rot); wg.drawImage(wim, it[1] * W.cw, ti * W.ch, W.cw, W.ch, -Math.round(gp[0]), -Math.round(gp[1]) + (HELD[it[0]] || LONG[it[0]] || at ? 0 : 2), W.cw, W.ch);
+      if (!it || !wim) return; let ti = W.types.indexOf(it[0]), gp = W.grip[it[0]] && W.grip[it[0]][it[1]], sim = wim, sx = it[1] * W.cw, sy = ti * W.ch; if (ti < 0 || !gp) return;
+      // Nov 13: a weapon look from the Skull Shop for this type of weapon (look.cos['wsk_' + type]) is drawn in its place; it is held and swung the same way
+      { const SK = window.CB_WSKINS, id = SK && look.cos && look.cos['wsk_' + it[0]]; if (id) { if (!SK.by) { SK.by = {}; SK.list.forEach((q, i) => { SK.by['wsk_' + q.k] = Object.assign({ i }, q); }); } const q = SK.by[id], im2 = q && q.t === it[0] && img('wskins'); if (im2) { sim = im2; sx = (q.i % SK.cols) * W.cw; sy = Math.floor(q.i / SK.cols) * W.ch; gp = q.g; } } }
+      base(); chain(wg, B, P, part); wg.translate(at ? at[0] : B.hand[hand][0], at ? at[1] : B.hand[hand][1]); wg.rotate(rot); wg.drawImage(sim, sx, sy, W.cw, W.ch, -Math.round(gp[0]), -Math.round(gp[1]) + (HELD[it[0]] || LONG[it[0]] || at ? 0 : 2), W.cw, W.ch);
       // Nov 13: the fist closes over the handle. The weapon is drawn on the hand, then the hand itself is drawn again on top of it,
       // so fingers wrap the grip instead of the weapon floating in front of an open hand
       if (!at && !HELD[it[0]]) { wg.save(); base(); chain(wg, B, P, part); wg.beginPath(); wg.arc(B.hand[hand][0], B.hand[hand][1], GRIPR, 0, 7); wg.clip(); wg.drawImage(strip, part * S, 0, S, S, 0, 0, S, S); wg.restore(); }

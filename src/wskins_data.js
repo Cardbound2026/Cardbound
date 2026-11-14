@@ -1,0 +1,2 @@
+// made by tools/heroart/wskins/bake.py: weapon looks sold in the Skull Shop (k key, t weapon type, n name, p price, g grip in its 48x112 cell)
+window.CB_WSKINS = {"cols": 10, "cw": 48, "ch": 112, "list": [{"k": "dagger_frost", "t": "dagger", "n": "Frost Fang", "p": 300, "g": [23.5, 106]}, {"k": "dagger_fish", "t": "dagger", "n": "Slippery Fish", "p": 400, "g": [22.5, 105]}, {"k": "maul_femur", "t": "maul", "n": "Giant's Femur", "p": 500, "g": [24.0, 80]}, {"k": "sword2h_gold", "t": "sword2h", "n": "Golden Greatsword", "p": 500, "g": [23.5, 99]}]};

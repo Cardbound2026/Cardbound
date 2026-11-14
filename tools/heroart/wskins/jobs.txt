@@ -1,0 +1,12 @@
+dagger_frost fcb6d892-bf7a-42f6-aaaa-1d24fbec50d7 1794614761871-3sbwzs
+dagger_fish 2092dc08-8e13-490b-b2b8-b9985ee5b117 1794614763015-lifte3
+sword2h_gold 10b8a2b9-4343-4582-87dd-452b9e60835e 1794614764756-3kkncm
+maul_femur 74569a1a-a7e9-4c0e-8131-ee844547439a
+dagger_poison 15a1ed06-174a-46ad-92eb-76608accec26
+dagger_blood 21c72e6a-a597-470c-821b-caf549f86859
+dagger_gold b20b10a3-5b4f-4775-b0e1-862af7211207
+dagger_shadow f56dd3a9-0418-47b7-b50c-f5779929add5
+dagger_carrot a6434f0d-f468-4156-a3a3-94c15e516ac4
+dagger_crystal 56788915-5055-4ef4-bd45-7e406df2f379
+sword1h_blood 84edf90e-9620-47bc-a544-59f8f02623f6
+sword1h_gold fc278e7b-75c7-46c9-80ff-72093cd32c44

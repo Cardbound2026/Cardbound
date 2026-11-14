@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Art', "Skull Shop: four new auras (Circling Skull, Poison Cloud, Blood Rain, Golden Orb), Poison and Holy footsteps, and Wings are now Back cosmetics with eight new things to carry: a gravestone, a poison flask, bloody crossed swords, a chained coffin, a skull war banner, a sack of loot, a rusty anchor and an ale keg."],
+      ['Feature', "Weapon looks by weapon type in the Skull Shop: pick a look for your daggers, another for your greatsword, and so on. The first few are in (Frost Fang, a Slippery Fish for a dagger, a Giant's Femur for a maul, a Golden Greatsword); many more are on the way."],
       ['Art', "Shoulder, bracer and glove items have proper pictures now: 54 new icons (plate, leather and cloth for each of the six maps) in place of the blurry scraps cut from the hero art."],
       ['Art', "Mount fixes: the Red Dragon and Golden Gryphon are redrawn in the same fine detail as the other mounts, the Bloodback Spider walks with its legs while its body holds still, and the Ghost Horse is see-through with a proper gallop."],
       ['Balance', "Codex drops: a map boss now drops your own class's codex 25% of the time, and 50% while you are wearing no codex at all. Every other class's codex still drops at 5% each. Before, a specific codex was 5% a kill whatever your class."],
