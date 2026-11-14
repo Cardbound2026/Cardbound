@@ -64,3 +64,9 @@ Chest_Plate_frost 862310d0-0cad-4fde-a343-3bb059a283bf
 Chest_Plate_nature b45cb7e2-0b23-4254-ba43-b7ca72e7eb2b
 Chest_Plate_arcane 8e2a9039-3c0a-4051-94f2-06ce072b2d2d
 Chest_Plate_shadow b70accab-1237-41ee-8557-e6bf342fd2c2
+Chest_Cloth_physical 1c44b9cb-ea36-4798-acf4-dfe5135634ad
+Chest_Cloth_fire d9b9bc45-aa63-446b-a751-3521d3dd0538
+Chest_Cloth_frost 3deb5823-32a6-4c4c-aabe-552aef24a194
+Chest_Cloth_nature 1021bd15-7764-4ce9-b058-2b7dd3a57662
+Chest_Cloth_arcane 7b752551-2376-44a7-8eac-471bbe1acd2c
+Chest_Cloth_shadow 6249bfab-9f98-4988-9123-48650a6115dc

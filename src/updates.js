@@ -2,8 +2,9 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Art', "New pictures for every chest piece (Cinder Jerkin and the rest): 18 redrawn icons for plate, leather and cloth chests on all six maps."],
       ['Interface', "A big gold ! appears next to your codex level whenever you have a talent point to spend. Point at it for the reminder (push N), or click it to open your talents."],
-      ['Art', "Six new mounts in the Skull Shop: Horned Beetle, Soldier Ant, Giant Rabbit, Swamp Toad, Phoenix and Giant Raven."],
+      ['Art', "Eight new mounts in the Skull Shop: Horned Beetle, Soldier Ant, Giant Rabbit, Swamp Toad, Phoenix, Giant Raven, Mossback Tortoise and Basilisk."],
       ['Fix', "Bag pictures (Leather Satchel and the rest) sit in the middle of their tile instead of the bottom-right corner."],
       ['Art', "Thorns striking back has a new look: a green briar with short hooked rose thorns and a few petals, in place of the long grey spikes."],
       ['Interface', "Skull Shop: click any picture (a mount, card back, cursor, aura, weapon look...) to see it big. Click again or press Esc to close."],

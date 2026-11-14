@@ -53,3 +53,7 @@ for k, D in RE2.items(): redo(k, D)
 for k, a in ALPHA.items():
     sh = np.array(Image.open(f'{H}/../mounts/{k}.png').convert('RGBA')).astype(float); sh[..., 3] *= a; Image.fromarray(sh.astype(np.uint8)).save(f'{H}/../mounts/{k}.png')
 print(rep)
+# Nov 13: two clean-ups the paintings need every time (run after everything above): the ant's grey ground-shadow blobs, the phoenix's white halo
+for k, f in (('ant', lambda a: (abs(a[..., 0].astype(int) - a[..., 1]) < 6) & (abs(a[..., 1].astype(int) - a[..., 2]) < 6) & (a[..., 0] > 150)), ('phoenix', lambda a: a[..., :3].min(-1) > 215)):
+    p = f'{H}/../mounts/{k}.png'
+    if os.path.exists(p): a = np.array(Image.open(p).convert('RGBA')); a[f(a)] = 0; Image.fromarray(a).save(p)
