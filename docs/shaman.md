@@ -31,7 +31,7 @@ Lightning spells build Static on the target. Static does nothing by itself: card
 - Power: if a Skill does not Multicast, roll again at 50% of your Multicast chance (30% chance: a 15% second roll).
 - **Living Lightning** (Healer): heal a target; if it Multicasts, it also casts Chain Lightning.
 - **Spirit Link** (Gold Power): all damage is shared evenly between the party.
-- Tank: something that gives All Resistance (talent or card, to confirm).
+- Tank: a debuff that lowers all of the target's resistances by a small amount (counts as one more unique debuff).
 - **Lightning Shield** (Tank): hits against the Shaman build Static on the attacker.
 - The cards first called Windfury and Stormstrike need new names.
 - Draft families from chat: lightning spells, Static payoffs, mace Attacks, weapon charges, heals, Shaman debuffs
@@ -62,8 +62,9 @@ Theme: lightning, rain and storm, nature. Class colour: a dark, deep blue, clear
 ## Open questions
 
 - Support tank: taunt chance per Attack (number, and which talent row)? Is the 5% per debuff capped?
-- Static: does it drop over time? Under the Support tank codex it would never drop.
-- Stun-lock on map bosses through Electrocute and its auto-return Power; Spirit Link before or after each hero's defences.
+- Settled Nov 14: Static does not fade (for now). No stun-lock guard: if someone has the draw and mana, let them cook.
+  Mass Electrocute is uncapped (30 Static = 3 turns). Spirit Link splits the hit before defences: a 30 hit on one of two
+  linked heroes becomes 15 each, and each hero's own defences then apply to their share.
 - Penetration does not exist in the engine yet.
 - Cards: being worked out in chat (Nov 14), nothing generated in the game.
 - Gear: maces give both stats, and since Nov 13 rings can roll Multi-hit and Multicast for every class.
