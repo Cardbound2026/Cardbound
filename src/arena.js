@@ -31,9 +31,11 @@
     giveBack(a.stake); profile.arena = null; AR.offers = {}; save(); if (typeof retrack === 'function') retrack(true); renderTownBar(); }
 
   // what other players see on the board (on presence)
+  // Nov 14: every wager and offer shows the hero's Arena rating, and what a win or a loss against them would do to yours
+  function arRate(r) { if (!r) return ''; const c = profile.chars[heroKey], m = c ? CBHub.pvpOf(c).r : 0, w = c ? CBHub.pvpDelta(m, r, 1) : 0, l = c ? CBHub.pvpDelta(m, r, 0) : 0; return ` <span class="pfrate" title="Arena rating. Yours is ${m}: a win is worth +${w}, a loss ${l}.">&#9876; ${r} ${CBHub.pvpRank(r)}</span>`; }
   function arenaPresence() {
     const a = arMe(); if (!a || a.role !== 'post' || a.status !== 'open') return null;
-    const c = profile.chars[a.hero]; return { pid: a.pid, hero: c ? c.name : '', cls: c ? c.cls : '', gold: a.stake.gold, items: a.stake.items.map(arSlim), note: a.note || '', n: Object.keys(AR.offers).length };
+    const c = profile.chars[a.hero]; return { pid: a.pid, pvp: c ? CBHub.pvpOf(c).r : 0, hero: c ? c.name : '', cls: c ? c.cls : '', gold: a.stake.gold, items: a.stake.items.map(arSlim), note: a.note || '', n: Object.keys(AR.offers).length };
   }
   const boardPosts = () => [...((typeof SOC !== 'undefined' && SOC.online) || new Map()).entries()].filter(([uid, st]) => uid !== SOC.me && st && st.arena && st.arena.pid).map(([uid, st]) => Object.assign({ uid, who: st.name }, st.arena));
 
@@ -61,7 +63,7 @@
     const oid = reviseOf || arId();
     profile.arena = { role: 'offer', pid: post.pid, oid, to: post.uid, hero: a0 ? a0.hero : heroKey, stake: r.stake, note: (note || '').slice(0, 120), status: 'pending', at: Date.now(), post: { who: post.who, hero: post.hero, cls: post.cls, gold: post.gold, items: post.items, note: post.note } };
     save(); retrack(true);
-    arSend('ar-offer', { to: post.uid, pid: post.pid, oid, gold: r.stake.gold, items: r.stake.items.map(arSlim), note: profile.arena.note, name: c.name, cls: c.cls, hero: heroRecord(c) });
+    arSend('ar-offer', { to: post.uid, pid: post.pid, oid, gold: r.stake.gold, items: r.stake.items.map(arSlim), note: profile.arena.note, name: c.name, cls: c.cls, pvp: CBHub.pvpOf(c).r, hero: heroRecord(c) });
     sysChat(`${reviseOf ? 'Revised offer' : 'Offer'} sent to ${post.who}: ${stakeTxt(r.stake)}.`); renderArena();
   }
   function withdraw() {
@@ -93,7 +95,7 @@
         if (!a || a.role !== 'post' || a.pid !== p.pid || a.status !== 'open') { arSend('ar-decline', { to: p.from, pid: p.pid, oid: p.oid, why: 'is no longer on the board' }); return; }
         { const ph = hcOf(p.from), mine = !!(profile.chars[a.hero] || {}).hardcore; if (ph != null && ph !== mine) { arSend('ar-decline', { to: p.from, pid: p.pid, oid: p.oid, why: mine ? 'is a Hardcore wager (Hardcore heroes only)' : 'is for normal heroes (Hardcore heroes only wager with Hardcore heroes)' }); return; } }
         const was = AR.offers[p.oid];
-        AR.offers[p.oid] = { oid: p.oid, from: p.from, name: p.name, cls: p.cls, gold: Math.max(0, +p.gold || 0), items: (p.items || []).slice(0, AR_ITEMS), note: p.note || '', hero: p.hero, at: Date.now() };
+        AR.offers[p.oid] = { oid: p.oid, from: p.from, name: p.name, cls: p.cls, pvp: +p.pvp || 0, gold: Math.max(0, +p.gold || 0), items: (p.items || []).slice(0, AR_ITEMS), note: p.note || '', hero: p.hero, at: Date.now() };
         sysChat(`${p.name} ${was ? 'revised their offer' : 'made an offer'} on your wager: ${stakeTxt(AR.offers[p.oid])}. Open the Wager Board to answer.`);
         retrack(true); if (!$('hpArena').hidden) renderArena(); return;
       }
@@ -173,7 +175,7 @@
       const offers = Object.values(AR.offers);
       mine = `<div class="arbox mine"><h4>Your wager <span class="muted">${a.status === 'open' ? 'on the board' : a.status === 'accepted' ? 'accepted: waiting for the duel' : 'in the ring'}</span></h4>${stakeHtml(a.stake, `${esc(arName())} puts up`)}${a.note ? `<p class="arnote">"${esc(a.note)}"</p>` : ''}
         ${a.status === 'open' ? '<div class="acts"><button class="btn" data-ardown="1">Take it down</button></div>' : ''}
-        <h4 style="margin-top:10px">Offers (${offers.length})</h4>${offers.length ? offers.map(o => `<div class="aroffer"><div class="arofhead"><b style="color:${CC[o.cls] || 'var(--text)'}">${esc(o.name)}</b> <span class="muted">${esc(o.cls || '')}</span><button class="pilebtn" data-arhero="${o.oid}">See their hero (locked)</button></div>
+        <h4 style="margin-top:10px">Offers (${offers.length})</h4>${offers.length ? offers.map(o => `<div class="aroffer"><div class="arofhead"><b style="color:${CC[o.cls] || 'var(--text)'}">${esc(o.name)}</b> <span class="muted">${esc(o.cls || '')}</span>${arRate(o.pvp)}<button class="pilebtn" data-arhero="${o.oid}">See their hero (locked)</button></div>
           ${stakeHtml(o, 'puts up')}${o.note ? `<p class="arnote">"${esc(o.note)}"</p>` : ''}${o.counter ? `<p class="muted">You countered${o.counter.gold ? `: ${o.counter.gold.toLocaleString()} gold` : ''}${o.counter.note ? ` "${esc(o.counter.note)}"` : ''}. Waiting for their answer.</p>` : ''}
           ${a.status === 'open' ? `<div class="acts"><button class="btn primary" data-araccept="${o.oid}">Accept and fight</button><button class="btn" data-arcounter="${o.oid}">Counter</button><button class="btn" data-ardecline="${o.oid}">Decline</button></div>
           ${AR.form && AR.form.kind === 'counter' && AR.form.oid === o.oid ? `<div class="namerow arform"><div class="field"><label>Gold you want from them</label><input type="number" min="0" value="${o.gold}" class="argoldin"></div><div class="field" style="flex:2"><label>Your counter</label><input maxlength="120" class="arnotein" placeholder="Add your Blue cloak and you have a deal"></div><button class="btn primary" data-arsendcounter="${o.oid}">Send counter</button><button class="btn" data-arcancel="1">Cancel</button></div>` : ''}` : ''}</div>`).join('') : '<p class="muted">No offers yet. Players in town see your wager on this board.</p>'}</div>`;
@@ -185,7 +187,7 @@
         ${a.status === 'pending' || a.status === 'countered' ? `<div class="acts">${a.status === 'countered' && a.counter.gold ? `<button class="btn primary" data-armeet="1">Meet it (${a.counter.gold.toLocaleString()} gold)</button>` : ''}<button class="btn" data-arrevise="1">Revise my offer</button><button class="btn" data-arwithdraw="1">Withdraw</button></div>` : ''}
         ${AR.form && AR.form.kind === 'revise' ? pickForm('revise', { gold: a.stake.gold }) : ''}</div>`;
     }
-    const others = posts.map(pp => `<div class="arpost ${a && a.role === 'offer' && a.pid === pp.pid ? 'on' : ''}"><div class="arofhead"><b style="color:${CC[pp.cls] || 'var(--text)'}">${esc(pp.hero || pp.who)}</b> <span class="muted">${esc(pp.cls || '')} &middot; ${esc(pp.who)}</span><span class="chip">${pp.n || 0} offer${pp.n === 1 ? '' : 's'}</span></div>
+    const others = posts.map(pp => `<div class="arpost ${a && a.role === 'offer' && a.pid === pp.pid ? 'on' : ''}"><div class="arofhead"><b style="color:${CC[pp.cls] || 'var(--text)'}">${esc(pp.hero || pp.who)}</b> <span class="muted">${esc(pp.cls || '')} &middot; ${esc(pp.who)}</span>${arRate(pp.pvp)}<span class="chip">${pp.n || 0} offer${pp.n === 1 ? '' : 's'}</span></div>
       ${stakeHtml(pp, 'puts up')}${pp.note ? `<p class="arnote">"${esc(pp.note)}"</p>` : ''}
       <div class="acts"><button class="pilebtn" data-arlook="${pp.pid}" data-arto="${pp.uid}">See their hero</button>${!a ? `<button class="btn primary" data-aroffer="${pp.pid}">Make an offer</button>` : ''}</div>
       ${AR.form && AR.form.kind === 'offer' && AR.form.pid === pp.pid ? pickForm('offer', pp) : ''}</div>`).join('');

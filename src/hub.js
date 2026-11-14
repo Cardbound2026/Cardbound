@@ -336,7 +336,12 @@ const PVP_RANKS = [[1800, 'Champion'], [1600, 'Gladiator'], [1400, 'Veteran'], [
 function pvpOf(c) { const P = (c.pvp = c.pvp || { r: PVP_START, w: 0, l: 0, d: 0, peak: PVP_START }); return P; }
 function pvpRank(r) { return (PVP_RANKS.find(x => r >= x[0]) || PVP_RANKS[PVP_RANKS.length - 1])[1]; }
 function pvpDelta(mine, theirs, score) { const exp = 1 / (1 + Math.pow(10, (theirs - mine) / 400)); let d = Math.round(PVP_K * (score - exp)); if (score === 1 && d < 1) d = 1; if (score === 0 && d > -1) d = -1; return d; }
-function pvpApply(c, theirs, score) { const P = pvpOf(c), d = pvpDelta(P.r, +theirs || PVP_START, score); P.r = Math.max(0, P.r + d); if (score === 1) P.w++; else if (score === 0) P.l++; else P.d = (P.d || 0) + 1; P.peak = Math.max(P.peak || PVP_START, P.r); return d; }
+function pvpApply(c, theirs, score, info) { const P = pvpOf(c), foeR = +theirs || PVP_START, d = pvpDelta(P.r, foeR, score); P.r = Math.max(0, P.r + d); if (score === 1) P.w++; else if (score === 0) P.l++; else P.d = (P.d || 0) + 1; P.peak = Math.max(P.peak || PVP_START, P.r);
+  // Nov 14: the Chronicle's Arena page: a streak, a tally by rival class, the best scalp, and the last 60 duels [minute, rival, class, score, change, rating after, rounds, their rating, wager 0/1]
+  P.st = score === 1 ? (P.st || 0) + 1 : 0; P.best = Math.max(P.best || 0, P.st);
+  if (info) { const cls = info.cls || '?', v = (P.vs = P.vs || {})[cls] = (P.vs || {})[cls] || [0, 0, 0]; v[score === 1 ? 0 : score === 0 ? 1 : 2]++; if (score === 1 && (!P.top || foeR > P.top[0])) P.top = [foeR, String(info.name || '').slice(0, 24), cls];
+    (P.log = P.log || []).push([Math.floor(Date.now() / 60000), String(info.name || '').slice(0, 24), cls, score, d, P.r, info.rounds || 0, foeR, info.wager ? 1 : 0]); if (P.log.length > 60) P.log.splice(0, P.log.length - 60); }
+  return d; }
 function stashFor(p, c) { p.stashOther = p.stashOther || []; const key = Object.keys(p.chars || {}).find(k => p.chars[k] === c); return !p.stashHero || key === p.stashHero ? p.stash : p.stashOther.filter(it => it.own === key); }
 // one time: the old account-wide bags (one normal set, one hardcore set) go to one hero each: the one you are playing if it is of that kind, else the hero of that kind with the most runs
 function bagsSplit(p, key) { if (p.invSplit) return; p.invSplit = 1; const keys = Object.keys(p.chars), of = (mode) => { const k = keys.filter(k2 => stashMode(p.chars[k2]) === mode); return stashMode(p.chars[key]) === mode ? key : k.sort((a, b) => (p.chars[b].runs || 0) - (p.chars[a].runs || 0))[0]; };

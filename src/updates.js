@@ -2,6 +2,9 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Feature', "The Chronicle has a new page, The Arena: your rating and rank, record, win streak and best streak, the highest-rated hero you have beaten, wagers won and lost, a chart of your rating after every duel, your record against each class, and your latest duels one by one. Duels fought before today are counted but not listed."],
+      ['Interface', "Duels now use the same fight screen as the roads: the stone panel, the mana orb, your frame top left. Your rival gets a matching frame top right with their HP, block, hand, mana, statuses and Arena rating."],
+      ['Interface', "Your Arena rating now shows on the character screen next to Power, Gear and Deck. Duel challenges and every wager and offer on the Wager Board show the other hero's rating, and what a win or a loss against them would do to yours."],
       ['Art', "Two-handed swords (Spellwoven Greatsword and the rest): the item picture showed only the blade, cut off at the bottom of its frame. It now shows the whole sword, hilt and all."],
       ['Interface', "Card text: the line \"Breaks Stealth\" is gone from every area card (Dark Cleave and the rest). Every area attack breaks Stealth, so the cards no longer repeat it."],
       ['Interface', "Following a build: on the deck screen and at the Scribe, every card your build uses now wears a gold Build marker (with the number of copies when it wants more than one), in your deck and in your collection."],

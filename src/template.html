@@ -1124,7 +1124,7 @@ body #scrCombat.bf .stage .uplate .bar span { font-size: 12px; }
 /* Nov 11 (round 3, the Darkest Dungeon layout): on a wide screen a solo fight fills the whole window. The battlefield runs edge to edge and one
    iron-and-stone panel (img/ui/hud3/panel.png, one generated piece) holds the mana orb, the hand, the piles and End turn. --u is one pixel of that
    panel art, so everything inside it scales with the panel; the stone ends keep their shape and only the iron middle stretches on wider screens. */
-#pframe, .hudbtns, .mtext .m3 { display: none; }
+#pframe, #pframe2, .hudbtns, .mtext .m3 { display: none; }
 .hand.notr .cf { transition: none !important; }
 .ubrow { display: contents; } .ushield { display: none; }
 #scrCombat.bf.hud3 .stage .uplate .ubrow { order: 1; display: flex; align-items: center; gap: 4px; position: relative; }
@@ -1292,18 +1292,23 @@ body #scrCombat.bf.hud3 .order .otile .ofig { width: 100%; height: 100% !importa
 body #scrCombat.bf.hud3 .order .otile .ofig img, body #scrCombat.bf.hud3 .order .otile .ofig svg { width: 135% !important; height: 135% !important; object-fit: cover; object-position: 50% 20%; image-rendering: pixelated; }
 body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 21px; text-shadow: 0 1px 2px #000; }
 /* your frame, top left (World of Warcraft style) */
-#scrCombat.hud3 #pframe { display: flex; position: absolute; left: 12px; top: 12px; z-index: 6; gap: 12px; align-items: center; width: 340px; padding: 10px 14px 10px 10px; box-sizing: border-box; transform: scale(.96); transform-origin: 0 0; filter: drop-shadow(0 2px 3px rgba(0,0,0,.9)); }
-#pframe .pfimg { position: relative; flex: none; width: 66px; height: 66px; border-radius: 50%; overflow: hidden; background: #0c0a09; border: 2px solid #8a653d; box-shadow: 0 0 0 2px #0c0a09; }
-#pframe .pfimg img { width: 120%; height: 120%; margin: -2% 0 0 -10%; object-fit: cover; object-position: 50% 0; image-rendering: pixelated; }
-#pframe .pfr { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-#pframe .pfn { font: 400 19px var(--cf-name, var(--f-display)); color: #e8dcc4; line-height: 1; text-shadow: 0 2px 0 #000; } #pframe .pfn small { font: 500 13px var(--f-ui); color: #a99f8e; }
-#pframe .pfrow { display: flex; align-items: center; gap: 6px; }
-#pframe .pfhp { position: relative; flex: 1; height: 18px; background: #0c0a09; border: 1px solid #000; box-shadow: 0 0 0 1px #5a4128; }
-#pframe .pfhp i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(#c94a3f, #8f2a24); transition: width .3s; }
-#pframe .pfhp span { position: absolute; inset: 0; display: grid; place-items: center; font: 700 13px var(--f-ui); color: #fff; text-shadow: 0 1px 0 #000; }
+#scrCombat.hud3 :is(#pframe, #pframe2) { display: flex; position: absolute; left: 12px; top: 12px; z-index: 6; gap: 12px; align-items: center; width: 340px; padding: 10px 14px 10px 10px; box-sizing: border-box; transform: scale(.96); transform-origin: 0 0; filter: drop-shadow(0 2px 3px rgba(0,0,0,.9)); }
+:is(#pframe, #pframe2) .pfimg { position: relative; flex: none; width: 66px; height: 66px; border-radius: 50%; overflow: hidden; background: #0c0a09; border: 2px solid #8a653d; box-shadow: 0 0 0 2px #0c0a09; }
+:is(#pframe, #pframe2) .pfimg img { width: 120%; height: 120%; margin: -2% 0 0 -10%; object-fit: cover; object-position: 50% 0; image-rendering: pixelated; }
+:is(#pframe, #pframe2) .pfr { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+:is(#pframe, #pframe2) .pfn { font: 400 19px var(--cf-name, var(--f-display)); color: #e8dcc4; line-height: 1; text-shadow: 0 2px 0 #000; } :is(#pframe, #pframe2) .pfn small { font: 500 13px var(--f-ui); color: #a99f8e; }
+:is(#pframe, #pframe2) .pfrow { display: flex; align-items: center; gap: 6px; }
+:is(#pframe, #pframe2) .pfhp { position: relative; flex: 1; height: 18px; background: #0c0a09; border: 1px solid #000; box-shadow: 0 0 0 1px #5a4128; }
+:is(#pframe, #pframe2) .pfhp i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(#c94a3f, #8f2a24); transition: width .3s; }
+:is(#pframe, #pframe2) .pfhp span { position: absolute; inset: 0; display: grid; place-items: center; font: 700 13px var(--f-ui); color: #fff; text-shadow: 0 1px 0 #000; }
 .mkshield.zero { opacity: .45; }
 .mkshield { width: 46px; height: 46px; flex: none; display: grid; place-items: center; background: var(--si) center / contain no-repeat; image-rendering: pixelated; filter: drop-shadow(0 0 4px rgba(120,170,255,.55)) drop-shadow(0 2px 2px #000); cursor: help; margin: -14px 0; } .mkshield b { font: 800 20px/1 var(--f-ui); color: #fff; text-shadow: 0 0 2px #000, 0 2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000; }
-#pframe .tags { display: flex; gap: 4px; flex-wrap: wrap; } #pframe .tags .sico.block { display: none; }
+/* Nov 14: a duel wears the same fight screen as the roads; your rival gets a frame of their own, top right, mirrored */
+#scrCombat.hud3 #pframe2 { left: auto; right: 118px; flex-direction: row-reverse; transform-origin: 100% 0; padding: 10px 10px 10px 14px; } #scrCombat.hud3 #pframe2[hidden] { display: none; }
+#pframe2 .pfn { text-align: right; } #pframe2 .pfrow { flex-direction: row-reverse; } #pframe2 .tags { justify-content: flex-end; } #pframe2 .pfsub { font: 600 12px var(--f-ui); color: #cfc3ad; text-align: right; text-shadow: 0 1px 0 #000; } .pfrate { color: #e0b354; font: 700 12px var(--f-ui); }
+#scrCombat.bf.hud3.duel .stage #foes .uplate .tags { display: none !important; }
+#scrCombat.bf.hud3.duel .stage #foes .uplate .uname { display: block !important; order: 0; text-align: center; } #scrCombat.bf.hud3.duel .stage #foes .uplate .uname small { display: none; } #scrCombat.bf.hud3.duel .stage #foes .uplate .uname b { font-size: 14px; text-shadow: 0 1px 0 #000, 0 0 4px #000; }
+:is(#pframe, #pframe2) .tags { display: flex; gap: 4px; flex-wrap: wrap; } :is(#pframe, #pframe2) .tags .sico.block { display: none; }
 /* compact notched HP bars over every unit; exact numbers on hover */
 #scrCombat.bf.hud3 .stage .unit > .uhead { display: none !important; }
 #scrCombat.bf.hud3 .stage .uplate { left: 50% !important; right: auto !important; bottom: calc(var(--figh, var(--fh)) + 4px) !important; transform: translate(-50%, var(--cy, 0px)); width: 150px !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; display: flex !important; flex-direction: column; align-items: center; gap: 5px; z-index: 4; filter: drop-shadow(0 1px 2px rgba(0,0,0,.9)); }
@@ -1398,7 +1403,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   <section id="scrCombat" class="combatmain" hidden aria-label="Battle">
     <aside class="panel combatchat" id="combatChat" hidden aria-label="Chat"><div class="lgrip cgrip-w" data-grip="w" title="Drag to resize (double-click to reset)"></div><div class="lgrip lgrip-h" data-grip="h" title="Drag to resize (double-click to reset)"></div><div class="lgrip cgrip-c" data-grip="c" title="Drag to resize (double-click to reset)"></div></aside>
     <div class="field-panel">
-      <div class="order" id="order"></div><div id="pframe" aria-label="Your hero"></div>
+      <div class="order" id="order"></div><div id="pframe" aria-label="Your hero"></div><div id="pframe2" aria-label="Your rival" hidden></div>
       <div class="stage"><div id="playerSlot"></div><div class="vs">vs</div><div class="foes" id="foes"></div><div class="playedpeek" id="playedPeek" hidden aria-live="polite"></div></div>
       <div class="hud">
         <div class="mana"><div class="orb" id="orb">0</div><div class="mtext"><b>Mana</b><small id="manaSub"></small></div></div>
@@ -3807,7 +3812,9 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     if (window.CB_BF) CB_BF.layout(cb, { map: $('scrCombat').dataset.map, row: cb.raid ? 'raid' : run && run.at && run.map && run.map.nodes[run.at] ? (run.at === 'boss' ? 'boss' : run.map.nodes[run.at].row) : null, left: cb.duel ? 'You' : cb.raid ? 'The raid' : cb.partySize > 1 ? 'Your party' : esc(hero().name), right: cb.duel ? 'Your rival' : (DATA.maps[$('scrCombat').dataset.map] || {}).name || 'The enemy' });
     if (withPops) popups(); else snapshot();
     if (window.CB_FX) CB_FX.consume(cb); // hero moves, hit effects and spell projectiles (src/fx.js, src/forge.js)
-    $('pframe').innerHTML = `<div class="pfimg">${window.CB_HEROPUP ? CB_HEROPUP.html('pf' + p.id, CB_HEROPUP.lookOf(p, p.cls, p.look), { view: 's', s: 1 }) : `<img src="img/heroes/${String(p.cls).toLowerCase()}.png" alt="">`}</div><div class="pfr"><div class="pfn">${esc(p.name)} <small>${esc(p.cls)}</small></div><div class="pfrow"><div class="pfhp"><i style="width:${Math.max(0, 100 * p.hp / p.maxHp)}%"></i><span>${p.hp} / ${p.maxHp}</span></div><div class="mkshield${p.block ? '' : ' zero'}" data-tip="${esc(p.defName || 'Block')} ${p.block}: soaks that much damage before HP" style="--si:url(img/ui/status/${({ Dodge: 'dodge', Parry: 'parry', Barrier: 'barrier', Absorb: 'absorb' }[p.defName] || 'block')}.png)"><b>${p.block}</b></div></div><div class="tags">${iconTags(tags(p))}</div></div>`;
+    const pfHtml = (p, foe) => { const rate = cb.duel && typeof NET !== 'undefined' && NET.s && NET.s.pvp && p.uid != null ? NET.s.pvp[p.uid] : null;
+      return `<div class="pfimg">${window.CB_HEROPUP ? CB_HEROPUP.html('pf' + p.id, CB_HEROPUP.lookOf(p, p.cls, p.look), { view: 's', s: 1 }) : `<img src="img/heroes/${String(p.cls).toLowerCase()}.png" alt="">`}</div><div class="pfr"><div class="pfn"${foe ? ` style="color:${CC[p.cls]}"` : ''}>${esc(p.name)} <small>${esc(p.cls)}${rate ? ` &middot; <span class="pfrate" title="Arena rating">${rate} ${CBHub.pvpRank(rate)}</span>` : ''}</small></div><div class="pfrow"><div class="pfhp"><i style="width:${Math.max(0, 100 * p.hp / p.maxHp)}%"></i><span>${p.hp} / ${p.maxHp}</span></div><div class="mkshield${p.block ? '' : ' zero'}" data-tip="${esc(p.defName || 'Block')} ${p.block}: soaks that much damage before HP" style="--si:url(img/ui/status/${({ Dodge: 'dodge', Parry: 'parry', Barrier: 'barrier', Absorb: 'absorb' }[p.defName] || 'block')}.png)"><b>${p.block}</b></div></div>${foe ? `<div class="pfsub">Hand ${p.hand.length} &middot; Mana ${p.mana} / ${p.maxMana} &middot; Deck ${p.drawPile.length}</div>` : ''}<div class="tags">${iconTags(tags(p))}</div></div>`; };
+    $('pframe').innerHTML = pfHtml(p); { const f2 = $('pframe2'), foe = cb.duel ? cb.players.find(x => x !== p) : null; f2.hidden = !foe; f2.innerHTML = foe ? pfHtml(foe, true) : ''; $('scrCombat').classList.toggle('duel', !!cb.duel); }
     $('orb').innerHTML = `<i class="orbfill" style="--mf:${Math.max(0, Math.min(1, p.mana / Math.max(1, p.maxMana)))}"></i><span>${p.mana}</span>`;
     $('manaSub').innerHTML = `<span class="m3">${p.mana} / ${p.maxMana} MANA</span><span class="mmax">of ${p.maxMana}</span><span class="mreg">+${p.regen} / turn</span>`;
     const fat = [...p.drawPile, ...p.hand, ...p.discard].filter(c => CARDS[c.key].type === 'Status').length;
@@ -3863,7 +3870,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   function rowHtml(n, d, extra) {
     return `<div class="cardrow" style="--rc:${RC[d.rarity] || 'var(--line)'}"><span class="n">${n}x</span><b>${esc(d.name)}${d.planned === false ? ' <span class="muted">(can\'t afford: discarded)</span>' : ''}</b><span class="cst">${d.cost != null ? d.cost + ' mana' : 'unplayable'}</span><span class="tx">${esc(d.text)}</span></div>`;
   }
-  function hud3On() { return innerWidth >= 900 && innerHeight >= 560 && cb && !cb.raid && !cb.duel && !(cb.partySize > 4); }
+  function hud3On() { return innerWidth >= 900 && innerHeight >= 560 && cb && !cb.raid && !(cb.partySize > 4); }
   function viewPile(which) {
     const p = hero();
     const title = { draw: 'Draw pile', discard: 'Discard pile', exhaust: 'Exhaust pile', deck: 'Your deck' }[which];

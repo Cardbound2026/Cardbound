@@ -304,7 +304,7 @@
       }
       case 'duel-ask': {
         if (p.to !== SOC.me || NET.duelIn.some(d => d.from === p.from)) return;
-        NET.duelIn.push({ from: p.from, name: p.name, cls: p.cls }); sysChat(`${p.name} challenges you to a duel.`); renderSocial(); return;
+        NET.duelIn.push({ from: p.from, name: p.name, cls: p.cls, pvp: +p.pvp || 0 }); sysChat(`${p.name} challenges you to a duel.`); renderSocial(); return;
       }
       case 'plan': { if (!S || p.sid !== S.sid || p.from !== S.host || !run) return; run.plan = { A: Array.isArray(p.A) ? p.A.filter(k => run.map.nodes[k]) : [], B: Array.isArray(p.B) ? p.B.filter(k => run.map.nodes[k]) : [] }; if (!$('scrMap').hidden) renderMap(); return; }
       case 'ar-offer': case 'ar-withdraw': case 'ar-decline': case 'ar-counter': case 'ar-accept': case 'ar-go': case 'ar-closed': case 'ar-look': case 'ar-hero': arenaIn(p); return;
@@ -324,7 +324,7 @@
     if (run || cb) { toast('Finish what you are doing first.'); return; }
     const c = profile.chars[heroKey]; if (!c) return;
     NET.duelOut = uid;
-    netSend('duel-ask', { to: uid, name: c.name, cls: c.cls });
+    netSend('duel-ask', { to: uid, name: c.name, cls: c.cls, pvp: CBHub.pvpOf(c).r });
     sysChat(`You challenged ${nameOfUid(uid)} to a duel.`); renderSocial();
     setTimeout(() => { if (NET.duelOut === uid) { NET.duelOut = null; sysChat(`${nameOfUid(uid)} didn't answer the challenge.`); renderSocial(); } }, 30000);
   }
@@ -336,7 +336,7 @@
   }
   function duelOver() {
     const S = NET.s, me = cb.players[cb.myMi], won = cb.winner === me;
-    const c = profile.chars[heroKey]; if (c && S && !S.counted) { S.counted = true; c.duels = c.duels || { w: 0, l: 0 }; if (won) c.duels.w++; else c.duels.l++; { const fu = S.uids.find(u => u !== SOC.me); S.pvpD = CBHub.pvpApply(c, (S.pvp || {})[fu], won ? 1 : cb.winner ? 0 : 0.5); S.pvpFoe = (S.pvp || {})[fu] || CBHub.PVP_START; if (typeof publishHero === 'function') setTimeout(() => publishHero(heroKey, true), 1500); } try { CBHub.achCheck(profile, { type: 'duel', won, rounds: cb.round, hp: me ? me.hp : null, hero: c.name }); } catch (e) {} save(); }
+    const c = profile.chars[heroKey]; if (c && S && !S.counted) { S.counted = true; c.duels = c.duels || { w: 0, l: 0 }; if (won) c.duels.w++; else c.duels.l++; { const fu = S.uids.find(u => u !== SOC.me); { const fo = cb.players.find(x => x !== me) || {}, ar = profile.arena; S.pvpD = CBHub.pvpApply(c, (S.pvp || {})[fu], won ? 1 : cb.winner ? 0 : 0.5, { name: fo.name, cls: fo.cls, rounds: cb.round, wager: !!(ar && ar.status === 'dueling') }); } S.pvpFoe = (S.pvp || {})[fu] || CBHub.PVP_START; if (typeof publishHero === 'function') setTimeout(() => publishHero(heroKey, true), 1500); } try { CBHub.achCheck(profile, { type: 'duel', won, rounds: cb.round, hp: me ? me.hp : null, hero: c.name }); } catch (e) {} save(); }
     const foe = cb.players.find(p => p !== me);
     const wager = typeof arenaSettle === 'function' ? arenaSettle(foe, won ? 'won' : cb.winner ? 'lost' : 'draw') : null;
     modal(`<h2 class="${won ? '' : 'loss'}">${won ? 'Victory' : cb.winner ? 'Defeat' : 'Draw'}</h2><p>${won ? `You beat ${esc(foe.name)} in ${cb.round} rounds.` : cb.winner ? `${esc(cb.winner.name)} wins in ${cb.round} rounds.` : 'Nobody is left standing.'} ${wager ? '' : 'Duels are for glory: nobody loses gear, gold or HP.'}</p>${wager || ''}
