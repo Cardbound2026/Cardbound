@@ -179,7 +179,7 @@
   // ---------- trading: both players pick items from their stash (and gold); when both accept the same offer, both games swap
   const TR = { inv: [], s: null };
   const sideKey = (items, gold) => items.map(i => i.id).sort().join(',') + '$' + (gold || 0);
-  function tradeHash() { const S = TR.s; return [[SOC.me, sideKey(myOffer(), S.myGold)], [S.with, sideKey(S.theirs, S.theirGold)]].sort((a, b) => a[0] < b[0] ? -1 : 1).map(x => x.join(':')).join('|'); }
+  function tradeHash() { const S = TR.s; return [[SOC.me, sideKey(myOffer(), S.myGold) + (S.mySk ? '~' + S.mySk : '')], [S.with, sideKey(S.theirs, S.theirGold) + (S.theirSk ? '~' + S.theirSk : '')]].sort((a, b) => a[0] < b[0] ? -1 : 1).map(x => x.join(':')).join('|'); }
   const myOffer = () => TR.s ? TR.s.mine.map(id => profile.stash.find(x => x.id === id)).filter(Boolean) : [];
   function tradeAsk(uid) {
     if (!socOn()) return; if (run || cb || NET.s) { toast('You can only trade in Emberwatch.'); return; }
@@ -197,8 +197,8 @@
     netSend('tr-ans', { to: from, ok, n });
     if (ok) openTrade(from, n);
   }
-  function openTrade(uid, n) { TR.s = { tid: [SOC.me, uid].sort().join('-') + '-' + (n || ''), with: uid, name: nameOfUid(uid), mine: [], myGold: 0, theirs: [], theirGold: 0, myAcc: null, theirAcc: null }; renderTrade(); }
-  function sendOffer() { const S = TR.s; S.myAcc = null; S.theirAcc = null; netSend('tr-offer', { to: S.with, items: myOffer(), gold: S.myGold }); renderTrade(); }
+  function openTrade(uid, n) { TR.s = { tid: [SOC.me, uid].sort().join('-') + '-' + (n || ''), with: uid, name: nameOfUid(uid), mine: [], myGold: 0, mySk: 0, theirs: [], theirGold: 0, theirSk: 0, myAcc: null, theirAcc: null }; renderTrade(); }
+  function sendOffer() { const S = TR.s; S.myAcc = null; S.theirAcc = null; netSend('tr-offer', { to: S.with, items: myOffer(), gold: S.myGold, sk: S.mySk || 0 }); renderTrade(); }
   function tradeAccept() {
     const S = TR.s; if (!S) return;
     const room = CBHub.STASH_MAX - (profile.stash.length - myOffer().length);
@@ -227,10 +227,11 @@
     if (TR.s !== S && res === 'skip') return;
     profile.stash = profile.stash.filter(x => !ids.has(x.id));
     profile.gold = Math.max(0, profile.gold - (S.myGold || 0)) + (S.theirGold || 0);
+    profile.skulls = Math.max(0, (profile.skulls || 0) - (S.mySk || 0)) + (S.theirSk || 0);
     for (const it of S.theirs) profile.stash.unshift(Object.assign({}, it, { id: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8) }));
     save(); if (TR.s === S) { TR.s = null; closeModal(); } renderHub();
-    const got = S.theirs.length + (S.theirGold ? 1 : 0), gave = mine.length + (S.myGold ? 1 : 0);
-    sysChat(`Trade with ${S.name} complete: you gave ${mine.length} item${mine.length === 1 ? '' : 's'}${S.myGold ? ' and ' + S.myGold + ' gold' : ''}, and got ${S.theirs.length} item${S.theirs.length === 1 ? '' : 's'}${S.theirGold ? ' and ' + S.theirGold + ' gold' : ''}.`);
+    const got = S.theirs.length + (S.theirGold ? 1 : 0) + (S.theirSk ? 1 : 0), gave = mine.length + (S.myGold ? 1 : 0) + (S.mySk ? 1 : 0);
+    sysChat(`Trade with ${S.name} complete: you gave ${mine.length} item${mine.length === 1 ? '' : 's'}${S.myGold ? ' and ' + S.myGold + ' gold' : ''}${S.mySk ? ' and ' + S.mySk + ' Skull Tokens' : ''}, and got ${S.theirs.length} item${S.theirs.length === 1 ? '' : 's'}${S.theirGold ? ' and ' + S.theirGold + ' gold' : ''}${S.theirSk ? ' and ' + S.theirSk + ' Skull Tokens' : ''}.`);
     toast(`Trade complete. ${got || gave ? 'New items are in your stash.' : ''}`);
   }
   function cancelTrade(quiet) { const S = TR.s; if (!S) return; TR.s = null; if (!quiet) netSend('tr-cancel', { to: S.with }); closeModal(); sysChat(`Trade with ${S.name} cancelled.`); }
@@ -244,9 +245,11 @@
       <div class="tradegrid">
         <div class="panel"><h3>You offer</h3><div class="trlist">${mine.map(it => row(it, `<button class="pilebtn" data-trrm="${it.id}">Remove</button>`)).join('') || '<span class="muted">Click items in your stash below to offer them.</span>'}</div>
           <label class="trgold">Gold <input type="number" id="trGold" min="0" max="${profile.gold}" value="${S.myGold || 0}"> <span class="muted">of ${profile.gold}</span></label>
+          <label class="trgold"><i class="skull"></i> Skull Tokens <input type="number" id="trSk" min="0" max="${profile.skulls || 0}" value="${S.mySk || 0}"> <span class="muted">of ${profile.skulls || 0}</span></label>
           <p class="trst ${S.myAcc ? 'up' : ''}">${S.myAcc ? 'You accepted.' : ''}</p></div>
         <div class="panel"><h3>${esc(S.name)} offers</h3><div class="trlist">${S.theirs.map(it => row(it, upBadge(it, gear))).join('') || '<span class="muted">Nothing yet.</span>'}</div>
           <p class="trgold">Gold: <b>${S.theirGold || 0}</b></p>
+          <p class="trgold"><i class="skull"></i> Skull Tokens: <b>${S.theirSk || 0}</b></p>
           <p class="trst ${S.theirAcc ? 'up' : ''}">${S.theirAcc ? (S.theirAcc === tradeHash() ? `${esc(S.name)} accepted this offer.` : `${esc(S.name)} accepted an earlier offer.`) : ''}</p></div>
       </div>
       <h3 style="font-size:16px;margin:10px 0 4px">Your stash (${profile.stash.length}/${CBHub.STASH_MAX})</h3><div class="trstash">${avail.map(it => row(it, `<button class="pilebtn" data-tradd="${it.id}">Offer</button>`)).join('') || '<span class="muted">Nothing else to offer. Unequip gear at the Quartermaster to trade it.</span>'}</div>
@@ -254,6 +257,7 @@
       <div class="row"><button class="btn primary" id="trAcc" ${S.myAcc || both ? 'disabled' : ''}>${S.myAcc ? 'Waiting for ' + esc(S.name) + '...' : 'Accept trade'}</button><button class="btn" id="trCancel">Cancel trade</button></div>`);
     $('modalBox').classList.add('wide');
     $('trAcc').onclick = tradeAccept; $('trCancel').onclick = () => cancelTrade();
+    $('trSk').onchange = (e) => { S.mySk = Math.max(0, Math.min(profile.skulls || 0, Math.floor(+e.target.value || 0))); sendOffer(); };
     $('trGold').onchange = (e) => { S.myGold = Math.max(0, Math.min(profile.gold, Math.floor(+e.target.value || 0))); sendOffer(); };
     for (const b of $('modalBox').querySelectorAll('[data-tradd]')) b.onclick = () => { if (S.mine.length >= 12) return; S.mine.push(b.dataset.tradd); sendOffer(); };
     for (const b of $('modalBox').querySelectorAll('[data-trrm]')) b.onclick = () => { S.mine = S.mine.filter(x => x !== b.dataset.trrm); sendOffer(); };
@@ -273,7 +277,7 @@
       case 'insp': { if (INS.waiting !== p.from) return; INS.waiting = null; showInspect(p.ch); return; }
       case 'tr-ask': { if (TR.inv.some(i => i.from === p.from)) return; TR.inv.push({ from: p.from, name: p.name, hc: p.hc }); sysChat(`${p.name} wants to trade with you.`); renderSocial(); return; }
       case 'tr-ans': { if (TR.asked !== p.from) return; TR.asked = null; if (!p.ok) { sysChat(`${nameOfUid(p.from)} declined the trade.`); return; } if (TR.s || run || cb) { netSend('tr-cancel', { to: p.from }); return; } openTrade(p.from, p.n); return; }
-      case 'tr-offer': { const S = TR.s; if (!S || S.with !== p.from) return; S.theirs = (p.items || []).slice(0, 12); S.theirGold = Math.max(0, Math.floor(p.gold || 0)); S.myAcc = null; S.theirAcc = null; renderTrade(); return; }
+      case 'tr-offer': { const S = TR.s; if (!S || S.with !== p.from) return; S.theirs = (p.items || []).slice(0, 12); S.theirGold = Math.max(0, Math.floor(p.gold || 0)); S.theirSk = Math.max(0, Math.floor(p.sk || 0)); S.myAcc = null; S.theirAcc = null; renderTrade(); return; }
       case 'tr-acc': { const S = TR.s; if (!S || S.with !== p.from) return; S.theirAcc = p.hash; if (S.myAcc && S.myAcc === p.hash) doTrade(); else renderTrade(); return; }
       case 'tr-cancel': { if (TR.s && TR.s.with === p.from && !TR.s.done) { TR.s = null; closeModal(); sysChat(`${nameOfUid(p.from)} cancelled the trade.`); } TR.inv = TR.inv.filter(i => i.from !== p.from); renderSocial(); return; }
     }
