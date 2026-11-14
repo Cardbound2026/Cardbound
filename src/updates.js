@@ -2,8 +2,9 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Balance', "Shaman, Skybreaker: a Multi-hit now plays the last Skill you played again, free, whatever it was (a heal, Guard, card draw, Static), not only a damaging spell. Damage on the repeat is still halved. Held Breath, Thunder Debt, Borrowed Thunder and the echo cards are never repeated."],
       ['Interface', "The Strength and Intelligence buff tips are shorter: \"12 Strength\". Hold Alt for what the stat does."],
-      ['Interface', "Skybreaker: a tag on your hero names the spell that will be cast again when an Attack Multi-hits (\"Repeats: Thunderfall\"). Point at it for the spell's text."],
+      ['Interface', "Skybreaker: a tag on your hero names the Skill that will be played again when an Attack Multi-hits (\"Repeats: Thunderfall\"). Point at it for its text."],
       ['Interface', "A monster's loot table now lists its cards by rarity: codexes first, then Gold, Blue, Green and White, each grouped by class. Warlock and Shaman cards are no longer in a separate block at the bottom."],
       ['Feature', "Two more Shaman weapon imbues, to go with Lightning Weapon: Flame Weapon (your next 3 Attacks also deal 4 Fire damage and apply 1 Burn) and Frost Weapon (4 Frost damage and 1 Chill). White Skills, 10 mana. They stack with each other."],
       ['Feature', "When a Hardcore hero dies, everyone online sees it in chat: the hero's name, what killed them and for how much, the map and its level, and the row (or the boss) where they fell."],

@@ -93,6 +93,8 @@ function install(K) {
   }
   const timedBuff = (cb, caster, a, key, turns, o) => cb.timed(a, key, turns, Object.assign({ hold: cb.has(caster, 'codex_stormwarden') }, o || {}));
 
+  // Skills that Skybreaker never repeats: the ones that end or rearrange turns, and the ones that are themselves repeats
+  const NO_REPEAT = { sh_held_breath: 1, sh_thunder_debt: 1, sh_borrowed_thunder: 1, sh_thunders_echo: 1, sh_thunder_without_end: 1 };
   // ================= engine hooks =================
   // before the engine rolls Multi-hit and Multicast for a card
   X.pre = (cb, p, d) => {
@@ -146,7 +148,7 @@ function install(K) {
       if (p.shFW > 0) { const e = tgtOf(cb, tgt && !tgt.isPlayer ? tgt : null); if (e) { p.shFW--; cb.powerHit(p, e, 4, 'Flame Weapon', 'Fire', 'Attack'); if (e.hp > 0) cb.applyDot(e, 'burn', 1); } }   // Nov 14: the fire and frost imbues
       if (p.shIW > 0) { const e = tgtOf(cb, tgt && !tgt.isPlayer ? tgt : null); if (e) { p.shIW--; cb.powerHit(p, e, 4, 'Frost Weapon', 'Frost', 'Attack'); if (e.hp > 0) cb.applyChill(e, 1); } }
       if (S.didMH) {
-        if (cb.has(p, 'codex_skybreaker') && p.shLast) recast(cb, p, p.shLast, tgt, 0.5 + shx(cb, p, 'skyCopy') / 100, 'Skybreaker');
+        if (cb.has(p, 'codex_skybreaker') && p.shLastAny) recast(cb, p, p.shLastAny, tgt, 0.5 + shx(cb, p, 'skyCopy') / 100, 'Skybreaker');   // Nov 14: any Skill, not only damaging spells
         if (has(cb, p, 'rain_of_maces')) { const o = others(cb, tgt)[0]; if (o && cb._lastLost > 0) { cb.powerHit(p, o, Math.max(1, Math.round(cb._lastLost / 2)), 'Rain of Maces', 'Physical', 'Attack'); } }
         const g = shx(cb, p, 'mhGuard'); if (g) cb.gainDef(g);
         if (d.key === 'sh_relentless' && !T.relBack) { T.relBack = true; S.back = true; }
@@ -154,6 +156,7 @@ function install(K) {
     }
     if (d.type === 'Skill') {
       if (d.tags.dmg && !d.tags.noEcho) p.shLast = d;
+      if (!NO_REPEAT[d.key] && !d.shNoAct) p.shLastAny = d;
       if (d.tags.lit && T.thunderhead && d.key !== 'sh_thunderhead') T.thunderhead = false;
       if (T.mcNext && d.key !== 'sh_focus_the_storm') T.mcNext = 0;
       if (T.shSurge && d.key !== 'sh_surge') { T.costSkill = (T.costSkill || 0) + T.shSurge; T.shSurge = 0; }
