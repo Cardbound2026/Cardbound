@@ -266,7 +266,7 @@ class Run {
       this.note(`Row ${n.row}: ${n.type === 'boss' ? 'the boss' : n.type === 'elite' ? 'an elite' : 'a fight'} against ${n.enemies.map(k => this.data.enemies[k].name).join(', ')}.`);
     } else if (n.type === 'rest') { this.pending = { type: 'rest', heals: this.members.map(m => Math.min(m.stats.maxHp - m.hp, Math.round(m.stats.maxHp * 0.3 * (1 + (m.stats.spirit || 0) / 100)))), keep: n.campfire ? 0.75 : 0.5 }; this.pending.heal = this.pending.heals[0]; }
     else if (n.type === 'shrine') { const s = SHRINES.find(x => x.key === n.shrine); this.buffs.push({ key: s.key, name: s.name, buff: s.buff, fights: 2 }); this.pending = { type: 'shrine', shrine: s }; this.note(`Row ${n.row}: ${s.name}. ${s.text}`); }
-    else if (n.type === 'merchant') { this.pending = { type: 'merchant', stock: this.merchantStock() }; if (this.online && this.members.length > 1) this.pending.stocks = this.members.map(() => this.merchantStock(5)); // online parties: every hero gets their own stock (Oct 31)
+    else if (n.type === 'merchant') { this.pending = { type: 'merchant', stock: this.merchantStock(this.members.length > 1 ? 0 : 5).concat(this.merchantCards(this.members[0].cls)) }; if (this.online && this.members.length > 1) this.pending.stocks = this.members.map((mm) => this.merchantStock(5).concat(this.merchantCards(mm.cls))); // online parties: every hero gets their own stock (Oct 31)
       this.note(`Row ${n.row}: a merchant.`); }
     return true;
   }
@@ -372,6 +372,13 @@ class Run {
   closePending() { this.pending = null; }
 
   stockFor(mi) { const p = this.pending; return p && p.stocks ? p.stocks[mi || 0] : p && p.stock; }
+  // Nov 13: the merchant on the road also sells 5 cards for the buyer's class (mostly White, sometimes Green, rarely Blue). They are ordered like items and go to that hero's collection
+  merchantCards(cls) {
+    const pool = CB.cardPool(cls), by = (r) => pool.filter(k => CB.CARDS[k].rarity === r), out = [];
+    for (let i = 0; i < 5; i++) { const x = this.rng() * 100; let rar = x < 80 ? 'White' : x < 97 ? 'Green' : 'Blue', ks = by(rar).filter(k => !out.some(o => o.key === k)); if (!ks.length) { rar = 'White'; ks = by('White'); } if (!ks.length) continue;
+      const key = ks[ri(this.rng, 0, ks.length - 1)]; out.push({ kind: 'card', key, name: CB.CARDS[key].name, rarity: rar, rank: 0, price: { White: 25, Green: 80, Blue: 220 }[rar] }); }
+    return out;
+  }
   merchantStock(n) {
     const bases = this.data.gear.bases.filter(b => (b.map || 'physical') === this.mapKey).map(b => b.name);
     const out = [];
@@ -392,7 +399,7 @@ class Run {
   buy(i, mi) {
     const m = this.members[mi || 0];
     const st = this.stockFor(mi); if (!st || !st[i] || st[i].sold) return false;
-    const item = st[i]; if (this.bankOf(m) < item.price || m.orders.length >= m.stashFree) return false;
+    const item = st[i]; if (this.bankOf(m) < item.price || (item.kind !== 'card' && m.orders.filter(o => o.kind !== 'card').length >= m.stashFree)) return false;   /* cards go to the collection, not the stash */
     if (this.sharedBank) this.bankPool -= item.price; else m.bank -= item.price;
     m.spent += item.price; item.sold = true; item.buyer = m.idx;
     const o = Object.assign({}, item); delete o.price; delete o.sold; delete o.buyer; m.orders.push(o);

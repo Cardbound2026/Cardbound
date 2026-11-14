@@ -8,7 +8,7 @@
       ['Art', "Six more mounts in the Skull Shop: Spotted Hyena, Great Moose, Tawny Sabertooth, War Rhino, Armoured Warhorse and the Holy Charger."],
       ['Fix', "Bags (Traveler's Pouch and the rest) show a bag as their picture. They were showing a helmet."],
       ['Interface', "The fire on the exhaust pile is much quieter: narrower, lower and see-through. The light on loot chests no longer pulses."],
-      ['Feature', "The merchant now sells 5 items and 5 cards for your class. The cards are mostly White, sometimes a Green, and rarely a Blue (25, 80 and 220 gold). Items are on the left half of the screen, cards on the right. You will see the new layout at once; the item count changes at the next restock."],
+      ['Feature', "Merchants, both Dace in town and the ones you meet on the road, now sell 5 items and 5 cards for your class. The cards are mostly White, sometimes a Green, and rarely a Blue (25, 80 and 220 gold). Items are on the left half of the screen, cards on the right. You will see the new layout at once; the item count changes at the next restock."],
       ['Interface', "Your gold has its own box on the character screen, beside the bag slots."],
       ['Interface', "The light on loot chests is softer: no hard line where it starts, and a fifth dimmer."],
       ['Interface', "Poison, Bleed, Burn and Dread each explain themselves in full when you hover them, with an example, instead of saying 'like Bleed' or 'like Poison'."],

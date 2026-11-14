@@ -4854,7 +4854,7 @@ class Run {
       this.note(`Row ${n.row}: ${n.type === 'boss' ? 'the boss' : n.type === 'elite' ? 'an elite' : 'a fight'} against ${n.enemies.map(k => this.data.enemies[k].name).join(', ')}.`);
     } else if (n.type === 'rest') { this.pending = { type: 'rest', heals: this.members.map(m => Math.min(m.stats.maxHp - m.hp, Math.round(m.stats.maxHp * 0.3 * (1 + (m.stats.spirit || 0) / 100)))), keep: n.campfire ? 0.75 : 0.5 }; this.pending.heal = this.pending.heals[0]; }
     else if (n.type === 'shrine') { const s = SHRINES.find(x => x.key === n.shrine); this.buffs.push({ key: s.key, name: s.name, buff: s.buff, fights: 2 }); this.pending = { type: 'shrine', shrine: s }; this.note(`Row ${n.row}: ${s.name}. ${s.text}`); }
-    else if (n.type === 'merchant') { this.pending = { type: 'merchant', stock: this.merchantStock() }; if (this.online && this.members.length > 1) this.pending.stocks = this.members.map(() => this.merchantStock(5)); // online parties: every hero gets their own stock (Oct 31)
+    else if (n.type === 'merchant') { this.pending = { type: 'merchant', stock: this.merchantStock(this.members.length > 1 ? 0 : 5).concat(this.merchantCards(this.members[0].cls)) }; if (this.online && this.members.length > 1) this.pending.stocks = this.members.map((mm) => this.merchantStock(5).concat(this.merchantCards(mm.cls))); // online parties: every hero gets their own stock (Oct 31)
       this.note(`Row ${n.row}: a merchant.`); }
     return true;
   }
@@ -4960,6 +4960,13 @@ class Run {
   closePending() { this.pending = null; }
 
   stockFor(mi) { const p = this.pending; return p && p.stocks ? p.stocks[mi || 0] : p && p.stock; }
+  // Nov 13: the merchant on the road also sells 5 cards for the buyer's class (mostly White, sometimes Green, rarely Blue). They are ordered like items and go to that hero's collection
+  merchantCards(cls) {
+    const pool = CB.cardPool(cls), by = (r) => pool.filter(k => CB.CARDS[k].rarity === r), out = [];
+    for (let i = 0; i < 5; i++) { const x = this.rng() * 100; let rar = x < 80 ? 'White' : x < 97 ? 'Green' : 'Blue', ks = by(rar).filter(k => !out.some(o => o.key === k)); if (!ks.length) { rar = 'White'; ks = by('White'); } if (!ks.length) continue;
+      const key = ks[ri(this.rng, 0, ks.length - 1)]; out.push({ kind: 'card', key, name: CB.CARDS[key].name, rarity: rar, rank: 0, price: { White: 25, Green: 80, Blue: 220 }[rar] }); }
+    return out;
+  }
   merchantStock(n) {
     const bases = this.data.gear.bases.filter(b => (b.map || 'physical') === this.mapKey).map(b => b.name);
     const out = [];
@@ -4980,7 +4987,7 @@ class Run {
   buy(i, mi) {
     const m = this.members[mi || 0];
     const st = this.stockFor(mi); if (!st || !st[i] || st[i].sold) return false;
-    const item = st[i]; if (this.bankOf(m) < item.price || m.orders.length >= m.stashFree) return false;
+    const item = st[i]; if (this.bankOf(m) < item.price || (item.kind !== 'card' && m.orders.filter(o => o.kind !== 'card').length >= m.stashFree)) return false;   /* cards go to the collection, not the stash */
     if (this.sharedBank) this.bankPool -= item.price; else m.bank -= item.price;
     m.spent += item.price; item.sold = true; item.buyer = m.idx;
     const o = Object.assign({}, item); delete o.price; delete o.sold; delete o.buyer; m.orders.push(o);
@@ -5472,7 +5479,7 @@ function absorbRun(p, run, mi) {
   let lost = 0, items = 0, cards = 0, ordered = 0;
   p.gold = Math.max(0, p.gold - (mem.spent || 0));
   const ST = stashFor(p, c); // this hero's stash (hardcore heroes have their own)
-  for (const o of mem.orders || []) { if (ST.length < STASH_MAX) { ST.unshift(Object.assign({ id: uid('g') }, o, { slot: /^Ring/.test(o.slot) ? 'Ring' : o.slot })); ordered++; } }
+  for (const o of mem.orders || []) { if (o.kind === 'card') { c.cards.push({ id: uid('k'), key: o.key, rank: 0 }); (c.seen = c.seen || {})[o.key] = 1; ordered++; continue; } if (ST.length < STASH_MAX) { ST.unshift(Object.assign({ id: uid('g') }, o, { slot: /^Ring/.test(o.slot) ? 'Ring' : o.slot })); ordered++; } }
   let salvaged = 0, salvGold = 0, salvInk = 0;
   for (const it of kept.items) {
     if (it.autoSalvage) { salvaged++; if (it.kind === 'card') { const v = inkValue(it); p.ink = (p.ink || 0) + v; salvInk += v; (c.seen = c.seen || {})[it.key] = 1; } else { const v = salvageValue(it); p.gold += v; salvGold += v; } continue; } // marked in the sack during the run
@@ -7541,8 +7548,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794617089196';
-  const CB_BUILD = 'a81a00ad3b'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794617278787';
+  const CB_BUILD = '5cd22c0d8c'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8654,7 +8661,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       ['Art', "Six more mounts in the Skull Shop: Spotted Hyena, Great Moose, Tawny Sabertooth, War Rhino, Armoured Warhorse and the Holy Charger."],
       ['Fix', "Bags (Traveler's Pouch and the rest) show a bag as their picture. They were showing a helmet."],
       ['Interface', "The fire on the exhaust pile is much quieter: narrower, lower and see-through. The light on loot chests no longer pulses."],
-      ['Feature', "The merchant now sells 5 items and 5 cards for your class. The cards are mostly White, sometimes a Green, and rarely a Blue (25, 80 and 220 gold). Items are on the left half of the screen, cards on the right. You will see the new layout at once; the item count changes at the next restock."],
+      ['Feature', "Merchants, both Dace in town and the ones you meet on the road, now sell 5 items and 5 cards for your class. The cards are mostly White, sometimes a Green, and rarely a Blue (25, 80 and 220 gold). Items are on the left half of the screen, cards on the right. You will see the new layout at once; the item count changes at the next restock."],
       ['Interface', "Your gold has its own box on the character screen, beside the bag slots."],
       ['Interface', "The light on loot chests is softer: no hard line where it starts, and a fifth dimmer."],
       ['Interface', "Poison, Bleed, Burn and Dread each explain themselves in full when you hover them, with an example, instead of saying 'like Bleed' or 'like Poison'."],
@@ -15842,8 +15849,11 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       const draw = redrawShop = () => {
         const bm = run.members[buyer] || run.m0, bank = run.bankOf(bm);
         const full = bm.orders.length >= bm.stashFree;
-        $('modalBox').innerHTML = `<h2>Merchant</h2><p>${run.solo || run.online ? '' : `Ordering for <select id="mBuyer">${run.members.map((m, i) => `<option value="${i}" ${i === buyer ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select>. `}Banked gold: <b>${bank}</b>${bm.orders.length ? ` &middot; ${bm.orders.length} order${bm.orders.length === 1 ? '' : 's'} placed` : ''}. Pay from the bank and the merchant brings it back to town: it waits in your stash, even if you die out here.${full ? ' <b>Your stash is full.</b>' : ''}</p>
-        <div class="shop">${run.stockFor(buyer).map((it, i) => { const cur = bm.gear.find(g => g.slot === run.slotFor(it, bm.idx)); return itemHtml(it, `<div class="il">${upBadge(it, bm.gear)}</div><div class="il">Compare: ${cur ? esc(cur.name) + ' (ilvl ' + cur.ilvl + ')' : 'empty ' + run.slotFor(it, bm.idx)}</div><div><button class="btn" data-buy="${i}" ${it.sold || bank < it.price || full ? 'disabled' : ''}>${it.sold ? 'Ordered' + (run.solo ? '' : ' by ' + esc(run.members[it.buyer].name)) : 'Order for ' + it.price + ' gold'}</button></div>`); }).join('')}</div>
+        $('modalBox').classList.add('wide'); $('modalBox').innerHTML = `<h2>Merchant</h2><p>${run.solo || run.online ? '' : `Ordering for <select id="mBuyer">${run.members.map((m, i) => `<option value="${i}" ${i === buyer ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select>. `}Banked gold: <b>${bank}</b>${bm.orders.length ? ` &middot; ${bm.orders.length} order${bm.orders.length === 1 ? '' : 's'} placed` : ''}. Pay from the bank and the merchant brings it back to town: it waits in your stash, even if you die out here.${full ? ' <b>Your stash is full.</b>' : ''}</p>
+        ${(() => { const st = run.stockFor(buyer).map((it, i) => [it, i]), btn = (it, i, word) => `<button class="btn" data-buy="${i}" ${it.sold || bank < it.price || (full && it.kind !== 'card') ? 'disabled' : ''}>${it.sold ? 'Ordered' + (run.solo ? '' : ' by ' + esc(run.members[it.buyer].name)) : word + it.price + ' gold'}</button>`;
+          const items = st.filter(([it]) => it.kind !== 'card').map(([it, i]) => { const cur = bm.gear.find(g => g.slot === run.slotFor(it, bm.idx)); return itemHtml(it, `<div class="il">${upBadge(it, bm.gear)}</div><div class="il">Compare: ${cur ? esc(cur.name) + ' (ilvl ' + cur.ilvl + ')' : 'empty ' + run.slotFor(it, bm.idx)}</div><div>${btn(it, i, 'Order for ')}</div>`); }).join('');
+          const cards = st.filter(([it]) => it.kind === 'card').map(([it, i]) => `<div class="shopcard" data-cardinfo="${it.key}">${cardBox(CARDS[it.key], 124)}${btn(it, i, '')}</div>`).join('');
+          return `<div class="shop2"><div><h3>Items</h3><div class="shop">${items}</div></div><div><h3>Cards <span class="muted" style="font-size:12.5px">for a ${esc(CARDS[(st.find(([it]) => it.kind === 'card') || [{ key: 'strike' }])[0].key].cls)}: they go to the collection</span></h3><div class="shopcards">${cards || '<span class="muted">None.</span>'}</div></div></div>`; })()}
         <div class="row"><button class="btn primary" id="mLeave">${run.online ? 'Close (vote on the map to move on)' : 'Leave'}</button></div>`;
         $('mLeave').onclick = () => { if (!run.online) run.closePending(); redrawShop = null; closeModal(); renderMap(); };
         for (const b of $('modalBox').querySelectorAll('[data-buy]')) b.onclick = () => { if (run.online) { b.disabled = true; netAct({ t: 'buy', i: +b.dataset.buy }); return; } run.buy(+b.dataset.buy, buyer); draw(); renderSide(); };

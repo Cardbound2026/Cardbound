@@ -475,7 +475,7 @@ function absorbRun(p, run, mi) {
   let lost = 0, items = 0, cards = 0, ordered = 0;
   p.gold = Math.max(0, p.gold - (mem.spent || 0));
   const ST = stashFor(p, c); // this hero's stash (hardcore heroes have their own)
-  for (const o of mem.orders || []) { if (ST.length < STASH_MAX) { ST.unshift(Object.assign({ id: uid('g') }, o, { slot: /^Ring/.test(o.slot) ? 'Ring' : o.slot })); ordered++; } }
+  for (const o of mem.orders || []) { if (o.kind === 'card') { c.cards.push({ id: uid('k'), key: o.key, rank: 0 }); (c.seen = c.seen || {})[o.key] = 1; ordered++; continue; } if (ST.length < STASH_MAX) { ST.unshift(Object.assign({ id: uid('g') }, o, { slot: /^Ring/.test(o.slot) ? 'Ring' : o.slot })); ordered++; } }
   let salvaged = 0, salvGold = 0, salvInk = 0;
   for (const it of kept.items) {
     if (it.autoSalvage) { salvaged++; if (it.kind === 'card') { const v = inkValue(it); p.ink = (p.ink || 0) + v; salvInk += v; (c.seen = c.seen || {})[it.key] = 1; } else { const v = salvageValue(it); p.gold += v; salvGold += v; } continue; } // marked in the sack during the run
