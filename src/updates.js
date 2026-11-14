@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Interface', "A monster's loot table now lists its cards by rarity: codexes first, then Gold, Blue, Green and White, each grouped by class. Warlock and Shaman cards are no longer in a separate block at the bottom."],
       ['Feature', "Two more Shaman weapon imbues, to go with Lightning Weapon: Flame Weapon (your next 3 Attacks also deal 4 Fire damage and apply 1 Burn) and Frost Weapon (4 Frost damage and 1 Chill). White Skills, 10 mana. They stack with each other."],
       ['Feature', "When a Hardcore hero dies, everyone online sees it in chat: the hero's name, what killed them and for how much, the map and its level, and the row (or the boss) where they fell."],
       ['Feature', "New Shaman card: Electric Burn (Blue Skill, 20 mana). Consume all Static on a target and apply 5 Burn for each one: 10 Static becomes 50 Burn."],
