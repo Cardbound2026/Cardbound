@@ -42,7 +42,7 @@
       } };
     }
     // spell bolts for the elements that had none: a grey orb tinted by element
-    const ORB = { Holy: 'sepia(1) saturate(4)', Nature: 'sepia(1) saturate(4) hue-rotate(70deg)', Shadow: 'sepia(1) saturate(4) hue-rotate(225deg) brightness(.8)', Physical: 'none' };
+    const ORB = { Holy: 'sepia(1) saturate(4)', Nature: 'sepia(1) saturate(4) hue-rotate(70deg)', Shadow: 'sepia(1) saturate(4) hue-rotate(225deg) brightness(.8)', Physical: 'none', Storm: 'sepia(1) saturate(6) hue-rotate(178deg) brightness(1.25)' };
     if (D.bolt) {
       const old = D.bolt.d;
       D.bolt.d = function (u, x, y, s, o) {
@@ -51,6 +51,13 @@
         const sx = a.x + a.side * a.w * 0.35, px = sx + (b.x - sx) * u, py = a.y + (b.y - a.y) * u - Math.sin(u * Math.PI) * 24 * a.s;
         const ang = Math.atan2(b.y - a.y - Math.cos(u * Math.PI) * 24 * a.s * Math.PI, b.x - sx);
         const g = ctx(); g.filter = ORB[o.el]; blit('orb', u, D.bolt.ms, px, py, Math.max(1, Math.round(a.s * 2.2 * 2) / 2), false, ang, 1, true); g.filter = 'none';
+        if (o.el === 'Storm') {   // ball lightning: jagged arcs crackling off the orb, redrawn every few frames (blit has already moved the canvas to the orb, so these are drawn around 0,0)
+          const r = 13 * a.s, t = Math.floor(u * 14), rnd = (n) => { const v = Math.sin((t + 1) * 12.9898 + n * 78.233) * 43758.5453; return v - Math.floor(v); };
+          g.save(); g.lineCap = 'square'; g.shadowColor = '#4f9dff'; g.shadowBlur = 8;
+          for (let k = 0; k < 4; k++) { const a0 = rnd(k) * Math.PI * 2, len = r * (1.1 + rnd(k + 9) * 1.1); let x0 = Math.cos(a0) * r * 0.45, y0 = Math.sin(a0) * r * 0.45; g.beginPath(); g.moveTo(x0, y0);
+            for (let j = 1; j <= 3; j++) { const d = r * 0.45 + len * j / 3, jit = (rnd(k * 7 + j) - 0.5) * r * 0.9; x0 = Math.cos(a0) * d - Math.sin(a0) * jit; y0 = Math.sin(a0) * d + Math.cos(a0) * jit; g.lineTo(Math.round(x0), Math.round(y0)); }
+            g.strokeStyle = '#2f6fe0'; g.lineWidth = Math.max(2, 3 * a.s); g.stroke(); g.strokeStyle = '#dff1ff'; g.lineWidth = Math.max(1, 1.2 * a.s); g.stroke(); }
+          g.restore(); }
       };
     }
     const one = (a) => a[Math.floor(Math.random() * a.length)];

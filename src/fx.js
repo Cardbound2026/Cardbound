@@ -204,7 +204,7 @@
         } else if (q.type === 'Power') { move = 'empower'; add('aura', { id: q.id, col: { Fire: 'fire', Frost: 'frost', Shadow: 'shadow', Arcane: 'arcane', Nature: 'nature' }[q.dtype] || 'gold' }); }
         else if (a.stealth && !lastStealth[a.id]) { move = 'vanish'; add('smoke', { id: q.id }); }
         else if (q.dmg || q.heal) {
-          move = 'cast'; const el = q.dtype || 'Physical';
+          move = 'cast'; const el = q.dtype === 'Nature' && a.cls === 'Shaman' ? 'Storm' : q.dtype || 'Physical';   /* Nov 14: the Shaman's Nature spells fly as blue ball lightning, not a green orb */
           if (q.dmg && q.tgt && !q.aoe && cb.actorById(q.tgt) && !cb.actorById(q.tgt).isPlayer) { add('bolt', { from: q.id, to: q.tgt, el, star: /shuriken|star|knife/.test(q.card || '') }, 160); proj[q.id] = 400; }
           else if (q.dmg && q.aoe) proj[q.id] = 200;
         } else if (q.def) move = (blocksBy[q.id] || 0) >= 2 ? 'guard2' : 'guard';
