@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Interface', "Clicking another class's codex in your bags now shows the Equip button greyed out, with the class that can use it."],
       ['Feature', "Skull Tokens can be traded. The trade window has a Skull Tokens box next to Gold: give them away, swap them for gear, or sell them by having the other player put gold on their side."],
       ['Feature', "Arena rating: every hero starts at 1000 and every duel moves it. Beat a higher-rated hero and you climb a lot while they drop; beat someone near your rating and you climb a little; beat someone far below you and you barely move. Your rating shows after each duel, on your character sheet and in your Chronicle."],
       ['Feature', "The Hall of Records has an Arena tab: every hero that has fought a duel, ranked by rating, with wins, losses, win rate and peak rating. Ranks run Novice, Contender, Duelist, Veteran, Gladiator, Champion."],
