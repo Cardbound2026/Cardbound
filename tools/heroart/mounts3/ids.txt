@@ -14,3 +14,13 @@ demonbrute char ff329ea4-9a73-46c4-9e13-f08c8a2cbbdc
 # still to animate: tiger, lion, bonedragon, felhound, demonbrute
 # still to make (objects or other shapes): bunny, frog, phoenix (fire bird), worm, basilisk, raven, bone spider, flying carpet, tortoise, beetle, mantis, giant ant, snake
 # holy charger should leave golden hoof prints (trail colour [255,218,112] while riding it)
+# batch Nov 13 late (pro quadrupeds, Nightmare style)
+bunny char 47aa7f97-2164-4db4-ab30-4e6967c17415
+tortoise char a03a0e5c-2caa-4db4-b38d-575bd765a21c
+basilisk char 1a5e5c5f-ee69-4383-a7d9-9c1ad35584d2
+frog char 11ee8bdc-f84e-47ba-8b88-9aaa9a961ec6
+beetle char 97d22f8f-571a-4e7b-957f-8271ea5badb5
+ant char edb2f7c0-7f82-4ed6-9f6f-dc44914d6c31
+phoenix char 844da71e-3418-4ac3-8e5f-d2e21261ec91
+raven char 41369e86-ee56-4c46-a8de-262339a08cae
+# still to make: worm, bone spider, flying carpet, mantis, snake
