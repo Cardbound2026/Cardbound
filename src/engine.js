@@ -1020,7 +1020,7 @@ class Combat {
     const p = {
       id: 'p' + i, idx: i, name: spec.name || spec.cls, isPlayer: true, cls: spec.cls, defName: (spec.cls === 'Warrior' || spec.cls === 'Paladin' || spec.cls === 'Shaman') ? (legalGear(spec, this.data).some(x => x && x.slot === 'Off-hand' && (/Shield/.test(x.arch || x.label || '') || ['Kite Shield', 'Pavise'].includes(x.name))) ? 'Block' : spec.cls === 'Shaman' ? 'Dodge' : 'Parry') : cls.defense, maxHp: g.maxHp, hp: Math.min(g.maxHp, spec.hp != null ? spec.hp : g.maxHp), block: 0,
       mana: spec.mana != null ? Math.min(spec.mana, g.maxMana) : 0, maxMana: g.maxMana, regen: g.regen + (buffs.regen || 0), draw: g.draw + (buffs.draw || 0),
-      strength: g.strength + (buffs.damage || 0), intelligence: g.intelligence + (buffs.damage || 0), dexterity: g.dexterity + g.defGain, spirit: g.spirit,
+      strength: g.strength + (buffs.damage || 0), intelligence: g.intelligence + (buffs.damage || 0), dexterity: g.dexterity + g.defGain, spirit: g.spirit + (buffs.spirit || 0),
       crit: g.crit + (buffs.crit || 0), critMult: g.critMult, multiHit: g.multiHit, multiplay: g.multiplay, multicast: g.multicast, bleedChance: g.bleedChance, lifesteal: g.lifesteal,
       thorns: g.thorns, baseInit: g.init, recovery: g.recovery, elem: g.elem, resist: Object.assign({}, g.resist),
       strTurn: 0, strCombat: 0, weak: 0, vulnerable: 0, bleed: 0, slow: 0, initNext: 0, defNext: 0, manaNext: 0, drawLess: 0,

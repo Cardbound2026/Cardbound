@@ -3494,7 +3494,7 @@ class Combat {
     const p = {
       id: 'p' + i, idx: i, name: spec.name || spec.cls, isPlayer: true, cls: spec.cls, defName: (spec.cls === 'Warrior' || spec.cls === 'Paladin' || spec.cls === 'Shaman') ? (legalGear(spec, this.data).some(x => x && x.slot === 'Off-hand' && (/Shield/.test(x.arch || x.label || '') || ['Kite Shield', 'Pavise'].includes(x.name))) ? 'Block' : spec.cls === 'Shaman' ? 'Dodge' : 'Parry') : cls.defense, maxHp: g.maxHp, hp: Math.min(g.maxHp, spec.hp != null ? spec.hp : g.maxHp), block: 0,
       mana: spec.mana != null ? Math.min(spec.mana, g.maxMana) : 0, maxMana: g.maxMana, regen: g.regen + (buffs.regen || 0), draw: g.draw + (buffs.draw || 0),
-      strength: g.strength + (buffs.damage || 0), intelligence: g.intelligence + (buffs.damage || 0), dexterity: g.dexterity + g.defGain, spirit: g.spirit,
+      strength: g.strength + (buffs.damage || 0), intelligence: g.intelligence + (buffs.damage || 0), dexterity: g.dexterity + g.defGain, spirit: g.spirit + (buffs.spirit || 0),
       crit: g.crit + (buffs.crit || 0), critMult: g.critMult, multiHit: g.multiHit, multiplay: g.multiplay, multicast: g.multicast, bleedChance: g.bleedChance, lifesteal: g.lifesteal,
       thorns: g.thorns, baseInit: g.init, recovery: g.recovery, elem: g.elem, resist: Object.assign({}, g.resist),
       strTurn: 0, strCombat: 0, weak: 0, vulnerable: 0, bleed: 0, slow: 0, initNext: 0, defNext: 0, manaNext: 0, drawLess: 0,
@@ -5150,7 +5150,7 @@ const MOB_HP_STEP = 0.3; // a party fights one monster per hero, each with +30% 
 const TIER_ROWS = r => r <= 4 ? '1' : r <= 9 ? '2' : '3';
 const SHRINES = [
   { key: 'crit', name: 'Shrine of the Keen Edge', text: '+10% Crit Chance for the next 2 fights.', buff: { crit: 10 } },
-  { key: 'damage', name: 'Shrine of Fury', text: '+20% damage (Strength and Intelligence) for the next 2 fights.', buff: { damage: 20 } },
+  { key: 'damage', name: 'Shrine of Fury', text: '+20% damage (Strength and Intelligence) and +10 Spirit (healing done and received) for the next 2 fights.', buff: { damage: 20, spirit: 10 } },
   { key: 'resist', name: 'Shrine of Warding', text: '+20% to all resistances for the next 2 fights.', buff: { resist: 20 } },
   { key: 'regen', name: 'Shrine of the Spring', text: '+10 mana regeneration for the next 2 fights.', buff: { regen: 10 } },
   { key: 'draw', name: 'Shrine of Insight', text: 'Draw 1 extra card each round for the next 2 fights.', buff: { draw: 1 } },
@@ -8256,8 +8256,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794700609991';
-  const CB_BUILD = '2f8abc9ae1'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794700771918';
+  const CB_BUILD = '63391ee07b'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -9376,6 +9376,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Balance', "Shrine of Fury now helps healers too: on top of +20% damage it gives +10 Spirit (healing done and received) for the next 2 fights."],
       ['Balance', "Spirit now also raises healing DONE, not only healing received: each point makes the heals you cast on other heroes 1% bigger, on top of the target's own Spirit. Healers finally have a gear stat that scales their healing. A heal on yourself still counts your Spirit once, so self-healing is unchanged."],
       ['Art', "Shaman lightning spells now fly as a blue ball of lightning with crackling arcs, instead of the green Nature orb."],
       ['Change', "Stormcaller codex wording changed: the third copy of a Multicast spell is now described as cast at 50% power (it used to say 50% strength). Same for its capstone talent, Thunderlord (75% power). Nothing about how it works has changed: only the words. It never had anything to do with the Strength stat."],

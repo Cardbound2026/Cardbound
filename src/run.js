@@ -10,7 +10,7 @@ const MOB_HP_STEP = 0.3; // a party fights one monster per hero, each with +30% 
 const TIER_ROWS = r => r <= 4 ? '1' : r <= 9 ? '2' : '3';
 const SHRINES = [
   { key: 'crit', name: 'Shrine of the Keen Edge', text: '+10% Crit Chance for the next 2 fights.', buff: { crit: 10 } },
-  { key: 'damage', name: 'Shrine of Fury', text: '+20% damage (Strength and Intelligence) for the next 2 fights.', buff: { damage: 20 } },
+  { key: 'damage', name: 'Shrine of Fury', text: '+20% damage (Strength and Intelligence) and +10 Spirit (healing done and received) for the next 2 fights.', buff: { damage: 20, spirit: 10 } },
   { key: 'resist', name: 'Shrine of Warding', text: '+20% to all resistances for the next 2 fights.', buff: { resist: 20 } },
   { key: 'regen', name: 'Shrine of the Spring', text: '+10 mana regeneration for the next 2 fights.', buff: { regen: 10 } },
   { key: 'draw', name: 'Shrine of Insight', text: 'Draw 1 extra card each round for the next 2 fights.', buff: { draw: 1 } },
