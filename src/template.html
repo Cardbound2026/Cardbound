@@ -1568,7 +1568,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     try {
       let ok; try { ok = await once(); } catch (e) { if (!/jwt|expired|token/i.test(e.message || '')) throw e; await supa.auth.refreshSession(); ok = await once(); }
       if (!ok) { await cloudCheck('push refused'); return; } // the account changed under us: sort it out instead of overwriting
-      SY.cloud = true; SY.err = null; profile.base = snap.wid; profile.baseFp = progFp(snap); writeLocal(); storeKind = 'cloud';
+      SY.cloud = true; SY.err = null; profile.base = snap.wid; profile.baseFp = progFp(snap); if (snap.wipedAt && profile.wipedAt === snap.wipedAt) delete profile.wipedAt; writeLocal(); storeKind = 'cloud';
       let day = ''; try { day = localStorage.getItem('cb-bk-day') || ''; } catch (e) {}
       const today = new Date().toISOString().slice(0, 10); if (day !== today) { try { localStorage.setItem('cb-bk-day', today); } catch (e) {} cloudBackup(snap, 'daily'); }
     } catch (e) { storeKind = 'local'; SY.err = e.message || String(e); }
@@ -1586,6 +1586,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
       const remote = row && row.data ? CBHub.fix(row.data) : null; SY.cloud = !!remote; SY.checkAt = Date.now();
       const L = profile;
       if (!remote) { SY.ready = true; if (hasHeroes(L)) cloudPush(); return; }
+      if (L.wipedAt && remote.wid !== L.wid && (remote.savedAt || 0) <= L.wipedAt) { SY.ready = true; L.base = remote.wid || null; cloudPush(); return; }   // a deliberate Start fresh that has not reached the account yet: send it, never restore over it
       if (remote.wid && remote.wid === L.wid) { L.base = remote.wid; L.baseFp = progFp(remote); writeLocal(); SY.ready = true; return; }       // already the same
       if (remote.wid && L.base === remote.wid) { SY.ready = true; if (L.wid !== L.base) cloudPush(); return; }                                // the account is where we left it: this browser is newer
       const fpL = progFp(L), fpR = progFp(remote);
@@ -2763,8 +2764,19 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   }
   function wipeFlow() {
     if (busyElsewhere()) return;
-    confirmTyped('Start fresh?', `<p>This deletes <b>everything</b> on this account: every hero, the shared stash, all gold, run history and merchant stock. You start over with nothing. This cannot be undone.</p>`, 'RESET',
-      () => { const keep = { savedAt: Date.now() }; profile = CBHub.fix(Object.assign(CBHub.newProfile(), keep)); heroKey = 'Warrior'; afterRosterChange(); toast('Everything was deleted. Create a hero to begin again.'); });
+    confirmTyped('Start fresh?', `<p>This deletes <b>everything</b> on this account: every hero, the bank and bags, all gold, Ink and Skull Tokens, cosmetics, pets, achievements, run history and your Hall of Records entries. You start over with nothing. (The old save is kept under Menu &gt; Save backups in case this was a mistake.)</p>`, 'RESET',
+      async () => {
+        // Nov 14: signed in, the wipe did not stick: the empty save forgot which account save it came from, so the next sync check saw "no heroes here, heroes in the account" and quietly put the account back.
+        // Now the wipe keeps that link (base), is marked as deliberate (wipedAt) and is pushed to the account straight away; the old save is kept as a backup first.
+        const old = profile; try { backupLocal(old, 'before Start fresh'); cloudBackup(old, 'before Start fresh'); } catch (e) {}
+        const keep = { savedAt: Date.now(), wipedAt: Date.now(), base: old.base || null, baseFp: old.baseFp || null };
+        profile = CBHub.fix(Object.assign(CBHub.newProfile(), keep)); heroKey = 'Warrior'; SY.conflict = null;
+        try { localStorage.removeItem('cb-bk-day'); } catch (e) {}
+        afterRosterChange(); toast('Everything was deleted. Create a hero to begin again.');
+        if (supa && supaUser) { try { await saving; if (profile.wid !== profile.base) { await pushNow(); }
+          if (profile.wid === profile.base) await supa.from('hero_records').delete().eq('user_id', supaUser.id).eq('season', CBHub.SEASON);   // off the Hall of Records too
+          else toast('The wipe is saved on this browser but has not reached your account yet. It will be sent when the connection is back.'); } catch (e) { console.warn('wipe sync', e); } }
+      });
   }
   $('heroList').addEventListener('click', (ev) => { const d = ev.target.closest('[data-delhero]'); if (d) return deleteHeroFlow(d.dataset.delhero); });
   $('heroSelect').addEventListener('click', (ev) => {
