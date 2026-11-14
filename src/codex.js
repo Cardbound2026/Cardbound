@@ -39,6 +39,7 @@
   function implicitText(A, b) {
     const G = DATA.gear, two = A.hands && A.hands.startsWith('2H') ? G.twoHand : 1;
     if (!A.imp2) return '';
+    if (A.imp2 === 'Multi-hit and Multicast') return `Multi-hit Chance and Multicast Chance, each half of a sword's Multi-hit roll (a sword rolls +${statRange('Multi-hit Chance', two)})`;
     if (A.imp2 === 'Draw / regen pool') return 'Card draw 3-5 plus Mana Regen: a pool of 6 (White) to 9 (Purple) points split between them, each point not spent on draw is +10 regen';
     if (A.imp2.startsWith('Elemental damage')) return `+${statRange('Elemental/Holy Damage', two)} damage of one random element`;
     if (A.imp2 === 'Shadow Damage') return `+${statRange('Elemental/Holy Damage', two)} Shadow damage`;

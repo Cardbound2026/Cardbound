@@ -74,6 +74,7 @@ function fix(p) { // tolerate older or partial saves
       c.season = SEASON; c.sKills = {}; c.mapBest = {}; c.mapRows = {}; c.mapKillAt = {}; c.bossKillsBy = {};
     }
   }
+  { const all = [p.stash, p.stashOther, p.vault, p.vaultOther, ...Object.values(p.chars || {}).map(c => c.gear), ...(p.bankBags || []), (p.arena && p.arena.stake && p.arena.stake.items) || []]; for (const L of all) if (Array.isArray(L)) for (const it of L) CB.maceFix(it); }   // Nov 13: old 1H maces get the new implicit
   achCheck(p, {}, null, true); // Nov 2: achievements a save can already prove (boss kills, duels, ranks...) unlock quietly
   useStash(p, p.last && p.last.cls); // the stash of the hero you were last playing (hardcore heroes have their own)
   // Nov 2: gold wipe for the start of season 0.02 (once per save)

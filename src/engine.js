@@ -734,7 +734,7 @@ const STARTER_GEAR = {
     it('Amulet', "Soldier's Pendant", { Intelligence: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Camp Robe', { Spirit: 3 }),
     it('Bracers', 'Linen Wraps', { Intelligence: 3 }), it('Gloves', "Scribe's Handwraps", { 'Crit Chance': 1 }), it('Belt', "Officer's Sash", { Stamina: 6 }), it('Pants', 'Quilted Leggings', { Stamina: 6 }),
     it('Boots', 'Pilgrim Slippers', { Dexterity: 3 }, { Initiative: 3 }), it('Ring 1', 'Ember-Warded Ring', { Stamina: 6 }), it('Ring 2', "Soldier's Signet", { 'Max Mana': 15 })],
-  Paladin: [it('Weapon', 'Flanged Mace', { Strength: 3 }, { 'Elemental/Holy Damage:Holy': 6 }), it('Off-hand', 'Pavise', { Dexterity: 3 }, { 'Defense Gain': 6 }), it('Helm', 'Warband Helm', { Stamina: 6 }), it('Shoulders', 'Warband Pauldrons', { Stamina: 4 }),
+  Paladin: [it('Weapon', 'Flanged Mace', { Strength: 3 }, { 'Multi-hit Chance': 2, 'Multicast Chance': 2 }), it('Off-hand', 'Pavise', { Dexterity: 3 }, { 'Defense Gain': 6 }), it('Helm', 'Warband Helm', { Stamina: 6 }), it('Shoulders', 'Warband Pauldrons', { Stamina: 4 }),
     it('Amulet', "Soldier's Pendant", { Strength: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Iron Cuirass', { Stamina: 6 }),
     it('Bracers', 'Iron Bracers', { Strength: 3 }), it('Gloves', 'Iron Gauntlets', { 'Crit Chance': 1 }), it('Belt', 'War Girdle', { Stamina: 6 }), it('Pants', 'Legguards', { Dexterity: 3 }),
     it('Boots', 'Iron Sabatons', { Stamina: 6 }, { Initiative: 3 }), it('Ring 1', 'Ember-Warded Ring', { Intelligence: 3 }), it('Ring 2', "Soldier's Signet", { Spirit: 3 })],
@@ -766,10 +766,10 @@ const STARTER_KITS = {
     arcanist: [gk('Chest', 'Camp Robe', { 'Max Mana': 25, Intelligence: 4 }), gk('Helm', 'Hedge-Mage Hood', { Intelligence: 6, Stamina: 8 })],
   },
   Paladin: {
-    balanced: [gk('Weapon', 'Flanged Mace', { Strength: 5 }, { 'Elemental/Holy Damage:Holy': 12 }), gk('Chest', 'Iron Cuirass', { Stamina: 16 })],
-    templar: [gk('Weapon', 'Flanged Mace', { Strength: 6 }, { 'Elemental/Holy Damage:Holy': 12 }), gk('Chest', 'Iron Cuirass', { Stamina: 14, 'Max Mana': 10 })],
+    balanced: [gk('Weapon', 'Flanged Mace', { Strength: 5 }, { 'Multi-hit Chance': 3, 'Multicast Chance': 3 }), gk('Chest', 'Iron Cuirass', { Stamina: 16 })],
+    templar: [gk('Weapon', 'Flanged Mace', { Strength: 6 }, { 'Multi-hit Chance': 3, 'Multicast Chance': 3 }), gk('Chest', 'Iron Cuirass', { Stamina: 14, 'Max Mana': 10 })],
     guardian: [gk('Off-hand', 'Pavise', { Dexterity: 4, Stamina: 6 }, { 'Defense Gain': 12, Thorns: 6 }), gk('Chest', 'Iron Cuirass', { Stamina: 16 })],
-    lightbringer: [gk('Weapon', 'Flanged Mace', { Intelligence: 5, Spirit: 4 }, { 'Elemental/Holy Damage:Holy': 12 }), gk('Chest', 'Iron Cuirass', { Stamina: 12, 'Max Mana': 15 })],
+    lightbringer: [gk('Weapon', 'Flanged Mace', { Intelligence: 5, Spirit: 4 }, { 'Multi-hit Chance': 3, 'Multicast Chance': 3 }), gk('Chest', 'Iron Cuirass', { Stamina: 12, 'Max Mana': 15 })],
   },
   Warlock: {
     balanced: [gk('Weapon', 'Ashwood Wand', { Intelligence: 6 }, { 'Elemental/Holy Damage:Shadow': 12 }), gk('Chest', 'Camp Robe', { Stamina: 16 })],
@@ -2106,6 +2106,7 @@ function rollItem(data, rng, baseName, rarity, level) {
   if (A.imp2) {
     if (A.imp2 === 'Draw / regen pool') { const pool = { White: 6, Green: 7, Blue: 8, 'Purple (Epic)': 9 }[rarity]; const d = ri(rng, 3, Math.min(5, pool - 2)); imp2.Draw = d; imp2.Regen = (pool - d) * 10; }
     else if (A.imp2.startsWith('Elemental damage')) imp2['Elemental/Holy Damage:' + ELS[ri(rng, 0, 5)]] = rollStat('Elemental/Holy Damage').v;
+    else if (b.arch === '1H Mace') { const v = Math.max(1, Math.round(rollStat('Multi-hit Chance').v / 2)); imp2['Multi-hit Chance'] = v; imp2['Multicast Chance'] = v; }   // Nov 13: a mace is half a sword's Multi-hit, and the same again as Multicast (it was Holy Damage)
     else if (A.imp2 === 'Elemental/Holy Damage') imp2['Elemental/Holy Damage:' + (/Mace|Warhammer/.test(b.arch) ? 'Holy' : ELS[ri(rng, 0, 4)])] = rollStat(A.imp2).v;
     else if (A.imp2 === 'Shadow Damage') imp2['Elemental/Holy Damage:Shadow'] = rollStat('Elemental/Holy Damage').v; // Nov 2: the Scythe, the Warhammer's shadow twin
     else if (A.imp2 === 'Frost Damage') imp2['Elemental/Holy Damage:Frost'] = rollStat('Elemental/Holy Damage').v;
@@ -2586,6 +2587,9 @@ if (C.pilfer) C.pilfer.cost = 20; // Nov 2
 if (C.twin_verdict) C.twin_verdict.cost = 15; if (C.steel_tempo) C.steel_tempo.cost = 0; if (C.decisive_reprisal) C.decisive_reprisal.cost = 20; // Nov 3
 POWERS.codex_soulbinder.dotDealt = POWERS.codex_soulbinder.dealt;
 CARDS_READY = true; if (DATA && DATA.gear) namedLoot(DATA);
-const API = { STARTER_KITS, staffShieldOk, legalGear, CODEX_NEEDS, codexNeed, weaponSetup, CODEX_TOKEN_CHANCE, bossCodexPct, BOSS_CODEX_BARE, GROUPS, groupData, itemRules, rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+// Nov 13: 1H maces made before the change swap their Holy Damage implicit for Multi-hit and Multicast (a quarter of the Holy number each, at least 1)
+function maceFix(it) { if (!it || !it.imp2 || !(it.arch === '1H Mace' || it.label === '1H Mace' || /^(Flanged|Ember|Snowdrift|Fernleaf|Leyforged|Ashbone) Mace$/.test(it.name || ''))) return false; const v = it.imp2['Elemental/Holy Damage:Holy']; if (v == null) return false;
+  delete it.imp2['Elemental/Holy Damage:Holy']; const n = Math.max(1, Math.round(v / 4)); it.imp2['Multi-hit Chance'] = n; it.imp2['Multicast Chance'] = n; return true; }
+const API = { maceFix, STARTER_KITS, staffShieldOk, legalGear, CODEX_NEEDS, codexNeed, weaponSetup, CODEX_TOKEN_CHANCE, bossCodexPct, BOSS_CODEX_BARE, GROUPS, groupData, itemRules, rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);
