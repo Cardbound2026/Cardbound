@@ -494,6 +494,35 @@ function partyOpts(p, classes) {
 }
 function runOpts(p, key) { useStash(p, key); const c = char(p, key); return { key, cls: c.cls, members: undefined, name: c.name, bank: p.gold, stashFree: Math.max(0, STASH_MAX - stashFor(p, c).length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }
 // Bring a finished run home: equipped gear (incl. merchant buys) stays on the character; kept loot goes to stash/collection.
+// ---------- The Chronicle (Nov 14): lifetime numbers kept on each hero in c.life, shown as a book (src/statbook.js) and sent when inspected.
+//   t / tr   seconds played / of those, in a run (ticked by the page while it is visible)
+//   runs     the last 240 runs: [minute stamp, map index, level, result (2 boss killed, 1 walked out, 0 died), row, party size, boss-fight rounds, damage dealt, seconds, kills]
+//   mobs     kills per monster key       plays    times each card was played
+//   dealt / healed / taken   lifetime totals per card (or per attacker for taken)
+//   big      [the biggest single hit, the card]     plus plain counters: fights, rounds, gold, items, cards, deaths, absorbed, dmg, heal, hurt
+const LIFE_MAPS = ['physical', 'fire', 'frost', 'nature', 'arcane', 'shadow'];
+function lifeOf(c) { const L = (c.life = c.life || {}); for (const k of ['mobs', 'plays', 'dealt', 'healed', 'taken']) L[k] = L[k] || {}; L.runs = L.runs || []; for (const k of ['t', 'tr', 'fights', 'rounds', 'gold', 'items', 'cards', 'deaths', 'absorbed', 'dmg', 'heal', 'hurt']) L[k] = L[k] || 0; return L; }
+function lifeAdd(into, from, strip) { let sum = 0; for (const [k0, v] of Object.entries(from || {})) { if (!(v > 0)) continue; const k = strip ? k0.replace(/ on .*$/, '') : k0; into[k] = Math.round((into[k] || 0) + v); sum += v; } return sum; }
+function lifeTrim(o, n) { const e = Object.entries(o); if (e.length <= n) return; e.sort((a, b) => b[1] - a[1]); for (const [k] of e.slice(n)) delete o[k]; }
+function chronicle(c, run, mem, mi, got) {
+  const L = lifeOf(c), ms = Object.values(run.meter || {}).filter(m => m.isPlayer), M = ms.find(m => m.id === 'p' + (mi || 0)) || ms.find(m => m.name === mem.name) || {};
+  const d = lifeAdd(L.dealt, M.dealt), h = lifeAdd(L.healed, M.healed, true), tk = lifeAdd(L.taken, M.taken); lifeAdd(L.plays, M.plays);
+  L.dmg += Math.round(d); L.heal += Math.round(h); L.hurt += Math.round(tk); L.absorbed += Math.round(M.absorbed || 0);
+  if ((M.big || 0) > ((L.big || [])[0] || 0)) L.big = [Math.round(M.big), M.bigBy || ''];
+  lifeAdd(L.mobs, run.mobKills); L.fights += run.fightsWon || 0; L.rounds += run.rounds || 0; L.gold += got.gold || 0; L.items += got.items || 0; L.cards += got.cards || 0;
+  if (run.over === 'dead') L.deaths++; else if (mem.deaths) L.deaths += mem.deaths;
+  const secs = run.t0 ? Math.max(0, Math.round((Date.now() - run.t0) / 1000)) : 0;
+  L.runs.push([Math.round(Date.now() / 60000), Math.max(0, LIFE_MAPS.indexOf(run.mapKey || 'physical')), run.level || 0, run.over === 'victory' ? 2 : run.over === 'dead' ? 0 : 1, got.row || 0, run.members ? run.members.length : 1, (mem.feat || {}).bossRounds || 0, Math.round(d), Math.min(secs, 86400), run.kills || 0]);
+  if (L.runs.length > 240) L.runs = L.runs.slice(-240);
+  lifeTrim(L.dealt, 80); lifeTrim(L.healed, 40); lifeTrim(L.taken, 60); lifeTrim(L.plays, 120);
+}
+// runs from before the Chronicle: the last 20 are still in the account's history, with their damage meters
+function lifeSeed(p, c) { const L = lifeOf(c); if (L.seed) return L; L.seed = 1; if (L.runs.length) return L;
+  for (const h of (p.history || []).slice().reverse()) { if (h.name !== c.name || h.cls !== c.cls) continue; const M = (h.meter || []).find(m => m.isPlayer && m.name === c.name) || {};
+    const d = lifeAdd(L.dealt, M.dealt), hl = lifeAdd(L.healed, M.healed, true), tk = lifeAdd(L.taken, M.taken); L.dmg += Math.round(d); L.heal += Math.round(hl); L.hurt += Math.round(tk); L.absorbed += Math.round(M.absorbed || 0);
+    L.fights += h.fights || 0; L.gold += h.gold || 0; L.items += h.items || 0; L.cards += h.cards || 0; if (h.result === 'dead') L.deaths++;
+    L.runs.push([Math.round((h.at || Date.now()) / 60000), Math.max(0, LIFE_MAPS.indexOf(h.map || 'physical')), h.level || 0, h.result === 'victory' ? 2 : h.result === 'dead' ? 0 : 1, h.row || 0, h.party ? h.party.length : 1, 0, Math.round(d), 0, 0]); }
+  return L; }
 function absorbRun(p, run, mi) {
   if (mi == null && run.members && run.members.length > 1) { const res = run.members.map((m, i) => absorbRun(p, run, i)); return res[0]; }
   const mem = run.members ? run.members[mi || 0] : run;
@@ -524,6 +553,7 @@ function absorbRun(p, run, mi) {
   if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); c.sKills = c.sKills || {}; c.sKills[mk] = Math.max(mapCleared(c, mk), run.level || 0); }
   // the run's damage meter, kept so the Chronicler can show it later (numbers rounded to keep saves small)
   const meter = Object.values(run.meter || {}).map(m => { const r = (o) => Object.fromEntries(Object.entries(o || {}).filter(x => x[1] > 0).map(([k, v]) => [k, Math.round(v)])); return { id: m.id, name: m.name, isPlayer: m.isPlayer, cls: m.cls, dealt: r(m.dealt), healed: r(m.healed), taken: r(m.taken), absorbed: Math.round(m.absorbed || 0) }; });
+  try { chronicle(c, run, mem, mi, { items, cards, gold: kept.gold, row }); } catch (e) {}   // Nov 14: lifetime numbers for the Chronicle (statbook.js)
   p.history.unshift({ meter: meter.length ? meter : undefined, map: run.mapKey, fights: run.fightsWon, cls: mem.cls, name: mem.name, party: run.members && run.members.length > 1 ? run.members.map(m => m.cls) : undefined, level: run.level, result: run.over, row, items, cards, gold: kept.gold, ordered, at: Date.now() });
   p.history = p.history.slice(0, 20);
   p.last = Object.assign(p.last || {}, { level: run.level });
@@ -540,7 +570,7 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk, ach };
 }
 
-const API = { shopCards, buyShopCard, makeBag, bagSizeFor, syncCaps, equipBag, unequipBag, own, grantPet, BAG_BASE, BANK_BASE, BAG_SLOTS, BANK_BAG_SLOTS, defWord, defText, titleAfter, titled, staffShield, toVault, fromVault, ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { lifeOf, lifeSeed, LIFE_MAPS, shopCards, buyShopCard, makeBag, bagSizeFor, syncCaps, equipBag, unequipBag, own, grantPet, BAG_BASE, BANK_BASE, BAG_SLOTS, BANK_BAG_SLOTS, defWord, defText, titleAfter, titled, staffShield, toVault, fromVault, ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 Object.defineProperty(API, 'STASH_MAX', { get: () => STASH_MAX, enumerable: true }); Object.defineProperty(API, 'VAULT_MAX', { get: () => VAULT_MAX, enumerable: true });
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);

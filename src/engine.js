@@ -1551,7 +1551,7 @@ class Combat {
     if (tgt.isPlayer && before > tgt.hp) { const lostHp = before - tgt.hp; tgt.dmgRound += lostHp; this.allyLost && this.allyLost.add(tgt.id); if (tgt.debtUser) tgt.bloodDebt += Math.round(lostHp * (this.has(tgt, 'pay_in_blood') ? 1 + this.upN(tgt, 'pay_in_blood', 0, 50) / 100 : 1)); if (tgt.until.storing) tgt.until.stored = (tgt.until.stored || 0) + lostHp; if (tgt.until.grudge && src && !src.isPlayer) tgt.until.grudge[src.id] = (tgt.until.grudge[src.id] || 0) + lostHp; }
     const real = before - tgt.hp, label = o.label || 'Attack';
     if (!tgt.isPlayer && before > 0 && tgt.hp <= 0) this.lastKill = { by: src ? src.name : null, byId: src ? src.id : null, mob: tgt.name, label: String(label).replace(/\s*\(?crit!\)?/i, '').trim(), card: o.card || null, dmg: dmg, over: dmg - real, crit: !!(o.crit || /crit!/.test(label)) };   // Nov 13: for the killing-blow banner
-    if (src) { const m = this.mtr(src).dealt; m[label] = (m[label] || 0) + real; }
+    if (src) { const M = this.mtr(src), m = M.dealt; m[label] = (m[label] || 0) + real; if (real > (M.big || 0)) { M.big = real; M.bigBy = label; } }
     if (src && src.isPlayer && !tgt.isPlayer && real > 0) { const dk = { Burn: 'Fire', Chill: 'Frost', Poison: 'Nature', Bleed: 'Physical', Dread: 'Shadow', Rot: 'Shadow' }[(String(label).match(/Burn|Chill|Poison|Bleed|Dread|Rot/) || [''])[0]] || o.dtype || 'Physical'; const T = src.fxTypes = src.fxTypes || {}; T[dk] = (T[dk] || 0) + real; if (o.isDot) src.fxDot = (src.fxDot || 0) + real; src.fxDealt = (src.fxDealt || 0) + real; } // Nov 13: what kinds of damage each hero dealt this fight (achievements)
     { const t = this.mtr(tgt); const k = src ? src.name : label; t.taken[k] = (t.taken[k] || 0) + real; t.absorbed += absorbed; }
     if (tgt.isPlayer) { this.stats.taken += dmg; this.stats.blocked += absorbed; } else this.stats.dealt += dmg;
@@ -1765,6 +1765,7 @@ class Combat {
     this._wasStealth = !!p.stealth; if (d.target === 'all' && p.stealth) p.stealth = false;
     const stAtk = d.type === 'Attack' && !!p.stealth; if (stAtk) p.stealth = 'atk'; // Nov 2: attacking ends Stealth (after this card; a card that grants Stealth keeps it)
     if (this.duel && d.target === 'all') for (const x of this.alive()) if (x.stealth) { x.stealth = false; this.say('player', `${x.name}'s Stealth is broken.`); }
+    { const M = this.mtr(p); (M.plays = M.plays || {})[d.name] = (M.plays[d.name] || 0) + 1; }   // Nov 14: cards played, for the Chronicle
     this._playing = d; this._rankMult = 1; this._rk = d.rk || null; this._rkCard = d; const ms = d.ms || {};
     this._rkHits = ms.hits ? [] : null; this._rkTimed = ms.turns ? [] : null; this._rkAdded = ms.count ? [] : null; this._rkDraw = 0; const dn0 = p.drawNext || 0; this.rkBegin(this._rk);
     this._attackMult = d.type === 'Attack' ? p.nextAttackMult : 1;

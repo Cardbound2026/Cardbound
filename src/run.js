@@ -224,7 +224,7 @@ class Run {
     this.mapName = this.data.maps ? this.data.maps[this.mapKey].name : 'The Broken March';
     { const bk = this.data.maps ? this.data.maps[this.mapKey].boss : 'warlord_gorrath_the_iron_tide', be = this.data.enemies[bk]; this.bossName = be ? be.name.split(',')[0].replace(/ of the .*/, '') : 'The boss'; }
     { const lead = CB.talentRun(specs[0] && specs[0].talents); this.map = generateMap(this.rng, this.data, specs.length, this.mapKey, { enraged: lead.enraged || 0, shrine: lead.shrine || 0, merchant: lead.merchant || 0 }); } // the leader's talents
-    this.at = null; this.visited = []; this.over = null; this.fightsWon = 0; this.kills = 0; this.combat = null; this.pending = null;
+    this.at = null; this.visited = []; this.over = null; this.fightsWon = 0; this.kills = 0; this.t0 = Date.now(); this.rounds = 0; this.mobKills = {}; this.combat = null; this.pending = null;
     this.note(this.members.length > 1 ? `A party of ${this.members.length} (${this.members.map(m => m.name).join(', ')}) sets out on ${this.mapName} (+${this.level}).` : `A ${this.cls} sets out on ${this.mapName} (+${this.level}).`);
   }
   get solo() { return this.members.length === 1; }
@@ -281,7 +281,10 @@ class Run {
       const k = m.isPlayer ? m.id : 'm:' + m.name, R = this.meter[k] || (this.meter[k] = { id: k, name: m.name, isPlayer: m.isPlayer, cls: m.cls, dealt: {}, healed: {}, taken: {}, absorbed: 0 });
       for (const f of ['dealt', 'healed', 'taken']) for (const [a, v] of Object.entries(m[f])) R[f][a] = (R[f][a] || 0) + v;
       R.absorbed += m.absorbed;
+      if (m.plays) { R.plays = R.plays || {}; for (const [a, v] of Object.entries(m.plays)) R.plays[a] = (R.plays[a] || 0) + v; }   // Nov 14: for the Chronicle (hub.js chronicle)
+      if ((m.big || 0) > (R.big || 0)) { R.big = m.big; R.bigBy = m.bigBy; }
     }
+    this.rounds = (this.rounds || 0) + (cb.round || 0); { const mk = (this.mobKills = this.mobKills || {}); for (const e of cb.enemies) if (e.hp <= 0 && !e.noLoot && e.key) mk[e.key] = (mk[e.key] || 0) + 1; }
     // codex XP (Nov 1): every kill counts for the codex each hero is wearing; a party splits the kills but gets +10% per extra hero
     { const xp = cb.enemies.filter(e => e.hp <= 0 && !e.noLoot).reduce((s, e) => s + KILL_XP((this.data.enemies[e.key] || {}).tier), 0), N = this.members.length;
       if (xp > 0) for (const m of this.members) { const cx = (m.gear.find(g => g && g.slot === 'Codex') || {}).codex; if (cx) m.cxp[cx] = (m.cxp[cx] || 0) + xp / N * (1 + 0.1 * (N - 1)) * (1 + 0.1 * (this.level || 0)); } }   /* Nov 13: +10% codex XP per map level (+3 = 1.3x) */
