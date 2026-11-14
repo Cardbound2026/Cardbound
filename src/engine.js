@@ -720,7 +720,7 @@ const CLASSES = {
   Warlock: { defense: 'Absorb', blurb: 'Shadow caster: Dread and Rot, curses, demons and Absorb (overhealing a Warlock becomes Absorb).', deck: [['soul_beacon', 1], ['shadow_armor', 1], ['soul_shroud', 1], ['shadow_volley', 1], ['curse_of_frailty', 1], ['drain_life', 1], ['summon_gloom_imp', 1], ['shadow_bolt', 5], ['dark_ward', 4], ['dread_touch', 2], ['rotting_grasp', 1], ['siphon_soul', 1]] },
 };
 const boost = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, /Crit Chance|Resistance/.test(k) ? v : Math.round(v * 4 / 3)])); // Nov 3: starter gear is a third stronger
-const it = (slot, base, stats, imp2) => ({ slot, name: base, rarity: 'White', ilvl: 1, stats: Object.assign({ 'Resistance:Fire': 3 }, boost(stats)), imp2: imp2 || {}, r2: 1, r3: 1, r4: 1 }); // starter gear keeps Fire (it isn't Map 1 loot; Physical here would make Map 1 trivial)
+const it = (slot, base, stats, imp2) => ({ slot, name: base, rarity: 'White', ilvl: 1, stats: Object.assign({ 'Resistance:Fire': 3 }, boost(stats)), imp2: imp2 || {}, r2: 1, r3: 1, r4: 1, r5: 1 }); // starter gear keeps Fire (it isn't Map 1 loot; Physical here would make Map 1 trivial)
 const STARTER_GEAR = {
   Warrior: [it('Weapon', 'Arming Sword', { Strength: 3 }, { 'Multi-hit Chance': 3 }), it('Off-hand', 'Kite Shield', { Dexterity: 3 }, { Thorns: 2 }), it('Helm', 'Warband Helm', { Stamina: 6 }), it('Shoulders', 'Warband Pauldrons', { Stamina: 4 }),
     it('Amulet', "Soldier's Pendant", { Strength: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Brigandine', { 'Crit Chance': 1 }),
@@ -745,7 +745,7 @@ const STARTER_GEAR = {
 };
 
 // Nov 3: each starting playstyle swaps two starter pieces for Greens that help that style get going (no affix lines, so they can't be rerolled)
-const gk = (slot, base, stats, imp2) => ({ slot, name: base, rarity: 'Green', ilvl: 1, stats: Object.assign({ 'Resistance:Fire': 3 }, stats), imp2: imp2 || {}, r2: 1, r3: 1, r4: 1, label: 'Starter kit' });
+const gk = (slot, base, stats, imp2) => ({ slot, name: base, rarity: 'Green', ilvl: 1, stats: Object.assign({ 'Resistance:Fire': 3 }, stats), imp2: imp2 || {}, r2: 1, r3: 1, r4: 1, r5: 1, label: 'Starter kit' });
 const STARTER_KITS = {
   Warrior: {
     balanced: [gk('Chest', 'Brigandine', { Stamina: 12, Strength: 4 }), gk('Gloves', 'Leather Gauntlets', { Strength: 6, 'Crit Chance': 2 })],
@@ -782,7 +782,7 @@ const STARTER_KITS = {
 // Gear presets for testing progression: the starter set's stats scaled to the average Green or Blue item (more affixes, higher rolls).
 function presetGear(cls, rarity) {
   const scale = { White: 1, Green: 2.2, Blue: 3.6 }[rarity] || 1, imp = { White: 1, Green: 1.1, Blue: 1.2 }[rarity] || 1;
-  return STARTER_GEAR[cls].map(x => ({ slot: x.slot, name: x.name, rarity, ilvl: 1, r2: 1, r3: 1, r4: 1, stats: Object.fromEntries(Object.entries(x.stats).map(([k, v]) => [k, Math.round(v * scale)])),
+  return STARTER_GEAR[cls].map(x => ({ slot: x.slot, name: x.name, rarity, ilvl: 1, r2: 1, r3: 1, r4: 1, r5: 1, stats: Object.fromEntries(Object.entries(x.stats).map(([k, v]) => [k, Math.round(v * scale)])),
     imp2: Object.fromEntries(Object.entries(x.imp2).map(([k, v]) => [k, k === 'Draw' ? 4 : k === 'Regen' ? { White: 20, Green: 30, Blue: 40 }[rarity] : Math.round(v * imp)])) }));
 }
 const FEAR_RESIST = 0.25, FEAR_RESIST_BOSS = 0.5, FEAR_BREAK = 0.75, FEAR_BREAK_DOT = 0.1;
@@ -830,7 +830,7 @@ const STARTER_AMULETS = [
   ['quickhand', 'Quickhand Pendant', 5, 10, 'Lots of cards, little mana: for cheap decks.'],
 ];
 const AMULET_STAT = { Warrior: 'Strength', Rogue: 'Strength', Mage: 'Intelligence', Paladin: 'Strength', Warlock: 'Intelligence' };
-function starterAmulet(cls, key) { const a = STARTER_AMULETS.find(x => x[0] === key) || STARTER_AMULETS[3]; return { slot: 'Amulet', name: a[1], rarity: 'White', ilvl: 1, stats: { [AMULET_STAT[cls] || 'Strength']: 3 }, imp2: { Draw: a[2], Regen: a[3] }, label: 'Starter amulet', amuletKey: a[0], r2: 1, r3: 1, r4: 1 }; }
+function starterAmulet(cls, key) { const a = STARTER_AMULETS.find(x => x[0] === key) || STARTER_AMULETS[3]; return { slot: 'Amulet', name: a[1], rarity: 'White', ilvl: 1, stats: { [AMULET_STAT[cls] || 'Strength']: 3 }, imp2: { Draw: a[2], Regen: a[3] }, label: 'Starter amulet', amuletKey: a[0], r2: 1, r3: 1, r4: 1, r5: 1 }; }
 const PRESSURE_START = 5, PRESSURE_STEP = 0.02;
 const ELEMENTS = ['Physical', 'Fire', 'Frost', 'Nature', 'Arcane', 'Shadow'];
 
@@ -848,7 +848,7 @@ function weaponFlat(x) {
 function sumGear(items) {
   const t = {}; const add = (k, v) => { t[k] = (t[k] || 0) + v; };
   let amulet = false, weaponDmg = 0;
-  for (const x of items) { if (!x) continue; const ok = (k) => k !== 'Mana Regen' || x.slot === 'Amulet', rv = (k, v) => !x.r2 && x.slot && /Recovery$/.test(k) ? halfUp(v) : !x.r3 && x.slot && CRIT_CUT[k] ? Math.max(1, Math.round(v * CRIT_CUT[k])) : v; for (const [k, v] of Object.entries(x.stats || {})) if (ok(k)) add(k, rv(k, v)); for (const [k, v] of Object.entries(x.imp2 || {})) if (ok(k)) add(k, rv(k, v)); if (x.slot === 'Amulet') amulet = true; weaponDmg += weaponFlat(x); }
+  for (const x of items) { if (!x) continue; const ok = (k) => k !== 'Mana Regen' || x.slot === 'Amulet', rv = (k, v) => !x.r2 && x.slot && /Recovery$/.test(k) ? halfUp(v) : !x.r3 && x.slot && CRIT_CUT[k] ? Math.max(1, Math.round(v * CRIT_CUT[k])) : !x.r5 && x.slot && MULTI_CUT[k] ? Math.max(1, Math.round(v * MULTI_CUT[k])) : v; for (const [k, v] of Object.entries(x.stats || {})) if (ok(k)) add(k, rv(k, v)); for (const [k, v] of Object.entries(x.imp2 || {})) if (ok(k)) add(k, rv(k, v)); if (x.slot === 'Amulet') amulet = true; weaponDmg += weaponFlat(x); }
   const res = {}, elem = {};
   for (const [k, v] of Object.entries(t)) { if (k.startsWith('Resistance:')) res[k.slice(11)] = (res[k.slice(11)] || 0) + v; if (k.startsWith('Elemental/Holy Damage:')) elem[k.slice(22)] = (elem[k.slice(22)] || 0) + v; }
   if (t['All Resistances']) for (const el of ELEMENTS) res[el] = (res[el] || 0) + t['All Resistances'];
@@ -1963,8 +1963,11 @@ function gearRules(G) { if (!G || G._rules) return; G._rules = true; for (const 
   for (const A of Object.values(G.arche || {})) { if (A.weights && A.slot !== 'Amulet') delete A.weights['Mana Regen']; if (A.imp2 === 'Mana Regen') A.imp2 = 'Frost Damage'; }
   for (const k of ['Recovery', 'Party Recovery']) { const st = G.stats[k]; if (st && !st._half) { st._half = true; st.min = Math.max(1, Math.round(st.min / 2)); st.max = Math.max(1, Math.round(st.max / 2)); st.pts *= 2; } }
   // Nov 1 (c): Crit Chance on gear rolls 75% less, Crit Damage 50% less (kept as fractions so higher map levels still grow; each roll is at least 1)
-  for (const [k, f] of Object.entries(CRIT_CUT)) { const st = G.stats[k]; if (st && !st._cut) { st._cut = true; st.min *= f; st.max *= f; st.pts /= f; } } }
+  for (const [k, f] of Object.entries(CRIT_CUT)) { const st = G.stats[k]; if (st && !st._cut) { st._cut = true; st.min *= f; st.max *= f; st.pts /= f; } }
+  for (const [k, f] of Object.entries(MULTI_CUT)) { const st = G.stats[k]; if (st && !st._cut) { st._cut = true; st.min *= f; st.max *= f; st.pts /= f; } } }
 const CRIT_CUT = { 'Crit Chance': 0.25, 'Crit Damage': 0.5 };
+// Nov 13: Multi-hit and Multicast on every weapon and piece of gear roll 30% less (rings can roll them now, and they had no brake at high map levels). Items made before are cut once (r5).
+const MULTI_CUT = { 'Multi-hit Chance': 0.7, 'Multicast Chance': 0.7 };
 // Bring an item made before those rules up to date (once; marked r2). Its Mana Regen affix is rerolled into a new stat and its Recovery halved.
 const halfUp = (v) => Math.max(1, Math.ceil(v / 2));
 function itemRules(it, data) {
@@ -1974,6 +1977,11 @@ function itemRules(it, data) {
       const b = D0.gear.bases.find(x => x.name === it.name), M = D0.maps[(b && b.map) || 'physical'], from = M && 'Resistance:' + (M.dropOld || 'Fire'), to = M && 'Resistance:' + M.element;
       if (M && from !== to && it.stats && it.stats[from]) { const onLines = (it.lines || []).filter(l => l.stat === from).reduce((t, l) => t + l.v, 0), imp = it.stats[from] - onLines;
         if (imp > 0) { it.stats = Object.assign({}, it.stats); it.stats[from] -= imp; if (it.stats[from] <= 0) delete it.stats[from]; it.stats[to] = (it.stats[to] || 0) + imp; } } } }
+  if (!it.r5) { it.r5 = 1; // Nov 13: Multi-hit and Multicast x0.7, each at least 1
+    for (const [k, f] of Object.entries(MULTI_CUT)) { const cut = (v) => Math.max(1, Math.round(v * f));
+      if (it.stats && it.stats[k]) { it.stats = Object.assign({}, it.stats); it.stats[k] = cut(it.stats[k]); }
+      if (it.imp2 && it.imp2[k]) { it.imp2 = Object.assign({}, it.imp2); it.imp2[k] = cut(it.imp2[k]); }
+      if (it.lines) it.lines = it.lines.map(l => l.stat === k ? Object.assign({}, l, { v: cut(l.v), lo: cut(l.lo || l.v), hi: cut(l.hi || l.v) }) : l); } }
   if (!it.r3) { it.r3 = 1; // Nov 1 (c): Crit Chance x0.25 and Crit Damage x0.5, each at least 1
     for (const [k, f] of Object.entries(CRIT_CUT)) { const cut = (v) => Math.max(1, Math.round(v * f));
       if (it.stats && it.stats[k]) { it.stats = Object.assign({}, it.stats); it.stats[k] = cut(it.stats[k]); }
@@ -2116,7 +2124,7 @@ function rollItem(data, rng, baseName, rarity, level) {
   const ilvl = Math.max(1, Math.min(100, Math.round(5 * level + 5 * Math.min(1, points / maxPts))));
   const slot = /Shield|Focus/.test(A.slot) ? 'Off-hand' : /Axe|Sword|Dagger|Mace|Wand|Maul|Warhammer|Staff|Scythe/.test(A.slot) ? 'Weapon' : A.slot;
   const out = { name: baseName, label: b.label, arch: b.arch, slot, hands: A.hands, rarity, ilvl, stats, imp2, lines, level };
-  out.rerolls = rerollPotential(out); out.r2 = 1; out.r3 = 1; out.r4 = 1; return out;
+  out.rerolls = rerollPotential(out); out.r2 = 1; out.r3 = 1; out.r4 = 1; out.r5 = 1; return out;
 }
 // ---------- Rerolls (Nov 1): every item drops with a reroll potential (White 0-1, Green 1-2, Blue 2-3, Purple 3-4). Spending a Reroll Token
 // and one point of potential rerolls one affix line of your choice: a new stat and value, rolled like a fresh drop of the same base, rarity and
@@ -2589,7 +2597,7 @@ POWERS.codex_soulbinder.dotDealt = POWERS.codex_soulbinder.dealt;
 CARDS_READY = true; if (DATA && DATA.gear) namedLoot(DATA);
 // Nov 13: 1H maces made before the change swap their Holy Damage implicit for Multi-hit and Multicast (a quarter of the Holy number each, at least 1)
 function maceFix(it) { if (!it || !it.imp2 || !(it.arch === '1H Mace' || it.label === '1H Mace' || /^(Flanged|Ember|Snowdrift|Fernleaf|Leyforged|Ashbone) Mace$/.test(it.name || ''))) return false; const v = it.imp2['Elemental/Holy Damage:Holy']; if (v == null) return false;
-  delete it.imp2['Elemental/Holy Damage:Holy']; const n = Math.max(1, Math.round(v / 4)); it.imp2['Multi-hit Chance'] = n; it.imp2['Multicast Chance'] = n; return true; }
+  delete it.imp2['Elemental/Holy Damage:Holy']; const n = Math.max(1, Math.round(v / 4 * 0.7)); it.r5 = 1; it.imp2['Multi-hit Chance'] = n; it.imp2['Multicast Chance'] = n; return true; }
 const API = { maceFix, STARTER_KITS, staffShieldOk, legalGear, CODEX_NEEDS, codexNeed, weaponSetup, CODEX_TOKEN_CHANCE, bossCodexPct, BOSS_CODEX_BARE, GROUPS, groupData, itemRules, rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);
