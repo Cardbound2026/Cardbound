@@ -89,6 +89,8 @@ function nameProblem(name) { name = (name || '').trim(); if (name.length < 2) re
 const MAX_HEROES = 20;
 function deleteChar(p, key) {
   if (!p.chars[key]) return { ok: false, why: 'No such hero' };
+  { const c = p.chars[key], same = stashMode(c) === (p.stashMode || 'normal'), v = same ? (p.vault = p.vault || []) : (p.vaultOther = p.vaultOther || []); p.stashOther = p.stashOther || [];   // Nov 14: a deleted hero's bags go to the bank
+    if (p.stashHero === key) { v.push(...p.stash); p.stash = []; p.stashHero = null; } const left = p.stashOther.filter(it => it.own === key); if (left.length) { p.stashOther = p.stashOther.filter(it => it.own !== key); for (const it of left) delete it.own; v.push(...left); } }
   delete p.chars[key];
   if (p.last) { if (p.last.cls === key) p.last.cls = Object.keys(p.chars)[0] || ''; if (p.last.party) p.last.party = p.last.party.filter(k => k !== key); }
   return { ok: true };
@@ -311,8 +313,13 @@ function arenaLock(p, cls) { if (OUT_CHECK(cls)) return 'You\'re out on a run: g
 const stashMode = (c) => c && c.hardcore ? 'hc' : 'normal';
 function useStash(p, key) {
   if (!p) return; syncCaps(p); p.stashMode = p.stashMode || 'normal'; p.stashOther = p.stashOther || []; p.stash = p.stash || [];
-  const want = stashMode(p.chars[key]); if (!p.chars[key] || p.stashMode === want) return;
-  const t = p.stash; p.stash = p.stashOther; p.stashOther = t; p.stashMode = want;
+  if (!p.chars[key]) return; bagsSplit(p, key);
+  // Nov 14: bags belong to one hero. p.stash is the bags of the hero you are playing (p.stashHero); every other hero's items wait in
+  // p.stashOther, each tagged with its owner (it.own). Only the bank (p.vault) is shared.
+  if (p.stashHero !== key) { if (p.chars[p.stashHero]) { for (const it of p.stash) it.own = p.stashHero; p.stashOther.push(...p.stash); p.stash = []; }
+    const mine = p.stashOther.filter(it => it.own === key); if (mine.length) { p.stashOther = p.stashOther.filter(it => it.own !== key); for (const it of mine) delete it.own; p.stash.push(...mine); } p.stashHero = key; }
+  const want = stashMode(p.chars[key]); if (p.stashMode === want) return;
+  p.stashMode = want;
   const v = p.vault || []; p.vault = p.vaultOther || []; p.vaultOther = v;
   const g = p.gold || 0; p.gold = p.goldOther || 0; p.goldOther = g; const k = p.ink || 0; p.ink = p.inkOther || 0; p.inkOther = k; const r = p.rerollTokens || 0; p.rerollTokens = p.tokensOther || 0; p.tokensOther = r;
 }
@@ -320,7 +327,13 @@ function useStash(p, key) {
 let VAULT_MAX = 40;
 function toVault(p, itemId) { p.vault = p.vault || []; const i = p.stash.findIndex(x => x.id === itemId); if (i < 0) return { ok: false, why: 'Not in your stash.' }; if (p.vault.length >= VAULT_MAX) return { ok: false, why: `Your vault is full (${VAULT_MAX}).` }; p.vault.unshift(p.stash.splice(i, 1)[0]); return { ok: true }; }
 function fromVault(p, itemId) { p.vault = p.vault || []; const i = p.vault.findIndex(x => x.id === itemId); if (i < 0) return { ok: false, why: 'Not in your vault.' }; if (p.stash.length >= STASH_MAX) return { ok: false, why: 'Your stash is full.' }; p.stash.unshift(p.vault.splice(i, 1)[0]); return { ok: true }; }
-function stashFor(p, c) { p.stashMode = p.stashMode || 'normal'; p.stashOther = p.stashOther || []; return stashMode(c) === p.stashMode ? p.stash : p.stashOther; }
+function stashFor(p, c) { p.stashOther = p.stashOther || []; const key = Object.keys(p.chars || {}).find(k => p.chars[k] === c); return !p.stashHero || key === p.stashHero ? p.stash : p.stashOther.filter(it => it.own === key); }
+// one time: the old account-wide bags (one normal set, one hardcore set) go to one hero each: the one you are playing if it is of that kind, else the hero of that kind with the most runs
+function bagsSplit(p, key) { if (p.invSplit) return; p.invSplit = 1; const keys = Object.keys(p.chars), of = (mode) => { const k = keys.filter(k2 => stashMode(p.chars[k2]) === mode); return stashMode(p.chars[key]) === mode ? key : k.sort((a, b) => (p.chars[b].runs || 0) - (p.chars[a].runs || 0))[0]; };
+  const cur = p.stashMode || 'normal', oth = cur === 'hc' ? 'normal' : 'hc', a = of(cur), b = of(oth), toBank = (L, mode) => { const v = mode === (p.stashMode || 'normal') ? (p.vault = p.vault || []) : (p.vaultOther = p.vaultOther || []); v.push(...L); };
+  const untagged = p.stashOther.filter(it => !it.own); p.stashOther = p.stashOther.filter(it => it.own);
+  if (b) { for (const it of untagged) it.own = b; p.stashOther.push(...untagged); } else if (untagged.length) toBank(untagged, oth);
+  if (a) p.stashHero = a; else if (p.stash.length) { toBank(p.stash, cur); p.stash = []; } }
 function equip(p, cls, itemId, slotWanted) {
   useStash(p, cls);
   { const lk = arenaLock(p, cls); if (lk) return { ok: false, why: lk }; }
