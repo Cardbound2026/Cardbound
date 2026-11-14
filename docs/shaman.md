@@ -18,15 +18,18 @@ Totems are saved for the Druid.
 3. **Caster.** Any Multicast also fires a third copy at 50% strength.
 4. **Melee.** Any Multi-hit also casts the last spell you cast, free, at half strength. The plan: cast one big spell, then
    stack Multi-hit to repeat it.
-5. **Support tank ("bard").** Lots of party buffs. Replaces the first idea (disarm on being hit, immune to Bleed and Poison).
-   Details open.
+5. **Support tank.** Your buffs and debuffs do not degrade over time. You take 5% less damage for each unique debuff on
+   the enemy. (Agreed Nov 14; replaces the "bard" party-buff idea and the earlier disarm idea.)
+   Talent in this tree: every Attack has a chance to taunt.
 6. **Control.** End a turn without acting and your next card is played twice. Tools to take an enemy's turn away:
    a polymorph-style card, card burn, mana burn, mana lockout next turn.
+   Agreed Nov 14: a 0-cost card counts as acting. Polymorph and mana lockout work on map bosses. Raid bosses stay immune
+   to control; against them the Control Shaman simply acts every other turn (skip a turn, next card plays twice).
 
 ## Open questions
 
-- Control: does a 0-cost card count as acting? Do polymorph and mana lockout work on bosses (raid bosses ignore all control today)?
-- Support tank: which buffs, and what makes it a tank (taunt, Block, damage shared from allies)?
+- Support tank: taunt chance per Attack (number, and which talent row)? Is the 5% per debuff capped? "Do not degrade" covers
+  the Shaman's own buffs and the debuffs the Shaman applies: does it include Bleed/Poison stacks ticking down?
 - Hybrid: is there a cap on the stored Multicast / Multi-hit chance?
 - The Tanglewild (map 4) is the Nature map: its monsters resist Nature. A one-element class needs an answer there
   (Paladin's Holy ignores resistance; lightning could ignore part of it, or a codex could convert).
