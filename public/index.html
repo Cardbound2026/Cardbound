@@ -2210,6 +2210,8 @@ function install(K) {
     const asAtk = d.type === 'Attack' || (both && d.type === 'Skill'), asSkl = d.type === 'Skill' || (both && d.type === 'Attack');
     if (d.type === 'Attack') {
       if (p.shLW > 0) { const e = tgtOf(cb, tgt && !tgt.isPlayer ? tgt : null); if (e) { p.shLW--; NAT(cb, p, e, 4, 'Lightning Weapon', 'Attack'); stat(cb, e, 1); } }
+      if (p.shFW > 0) { const e = tgtOf(cb, tgt && !tgt.isPlayer ? tgt : null); if (e) { p.shFW--; cb.powerHit(p, e, 4, 'Flame Weapon', 'Fire', 'Attack'); if (e.hp > 0) cb.applyDot(e, 'burn', 1); } }   // Nov 14: the fire and frost imbues
+      if (p.shIW > 0) { const e = tgtOf(cb, tgt && !tgt.isPlayer ? tgt : null); if (e) { p.shIW--; cb.powerHit(p, e, 4, 'Frost Weapon', 'Frost', 'Attack'); if (e.hp > 0) cb.applyChill(e, 1); } }
       if (S.didMH) {
         if (cb.has(p, 'codex_skybreaker') && p.shLast) recast(cb, p, p.shLast, tgt, 0.5 + shx(cb, p, 'skyCopy') / 100, 'Skybreaker');
         if (has(cb, p, 'rain_of_maces')) { const o = others(cb, tgt)[0]; if (o && cb._lastLost > 0) { cb.powerHit(p, o, Math.max(1, Math.round(cb._lastLost / 2)), 'Rain of Maces', 'Physical', 'Attack'); } }
@@ -2359,6 +2361,8 @@ function install(K) {
 
   // ================= hybrid bridges =================
   W('lightning_weapon', 'Lightning Weapon', 'White', 'Skill', 10, 'self', 'Nature', 'Your next 3 Attacks also deal 4 Nature damage and apply 1 Static.', (cb, t, p) => { p.shLW = (p.shLW || 0) + 3; say(cb, `Lightning Weapon: ${p.shLW} charged Attacks.`); }, {});
+  W('flame_weapon', 'Flame Weapon', 'White', 'Skill', 10, 'self', 'Fire', 'Your next 3 Attacks also deal 4 Fire damage and apply 1 Burn.', (cb, t, p) => { p.shFW = (p.shFW || 0) + 3; say(cb, `Flame Weapon: ${p.shFW} burning Attacks.`); }, {});
+  W('frost_weapon', 'Frost Weapon', 'White', 'Skill', 10, 'self', 'Frost', 'Your next 3 Attacks also deal 4 Frost damage and apply 1 Chill.', (cb, t, p) => { p.shIW = (p.shIW || 0) + 3; say(cb, `Frost Weapon: ${p.shIW} freezing Attacks.`); }, {});
   W('surge', 'Surge', 'Green', 'Skill', 10, 'self', null, 'Your next spell this turn costs 10 less for each Attack you played this turn.', (cb, t, p) => { const n = 10 * p.turnAttacks; if (!n) { say(cb, 'No Attacks played yet this turn.'); return; } p.turn.shSurge = (p.turn.shSurge || 0) + n; p.turn.costSkill = (p.turn.costSkill || 0) - n; say(cb, `Surge: the next spell costs ${n} less.`); }, {});
   W('war_chant', 'War Chant', 'Green', 'Skill', 10, 'self', null, 'Your next Attack deals 5 more damage for each Skill you played this turn, this one included.', (cb, t, p) => { const n = 5 * (p.turnSkills + 1); p.nextAttackFlat = (p.nextAttackFlat || 0) + n; say(cb, `War Chant: +${n} damage on the next Attack.`); }, {});
   W('storm_dance', 'Storm Dance', 'Green', 'Skill', 10, 'self', null, 'Draw 2. If you then hold both an Attack and a Skill, gain 10 mana.', (cb, t, p) => { cb.drawCards(p, 2); const ty = new Set(p.hand.map(c => C[c.key].type)); if (ty.has('Attack') && ty.has('Skill')) { p.mana += 10; say(cb, '+10 mana.'); } }, { draw: 2 });
@@ -8224,8 +8228,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794687480104';
-  const CB_BUILD = 'df1d1d2af5'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794687571345';
+  const CB_BUILD = 'cccdb59aa9'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -9342,6 +9346,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Feature', "Two more Shaman weapon imbues, to go with Lightning Weapon: Flame Weapon (your next 3 Attacks also deal 4 Fire damage and apply 1 Burn) and Frost Weapon (4 Frost damage and 1 Chill). White Skills, 10 mana. They stack with each other."],
       ['Feature', "When a Hardcore hero dies, everyone online sees it in chat: the hero's name, the map and its level, and the row (or the boss) where they fell."],
       ['Feature', "New Shaman card: Electric Burn (Blue Skill, 20 mana). Consume all Static on a target and apply 5 Burn for each one: 10 Static becomes 50 Burn."],
       ['Interface', "Every hit gets its own damage number. A Multi-hit, a card that strikes twice or a spell that is cast again now shows each number a beat apart, fanned out, instead of one total."],
@@ -9354,7 +9359,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       ['Balance', "Mage: Ice Block now also makes you immune to all damage until your next turn (it already removed your debuffs, gave 10 Barrier and blocked new debuffs)."],
       ['Feature', "A sixth class: the Shaman. A storm hybrid that mixes mace Attacks with lightning spells and is built on Multi-hit and Multicast. Nature damage only, no Bleed and no Poison. Its defence is Guard: Dodge, or Block if you carry a shield. Pick it at the campfire with one of four starting decks."],
       ['Feature', "Static: the Shaman's lightning builds Static on a target. It never fades. Spend it with Electrocute (10 Static: a 1-turn Stun for 0 mana), Mass Electrocute (1 turn for every 10), Discharge and more. These Stuns work on bosses and can be chained; raid bosses are immune."],
-      ['Feature', "141 Shaman cards, six codexes (Twinstorm, Rainbringer, Stormcaller, Skybreaker, Stormwarden, Calm Eye), six talent trees and 18 test decks at Tinker Pip. Each map boss can drop one Shaman codex. Shaman cards drop like any other class's."],
+      ['Feature', "143 Shaman cards, six codexes (Twinstorm, Rainbringer, Stormcaller, Skybreaker, Stormwarden, Calm Eye), six talent trees and 18 test decks at Tinker Pip. Each map boss can drop one Shaman codex. Shaman cards drop like any other class's."],
       ['Art', "Shaman cards have their own storm-steel border. Their pictures are still to come: for now they show a symbol."],
       ['Change', "The Mage's class colour is a brighter arcane blue; the Shaman takes a deep storm blue."],
       ['Interface', "Clicking another class's codex in your bags now shows the Equip button greyed out, with the class that can use it."],
@@ -17056,7 +17061,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if (!a.isPlayer && a.sh) { if (a.sh.soaked > 0) t.push(`<span class="tag bad" title="Takes 20% more Nature damage">Soaked</span>`); if (a.sh.deaf > 0) t.push(`<span class="tag bad" title="Deals 15% less damage">Deafened</span>`); if (a.sh.unsteady > 0) t.push(`<span class="tag bad" title="Its Block stops nothing">Unsteady</span>`); if (a.sh.worn > 0) t.push(`<span class="tag bad" title="All of its resistances are 10% lower">Stormworn</span>`); }
     if (!a.isPlayer && a.stunTurns > 0) t.push(`<span class="tag bad" title="Loses its next ${a.stunTurns > 1 ? a.stunTurns + ' turns' : 'turn'}">${a.toad ? 'Toad' : 'Stunned'}${a.stunTurns > 1 ? ' ' + a.stunTurns : ''}</span>`);
     if (!a.isPlayer && a.manaLock > 0) t.push(`<span class="tag bad" title="Gains no mana on its next turn">Mana Lock</span>`);
-    if (a.isPlayer && a.cls === 'Shaman') { if (a.shMH) t.push(`<span class="tag good" title="Stored Multi-hit chance for your next Attack (Twinstorm)">+${a.shMH}% Multi-hit</span>`); if (a.shMC) t.push(`<span class="tag good" title="Stored Multicast chance for your next spell (Twinstorm)">+${a.shMC}% Multicast</span>`); if (a.shSure) t.push(`<span class="tag good" title="Your next Attack is a sure Multi-hit (Rainbringer)">Sure Multi-hit</span>`); if (a.shNextX > 1) t.push(`<span class="tag good" title="Your next card is played ${a.shNextX === 3 ? 'three times' : 'twice'}">Next card x${a.shNextX}</span>`); if (a.shCoil) t.push(`<span class="tag good" title="Your next card deals ${a.shCoil * 30}% more">Coiled x${a.shCoil}</span>`); if (a.shLW) t.push(`<span class="tag good" title="Charged Attacks left: +4 Nature damage and 1 Static each">Lightning Weapon ${a.shLW}</span>`); if (a.shDmgUp) t.push(`<span class="tag good" title="Gathering Storm">+${a.shDmgUp}% damage</span>`); if (a.shSkip > 0 || (a.turn && a.turn.noAct)) t.push(`<span class="tag bad" title="Turns you cannot act">Sitting out${a.shSkip > 0 ? ' ' + a.shSkip : ''}</span>`); }
+    if (a.isPlayer && a.cls === 'Shaman') { if (a.shMH) t.push(`<span class="tag good" title="Stored Multi-hit chance for your next Attack (Twinstorm)">+${a.shMH}% Multi-hit</span>`); if (a.shMC) t.push(`<span class="tag good" title="Stored Multicast chance for your next spell (Twinstorm)">+${a.shMC}% Multicast</span>`); if (a.shSure) t.push(`<span class="tag good" title="Your next Attack is a sure Multi-hit (Rainbringer)">Sure Multi-hit</span>`); if (a.shNextX > 1) t.push(`<span class="tag good" title="Your next card is played ${a.shNextX === 3 ? 'three times' : 'twice'}">Next card x${a.shNextX}</span>`); if (a.shCoil) t.push(`<span class="tag good" title="Your next card deals ${a.shCoil * 30}% more">Coiled x${a.shCoil}</span>`); if (a.shLW) t.push(`<span class="tag good" title="Charged Attacks left: +4 Nature damage and 1 Static each">Lightning Weapon ${a.shLW}</span>`); if (a.shFW) t.push(`<span class="tag good" title="Burning Attacks left: +4 Fire damage and 1 Burn each">Flame Weapon ${a.shFW}</span>`); if (a.shIW) t.push(`<span class="tag good" title="Freezing Attacks left: +4 Frost damage and 1 Chill each">Frost Weapon ${a.shIW}</span>`); if (a.shDmgUp) t.push(`<span class="tag good" title="Gathering Storm">+${a.shDmgUp}% damage</span>`); if (a.shSkip > 0 || (a.turn && a.turn.noAct)) t.push(`<span class="tag bad" title="Turns you cannot act">Sitting out${a.shSkip > 0 ? ' ' + a.shSkip : ''}</span>`); }
     if (!a.isPlayer && a.parryBack) t.push(`<span class="tag bad" title="Attacks into its Parry take damage back">Riposte</span>`);
     if (!a.isPlayer && a.thorns) t.push(`<span class="tag bad">Spikes ${a.thorns}</span>`);
     if (!a.isPlayer && a.regenDown.length) t.push(`<span class="tag bad">Regen -${a.regenDown.reduce((s, x) => s + x.n, 0)}</span>`);

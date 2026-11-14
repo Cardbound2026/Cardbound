@@ -211,3 +211,5 @@ Stormheart was dropped (the third hit stays with the Healer's guaranteed Multi-h
 | Ride the Wind | Green, 10, Skill | Gain 20 Guard. |
 | Become the Storm | Blue, 20, Skill | Gain 40 Guard. |
 | Electric Burn | Blue, 20, Skill | Consume all Static on the target. Apply 5 Burn for each Static consumed (10 Static = 50 Burn). |
+| Flame Weapon | White, 10, Skill | Your next 3 Attacks also deal 4 Fire damage and apply 1 Burn. |
+| Frost Weapon | White, 10, Skill | Your next 3 Attacks also deal 4 Frost damage and apply 1 Chill. |

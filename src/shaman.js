@@ -143,6 +143,8 @@ function install(K) {
     const asAtk = d.type === 'Attack' || (both && d.type === 'Skill'), asSkl = d.type === 'Skill' || (both && d.type === 'Attack');
     if (d.type === 'Attack') {
       if (p.shLW > 0) { const e = tgtOf(cb, tgt && !tgt.isPlayer ? tgt : null); if (e) { p.shLW--; NAT(cb, p, e, 4, 'Lightning Weapon', 'Attack'); stat(cb, e, 1); } }
+      if (p.shFW > 0) { const e = tgtOf(cb, tgt && !tgt.isPlayer ? tgt : null); if (e) { p.shFW--; cb.powerHit(p, e, 4, 'Flame Weapon', 'Fire', 'Attack'); if (e.hp > 0) cb.applyDot(e, 'burn', 1); } }   // Nov 14: the fire and frost imbues
+      if (p.shIW > 0) { const e = tgtOf(cb, tgt && !tgt.isPlayer ? tgt : null); if (e) { p.shIW--; cb.powerHit(p, e, 4, 'Frost Weapon', 'Frost', 'Attack'); if (e.hp > 0) cb.applyChill(e, 1); } }
       if (S.didMH) {
         if (cb.has(p, 'codex_skybreaker') && p.shLast) recast(cb, p, p.shLast, tgt, 0.5 + shx(cb, p, 'skyCopy') / 100, 'Skybreaker');
         if (has(cb, p, 'rain_of_maces')) { const o = others(cb, tgt)[0]; if (o && cb._lastLost > 0) { cb.powerHit(p, o, Math.max(1, Math.round(cb._lastLost / 2)), 'Rain of Maces', 'Physical', 'Attack'); } }
@@ -292,6 +294,8 @@ function install(K) {
 
   // ================= hybrid bridges =================
   W('lightning_weapon', 'Lightning Weapon', 'White', 'Skill', 10, 'self', 'Nature', 'Your next 3 Attacks also deal 4 Nature damage and apply 1 Static.', (cb, t, p) => { p.shLW = (p.shLW || 0) + 3; say(cb, `Lightning Weapon: ${p.shLW} charged Attacks.`); }, {});
+  W('flame_weapon', 'Flame Weapon', 'White', 'Skill', 10, 'self', 'Fire', 'Your next 3 Attacks also deal 4 Fire damage and apply 1 Burn.', (cb, t, p) => { p.shFW = (p.shFW || 0) + 3; say(cb, `Flame Weapon: ${p.shFW} burning Attacks.`); }, {});
+  W('frost_weapon', 'Frost Weapon', 'White', 'Skill', 10, 'self', 'Frost', 'Your next 3 Attacks also deal 4 Frost damage and apply 1 Chill.', (cb, t, p) => { p.shIW = (p.shIW || 0) + 3; say(cb, `Frost Weapon: ${p.shIW} freezing Attacks.`); }, {});
   W('surge', 'Surge', 'Green', 'Skill', 10, 'self', null, 'Your next spell this turn costs 10 less for each Attack you played this turn.', (cb, t, p) => { const n = 10 * p.turnAttacks; if (!n) { say(cb, 'No Attacks played yet this turn.'); return; } p.turn.shSurge = (p.turn.shSurge || 0) + n; p.turn.costSkill = (p.turn.costSkill || 0) - n; say(cb, `Surge: the next spell costs ${n} less.`); }, {});
   W('war_chant', 'War Chant', 'Green', 'Skill', 10, 'self', null, 'Your next Attack deals 5 more damage for each Skill you played this turn, this one included.', (cb, t, p) => { const n = 5 * (p.turnSkills + 1); p.nextAttackFlat = (p.nextAttackFlat || 0) + n; say(cb, `War Chant: +${n} damage on the next Attack.`); }, {});
   W('storm_dance', 'Storm Dance', 'Green', 'Skill', 10, 'self', null, 'Draw 2. If you then hold both an Attack and a Skill, gain 10 mana.', (cb, t, p) => { cb.drawCards(p, 2); const ty = new Set(p.hand.map(c => C[c.key].type)); if (ty.has('Attack') && ty.has('Skill')) { p.mana += 10; say(cb, '+10 mana.'); } }, { draw: 2 });
