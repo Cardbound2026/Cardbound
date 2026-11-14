@@ -57,3 +57,8 @@ print(rep)
 for k, f in (('ant', lambda a: (abs(a[..., 0].astype(int) - a[..., 1]) < 6) & (abs(a[..., 1].astype(int) - a[..., 2]) < 6) & (a[..., 0] > 150)), ('phoenix', lambda a: a[..., :3].min(-1) > 215)):
     p = f'{H}/../mounts/{k}.png'
     if os.path.exists(p): a = np.array(Image.open(p).convert('RGBA')); a[f(a)] = 0; Image.fromarray(a).save(p)
+
+# the flying carpet floats: lift every frame 16 px off the ground line
+p = f'{H}/../mounts/carpet.png'
+if os.path.exists(p): a = np.array(Image.open(p).convert('RGBA')); b = np.zeros_like(a); b[:-16] = a[16:]; \
+    [b.__setitem__((slice(r * 128 + 112, r * 128 + 128),), 0) for r in range(3)]; Image.fromarray(b).save(p)
