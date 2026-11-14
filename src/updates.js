@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Change', "The Previous interface and Previous enemy art settings are removed. The game has one look now."],
       ['Change', "Bags now belong to each hero: what one hero carries, the others can't see. Only the bank is shared, so put gear in the bank to pass it to another hero. What was in your shared bags stays with the hero you were playing. Bag slots (the extra space from bags you equip) still count for every hero. A deleted hero's bags go to the bank."],
       ['Interface', "Group finder: a red Cancel my notice button, both next to Update and on your own notice in the list, takes your posting down."],
       ['Interface', "Rest the mouse on a bag item for a second and its full card shows, with item power and what it would replace, the same as clicking it but without the buttons. Move the mouse and it goes away."],
@@ -220,7 +221,6 @@
     ] },
     { date: '2026-11-10', items: [
       ['Art', "New pixel-art interface in a Gothic Cathedral style: carved stone frames with tarnished gold for windows and panels, new buttons, tabs and health bars. This is the first piece of the move to high-detail pixel art."],
-      ['Change', "Menu > Settings > Previous interface switches back to the stone and wood look if you prefer it."],
       ['Art', "New Warlock card frames: the orb colour shows the card's rarity (silver, green, blue, gold), mana cost in the top-left orb, card level in the top-right orb, and a plaque under the picture naming the damage and card type (for example Shadow Skill)."],
       ['Art', "New card frames for Paladin (gold-trimmed stone with a cross), Rogue (leather, dagger and poison), Mage (purple cloth, scrolls and runes) and Warrior (wood, chains and red cloth), in all four rarities, laid out like the Warlock frames."],
       ['Art', "Enemy cards get new frames by type: rusted iron for soldiers, wood for outlaws, fur for beasts, chains for constructs, blood-stained iron for brutes, vines for the nature map and pale fur for the frost map. Other enemies keep their current frames for now."],
@@ -230,7 +230,6 @@
       ['Art', "Tanglewild joins them: spitting toads, briar wolves, giant wasps, bog lurkers, treants, a broodmother spider, six elites (the Swamp Hag and her cauldron, the Hive Queen, the Colossal Treant and more) and the Elder Thornheart, whose chest splits open into the Wild Bloom at half health."],
       ['Art', "The Shattered Spire is next: mana wisps, scroll thieves, ley hounds, warded golems, living tomes, a rune titan, a plain-iron Arbiter, six elites (the Mirror Twins, the Clockwork Oracle, the Bursar and more) and Archmagus Ilvar, cracked open and leaking violet light, who unbinds himself at half health."],
       ['Art', "And the Hollow Crypts finish the set: crypt rats, restless skeletons, ghouls, shades, a bone golem, a death knight, a siege engine of bones, six elites (the Bell of Mourning on its bone legs, the Weeping Sisters, the Crimson Count and more) and the Hollow King, who calls the Hollow Court at half health. Every enemy in the game now has animated pixel art."],
-      ['Change', "Menu > Settings > Previous enemy art switches back to the still pictures."],
     ] },
     { date: '2026-11-07', items: [
       ['Change', "New Warriors with the Berserker starting deck begin with a two-handed Bearded Greataxe (no shield), so Colossus works from the start."],

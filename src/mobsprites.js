@@ -2,7 +2,7 @@
 // Sheets: public/img/mobs/<enemy key>.webp, one row per animation, every cell the same size; <key>_p.webp is a still idle frame
 // for the turn order. The manifest (inlined at build) lists each sheet's cell size, its animations and frame counts, and which
 // animation to play for an attack, an area attack, a buff, a defence, a hit and (bosses) the phase change.
-// Enemies without a sheet keep the Gothic Ink art. Settings > "Previous enemy art" turns all of this off.
+// Enemies without a sheet keep the Gothic Ink art.
 // TO REMOVE: delete this file, the /*MOBS*/ line in src/template.html and its entry in build.js.
 (function () {
   const M = /*MOB-MANIFEST*/{};

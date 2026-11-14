@@ -952,7 +952,7 @@ body.inkui:not(.ui-classic) .item.itm .acts .btn:disabled { opacity: .45; filter
 .btn:not(.primary) { background: linear-gradient(180deg, #2d241b, #1b1611); border-color: #5e4630; color: #e8d8ba; box-shadow: inset 0 1px 0 rgba(255,220,160,.08); }
 .btn:not(.primary):hover:not(:disabled) { border-color: #a07a46; color: #fff1d6; }
 /* ===== Pixel UI (Nov 10): Gothic Cathedral pixel-art kit (made in PixelLab; files in img/ui/px; source art in Cardbound/art/ui).
-   Laid over the Gothic Ink skin (inkui.js): replaces its stone frames, wooden buttons, tabs and bars. Menu > Settings > "Previous interface" turns it off (body.ui-classic). ===== */
+   Laid over the Gothic Ink skin (inkui.js): replaces its stone frames, wooden buttons, tabs and bars. ===== */
 body.inkui:not(.ui-classic) .sheetbox, body.inkui:not(.ui-classic) .modal .box { border: 26px solid transparent; border-image: url(img/ui/px/window.png) 40 fill / 40px / 0 repeat; image-rendering: pixelated; background: none; border-radius: 0; }
 body.inkui:not(.ui-classic) .panel, body.inkui:not(.ui-classic) .talk { border: 24px solid transparent; border-image: url(img/ui/px/panel.png) 40 fill / 40px / 0 repeat; image-rendering: pixelated; background: none; border-radius: 0; }
 body.inkui:not(.ui-classic) .btn.primary, body.inkui:not(.ui-classic) .btn:not(.primary) { border-image: url(img/ui/px/button.png) 14 22 fill / 14px 22px / 0 repeat; image-rendering: pixelated; background: none; box-shadow: none; border-radius: 0; }
@@ -2654,7 +2654,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
 
   // ---------- settings (this browser)
   const settings = (() => { try { return Object.assign({ fast: false }, JSON.parse(localStorage.getItem('cb-settings') || '{}')); } catch (e) { return { fast: false }; } })();
-  document.body.classList.toggle('ui-classic', !!settings.classicUi); // Nov 10: pixel-art UI is the default; Settings can switch back
+  if ('classicUi' in settings || 'classicFoes' in settings) { delete settings.classicUi; delete settings.classicFoes; try { localStorage.setItem('cb-settings', JSON.stringify(settings)); } catch (e) {} } // Nov 14: the previous interface and previous enemy art are gone for good; the saved switches are wiped
   // combat log: drag its left edge (width), bottom edge (height) or the corner; double-click a grip to reset; remembered per browser
   function applyLedgerSize() { const sc = $('scrCombat'); if (!sc) return; for (const [k, v] of [['--chatW', settings.chatW], ['--chatH', settings.chatH]]) { if (v) sc.style.setProperty(k, v + 'px'); else sc.style.removeProperty(k); } if (settings.ledgerW) sc.style.setProperty('--ledgerW', settings.ledgerW + 'px'); else sc.style.removeProperty('--ledgerW'); if (settings.ledgerH) sc.style.setProperty('--ledgerH', settings.ledgerH + 'px'); else sc.style.removeProperty('--ledgerH'); }
   (function () {
@@ -2854,8 +2854,6 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
       ${typeof socOn === 'function' && socOn() ? `<button class="btn" id="mnNet">Connection details (co-op)</button>` : ''}
       <h3 style="font-size:20px;margin-top:6px">Settings</h3>
       <label class="toggle"><input type="checkbox" id="setFast" ${settings.fast ? 'checked' : ''}> Fast enemy turns</label>
-      <label class="toggle"><input type="checkbox" id="setClassic" ${settings.classicUi ? 'checked' : ''}> Previous interface (the stone and wood look from before the pixel art)</label>
-      <label class="toggle"><input type="checkbox" id="setClassicFoes" ${settings.classicFoes ? 'checked' : ''}> Previous enemy art (the still pictures from before the animated pixel monsters)</label>
       <h3 style="font-size:20px;margin-top:6px">Sound</h3>
       <label class="setrow">Music <input type="range" id="setMusic" min="0" max="100" value="${window.CB_AUDIO ? Math.round(CB_AUDIO.get().music * 100) : 0}"></label>
       <label class="setrow">Effects <input type="range" id="setSfx" min="0" max="100" value="${window.CB_AUDIO ? Math.round(CB_AUDIO.get().sfx * 100) : 0}"></label>
@@ -2874,8 +2872,6 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     if (window.CB_AUDIO) { $('setMusic').oninput = (e) => CB_AUDIO.vol('music', e.target.value / 100); $('setSfx').oninput = (e) => { CB_AUDIO.vol('sfx', e.target.value / 100); }; $('setSfx').onchange = () => CB_AUDIO.sfx('hit'); }
     $('setRatio').onchange = (e) => { settings.ratio = e.target.value; saveSettings(); applyDisplay(); }; $('setSize').onchange = (e) => { settings.size = +e.target.value; saveSettings(); applyDisplay(); };
     $('setFull').onclick = () => { try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); } catch (e) {} closeModal(); };
-    $('setClassic').onchange = (e) => { settings.classicUi = e.target.checked; saveSettings(); document.body.classList.toggle('ui-classic', !!settings.classicUi); };
-    $('setClassicFoes').onchange = (e) => { settings.classicFoes = e.target.checked; saveSettings(); if (cb && typeof render === 'function') try { render(); } catch (er) {} };
     if ($('mnLeave')) $('mnLeave').onclick = () => {
       modal(`<h2 class="loss">Leave this run?</h2><p>You go back to Emberwatch now. Everything in your loot sack (items, cards and gold found this run) is lost. Gear you are wearing, your deck and any merchant orders are kept.</p><div class="row"><button class="btn" id="mnConfirm">Leave and lose the sack</button><button class="btn primary" id="mClose">Keep playing</button></div>`);
       $('mClose').onclick = closeModal; $('mnConfirm').onclick = leaveRun;
@@ -3499,7 +3495,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     if (!a.isPlayer && a.key === 'training_dummy') return `<img class="inkfig pxhero" src="img/mobs/dummy.png" style="--s:1.05" alt="" draggable="false">`; // pixel-art training dummy
     if (a.isPlayer && window.CB_HEROPUP && window.CB_FORGE) return CB_FORGE.figureHtml(a); // Nov 12: pixel-art hero puppets (src/heropup.js)
     if (unit && a.isPlayer && window.CB_FORGE && a.look && !(window.CB_INK && CB_INK.pxHero && CB_INK.pxHero(a.cls))) return CB_FORGE.figureHtml(a, window.CB_INK ? CB_INK.figure(a) || '' : ''); // live sprite from the gear the hero wears (src/forge.js)
-    if (window.CB_MOBS && !settings.classicFoes) { const px = CB_MOBS.figure(a, unit); if (px) return px; } // Nov 10: animated pixel monsters (src/mobsprites.js)
+    if (window.CB_MOBS) { const px = CB_MOBS.figure(a, unit); if (px) return px; } // Nov 10: animated pixel monsters (src/mobsprites.js)
     if (window.CB_INK) { const ink = CB_INK.figure(a); if (ink) return ink; } // Gothic Ink art pack (src/inkart.js); without it, the drawn figures below
     if (a.isPlayer) { const col = CC[a.cls]; return `<svg viewBox="0 0 80 100"><ellipse cx="40" cy="96" rx="26" ry="4" fill="#000" opacity=".4"/><path d="M28 40h24l4 34-6 22H30l-6-22z" fill="#5d5a55"/><circle cx="40" cy="26" r="13" fill="#8a847a"/><path d="M27 24h26v6H27z" fill="${col}"/><path d="M14 44l14-4 3 30-12 8-7-14z" fill="#3b3128" stroke="${col}" stroke-width="2"/><path d="M58 30l4-2 2 46-4 2z" fill="#c9c3b8"/></svg>`; }
     const c = a.creature, big = a.tier === 'Elite' || a.tier === 'Boss';
