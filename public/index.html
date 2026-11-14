@@ -7521,8 +7521,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794614911164';
-  const CB_BUILD = '5ebe73694b'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794615007349';
+  const CB_BUILD = 'ecc31a6146'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8628,6 +8628,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Interface', "Poison, Bleed, Burn and Dread each explain themselves in full when you hover them, with an example, instead of saying 'like Bleed' or 'like Poison'."],
       ['Art', "Skull Shop: four new auras (Circling Skull, Poison Cloud, Blood Rain, Golden Orb), Poison and Holy footsteps, and Wings are now Back cosmetics with eight new things to carry: a gravestone, a poison flask, bloody crossed swords, a chained coffin, a skull war banner, a sack of loot, a rusty anchor and an ale keg."],
       ['Feature', "Weapon looks by weapon type in the Skull Shop: pick a look for your daggers, another for your greatsword, and so on. The first few are in (Frost Fang, a Slippery Fish for a dagger, a Giant's Femur for a maul, a Golden Greatsword); many more are on the way."],
       ['Art', "Shoulder, bracer and glove items have proper pictures now: 54 new icons (plate, leather and cloth for each of the six maps) in place of the blurry scraps cut from the hero art."],
@@ -13706,10 +13707,10 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     ['Debuffs', [
       ['Weak', 'Deals that % less damage. Halves at the end of each turn.'],
       ['Vulnerable', 'Takes that % more Physical damage, up to +50%. Halves at the end of each turn. (Magic damage has Magic Vulnerability.)'],
-      ['Bleed', 'Takes damage equal to its stacks at the start of its turn (Block absorbs it), then loses 10% of its stacks (at least 1).'],
-      ['Poison', 'Like Bleed, but ignores Block.'],
-      ['Burn', 'Like Bleed: damage each turn equal to its stacks, then -1.'],
-      ['Dread', 'Warlock. Like Poison: ignores Block, deals its stacks at the start of the target\'s turn, then loses 10% of its stacks (at least 1). Scales with Intelligence.'],
+      ['Bleed', 'Damage over time. At the start of its turn the target takes damage equal to its Bleed stacks; Block can soak it. Then the Bleed shrinks by 10% (at least 1), so 10 Bleed deals 10, then 9, then 8, and so on. More Bleed adds to the stack. Your Strength makes the Bleed you apply bigger.'],
+      ['Poison', 'Damage over time that goes straight through Block. At the start of its turn the target takes damage equal to its Poison stacks. Then the Poison shrinks by 10% (at least 1), so 10 Poison deals 10, then 9, then 8, and so on. More Poison adds to the stack. Your Strength makes the Poison you apply bigger.'],
+      ['Burn', 'Fire damage over time. At the start of its turn the target takes damage equal to its Burn stacks; Block can soak it. Then the Burn drops by 1, so 10 Burn deals 10, then 9, then 8, and so on. More Burn adds to the stack.'],
+      ['Dread', 'Warlock. Shadow damage over time that goes straight through Block. At the start of its turn the target takes damage equal to its Dread stacks, then the Dread shrinks by 10% (at least 1). More Dread adds to the stack. Your Intelligence makes the Dread you apply bigger.'],
       ['Rot', 'Warlock. Each application deals its amount over 4 turns (12 Rot: 3 a turn) and ignores Block; every application keeps its own timer. Scales with Intelligence.'],
       ['Fear', 'The enemy skips its attacks on its next turn. Monsters resist Fear 25% of the time (bosses 50%), and direct damage that lands on a Feared monster has a 75% chance to snap it out (damage over time: 10% per tick). After a Fear or Stun lands, that enemy can\'t be Feared or Stunned for 2 rounds (3 for bosses).'],
       ['Stunned', 'The enemy loses its whole next turn. Bosses are only Feared by it.'],

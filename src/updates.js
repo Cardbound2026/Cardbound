@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Interface', "Poison, Bleed, Burn and Dread each explain themselves in full when you hover them, with an example, instead of saying 'like Bleed' or 'like Poison'."],
       ['Art', "Skull Shop: four new auras (Circling Skull, Poison Cloud, Blood Rain, Golden Orb), Poison and Holy footsteps, and Wings are now Back cosmetics with eight new things to carry: a gravestone, a poison flask, bloody crossed swords, a chained coffin, a skull war banner, a sack of loot, a rusty anchor and an ale keg."],
       ['Feature', "Weapon looks by weapon type in the Skull Shop: pick a look for your daggers, another for your greatsword, and so on. The first few are in (Frost Fang, a Slippery Fish for a dagger, a Giant's Femur for a maul, a Golden Greatsword); many more are on the way."],
       ['Art', "Shoulder, bracer and glove items have proper pictures now: 54 new icons (plate, leather and cloth for each of the six maps) in place of the blurry scraps cut from the hero art."],
