@@ -563,7 +563,7 @@ const CODEXES = {
   // Nov 14: the Shaman's six (the passives are in src/shaman.js)
   Shaman: [['twinstorm', 'Twinstorm', '50% of your Strength is added as Intelligence and 50% of your Intelligence as Strength. Each Attack you play adds 10% Multicast chance and each Skill adds 10% Multi-hit chance; the stored chance is spent when it triggers.'],
     ['rainbringer', 'Rainbringer', 'Your heals can Multicast. A heal that Multicasts makes your next Attack a sure Multi-hit, and your own Multi-hit chance then becomes the chance of a third hit.'],
-    ['stormcaller', 'Stormcaller', 'Whenever one of your spells Multicasts, a third copy is cast at 50% strength.'],
+    ['stormcaller', 'Stormcaller', 'Whenever one of your spells Multicasts, a third copy is cast at 50% power.'],
     ['skybreaker', 'Skybreaker', 'Whenever one of your Attacks Multi-hits, the last Skill you played is played again, free. Its damage is halved. (Not Held Breath, Thunder Debt, Borrowed Thunder or the echo cards.)'],
     ['stormwarden', 'Stormwarden', 'Your Soaked, Deafened, Unsteady and Stormworn never wear off, and your timed buffs never run out. Only 20% of your Guard fades between turns (not half). You take 5% less damage from an enemy for each different Shaman debuff on it (Static counts).'],
     ['calm_eye', 'Calm Eye', 'End a turn without playing a card and your next card is played twice.']],

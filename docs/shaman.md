@@ -54,7 +54,7 @@ Theme: lightning, rain and storm, nature. Class colour: a dark, deep blue, clear
    No cap on the stored chance (agreed Nov 14: see how it plays first).
 2. **Healer.** Beneficial heals can Multicast (Shaman only, this codex only). A heal that Multicasts makes your next Attack
    a guaranteed Multi-hit (+100%, so gear Multi-hit on top becomes the chance of a third hit).
-3. **Caster.** Any Multicast also fires a third copy at 50% strength.
+3. **Caster.** Any Multicast also fires a third copy at 50% power.
 4. **Melee.** Any Multi-hit also casts the last spell you cast, free, at half strength. The plan: cast one big spell, then
    stack Multi-hit to repeat it.
 5. **Support tank.** Your buffs and debuffs do not degrade over time. You take 5% less damage for each unique debuff on

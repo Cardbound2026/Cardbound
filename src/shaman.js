@@ -130,7 +130,7 @@ function install(K) {
       if (mc) {
         S.didMC = true; if (p.shMC > 0) { p.shMC = vessel ? Math.floor(p.shMC / 2) : 0; X.storeTrig(cb, p); }
         { const mg = shx(cb, p, 'mcGuard'); if (mg) cb.gainDef(mg); }
-        if (cb.has(p, 'codex_stormcaller')) { const tc = 0.5 + shx(cb, p, 'thirdCopy') / 100; out.push({ kind: 'mc', mult: tc }); cb.say('crit', `Stormcaller: a third ${d.name} at ${Math.round(tc * 100)}% strength.`); }
+        if (cb.has(p, 'codex_stormcaller')) { const tc = 0.5 + shx(cb, p, 'thirdCopy') / 100; out.push({ kind: 'mc', mult: tc }); cb.say('crit', `Stormcaller: a third ${d.name} at ${Math.round(tc * 100)}% power.`); }
         if (has(cb, p, 'rolling_echo') && cb.rng() * 100 < 25) { out.push({ kind: 'mc' }); cb.say('crit', `Rolling Echo: ${d.name} is cast once more.`); }
         const te = shx(cb, p, 'mcDraw'); if (te && !(p.turn.shMcDraw)) { p.turn.shMcDraw = 1; cb.drawCards(p, te); }
       }

@@ -1857,7 +1857,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.
       stormcaller: { cap: ['sh_charged_air', 'sh_lightning_shield', 'sh_echo_chamber'], party: party('Bright Minds', 'intelligence'),
         off: [N('Crackle', '+4% Nature damage.', ['dmg', 4, { dtype: 'Nature' }]), pen1, N('Echoes', '+3% Multicast chance.', ['stat', 'multicast', 3]), N('Conductive', '+2% Nature damage for every 5 Static on the target (up to +10%).', ['dmgPer', 'static', 5, 2, 10, { dtype: 'Nature' }]),
           N('Overcharged Air', 'Every time you apply Static, apply 1 more.', ['shx', 'staticPlus', 1]), N('Echoing Thunder', 'The first time a spell Multicasts each turn, draw a card.', ['shx', 'mcDraw', 1]), pen2,
-          N('Livewire', 'You deal 15% more damage to Stunned enemies.', ['shx', 'stunDmg', 15]), N('Thunderlord', "Stormcaller's third copy is cast at 75% strength, and you have +8% Multicast chance.", ['shx', 'thirdCopy', 25], ['stat', 'multicast', 8])],
+          N('Livewire', 'You deal 15% more damage to Stunned enemies.', ['shx', 'stunDmg', 15]), N('Thunderlord', "Stormcaller's third copy is cast at 75% power, and you have +8% Multicast chance.", ['shx', 'thirdCopy', 25], ['stat', 'multicast', 8])],
         def: [sDef(1), gPct('Warding Winds', 5), N('Spell Guard', 'When one of your spells Multicasts, gain 3 Guard.', ['shx', 'mcGuard', 3]), less('Storm Cloak', 4), low('Thunder Shell', 25), N('Rain on Skin', 'Heal 1% of your max HP at the start of each of your turns.', ['turn', 'heal', 1, null, null]), resA('Grounded Soul', 6), hitStatic('Live Current', 2), cheatG('Lightning Rebirth', 25, true)],
         sup: [sMana('Spark', 8), mMana('Storm Well', 10), rg('Ley Wind', 3), first('Opening Bolt', 5, 'Skill'), null, tMana('Channel the Sky', 4), kMana('Stolen Charge', 10), N('Cycling Storm', 'Every 3rd Skill you play in a turn gives 4 mana.', ['every', 3, { type: 'Skill' }, 'mana', 4]), N('Storm Scholar', 'Draw 1 extra card each turn.', ['stat', 'draw', 1])] },
       skybreaker: { cap: ['sh_gale_fury', 'sh_unbowed', 'sh_rain_of_maces'], party: party('Battle Rhythm', 'multiHit'),
@@ -2204,7 +2204,7 @@ function install(K) {
       if (mc) {
         S.didMC = true; if (p.shMC > 0) { p.shMC = vessel ? Math.floor(p.shMC / 2) : 0; X.storeTrig(cb, p); }
         { const mg = shx(cb, p, 'mcGuard'); if (mg) cb.gainDef(mg); }
-        if (cb.has(p, 'codex_stormcaller')) { const tc = 0.5 + shx(cb, p, 'thirdCopy') / 100; out.push({ kind: 'mc', mult: tc }); cb.say('crit', `Stormcaller: a third ${d.name} at ${Math.round(tc * 100)}% strength.`); }
+        if (cb.has(p, 'codex_stormcaller')) { const tc = 0.5 + shx(cb, p, 'thirdCopy') / 100; out.push({ kind: 'mc', mult: tc }); cb.say('crit', `Stormcaller: a third ${d.name} at ${Math.round(tc * 100)}% power.`); }
         if (has(cb, p, 'rolling_echo') && cb.rng() * 100 < 25) { out.push({ kind: 'mc' }); cb.say('crit', `Rolling Echo: ${d.name} is cast once more.`); }
         const te = shx(cb, p, 'mcDraw'); if (te && !(p.turn.shMcDraw)) { p.turn.shMcDraw = 1; cb.drawCards(p, te); }
       }
@@ -3037,7 +3037,7 @@ const CODEXES = {
   // Nov 14: the Shaman's six (the passives are in src/shaman.js)
   Shaman: [['twinstorm', 'Twinstorm', '50% of your Strength is added as Intelligence and 50% of your Intelligence as Strength. Each Attack you play adds 10% Multicast chance and each Skill adds 10% Multi-hit chance; the stored chance is spent when it triggers.'],
     ['rainbringer', 'Rainbringer', 'Your heals can Multicast. A heal that Multicasts makes your next Attack a sure Multi-hit, and your own Multi-hit chance then becomes the chance of a third hit.'],
-    ['stormcaller', 'Stormcaller', 'Whenever one of your spells Multicasts, a third copy is cast at 50% strength.'],
+    ['stormcaller', 'Stormcaller', 'Whenever one of your spells Multicasts, a third copy is cast at 50% power.'],
     ['skybreaker', 'Skybreaker', 'Whenever one of your Attacks Multi-hits, the last Skill you played is played again, free. Its damage is halved. (Not Held Breath, Thunder Debt, Borrowed Thunder or the echo cards.)'],
     ['stormwarden', 'Stormwarden', 'Your Soaked, Deafened, Unsteady and Stormworn never wear off, and your timed buffs never run out. Only 20% of your Guard fades between turns (not half). You take 5% less damage from an enemy for each different Shaman debuff on it (Static counts).'],
     ['calm_eye', 'Calm Eye', 'End a turn without playing a card and your next card is played twice.']],
@@ -8254,8 +8254,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794698662644';
-  const CB_BUILD = 'ab45061ef1'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794698922004';
+  const CB_BUILD = 'b5c72ca2e0'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -9374,6 +9374,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Change', "Stormcaller codex wording changed: the third copy of a Multicast spell is now described as cast at 50% power (it used to say 50% strength). Same for its capstone talent, Thunderlord (75% power). Nothing about how it works has changed: only the words. It never had anything to do with the Strength stat."],
       ['Fix', "Start fresh (delete everything) now really wipes a signed-in account. Before, the empty save could be quietly replaced by the account's old save at the next sync, so nothing seemed to happen. The wipe is now sent to your account straight away and also removes your heroes from the Hall of Records. Your old save is kept under Menu > Save backups in case it was a mistake."],
       ['Art', "The Shaman has card art: all 143 Shaman cards now have their own painting, in the same pixel style as the other classes."],
       ['Fix', "Shaman, Hundred Blows: when any of its hits Multi-hit, that now counts as a Multi-hit for your codex, talents and powers (Skybreaker's free repeat, Twinstorm's stored chance, Rain of Maces and so on), once per card. Before, only a Multi-hit of the whole card counted."],

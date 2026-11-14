@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Change', "Stormcaller codex wording changed: the third copy of a Multicast spell is now described as cast at 50% power (it used to say 50% strength). Same for its capstone talent, Thunderlord (75% power). Nothing about how it works has changed: only the words. It never had anything to do with the Strength stat."],
       ['Fix', "Start fresh (delete everything) now really wipes a signed-in account. Before, the empty save could be quietly replaced by the account's old save at the next sync, so nothing seemed to happen. The wipe is now sent to your account straight away and also removes your heroes from the Hall of Records. Your old save is kept under Menu > Save backups in case it was a mistake."],
       ['Art', "The Shaman has card art: all 143 Shaman cards now have their own painting, in the same pixel style as the other classes."],
       ['Fix', "Shaman, Hundred Blows: when any of its hits Multi-hit, that now counts as a Multi-hit for your codex, talents and powers (Skybreaker's free repeat, Twinstorm's stored chance, Rain of Maces and so on), once per card. Before, only a Multi-hit of the whole card counted."],
