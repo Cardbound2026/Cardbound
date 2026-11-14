@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Balance', "Stealth is a little less safe: more monsters carry an attack that hits everyone. Half of all elites now have one (was a third), 40% of tier 3 monsters, 30% of tier 2 and 20% of tier 1 (which had none). That is 20 new monster cards, each with its own painting; every one replaces two copies of a single-target hit, so decks are the same size."],
+      ['Change', "Monsters now spend their mana in a set order: buffs first, then any attack that hits everyone, then defence or a single-target card. Before, an area attack was often left unplayed behind cheaper cards."],
       ['Art', "Town torches tidied: four stand square around the bonfire, and the ones around the plaza now sit on the grass at the edge of the paving, evenly spaced."],
       ['Interface', "You can drag windows. Hold the mouse on any open pop-up, sheet or the deck tracker and move it out of the way. The tracker remembers where you left it; double-click a window's empty edge to put it back."],
       ['Fix', "The small scroll bar that sometimes appeared on chest loot (even with a single pile of gold) is gone for good."],
