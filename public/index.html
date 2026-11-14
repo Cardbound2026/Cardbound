@@ -1236,6 +1236,9 @@ body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn.pi-exhaust:not([data-n="0"]
 html.ccur, html.ccur * { cursor: var(--cur), auto !important; }
 html.ccur input:not([type=button]):not([type=submit]):not([type=checkbox]):not([type=radio]):not([type=range]), html.ccur textarea, html.ccur [contenteditable] { cursor: text !important; }
 html.ccur .baggrid.qsalv .bagcell:not(.empty), html.ccur .baggrid.qsalv .bagcell:not(.empty) * { cursor: var(--hammer) !important; }
+/* Nov 13: the merchant: items on the left half, five cards on the right */
+.shop2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; } .shop2 h3 { margin: 0 0 6px; font-size: 18px; color: var(--accent); } @media (max-width: 900px) { .shop2 { grid-template-columns: 1fr; } }
+.shopcards { display: flex; flex-wrap: wrap; gap: 12px; } .shopcard { display: grid; gap: 6px; justify-items: center; cursor: pointer; } .shopcard .btn { width: 100%; padding: 5px 8px; font-size: 13px; }
 .recap { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; } .recap h4 { margin: 0 0 6px; } .recap .list { max-height: 48vh; } .recap .meter { max-height: 50vh; overflow: auto; } @media (max-width: 800px) { .recap { grid-template-columns: 1fr; } }
 .nmtop { font-size: 15px; line-height: 1.5; } .nmfoe { border-top: 1px solid var(--line); padding-top: 10px; } .nmhead { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; } .nmhead h3 { margin: 0; font-size: 24px; color: var(--accent); }
 .nmpic { width: 110px; height: 110px; object-fit: contain; image-rendering: pixelated; flex: none; filter: drop-shadow(0 4px 6px #000); } .nmfoe h4 { margin: 8px 0 4px; font-size: 16px; } .nmloot summary { cursor: pointer; font-weight: 700; margin: 8px 0 4px; } .nmloot p { margin: 6px 0 4px; }
@@ -5372,7 +5375,22 @@ function shopBasis(p) { const lb = p.lastBoss; return lb && lb.map ? { map: lb.m
 function refreshShop(p, data, level, rng, now) {
   const sb = shopBasis(p); level = sb.level;
   rng = rng || Math.random; const mk = sb.map; let bases = data.gear.bases.filter(b => (b.map || 'physical') === mk).map(b => b.name); if (!bases.length) bases = data.gear.bases.map(b => b.name); p.shop = { level, map: mk, items: [], at: now || Date.now() };
-  for (let i = 0; i < 6; i++) { const x = rng() * 100, rar = x < 35 ? 'White' : x < 78 ? 'Green' : 'Blue'; const it = CB.rollItem(data, rng, bases[Math.floor(rng() * bases.length)], rar, level); it.price = shopPrice(rar, level); it.px2 = 1; p.shop.items.push(it); }
+  for (let i = 0; i < 5; i++) { const x = rng() * 100, rar = x < 35 ? 'White' : x < 78 ? 'Green' : 'Blue'; const it = CB.rollItem(data, rng, bases[Math.floor(rng() * bases.length)], rar, level); it.price = shopPrice(rar, level); it.px2 = 1; p.shop.items.push(it); }
+}
+// Nov 13: the merchant also sells 5 cards for the class of the hero looking (mostly White, sometimes a Green, rarely a Blue). Each class has its own
+// five, rolled the first time a hero of that class looks at this stock, and they change when the items do.
+const SHOP_CARD_PRICE = { White: 25, Green: 80, Blue: 220 };
+function shopCards(p, cls, rng) {
+  if (!p.shop) return []; rng = rng || Math.random; const all = (p.shop.cards = p.shop.cards || {}); if (all[cls]) return all[cls];
+  const pool = CB.cardPool(cls), by = (r) => pool.filter(k => CARDS[k].rarity === r), out = [];
+  for (let i = 0; i < 5; i++) { const x = rng() * 100; let rar = x < 80 ? 'White' : x < 97 ? 'Green' : 'Blue', ks = by(rar).filter(k => !out.some(o => o.key === k)); if (!ks.length) { rar = 'White'; ks = by('White'); } if (!ks.length) continue;
+    out.push({ key: ks[Math.floor(rng() * ks.length)], price: SHOP_CARD_PRICE[rar] }); }
+  return (all[cls] = out);
+}
+function buyShopCard(p, heroKey, i) {
+  const c = p.chars[heroKey]; if (!c) return { ok: false, why: 'No hero' }; const it = shopCards(p, c.cls)[i]; if (!it || it.sold) return { ok: false, why: 'Already sold' };
+  if (p.gold < it.price) return { ok: false, why: 'Not enough gold in the bank' };
+  p.gold -= it.price; it.sold = true; c.cards.push({ id: uid('k'), key: it.key, rank: 0 }); (c.seen = c.seen || {})[it.key] = 1; return { ok: true };
 }
 function buyShop(p, i) {
   const it = p.shop && p.shop.items[i]; if (!it || it.sold) return { ok: false, why: 'Already sold' };
@@ -5483,7 +5501,7 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk, ach };
 }
 
-const API = { makeBag, bagSizeFor, syncCaps, equipBag, unequipBag, own, grantPet, BAG_BASE, BANK_BASE, BAG_SLOTS, BANK_BAG_SLOTS, defWord, defText, titleAfter, titled, staffShield, toVault, fromVault, ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { shopCards, buyShopCard, makeBag, bagSizeFor, syncCaps, equipBag, unequipBag, own, grantPet, BAG_BASE, BANK_BASE, BAG_SLOTS, BANK_BAG_SLOTS, defWord, defText, titleAfter, titled, staffShield, toVault, fromVault, ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 Object.defineProperty(API, 'STASH_MAX', { get: () => STASH_MAX, enumerable: true }); Object.defineProperty(API, 'VAULT_MAX', { get: () => VAULT_MAX, enumerable: true });
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -6092,9 +6110,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       const vs = cur.length ? cur.map(g => { const d = (it.ilvl || 0) - (g.ilvl || 0); return `${esc(g.name)} (${rarName(g.rarity)}, ilvl ${g.ilvl}) <span class="${d > 0 ? 'up' : d < 0 ? 'down' : ''}">${d > 0 ? '+' : ''}${d}</span>`; }).join(', ') : 'an empty slot';
       return itemHtml(it, `<div class="il">${upBadge(it, c.gear)}</div><div class="il">${esc(c.name)} wears ${vs}</div><div class="acts"><button class="btn" data-shop="${i}" ${it.sold || profile.gold < it.price || full ? 'disabled' : ''}>${it.sold ? 'Sold' : 'Buy for ' + it.price + ' gold'}</button></div>`);
     }).join('');
-    $('hpShop').innerHTML = `<p class="savenote" style="margin:0 0 8px">Bank: <b style="color:var(--accent)">${profile.gold} gold</b>. Stock comes from your last boss kill: <b>${DATA.maps[sh.map || 'physical'] ? 'Map ' + DATA.maps[sh.map || 'physical'].num + ' ' + esc(DATA.maps[sh.map || 'physical'].name) : 'Map 1'} +${sh.level}</b>. <b>New stock in ${restockIn()}</b> (every 12 hours, at the map level you last played). Purchases go to your stash.${full ? ' <b class="down">Your stash is full.</b>' : ''}</p><div class="list tall" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px">${rows}</div>`;
+    $('hpShop').innerHTML = `<p class="savenote" style="margin:0 0 8px">Bank: <b style="color:var(--accent)">${profile.gold} gold</b>. Stock comes from your last boss kill: <b>${DATA.maps[sh.map || 'physical'] ? 'Map ' + DATA.maps[sh.map || 'physical'].num + ' ' + esc(DATA.maps[sh.map || 'physical'].name) : 'Map 1'} +${sh.level}</b>. <b>New stock in ${restockIn()}</b> (every 12 hours, at the map level you last played). Purchases go to your stash.${full ? ' <b class="down">Your stash is full.</b>' : ''}</p><div class="shop2"><div><h3>Items</h3><div class="list tall" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px">${rows}</div></div><div><h3>Cards <span class="muted" style="font-size:12.5px">for a ${esc(c.cls)}: they go to your collection</span></h3><div class="shopcards">${CBHub.shopCards(profile, c.cls).map((x, i) => { const d = CARDS[x.key]; return `<div class="shopcard" data-cardinfo="${x.key}" title="Click the card for its ranks and where it drops">${cardBox(d, 124)}<button class="btn" data-shopcard="${i}" ${x.sold || profile.gold < x.price ? 'disabled' : ''}>${x.sold ? 'Sold' : x.price + ' gold'}</button></div>`; }).join('')}</div></div></div>`;
   }
-  $('hpShop').addEventListener('click', (ev) => { const b = ev.target.closest('[data-shop]'); if (!b || b.disabled) return; const r = CBHub.buyShop(profile, +b.dataset.shop); if (!r.ok) return toast(r.why); save(); renderHub(); });
+  $('hpShop').addEventListener('click', (ev) => { const cb2 = ev.target.closest('[data-shopcard]'); if (cb2) { ev.stopPropagation(); if (cb2.disabled) return; const r = CBHub.buyShopCard(profile, heroKey, +cb2.dataset.shopcard); if (!r.ok) return toast(r.why); try { if (window.CB_AUDIO) CB_AUDIO.sfx('coin', .8); } catch (e) {} save(); return renderHub(); } const b = ev.target.closest('[data-shop]'); if (!b || b.disabled) return; const r = CBHub.buyShop(profile, +b.dataset.shop); if (!r.ok) return toast(r.why); save(); renderHub(); });
 
   loadLocal();
   setTimeout(() => { try { if (window.CB_INK && CB_INK.preload) { CB_INK.preloadMap(curMap()); CB_INK.preload(['hero_warrior', 'hero_rogue', 'hero_mage', 'hero_paladin', 'hero_warlock', 'ash_imp', 'obsidian_brute', 'brimstone_warden', 'shade', 'hellhound_alpha']); } } catch (e) {} }, 1500); // Nov 2: your road's monsters, ready before the first fight
@@ -7521,8 +7539,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794615419086';
-  const CB_BUILD = 'c0519da560'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794615727653';
+  const CB_BUILD = '28ad1a28ce'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8628,6 +8646,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Feature', "The merchant now sells 5 items and 5 cards for your class. The cards are mostly White, sometimes a Green, and rarely a Blue (25, 80 and 220 gold). Items are on the left half of the screen, cards on the right. You will see the new layout at once; the item count changes at the next restock."],
       ['Interface', "Your gold has its own box on the character screen, beside the bag slots."],
       ['Interface', "The light on loot chests is softer: no hard line where it starts, and a fifth dimmer."],
       ['Interface', "Poison, Bleed, Burn and Dread each explain themselves in full when you hover them, with an example, instead of saying 'like Bleed' or 'like Poison'."],

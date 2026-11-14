@@ -380,7 +380,22 @@ function shopBasis(p) { const lb = p.lastBoss; return lb && lb.map ? { map: lb.m
 function refreshShop(p, data, level, rng, now) {
   const sb = shopBasis(p); level = sb.level;
   rng = rng || Math.random; const mk = sb.map; let bases = data.gear.bases.filter(b => (b.map || 'physical') === mk).map(b => b.name); if (!bases.length) bases = data.gear.bases.map(b => b.name); p.shop = { level, map: mk, items: [], at: now || Date.now() };
-  for (let i = 0; i < 6; i++) { const x = rng() * 100, rar = x < 35 ? 'White' : x < 78 ? 'Green' : 'Blue'; const it = CB.rollItem(data, rng, bases[Math.floor(rng() * bases.length)], rar, level); it.price = shopPrice(rar, level); it.px2 = 1; p.shop.items.push(it); }
+  for (let i = 0; i < 5; i++) { const x = rng() * 100, rar = x < 35 ? 'White' : x < 78 ? 'Green' : 'Blue'; const it = CB.rollItem(data, rng, bases[Math.floor(rng() * bases.length)], rar, level); it.price = shopPrice(rar, level); it.px2 = 1; p.shop.items.push(it); }
+}
+// Nov 13: the merchant also sells 5 cards for the class of the hero looking (mostly White, sometimes a Green, rarely a Blue). Each class has its own
+// five, rolled the first time a hero of that class looks at this stock, and they change when the items do.
+const SHOP_CARD_PRICE = { White: 25, Green: 80, Blue: 220 };
+function shopCards(p, cls, rng) {
+  if (!p.shop) return []; rng = rng || Math.random; const all = (p.shop.cards = p.shop.cards || {}); if (all[cls]) return all[cls];
+  const pool = CB.cardPool(cls), by = (r) => pool.filter(k => CARDS[k].rarity === r), out = [];
+  for (let i = 0; i < 5; i++) { const x = rng() * 100; let rar = x < 80 ? 'White' : x < 97 ? 'Green' : 'Blue', ks = by(rar).filter(k => !out.some(o => o.key === k)); if (!ks.length) { rar = 'White'; ks = by('White'); } if (!ks.length) continue;
+    out.push({ key: ks[Math.floor(rng() * ks.length)], price: SHOP_CARD_PRICE[rar] }); }
+  return (all[cls] = out);
+}
+function buyShopCard(p, heroKey, i) {
+  const c = p.chars[heroKey]; if (!c) return { ok: false, why: 'No hero' }; const it = shopCards(p, c.cls)[i]; if (!it || it.sold) return { ok: false, why: 'Already sold' };
+  if (p.gold < it.price) return { ok: false, why: 'Not enough gold in the bank' };
+  p.gold -= it.price; it.sold = true; c.cards.push({ id: uid('k'), key: it.key, rank: 0 }); (c.seen = c.seen || {})[it.key] = 1; return { ok: true };
 }
 function buyShop(p, i) {
   const it = p.shop && p.shop.items[i]; if (!it || it.sold) return { ok: false, why: 'Already sold' };
@@ -491,7 +506,7 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk, ach };
 }
 
-const API = { makeBag, bagSizeFor, syncCaps, equipBag, unequipBag, own, grantPet, BAG_BASE, BANK_BASE, BAG_SLOTS, BANK_BAG_SLOTS, defWord, defText, titleAfter, titled, staffShield, toVault, fromVault, ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { shopCards, buyShopCard, makeBag, bagSizeFor, syncCaps, equipBag, unequipBag, own, grantPet, BAG_BASE, BANK_BASE, BAG_SLOTS, BANK_BAG_SLOTS, defWord, defText, titleAfter, titled, staffShield, toVault, fromVault, ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 Object.defineProperty(API, 'STASH_MAX', { get: () => STASH_MAX, enumerable: true }); Object.defineProperty(API, 'VAULT_MAX', { get: () => VAULT_MAX, enumerable: true });
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);
