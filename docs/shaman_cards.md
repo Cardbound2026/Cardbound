@@ -159,7 +159,9 @@ Guard means Dodge, or Block while a shield is worn. A star marks a card the desi
 | Ride the Lightning | Blue | 10 | Skill | Draw a card for each enemy with Static (up to 3). |
 | Storm Surge | Gold | 20 | Skill | Draw 3 and gain 20 mana. Exhaust. |
 
-## Proposed Nov 14, not yet agreed: more Golds and the skip-a-turn Control cards
+## Agreed Nov 14: more Golds and the skip-a-turn Control cards
+
+Stormheart was dropped (the third hit stays with the Healer's guaranteed Multi-hit). The Unbroken Circuit + Arc Flash + Electrocute loop is accepted. 18 Golds and 10 Control cards: 137 cards in all, 31 of them Gold.
 
 ### Golds
 
@@ -174,7 +176,6 @@ Guard means Dodge, or Block while a shield is worn. A star marks a card the desi
 | Hundred Blows | 30, Attack | Deal 4 damage 8 times. Each hit rolls Multi-hit on its own. | Melee |
 | Thunder God's Hammer | 30, Attack | Deal 30 damage. If it Multi-hits, Stun the target for 1 turn. | Melee |
 | Rain of Maces | 30, Power | When an Attack Multi-hits, it also hits a second random enemy for half. | Melee |
-| Stormheart | 30, Power | Multi-hit chance above 100% is not wasted for you: it becomes a chance at a third hit. (The third-hit rule, as a card for non-Healer builds.) | Melee, Hybrid |
 | Twin Thunder | 20, Skill | This turn, every Attack you play also counts as a Skill and every Skill as an Attack. | Hybrid |
 | Ride the Storm | 30, Power | Whenever you play an Attack and a Skill in the same turn, draw a card and gain 10 mana. | Hybrid |
 | Storm Vessel | 30, Power | Your stored Hybrid chance is not spent when it triggers; it halves instead. | Hybrid |
