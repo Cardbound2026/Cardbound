@@ -230,6 +230,15 @@
       const L = Object.assign({}, exLook(), { cos: { [c[3]]: c[0] } }); if (c[3] === 'wskin' && !L.weapon) L.weapon = ['sword2h', 0]; if (c[3].startsWith('wsk_')) { const wt = c[3].slice(4); if (wt === 'kite' || wt === 'tower' || wt === 'focus') { L.weapon = ['sword1h', 0]; L.off = [wt, 0]; } else { L.weapon = [wt, 0]; L.off = null; } }
       if (window.CB_PUPPET) CB_PUPPET.draw(g, L, c[3] === 'wings' ? 's' : 'e', c[3] === 'trail' ? 'walk' : 'idle', t, 64, 98, 0.78); }
   }
+  // Nov 13: click a shop picture to see it big (the same preview, four times the size, still moving). Click again, or Esc, to close.
+  { const st = document.createElement('style'); st.textContent = `.shopit .pv { cursor: zoom-in; } #exZoom { position: fixed; inset: 0; z-index: 9000; background: rgba(6,5,8,.86); display: grid; place-items: center; cursor: zoom-out; }
+    #exZoom .zbox { display: grid; justify-items: center; gap: 10px; } #exZoom .zpv { width: 512px; height: 416px; max-width: 92vw; display: grid; place-items: center; border: 1px solid #5a4a2e; border-radius: 6px; background: radial-gradient(#2a2420, #14110f); overflow: hidden; }
+    #exZoom .zpv > * { transform: scale(var(--zs, 4)); image-rendering: pixelated; flex: none; } #exZoom b { font: 600 26px 'Grenze', serif; color: #f4d89a; } #exZoom small { color: #cfc4ae; font-size: 14px; max-width: 520px; text-align: center; }`; document.head.appendChild(st); }
+  function exZoomClose() { const z = document.getElementById('exZoom'); if (z) z.remove(); }
+  document.addEventListener('click', (ev) => { if (ev.target.closest('#exZoom')) return exZoomClose(); const pv = ev.target.closest('.shopit .pv'); if (!pv || !pv.firstElementChild) return; const it = pv.closest('.shopit'), z = document.createElement('div'); z.id = 'exZoom';
+    const kid = pv.firstElementChild, r = kid.getBoundingClientRect(), zs = Math.max(1.5, Math.min(4, 480 / Math.max(1, r.width), 390 / Math.max(1, r.height)));
+    z.innerHTML = `<div class="zbox"><div class="zpv" style="--zs:${zs.toFixed(2)}">${pv.innerHTML}</div><b>${esc((it.querySelector('b') || {}).textContent || '')}</b><small>${esc((it.querySelector('small') || {}).textContent || '')}</small><small class="muted">Click anywhere to close</small></div>`; document.body.appendChild(z); exPreviews(); });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && document.getElementById('exZoom')) { exZoomClose(); ev.stopImmediatePropagation(); ev.preventDefault(); ev.cbHandled = true; } }, true);
   function exLook() { const c = profile.chars[heroKey]; return c && window.CB_HEROPUP ? CB_HEROPUP.lookOf('me', c.cls, c.gear) : {}; }
   setInterval(() => { if (document.querySelector('canvas[data-pvmount], canvas[data-pvcos]')) exPreviews(); }, 90);
   document.addEventListener('click', (ev) => {
