@@ -236,7 +236,7 @@ const ACH = [
   { id: 'pet10', cat: 'Collection', name: 'Menagerie', how: 'Own 10 different pets.', title: 'of the Menagerie', n: 10, count: (p) => ((p.own || {}).pets || []).length },
   { id: 'pet50', cat: 'Collection', name: 'Zookeeper', how: 'Own 50 different pets.', title: 'Zookeeper', n: 50, count: (p) => ((p.own || {}).pets || []).length },
   { id: 'mount5', cat: 'Collection', name: 'Stablemaster', how: 'Own 5 mounts.', title: 'Stablemaster', n: 5, count: (p) => ((p.own || {}).mounts || ['horse']).length },
-  { id: 'mount10', cat: 'Collection', name: 'Master of Horse', how: 'Own all 10 mounts.', title: 'Master of Horse', n: 10, count: (p) => ((p.own || {}).mounts || ['horse']).length },
+  { id: 'mount10', cat: 'Collection', name: 'Master of Horse', how: 'Own 10 mounts.', title: 'Master of Horse', n: 10, count: (p) => ((p.own || {}).mounts || ['horse']).length },
   { id: 'cos10', cat: 'Collection', name: 'Fashionable', how: 'Own 10 looks from the Skull Shop (auras, footsteps, wings, weapon looks, card borders).', title: 'the Fashionable', n: 10, count: (p) => ((p.own || {}).cos || []).length },
   { id: 'dye8', cat: 'Collection', name: 'Colourful', how: 'Wear a dye on all eight pieces of armour at once.', title: 'the Colourful', test: (p) => heroes(p).some(c => c.app && c.app.dye && Object.keys(c.app.dye).length >= 8) },
   { id: 'bags4', cat: 'Collection', name: 'Pack Mule', how: 'Fill all four of your bag slots.', title: 'the Pack Mule', n: 4, count: (p) => (p.bags || []).filter(Boolean).length },

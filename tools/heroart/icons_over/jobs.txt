@@ -101,3 +101,9 @@ Boots_Leather_nature 5f5fa0e3-3397-4035-b974-1931ad87e3f6
 Boots_Leather_arcane 8e5131bf-d8b7-4f16-ad5e-51c93662d180
 Boots_Leather_shadow 2aad1bb2-7594-402f-9415-76f924076d24
 # Boots_Cloth_* still to launch
+Boots_Cloth_physical 909107f0-ff7b-4f2e-b0a2-ae5e1045067c
+Boots_Cloth_fire cb3eb8db-95e6-4109-bb39-58bee54be702
+Boots_Cloth_frost ae726feb-2268-4738-9bf9-6b2b3eb31246
+Boots_Cloth_nature 691dea8f-4c16-4914-a085-c261e7f46871
+Boots_Cloth_arcane 125726ac-9158-4003-939f-4cd12f2adce9
+# Boots_Cloth_shadow still to launch (hit the 20-job cap)
