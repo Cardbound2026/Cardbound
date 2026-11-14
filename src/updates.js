@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Interface', "Pointing at a buff or debuff in a fight now shows one short line, such as \"Bleed for 68 damage next turn\". Hold Alt while pointing at it for the full glossary entry."],
       ['Fix', "The shadows left on the ground where town torches used to stand are gone."],
       ['Interface', "The box that opens when you talk to someone in town sits higher, clear of the bottom bar."],
       ['Change', "The Previous interface and Previous enemy art settings are removed. The game has one look now."],
