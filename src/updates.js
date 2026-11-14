@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Interface', "The codex bar at the top of town is just a bar with the level beside it. Point at it for the XP numbers."],
+      ['Art', "Sixteen more weapon looks in the Skull Shop (28 in all), among them a baguette, a butcher's cleaver, a miner's pickaxe, a roast drumstick, a frying pan, a wooden spoon and a finger-bone wand."],
       ['Art', "Five more mounts in the Skull Shop: Striped Tiger, Royal Lion, Felhound, Demon Brute and Bone Dragon."],
       ['Art', "Six more mounts in the Skull Shop: Spotted Hyena, Great Moose, Tawny Sabertooth, War Rhino, Armoured Warhorse and the Holy Charger."],
       ['Fix', "Bags (Traveler's Pouch and the rest) show a bag as their picture. They were showing a helmet."],

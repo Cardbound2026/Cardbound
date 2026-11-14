@@ -11,3 +11,19 @@ dagger_carrot|dagger|Sharpened Carrot|400||
 dagger_crystal|dagger|Arcane Shard|300||
 sword1h_blood|sword1h|Bloodletter|300||
 sword1h_gold|sword1h|Golden Sword|400||
+sword1h_crystal|sword1h|Crystal Blade|300||
+sword1h_toy|sword1h|Wooden Practice Sword|300||
+sword1h_baguette|sword1h|Stale Baguette|400||
+sword1h_cleaver|sword1h|Butcher's Cleaver|300||
+axe1h_blood|axe1h|Bloody Hatchet|300||
+axe1h_gold|axe1h|Golden Axe|400||
+axe1h_frost|axe1h|Frost Hatchet|300||
+axe1h_pick|axe1h|Miner's Pickaxe|300||
+mace1h_gold|mace1h|Golden Mace|400||
+mace1h_drumstick|mace1h|Roast Drumstick|400||
+mace1h_pan|mace1h|Frying Pan|400||
+wand_gold|wand|Sunburst Wand|300||
+wand_bone|wand|Finger Bone Wand|300||
+wand_spoon|wand|Wooden Spoon|400||
+sword2h_blood|sword2h|Blood-soaked Greatsword|400||
+sword2h_frost|sword2h|Glacier Greatsword|400||
