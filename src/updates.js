@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Interface', "Following a build: on the talent screen, the talent your build picks on each row now wears a gold Build marker, so you know which one to take when you level."],
       ['Fix', "Full bags no longer destroy loot. If the gear you bring home from a run will not fit, a sorting screen opens before you return to camp: mark gear to salvage, from the run or from your bags, until everything fits. Cards and gold never use bag space."],
       ['Interface', "Following a build: the tracker now lists what to go after in order. The codex comes first, then the Gold cards, then the maps, starting with the map that has the most different cards you still need (the count is shown next to the map's name)."],
       ['Balance', "Bleed Chance (one-handed axes, and anything else that gives it): when it triggers, the Bleed is now half the damage that hit dealt, with a minimum of 3. It used to be a flat 3 Bleed however hard you hit."],

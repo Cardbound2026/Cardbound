@@ -42,6 +42,7 @@
         <span class="muted">${info.need ? `${info.into} / ${info.need} XP to level ${info.level + 1}` : 'Maxed: +10% codex XP on your other codexes'} &middot; ${info.rows} of 10 rows open${info.rows > picks.filter((x, i) => x != null && i < info.rows).length ? ` &middot; <b style="color:var(--warn)">${info.rows - picks.filter((x, i) => x != null && i < info.rows).length} to pick</b>` : ''}</span></div>`
       : `<p class="muted" style="margin:4px 0 8px">${me ? `Your hero is a ${esc(me.cls)}: this is a ${esc(cx.cls)} codex, so you can look but not pick.` : 'Make a hero to start earning codex XP.'}</p>`;
     const rows = [];
+    const fb = me && typeof plActive === 'function' ? plActive(me) : null, bpick = fb && fb.codex === cxKey && me.cls === cx.cls ? (fb.talents || []) : []; // Nov 14: the build you follow marks its talent on each row
     for (let i = 0; i < 10; i++) {
       const lv = (i + 1) * 2, open = info ? i < info.rows : false, dim = info && !open, cap = i === 9, mini = i === 4;
       const cells = [0, 1, 2].map(j => {
@@ -49,7 +50,7 @@
         if (cap) { const d = CARDS[tr.cap[j]]; name = d ? d.name : tr.cap[j]; text = (d ? d.text : '') + ' Already in play at the start of every fight.'; }
         else { const t = tr.rows[i][j]; name = t.n; text = talentText(t.t, cx.cls, me); }
         const on = picks[i] === j && (info ? i < info.rows : false); const other = !on && open && picks[i] != null && picks[i] !== j; // another talent on this row is picked
-        return `<button class="tlcell ${on ? 'on' : ''} ${other ? 'other' : ''} ${dim ? 'locked' : ''} ${open ? '' : 'noclick'} ${cap ? 'cap' : mini ? 'mini' : ''}" style="--tc:${TCOL[j][1]}" data-tlr="${i}" data-tlc="${j}" ${edit && open ? '' : 'tabindex="-1"'} aria-pressed="${on}">${talIcon(cap ? {} : tr.rows[i][j], cap)}<span class="tltx"><b>${esc(name)}</b><span>${esc(text)}</span></span></button>`;
+        return `<button class="tlcell ${on ? 'on' : ''} ${other ? 'other' : ''} ${dim ? 'locked' : ''} ${open ? '' : 'noclick'} ${cap ? 'cap' : mini ? 'mini' : ''}" style="--tc:${TCOL[j][1]}" data-tlr="${i}" data-tlc="${j}" ${edit && open ? '' : 'tabindex="-1"'} aria-pressed="${on}">${talIcon(cap ? {} : tr.rows[i][j], cap)}${bpick[i] === j ? `<em class="tlbuild" title="Your build, ${esc(fb.name)}, picks this talent">&#9733; Build</em>` : ''}<span class="tltx"><b>${esc(name)}</b><span>${esc(text)}</span></span></button>`;
       }).join('');
       rows.push(`<div class="tllv ${dim ? 'locked' : ''}">Lv ${lv}${cap ? '<small>Capstone</small>' : mini ? '<small>Mini capstone</small>' : ''}</div>${cells}`);
     }
