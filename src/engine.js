@@ -1818,6 +1818,9 @@ class Combat {
     if (d.type === 'Attack' && this.rng() * 100 < p.multiHit + (SX ? SX.mh : 0)) { times = 2; mhIdx = 1; this.say('crit', `Multi-hit! ${d.name} strikes again.`); }
     if ((d.tags.dmg || (SX && SX.healMC && d.tags.heal)) && this.rng() * 100 < (d.type === 'Attack' ? p.multiplay : p.multicast + (SX ? SX.mc : 0))) { times++; mcIdx = times - 1; this.say('crit', `${d.type === 'Attack' ? 'Multiplay' : 'Multicast'}! ${d.name} is played again for free.`); }
     const xtra = SX ? SHX.rolled(this, p, d, SX, mhIdx > 0, mcIdx > 0) : [];
+    { const third = xtra.filter(x => x.kind === 'mh').length, mcs = (mcIdx > 0 ? 1 : 0) + xtra.filter(x => x.kind === 'mc').length;   // Nov 14: a big call-out over whoever the card is aimed at (the fight screen reads multiN / multiWord)
+      const word = third ? 'TRIPLE HIT' : mhIdx > 0 ? 'MULTI-HIT' : mcs ? (d.type === 'Attack' ? 'MULTIPLAY' : mcs > 1 ? 'MULTICAST x' + (mcs + 1) : 'MULTICAST') : '';
+      if (word) for (const a of (tgt ? [tgt] : d.target === 'self' ? [p] : this.alive())) { a.multiN = (a.multiN || 0) + 1; a.multiWord = word; } }
     const echo = d.type === 'Attack' && p.powers.find(x => x.key === 'divine_echo');
     if (echo) { if (echo.chance == null) echo.chance = echo.upN ? echo.upN[0] : 10; if (this.rng() * 100 < echo.chance) { times++; echo.chance = 0; this.say('crit', `Divine Echo! ${d.name} repeats.`); } }
     const storm = d.key === 'shuriken' && this.has(p, 'shuriken_storm');
