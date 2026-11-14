@@ -9,10 +9,20 @@ Totems are saved for the Druid.
 - **Weapons:** two one-handed maces (implicit: half a sword's Multi-hit plus the same Multicast), or an Arcane Staff (Multicast).
 - **Multi-hit over 100%:** Shaman only, and only through the Healer's guaranteed Multi-hit: the overflow is a chance at a third hit (150% = two hits for sure, 50% chance of a third). Other classes still stop at two hits.
 
+## Nature resistance (agreed Nov 14)
+
+The Tanglewild's monsters resist Nature, and the Shaman only deals Nature. The answer is a new stat, **Penetration**
+(ignores part of the target's resistance), handed out through the Shaman's talents. New to the game: no class has it today.
+
+## Look (agreed Nov 14)
+
+Theme: lightning, rain and storm, nature. Class colour: a dark, deep blue, clearly darker than the Mage's light blue (#4f93e6).
+
 ## Codexes
 
 1. **Hybrid.** 50% of Strength is added as Intelligence and 50% of Intelligence as Strength (buffs gained in a fight count too).
    Each Attack adds 10% Multicast chance, each Skill adds 10% Multi-hit chance; the stored chance is spent when it triggers.
+   No cap on the stored chance (agreed Nov 14: see how it plays first).
 2. **Healer.** Beneficial heals can Multicast (Shaman only, this codex only). A heal that Multicasts makes your next Attack
    a guaranteed Multi-hit (+100%, so gear Multi-hit on top becomes the chance of a third hit).
 3. **Caster.** Any Multicast also fires a third copy at 50% strength.
@@ -30,8 +40,7 @@ Totems are saved for the Druid.
 
 - Support tank: taunt chance per Attack (number, and which talent row)? Is the 5% per debuff capped? "Do not degrade" covers
   the Shaman's own buffs and the debuffs the Shaman applies: does it include Bleed/Poison stacks ticking down?
-- Hybrid: is there a cap on the stored Multicast / Multi-hit chance?
-- The Tanglewild (map 4) is the Nature map: its monsters resist Nature. A one-element class needs an answer there
-  (Paladin's Holy ignores resistance; lightning could ignore part of it, or a codex could convert).
+- Penetration numbers: how much per talent, and where in each tree (see "Nature resistance" above). The stat does not exist
+  in the engine yet.
 - Gear: maces give both stats, and since Nov 13 rings can roll Multi-hit and Multicast for every class.
-- Class colour, hero look, starter deck, starter kit.
+- Starter deck, starter kit. Exact colour hex to be picked against the map and party frames (start from #2b4fa8).
