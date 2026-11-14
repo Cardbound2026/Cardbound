@@ -88,3 +88,16 @@ Belt_Plate_frost c68bd679-42ac-46ce-8fc4-f58794f494a6
 Belt_Plate_nature 26ab7201-3ee1-4713-9433-7d036051bc10
 Belt_Plate_arcane 38875f8c-9dd8-418a-a022-80c9bb472fc7
 Belt_Plate_shadow d9e57b42-9a98-4b2c-97b5-f1c8e67b527b
+Boots_Plate_physical ca8a558a-a3ad-42e0-b98c-7cae3bf4e33b
+Boots_Plate_fire 46a8f143-8a6e-4be0-8cf7-e95d772519ab
+Boots_Plate_frost f1e52ccc-154e-40e4-b501-007c99ebfdda
+Boots_Plate_nature 56666a58-a526-4680-9437-f0234d3d899d
+Boots_Plate_arcane e42d62fb-e619-4068-ba88-da5fa634e19e
+Boots_Plate_shadow b84af55e-b4b6-49bf-aac2-39f1e78febca
+Boots_Leather_physical ed3c8e17-f05d-43f4-b956-3ab48d43f36a
+Boots_Leather_fire 72601a8a-df3c-4b05-a969-a0b264a7d32f
+Boots_Leather_frost 2ba276ba-fc1e-4189-9b2a-54f95e3fba7e
+Boots_Leather_nature 5f5fa0e3-3397-4035-b974-1931ad87e3f6
+Boots_Leather_arcane 8e5131bf-d8b7-4f16-ad5e-51c93662d180
+Boots_Leather_shadow 2aad1bb2-7594-402f-9415-76f924076d24
+# Boots_Cloth_* still to launch
