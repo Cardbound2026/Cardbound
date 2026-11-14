@@ -13,7 +13,7 @@
     if (cap) return 'cap'; const f = (t.fx || [])[0] || [], k = f[0], a = f[1], b = f[2], c = f[3];
     switch (k) {
       case 'dmg': { const o = b || {}; return o.key === 'shuriken' ? 'shuriken' : o.dtype ? ELIC[o.dtype] : o.vs ? (DOTIC[String(o.vs).split(':')[0]] || 'sword') : o.self && /^stealth/.test(o.self) ? 'stealth' : o.self && /^devotion/.test(o.self) ? 'devotion' : 'sword'; }
-      case 'crit': return 'crit'; case 'critX': return 'critX'; case 'flat': return 'flat'; case 'dmgPer': return DOTIC[a] || 'per'; case 'dotPlus': case 'dotX': case 'dotCrit': return DOTIC[a] || 'bleed';
+      case 'crit': return 'crit'; case 'critX': return 'critX'; case 'flat': return 'flat'; case 'dmgPer': return DOTIC[a] || 'per'; case 'dotPlus': case 'dotX': case 'dotCrit': return DOTIC[a] || 'bleed'; case 'stealthDot': return 'stealth';
       case 'every': return 'every'; case 'extraStrike': return 'double'; case 'extraTarget': return 'extra'; case 'def': return 'def'; case 'incoming': return 'incoming'; case 'lowhp': return 'lowhp'; case 'cheat': return 'cheat';
       case 'heal': return 'healIn'; case 'party': return a === 'recovery' || a === 'heal' ? 'partyHeal' : 'party'; case 'run': return a === 'partyHealthRegen' ? 'partyHeal' : 'run'; case 'aura': return 'party';
       case 'start': return a === 'block' ? 'startBlock' : a === 'mana' ? 'startMana' : a === 'draw' ? 'startDraw' : a === 'summon' ? 'summon' : a === 'shuriken' ? 'shuriken' : a === 'stealth' ? 'stealth' : a === 'devotion' ? 'devotion' : a === 'discard' || a === 'dazed' ? 'discard' : a === 'str' ? 'sword' : DOTIC[c] || 'weak';

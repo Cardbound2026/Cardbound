@@ -1581,7 +1581,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.
         spread('Plague Carrier', 'poison'), dmg('Corrosion', 15, { vs: 'poison' }), every('Toxic Cloud', 3, { type: 'Attack' }, 'poison', 5), per('Necrosis', 'poison', 10, 5, 25), dotX('Lethal Dose', 'poison', 50)],
       d: { 3: hitDot('Venomous Hide', 'poison', 3) }, s: { 9: rally('Plague Doctor', 15, 'poison') } },
     bloodletter: { party: party('Opened Arteries', 'bleedChance'), cls: 'Rogue', cap: ['open_veins', 'fleetfooted', 'quickened_pulse'],
-      off: [dotPlus('Nicks', 'bleed', 1), dmg('Scent of Blood', 8, { vs: 'bleed' }), startDot('Serrated Start', 'bleed', 5), dotX('Jagged', 'bleed', 25),
+      off: [dotPlus('Nicks', 'bleed', 1), dmg('Scent of Blood', 8, { vs: 'bleed' }), T('From the Shadows', 'Bleed you apply from Stealth is increased by 25%.', ['stealthDot', 'bleed', 25]), dotX('Jagged', 'bleed', 25),
         spread('Bloodbath', 'bleed'), dmg('Frenzy', 15, { vs: 'bleed' }), every('Ribbons', 3, { type: 'Attack' }, 'bleed', 5), per('Exsanguinate', 'bleed', 10, 5, 25), T('Crimson Rain', 'Bleed you apply is increased by 2 and by 30%.', ['dotPlus', 'bleed', 2], ['dotX', 'bleed', 30])],
       d: {}, s: { 9: rally('Feeding Frenzy', 15, 'bleed') } },
     ninja: { party: party('Quick Hands', 'multiplay'), cls: 'Rogue', cap: ['sharpened_stars', 'reflexive_volley', 'hidden_pockets'],
@@ -3521,7 +3521,7 @@ class Combat {
   applyDot(e, key, n) {
     if (!e || e.hp <= 0) return;
     const q = this.player, strMult = (key === 'poison' || key === 'bleed') && q.isPlayer ? 1 + (q.strength + q.strTurn + q.strCombat) / 100 : (key === 'dread' || key === 'rot') && q.isPlayer ? 1 + (q.intelligence + (q.intTurn || 0)) / 100 : 1; // Nov 1: Poison and Bleed scale with Strength (50 Strength: 10 Bleed becomes 15); the Warlock's Dread and Rot with Intelligence
-    const v = Math.round(n * (this._playing && !this._playing.isPower ? this._allX || 1 : 1) * strMult * (key === 'dread' ? 0.7 : 1) * this.pwKey(this.player, 'dotMult', key) * (key === 'bleed' && this.player.bleedX ? this.player.bleedX : 1)) + this.pwKey(this.player, 'dotPlus', key, 'sum');
+    const v = Math.round(n * (this._playing && !this._playing.isPower ? this._allX || 1 : 1) * strMult * (key === 'dread' ? 0.7 : 1) * this.pwKey(this.player, 'dotMult', key) * (key === 'bleed' && this.player.bleedX ? this.player.bleedX : 1) * (this._playing && !this._playing.isPower && (this.player.stealth || this._wasStealth) ? 1 + this.pws(this.player).reduce((t, [, d]) => t + ((d && d.stealthDot && d.stealthDot[key]) || 0), 0) / 100 : 1)) + this.pwKey(this.player, 'dotPlus', key, 'sum');
     if (key === 'rot') { this.fxPush({ t: 'apply', d: e.id, key: 'rot' }); const before = e.rot || 0, w = Math.round(v * this.rkm('rot')); this.addRot(e, w, 4, this.player); if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, w, before); this.say('player', `${e.name} gains ${w} Rot over 4 turns (Rot ${e.rot}).`); return; }
     const before = e[key] || 0; e[key] = before + v; e[key + 'By'] = this.player.id; this.fxPush({ t: 'apply', d: e.id, key });
     if (this.player.isPlayer && this.player.powers.length) this.fire(this.player, 'applyDot', e, key, v, before);
@@ -4192,7 +4192,7 @@ function talentDef(list, cap, label) {
     if (k === 'dmg') D.hm.push([a, b || {}]); else if (k === 'crit') D.cr.push([a, b || {}]); else if (k === 'critX') D.cx += a; else if (k === 'flat') D.fl.push([b, c || {}]);
     else if (k === 'dmgPer') D.hm.push([0, d2 ? Object.assign({}, e2 || {}, { per: [a, b, c, d2] }) : {}]);
     else if (k === 'def') D.dm.push([a, b]); else if (k === 'heal') D.hl += a; else if (k === 'incoming') D.inc.push([a, b]);
-    else if (k === 'dotPlus') D.dp[a] = (D.dp[a] || 0) + b; else if (k === 'dotX') D.dx[a] = (D.dx[a] || 0) + b; else if (k === 'devPlus') D.dev += a; else if (k === 'shurPlus') D.sh += a; else if (k === 'dotCrit') (D.dc = D.dc || {})[a] = true;
+    else if (k === 'dotPlus') D.dp[a] = (D.dp[a] || 0) + b; else if (k === 'dotX') D.dx[a] = (D.dx[a] || 0) + b; else if (k === 'devPlus') D.dev += a; else if (k === 'shurPlus') D.sh += a; else if (k === 'stealthDot') (D.sd = D.sd || {})[a] = ((D.sd || {})[a] || 0) + b; else if (k === 'dotCrit') (D.dc = D.dc || {})[a] = true;
     else if (k === 'start') D.start.push([a, b, c]); else if (k === 'turn') D.turn.push([a, b, c, d2]); else if (k === 'kill') D.kill.push([a, b, c]);
     else if (k === 'hitBy') D.hit.push([a, b, c]); else if (k === 'full') D.full.push([a, b, c]); else if (k === 'lowhp') D.low = [a, b]; else if (k === 'cheat') D.cheat = [a, b];
     else if (k === 'party') (D.party = D.party || []).push([a, b]);
@@ -4229,6 +4229,7 @@ function talentDef(list, cap, label) {
   if (D.cr.length) P.crit = (cb, p, d) => D.cr.reduce((s, [n, f]) => s + ((!f.type && !f.key || tcard(d, f)) && (!f.self || tcond(cb, p, f.self)) ? n : 0), 0);
   if (D.cx) P.critMultX = 1 + D.cx / 100;
   if (D.dc) P.dotCrit = D.dc;
+  if (D.sd) P.stealthDot = D.sd;   // Nov 13: a damage-over-time effect applied by a card played from Stealth is bigger (Bloodletter: From the Shadows)
   if (D.fl.length) P.flat = (cb, p, d) => D.fl.reduce((s, [pct, f]) => s + (tcard(d, f) ? Math.round(p.block * pct / 100) : 0), 0);
   if (D.dm.length) P.defMultFn = (cb, p) => D.dm.reduce((m, [pct, c]) => m * (tcond(cb, p, c) ? 1 + pct / 100 : 1), 1);
   if (D.hl) P.healMult = 1 + D.hl / 100;
@@ -7599,8 +7600,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794623472101';
-  const CB_BUILD = 'd3d8364108'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794623556917';
+  const CB_BUILD = '8d22c93374'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8706,6 +8707,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Balance', "Bloodletter, level 6: Serrated Start (3 Bleed to all enemies at the start of a fight) is replaced by From the Shadows: Bleed you apply from Stealth is increased by 25%. If you had Serrated Start picked, you now have the new talent."],
       ['Art', "New pictures for every chest piece (Cinder Jerkin and the rest): 18 redrawn icons for plate, leather and cloth chests on all six maps."],
       ['Interface', "A big gold ! appears next to your codex level whenever you have a talent point to spend. Point at it for the reminder (push N), or click it to open your talents."],
       ['Art', "Eight new mounts in the Skull Shop: Horned Beetle, Soldier Ant, Giant Rabbit, Swamp Toad, Phoenix, Giant Raven, Mossback Tortoise and Basilisk."],
@@ -9598,7 +9600,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     if (cap) return 'cap'; const f = (t.fx || [])[0] || [], k = f[0], a = f[1], b = f[2], c = f[3];
     switch (k) {
       case 'dmg': { const o = b || {}; return o.key === 'shuriken' ? 'shuriken' : o.dtype ? ELIC[o.dtype] : o.vs ? (DOTIC[String(o.vs).split(':')[0]] || 'sword') : o.self && /^stealth/.test(o.self) ? 'stealth' : o.self && /^devotion/.test(o.self) ? 'devotion' : 'sword'; }
-      case 'crit': return 'crit'; case 'critX': return 'critX'; case 'flat': return 'flat'; case 'dmgPer': return DOTIC[a] || 'per'; case 'dotPlus': case 'dotX': case 'dotCrit': return DOTIC[a] || 'bleed';
+      case 'crit': return 'crit'; case 'critX': return 'critX'; case 'flat': return 'flat'; case 'dmgPer': return DOTIC[a] || 'per'; case 'dotPlus': case 'dotX': case 'dotCrit': return DOTIC[a] || 'bleed'; case 'stealthDot': return 'stealth';
       case 'every': return 'every'; case 'extraStrike': return 'double'; case 'extraTarget': return 'extra'; case 'def': return 'def'; case 'incoming': return 'incoming'; case 'lowhp': return 'lowhp'; case 'cheat': return 'cheat';
       case 'heal': return 'healIn'; case 'party': return a === 'recovery' || a === 'heal' ? 'partyHeal' : 'party'; case 'run': return a === 'partyHealthRegen' ? 'partyHeal' : 'run'; case 'aura': return 'party';
       case 'start': return a === 'block' ? 'startBlock' : a === 'mana' ? 'startMana' : a === 'draw' ? 'startDraw' : a === 'summon' ? 'summon' : a === 'shuriken' ? 'shuriken' : a === 'stealth' ? 'stealth' : a === 'devotion' ? 'devotion' : a === 'discard' || a === 'dazed' ? 'discard' : a === 'str' ? 'sword' : DOTIC[c] || 'weak';

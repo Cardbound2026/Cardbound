@@ -108,7 +108,7 @@
         spread('Plague Carrier', 'poison'), dmg('Corrosion', 15, { vs: 'poison' }), every('Toxic Cloud', 3, { type: 'Attack' }, 'poison', 5), per('Necrosis', 'poison', 10, 5, 25), dotX('Lethal Dose', 'poison', 50)],
       d: { 3: hitDot('Venomous Hide', 'poison', 3) }, s: { 9: rally('Plague Doctor', 15, 'poison') } },
     bloodletter: { party: party('Opened Arteries', 'bleedChance'), cls: 'Rogue', cap: ['open_veins', 'fleetfooted', 'quickened_pulse'],
-      off: [dotPlus('Nicks', 'bleed', 1), dmg('Scent of Blood', 8, { vs: 'bleed' }), startDot('Serrated Start', 'bleed', 5), dotX('Jagged', 'bleed', 25),
+      off: [dotPlus('Nicks', 'bleed', 1), dmg('Scent of Blood', 8, { vs: 'bleed' }), T('From the Shadows', 'Bleed you apply from Stealth is increased by 25%.', ['stealthDot', 'bleed', 25]), dotX('Jagged', 'bleed', 25),
         spread('Bloodbath', 'bleed'), dmg('Frenzy', 15, { vs: 'bleed' }), every('Ribbons', 3, { type: 'Attack' }, 'bleed', 5), per('Exsanguinate', 'bleed', 10, 5, 25), T('Crimson Rain', 'Bleed you apply is increased by 2 and by 30%.', ['dotPlus', 'bleed', 2], ['dotX', 'bleed', 30])],
       d: {}, s: { 9: rally('Feeding Frenzy', 15, 'bleed') } },
     ninja: { party: party('Quick Hands', 'multiplay'), cls: 'Rogue', cap: ['sharpened_stars', 'reflexive_volley', 'hidden_pockets'],

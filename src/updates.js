@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Balance', "Bloodletter, level 6: Serrated Start (3 Bleed to all enemies at the start of a fight) is replaced by From the Shadows: Bleed you apply from Stealth is increased by 25%. If you had Serrated Start picked, you now have the new talent."],
       ['Art', "New pictures for every chest piece (Cinder Jerkin and the rest): 18 redrawn icons for plate, leather and cloth chests on all six maps."],
       ['Interface', "A big gold ! appears next to your codex level whenever you have a talent point to spend. Point at it for the reminder (push N), or click it to open your talents."],
       ['Art', "Eight new mounts in the Skull Shop: Horned Beetle, Soldier Ant, Giant Rabbit, Swamp Toad, Phoenix, Giant Raven, Mossback Tortoise and Basilisk."],
