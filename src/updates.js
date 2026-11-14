@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Interface', "Group finder: a red Cancel my notice button, both next to Update and on your own notice in the list, takes your posting down."],
       ['Interface', "Rest the mouse on a bag item for a second and its full card shows, with item power and what it would replace, the same as clicking it but without the buttons. Move the mouse and it goes away."],
       ['Interface', "Organise your bags: press and hold an item, drag it to any slot and let go. Two items swap places. Everything stays where you put it, and new loot takes the first free slot."],
       ['Change', "Windows now move only when you grab their outer edge (the cursor turns into a hand there), so dragging inside a window never moves it by accident."],
