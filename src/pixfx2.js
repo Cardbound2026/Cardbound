@@ -67,7 +67,7 @@
         case 'frost': return big ? 'icespikes' : one(['frost', 'ice2']);
         case 'shadow': return big ? one(['snare', 'bats']) : 'shadow';
         case 'holy': return big ? 'smite' : 'holy';
-        case 'arcane': return big ? 'lightning' : one(['arcane', 'zap']);
+        case 'arcane': if (o.storm) return big ? 'lightning' : one(['zap', 'zap', 'lightning']); return big ? 'lightning' : one(['arcane', 'zap']);
         case 'nature': return big ? one(['earth', 'thorns2']) : one(['nature', 'vines']);
         case 'clank': FX.add('sparks', { id: o.id }, delay); return null;
         case 'smoke': return 'poof';

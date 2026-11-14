@@ -168,7 +168,7 @@ function upgradeDelta(c, it, mk) {
 // achCheck(p, ev) tests every locked achievement against the account and the event (ev.type: 'run', 'raid', 'duel', 'sale', ...)
 // and returns the newly unlocked ones. A save made before achievements existed unlocks what it can prove, silently, on load.
 const MAP_TITLES = { physical: ['The Broken March', 'Ironbreaker'], fire: ['The Cinder Reach', 'Emberborn'], frost: ['The Rimewatch', 'Winterborn'], nature: ['The Tanglewild', 'Thornwarden'], arcane: ['The Shattered Spire', 'Spirebreaker'], shadow: ['The Hollow Crypts', 'Cryptkeeper'] };
-const CLASS_TITLES = { Warrior: 'Warmaster', Rogue: 'Nightblade', Mage: 'Spellbinder', Paladin: 'Lightbringer', Warlock: 'Voidcaller' };
+const CLASS_TITLES = { Warrior: 'Warmaster', Rogue: 'Nightblade', Mage: 'Spellbinder', Paladin: 'Lightbringer', Warlock: 'Voidcaller', Shaman: 'Stormlord' };
 const heroes = (p) => Object.values(p.chars || {});
 const bestKill = (c, mk) => { const k = c.mapKills || {}; return mk ? (k[mk] == null ? -1 : k[mk]) : Math.max(-1, ...Object.values(k)); };
 const won = (ev, lvl) => ev.type === 'run' && ev.victory && (ev.level || 0) >= lvl;
@@ -204,7 +204,7 @@ const ACH = [
   { id: 'codex20', cat: 'Collection', name: 'Codexmaster', how: 'Take a codex to its top level.', title: 'Codexmaster', test: (p) => heroes(p).some(c => Object.values(c.codexes || {}).some(s => CB.codexLevel(s.xp || 0).level >= CB.CODEX_MAX)) },
   // ---- Nov 13: achievements for every system in the game. All of them, old and new, are kept on the account (p.ach), so every hero shares them.
   { id: 'codex3', cat: 'Codexes', name: 'Scholar', how: 'Take three codexes to their top level on one hero.', title: 'Scholar', test: (p) => heroes(p).some(c => maxedN(c) >= 3) },
-  ...Object.entries({ Warrior: 'Grand Marshal', Rogue: 'Shadowmaster', Mage: 'Archmage', Paladin: 'High Crusader', Warlock: 'Demon Lord' }).map(([cls, t]) => ({ id: 'cxcls_' + cls, cat: 'Codexes', name: t, how: `Take all six ${cls} codexes to their top level.`, title: t,
+  ...Object.entries({ Warrior: 'Grand Marshal', Rogue: 'Shadowmaster', Mage: 'Archmage', Paladin: 'High Crusader', Warlock: 'Demon Lord', Shaman: 'Storm Sovereign' }).map(([cls, t]) => ({ id: 'cxcls_' + cls, cat: 'Codexes', name: t, how: `Take all six ${cls} codexes to their top level.`, title: t,
     n: 6, count: (p) => Math.max(0, ...heroes(p).filter(c => c.cls === cls).map(c => maxedN(c))) })),
   { id: 'cxall', cat: 'Codexes', name: 'Omniscient', how: 'Take every codex in the game to its top level (all five classes).', title: 'the Omniscient', n: 30, count: (p) => Object.keys(CLASS_TITLES).reduce((s, cls) => s + Math.max(0, ...heroes(p).filter(c => c.cls === cls).map(c => maxedN(c))), 0) },
   { id: 'cxlv100', cat: 'Codexes', name: 'Well Read', how: 'Earn 100 codex levels in total across all your heroes.', title: 'the Well Read', n: 100, count: (p) => heroes(p).reduce((s, c) => s + Object.values(c.codexes || {}).reduce((t, x) => t + CB.codexLevel(x.xp || 0).level, 0), 0) },
@@ -292,9 +292,9 @@ function bump(p, k, n) { p.stats = p.stats || {}; p.stats[k] = (p.stats[k] || 0)
 const titleAfter = (t) => /^(the|of) /.test(t || '');   // Nov 13: lower case only, so "The Notorious" is worn before the name
 const titled = (name, t) => !t ? name : titleAfter(t) ? `${name} ${t}` : `${t} ${name}`;
 // Nov 2: Warriors and Paladins call their defense Block with a shield in hand and Parry without one
-function defWord(c) { if (!c) return null; const cls = CLASSES[c.cls]; if (!cls) return null; if (c.cls !== 'Warrior' && c.cls !== 'Paladin') return cls.defense;
-  const o = (c.gear || []).find(g => g && g.slot === 'Off-hand'); return o && /Shield|Pavise|Buckler/.test((o.arch || '') + ' ' + (o.label || '') + ' ' + (o.name || '')) ? 'Block' : 'Parry'; }
-function defText(c, cls, text) { const w = defWord(c); if (!w || !text || (cls !== 'Warrior' && cls !== 'Paladin') || c.cls !== cls) return text;
+function defWord(c) { if (!c) return null; const cls = CLASSES[c.cls]; if (!cls) return null; if (c.cls !== 'Warrior' && c.cls !== 'Paladin' && c.cls !== 'Shaman') return cls.defense;
+  const o = (c.gear || []).find(g => g && g.slot === 'Off-hand'); return o && /Shield|Pavise|Buckler/.test((o.arch || '') + ' ' + (o.label || '') + ' ' + (o.name || '')) ? 'Block' : c.cls === 'Shaman' ? 'Dodge' : 'Parry'; }
+function defText(c, cls, text) { const w = defWord(c); if (!w || !text || c.cls !== cls) return text; if (cls === 'Shaman') return text.replace(/\bGuard\b/g, w); /* Nov 14: the Shaman's Guard reads as Dodge, or Block with a shield */ if (cls !== 'Warrior' && cls !== 'Paladin') return text;
   const lo = w.toLowerCase(), ed = w === 'Block' ? 'Blocked' : 'Parried';
   return text.replace(/\b(Block|Parry)\b/g, w).replace(/\b(block|parry)\b/g, lo).replace(/\b(Blocked|Parried)\b/g, ed).replace(/\b(blocked|parried)\b/g, ed.toLowerCase()); }
 function titleOf(c, p) { const a = c && c.title && ACH_BY[c.title]; return a && (!p || (p.ach || {})[a.id]) ? a.title : ''; }

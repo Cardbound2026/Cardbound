@@ -10,7 +10,7 @@ create table if not exists public.builds (
   user_id     uuid not null default auth.uid() references auth.users (id) on delete cascade,
   author      text not null check (char_length(author) between 1 and 40),
   name        text not null check (char_length(name) between 1 and 60),
-  cls         text not null check (cls in ('Warrior', 'Rogue', 'Mage', 'Paladin', 'Warlock')),
+  cls         text not null check (cls in ('Warrior', 'Rogue', 'Mage', 'Paladin', 'Warlock', 'Shaman')),
   codex       text,
   data        jsonb not null default '{}'::jsonb check (pg_column_size(data) < 20000),
   descr       text not null default '' check (char_length(descr) <= 4000),
@@ -72,3 +72,7 @@ begin
 end $$;
 drop trigger if exists builds_guard on public.builds;
 create trigger builds_guard before insert or update on public.builds for each row execute function public.builds_guard();
+
+-- Nov 14: the Shaman. A table made before this date still has the five-class check: this swaps it (safe to run again).
+alter table public.builds drop constraint if exists builds_cls_check;
+alter table public.builds add constraint builds_cls_check check (cls in ('Warrior', 'Rogue', 'Mage', 'Paladin', 'Warlock', 'Shaman'));

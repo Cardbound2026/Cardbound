@@ -185,7 +185,7 @@
     // ---------- what the engine's events look like
     const ELEM = (d) => d === 'Fire' ? 'fire' : d === 'Frost' ? 'frost' : d === 'Shadow' ? 'shadow' : d === 'Holy' ? 'holy' : d === 'Arcane' ? 'arcane' : d === 'Nature' ? 'nature' : null;
     const DOT = { bleed: 'bleed', poison: 'poison', burn: 'burn', dread: 'dread', rot: 'rot', chill: 'chill' };
-    const DEF_FX = { Rogue: 'dodge', Warrior: 'parry', Paladin: 'block', Mage: 'barrier', Warlock: 'absorb' };
+    const DEF_FX = { Rogue: 'dodge', Warrior: 'parry', Paladin: 'block', Mage: 'barrier', Warlock: 'absorb', Shaman: 'dodge' };
     let lastStealth = {}, seen = {};
     function consume(cb) {
       if (!cb) return; const F = window.CB_FORGE;
@@ -229,10 +229,10 @@
             continue;
           }
           // the impact: by element, else by the weapon (heroes) or the creature (monsters)
-          let fx = ELEM(e.dtype);
+          let fx = ELEM(e.dtype); const storm = fx === 'nature' && src && src.cls === 'Shaman'; if (storm) fx = 'arcane';   /* Nov 14: the Shaman's Nature damage is lightning, not leaves */
           if (!fx) { if (src && src.isPlayer) fx = e.kind === 'Skill' ? 'blunt' : (F ? F.weaponKind(src) : 'slash'); else fx = src && /beast|Beast/.test(src.creature || '') ? 'claw' : 'slash'; }
           const big = !!e.crit || e.lost >= tgt.maxHp * 0.2;
-          add(e.thorn ? 'rosethorn' : fx, { id: e.d, ang: -2.4 + (i - 1) * 0.9 * (i % 2 ? 1 : -1), big, side, seed: Math.random() * 1e9, snd: e.thorn ? 'mute' : null }, delay);   /* Nov 13: Thorns and Spikes striking back are silent */
+          add(e.thorn ? 'rosethorn' : fx, { id: e.d, storm, ang: -2.4 + (i - 1) * 0.9 * (i % 2 ? 1 : -1), big, side, seed: Math.random() * 1e9, snd: e.thorn ? 'mute' : null }, delay);   /* Nov 13: Thorns and Spikes striking back are silent */
           if (e.crit) { add('crit', { id: e.d }, delay); setTimeout(() => { const st = document.querySelector('#scrCombat .stage') || document.getElementById('scrCombat'); if (st) { st.classList.remove('fxshake'); void st.offsetWidth; st.classList.add('fxshake'); } }, delay); }
           if (F) setTimeout(() => F.play(e.d, tgt.isPlayer ? (big ? 'knock' : 'hit') : (big ? 'eknock' : 'ehit')), delay);
           setTimeout(() => { const u = document.querySelector(`#scrCombat .unit[data-id="${e.d}"]`), st = document.querySelector('#scrCombat .stage') || document.getElementById('scrCombat'); if (u) { u.classList.remove('hitflash'); void u.offsetWidth; u.classList.add('hitflash'); setTimeout(() => u.classList.remove('hitflash'), 140); } if (big && st) { st.classList.remove('fxpunch'); void st.offsetWidth; st.classList.add('fxpunch'); setTimeout(() => st.classList.remove('fxpunch'), 260); if (window.CB_HEROPUP && CB_HEROPUP.hold) CB_HEROPUP.hold(e.crit ? 110 : 70); } }, delay); // impact: a white flash on whoever is struck; a big hit also holds the fight still for an instant and punches the camera
@@ -240,7 +240,8 @@
           const k = e.t === 'demon' ? 'dact' : 'dhit', wait = e.t === 'demon' ? (nth['dm' + e.d] = (nth['dm' + e.d] || 0) + 1) * 260 - 260 : 140;
           setTimeout(() => { const el = document.querySelector(`.unit[data-id="${e.d}"] .demon[data-du="${e.u}"]`); if (!el) return; el.classList.remove('dact', 'dhit'); void el.offsetWidth; el.classList.add(k); setTimeout(() => el.classList.remove(k), 600); }, wait);
         } else if (e.t === 'eplay') { if (window.CB_MOBS) CB_MOBS.cardPlay(e); // an animated monster plays its card's move (src/mobsprites.js)
-        } else if (e.t === 'apply') { add(DOT[e.key] || 'bleed', { id: e.d, n: 4, seed: Math.random() * 1e9 }, 260); }
+        } else if (e.t === 'apply' && (e.key === 'static' || e.key === 'stun')) { if (e.key === 'stun' && DRAW.stun) add('stun', { id: e.d, raw: true }, 200); else add('arcane', { id: e.d, storm: true, snd: 'mute' }, 200); }
+        else if (e.t === 'apply') { add(DOT[e.key] || 'bleed', { id: e.d, n: 4, seed: Math.random() * 1e9 }, 260); }
         else if (e.t === 'heal') add('heal', { id: e.d, seed: Math.random() * 1e9 });
         else if (e.t === 'block') add('block', { id: e.d, col: (cb.actorById(e.d) || {}).cls === 'Mage' ? 'ward' : (cb.actorById(e.d) || {}).cls === 'Warlock' ? 'absorb' : null, snd: (cb.actorById(e.d) || {}).cls === 'Rogue' ? 'whoosh' : null });   // Nov 13: gaining Dodge sounds like a whoosh, not a shield clink
       }

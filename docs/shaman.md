@@ -1,4 +1,10 @@
-# Shaman: class design (agreed Nov 13, not built yet)
+# Shaman: class design (agreed Nov 13; BUILT and live Nov 14)
+
+Built in src/shaman.js (cards, Powers, codex passives, engine hooks), src/talents.js (the six trees at the bottom), src/engine.js (search "Shaman"),
+src/testdecks.js (18 decks, made by tools/shaman/testdecks.js). Tests: `node tools/shaman/test.js` (every card) and `node tools/shaman/fuzz_all.js`.
+Codex names: Hybrid = Twinstorm, Healer = Rainbringer, Caster = Stormcaller, Melee = Skybreaker, Support tank = Stormwarden, Control = Calm Eye.
+Differences from the notes below: the card "Stormwarden" became Storm's Aegis; Quiet Sky gives 8 Guard on a quiet turn; Patience makes next turn's cards cost 10 less;
+Wellspring gives 3 defence per heal instead of turning overhealing into Barrier; Lightning Rod is an exhausting Skill, not a Power. No card art yet.
 
 **Identity.** A hybrid through and through: Attacks and spells mixed in one deck, built around Multi-hit and Multicast.
 Totems are saved for the Druid.

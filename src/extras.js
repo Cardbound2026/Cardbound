@@ -48,7 +48,7 @@
   const EX_KIND = { aura: 'Aura', trail: 'Footsteps', wings: 'Back cosmetic', wskin: 'Weapon look', border: 'Card border', cback: 'Card back', cursor: 'Mouse cursor' }; for (const [t, n] of Object.entries(WSK_T)) EX_KIND['wsk_' + t] = n + ' look';
   // Nov 13: card backs (img/cardbacks.webp, 10 across: the five class backs, then the shop's). Shown on the draw, discard and exhaust piles
   const CBK = window.CB_CARDBACKS || { rows: 2, extra: [] };
-  const EX_CLSBACK = { Warrior: 0, Rogue: 1, Mage: 2, Paladin: 3, Warlock: 4 };
+  const EX_CLSBACK = { Warrior: 0, Rogue: 1, Mage: 2, Paladin: 3, Warlock: 4, Shaman: 2 };
   function exCardBack(cls) { let b = null; try { b = exApp().cos.cback; } catch (e) {} const c = b && EX_COSBY[b]; return c ? c[4] : EX_CLSBACK[cls] || 0; }
   const cbackPv = (i) => `<i class="sw" style="border-radius:5px;width:60px;height:85px;background:url(img/cardbacks.webp) ${(i % 10) / 9 * 100}% ${Math.floor(i / 10) / Math.max(1, CBK.rows - 1) * 100}% / 1000% ${CBK.rows * 100}%;image-rendering:pixelated;box-shadow:0 0 0 1px #000,0 3px 8px #000"></i>`;
   // dyes: the game's own colours (class, element and rarity colours, plus the neutrals)

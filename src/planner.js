@@ -4,7 +4,7 @@
   // (supabase/builds.sql: builds, build_votes); your own builds are kept on your account (profile.builds). Builds on the old
   // Build guide (src/guide.js) can be followed the same way.
   const PL = { tab: 'mine', edit: null, view: null, back: 'mine', list: null, sort: 'top', q: '', cls: '', votes: {}, err: '', busy: false, pick: { q: '', type: '' }, fold: false, sig: '' };
-  const PL_CLS = ['Warrior', 'Rogue', 'Mage', 'Paladin', 'Warlock'], PL_RAR = ['Gold', 'Blue', 'Green', 'White'];
+  const PL_CLS = ['Warrior', 'Rogue', 'Mage', 'Paladin', 'Warlock', 'Shaman'], PL_RAR = ['Gold', 'Blue', 'Green', 'White'];
   const plBuilds = () => (profile.builds = profile.builds || []);
   const plCount = (b) => (b.cards || []).reduce((s, x) => s + x[1], 0);
   const plCodexes = (cls) => Object.values(CB.CODEX_BY_KEY).filter(x => x.cls === cls);

@@ -13,6 +13,7 @@
       Mage: { scheme: 'funeral', face: 'mystic', hair: 'long', beard: 'pointed', mark: 'runes' },
       Paladin: { scheme: 'brass', face: 'pilgrim', hair: 'curls', beard: 'short', mark: 'none' },
       Warlock: { scheme: 'funeral', face: 'skull', hair: 'bald', beard: 'none', mark: 'none' },
+      Shaman: { scheme: 'moss', face: 'veteran', hair: 'long', beard: 'short', mark: 'runes' },
     };
     const BASE = { head: 'none_0', chest: 'cloth_0', shoulders: 'none_0', hands: 'none_0', waist: 'belt_0', legs: 'pants_0', feet: 'none_0', back: 'none_0', weapon: 'none_0', offhand: 'none_0' };
     // game item archetype -> sprite slot and one piece per map (Broken March, Cinder Reach, Rimewatch, Tanglewild, Shattered Spire, Hollow Crypts)

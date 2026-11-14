@@ -560,6 +560,13 @@ const CODEXES = {
   Warlock: [['soulbinder', 'Soulbinder', 'Your Shadow damage is 20% higher. 5% of the damage you deal heals every hero in the party, and your Soul Beacon heals 50% more.'], ['blightcaller', 'Blightcaller', 'Dread you apply is increased by 15%.'],
     ['shadow_knight', 'Shadow Knight', 'You get 20% more Strength from gear. Your Physical damage becomes Shadow. Your Shadow Attacks heal you for 5% of the damage they deal.'], ['demonologist', 'Demonologist', 'Your demons stay 1 turn longer.'],
     ['bloodmancer', 'Bloodmancer', 'Physical Skills deal 20% more damage. Your cards cost HP instead of mana (1 HP per 2 mana, up to as much HP as your max mana each turn). At the start of your turn your mana turns into healing (1 HP per 3 mana). Below 50% HP you heal for 5% of the damage you deal; below 20% HP, 10%.'], ['umbral_ruin', 'Umbral Ruin', '+10% crit chance. 30% of the damage your crits deal is applied again as Rot over 3 turns.']],
+  // Nov 14: the Shaman's six (the passives are in src/shaman.js)
+  Shaman: [['twinstorm', 'Twinstorm', '50% of your Strength is added as Intelligence and 50% of your Intelligence as Strength. Each Attack you play adds 10% Multicast chance and each Skill adds 10% Multi-hit chance; the stored chance is spent when it triggers.'],
+    ['rainbringer', 'Rainbringer', 'Your heals can Multicast. A heal that Multicasts makes your next Attack a sure Multi-hit, and your own Multi-hit chance then becomes the chance of a third hit.'],
+    ['stormcaller', 'Stormcaller', 'Whenever one of your spells Multicasts, a third copy is cast at 50% strength.'],
+    ['skybreaker', 'Skybreaker', 'Whenever one of your Attacks Multi-hits, your last damaging spell is cast again, free, at half strength.'],
+    ['stormwarden', 'Stormwarden', 'Your Soaked, Deafened, Unsteady and Stormworn never wear off, and your timed buffs never run out. Only 20% of your Guard fades between turns (not half). You take 5% less damage from an enemy for each different Shaman debuff on it (Static counts).'],
+    ['calm_eye', 'Calm Eye', 'End a turn without playing a card and your next card is played twice.']],
 };
 const CODEX_BY_KEY = {}; for (const [cls, list] of Object.entries(CODEXES)) for (const [key, name, text] of list) CODEX_BY_KEY[key] = { key, name, text, cls };
 function makeCodex(data, rng, key, level) {
@@ -673,6 +680,10 @@ const WARLOCK = (typeof module !== 'undefined' && module.exports) ? require('./w
 const BLOOD_CAP = 15; // Bloodmancer: HP you can pay for cards in one turn
 const DEMONS = {}; // filled by src/warlock.js: key -> { name, hp (% of the owner's max HP), act(cb, owner, demon, target, scale), taunt?, pick?, depart? }
 if (WARLOCK) WARLOCK.install({ card, C, POWERS, DEMONS, tgtOf, D_, DA, say, PN });
+// ---------------- Shaman (Nov 14): the sixth class. Cards, Powers, codex passives and the engine hooks (SHX) live in src/shaman.js
+const SHAMAN = (typeof module !== 'undefined' && module.exports) ? require('./shaman.js') : root.CB_SHAMAN;
+if (SHAMAN) SHAMAN.install({ card, C, POWERS, tgtOf, D_, DA, say, PN });
+const SHX = SHAMAN ? SHAMAN.X : null;
 // run a generated card's effects; t = the chosen enemy (or null)
 function runOps(cb, t, ops, label) {
   const p = cb.player;
@@ -718,6 +729,7 @@ const CLASSES = {
   Mage: { defense: 'Barrier', blurb: 'Fire, Frost and Arcane spells with Barrier. Exploits enemy weaknesses (Arcane vs humans, Fire vs beasts).', deck: [['amplify', 1], ['prismatic_barrier', 1], ['pyroblast', 1], ['arcane_barrage', 1], ['blizzard', 1], ['ice_barrier', 1], ['arcane_missiles', 2], ['fireball', 3], ['frostbolt', 2], ['ice_bolt', 1], ['mana_spring', 1], ['ward', 5]] },
   Paladin: { defense: 'Block', blurb: 'Holy warrior: Block, Holy damage that ignores resistance, and heals.', deck: [['lay_on_hands', 1], ['ardent_defense', 1], ['holy_nova', 1], ['divine_shield', 1], ['divine_storm', 1], ['healing_light', 1], ['crusader_strike', 6], ['raise_shield', 2], ['righteous_blow', 2], ['sacred_ward', 1], ['smite', 3]] },
   Warlock: { defense: 'Absorb', blurb: 'Shadow caster: Dread and Rot, curses, demons and Absorb (overhealing a Warlock becomes Absorb).', deck: [['soul_beacon', 1], ['shadow_armor', 1], ['soul_shroud', 1], ['shadow_volley', 1], ['curse_of_frailty', 1], ['drain_life', 1], ['summon_gloom_imp', 1], ['shadow_bolt', 5], ['dark_ward', 4], ['dread_touch', 2], ['rotting_grasp', 1], ['siphon_soul', 1]] },
+  Shaman: { defense: 'Dodge', blurb: 'Storm hybrid: mace Attacks and lightning spells built on Multi-hit and Multicast. Lightning builds Static, which you spend on damage and Stuns. Dodge, or Block with a shield.', deck: [['sh_tempest', 1], ['sh_electrocute', 1], ['sh_gale_fury', 1], ['sh_chain_lightning', 1], ['sh_charged_blow', 1], ['sh_rain_mend', 1], ['sh_mace_strike', 4], ['sh_lightning_bolt', 3], ['sh_jolt', 2], ['sh_wind_step', 3], ['sh_twin_strike', 1], ['sh_mending_rain', 1]] },
 };
 const boost = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, /Crit Chance|Resistance/.test(k) ? v : Math.round(v * 4 / 3)])); // Nov 3: starter gear is a third stronger
 const it = (slot, base, stats, imp2) => ({ slot, name: base, rarity: 'White', ilvl: 1, stats: Object.assign({ 'Resistance:Fire': 3 }, boost(stats)), imp2: imp2 || {}, r2: 1, r3: 1, r4: 1, r5: 1 }); // starter gear keeps Fire (it isn't Map 1 loot; Physical here would make Map 1 trivial)
@@ -742,6 +754,10 @@ const STARTER_GEAR = {
     it('Amulet', "Soldier's Pendant", { Intelligence: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Camp Robe', { Stamina: 6 }),
     it('Bracers', 'Linen Wraps', { Intelligence: 3 }), it('Gloves', "Scribe's Handwraps", { 'Crit Chance': 1 }), it('Belt', "Officer's Sash", { Stamina: 6 }), it('Pants', 'Quilted Leggings', { Stamina: 6 }),
     it('Boots', 'Pilgrim Slippers', { Dexterity: 3 }, { Initiative: 3 }), it('Ring 1', 'Ember-Warded Ring', { Stamina: 6 }), it('Ring 2', "Soldier's Signet", { Spirit: 3 })],
+  Shaman: [it('Weapon', 'Flanged Mace', { Strength: 3 }, { 'Multi-hit Chance': 2, 'Multicast Chance': 2 }), it('Off-hand', 'Flanged Mace', { Intelligence: 3 }, { 'Multi-hit Chance': 2, 'Multicast Chance': 2 }), it('Helm', "Scout's Cap", { Strength: 3 }), it('Shoulders', "Scout's Spaulders", { Dexterity: 2 }),
+    it('Amulet', "Soldier's Pendant", { Intelligence: 3 }, { Draw: 4, Regen: 20 }), it('Cloak', 'Campaign Cloak', { 'Max Mana': 15 }), it('Chest', 'Camp Robe', { Stamina: 6 }),
+    it('Bracers', "Archer's Bracers", { Strength: 3 }), it('Gloves', "Scribe's Handwraps", { 'Crit Chance': 1 }), it('Belt', 'War Belt', { Stamina: 6 }), it('Pants', 'Quilted Leggings', { Stamina: 6 }),
+    it('Boots', 'March Boots', { Dexterity: 3 }, { Initiative: 3 }), it('Ring 1', 'Ember-Warded Ring', { Stamina: 6 }), it('Ring 2', "Soldier's Signet", { Intelligence: 3 })],
 };
 
 // Nov 3: each starting playstyle swaps two starter pieces for Greens that help that style get going (no affix lines, so they can't be rerolled)
@@ -776,6 +792,12 @@ const STARTER_KITS = {
     soulbinder: [gk('Off-hand', 'Battle Focus', { Spirit: 6 }, { 'Elemental/Holy Damage:Shadow': 12 }), gk('Chest', 'Camp Robe', { Stamina: 16 })],
     demonologist: [gk('Weapon', 'Ashwood Wand', { Intelligence: 6 }, { 'Elemental/Holy Damage:Shadow': 12 }), gk('Chest', 'Camp Robe', { Stamina: 14, 'Max Mana': 10 })],
     shadowknight: [gk('Weapon', "Reaper's Scythe", { Strength: 8, Stamina: 6 }, { 'Elemental/Holy Damage:Shadow': 12 }), { slot: 'Off-hand', none: true }, gk('Chest', 'Camp Robe', { Stamina: 16 })], // Nov 7: a Scythe instead of the Wand and Focus
+  },
+  Shaman: {
+    balanced: [gk('Weapon', 'Flanged Mace', { Strength: 4, Intelligence: 4 }, { 'Multi-hit Chance': 3, 'Multicast Chance': 3 }), gk('Chest', 'Camp Robe', { Stamina: 16 })],
+    stormcaller: [gk('Off-hand', 'Flanged Mace', { Intelligence: 7 }, { 'Multi-hit Chance': 3, 'Multicast Chance': 3 }), gk('Chest', 'Camp Robe', { 'Max Mana': 25, Intelligence: 4 })],
+    skybreaker: [gk('Weapon', 'Flanged Mace', { Strength: 7 }, { 'Multi-hit Chance': 3, 'Multicast Chance': 3 }), gk('Gloves', 'Leather Gauntlets', { Strength: 6, 'Crit Chance': 2 })],
+    rainbringer: [gk('Off-hand', 'Flanged Mace', { Intelligence: 5, Spirit: 4 }, { 'Multi-hit Chance': 3, 'Multicast Chance': 3 }), gk('Chest', 'Camp Robe', { Stamina: 12, 'Max Mana': 15 })],
   },
 };
 
@@ -820,6 +842,12 @@ const STARTER_DECKS = {
     ['demonologist', 'Demonologist', 'Summon demons that fight for you at the end of each turn.', [['summon_ruin_fiend', 1], ['summon_bulwark_fiend', 1], ['demonic_empowerment', 1], ['summon_imp_swarm', 1], ['summon_hollow_hound', 1], ['fel_command', 1], ['summon_gloom_imp', 2], ['shadow_bolt', 4], ['dark_ward', 4], ['demon_whip', 2], ['dark_pact', 2]]],
     ['shadowknight', 'Shadow Knight', 'Two-handed Strength strikes wreathed in shadow that drain life.', [['dread_lord', 1], ['soul_cleave', 1], ['blood_armor', 1], ['shadow_strike', 1], ['dark_cleave', 1], ['harvest_life', 1], ['dread_blade', 4], ['grim_swing', 4], ['dark_ward', 4], ['life_tap_strike', 2]]],
   ],
+  Shaman: [
+    ['balanced', 'Balanced', 'Maces, lightning, a heal and a first taste of Static and Stuns.', null],
+    ['stormcaller', 'Stormcaller', 'Lightning spells that pile up Static, then spend it.', [['sh_tempest_lance', 1], ['sh_lightning_burst', 1], ['sh_charged_air', 1], ['sh_chain_lightning', 1], ['sh_discharge', 1], ['sh_thunderhead', 1], ['sh_lightning_bolt', 4], ['sh_jolt', 3], ['sh_static_charge', 2], ['sh_wind_step', 3], ['sh_drench', 1], ['sh_focus_the_storm', 1]]],
+    ['skybreaker', 'Skybreaker', 'Two maces and as much Multi-hit as you can find.', [['sh_tempest', 1], ['sh_echoing_blow', 1], ['sh_gale_fury', 1], ['sh_charged_blow', 1], ['sh_rolling_thunder', 1], ['sh_hammer_and_anvil', 1], ['sh_mace_strike', 4], ['sh_twin_strike', 3], ['sh_backswing', 2], ['sh_lightning_weapon', 2], ['sh_wind_step', 3]]],
+    ['rainbringer', 'Rainbringer', 'Keep the party standing with rain, and fight between heals.', [['sh_rainmaker', 1], ['sh_lifeline', 1], ['sh_thunder_mend', 1], ['sh_living_lightning', 1], ['sh_rain_mend', 1], ['sh_chain_lightning', 1], ['sh_mending_rain', 3], ['sh_cleansing_rain', 1], ['sh_soothing_mist', 1], ['sh_lightning_bolt', 3], ['sh_mace_strike', 3], ['sh_wind_step', 3]]],
+  ],
 };
 // the amulet's 6 points split between card draw and mana regen (each point not on draw is +10 regen)
 const STARTER_AMULETS = [
@@ -829,7 +857,7 @@ const STARTER_AMULETS = [
   ['soldier', "Soldier's Pendant", 4, 20, 'The classic: a full hand, modest mana.'],
   ['quickhand', 'Quickhand Pendant', 5, 10, 'Lots of cards, little mana: for cheap decks.'],
 ];
-const AMULET_STAT = { Warrior: 'Strength', Rogue: 'Strength', Mage: 'Intelligence', Paladin: 'Strength', Warlock: 'Intelligence' };
+const AMULET_STAT = { Warrior: 'Strength', Rogue: 'Strength', Mage: 'Intelligence', Paladin: 'Strength', Warlock: 'Intelligence', Shaman: 'Intelligence' };
 function starterAmulet(cls, key) { const a = STARTER_AMULETS.find(x => x[0] === key) || STARTER_AMULETS[3]; return { slot: 'Amulet', name: a[1], rarity: 'White', ilvl: 1, stats: { [AMULET_STAT[cls] || 'Strength']: 3 }, imp2: { Draw: a[2], Regen: a[3] }, label: 'Starter amulet', amuletKey: a[0], r2: 1, r3: 1, r4: 1, r5: 1 }; }
 const PRESSURE_START = 5, PRESSURE_STEP = 0.02;
 const ELEMENTS = ['Physical', 'Fire', 'Frost', 'Nature', 'Arcane', 'Shadow'];
@@ -990,7 +1018,7 @@ class Combat {
   makePlayer(spec, i, n) {
     const cls = CLASSES[spec.cls]; const g = sumGear(legalGear(spec, this.data)); const buffs = spec.buffs || {};
     const p = {
-      id: 'p' + i, idx: i, name: spec.name || spec.cls, isPlayer: true, cls: spec.cls, defName: (spec.cls === 'Warrior' || spec.cls === 'Paladin') ? (legalGear(spec, this.data).some(x => x && x.slot === 'Off-hand' && (/Shield/.test(x.arch || x.label || '') || ['Kite Shield', 'Pavise'].includes(x.name))) ? 'Block' : 'Parry') : cls.defense, maxHp: g.maxHp, hp: Math.min(g.maxHp, spec.hp != null ? spec.hp : g.maxHp), block: 0,
+      id: 'p' + i, idx: i, name: spec.name || spec.cls, isPlayer: true, cls: spec.cls, defName: (spec.cls === 'Warrior' || spec.cls === 'Paladin' || spec.cls === 'Shaman') ? (legalGear(spec, this.data).some(x => x && x.slot === 'Off-hand' && (/Shield/.test(x.arch || x.label || '') || ['Kite Shield', 'Pavise'].includes(x.name))) ? 'Block' : spec.cls === 'Shaman' ? 'Dodge' : 'Parry') : cls.defense, maxHp: g.maxHp, hp: Math.min(g.maxHp, spec.hp != null ? spec.hp : g.maxHp), block: 0,
       mana: spec.mana != null ? Math.min(spec.mana, g.maxMana) : 0, maxMana: g.maxMana, regen: g.regen + (buffs.regen || 0), draw: g.draw + (buffs.draw || 0),
       strength: g.strength + (buffs.damage || 0), intelligence: g.intelligence + (buffs.damage || 0), dexterity: g.dexterity + g.defGain, spirit: g.spirit,
       crit: g.crit + (buffs.crit || 0), critMult: g.critMult, multiHit: g.multiHit, multiplay: g.multiplay, multicast: g.multicast, bleedChance: g.bleedChance, lifesteal: g.lifesteal,
@@ -1068,7 +1096,7 @@ class Combat {
 
   // ----- card systems: turn flags (p.turn, cleared when your turn ends), until-your-next-turn flags (p.until), timed effects (p.timed)
   timed(p, key, turns, o) { const t = Object.assign({ key, turns }, o || {}); p.timed.push(t); if (this._rkCard && !this._inPw && this._playing === this._rkCard) { if (this._rk) t.rk = this._rk; if (this._rkTimed) this._rkTimed.push(t); } if (t.begin) t.begin(this, p, t); return t; }
-  tickTimed(p) { for (const t of p.timed) { if (t.each) this.rkRun(t.rk, () => t.each(this, p, t)); t.turns--; if (t.turns <= 0 && t.end) this.rkRun(t.rk, () => t.end(this, p, t)); } p.timed = p.timed.filter(t => t.turns > 0); }
+  tickTimed(p) { for (const t of p.timed) { if (t.each) this.rkRun(t.rk, () => t.each(this, p, t)); if (!t.hold) t.turns--; if (t.turns <= 0 && t.end) this.rkRun(t.rk, () => t.end(this, p, t)); } p.timed = p.timed.filter(t => t.turns > 0); }
   hasTimed(p, key) { return p.timed && p.timed.some(t => t.key === key); }
   // ----- Warlock systems (Nov 1)
   // Rot: each application deals its amount over 4 turns (12 Rot ticks 3/3/3/3); every application keeps its own timer. Ignores Block.
@@ -1254,7 +1282,7 @@ class Combat {
   // what the acting hero can hit: monsters, or in a duel the other hero (unless they are in Stealth and the card is single-target)
   alive() { return this.duel ? this.players.filter(p => p !== this.player && p.hp > 0) : this.foes(); }
   initiative(a) { return a.baseInit + (a.initNext || 0) - (a.slow || 0) - (a.chill || 0) + (a.isPlayer && a.powers.length ? this.pwSum(a, 'initPlus') : 0); }
-  pressure() { if (this.opts.practice) return 0; return this.round >= PRESSURE_START ? (this.round - PRESSURE_START + 1) * PRESSURE_STEP * (this.duel ? 5 : 1) : 0; } // duels ramp 5x faster so they end
+  pressure() { if (this.opts.practice) return 0; const rd = this.round - (this.pressSkip || 0); return rd >= PRESSURE_START ? (rd - PRESSURE_START + 1) * PRESSURE_STEP * (this.duel ? 5 : 1) : 0; } // duels ramp 5x faster so they end
   card(c) { if (!c.rank) return C[c.key]; if (!c._v || c._v.rank !== c.rank) Object.defineProperty(c, '_v', { value: rankedCard(c.key, c.rank), enumerable: false, writable: true, configurable: true }); return c._v; } // cached off the JSON
   // card text with live numbers: damage and defense as they would land right now from this hero's stats, gear and active buffs
   // (before the target's own resistance, weakness, Vulnerable or Block). Changed numbers are wrapped \u0001n\u0002 (up) or \u0003n\u0004 (down).
@@ -1436,6 +1464,7 @@ class Combat {
     if (this.over) return;
     if (a.hp <= 0) { this.nextTurn(); return; }
     if (a.isPlayer && a.frozen) { a.frozen = false; this.say('crit', `${a.name} is Frozen and loses the turn.`); a.discard.push(...a.hand.splice(0)); if (a.chill) a.chill = 0; this.nextTurn(); return; }
+    if (!a.isPlayer && a.stunTurns > 0 && !this.raidBoss(a)) { a.stunTurns--; this.say('enemy', `${a.name} is ${a.toad ? 'a toad' : 'Stunned'} and loses its turn${a.stunTurns ? ' (' + a.stunTurns + ' more)' : ''}.`); if (!a.stunTurns) { a.stunned = 0; a.toad = 0; } a.frozen = false; a.plan = []; a.discard.push(...a.hand.splice(0)); this.drawCards(a, a.draw); this.planEnemy(a); if (SHX) SHX.eTick(this, a); this.nextTurn(); return; } // Nov 14: Shaman stuns take whole turns and stack
     if (!a.isPlayer && a.frozen && this.raidBoss(a)) { a.frozen = false; this.say('enemy', `${a.name} shrugs off the Freeze: raid bosses can't be stopped.`); }
     if (!a.isPlayer && a.frozen) { a.frozen = false; this.say('enemy', `${a.name} is Frozen and loses its turn.`); a.plan = []; a.discard.push(...a.hand.splice(0)); this.drawCards(a, a.draw); this.planEnemy(a); this.nextTurn(); return; }
     this.phase = a.isPlayer ? 'player' : 'enemy';
@@ -1444,7 +1473,7 @@ class Combat {
   beginTurn(a) {
     if (!a.isPlayer && this.opts.blockReset !== 'none' && a.block) { a.block = 0; a.parryBack = 0; }
     if (a.isPlayer && this.opts.blockReset === 'all' && a.block) { this.say('player', `Your ${a.block} ${a.defName} fades.`); a.block = 0; }
-    if (a.isPlayer && this.opts.blockReset === 'decay' && a.block && !(a.until.keepBlock || this.hasTimed(a, 'keepBlock'))) { const hold = this.has(a, 'codex_bulwark') || this.has(a, 'codex_riposte') || this.has(a, 'codex_barrier_savant'); const kept = Math.floor(a.block * (hold ? 0.8 : 0.5)); this.say('player', `${hold ? '20% of ' + (this.partySize > 1 ? a.name + "'s" : 'your') : this.partySize > 1 ? 'Half of ' + a.name + "'s" : 'Half your'} ${a.defName} fades: ${a.block} -> ${kept}.`); a.block = kept; } // Nov 2: Bulwark, Riposte and Barrier Savant keep 80%
+    if (a.isPlayer && this.opts.blockReset === 'decay' && a.block && !(a.until.keepBlock || this.hasTimed(a, 'keepBlock'))) { const hold = this.has(a, 'codex_bulwark') || this.has(a, 'codex_riposte') || this.has(a, 'codex_barrier_savant') || this.has(a, 'codex_stormwarden'); const kept = Math.floor(a.block * (hold ? 0.8 : 0.5)); this.say('player', `${hold ? '20% of ' + (this.partySize > 1 ? a.name + "'s" : 'your') : this.partySize > 1 ? 'Half of ' + a.name + "'s" : 'Half your'} ${a.defName} fades: ${a.block} -> ${kept}.`); a.block = kept; } // Nov 2: Bulwark, Riposte and Barrier Savant keep 80%
     if (a.isPlayer && a.regenDown.length) { for (const r of a.regenDown) r.turns--; }
     const regen = a.isPlayer ? Math.max(0, a.regen - a.regenDown.reduce((s, x) => s + x.n, 0)) : this.effRegen(a);
     if (a.isPlayer) a.regenDown = a.regenDown.filter(r => r.turns > 0);
@@ -1453,6 +1482,7 @@ class Combat {
     if (a.isPlayer && a.noRegenTurns > 0) this.say('player', `${this.who(a)} regenerate${this.partySize > 1 ? 's' : ''} no mana this turn.`);
     const before = a.mana;
     a.mana = a.isPlayer && this.has(a, 'mana_shell') ? a.mana + gain : a.isPlayer ? Math.max(a.mana, Math.min(a.maxMana + extra, a.mana + gain)) : Math.min(a.maxMana + extra, a.mana + gain); // Nov 3: mana above max (Overcharge, Arcane Reservoir) is kept
+    if (!a.isPlayer && a.manaLock > 0) { a.manaLock--; a.mana = before; this.say('player', `${a.name} gains no mana this turn (Mana Lock).`); }
     a.firstTurn = false;
     if (a.isPlayer) {
       this.say('player', `${this.partySize > 1 ? a.name + "'s" : 'Your'} turn. Mana ${before} + ${gain}${extra ? ' (incl. Mana Spring)' : ''} = ${a.mana} / ${a.maxMana}.`);
@@ -1462,7 +1492,7 @@ class Combat {
       if (a.disarmed) this.say('enemy', 'You are Disarmed: you cannot play Attacks this turn.');
       if (a.defNext) { this.gainDef(a.defNext, 'delayed'); a.defNext = 0; }
       if (a.recovery && a.hp < a.maxHp) this.heal(a, a.recovery, 'Recovery', true);
-      a.turnAttacks = 0; a.turnSkills = 0; a.turnElems = []; a.turn = {};
+      a.turnAttacks = 0; a.turnSkills = 0; a.turnElems = []; a.turn = {}; if (SHX) SHX.begin(this, a);
       if (a.until.grudge) { for (const [eid, n] of Object.entries(a.until.grudge)) { const e = this.actorById(eid); if (e && e.hp > 0) { const s2 = this.drainMana(e, n); this.say('player', `Grudge: ${e.name} loses ${s2} mana.`); } } }
       if (a.until.stored) { this.gainDef(a.until.stored); this.say('player', 'Stored Impact turns into protection.'); }
       a.until = a.until.storeNext ? { storing: true } : {};
@@ -1589,10 +1619,10 @@ class Combat {
     if (this.foes().length === 0) { this.say('win', `Victory in ${this.round} round${this.round > 1 ? 's' : ''}.`); this.over = 'win'; this.phase = 'over'; }
   }
 
-  typeMod(e, dtype) {
+  typeMod(e, dtype, p) {
     if (dtype === 'Holy') return 1;
     let m = 1;
-    if (e.type === dtype) m *= 1 - this.typeResist;
+    if (e.type === dtype) m *= 1 - (SHX ? SHX.res(this, p, e, this.typeResist) : this.typeResist); // Nov 14: Penetration and Stormworn cut the resistance
     if (e.weakTo === dtype) m *= 1.25;
     return m;
   }
@@ -1626,13 +1656,13 @@ class Combat {
     const stat = (kind === 'Attack' ? p.strength + p.strTurn + p.strCombat : p.intelligence + (p.intTurn || 0)) + (pow ? this.pwSum(p, 'statPlus', e, ctx) : 0);
     const elem = p.elem[dtype] || 0;
     const crit = this.rng() * 100 < p.crit + (pow ? this.pwSum(p, 'crit', cd) : 0) + (p.turn && p.turn.critPlus || 0); this._lastCrit = crit;
-    const tm = this.typeMod(e, dtype);
+    const tm = this.typeMod(e, dtype, p);
     const weakMod = 1 - Math.min(p.weak, 90) / 100, vulnMod = 1 + (dtype !== 'Physical' ? 0 : 1) * Math.min(0.5, e.vulnerable / 100) * (pow ? Math.max(1, ...this.pws(p).map(([, d]) => d.vulnX || 1)) : 1); // Nov 2: Vulnerable caps at +50%
     const holyUp = dtype === 'Holy' && p.nextHolyMult > 1 ? p.nextHolyMult : 1; if (holyUp > 1) p.nextHolyMult = 1;
     const curse = (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? (1 + (e.unwarded || 0) / 100) * (1 + Math.min(50, e.magicVuln || 0) / 100) : 1); // Magic Vulnerability caps at +50%
-    const pm = (pow ? this.pwProd(p, 'hitMult', e, ctx) : 1) * (this._cmult || 1) * (this._allX || 1) * holyUp * curse * (crit && p.turn && p.turn.killingBlow ? (p.turn.killingBlow === true ? 2 : p.turn.killingBlow) : 1), cmx = pow ? this.pwProd(p, 'critMultX') : 1;
+    const pm = (pow ? this.pwProd(p, 'hitMult', e, ctx) : 1) * (this._cmult || 1) * (this._allX || 1) * holyUp * curse * (crit && p.turn && p.turn.killingBlow ? (p.turn.killingBlow === true ? 2 : p.turn.killingBlow) : 1) * (SHX ? SHX.vs(this, p, e, dtype, kind) : 1), cmx = pow ? this.pwProd(p, 'critMultX') : 1;
     if (crit && p.turn && p.turn.killingBlow) { p.turn.killingBlow = false; this.say('crit', 'Killing Blow: the crit hits harder.'); }
-    const pvp = e.isPlayer ? (1 - Math.min(75, e.resist[dtype] || 0) / 100) * (1 + this.pressure()) : 1;
+    const pvp = e.isPlayer ? (1 - Math.min(75, (e.resist[dtype] || 0) * (1 - Math.min(100, p.pen || 0) / 100)) / 100) * (1 + this.pressure()) : 1;
     const setup = kind === 'Attack' ? (this._attackMult || 1) : (this._skillMult || 1);
     const dmg = Math.max(0, Math.round(base * (1 + stat / 100) * (1 + elem / 100) * weakMod * (crit ? p.critMult * cmx : 1) * tm * vulnMod * setup * pvp * pm));
     const parts = [`${base}`];
@@ -1645,7 +1675,7 @@ class Combat {
     if (e.vulnerable && vulnMod > 1) parts.push(`x ${vulnMod.toFixed(2)} Vulnerable`);
     if (pvp !== 1) parts.push(`x ${pvp.toFixed(2)} resist/Pressure`);
     if (pm !== 1) parts.push(`x ${pm.toFixed(2)} Powers`);
-    const ign = (kind === 'Skill' && p.turn && p.turn.pierce) ? e.block : kind === 'Attack' && pow ? Math.floor(e.block * Math.min(1, Math.max(0, ...this.pws(p).map(([pw, d]) => d.ignoreBlock ? (pw.upN ? pw.upN[0] / 100 : d.ignoreBlock) : 0)))) : 0; e.block -= ign;
+    let ign = (kind === 'Skill' && p.turn && p.turn.pierce) ? e.block : kind === 'Attack' && pow ? Math.floor(e.block * Math.min(1, Math.max(0, ...this.pws(p).map(([pw, d]) => d.ignoreBlock ? (pw.upN ? pw.upN[0] / 100 : d.ignoreBlock) : 0)))) : 0; if (SHX && !e.isPlayer && SHX.unsteady(e)) ign = e.block; e.block -= ign;
     const r = this.applyHit(p, e, dmg, { defer: true, label, crit, dtype, kind, card: cd && cd.key }); e.block += ign;
     if (pow) this.fire(p, 'dealt', { e, lost: r.lost, absorbed: r.absorbed, kind, dtype, d: cd, crit });
     if (pow && !e.isPlayer) { const dd = this.pwSum(p, 'dealtDef'); if (dd > 0) { const n = Math.round((r.lost + r.absorbed) * dd / 100); if (n > 0) { p.block += n; this.say('player', `+${n} ${p.defName} from the hit.`); } } } // Nov 2: Colossus Iron Momentum
@@ -1679,6 +1709,7 @@ class Combat {
     const guard = this.alivePlayers().find(q => q !== p && q.until.guarding === p.id);
     if (guard) { guard.until.guarding = null; this.say('player', `${guard.name} steps in and takes the hit meant for ${p.name}.`); p = this.player = guard; }
     if (p.until.immune) { this.say('player', `${p.name} is untouchable: ${label} does nothing.`); return 0; }
+    if (SHX && SHX.slip(this, p, e, label)) return 0;
     if (this.hasTimed(p, 'mirror') && p.until.mirrorUsed !== this.round) { p.until.mirrorUsed = this.round; this.say('player', `A mirror image takes ${e.name}'s ${label}.`); return 0; }
     if (p.until.convertNext) { dtype = p.until.convertNext; p.until.convertNext = null; } else if (p.until.convert) dtype = p.until.convert;
     if (p.until.immuneTypes && p.until.immuneTypes.includes(dtype)) { this.say('player', `${p.name} takes no ${dtype} damage.`); return 0; }
@@ -1686,7 +1717,7 @@ class Combat {
     const str = e.strength + e.strTurn, press = this.pressure();
     const res = Math.min(75, p.resist[dtype] || 0) / 100;
     const bonus = extra || 0;
-    const dmg = Math.max(0, Math.round((base + bonus) * this.dmgMult * e.dmgTune * (1 + str / 100) * (1 - Math.min(e.weak, 90) / 100) * (1 + press) * (1 - res) * (1 + (dtype === 'Physical' ? Math.min(50, p.vulnerable) : 0) / 100) * (e.weakNext ? 1 - (e.weakNext === 1 || e.weakNext === true ? 0.3 : e.weakNext) : 1) * (p.until.lessDmg ? 1 - p.until.lessDmg : 1) * (dtype !== 'Physical' ? 1 + (p.unwarded || 0) / 100 : 1)));
+    const dmg = Math.max(0, Math.round((base + bonus) * this.dmgMult * e.dmgTune * (1 + str / 100) * (1 - Math.min(e.weak, 90) / 100) * (1 + press) * (1 - res) * (1 + (dtype === 'Physical' ? Math.min(50, p.vulnerable) : 0) / 100) * (e.weakNext ? 1 - (e.weakNext === 1 || e.weakNext === true ? 0.3 : e.weakNext) : 1) * (p.until.lessDmg ? 1 - p.until.lessDmg : 1) * (dtype !== 'Physical' ? 1 + (p.unwarded || 0) / 100 : 1) * (SHX ? SHX.out(e) : 1)));
     const parts = [`${base}${bonus ? ' + ' + bonus : ''}`];
     if (this.dmgMult !== 1) parts.push(`x ${this.dmgMult.toFixed(2)} map level`);
     if (str) parts.push(`x ${(1 + str / 100).toFixed(2)} Strength`);
@@ -1699,7 +1730,7 @@ class Combat {
     p.attackedThisRound = true;
     let dmgIn = dmg;
     if (p.reflect && dmgIn > 0 && e.hp > 0 && this.rng() * 100 < p.reflect) { this.say('crit', `${p.name} reflects ${e.name}'s ${label}: ${e.name} takes ${dmgIn}.`); this.applyHit(p, e, dmgIn, { defer: true, label: 'Reflect' }); if (e.hp <= 0) this.onDeath(e); return 0; }
-    if (p.powers.length) dmgIn = Math.round(dmgIn * this.pwProd(p, 'incoming'));
+    if (p.powers.length) dmgIn = Math.round(dmgIn * this.pwProd(p, 'incoming') * this.pwProd(p, 'incomingFrom', e));
     if (dmgIn > 0 && p.timed.length) {
       const sa = p.timed.find(t => t.key === 'shadowArmor'); if (sa) dmgIn = Math.round(dmgIn * (1 - (sa.pct || 25) / 100));
       const da = p.timed.find(t => t.key === 'demonArmor'); if (da && p.demons && p.demons.length) { const dm = p.demons.slice().sort((x, y) => y.hp - x.hp)[0], part = Math.min(dm.hp, Math.round(dmgIn * (da.pct || 30) / 100)); if (part > 0) { dmgIn -= part; this.say('player', `Demon Armor: ${dm.name} takes ${part} of the hit.`); this.hurtDemon(p, dm, part); } }
@@ -1707,6 +1738,7 @@ class Combat {
     const cutTo = dmgIn; // Nov 7: damage reduction (Sanctuary, talents, armors) is now shown in the hit line
     const g = this.alivePlayers().find(q => q !== p && this.has(q, 'guardian_s_oath'));
     if (g && dmgIn > 0) { const part = Math.round(dmgIn * this.upN(g, 'guardian_s_oath', 0, 50) / 100); dmgIn -= part; this.applyHit(e, g, part, { defer: true, label }); this.say('player', `Guardian's Oath: ${g.name} takes ${part} of the hit for ${p.name}. HP ${g.hp}/${g.maxHp}.`); if (g.hp <= 0) this.onDeath(g); }
+    if (SHX) dmgIn = SHX.share(this, p, e, dmgIn, label);
     const r = this.applyHit(e, p, dmgIn, { defer: true, label, dtype, kind: 'Attack' });
     this.say('enemy', `${e.name}'s ${label} hits ${this.partySize > 1 ? p.name : 'you'}${dtype !== 'Physical' ? ' (' + dtype + ')' : ''}: ${parts.join(' ')} = ${dmg}` + (cutTo < dmg ? `, reduced to ${cutTo}` : '') + (r.absorbed ? `, ${r.absorbed} absorbed` : '') + `. HP ${p.hp}/${p.maxHp}.`);
     if (p.hp <= 0) { this.onDeath(p); return r.lost; }
@@ -1715,6 +1747,7 @@ class Combat {
     if (r.absorbed > 0) { p.lastParried = this.round; p.parryFlag = true; if (p.until.backDmg && e.hp > 0) { this.applyHit(p, e, p.until.backDmg, { label: 'Counter' }); this.say('player', `${p.name} strikes back: ${e.name} takes ${p.until.backDmg}.`); if (e.hp <= 0) this.onDeath(e); } }
     if (r.absorbed > 0 && (r.lost === 0 || this.has(p, 'partial_guard'))) { for (const f of (p.until.onFull || [])) if (!this.over) f(this, p, e); }
     if (p.powers.length && !this.over) { if (r.absorbed > 0 && (r.lost === 0 || this.has(p, 'partial_guard'))) this.fire(p, 'fullBlock', e); this.fire(p, 'hitBy', e, r); }
+    if (SHX && !this.over) SHX.wasHit(this, p, e, r);
     if (p.thorns && e.hp > 0) { const t = this.applyHit(p, e, p.thorns, { defer: true, label: 'Thorns' }); this.wardCheck(p); this.say('player', `Thorns: ${e.name} takes ${p.thorns}` + (t.absorbed ? ` (${t.absorbed} blocked)` : '') + '.'); if (e.hp <= 0) this.onDeath(e); }
     return r.lost;
   }
@@ -1740,6 +1773,7 @@ class Combat {
     if (this.phase !== 'player' || this.over) return { ok: false, why: 'Not your turn' };
     if (this.raid && !this.canAct(p)) return { ok: false, why: 'Turn ended' };
     if (d.designOnly) return { ok: false, why: 'Not built yet' };
+    if (p.turn && p.turn.noAct) return { ok: false, why: 'You cannot act this turn' };
     if (d.cost == null) return { ok: false, why: 'Unplayable' };
     const cost = this.costOf(p, d, c);
     if (p.locked && cost > 0) return { ok: false, why: 'In Stealth: 0-cost only' };
@@ -1776,12 +1810,14 @@ class Combat {
     this._attackMult = d.type === 'Attack' ? p.nextAttackMult : 1;
     this._allX = d.type !== 'Power' && p.nextAllMult > 1 ? p.nextAllMult : 1; if (this._allX !== 1) p.nextAllMult = 1;   // Assassinate: everything this card does is multiplied
     this._skillMult = (d.type === 'Skill' && d.tags.dmg) ? p.nextSkillMult : 1;
-    this._cmult = (p.powers.length ? this.pwProd(p, 'cardMult', d) : 1) * (T.nextMult && d.type !== 'Power' ? T.nextMult : 1) * (twice && twice.mult ? twice.mult : 1); if (T.nextMult && d.type !== 'Power') T.nextMult = 0;
+    this._cmult = (p.powers.length ? this.pwProd(p, 'cardMult', d) : 1) * (T.nextMult && d.type !== 'Power' ? T.nextMult : 1) * (twice && twice.mult ? twice.mult : 1) * (p.nextCardX && d.type !== 'Power' ? p.nextCardX : 1); if (T.nextMult && d.type !== 'Power') T.nextMult = 0; if (p.nextCardX && d.type !== 'Power') p.nextCardX = 0;
     if (T.reflux && d.type === 'Skill' && paid) { const per = Math.round(paid / 3); this.timed(p, 'reflux', 3, { each: (cb, q) => { q.manaNext += per; } }); T.reflux = false; this.say('player', `Mana Reflux: ${paid} mana comes back over 3 turns.`); }
     let times = 1;
     if (twice || echoArc) { times++; this.say('crit', `${d.name} is played twice.`); }
-    if (d.type === 'Attack' && this.rng() * 100 < p.multiHit) { times = 2; this.say('crit', `Multi-hit! ${d.name} strikes again.`); }
-    if (d.tags.dmg && this.rng() * 100 < (d.type === 'Attack' ? p.multiplay : p.multicast)) { times++; this.say('crit', `${d.type === 'Attack' ? 'Multiplay' : 'Multicast'}! ${d.name} is played again for free.`); }
+    const SX = SHX && p.isPlayer && p.cls === 'Shaman' ? SHX.pre(this, p, d) : null; let mhIdx = -1, mcIdx = -1; // Shaman: stored chances, sure hits, heals that Multicast (src/shaman.js)
+    if (d.type === 'Attack' && this.rng() * 100 < p.multiHit + (SX ? SX.mh : 0)) { times = 2; mhIdx = 1; this.say('crit', `Multi-hit! ${d.name} strikes again.`); }
+    if ((d.tags.dmg || (SX && SX.healMC && d.tags.heal)) && this.rng() * 100 < (d.type === 'Attack' ? p.multiplay : p.multicast + (SX ? SX.mc : 0))) { times++; mcIdx = times - 1; this.say('crit', `${d.type === 'Attack' ? 'Multiplay' : 'Multicast'}! ${d.name} is played again for free.`); }
+    const xtra = SX ? SHX.rolled(this, p, d, SX, mhIdx > 0, mcIdx > 0) : [];
     const echo = d.type === 'Attack' && p.powers.find(x => x.key === 'divine_echo');
     if (echo) { if (echo.chance == null) echo.chance = echo.upN ? echo.upN[0] : 10; if (this.rng() * 100 < echo.chance) { times++; echo.chance = 0; this.say('crit', `Divine Echo! ${d.name} repeats.`); } }
     const storm = d.key === 'shuriken' && this.has(p, 'shuriken_storm');
@@ -1790,13 +1826,16 @@ class Combat {
     const xTgt = d.type === 'Attack' && d.target === 'enemy' && p.powers.length ? this.pwSum(p, 'extraTarget', d) : 0;
     const twin = T.twin && d.type === 'Attack' && (d.dtype || 'Physical') === 'Physical'; if (twin) { T.twin = false; times++; }
     if (p.isPlayer) { const q = this.animQ = this.animQ || []; if (q.length < 20) q.push({ id: p.id, card: d.key, cost: d.cost || 0, type: d.type, dtype: d.dtype || (d.type === 'Attack' ? 'Physical' : null), aoe: d.target === 'all' || !!d.tags.aoe, dmg: !!d.tags.dmg, def: !!d.tags.def, heal: !!d.tags.heal, tgt: tgt ? tgt.id : null }); } // the fight screen's animations (src/forge.js)
-    for (let i = 0; i < times && !this.over; i++) {
+    const cmBase = this._cmult;
+    for (let i = 0; i < times + xtra.length && !this.over; i++) {
+      const xk = i >= times ? xtra[i - times] : null; this._shIter = xk ? xk.kind : i === mcIdx ? 'mc' : i === mhIdx ? 'mh' : i ? 'rep' : 'base'; this._cmult = cmBase * (xk && xk.mult ? xk.mult : 1);
       if (storm) { for (const e of this.alive()) if (!this.over) d.play(this, e); continue; }
       if (tgt && tgt.hp <= 0 && d.target !== 'ally') tgt = this.alive()[0]; if (d.target === 'enemy' && !tgt) break;
       if (twin && i === times - 1) { const was = this._playing; this._playing = Object.assign(Object.create(d), { dtype: 'Holy' }); d.play(this, tgt); this._playing = was; } else d.play(this, tgt);
       if (xTgt > 0 && i === 0) { for (const o2 of this.alive().filter(x => x !== tgt && x.hp > 0 && !x.stealth).slice(0, xTgt)) if (!this.over) { this.say('player', `${d.name} also hits ${o2.name}.`); d.play(this, o2); } }
       if (p.sweep > 0 && d.type === 'Attack' && d.target === 'enemy' && i === 0) { const os = this.alive().filter(x => x !== tgt).slice(0, p.sweepN || 1); if (os.length) { p.sweep--; if (!p.sweep) p.sweepN = 0; for (const o2 of os) if (!this.over && o2.hp > 0) { this.say('player', `Sweeping Strikes: ${d.name} also hits ${o2.name}.`); d.play(this, o2); } } }
     }
+    this._cmult = cmBase; this._shIter = null; if (SX) SHX.post(this, p, d, SX, tgt);
     if (T.cascade && !this.over) this.drawCards(p, 1);
     (T.played = T.played || []).push(c);
     if (this.has(p, 'smoke_and_mirrors') && this._forced >= 2) { p.stealth = true; this.say('player', 'Smoke and Mirrors: you slip into Stealth.'); }
@@ -1820,6 +1859,8 @@ class Combat {
     if (this._skillMult !== 1) p.nextSkillMult = 1;
     this._playing = null; this._rankMult = 1; this._attackMult = 1; this._skillMult = 1; this._spentAll = null; this._allX = 1;
     (d.exhaust ? p.exhaust : p.discard).push(c);
+    if (SX && SX.back && !d.exhaust) { const bi = p.discard.lastIndexOf(c); if (bi >= 0 && p.hand.length < 10) { p.discard.splice(bi, 1); p.hand.push(c); this.say('player', `${d.name} returns to ${this.partySize > 1 ? p.name + "'s" : 'your'} hand.`); } }
+    if (this._endAfter) { this._endAfter = false; if (this._pendingDeath) { const q = this._pendingDeath; this._pendingDeath = null; if (q.hp <= 0 && !q.dead) this.onDeath(q); } if (!this.over && this.phase === 'player') this.endPlayerTurn(); return true; }
     if (this._pendingDeath) { const q = this._pendingDeath; this._pendingDeath = null; if (q.hp <= 0 && !q.dead) { this.say('loss', `${q.name} paid with their last HP.`); this.onDeath(q); } }
     return true;
   }
@@ -1827,7 +1868,7 @@ class Combat {
   endPlayerTurn() {
     if (this.phase !== 'player') return;
     if (this.player && this.player.pick) this.autoPick(this.player);
-    this.fire(this.player, 'turnEnd');
+    this.fire(this.player, 'turnEnd'); if (SHX) SHX.endTurn(this, this.player);
     if (this.player.demons && this.player.demons.length) { const q = this.player; this.demonsAct(q); this.player = q; if (this.over) return; }
     { const q = this.player; for (const c of q.hand) { const cd = this.card(c); if (cd.endInHand) this.rkRun(cd.rk, () => cd.endInHand(this, q, c)); } if (q.turn.endStealth && q.turnAttacks + q.turnSkills <= 1) { q.stealth = true; this.say('player', `${this.who(q)} slip${this.partySize > 1 ? 's' : ''} into Stealth.`); } if (q.turn.lurk && q.turnAttacks + q.turnSkills <= 1) q.drawNext = (q.drawNext || 0) + (q.turn.lurk === true ? 1 : q.turn.lurk); q.lastTurnAttacks = q.turnAttacks; }
     const p = this.player; const keep = p.hand.filter(c => this.card(c).retain), kept = p.hand.length - keep.length;
@@ -1943,7 +1984,7 @@ class Combat {
 
   endEnemyTurn(e) {
     if (e.hand.length) e.discard.push(...e.hand.splice(0).filter(c => !c.exhaust));
-    e.silenced = 0; e.disarmed = 0; e.feared = 0; e.stunned = 0;
+    e.silenced = 0; e.disarmed = 0; e.feared = 0; e.stunned = (e.stunTurns || 0) > 0 ? 1 : 0; if (SHX) SHX.eTick(this, e);
     this.raidShrug(e); const less = e.drawLess || 0; e.drawLess = 0; if (e.drawLessTurns > 0) { e.drawLessTurns--; if (e.drawLessTurns > 0) e.drawLess = 1; }
     if (e.hp > 0) { this.drawCards(e, Math.max(0, (e.d.tier === 'Boss' && e.phase === 1 && e.hp <= e.maxHp / 2 && e.d.draw2 ? e.d.draw2 + (e.drawPlus || 0) : e.draw) - less)); if (less) this.say('player', `${e.name} draws ${less} fewer.`); this.planEnemy(e); }
     e.weak = Math.floor(e.weak / 2); e.vulnerable = Math.floor(e.vulnerable * (this.players.some(q => this.has(q, 'codex_sunderer')) ? 0.9 : 0.5)); if (e.chill) e.chill = Math.max(0, e.chill - 1); // Nov 2: Sunderer keeps Vulnerable up (-10% a turn)
@@ -2086,6 +2127,9 @@ function gearData(data) {
   // Nov 1: each map boss also carries one Warlock codex
   const WLC = { physical: 'Shadow Knight', fire: 'Demonologist', frost: 'Soulbinder', nature: 'Blightcaller', arcane: 'Bloodmancer', shadow: 'Umbral Ruin' };
   for (const e of Object.values(data.enemies || {})) if (e.tier === 'Boss' && !e.raid && WLC[e.map] && e.loot && !e.loot.some(x => x.type === 'Codex' && x.cls === 'Warlock')) e.loot.push({ item: WLC[e.map] + ' Codex', type: 'Codex', cls: 'Warlock', rarity: 'Codex', pct: 3, note: 'Fixed codex passive plus random affixes; cannot be upgraded.' });
+  // Nov 14: and one Shaman codex
+  const SHC = { physical: 'Skybreaker', fire: 'Stormcaller', frost: 'Rainbringer', nature: 'Stormwarden', arcane: 'Twinstorm', shadow: 'Calm Eye' };
+  for (const e of Object.values(data.enemies || {})) if (e.tier === 'Boss' && !e.raid && SHC[e.map] && e.loot && !e.loot.some(x => x.type === 'Codex' && x.cls === 'Shaman')) e.loot.push({ item: SHC[e.map] + ' Codex', type: 'Codex', cls: 'Shaman', rarity: 'Codex', pct: 3, note: 'Fixed codex passive plus random affixes; cannot be upgraded.' });
   // every monster that drops gear can drop its map's shoulders
   // each monster adds the one shoulder piece that matches the armor it already drops most (plate, leather or cloth), so shoulders drop about as often as any other slot
   for (const e of Object.values(data.enemies || {})) { if (!e.pool || !e.pool.length) continue; const add = SHOULDER_BASES[e.map || 'physical']; if (!add || e.pool.some(n => add.includes(n))) continue;
@@ -2218,6 +2262,7 @@ function talentDef(list, cap, label) {
     else if (k === 'arcRegen') D.arcRegen = a; else if (k === 'dealtDef') D.dd = (D.dd || 0) + a;
     else if (k === 'parryFirst') D.pf = (D.pf || 0) + a; else if (k === 'parryExtra') D.px = true; else if (k === 'extraTarget') (D.xt = D.xt || []).push([a, b || {}]); else if (k === 'extraStrike') (D.xs = D.xs || []).push([a, b || {}]);
     else if (k === 'dealtBleed') (D.db = D.db || []).push([a, b || {}]);
+    else if (k === 'shx') (D.shx = D.shx || {})[a] = ((D.shx || {})[a] || 0) + b;
     else if (k === 'every') D.every.push([a, b, c, d2, e2]); else if (k === 'cost') D.cost.push([a, b]); else if (k === 'firstCost') D.first.push([a, b]); else if (k === 'aura') D.aura.push(...a);
   }
   const P = { talent: true, label };
@@ -2278,6 +2323,7 @@ function talentDef(list, cap, label) {
   };
   if (D.full.length) P.fullBlock = (cb, p, e) => { for (const [w, n, key] of D.full) {
     if (w === 'back') { if (e.hp > 0) { cb.applyHit(p, e, n, { label }); if (e.hp <= 0) cb.onDeath(e); } } else if (w === 'debuff') { if (e.hp > 0) e[key] = (e[key] || 0) + n; } else if (w === 'mana') p.mana += n; else act(cb, p, w, n, key, label); } };
+  if (D.shx) P.shx = D.shx;
   if (D.cheat) P.cheat = D.cheat;
   if (D.dd) P.dealtDef = D.dd;
   if (D.vx) P.vulnX = D.vx;
@@ -2298,6 +2344,7 @@ function talentDef(list, cap, label) {
 // src/card_upgrades.js by design/scripts/card_upgrades.py. Each number token in the text says how it grows:
 // [start, end, base, kind, step, every]: base + step per `every` levels. Kinds ms_* are milestones: +1 at +5 and +2 at +10.
 const UPG = (typeof module !== 'undefined' && module.exports) ? require('./card_upgrades.js') : (root.CB_UPGRADES || {});
+if (SHX) SHX.upgrades(UPG);
 const RK_FIELDS = { dmg: ['nextAttackFlat', 'turn.skillFlat', 'nextSkillMult', 'nextAttackMult'], bleed: ['bleed'], poison: ['poison'], burn: ['burn'], dread: ['dread'], vulnerable: ['vulnerable'], weak: ['weak'], slow: ['slow'], chill: ['chill'], unwarded: ['unwarded'], exposure: ['exposure'], condemnation: ['condemn'],
   str: ['strTurn', 'strCombat'], int: ['intTurn'], dex: ['dexTurn', 'dexterity'], mana: ['mana', 'manaNext', 'turn.killMana'], regen: ['regen'], maxMana: ['maxMana'], init: ['initNext'], thorns: ['thorns'], devotion: ['devotion'], back: ['parryBack', 'until.backDmg'] };
 const RK_FLOAT = { nextSkillMult: 1, nextAttackMult: 1 };

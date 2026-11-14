@@ -41,6 +41,14 @@
       { label: 'Blood magic', blurb: 'Pay with HP instead of mana. Glass cannon or a self-healing wall.', codexes: ['bloodmancer'] },
       { label: 'Critical strikes', blurb: 'Crit nukes whose crits leave Rot behind.', codexes: ['umbral_ruin'] },
     ],
+    Shaman: [
+      { label: 'Lightning caster', blurb: 'Build Static with lightning, then spend it on damage and Stuns. Every Multicast echoes.', codexes: ['stormcaller'] },
+      { label: 'Dual maces', blurb: 'Stack Multi-hit: every extra hit casts your last spell again.', codexes: ['skybreaker'] },
+      { label: 'A bit of both', blurb: 'Swap between Attacks and spells; each one charges the other.', codexes: ['twinstorm'] },
+      { label: 'Healer', blurb: 'Heals that Multicast, and maces that hit three times after them.', codexes: ['rainbringer'] },
+      { label: 'A tank and support', blurb: 'Debuffs and buffs that never wear off, taunts, and damage spread across the party.', codexes: ['stormwarden'] },
+      { label: 'Control', blurb: 'Skip a turn to play the next card twice, and take the enemy\'s turns away.', codexes: ['calm_eye'] },
+    ],
   };
   const GD = { cls: null, feel: null, codex: null, deck: null, fresh: false };
   const G_RAR = ['Gold', 'Blue', 'Green', 'White'];

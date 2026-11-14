@@ -12,7 +12,7 @@ window.CB_PUPPET = (function () {
   const HAIRCOL = [[52, 44, 44], [110, 70, 40], [160, 104, 52], [226, 190, 110], [196, 70, 40], [236, 236, 240], [150, 150, 158], [70, 90, 190], [150, 60, 170], [60, 150, 90]];
   const EYECOL = [[70, 44, 28], [60, 110, 190], [70, 150, 80], [150, 150, 160], [190, 150, 40], [170, 50, 50], [150, 70, 190]];
   const LIPCOL = [null, [176, 60, 60], [120, 40, 60], [90, 50, 110], [40, 30, 36]];
-  const EYES = 5, MOUTHS = 4, BODY = { Warrior: 'warrior', Paladin: 'paladin', Mage: 'mage', Rogue: 'female', Warlock: 'female' };
+  const EYES = 5, MOUTHS = 4, BODY = { Warrior: 'warrior', Paladin: 'paladin', Mage: 'mage', Rogue: 'female', Warlock: 'female', Shaman: 'warrior' };
   const W = D.weapons, MAPS = ['physical', 'fire', 'frost', 'nature', 'arcane', 'shadow'], CLOAKCOL = [[124, 104, 86], [156, 46, 38], [150, 182, 208], [72, 108, 62], [112, 72, 164], [54, 50, 66]];
   const WTYPE = { '1H Sword': 'sword1h', '1H Axe': 'axe1h', '1H Mace': 'mace1h', Dagger: 'dagger', Wand: 'wand', '2H Sword': 'sword2h', '2H Axe': 'axe2h', '2H Maul': 'maul', '2H Warhammer': 'hammer', '2H Scythe': 'scythe', 'Kite Shield': 'kite', 'Tower Shield': 'tower', Focus: 'focus' };
   const STAFF = { 'Fire Staff': 1, 'Frost Staff': 2, 'Nature Staff': 3, 'Arcane Staff': 4, 'Shadow Staff': 5 }, LONG = { staff: 1, scythe: 1 }, HELD = { kite: 1, tower: 1, focus: 1 };
