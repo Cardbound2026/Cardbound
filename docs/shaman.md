@@ -13,6 +13,13 @@ Totems are saved for the Druid.
 
 The Tanglewild's monsters resist Nature, and the Shaman only deals Nature. The answer is a new stat, **Penetration**
 (ignores part of the target's resistance), handed out through the Shaman's talents. New to the game: no class has it today.
+In the Hybrid, Caster and Melee trees: a Lv 4 talent removes 50% of the target's resistance, and a Lv 14 talent ignores
+another 25% (75% in all). Remember the standing rule that halves talent numbers: write double, or exempt these.
+
+## Static (agreed Nov 14)
+
+Lightning spells build Static on the target, the way Frost builds Chill. At 10 Static the target is Stunned.
+The Shaman has no Bleed and no Poison.
 
 ## Look (agreed Nov 14)
 
@@ -30,7 +37,7 @@ Theme: lightning, rain and storm, nature. Class colour: a dark, deep blue, clear
    stack Multi-hit to repeat it.
 5. **Support tank.** Your buffs and debuffs do not degrade over time. You take 5% less damage for each unique debuff on
    the enemy. (Agreed Nov 14; replaces the "bard" party-buff idea and the earlier disarm idea.)
-   Talent in this tree: every Attack has a chance to taunt.
+   Only debuffs the Shaman itself applied count (agreed Nov 14). Talent in this tree: every Attack has a chance to taunt.
 6. **Control.** End a turn without acting and your next card is played twice. Tools to take an enemy's turn away:
    a polymorph-style card, card burn, mana burn, mana lockout next turn.
    Agreed Nov 14: a 0-cost card counts as acting. Polymorph and mana lockout work on map bosses. Raid bosses stay immune
@@ -38,9 +45,10 @@ Theme: lightning, rain and storm, nature. Class colour: a dark, deep blue, clear
 
 ## Open questions
 
-- Support tank: taunt chance per Attack (number, and which talent row)? Is the 5% per debuff capped? "Do not degrade" covers
-  the Shaman's own buffs and the debuffs the Shaman applies: does it include Bleed/Poison stacks ticking down?
-- Penetration numbers: how much per talent, and where in each tree (see "Nature resistance" above). The stat does not exist
-  in the engine yet.
+- Support tank: taunt chance per Attack (number, and which talent row)? Is the 5% per debuff capped?
+- Static: does it drop by 1 a turn like Chill, reset to 0 after the stun, and does it lower anything on the way up?
+  Under the Support tank codex it would never drop.
+- Penetration does not exist in the engine yet.
+- Cards: being worked out in chat (Nov 14), nothing generated in the game.
 - Gear: maces give both stats, and since Nov 13 rings can roll Multi-hit and Multicast for every class.
 - Starter deck, starter kit. Exact colour hex to be picked against the map and party frames (start from #2b4fa8).
