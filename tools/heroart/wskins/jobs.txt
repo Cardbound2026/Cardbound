@@ -11,3 +11,19 @@ dagger_crystal 56788915-5055-4ef4-bd45-7e406df2f379
 sword1h_blood 84edf90e-9620-47bc-a544-59f8f02623f6
 sword1h_gold fc278e7b-75c7-46c9-80ff-72093cd32c44
 # picked and baked: the first 12 in list.txt. prompts.txt lists the other 38 to generate (same prompt wrapper as the daggers)
+sword1h_crystal a5d05bc8-416c-43cf-a974-4dc278524fcc 28x60 c16
+sword1h_toy 8b49eae0-9832-4321-82fa-a4d4c67bb329 28x60 c16
+sword1h_baguette a9308a0e-2ee3-4152-a756-6daf7981494e 28x60 c16
+sword1h_cleaver 048a6adf-dacb-4ceb-862a-9d1b9dfc6c93 28x60 c16
+axe1h_blood 8b785c1d-4509-412a-abea-c1d19e7809e1 32x60 c25
+axe1h_gold a64f5cdf-199f-494a-bae9-33c431c8494a 32x60 c25
+axe1h_frost 23969e81-6a3e-4a52-9f8c-7874044b383c 32x60 c25
+axe1h_pick fe7e8398-90ac-4fd6-9411-3be7ac3cb189 32x60 c25
+mace1h_gold 570af441-504f-496d-a5bb-f37dbc3384da 28x56 c36
+mace1h_drumstick 9c54a1f5-1a40-4158-b871-65f5632a553b 28x56 c36
+mace1h_pan 79a63d0d-3225-43f1-9b21-160910daccba 28x56 c36
+wand_gold 32dd0d6b-5e9d-4bfe-bf83-52447551dfc9 20x46 c16
+wand_bone dfcb73ce-938e-492e-9e75-35a5846d0d01 20x46 c16
+wand_spoon b6a1aca4-6562-4174-8005-69b95b2b0855 20x46 c16
+sword2h_blood 3f71dfed-1ed4-44a9-9619-e8d2bbfd4ae9 28x92 c4
+sword2h_frost b9f8715c-c0be-4ccf-b203-8605c9249f5c 28x92 c4

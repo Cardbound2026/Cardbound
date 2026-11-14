@@ -14,7 +14,8 @@
     ['spider', 'Bloodback Spider', 900, 'Eight legs and a saddle. Do not look down.'], ['scorpion', 'Emperor Scorpion', 1000, 'Black chitin, claws out, sting held high.'], ['ghost', 'Ghost Horse', 1200, 'Pale, cold, and not entirely here.'],
     ['gryphon', 'Golden Gryphon', 1500, 'Half eagle, half lion, all pride.'], ['dragon', 'Red Dragon', 2000, 'A young red dragon that tolerates a saddle.'],
     ['hyena', 'Spotted Hyena', 500, 'It finds all of this very funny.'], ['moose', 'Great Moose', 600, 'Tall, shaggy, and not moving for anyone.'], ['sabertawny', 'Tawny Sabertooth', 700, 'Sand-coloured, long in the tooth.'], ['rhino', 'War Rhino', 800, 'Two tons of bad temper with a saddle.'],
-    ['armorhorse', 'Armoured Warhorse', 900, 'Steel barding from nose to tail.'], ['holycharger', 'Holy Charger', 1500, 'White and gold. Leaves golden hoof prints.']];
+    ['armorhorse', 'Armoured Warhorse', 900, 'Steel barding from nose to tail.'], ['holycharger', 'Holy Charger', 1500, 'White and gold. Leaves golden hoof prints.'],
+    ['tiger', 'Striped Tiger', 800, 'Orange, black, and very quiet.'], ['lion', 'Royal Lion', 900, 'A great mane and a red and gold saddle.'], ['felhound', 'Felhound', 1200, 'Horned, red, and dripping green fire.'], ['demonbrute', 'Demon Brute', 1500, 'Ram horns, lava cracks, bad intentions.'], ['bonedragon', 'Bone Dragon', 2000, 'A dragon that kept going after it died.']];
   // cosmetics: [key, name, price, kind, how it is drawn]
   const EX_COS = [
     ['aura_fire', 'Burning Aura', 500, 'aura', { fx: 'flame', at: 'f', back: 1, z: 1.05 }], ['aura_frost', 'Frostfire Aura', 500, 'aura', { fx: 'flame', at: 'f', back: 1, z: 1.05, tint: 'hue-rotate(170deg)' }],

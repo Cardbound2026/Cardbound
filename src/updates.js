@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Art', "Five more mounts in the Skull Shop: Striped Tiger, Royal Lion, Felhound, Demon Brute and Bone Dragon."],
       ['Art', "Six more mounts in the Skull Shop: Spotted Hyena, Great Moose, Tawny Sabertooth, War Rhino, Armoured Warhorse and the Holy Charger."],
       ['Fix', "Bags (Traveler's Pouch and the rest) show a bag as their picture. They were showing a helmet."],
       ['Interface', "The fire on the exhaust pile is much quieter: narrower, lower and see-through. The light on loot chests no longer pulses."],
