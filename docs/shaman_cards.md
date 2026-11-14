@@ -158,3 +158,46 @@ Guard means Dodge, or Block while a shield is worn. A star marks a card the desi
 | Rainwell | Green | 10 | Power | +5 mana each turn. |
 | Ride the Lightning | Blue | 10 | Skill | Draw a card for each enemy with Static (up to 3). |
 | Storm Surge | Gold | 20 | Skill | Draw 3 and gain 20 mana. Exhaust. |
+
+## Proposed Nov 14, not yet agreed: more Golds and the skip-a-turn Control cards
+
+### Golds
+
+| Card | Cost, type | Effect | Built for |
+|---|---|---|---|
+| Thousand Volts | 30, Skill | Deal 15 Nature damage. Then apply Static equal to the damage dealt, divided by 3. | Caster |
+| Perfect Storm | 30, Power | Your lightning spells that hit one enemy also hit every other enemy for half. | Caster |
+| Lightning Rod | 20, Power | Pick an enemy. All Static you apply to anyone is also applied to it. | Caster, Control |
+| Thunder Without End | 30, Skill | Cast every lightning spell in your discard pile at half strength. Exhaust. | Caster |
+| Bottled Lightning | 10, Skill | Take all Static off a target and store it. Your next spell deals 4 more damage for each. | Caster |
+| Unbroken Circuit | 30, Power | When you consume Static, half of it (rounded down) goes back on the target. | Caster, Control |
+| Hundred Blows | 30, Attack | Deal 4 damage 8 times. Each hit rolls Multi-hit on its own. | Melee |
+| Thunder God's Hammer | 30, Attack | Deal 30 damage. If it Multi-hits, Stun the target for 1 turn. | Melee |
+| Rain of Maces | 30, Power | When an Attack Multi-hits, it also hits a second random enemy for half. | Melee |
+| Stormheart | 30, Power | Multi-hit chance above 100% is not wasted for you: it becomes a chance at a third hit. (The third-hit rule, as a card for non-Healer builds.) | Melee, Hybrid |
+| Twin Thunder | 20, Skill | This turn, every Attack you play also counts as a Skill and every Skill as an Attack. | Hybrid |
+| Ride the Storm | 30, Power | Whenever you play an Attack and a Skill in the same turn, draw a card and gain 10 mana. | Hybrid |
+| Storm Vessel | 30, Power | Your stored Hybrid chance is not spent when it triggers; it halves instead. | Hybrid |
+| Monsoon | 30, Skill | Heal the whole party for 10. Roll Multicast separately for each ally. | Healer |
+| Ancestral Echo | 30, Power | When a heal Multicasts, your next heal costs 0. | Healer |
+| Last Light | 30, Skill | An ally who would die this turn is left at 1 health instead. Exhaust. | Healer, Tank |
+| Stormwarden | 30, Power | You take 10% of the damage dealt to each ally in their place. You have +2 Guard for each ally. | Tank |
+| Overcast | 20, Power | Enemies can never have fewer than 3 different debuffs of yours: at the start of your turn, missing ones are put back (Soaked, Deafened, Stormworn). | Tank |
+| Deluge | 30, Skill | Apply every Shaman debuff to all enemies: Soaked, Deafened, Unsteady, Stormworn and 3 Static. | Tank, Control |
+
+### Skip-a-turn Control cards
+
+"Acting" means playing any card, including a 0-cost one. So everything here either works from a Power already on the table, or is the one card you are allowed to play.
+
+| Card | Rarity, cost, type | Effect |
+|---|---|---|
+| Held Breath | White, 0, Skill | End your turn. This does not count as acting. Gain 6 Guard. |
+| Quiet Sky | White, 10, Power | While you have not acted this turn, you have +20% Dodge. |
+| Patience | Green, 10, Power | Each turn you end without acting, keep your unspent mana (up to 60). |
+| Coiled Storm | Green, 10, Power | Each turn you end without acting, your next card deals 30% more (stacks up to 3 turns). |
+| Deep Listening | Green, 10, Power | Each turn you end without acting, look at the top 3 cards of your deck, keep one in hand and put the rest back in any order. |
+| Loaded Sky | Blue, 20, Power | Each turn you end without acting, all enemies gain 2 Static and lose 10 mana. |
+| Thunder Debt | Blue, 20, Skill | Take an extra turn now. You cannot act on your next turn. |
+| The Long Wait | Blue, 20, Power | After two turns in a row without acting, your next card is played three times instead of twice. |
+| Borrowed Thunder | Gold, 30, Skill | Skip your next two turns. All enemies skip their next turn, and your first card after that is played three times. Exhaust. |
+| Stillness | Gold, 30, Power | Turns you end without acting do not count as rounds for enemy Pressure, and you take 25% less damage during them. |
