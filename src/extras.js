@@ -230,6 +230,30 @@
       const L = Object.assign({}, exLook(), { cos: { [c[3]]: c[0] } }); if (c[3] === 'wskin' && !L.weapon) L.weapon = ['sword2h', 0]; if (c[3].startsWith('wsk_')) { const wt = c[3].slice(4); if (wt === 'kite' || wt === 'tower' || wt === 'focus') { L.weapon = ['sword1h', 0]; L.off = [wt, 0]; } else { L.weapon = [wt, 0]; L.off = null; } }
       if (window.CB_PUPPET) CB_PUPPET.draw(g, L, c[3] === 'wings' ? 's' : 'e', c[3] === 'trail' ? 'walk' : 'idle', t, 64, 98, 0.78); }
   }
+  // ---------- Nov 14: drag any open window to move it (pop-ups, the big sheets, the deck tracker). Hold the mouse down anywhere on the window
+  // that is not a text box, slider or scroll bar and move: after 6 px it becomes a drag, and the click that would have followed is swallowed.
+  // The move is the CSS `translate` property, so it never fights a window's own transform. The tracker's place is remembered (localStorage);
+  // a pop-up goes back to the middle when it closes; double-click a window's empty edge to put it back.
+  { const SEL = '#modalBox, #sheet .sheetbox, #questTrk:not(.map)', D = { el: null };
+    const put = (el) => { el.style.translate = (el._dx || el._dy) ? `${el._dx || 0}px ${el._dy || 0}px` : ''; };
+    const loadTrk = () => { const el = document.getElementById('questTrk'); if (!el || el._ld) return; el._ld = 1; try { const v = JSON.parse(localStorage.getItem('cb_trkpos') || 'null'); if (v) { el._dx = v[0]; el._dy = v[1]; put(el); } } catch (e) {} };
+    new MutationObserver(() => { loadTrk(); const m = document.getElementById('modal'), mb = document.getElementById('modalBox'); if (m && mb && m.hidden && (mb._dx || mb._dy)) { mb._dx = mb._dy = 0; put(mb); } }).observe(document.body, { childList: true, subtree: false, attributes: true, attributeFilter: ['hidden'] });
+    { const m = document.getElementById('modal'); if (m) new MutationObserver(() => { const mb = document.getElementById('modalBox'); if (m.hidden && mb && (mb._dx || mb._dy)) { mb._dx = mb._dy = 0; put(mb); } }).observe(m, { attributes: true, attributeFilter: ['hidden'] }); }
+    document.addEventListener('pointerdown', (ev) => { if (ev.button !== 0 || D.el) return; const el = ev.target.closest && ev.target.closest(SEL); if (!el) return; const t = ev.target;
+      if (t.closest('input, textarea, select, [contenteditable], [draggable="true"], canvas.nodrag')) return;
+      if (t.clientWidth && (ev.offsetX > t.clientWidth || ev.offsetY > t.clientHeight)) return;   /* a scroll bar */
+      D.el = el; D.x = ev.clientX; D.y = ev.clientY; D.dx = el._dx || 0; D.dy = el._dy || 0; D.on = false; D.id = ev.pointerId; }, true);
+    document.addEventListener('pointermove', (ev) => { const el = D.el; if (!el || ev.pointerId !== D.id) return; const mx = ev.clientX - D.x, my = ev.clientY - D.y;
+      if (!D.on) { if (Math.hypot(mx, my) < 6) return; D.on = true; el.style.translate = `${D.dx}px ${D.dy}px`; D.r = el.getBoundingClientRect(); document.documentElement.classList.add('wdrag'); try { getSelection().removeAllRanges(); } catch (e) {} }
+      const r = D.r, W = innerWidth, H = innerHeight, keep = 70;   /* always leave a piece on screen to grab */
+      const nx = Math.max(keep - r.right, Math.min(W - keep - r.left, mx)), ny = Math.max(-r.top, Math.min(H - 40 - r.top, my));
+      el._dx = Math.round(D.dx + nx); el._dy = Math.round(D.dy + ny); put(el); ev.preventDefault(); }, true);
+    const end = (ev) => { const el = D.el; if (!el) return; D.el = null; if (!D.on) return; document.documentElement.classList.remove('wdrag');
+      if (el.id === 'questTrk') { try { localStorage.setItem('cb_trkpos', JSON.stringify([el._dx || 0, el._dy || 0])); } catch (e) {} }
+      const eat = (e) => { e.stopPropagation(); e.preventDefault(); }; document.addEventListener('click', eat, { capture: true, once: true }); setTimeout(() => document.removeEventListener('click', eat, true), 0); };
+    document.addEventListener('pointerup', end, true); document.addEventListener('pointercancel', end, true);
+    document.addEventListener('dblclick', (ev) => { const el = ev.target.closest && ev.target.closest(SEL); if (!el || ev.target !== el || !(el._dx || el._dy)) return; el._dx = el._dy = 0; put(el); if (el.id === 'questTrk') { try { localStorage.removeItem('cb_trkpos'); } catch (e) {} } });
+    const st = document.createElement('style'); st.textContent = 'html.wdrag, html.wdrag * { user-select: none !important; cursor: grabbing !important; } #questTrk:not(.map) { cursor: grab; }'; document.head.appendChild(st); }
   // Nov 13: click a shop picture to see it big (the same preview, four times the size, still moving). Click again, or Esc, to close.
   { const st = document.createElement('style'); st.textContent = `.shopit .pv { cursor: zoom-in; } #exZoom { position: fixed; inset: 0; z-index: 9000; background: rgba(6,5,8,.86); display: grid; place-items: center; cursor: zoom-out; }
     #exZoom .zbox { display: grid; justify-items: center; gap: 10px; } #exZoom .zpv { width: 512px; height: 416px; max-width: 92vw; display: grid; place-items: center; border: 1px solid #5a4a2e; border-radius: 6px; background: radial-gradient(#2a2420, #14110f); overflow: hidden; }

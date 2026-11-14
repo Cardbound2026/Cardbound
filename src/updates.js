@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Interface', "You can drag windows. Hold the mouse on any open pop-up, sheet or the deck tracker and move it out of the way. The tracker remembers where you left it; double-click a window's empty edge to put it back."],
       ['Fix', "The small scroll bar that sometimes appeared on chest loot (even with a single pile of gold) is gone for good."],
     ] },
     { date: '2026-11-13', items: [
