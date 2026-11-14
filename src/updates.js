@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Interface', "Cards a merchant is selling grow when you point at them, and clicking one opens its rank page (every upgrade and where it drops)."],
+      ['Change', "You can no longer walk over the top of the Colosseum in town: the way in is Arenamaster Kord's gate on its west side."],
       ['Art', "26 more weapon looks in the Cosmetic Shop: two-handed swords, axes, mauls, hammers, scythes, staves, shields and off-hand items (a swordfish greatsword, a lute axe, a log maul, a barrel mallet, a broom staff, a wooden door for a tower shield, a skull, a mug of ale and more). The Wooden Practice Sword was redrawn so it looks like a sword."],
       ['Feature', "The Colosseum has a floor you can walk on. Arenamaster Kord's gate now leads onto the sand: a new place to walk around, with the stands behind you. The Wager Board and Kord are inside, by the far gate; the near gate (or Esc) takes you back to town."],
       ['Art', "Talent pictures fill their frames: the pale strip under each one is gone."],

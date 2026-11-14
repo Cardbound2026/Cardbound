@@ -74,7 +74,7 @@
   for (const [x, y] of [[93, 49], [141, 49], [93, 72], [141, 72], [117, 47]]) PROPS.push({ kind: 'torch', x, y, w: 1, h: 1 });
   // solid: walls round the edge, water, building footprints, the Colosseum's stands
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) { if (x <= 3 || x >= MW - 4 || y <= 3 || y >= MH - 4 || ground[y][x] === '~') solid.add(K(x, y)); }
-  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) { const o = ((x + .5 - ARN.x) / ARN.RX) ** 2 + ((y + .5 - ARN.y) / ARN.RY) ** 2, i = ((x + .5 - ARN.x) / ARN.rx) ** 2 + ((y + .5 - ARN.y) / ARN.ry) ** 2; if (o <= 1 && i > 1 && ground[y][x] !== 'a') solid.add(K(x, y)); }
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) { const o = ((x + .5 - ARN.x) / ARN.RX) ** 2 + ((y + .5 - ARN.y) / ARN.RY) ** 2, i = ((x + .5 - ARN.x) / ARN.rx) ** 2 + ((y + .5 - ARN.y) / ARN.ry) ** 2; if (o <= 1) solid.add(K(x, y)); }   // Nov 13: the whole Colosseum is solid from outside (stands and sand): you go in through Kord's gate
   for (const p of PROPS) if (!p.nosolid) for (let y = p.y; y < p.y + p.h; y++) for (let x = p.x; x < p.x + p.w; x++) solid.add(K(x, y));
   // trees in the open ground (seeded, so every player sees the same city)
   { let s = 7; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
