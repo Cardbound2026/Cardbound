@@ -53,6 +53,7 @@ Theme: lightning, rain and storm, nature. Class colour: a dark, deep blue, clear
    stack Multi-hit to repeat it.
 5. **Support tank.** Your buffs and debuffs do not degrade over time. You take 5% less damage for each unique debuff on
    the enemy. (Agreed Nov 14; replaces the "bard" party-buff idea and the earlier disarm idea.)
+   Only 20% of your Dodge or Block fades between turns, not half (the same as Bulwark, Riposte and Barrier Savant).
    Only debuffs the Shaman itself applied count (agreed Nov 14). Talent in this tree: every Attack has a chance to taunt.
 6. **Control.** End a turn without acting and your next card is played twice. Tools to take an enemy's turn away:
    a polymorph-style card, card burn, mana burn, mana lockout next turn.
