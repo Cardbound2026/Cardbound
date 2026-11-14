@@ -130,7 +130,8 @@ body.sheetopen #btnUpdates, body.modalopen #btnUpdates { display: none; }
 body .modal .box.bare { border: 0 !important; border-image: none !important; background: none !important; padding: 0 !important; width: auto; overflow: visible; gap: 0; image-rendering: auto; }
 .bagpop .bagacts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 10px 12px 0; }
 .bagpop .bagcmp { text-align: center; margin: 8px 0 0; font-size: 14px; }
-#bagPeek { position: fixed; z-index: 9400; pointer-events: none; filter: drop-shadow(0 10px 26px rgba(0,0,0,.8)); } #bagPeek .gtip.bagpop { pointer-events: none; } #bagPeek .bagcmp { padding-bottom: 10px; }
+body:has(#bagPeek) .gtip:not(.bagpop) { display: none !important; }
+#bagPeek { display: flex; gap: 8px; align-items: flex-start; position: fixed; z-index: 9400; pointer-events: none; filter: drop-shadow(0 10px 26px rgba(0,0,0,.8)); } #bagPeek .gtip.bagpop { pointer-events: none; } #bagPeek .bagcmp { padding-bottom: 10px; }
 .gtip.bagpop { position: static; width: 330px; margin: 0 auto; pointer-events: auto; filter: none; }
 .stashgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 6px; align-content: start; } .stashgrid > .muted { grid-column: 1 / -1; }
 .item .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
@@ -6499,16 +6500,22 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     fitCards($('hpGear'));
     paintPortraits($('hpGear'));
   }
-  // Nov 14: rest the mouse on a bag item for a second and the same card as clicking it shows (item power, what it replaces), without the buttons; any mouse movement puts it away
-  function bagPeek(id) { const c = CBHub.char(profile, heroKey), it = profile.stash.find(x => x.id === id); if (!it || !c) return '';
+  // Nov 14: pointing at a bag item shows the same card as clicking it (item power, what it replaces), without the buttons. It is the only tooltip on bag items: the plain one is hidden while it is up
+  function bagPeek(id, cmpOn) { const c = CBHub.char(profile, heroKey), it = profile.stash.find(x => x.id === id); if (!it || !c) return '';
     const opts = it.kind === 'card' ? [] : CBHub.slotOptions(it), cur = opts.map(sl => c.gear.find(g => g.slot === sl)).filter(Boolean), vs = cur.length ? cur.map(g => esc(g.name)).join(', ') : 'an empty slot';
     const cmp = it.kind === 'card' ? '' : it.bag ? `<div class="bagcmp muted">Adds ${it.bag} slots while it sits in a bag slot (yours, or the bank's).</div>` : `<div class="bagcmp">${upBadge(it, c.gear)} <span class="muted">Replaces ${vs}</span></div>`;
-    return `<div class="gtip bagpop">${itemHtml(it, `${it.kind === 'card' ? '' : `<div class="il"><b>${itemPower(it)}</b>Item Power</div>`}${cmp}`)}</div>`; }
-  { let tm = 0, cell = null, box = null; const off = () => { clearTimeout(tm); tm = 0; if (box) { box.remove(); box = null; } };
-    document.addEventListener('mousemove', (ev) => { off(); const c = ev.target.closest && ev.target.closest('.baggrid:not(.qsalv) .bagcell[data-bagit]'); cell = c; if (!c || ev.buttons || !$('modal').hidden) return; const x = ev.clientX, y = ev.clientY;
-      tm = setTimeout(() => { if (!cell || !cell.isConnected || !$('modal').hidden) return; const h = bagPeek(cell.dataset.bagit); if (!h) return; hidePeeks(); box = document.createElement('div'); box.id = 'bagPeek'; box.innerHTML = h; document.body.appendChild(box); paintPortraits(box);
-        const r = box.getBoundingClientRect(); box.style.left = Math.max(8, Math.min(innerWidth - r.width - 8, x + 18)) + 'px'; box.style.top = Math.max(8, Math.min(innerHeight - r.height - 8, y - r.height / 2)) + 'px'; }, 1000); }, true);
-    for (const e of ['mousedown', 'keydown', 'wheel', 'blur']) addEventListener(e, off, true); }
+    const hint = it.kind === 'card' || it.bag || !cur.length ? '' : `<div class="bagcmp muted" style="font-size:12px">Hold Shift to compare</div>`;
+    return `<div class="gtip bagpop">${itemHtml(it, `${it.kind === 'card' ? '' : `<div class="il"><b>${itemPower(it)}</b>Item Power</div>`}${cmp}${hint}`)}</div>`; }
+  { let cell = null, box = null, sh = false, mx = 0, my = 0; const off = () => { cell = null; if (box) { box.remove(); box = null; } };
+    const place = (x, y) => { const r = box.getBoundingClientRect(); box.style.left = Math.max(8, Math.min(innerWidth - r.width - 8, x + 18)) + 'px'; box.style.top = Math.max(8, Math.min(innerHeight - r.height - 8, y - r.height / 2)) + 'px'; };
+    const draw = (c) => { if (sh) { if (box) { box.remove(); box = null; } cell = c; return; }   /* Shift: step aside for the game's own compare tooltip (this item against what you wear, stat by stat) */
+      const h = bagPeek(c.dataset.bagit, sh); if (!h) return off(); if (!box) { box = document.createElement('div'); box.id = 'bagPeek'; document.body.appendChild(box); } cell = c; box.innerHTML = h; paintPortraits(box); hidePeeks(); place(mx, my); };
+    document.addEventListener('mousemove', (ev) => { const c = ev.target.closest && ev.target.closest('.baggrid:not(.qsalv) .bagcell[data-bagit]'); mx = ev.clientX; my = ev.clientY;
+      if (!c || ev.buttons || !$('modal').hidden) return off();
+      if (c !== cell || (!box && !sh) || sh !== ev.shiftKey) { sh = ev.shiftKey; draw(c); } else if (box) { hidePeeks(); place(mx, my); } }, true);
+    const key = (ev) => { if (ev.key !== 'Shift') { if (ev.type === 'keydown') off(); return; } const on = ev.type === 'keydown'; if (on === sh) return; sh = on; if (cell && cell.isConnected) { draw(cell); if (sh) cell.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: mx, clientY: my, shiftKey: true })); } };
+    addEventListener('keydown', key, true); addEventListener('keyup', key, true);
+    for (const e of ['mousedown', 'wheel', 'blur']) addEventListener(e, off, true); }
   // a bag item: its card, and what you can do with it
   function bagItem(id) {
     const c = CBHub.char(profile, heroKey), it = profile.stash.find(x => x.id === id); if (!it) return;
@@ -8211,8 +8218,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794685745149';
-  const CB_BUILD = '023615ef27'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794685952621';
+  const CB_BUILD = '0d23462996'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -9347,7 +9354,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       ['Change', "The Previous interface and Previous enemy art settings are removed. The game has one look now."],
       ['Change', "Bags now belong to each hero: what one hero carries, the others can't see. Only the bank is shared, so put gear in the bank to pass it to another hero. What was in your shared bags stays with the hero you were playing. A deleted hero's bags go to the bank."],
       ['Interface', "Group finder: a red Cancel my notice button, both next to Update and on your own notice in the list, takes your posting down."],
-      ['Interface', "Rest the mouse on a bag item for a second and its full card shows, with item power and what it would replace, the same as clicking it but without the buttons. Move the mouse and it goes away."],
+      ['Interface', "Point at a bag item and its full card shows at once, with item power and what it would replace: the same as clicking it, without the buttons. Hold Shift while pointing at it to compare it, stat by stat, with what you are wearing in that slot."],
       ['Interface', "Organise your bags: press and hold an item, drag it to any slot and let go. Two items swap places. Everything stays where you put it, and new loot takes the first free slot."],
       ['Change', "Windows now move only when you grab their outer edge (the cursor turns into a hand there), so dragging inside a window never moves it by accident."],
       ['Feature', "The Chronicle: a book of everything your hero has done. Open it from the new book button on the bottom bar (J) or the Menu. Five spreads: time played and lifetime totals, a line chart of every run with your highest boss kill, a bestiary of every monster slain, lifetime damage by card with healing and damage taken and your most played cards. Detail is counted from today; older runs are filled in where the game has them."],
