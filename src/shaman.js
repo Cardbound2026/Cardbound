@@ -295,6 +295,7 @@ function install(K) {
     if (cb._shIter === 'base' || cb._shIter == null || p.turn.hbN == null) p.turn.hbN = Math.floor(cb.spendAll(p) / 3);
     const n = p.turn.hbN, SX = cb._shSX, ch = SX && SX.base ? SX.base : p.multiHit + (p.shMH || 0) + (p.turn.mhPlus || 0); let extra = 0;
     for (let i = 0; i < n && !cb.over; i++) { e = D_(cb, e, 4, 'Hundred Blows'); if (cb.rng() * 100 < ch && !cb.over) { extra++; if (e && e.hp > 0) { e.multiN = (e.multiN || 0) + 1; e.multiWord = 'MULTI-HIT'; } e = D_(cb, e, 4, 'Hundred Blows (Multi-hit)'); } }
+    if (extra && SX && !SX.didMH) { SX.didMH = true; if (p.shMH > 0) { p.shMH = has(cb, p, 'storm_vessel') ? Math.floor(p.shMH / 2) : 0; X.storeTrig(cb, p); } const mm = shx(cb, p, 'mhMana'); if (mm) p.mana += mm; }   // Nov 14: its own Multi-hits count as a Multi-hit for the codex, talents and powers (once a card)
     say(cb, `Hundred Blows: ${n} hit${n === 1 ? '' : 's'}${extra ? `, ${extra} more from Multi-hit` : ''}.`); }, { dmg: 40, hits: 10 });
   A('thunder_gods_hammer', "Thunder God's Hammer", 'Gold', 30, 'enemy', 'Deal 30 damage. If it Multi-hits, Stun the target for 1 turn.', (cb, t) => { const e = D_(cb, t, 30, "Thunder God's Hammer"); if (cb._shIter === 'mh' && e && e.hp > 0) stunFor(cb, e, 1); }, { dmg: 30 });
   POW('gale_fury', 'Gale Fury', 'Blue', 20, 'Power: +20% Multi-hit chance.', { onPlay: (cb, p, pw) => { p.multiHit += pw.upN ? pw.upN[0] : 20; } });
