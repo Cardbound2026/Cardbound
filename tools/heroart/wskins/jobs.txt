@@ -10,3 +10,4 @@ dagger_carrot a6434f0d-f468-4156-a3a3-94c15e516ac4
 dagger_crystal 56788915-5055-4ef4-bd45-7e406df2f379
 sword1h_blood 84edf90e-9620-47bc-a544-59f8f02623f6
 sword1h_gold fc278e7b-75c7-46c9-80ff-72093cd32c44
+# picked and baked: the first 12 in list.txt. prompts.txt lists the other 38 to generate (same prompt wrapper as the daggers)

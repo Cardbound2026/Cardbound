@@ -10,3 +10,7 @@ lion char eca52679-a885-4d31-99d8-960ff7f30577
 bonedragon char f6ef4170-16eb-4623-b488-f423ba4957bf
 felhound char ee3f920e-d15e-42f7-a32a-282708f01c3c
 demonbrute char ff329ea4-9a73-46c4-9e13-f08c8a2cbbdc
+# run2 animations launched (v3, 6 frames, east/south/north): armorhorse, holycharger, rhino, moose, hyena, sabertawny
+# still to animate: tiger, lion, bonedragon, felhound, demonbrute
+# still to make (objects or other shapes): bunny, frog, phoenix (fire bird), worm, basilisk, raven, bone spider, flying carpet, tortoise, beetle, mantis, giant ant, snake
+# holy charger should leave golden hoof prints (trail colour [255,218,112] while riding it)
