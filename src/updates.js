@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Balance', "Rings can now roll Multi-hit Chance and Multicast Chance."],
       ['Balance', "One-handed maces: the implicit is now Multi-hit Chance and Multicast Chance, each half of what a sword's Multi-hit would be (a 10% sword is a 5% / 5% mace). It was Holy Damage. Maces you already own were changed over, and the Paladin's starter Flanged Mace too. Two-handed warhammers keep Holy Damage."],
       ['Fix', "Bloodletter's From the Shadows gives the full 25% (it was being halved to 13% by the rule that halves every talent)."],
       ['Interface', "Deck Planner: a new build is now made in steps. Pick the class, then the codex, then the Gold cards you are building around, then fill in the Blue, Green and White cards with a counter for each. A button opens the full talent tree, and the steps along the top let you go back."],

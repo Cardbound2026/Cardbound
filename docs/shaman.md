@@ -7,7 +7,7 @@ Totems are saved for the Druid.
 - **Element:** Nature only, all of it lightning: Lightning Bolt, Chain Lightning, Lightning Burst, Lightning Cloud...
 - **Armour:** a mix of leather and cloth.
 - **Weapons:** two one-handed maces (implicit: half a sword's Multi-hit plus the same Multicast), or an Arcane Staff (Multicast).
-- **Multi-hit over 100%:** the overflow is a chance at a third hit (150% = two hits for sure, 50% chance of a third).
+- **Multi-hit over 100%:** Shaman only, and only through the Healer's guaranteed Multi-hit: the overflow is a chance at a third hit (150% = two hits for sure, 50% chance of a third). Other classes still stop at two hits.
 
 ## Codexes
 
@@ -30,5 +30,5 @@ Totems are saved for the Druid.
 - Hybrid: is there a cap on the stored Multicast / Multi-hit chance?
 - The Tanglewild (map 4) is the Nature map: its monsters resist Nature. A one-element class needs an answer there
   (Paladin's Holy ignores resistance; lightning could ignore part of it, or a codex could convert).
-- Gear: only maces give both stats today. Leather and cloth pieces need Multi-hit / Multicast on their roll tables for a Shaman.
+- Gear: maces give both stats, and since Nov 13 rings can roll Multi-hit and Multicast for every class.
 - Class colour, hero look, starter deck, starter kit.
