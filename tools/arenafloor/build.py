@@ -3,7 +3,7 @@
 #   wall_top.png    688x256  the far wall: stands, arches, banners, braziers (repeated, every other copy mirrored)
 #   wall_bottom.png 688x128  the near wall seen from above: its stone cap, then its dark outer face
 #   sand.png        512x464  plain arena sand (repeated, mirrored both ways so the joins do not show)
-# plus chalk duelling rings drawn here. The grid position (chunks 3..8, 10..13) matches AFL in src/city.js.
+# The grid position (chunks 3..8, 10..13) matches AFL in src/city.js.
 import os, random
 from PIL import Image, ImageDraw
 H = os.path.dirname(os.path.abspath(__file__)); R = os.path.dirname(os.path.dirname(H)); W, HT, T = 2304, 1536, 32
@@ -39,18 +39,8 @@ if st_box:
         if rnd.random() < .5: t, f = t.transpose(Image.FLIP_LEFT_RIGHT), f.transpose(Image.FLIP_LEFT_RIGHT)
         im.paste(t, (rnd.randint(SIDE + 80, W - SIDE - 200), rnd.randint(FLOOR_T + 80, FLOOR_B - 200)), f)
 im.paste((8, 5, 14), (0, 0, SIDE, HT)); im.paste((8, 5, 14), (W - SIDE, 0, W, HT)); im.paste((8, 5, 14), (0, 0, W, FLOOR_T))
-# chalk duelling rings: 7 x 4, a little out of line, with gaps like worn chalk
-rnd = random.Random(11); d = ImageDraw.Draw(im); px = im.load()
-import math
-for r in range(4):
-    for c in range(7):
-        cx = SIDE + 190 + c * 300 + rnd.randint(-22, 22); cy = FLOOR_T + 190 + r * 262 + rnd.randint(-16, 16); rx, ry = 92, 50
-        if r == 3 and c == 3: continue   # keep the lane to the near gate clear
-        for a in range(0, 3600):
-            th = a / 3600 * 2 * math.pi
-            if math.sin(th * 9 + c * 2 + r) > 0.86 or rnd.random() < 0.12: continue
-            for k in (0, 1):
-                x = int(cx + (rx - k) * math.cos(th)); y = int(cy + (ry - k) * math.sin(th)); p = px[x, y]; px[x, y] = tuple(min(255, int(v * 0.35 + w * 0.65)) for v, w in zip(p, (244, 238, 224)))
+# (Nov 13: the chalk duelling rings were taken out)
+d = ImageDraw.Draw(im); px = im.load(); import math
 # side walls: the near wall's stone cap turned on its side
 cap = bot.crop((0, 0, 688, 66)).rotate(90, expand=True)   # 66 wide, 688 tall
 for x, s in ((0, cap), (W - 66, cap.transpose(Image.FLIP_LEFT_RIGHT))):
