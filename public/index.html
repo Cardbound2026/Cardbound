@@ -211,7 +211,7 @@ svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
 .demon { display: grid; justify-items: center; gap: 1px; } .demon .dfig .dimg { height: calc(80px * var(--ds)); width: auto; display: block; }
 /* Nov 2: demons breathe while they wait, lunge at their target when they act and shake when hit */
 .demon .dfig { transform-origin: 50% 100%; animation: dmidle 2.6s ease-in-out infinite; } .demon:nth-child(2) .dfig { animation-delay: -.9s; } .demon:nth-child(3) .dfig { animation-delay: -1.7s; }
-@keyframes dmidle { 0%, 100% { transform: translateY(0) scaleY(1); } 50% { transform: translateY(-3%) scaleY(1.025); } }
+@keyframes dmidle { 0%, 100% { transform: translateY(0) scaleY(1); } 50% { transform: scaleY(1.02); } } .demon.dfly .dfig { animation-name: dmfloat; } @keyframes dmfloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4%); } }
 .demon.dact .dfig { animation: dmlunge .55s cubic-bezier(.3,.7,.3,1); } @keyframes dmlunge { 0% { transform: none; } 30% { transform: translateX(-8%) rotate(-4deg); } 55% { transform: translateX(42%) rotate(7deg) scale(1.08); } 100% { transform: none; } }
 .demon.dhit .dfig { animation: dmhit .4s linear; } @keyframes dmhit { 0%, 100% { transform: none; filter: none; } 20% { transform: translateX(-7%) rotate(-5deg); filter: brightness(1.8); } 45% { transform: translateX(5%) rotate(4deg); } 70% { transform: translateX(-3%); } }
 #foes .demon.dact .dfig { animation-name: dmlungeL; } @keyframes dmlungeL { 0% { transform: none; } 30% { transform: translateX(8%) rotate(4deg); } 55% { transform: translateX(-42%) rotate(-7deg) scale(1.08); } 100% { transform: none; } }
@@ -540,6 +540,7 @@ body.aiming { cursor: grabbing; user-select: none; }
 .dslot .dic svg { width: 22px; height: 22px; }
 .dslot .dtx { display: grid; min-width: 0; line-height: 1.15; } .dslot .dtx b { font-size: 13px; color: var(--rc, var(--muted)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .dslot .dtx small { font-size: 11px; color: var(--muted); }
 .dslot.empty { opacity: .55; border-left-color: var(--line); } .dslot.empty .dtx b { color: var(--muted); }
+.dres { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,.08); } .dres > div { display: flex; align-items: center; gap: 7px; padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,.05); } .dres i { flex: none; width: 22px; height: 22px; background: url(img/ui/talents.webp) 0 0 / 132px auto no-repeat; image-rendering: pixelated; } .dres span { flex: 1; color: #d8cdb8; } .dres b { color: #fff; font-variant-numeric: tabular-nums; } .dres .zero { opacity: .45; }
 .dstats { grid-area: s; display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 2px 10px; font-size: 13px; margin: 6px 0 0; padding: 8px 10px; background: var(--panel2); border-radius: 6px; }
 /* ===== Nov 13: the welcome screen, the hero select, and one button style for the whole game ===== */
 #splash { position: fixed; inset: 0; z-index: 2000; display: grid; grid-template-rows: 1fr auto 1fr; justify-items: center; align-items: center; cursor: pointer; background: #050406 url(img/ui/bg_title_hd.webp) center 40% / cover no-repeat; overflow: hidden; transition: opacity .7s ease, visibility .7s; }
@@ -1080,7 +1081,7 @@ body #scrCombat.bf .stage .uplate .bar span { font-size: 12px; }
   [data-cardinfo] .card, [data-cardinfo].item { cursor: pointer; }
   .cxbarrow { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); z-index: 3; display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 8px; background: rgba(14,11,8,.82); border: 1px solid var(--line); font-size: 13.5px; white-space: nowrap; max-width: calc(100% - 20px); flex-wrap: wrap; justify-content: center; }
   .cxbarrow { width: 50%; box-sizing: border-box; flex-wrap: nowrap !important; } .cxbarrow[hidden] { display: none !important; }
-  body .cxbarrow, body.inkui .cxbarrow { background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; gap: 12px; top: 12px; } .cxbarrow .cxxp { cursor: help; } .cxbarrow .cxlv { order: -1; font: 700 30px/1 'Grenze', serif; color: #fff; text-shadow: 0 2px 0 #000, 0 0 8px rgba(0,0,0,.9); cursor: help; }
+  body .cxbarrow, body.inkui .cxbarrow { background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; gap: 12px; top: 5px; } .cxbarrow .cxxp { cursor: help; } .cxbarrow .cxlv { order: -1; font: 700 30px/1 'Grenze', serif; color: #fff; text-shadow: 0 2px 0 #000, 0 0 8px rgba(0,0,0,.9); cursor: help; position: relative; top: -4px; }
   .cxbarrow .cxxp { flex: 1 1 auto; min-width: 80px; width: auto; height: 10px; margin: 0; } .cxbarrow .pilebtn { padding: 2px 8px; font-size: 12.5px; }
   .tltabs { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0 8px; } .tltab { background: #1a1612; border: 1px solid var(--line); border-radius: 6px; color: var(--text); padding: 4px 9px; cursor: pointer; font: inherit; font-size: 13px; } .tltab.on { border-color: var(--accent); background: #2a2219; } .tltab small { color: var(--muted); }
   .tlprog { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 8px; font-size: 13.5px; } .tlprog .tlxp { width: 220px; height: 9px; margin: 0; }
@@ -7548,8 +7549,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794618183466';
-  const CB_BUILD = '37af74c9fa'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794618788287';
+  const CB_BUILD = '28420053b4'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8655,6 +8656,10 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Fix', "Enemy card pictures that showed as blurry stripes (Frozen Bite, Stalk, Snow Wall, Ice Bolt and most other Frost cards, 81 in all) are repaired."],
+      ['Interface', "Your gear panel now lists resistances as a table: an icon, the name and the number for each element."],
+      ['Change', "Summoned demons stand on the ground and breathe instead of bobbing up and down."],
+      ['Interface', "The codex level sits level with its XP bar, a little closer to the top."],
       ['Balance', "Harder maps level your codex faster: +10% codex XP per map level, so a +3 map gives 1.3 times the XP."],
       ['Interface', "The codex bar at the top of town is just a bar with the level beside it. Point at it for the XP numbers."],
       ['Art', "Sixteen more weapon looks in the Skull Shop (28 in all), among them a baguette, a butcher's cleaver, a miner's pickaxe, a roast drumstick, a frying pan, a wooden spoon and a finger-bone wand."],
@@ -13528,7 +13533,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       if (!it) return `<div class="dslot empty" ${o.own ? `data-dslot="${sl}" role="button" tabindex="0"` : ''} title="${sl}: empty${o.own ? ' (click to equip something)' : ''}"><span class="dic">${slotIcon(sl)}</span><span class="dtx"><b>${sl}</b><small>empty</small></span></div>`;
       return `<div class="dslot" style="--rc:${RC[it.rarity] || 'var(--line)'}" data-tip="${tipKey(it, o.cmp)}" ${o.own ? `data-dslot="${sl}" role="button"` : ''} tabindex="0"><span class="dic">${itemIcon(it, 40)}</span><span class="dtx"><b>${esc(it.name)}</b><small>${sl} &middot; ilvl ${it.ilvl}</small></span></div>`;
     };
-    const s = CB.sumGear(ch.gear), res = Object.entries(s.resist || {}).filter(x => x[1]).map(([k, v]) => `${k} ${v}%`).join(', ') || 'none';
+    const s = CB.sumGear(ch.gear), resIc = { Physical: 54, Shadow: 55, Arcane: 56, Nature: 57, Fire: 58, Frost: 59 }, res = `<div class="dres">${CB.ELEMENTS.map(k => { const v = (s.resist || {})[k] || 0, i = resIc[k]; return `<div class="${v ? '' : 'zero'}" title="${k} damage you take is cut by ${Math.min(75, v)}% (75% is the most that counts)"><i style="background-position:${-(i % 6) * 22}px ${-Math.floor(i / 6) * 22}px"></i><span>${k} Resistance</span><b>${v}%</b></div>`; }).join('')}</div>`;
     return `<div class="doll">
       <div class="dcol">${DOLL_L.map(slot).join('')}</div>
       <div class="dmid">${window.CB_HEROPUP ? `<div class="dpup">${CB_HEROPUP.html('doll' + (ch.id || ch.name || cls), CB_HEROPUP.lookOf({ app: ch.app, name: ch.name, cls }, cls, ch.gear), { view: 's', s: 1 })}${o.own ? '<button type="button" class="btn dmirror" data-mirror="1" title="Change how your hero looks">Mirror</button>' : ''}</div>` : `<canvas class="dportrait" width="220" height="250" data-cls="${cls}" data-rc="${esc(JSON.stringify(rcOf(ch)))}" data-gear="${esc(JSON.stringify((ch.gear || []).map(g => ({ slot: g.slot, name: g.name, arch: g.arch, rarity: g.rarity }))))}"></canvas>`}
@@ -13538,7 +13543,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       <div class="dbot">${DOLL_B.map(slot).join('')}</div>
       <dl class="kv dstats"><dt>Max HP</dt><dd>${s.maxHp}</dd><dt>Mana</dt><dd ${s.manaOver ? `title="Gear adds at most +${CB.MANA_GEAR_CAP} max mana: ${s.manaOver} of yours is wasted"` : ''}>${s.maxMana}${s.manaOver ? ' <span class="down">(capped)</span>' : ''}, +${s.regen}/turn</dd><dt>Draw</dt><dd>${s.draw}/round</dd>
         <dt>Strength / Int</dt><dd>+${s.strength}% / +${s.intelligence}%</dd><dt>Dexterity</dt><dd>+${s.dexterity + s.defGain}% ${(o.own && profile.chars[heroKey] && CBHub.defWord(profile.chars[heroKey])) || CLASSES[cls].defense}</dd><dt>Crit</dt><dd>${s.crit}% x${s.critMult.toFixed(2)}</dd>${s.weaponDmg ? `<dt>Weapon damage</dt><dd>+${s.weaponDmg} per Attack hit</dd>` : ''}
-        <dt>Initiative</dt><dd>${s.init}</dd><dt>Resist</dt><dd>${res}</dd>${s.luck ? `<dt>Luck</dt><dd>${s.luck}</dd>` : ''}${ch.duels ? `<dt>Duels</dt><dd>${ch.duels.w} won, ${ch.duels.l} lost</dd>` : ''}</dl>
+        <dt>Initiative</dt><dd>${s.init}</dd>${s.luck ? `<dt>Luck</dt><dd>${s.luck}</dd>` : ''}${ch.duels ? `<dt>Duels</dt><dd>${ch.duels.w} won, ${ch.duels.l} lost</dd>` : ''}${res}</dl>
     </div>`;
   }
   window.addEventListener('forge-ready', () => paintPortraits()); // a Forge sprite finished drawing: repaint the dolls with it

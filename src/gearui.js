@@ -114,7 +114,7 @@
       if (!it) return `<div class="dslot empty" ${o.own ? `data-dslot="${sl}" role="button" tabindex="0"` : ''} title="${sl}: empty${o.own ? ' (click to equip something)' : ''}"><span class="dic">${slotIcon(sl)}</span><span class="dtx"><b>${sl}</b><small>empty</small></span></div>`;
       return `<div class="dslot" style="--rc:${RC[it.rarity] || 'var(--line)'}" data-tip="${tipKey(it, o.cmp)}" ${o.own ? `data-dslot="${sl}" role="button"` : ''} tabindex="0"><span class="dic">${itemIcon(it, 40)}</span><span class="dtx"><b>${esc(it.name)}</b><small>${sl} &middot; ilvl ${it.ilvl}</small></span></div>`;
     };
-    const s = CB.sumGear(ch.gear), res = Object.entries(s.resist || {}).filter(x => x[1]).map(([k, v]) => `${k} ${v}%`).join(', ') || 'none';
+    const s = CB.sumGear(ch.gear), resIc = { Physical: 54, Shadow: 55, Arcane: 56, Nature: 57, Fire: 58, Frost: 59 }, res = `<div class="dres">${CB.ELEMENTS.map(k => { const v = (s.resist || {})[k] || 0, i = resIc[k]; return `<div class="${v ? '' : 'zero'}" title="${k} damage you take is cut by ${Math.min(75, v)}% (75% is the most that counts)"><i style="background-position:${-(i % 6) * 22}px ${-Math.floor(i / 6) * 22}px"></i><span>${k} Resistance</span><b>${v}%</b></div>`; }).join('')}</div>`;
     return `<div class="doll">
       <div class="dcol">${DOLL_L.map(slot).join('')}</div>
       <div class="dmid">${window.CB_HEROPUP ? `<div class="dpup">${CB_HEROPUP.html('doll' + (ch.id || ch.name || cls), CB_HEROPUP.lookOf({ app: ch.app, name: ch.name, cls }, cls, ch.gear), { view: 's', s: 1 })}${o.own ? '<button type="button" class="btn dmirror" data-mirror="1" title="Change how your hero looks">Mirror</button>' : ''}</div>` : `<canvas class="dportrait" width="220" height="250" data-cls="${cls}" data-rc="${esc(JSON.stringify(rcOf(ch)))}" data-gear="${esc(JSON.stringify((ch.gear || []).map(g => ({ slot: g.slot, name: g.name, arch: g.arch, rarity: g.rarity }))))}"></canvas>`}
@@ -124,7 +124,7 @@
       <div class="dbot">${DOLL_B.map(slot).join('')}</div>
       <dl class="kv dstats"><dt>Max HP</dt><dd>${s.maxHp}</dd><dt>Mana</dt><dd ${s.manaOver ? `title="Gear adds at most +${CB.MANA_GEAR_CAP} max mana: ${s.manaOver} of yours is wasted"` : ''}>${s.maxMana}${s.manaOver ? ' <span class="down">(capped)</span>' : ''}, +${s.regen}/turn</dd><dt>Draw</dt><dd>${s.draw}/round</dd>
         <dt>Strength / Int</dt><dd>+${s.strength}% / +${s.intelligence}%</dd><dt>Dexterity</dt><dd>+${s.dexterity + s.defGain}% ${(o.own && profile.chars[heroKey] && CBHub.defWord(profile.chars[heroKey])) || CLASSES[cls].defense}</dd><dt>Crit</dt><dd>${s.crit}% x${s.critMult.toFixed(2)}</dd>${s.weaponDmg ? `<dt>Weapon damage</dt><dd>+${s.weaponDmg} per Attack hit</dd>` : ''}
-        <dt>Initiative</dt><dd>${s.init}</dd><dt>Resist</dt><dd>${res}</dd>${s.luck ? `<dt>Luck</dt><dd>${s.luck}</dd>` : ''}${ch.duels ? `<dt>Duels</dt><dd>${ch.duels.w} won, ${ch.duels.l} lost</dd>` : ''}</dl>
+        <dt>Initiative</dt><dd>${s.init}</dd>${s.luck ? `<dt>Luck</dt><dd>${s.luck}</dd>` : ''}${ch.duels ? `<dt>Duels</dt><dd>${ch.duels.w} won, ${ch.duels.l} lost</dd>` : ''}${res}</dl>
     </div>`;
   }
   window.addEventListener('forge-ready', () => paintPortraits()); // a Forge sprite finished drawing: repaint the dolls with it

@@ -27,3 +27,25 @@ wand_bone dfcb73ce-938e-492e-9e75-35a5846d0d01 20x46 c16
 wand_spoon b6a1aca4-6562-4174-8005-69b95b2b0855 20x46 c16
 sword2h_blood 3f71dfed-1ed4-44a9-9619-e8d2bbfd4ae9 28x92 c4
 sword2h_frost b9f8715c-c0be-4ccf-b203-8605c9249f5c 28x92 c4
+# batch 3 (join rows in this order per group)
+sword2h_shadow c96e4456-2897-40e4-9326-a80c9932ed81 28x92 c4
+sword2h_swordfish b1db3b79-a31b-4d93-830b-47bfcaf08dca 28x92 c4
+axe2h_frost 406a0101-0eff-4d4f-b0e7-72527074d0a7 40x88 c4
+axe2h_blood 18b0466b-c1b1-4045-a5fd-7b2388a73069 40x88 c4
+axe2h_gold 07795c8f-780c-4c7b-887a-ae00b46dc561 40x88 c4
+axe2h_lute dc503f82-1587-4abb-b1a5-4af452f002f8 40x88 c4
+maul_gold d0aab8b8-7c49-4ac8-9583-83b68ef4a876 32x92 c4
+maul_log b7a0b59d-5ee2-4f81-88c7-77b811dcd696 32x92 c4
+hammer_gold bce762c0-04f5-42eb-835a-e7093d5e2544 36x80 c16
+hammer_frost c78cf6c1-4534-42e6-9c0c-435912757d53 36x80 c16
+hammer_mallet a4687f49-f9b7-4d99-b4ce-c5820bc4db58 36x80 c16
+scythe_blood cfb370f7-1526-4308-9480-f13bc38fdf39 40x100 c4
+scythe_gold baf53e29-e0e7-4d7b-8be5-a131d0433ccb 40x100 c4
+scythe_bone d75cd769-57bf-43fc-a1b3-a8022e73274e 40x100 c4
+staff_broom ab8aca2e-5dd0-4ecf-918c-b2bb751e12ec 28x92 c4
+staff_crook c6f31170-943e-4e84-974a-b5ffb0682415 28x92 c4
+staff_crystal 27586fe9-1034-4448-830b-aef397237905 28x92 c4
+kite_gold 891b8cb4-27ae-498e-ba3a-5b05ecc980ad 36x56 c25
+kite_blood 1b344626-f961-4bd8-ba26-1140d281417c 36x56 c25
+kite_lid 7bba8f02-1de4-4583-87b7-72b32fdbab38 36x56 c25
+# not launched yet: tower_door, tower_gold, focus_skull, focus_crystalball, focus_lantern, focus_mug
