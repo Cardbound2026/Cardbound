@@ -3,7 +3,7 @@
   const CHANGELOG = [
     { date: '2026-11-13', items: [
       ['Art', "Five more mounts in the Skull Shop: Praying Mantis, Bone Spider, Great Worm, Flying Carpet and Great Cobra."],
-      ['Art', "New pictures for belts (Molten Sash and the rest): every cloth sash and leather belt is redrawn as a proper belt in place of the thin strip."],
+      ['Art', "New pictures for belts and boots (Molten Sash and the rest): every belt is redrawn as a proper belt in place of the thin strip, and plate and leather boots are redrawn larger."],
       ['Balance', "Bloodletter, level 6: Serrated Start (3 Bleed to all enemies at the start of a fight) is replaced by From the Shadows: Bleed you apply from Stealth is increased by 25%. If you had Serrated Start picked, you now have the new talent."],
       ['Art', "New pictures for every chest piece (Cinder Jerkin and the rest): 18 redrawn icons for plate, leather and cloth chests on all six maps."],
       ['Interface', "A big gold ! appears next to your codex level whenever you have a talent point to spend. Point at it for the reminder (push N), or click it to open your talents."],
