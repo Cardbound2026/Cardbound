@@ -1363,7 +1363,12 @@ class Combat {
     e.plan = [];
     const allowed = (c) => c.cost < 999 && !(e.silenced && CB_intent(c) !== 'attack') && !(e.disarmed && CB_intent(c) === 'attack');
     const gm = c => c.ops.some(o => o.op === 'gainMana') ? 1 : 0;
-    const order = [...e.hand].sort((a, b) => gm(b) - gm(a));
+    // Nov 14: what a monster spends its mana on, in order: cards that give it mana, then buffs (Strength for itself or its side, a bonus to its
+    // next card), then area attacks, then whatever else it holds (defence or a single-target card, in the order drawn). It used to be hand order,
+    // so an area attack was often left unplayed behind cheaper cards. Plan order is also play order, so the buff lands before the hits.
+    const BUFF_OPS = { teamStrength: 1, strTurn: 1, strCombat: 1, nextBonus: 1 };
+    const pri = (c) => gm(c) ? 0 : c.ops.some(o => BUFF_OPS[o.op]) ? 1 : c.ops.some(o => (o.op === 'damage' || o.op === 'execute') && o.all) ? 2 : 3;
+    const order = e.hand.map((c, i) => [c, i]).sort((a, b) => pri(a[0]) - pri(b[0]) || a[1] - b[1]).map(x => x[0]);
     for (const c of order) if (rb && c.cost < 999 && CB_intent(c) === 'attack') { mana = Math.max(0, mana - this.eCost(e, c)); e.plan.push(c.uid); } // a raid boss always plays its attacks
     else if (allowed(c) && this.eCost(e, c) <= mana) { mana -= this.eCost(e, c); e.plan.push(c.uid); const g = c.ops.find(o => o.op === 'gainMana'); if (g) mana += g.n; }
     const tq = this.taunting(); if (tq) { for (const uid of e.plan) { const c = e.hand.find(x => x.uid === uid); if (c && this.isTargeted(c)) c.mark = tq.id; } return; }
