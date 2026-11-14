@@ -6298,8 +6298,12 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   /* Nov 13: the Wager Board moved inside, onto the arena floor (extras.js: exArFrame) */
   PROPS.push({ kind: 'fountain', x: 63, y: 61, w: 4, h: 3 }, { kind: 'fountain', x: 82, y: 61, w: 4, h: 3 });
   PROPS.push({ kind: 'sign', x: 79, y: 102, w: 1, h: 1 }, { kind: 'chest', x: 61, y: 57, w: 1, h: 1 });
-  for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2 + .3; const x = Math.round(74.5 + Math.cos(a) * 12), y = Math.round(60 + Math.sin(a) * 9.4); if (ground[y][x] === 'b') PROPS.push({ kind: 'torch', x, y, w: 1, h: 1 }); }
-  for (let y = 20; y < 104; y += 6) if (ground[y][71] !== '~' && ground[y][78] !== '~') { PROPS.push({ kind: 'torch', x: 71, y, w: 1, h: 1 }); PROPS.push({ kind: 'torch', x: 78, y, w: 1, h: 1 }); }
+  // Nov 14: plaza torches tidied. Four stand square around the bonfire (the brazier is tiles 73-75 x 57-59, so its middle is 74.5, 58.5).
+  for (const [x, y] of [[71, 55], [77, 55], [71, 61], [77, 61]]) PROPS.push({ kind: 'torch', x, y, w: 1, h: 1 });
+  // Eight ring the plaza on the grass, on the first grass tile past the paving, mirrored left-right and top-bottom (none on the four roads).
+  for (const deg of [18, 54, 126, 162, 198, 234, 306, 342]) { const a = deg * Math.PI / 180; for (let r = 6; r <= 16; r += 0.25) { const x = Math.floor(74.5 + Math.cos(a) * r), y = Math.floor(60 + Math.sin(a) * r * 0.8); if (ground[y][x] === 'b') continue; if (ground[y][x] === 'g' && !PROPS.some(p => p.kind === 'torch' && p.x === x && p.y === y)) PROPS.push({ kind: 'torch', x, y, w: 1, h: 1 }); break; } }
+  // The north-south road keeps a pair every 6 rows, on the grass at its edges (not where the road crosses the plaza paving).
+  for (let y = 20; y < 104; y += 6) if (ground[y][71] !== '~' && ground[y][78] !== '~' && ground[y][71] !== 'b' && ground[y][78] !== 'b') { PROPS.push({ kind: 'torch', x: 71, y, w: 1, h: 1 }); PROPS.push({ kind: 'torch', x: 78, y, w: 1, h: 1 }); }
   for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; PROPS.push({ kind: 'torch', x: Math.round(ARN.x + Math.cos(a) * (ARN.RX + 1.2)), y: Math.round(ARN.y + Math.sin(a) * (ARN.RY + 1)), w: 1, h: 1 }); }
   for (const [x, y] of [[93, 49], [141, 49], [93, 72], [141, 72], [117, 47]]) PROPS.push({ kind: 'torch', x, y, w: 1, h: 1 });
   // solid: walls round the edge, water, building footprints, the Colosseum's stands
@@ -7659,8 +7663,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794672757990';
-  const CB_BUILD = 'dd422f60b9'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794672983869';
+  const CB_BUILD = '9486eb8d31'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8766,6 +8770,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Art', "Town torches tidied: four stand square around the bonfire, and the ones around the plaza now sit on the grass at the edge of the paving, evenly spaced."],
       ['Interface', "You can drag windows. Hold the mouse on any open pop-up, sheet or the deck tracker and move it out of the way. The tracker remembers where you left it; double-click a window's empty edge to put it back."],
       ['Fix', "The small scroll bar that sometimes appeared on chest loot (even with a single pile of gold) is gone for good."],
     ] },

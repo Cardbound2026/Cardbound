@@ -1,0 +1,21 @@
+# Nov 14: art jobs for the 20 new area cards (Pro Flash 208x140), in this order
+e_tusk_rush 17a97c64-ef44-4ee5-ae22-ff1b6a2feebf
+e_scatter_embers 5656cef9-a5c5-4319-8330-d694b9e423de
+e_flurry 8cfa9030-1632-4009-a8b2-fcb986a725ad
+e_bile_spray a3b54d86-c6e5-48ed-91a7-cf194134be3a
+e_wild_surge 0436ff35-8d03-4026-92f5-55c7aa45c5e7
+e_piercing_shriek 1d26374d-873b-40e2-a33c-5b18fe063c1c
+e_flame_wash 6c15d989-9934-4acc-9768-662a8dd36cd5
+e_thunderous_charge 353c917d-32e8-4433-a05b-c21677203b67
+e_spore_burst d5ee96ad-3332-4932-bc5f-6c86e0144c29
+e_howling_rampage 0155124c-86fa-4901-9015-f91e2531f443
+e_winter_s_howl 1931c818-47cf-4bbf-979d-155f22cd7c95
+e_spray_venom 25a7429a-8b78-446c-a7c8-3d7f509f91c2
+e_mana_storm 0d083fda-e0ee-441e-a561-29fbb828638b
+e_blood_mist 9a87de89-e809-4005-8e63-d83e5432d4f0
+e_arena_sweep 075ae8ce-d734-4221-b473-8b725029939e
+e_royal_inferno 31d9a4f5-fe15-49ae-ac18-93ba93079839
+e_glacial_sweep 6a18fa6b-717f-44c7-b5dc-920a2636e009
+e_bladed_bloom 46829b62-d626-4e36-957b-da15395a97e5
+e_arcane_flourish d60175eb-f420-4344-ac25-2f2f04da0e43
+e_crimson_tide df42308a-4160-44ae-97f8-226f76722303

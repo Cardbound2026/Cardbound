@@ -73,8 +73,12 @@
   /* Nov 13: the Wager Board moved inside, onto the arena floor (extras.js: exArFrame) */
   PROPS.push({ kind: 'fountain', x: 63, y: 61, w: 4, h: 3 }, { kind: 'fountain', x: 82, y: 61, w: 4, h: 3 });
   PROPS.push({ kind: 'sign', x: 79, y: 102, w: 1, h: 1 }, { kind: 'chest', x: 61, y: 57, w: 1, h: 1 });
-  for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2 + .3; const x = Math.round(74.5 + Math.cos(a) * 12), y = Math.round(60 + Math.sin(a) * 9.4); if (ground[y][x] === 'b') PROPS.push({ kind: 'torch', x, y, w: 1, h: 1 }); }
-  for (let y = 20; y < 104; y += 6) if (ground[y][71] !== '~' && ground[y][78] !== '~') { PROPS.push({ kind: 'torch', x: 71, y, w: 1, h: 1 }); PROPS.push({ kind: 'torch', x: 78, y, w: 1, h: 1 }); }
+  // Nov 14: plaza torches tidied. Four stand square around the bonfire (the brazier is tiles 73-75 x 57-59, so its middle is 74.5, 58.5).
+  for (const [x, y] of [[71, 55], [77, 55], [71, 61], [77, 61]]) PROPS.push({ kind: 'torch', x, y, w: 1, h: 1 });
+  // Eight ring the plaza on the grass, on the first grass tile past the paving, mirrored left-right and top-bottom (none on the four roads).
+  for (const deg of [18, 54, 126, 162, 198, 234, 306, 342]) { const a = deg * Math.PI / 180; for (let r = 6; r <= 16; r += 0.25) { const x = Math.floor(74.5 + Math.cos(a) * r), y = Math.floor(60 + Math.sin(a) * r * 0.8); if (ground[y][x] === 'b') continue; if (ground[y][x] === 'g' && !PROPS.some(p => p.kind === 'torch' && p.x === x && p.y === y)) PROPS.push({ kind: 'torch', x, y, w: 1, h: 1 }); break; } }
+  // The north-south road keeps a pair every 6 rows, on the grass at its edges (not where the road crosses the plaza paving).
+  for (let y = 20; y < 104; y += 6) if (ground[y][71] !== '~' && ground[y][78] !== '~' && ground[y][71] !== 'b' && ground[y][78] !== 'b') { PROPS.push({ kind: 'torch', x: 71, y, w: 1, h: 1 }); PROPS.push({ kind: 'torch', x: 78, y, w: 1, h: 1 }); }
   for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; PROPS.push({ kind: 'torch', x: Math.round(ARN.x + Math.cos(a) * (ARN.RX + 1.2)), y: Math.round(ARN.y + Math.sin(a) * (ARN.RY + 1)), w: 1, h: 1 }); }
   for (const [x, y] of [[93, 49], [141, 49], [93, 72], [141, 72], [117, 47]]) PROPS.push({ kind: 'torch', x, y, w: 1, h: 1 });
   // solid: walls round the edge, water, building footprints, the Colosseum's stands
