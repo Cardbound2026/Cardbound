@@ -67,6 +67,6 @@ Theme: lightning, rain and storm, nature. Class colour: a dark, deep blue, clear
   Mass Electrocute is uncapped (30 Static = 3 turns). Spirit Link splits the hit before defences: a 30 hit on one of two
   linked heroes becomes 15 each, and each hero's own defences then apply to their share.
 - Penetration does not exist in the engine yet.
-- Cards: being worked out in chat (Nov 14), nothing generated in the game.
+- Cards: the working list (109 cards) is in docs/shaman_cards.md. Nothing generated in the game.
 - Gear: maces give both stats, and since Nov 13 rings can roll Multi-hit and Multicast for every class.
 - Starter deck, starter kit. Exact colour hex to be picked against the map and party frames (start from #2b4fa8).
