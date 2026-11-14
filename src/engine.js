@@ -419,7 +419,7 @@ const CUSTOM = {
   counterspell: { play: (cb, t) => { const e = tgtOf(cb, t); if (e) { e.counter = 1; say(cb, `${e.name}'s next card will have no effect.`); } } },
   silence: { play: (cb, t) => { const e = tgtOf(cb, t); if (e) { e.silenced = 1; cb.planEnemy(e, true); say(cb, `${e.name} is Silenced: Attacks only next turn.`); } } },
   spellsteal: { play: (cb, t, p) => { const e = tgtOf(cb, t); if (e) cb.stealBuff(p, e); } },
-  ice_block: { play: (cb, t, p) => { cb.cleanseAll(p, true); cb.gainDef(10); p.until.debuffImmune = true; } },
+  ice_block: { play: (cb, t, p) => { cb.cleanseAll(p, true); cb.gainDef(10); p.until.debuffImmune = true; p.until.immune = true; say(cb, 'Ice Block: immune to damage and debuffs until your next turn.'); } },   // Nov 14: full damage immunity too
   arcane_mirror: { play: (cb, t, p) => { p.until.reflect = true; } },
   elemental_attunement: { play: (cb, t, p) => CUSTOM.elemental_ward.play(cb, t, p) },
   arcane_power: { play: (cb, t, p) => critBuff(cb, p) },
