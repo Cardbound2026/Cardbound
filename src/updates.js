@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Fix', "Bag pictures (Leather Satchel and the rest) sit in the middle of their tile instead of the bottom-right corner."],
       ['Art', "Thorns striking back has a new look: a green briar with short hooked rose thorns and a few petals, in place of the long grey spikes."],
       ['Interface', "Skull Shop: click any picture (a mount, card back, cursor, aura, weapon look...) to see it big. Click again or press Esc to close."],
       ['Feature', "22 new achievements and titles: Booster, Hard Carry, Hitman, The Notorious, Comeback King, The Unshakeable, Aggressive, the Sleepy, Risky, Thick, Slippery, Brother, Useless, The Undying, The Immortal, The Unkillable, Theorycrafter, Moneybags, Shiny, Threatening, the Salvager and The One and Only (earn every other achievement)."],
