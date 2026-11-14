@@ -32,7 +32,7 @@ Lightning spells build Static on the target. Static does nothing by itself: card
 - **Living Lightning** (Healer): heal a target; if it Multicasts, it also casts Chain Lightning.
 - **Spirit Link** (Gold Power): all damage is shared evenly between the party.
 - Tank: a debuff that lowers all of the target's resistances by a small amount (counts as one more unique debuff).
-- **Lightning Shield** (Tank): hits against the Shaman build Static on the attacker.
+- **Lightning Shield** (Gold Power, lasts the fight): hits against the Shaman build Static on the attacker (amount per hit to set; 1 suggested).
 - The cards first called Windfury and Stormstrike need new names.
 - Draft families from chat: lightning spells, Static payoffs, mace Attacks, weapon charges, heals, Shaman debuffs
   (Soaked, Deafened, Unsteady, Hex, mana burn, cost increase), defence.
