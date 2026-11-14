@@ -253,7 +253,7 @@ svg.dimg { transform: none; filter: drop-shadow(0 0 4px #b05ad0aa); }
 .pop.dmg { color: #f4ecdc; } .pop.blk { color: #9fc4ff; } .pop.heal { color: #8fdc6a; }
 /* Nov 2: ink-style numbers: heavy black outline, straight blocky letters, a hard drop shadow; crits are red and bigger */
 .pop { font-family: "Barlow Semi Condensed", "Arial Narrow", sans-serif; font-weight: 800; font-style: normal; letter-spacing: .02em; -webkit-text-stroke: 7px #121918; paint-order: stroke fill; text-shadow: 3px 3px 0 #121918; line-height: 1; }
-.pop.dmg.crit { color: #ff3a2a; font-size: 42px; animation-name: popcrit; } .pop.multi { top: -22px; color: #ffd34d; font-size: 40px; letter-spacing: .06em; white-space: nowrap; z-index: 6; animation: popmulti 1.5s ease-out forwards; } @keyframes popmulti { 0% { opacity: 0; transform: translateX(-50%) scale(.4) rotate(-6deg); } 12% { opacity: 1; transform: translateX(-50%) scale(1.3) rotate(-3deg); } 24% { transform: translateX(-50%) scale(1) rotate(-3deg); } 75% { opacity: 1; transform: translateX(-50%) translateY(-14px) scale(1) rotate(-3deg); } 100% { opacity: 0; transform: translateX(-50%) translateY(-34px) scale(1) rotate(-3deg); } } .pop.blk::before { content: '\25C6 '; font-size: .7em; }
+.pop.dmg.crit { color: #ff3a2a; font-size: 42px; animation-name: popcrit; } #scrCombat.bf .stage .unit .pop.multi { top: auto; bottom: calc(var(--fh) * 1.2); } .pop.multi { top: -66px; color: #ffd34d; font-size: 40px; letter-spacing: .06em; white-space: nowrap; z-index: 6; animation: popmulti 1.5s ease-out forwards; } @keyframes popmulti { 0% { opacity: 0; transform: translateX(-50%) scale(.4) rotate(-6deg); } 12% { opacity: 1; transform: translateX(-50%) scale(1.3) rotate(-3deg); } 24% { transform: translateX(-50%) scale(1) rotate(-3deg); } 75% { opacity: 1; transform: translateX(-50%) translateY(-14px) scale(1) rotate(-3deg); } 100% { opacity: 0; transform: translateX(-50%) translateY(-34px) scale(1) rotate(-3deg); } } .pop.blk::before { content: '\25C6 '; font-size: .7em; }
 @keyframes popcrit { 0% { opacity: 0; transform: translate(-50%, 6px) scale(.5) rotate(-6deg); } 15% { opacity: 1; transform: translate(-50%, -6px) scale(1.25) rotate(-6deg); } 30% { transform: translate(-50%, -12px) scale(1) rotate(-4deg); } 100% { opacity: 0; transform: translate(-50%, -46px) scale(1) rotate(-4deg); } }
 @keyframes pop { from { opacity: 1; transform: translate(-50%, 0) scale(1.15); } to { opacity: 0; transform: translate(-50%, -38px) scale(.9); } }
 @media (prefers-reduced-motion: reduce) { .pop { animation: none; opacity: 0; } }
@@ -3489,8 +3489,8 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     if (cb && cb.over) combatOver();
     if (netOn()) netDrain();
   }
-  const lastCrit = {}, lastMulti = {};
-  function snapshot() { for (const a of [...cb.players, ...cb.enemies]) { lastHp[a.id] = a.hp; lastBlock[a.id] = a.block; lastCrit[a.id] = a.critN || 0; lastMulti[a.id] = a.multiN || 0; } }
+  const lastCrit = {}, lastMulti = {}, lastHitN = {};
+  function snapshot() { for (const a of [...cb.players, ...cb.enemies]) { lastHp[a.id] = a.hp; lastBlock[a.id] = a.block; lastCrit[a.id] = a.critN || 0; lastMulti[a.id] = a.multiN || 0; lastHitN[a.id] = a.hitN || 0; } }
   // the mirror (hero window): change your hero's appearance any time (src/heropup.js)
   function openMirror() {
     const c = CBHub.char(profile, heroKey); if (!c || !window.CB_HEROPUP) return;
@@ -3704,9 +3704,13 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     for (const a of [...cb.players, ...cb.enemies]) {
       const el = document.querySelector(`.unit[data-id="${a.id}"]`); if (!el) continue;
       const dh = a.hp - (lastHp[a.id] ?? a.hp), db = a.block - (lastBlock[a.id] ?? a.block);
-      const add = (cls, txt) => { const s = document.createElement('div'); s.className = 'pop ' + cls; s.textContent = txt; el.appendChild(s); setTimeout(() => s.remove(), cls === 'multi' ? 1600 : 1200); };
+      const put = (cls, txt, dx) => { const host = el.isConnected ? el : document.querySelector(`.unit[data-id="${a.id}"]`); if (!host) return; const s = document.createElement('div'); s.className = 'pop ' + cls; s.textContent = txt; if (dx) s.style.marginLeft = dx + 'px'; host.appendChild(s); setTimeout(() => s.remove(), cls === 'multi' ? 1600 : 1200); };
+      const add = (cls, txt, delay, dx) => { if (delay) setTimeout(() => put(cls, txt, dx), delay); else put(cls, txt, dx); };
       const crit = (a.critN || 0) > (lastCrit[a.id] || 0);
-      if (dh < 0) add(crit ? 'dmg crit' : 'dmg', crit ? dh + '!' : dh); else if (dh > 0) add('heal', '+' + dh);
+      // Nov 14: one number for every hit (a Multi-hit, a card that strikes twice, an area card that lands twice...), a beat apart and fanned out so they can all be read
+      const hn = (a.hitN || 0) - (lastHitN[a.id] ?? (a.hitN || 0)), hits = hn > 1 ? (a.hitLast || []).slice(-Math.min(hn, 8)) : [], hitSum = hits.reduce((t, h) => t + h[0], 0);
+      if (hits.length) { hits.forEach(([n, cr], i) => add(cr ? 'dmg crit' : 'dmg', '-' + n + (cr ? '!' : ''), i * 170, (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 30)); const rest = dh + hitSum; if (rest < 0) add('dmg', rest, hits.length * 170); else if (rest > 0) add('heal', '+' + rest, hits.length * 170); }
+      else if (dh < 0) add(crit ? 'dmg crit' : 'dmg', crit ? dh + '!' : dh); else if (dh > 0) add('heal', '+' + dh);
       if (db > 0) add('blk', '+' + db);
       if ((a.multiN || 0) > (lastMulti[a.id] || 0)) add('multi', a.multiWord || 'MULTI-HIT');   // Nov 14: Multi-hit, Multicast and Multiplay get a call-out
     }
