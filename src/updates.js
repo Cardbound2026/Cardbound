@@ -2,12 +2,14 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Feature', "New Shaman card: Voltage (Green Power, 10 mana). You deal 2% more damage to an enemy for each Static on it, up to +40%."],
+      ['Interface', "Deck Planner: the Gold card step has a search box (name or card text), and pointing at any card in the planner shows it big. Gold cards grow in place; cards in the list and in your deck show the full card beside the pointer."],
       ['Change', "The bags you put in your bag slots now belong to that hero too: each hero has its own bag slots and its own bag space. The bags that were equipped stay with the hero you were playing. The bank's bag slots are still shared."],
       ['Interface', "A big gold call-out pops over the target when a card Multi-hits, Multicasts or Multiplays (and TRIPLE HIT for the Shaman's third hit)."],
       ['Balance', "Mage: Ice Block now also makes you immune to all damage until your next turn (it already removed your debuffs, gave 10 Barrier and blocked new debuffs)."],
       ['Feature', "A sixth class: the Shaman. A storm hybrid that mixes mace Attacks with lightning spells and is built on Multi-hit and Multicast. Nature damage only, no Bleed and no Poison. Its defence is Guard: Dodge, or Block if you carry a shield. Pick it at the campfire with one of four starting decks."],
       ['Feature', "Static: the Shaman's lightning builds Static on a target. It never fades. Spend it with Electrocute (10 Static: a 1-turn Stun for 0 mana), Mass Electrocute (1 turn for every 10), Discharge and more. These Stuns work on bosses and can be chained; raid bosses are immune."],
-      ['Feature', "137 Shaman cards, six codexes (Twinstorm, Rainbringer, Stormcaller, Skybreaker, Stormwarden, Calm Eye), six talent trees and 18 test decks at Tinker Pip. Each map boss can drop one Shaman codex. Shaman cards drop like any other class's."],
+      ['Feature', "138 Shaman cards, six codexes (Twinstorm, Rainbringer, Stormcaller, Skybreaker, Stormwarden, Calm Eye), six talent trees and 18 test decks at Tinker Pip. Each map boss can drop one Shaman codex. Shaman cards drop like any other class's."],
       ['Art', "Shaman cards have their own storm-steel border. Their pictures are still to come: for now they show a symbol."],
       ['Change', "The Mage's class colour is a brighter arcane blue; the Shaman takes a deep storm blue."],
       ['Interface', "Clicking another class's codex in your bags now shows the Equip button greyed out, with the class that can use it."],

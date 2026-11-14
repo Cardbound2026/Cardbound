@@ -202,3 +202,9 @@ Stormheart was dropped (the third hit stays with the Healer's guaranteed Multi-h
 | The Long Wait | Blue, 20, Power | After two turns in a row without acting, your next card is played three times instead of twice. |
 | Borrowed Thunder | Gold, 30, Skill | Skip your next two turns. All enemies skip their next turn, and your first card after that is played three times. Exhaust. |
 | Stillness | Gold, 30, Power | Turns you end without acting do not count as rounds for enemy Pressure, and you take 25% less damage during them. |
+
+## Added after launch (Nov 14)
+
+| Card | Rarity, cost, type | Effect |
+|---|---|---|
+| Voltage | Green, 10, Power | You deal 2% more damage to an enemy for each Static on it (up to +40%). |

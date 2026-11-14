@@ -253,6 +253,7 @@ function install(K) {
   const once = (cb, e, tag) => { if (e[tag] === cb._shSeq) return false; e[tag] = cb._shSeq; return true; };
   POW('charged_air', 'Charged Air', 'Blue', 20, 'Power: each damaging spell you cast applies 1 extra Static to every enemy it hits.', { dealt: (cb, p, h) => { if (h.kind === 'Skill' && h.d && !h.d.isPower && h.e && h.e.hp > 0 && !h.e.isPlayer && once(cb, h.e, '_caSeq')) stat(cb, h.e, 1); } });
   POW('arc_flash', 'Arc Flash', 'Blue', 20, 'Power: when a target reaches 15 Static, Electrocute is put into your hand from anywhere.', {});
+  POW('voltage', 'Voltage', 'Green', 10, 'Power: you deal 2% more damage to an enemy for each Static on it (up to +40%).', { hitMult: (cb, p, e) => 1 + Math.min(40, 2 * ((e && e.static) || 0)) / 100 });
   POW('resonance', 'Resonance', 'Green', 10, 'Power: your Multicasts apply 1 extra Static.', {});
   POW('aftershock', 'Aftershock', 'Blue', 20, 'Power: if a Skill does not Multicast, roll again at half your Multicast chance.', {});
   POW('echo_chamber', 'Echo Chamber', 'Blue', 20, 'Power: +15% Multicast chance.', { onPlay: (cb, p, pw) => { p.multicast += pw.upN ? pw.upN[0] : 15; } });
