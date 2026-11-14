@@ -95,10 +95,17 @@
   const MOVED = new Map();
   const MOUNTS = { horse: HORSE };   // filled from src/mounts_data.js (tools/heroart/bake_mounts.py): the same layout as the horse, with each beast's own seat
   if (window.CB_MOUNTS) for (const k in window.CB_MOUNTS) MOUNTS[k] = window.CB_MOUNTS[k];
+  const HOOFS = [];
   function ride(g, look, key, cx, by, dir, moving, s, t, kind) {
     const HORSE = MOUNTS[kind] || MOUNTS.horse, im = P.img(HORSE === MOUNTS.horse ? 'horse' : 'mounts/' + kind), v = DIRS[dir] || 's', hv = v === 'w' ? 'e' : v, H = HORSE[hv], rv = viewOf(look, v, key); if (rv === false) return false; if (!im || rv !== v) return true;
     const M = MOVED.get(key) || { x: cx, y: by, at: -1e9 }; if (Math.abs(M.x - cx) + Math.abs(M.y - by) > .01) { M.x = cx; M.y = by; M.at = t; } MOVED.set(key, M); moving = t - M.at < 140;   // a rider is moving while its place changes (no flicker between steps)
     const f = v === 'w' ? -1 : 1, fr = moving ? 1 + Math.floor(t / 80) % HORSE.frames : 0, k = HORSE.k * s * .7, C = HORSE.cell, bob = moving ? Math.sin(t / 240 * Math.PI) * 2.2 * s : 0, sc = 96 * s / 118;
+    if (kind === 'holycharger') {   // Nov 13: the Holy Charger leaves golden hoof prints that fade behind it
+      const now = performance.now(), last = HOOFS.length ? HOOFS[HOOFS.length - 1] : null;
+      if (moving && (!last || last.key !== key || Math.abs(last.x - cx) + Math.abs(last.y - by) > 13 * s)) { const n = last ? last.n + 1 : 0, off = (n % 2 ? -1 : 1) * 5 * s; HOOFS.push({ key, g, n, x: hv === 'e' ? cx : cx + off, y: hv === 'e' ? by + off * .5 : by, t0: now, s }); if (HOOFS.length > 50) HOOFS.shift(); }
+      for (let i = HOOFS.length - 1; i >= 0; i--) { const h = HOOFS[i], u = (now - h.t0) / 2600; if (u >= 1) { HOOFS.splice(i, 1); continue; } if (h.g !== g) continue; const a = (1 - u) * .85;
+        g.save(); g.translate(Math.round(h.x), Math.round(h.y)); g.scale(1, .6); g.fillStyle = `rgba(255,214,96,${a * .3})`; g.beginPath(); g.arc(0, 0, 7 * h.s, 0, 6.3); g.fill(); g.strokeStyle = `rgba(255,224,120,${a})`; g.lineWidth = 2.2 * h.s; g.beginPath(); g.arc(0, 0, 3.6 * h.s, .6, Math.PI * 2 - .6); g.stroke(); g.restore(); }
+    }
     g.save(); g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx, by, (hv === 'e' ? 30 : 15) * s, 6 * s, 0, 0, Math.PI * 2); g.fill(); g.restore();
     const horse = () => { g.save(); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.translate(cx, by); if (f < 0) g.scale(-1, 1); g.drawImage(im, fr * C, H.row * C, C, C, -C / 2 * k, -H.foot * k, C * k, C * k); g.restore(); };
     const hipY = by + H.seat[1] * k + bob, rider = (clip) => { g.save(); if (clip) { g.beginPath(); g.rect(cx - 90 * s, hipY - 200 * s, 180 * s, 200 * s + 8 * sc); g.clip(); } P.draw(g, look, v, 'sit', t, cx + H.seat[0] * k * f, hipY + HORSE.hip * sc + 3 * s, sc); g.restore(); };

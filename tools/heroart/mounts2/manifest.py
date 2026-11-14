@@ -22,3 +22,11 @@ ALPHA = {'ghost': 0.72}   # the ghost horse is see-through
 # third pass (Nov 13): the dragon and gryphon redrawn as detailed characters (the first ones were too coarse). rot: (blob, cell, first column, columns) in order east, south, north
 CH = {'dragon': {'rot': ('1794614288919-bbiw8f', 128, 0, 6), 'e': ('1794614280182-mdhcfs', 172), 's': ('1794614281697-l5uml5', 132), 'n': ('1794614283552-1y3oy8', 160)},
   'gryphon': {'rot': ('1794614288919-bbiw8f', 128, 3, 6), 'e': ('1794614284656-qw9b17', 180), 's': ('1794614286364-an5cks', 160), 'n': ('1794614287683-1gcrxl', 160)}}
+# fourth pass (Nov 13): more mounts drawn as characters in the Nightmare's style
+CH.update({
+  'armorhorse': {'rot': ('1794616037755-5vttku', 128, 0, 6), 'e': ('1794616053123-7jo7n2', 156), 's': ('1794616055092-5t8gzk', 132), 'n': ('1794616056621-sydbuk', 160)},
+  'holycharger': {'rot': ('1794616037755-5vttku', 128, 3, 6), 'e': ('1794616058695-b9zv3h', 144), 's': ('1794616060513-ga5n3d', 132), 'n': ('1794616062874-spamy1', 168)},
+  'rhino': {'rot': ('1794616039455-ps807m', 128, 0, 6), 'e': ('1794616065020-r0rcre', 172), 's': ('1794616067750-7uo7b5', 144), 'n': ('1794616069548-p4r2f0', 160)},
+  'moose': {'rot': ('1794616039455-ps807m', 128, 3, 6), 'e': ('1794616082089-ufwh2q', 168), 's': ('1794616084403-m5p72h', 164), 'n': ('1794616086772-yuyx8v', 176)},
+  'hyena': {'rot': ('1794616040866-12jsb7', 128, 0, 6), 'e': ('1794616088632-43c2mb', 168), 's': ('1794616090628-ctg06z', 140), 'n': ('1794616094859-f595nt', 160)},
+  'sabertawny': {'rot': ('1794616040866-12jsb7', 128, 3, 6), 'e': ('1794616096788-7e3cpc', 168), 's': ('1794616098817-12ey2h', 144), 'n': ('1794616100553-kt06go', 152)}})
