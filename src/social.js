@@ -111,7 +111,7 @@
     if (o.q.length > 8) { const s = o.q[o.q.length - 1]; o.q = []; Object.assign(o, { fx: s[0], fy: s[1], x: s[0], y: s[1], t: 1, dir: s[2] }); } // fell far behind: jump
   }
   function otherPos(o) { const k = Math.min(1, o.t); return { x: o.fx + (o.x - o.fx) * k, y: o.fy + (o.y - o.fy) * k }; }
-  function updateOthers(dt) { for (const o of SOC.others.values()) { if (o.t < 1) o.t += dt / (o.mount ? STEP_MS / MOUNT_SPEED : STEP_MS); if (o.t >= 1 && o.q && o.q.length) { const s = o.q.shift(); Object.assign(o, { fx: o.x, fy: o.y, x: s[0], y: s[1], t: 0, dir: s[2] || o.dir, step: o.step + 1 }); } } }
+  function updateOthers(dt) { for (const o of SOC.others.values()) { if (o.t < 1) o.t += dt / (o.mount ? STEP_MS / MOUNT_SPEED : STEP_MS); if (o.t >= 1 && o.q && o.q.length) { const s = o.q.shift(), far = Math.abs(s[0] - o.x) + Math.abs(s[1] - o.y) > 4; Object.assign(o, { fx: far ? s[0] : o.x, fy: far ? s[1] : o.y, x: s[0], y: s[1], t: far ? 1 : 0, dir: s[2] || o.dir, step: o.step + 1 }); }   /* a jump (through a gate) is not walked */ } }
   function othersDrawList(TS, s, t) {
     const out = [];
     for (const o of SOC.others.values()) {

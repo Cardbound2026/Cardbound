@@ -6,7 +6,7 @@
       ['Interface', "Cards a merchant is selling grow when you point at them, and clicking one opens its rank page (every upgrade and where it drops)."],
       ['Change', "You can no longer walk over the top of the Colosseum in town: the way in is Arenamaster Kord's gate on its west side."],
       ['Art', "26 more weapon looks in the Cosmetic Shop: two-handed swords, axes, mauls, hammers, scythes, staves, shields and off-hand items (a swordfish greatsword, a lute axe, a log maul, a barrel mallet, a broom staff, a wooden door for a tower shield, a skull, a mug of ale and more). The Wooden Practice Sword was redrawn so it looks like a sword."],
-      ['Feature', "The Colosseum has a floor you can walk on. Arenamaster Kord's gate now leads onto the sand: a new place to walk around, with the stands behind you. The Wager Board and Kord are inside, by the far gate; the near gate (or Esc) takes you back to town."],
+      ['Feature', "The arena floor: Arenamaster Kord's gate on the west side of the Colosseum now leads onto the sand inside, a huge walled field about a fifth the size of the whole city, with 27 chalk duelling rings and room for dozens of fighters. It works like the town: you see everyone else who is in there, and can chat, ride and challenge them. The Wager Board and Kord stand by the far wall; the gate in the near wall leads back to Emberwatch."],
       ['Art', "Talent pictures fill their frames: the pale strip under each one is gone."],
       ['Fix', "Enemy card pictures that showed as blurry stripes (Frozen Bite, Stalk, Snow Wall, Ice Bolt and most other Frost cards, 81 in all) are repaired."],
       ['Interface', "Your gear panel now lists resistances as a table: an icon, the name and the number for each element."],

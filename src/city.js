@@ -5,6 +5,11 @@
   const BAZ = { x0: 94, y0: 48, x1: 140, y1: 72 }; // the Grand Bazaar: set up shop anywhere inside
   const inBazaar = (x, y) => x >= BAZ.x0 && x <= BAZ.x1 && y >= BAZ.y0 && y <= BAZ.y1;
   const ARN = { x: 118, y: 91, rx: 11.2, ry: 5.3, RX: 17.3, RY: 11.6 }; // the Colosseum: sand floor and the outer wall (Nov 12: measured from the painting, tools/townart)
+  // Nov 13: the arena floor. Kord's gate leads onto the sand inside the Colosseum: a second walled field on the same grid, far below the
+  // city (rows 120-167), so everything the town can do (other players, chat, mounts, duels, clicking to walk) works there too.
+  // It is 72 x 48 tiles, about a fifth of the city. The picture is img/town/g_3_10 ... g_8_13 (tools/arenafloor/build.py).
+  const AFL = { x0: 36, y0: 120, w: 72, h: 48, sx0: 38, sy0: 128, sx1: 105, sy1: 163, MHT: 168, inAt: [72, 160], outAt: [98, 91], gate: [72, 163], board: [69, 128], kord: [74, 128] };
+  const onFloor = (y) => y >= MH;
   const inArena = (x, y) => ((x + .5 - ARN.x) / ARN.RX) ** 2 + ((y + .5 - ARN.y) / ARN.RY) ** 2 <= 1;
   const CITY_SPAWN = { x: 74, y: 64 }, CITY_RETURN = { x: 75, y: 99 }; // log in at Ember Square; come home from a run in the Wagon Yard
   const TOWN = { running: false, last: 0, t: 0, TS: 48, dpr: 1, chunks: new Map(), dark: null, sprites: {}, embers: [], district: '', districtAt: 0 };
@@ -76,6 +81,8 @@
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) { if (x <= 3 || x >= MW - 4 || y <= 3 || y >= MH - 4 || ground[y][x] === '~') solid.add(K(x, y)); }
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) { const o = ((x + .5 - ARN.x) / ARN.RX) ** 2 + ((y + .5 - ARN.y) / ARN.RY) ** 2, i = ((x + .5 - ARN.x) / ARN.rx) ** 2 + ((y + .5 - ARN.y) / ARN.ry) ** 2; if (o <= 1) solid.add(K(x, y)); }   // Nov 13: the whole Colosseum is solid from outside (stands and sand): you go in through Kord's gate
   for (const p of PROPS) if (!p.nosolid) for (let y = p.y; y < p.y + p.h; y++) for (let x = p.x; x < p.x + p.w; x++) solid.add(K(x, y));
+  for (let y = MH; y < AFL.MHT; y++) for (let x = 0; x < MW; x++) if (!(x >= AFL.sx0 && x <= AFL.sx1 && y >= AFL.sy0 && y <= AFL.sy1)) solid.add(K(x, y));   // the arena floor: only the sand is open
+  PROPS.push({ kind: 'arenaboard', x: AFL.board[0], y: AFL.board[1], w: 1, h: 1 });
   // trees in the open ground (seeded, so every player sees the same city)
   { let s = 7; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
     for (let i = 0; i < 420 && PROPS.filter(p => p.kind === 'tree').length < 170; i++) { const x = 5 + Math.floor(r() * (MW - 10)), y = 5 + Math.floor(r() * (MH - 10));
@@ -87,7 +94,7 @@
     chron: [70, 49, 'down'], barber: [17, 57, 'down'], boutique: [25, 57, 'down'], tavern: [61, 71, 'down'], captain: [19, 81, 'down'], guildmaster: [41, 81, 'down'], raidwarden: [75, 16, 'down'], arena: [99, 91, 'right'], dummy: [18, 92, 'down'], banker: [35, 57, 'down'] };
   // districts: the name shows when you walk in
   const DISTRICTS = [['Ember Square', 61, 49, 88, 71], ['The Grand Bazaar', 93, 47, 141, 73], ['The Colosseum', 97, 77, 137, 105], ['The Wagon Yard', 57, 88, 92, 105], ['Market Row', 4, 50, 60, 62], ['The Old Market', 33, 62, 53, 77],
-    ['The Barracks', 4, 72, 47, 105], ['Guild Row', 33, 72, 56, 87], ["Scholars' Quarter", 4, 4, 56, 28], ['The Keep', 57, 4, 92, 24], ['Cathedral Hill', 93, 4, 146, 28], ['The River Ash', 4, 27, 146, 35], ['Riverside', 4, 35, 146, 49], ['The Stables', 93, 94, 106, 105]];
+    ['The Barracks', 4, 72, 47, 105], ['Guild Row', 33, 72, 56, 87], ["Scholars' Quarter", 4, 4, 56, 28], ['The Keep', 57, 4, 92, 24], ['Cathedral Hill', 93, 4, 146, 28], ['The River Ash', 4, 27, 146, 35], ['Riverside', 4, 35, 146, 49], ['The Stables', 93, 94, 106, 105], ['The Arena Floor', 0, 110, 150, 168]];
   const districtAt = (x, y) => { const d = DISTRICTS.find(([n, a, b, c, e]) => x >= a && x <= c && y >= b && y <= e); return d ? d[0] : 'Emberwatch'; };
   // ---------- city drawing (Nov 2): the new buildings in the same cut-paper ink as the town art pack (src/inkart.js)
   const CITYDRAW = (function () {
@@ -267,7 +274,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     return c;
   }
   function drawGround(cam) {
-    if (window.CB_TOWNART && CB_TOWNART.ground(gx, cam, TOWN, MW, MH, heroPos(), DIRS[P.dir])) return; // painted pixel-art ground (src/townart.js)
+    if (window.CB_TOWNART && CB_TOWNART.ground(gx, cam, TOWN, MW, onFloor(P.y) ? AFL.MHT : MH, heroPos(), DIRS[P.dir])) return; // painted pixel-art ground (src/townart.js)
     const TS = TOWN.TS, d = TOWN.dpr, i0 = Math.floor(cam.x / (CH * TS)), j0 = Math.floor(cam.y / (CH * TS)), i1 = Math.floor((cam.x + TOWN.vw) / (CH * TS)), j1 = Math.floor((cam.y + TOWN.vh) / (CH * TS));
     for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { if (i < 0 || j < 0 || i * CH >= MW || j * CH >= MH) continue; gx.drawImage(groundChunk(i, j), Math.round((i * CH * TS - cam.x) * d), Math.round((j * CH * TS - cam.y) * d)); }
     // warm up the next chunks in the direction you're heading, one per frame
@@ -276,6 +283,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   }
   const LIGHTS = (vx0, vy0, vx1, vy1) => {
     const L = [], inV = (x, y) => x > vx0 - 4 && x < vx1 + 4 && y > vy0 - 4 && y < vy1 + 4;
+    if (vy1 > MH) { for (let y = AFL.sy0 - 1; y <= AFL.sy1; y += 9) for (let x = AFL.sx0 + 3; x <= AFL.sx1; x += 10) if (inV(x, y)) L.push({ x, y, r: y < AFL.sy0 ? 7 : 9, c: '255,180,100' }); return L; }   /* the arena floor is torch-lit all over */
     for (const p of PROPS) { if (!inV(p.x, p.y) && !inV(p.x + p.w, p.y + p.h)) continue;
       if (p.kind === 'torch') L.push({ x: p.x + 0.5, y: p.y + 0.1, r: 3.2, c: '255,150,60' });
       else if (p.kind === 'brazier') L.push({ x: p.x + 1.5, y: p.y + .5, r: 8, c: '255,140,50' });
@@ -318,7 +326,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       cv2.addEventListener('click', (ev) => { const r = cv2.getBoundingClientRect(), tx = Math.floor((ev.clientX - r.left) / r.width * MW), ty = Math.floor((ev.clientY - r.top) / r.height * MH); if (townBusy()) return;
         let best = null; for (let rr = 0; rr < 6 && !best; rr++) for (let dy = -rr; dy <= rr && !best; dy++) for (let dx = -rr; dx <= rr; dx++) if (free(tx + dx, ty + dy)) { best = [tx + dx, ty + dy]; break; }
         if (best) { const path = bfs(best[0], best[1], false); if (path) { P.path = path; P.talkTo = null; P.target = { x: best[0], y: best[1] }; } } }); }
-    if (!MINI.open) return;
+    if (!MINI.open || onFloor(P.y)) { if (cv2 && onFloor(P.y)) cv2.style.visibility = 'hidden'; return; } cv2.style.visibility = '';
     if (!MINI.base) MINI.base = miniBase();
     const W2 = Math.min(240, Math.max(150, TOWN.vw * .2)), H2 = W2 * MH / MW, d = TOWN.dpr;
     if (cv2.width !== Math.round(W2 * d)) { cv2.width = Math.round(W2 * d); cv2.height = Math.round(H2 * d); cv2.style.width = W2 + 'px'; cv2.style.height = H2 + 'px'; }

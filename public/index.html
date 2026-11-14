@@ -6135,6 +6135,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   const BAZ = { x0: 94, y0: 48, x1: 140, y1: 72 }; // the Grand Bazaar: set up shop anywhere inside
   const inBazaar = (x, y) => x >= BAZ.x0 && x <= BAZ.x1 && y >= BAZ.y0 && y <= BAZ.y1;
   const ARN = { x: 118, y: 91, rx: 11.2, ry: 5.3, RX: 17.3, RY: 11.6 }; // the Colosseum: sand floor and the outer wall (Nov 12: measured from the painting, tools/townart)
+  // Nov 13: the arena floor. Kord's gate leads onto the sand inside the Colosseum: a second walled field on the same grid, far below the
+  // city (rows 120-167), so everything the town can do (other players, chat, mounts, duels, clicking to walk) works there too.
+  // It is 72 x 48 tiles, about a fifth of the city. The picture is img/town/g_3_10 ... g_8_13 (tools/arenafloor/build.py).
+  const AFL = { x0: 36, y0: 120, w: 72, h: 48, sx0: 38, sy0: 128, sx1: 105, sy1: 163, MHT: 168, inAt: [72, 160], outAt: [98, 91], gate: [72, 163], board: [69, 128], kord: [74, 128] };
+  const onFloor = (y) => y >= MH;
   const inArena = (x, y) => ((x + .5 - ARN.x) / ARN.RX) ** 2 + ((y + .5 - ARN.y) / ARN.RY) ** 2 <= 1;
   const CITY_SPAWN = { x: 74, y: 64 }, CITY_RETURN = { x: 75, y: 99 }; // log in at Ember Square; come home from a run in the Wagon Yard
   const TOWN = { running: false, last: 0, t: 0, TS: 48, dpr: 1, chunks: new Map(), dark: null, sprites: {}, embers: [], district: '', districtAt: 0 };
@@ -6206,6 +6211,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) { if (x <= 3 || x >= MW - 4 || y <= 3 || y >= MH - 4 || ground[y][x] === '~') solid.add(K(x, y)); }
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) { const o = ((x + .5 - ARN.x) / ARN.RX) ** 2 + ((y + .5 - ARN.y) / ARN.RY) ** 2, i = ((x + .5 - ARN.x) / ARN.rx) ** 2 + ((y + .5 - ARN.y) / ARN.ry) ** 2; if (o <= 1) solid.add(K(x, y)); }   // Nov 13: the whole Colosseum is solid from outside (stands and sand): you go in through Kord's gate
   for (const p of PROPS) if (!p.nosolid) for (let y = p.y; y < p.y + p.h; y++) for (let x = p.x; x < p.x + p.w; x++) solid.add(K(x, y));
+  for (let y = MH; y < AFL.MHT; y++) for (let x = 0; x < MW; x++) if (!(x >= AFL.sx0 && x <= AFL.sx1 && y >= AFL.sy0 && y <= AFL.sy1)) solid.add(K(x, y));   // the arena floor: only the sand is open
+  PROPS.push({ kind: 'arenaboard', x: AFL.board[0], y: AFL.board[1], w: 1, h: 1 });
   // trees in the open ground (seeded, so every player sees the same city)
   { let s = 7; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
     for (let i = 0; i < 420 && PROPS.filter(p => p.kind === 'tree').length < 170; i++) { const x = 5 + Math.floor(r() * (MW - 10)), y = 5 + Math.floor(r() * (MH - 10));
@@ -6217,7 +6224,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     chron: [70, 49, 'down'], barber: [17, 57, 'down'], boutique: [25, 57, 'down'], tavern: [61, 71, 'down'], captain: [19, 81, 'down'], guildmaster: [41, 81, 'down'], raidwarden: [75, 16, 'down'], arena: [99, 91, 'right'], dummy: [18, 92, 'down'], banker: [35, 57, 'down'] };
   // districts: the name shows when you walk in
   const DISTRICTS = [['Ember Square', 61, 49, 88, 71], ['The Grand Bazaar', 93, 47, 141, 73], ['The Colosseum', 97, 77, 137, 105], ['The Wagon Yard', 57, 88, 92, 105], ['Market Row', 4, 50, 60, 62], ['The Old Market', 33, 62, 53, 77],
-    ['The Barracks', 4, 72, 47, 105], ['Guild Row', 33, 72, 56, 87], ["Scholars' Quarter", 4, 4, 56, 28], ['The Keep', 57, 4, 92, 24], ['Cathedral Hill', 93, 4, 146, 28], ['The River Ash', 4, 27, 146, 35], ['Riverside', 4, 35, 146, 49], ['The Stables', 93, 94, 106, 105]];
+    ['The Barracks', 4, 72, 47, 105], ['Guild Row', 33, 72, 56, 87], ["Scholars' Quarter", 4, 4, 56, 28], ['The Keep', 57, 4, 92, 24], ['Cathedral Hill', 93, 4, 146, 28], ['The River Ash', 4, 27, 146, 35], ['Riverside', 4, 35, 146, 49], ['The Stables', 93, 94, 106, 105], ['The Arena Floor', 0, 110, 150, 168]];
   const districtAt = (x, y) => { const d = DISTRICTS.find(([n, a, b, c, e]) => x >= a && x <= c && y >= b && y <= e); return d ? d[0] : 'Emberwatch'; };
   // ---------- city drawing (Nov 2): the new buildings in the same cut-paper ink as the town art pack (src/inkart.js)
   const CITYDRAW = (function () {
@@ -6397,7 +6404,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     return c;
   }
   function drawGround(cam) {
-    if (window.CB_TOWNART && CB_TOWNART.ground(gx, cam, TOWN, MW, MH, heroPos(), DIRS[P.dir])) return; // painted pixel-art ground (src/townart.js)
+    if (window.CB_TOWNART && CB_TOWNART.ground(gx, cam, TOWN, MW, onFloor(P.y) ? AFL.MHT : MH, heroPos(), DIRS[P.dir])) return; // painted pixel-art ground (src/townart.js)
     const TS = TOWN.TS, d = TOWN.dpr, i0 = Math.floor(cam.x / (CH * TS)), j0 = Math.floor(cam.y / (CH * TS)), i1 = Math.floor((cam.x + TOWN.vw) / (CH * TS)), j1 = Math.floor((cam.y + TOWN.vh) / (CH * TS));
     for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { if (i < 0 || j < 0 || i * CH >= MW || j * CH >= MH) continue; gx.drawImage(groundChunk(i, j), Math.round((i * CH * TS - cam.x) * d), Math.round((j * CH * TS - cam.y) * d)); }
     // warm up the next chunks in the direction you're heading, one per frame
@@ -6406,6 +6413,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   }
   const LIGHTS = (vx0, vy0, vx1, vy1) => {
     const L = [], inV = (x, y) => x > vx0 - 4 && x < vx1 + 4 && y > vy0 - 4 && y < vy1 + 4;
+    if (vy1 > MH) { for (let y = AFL.sy0 - 1; y <= AFL.sy1; y += 9) for (let x = AFL.sx0 + 3; x <= AFL.sx1; x += 10) if (inV(x, y)) L.push({ x, y, r: y < AFL.sy0 ? 7 : 9, c: '255,180,100' }); return L; }   /* the arena floor is torch-lit all over */
     for (const p of PROPS) { if (!inV(p.x, p.y) && !inV(p.x + p.w, p.y + p.h)) continue;
       if (p.kind === 'torch') L.push({ x: p.x + 0.5, y: p.y + 0.1, r: 3.2, c: '255,150,60' });
       else if (p.kind === 'brazier') L.push({ x: p.x + 1.5, y: p.y + .5, r: 8, c: '255,140,50' });
@@ -6448,7 +6456,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       cv2.addEventListener('click', (ev) => { const r = cv2.getBoundingClientRect(), tx = Math.floor((ev.clientX - r.left) / r.width * MW), ty = Math.floor((ev.clientY - r.top) / r.height * MH); if (townBusy()) return;
         let best = null; for (let rr = 0; rr < 6 && !best; rr++) for (let dy = -rr; dy <= rr && !best; dy++) for (let dx = -rr; dx <= rr; dx++) if (free(tx + dx, ty + dy)) { best = [tx + dx, ty + dy]; break; }
         if (best) { const path = bfs(best[0], best[1], false); if (path) { P.path = path; P.talkTo = null; P.target = { x: best[0], y: best[1] }; } } }); }
-    if (!MINI.open) return;
+    if (!MINI.open || onFloor(P.y)) { if (cv2 && onFloor(P.y)) cv2.style.visibility = 'hidden'; return; } cv2.style.visibility = '';
     if (!MINI.base) MINI.base = miniBase();
     const W2 = Math.min(240, Math.max(150, TOWN.vw * .2)), H2 = W2 * MH / MW, d = TOWN.dpr;
     if (cv2.width !== Math.round(W2 * d)) { cv2.width = Math.round(W2 * d); cv2.height = Math.round(H2 * d); cv2.style.width = W2 + 'px'; cv2.style.height = H2 + 'px'; }
@@ -6505,8 +6513,11 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   for (const n of NPCS) n.pal.ink = 'npc_' + (/^dummy/.test(n.id) ? 'dummy' : n.id); // town art pack key (src/inkart.js)
   // Nov 13: most townsfolk now work indoors. Their spot at the door is where you walk in (src/extras.js exEnter): [room painting, the name over the door]
   const IN_PLACES = { qm: ['armory', "Old Arthur's Armory"], scribe: ['scriptorium', 'The Scriptorium'], chron: ['records', 'Hall of Records'], captain: ['barracks', 'The Barracks'], merchant: ['store', "Dace's Wares"], guildmaster: ['guildhall', 'The Guild Hall'],
-    jeweler: ['jeweler', "Rook's Jewels"], banker: ['bank', 'The Bank'], archivist: ['library', 'The Archive'], raidwarden: ['warroom', 'The War Room'], arena: ['arenafloor', 'The Colosseum'], barber: ['barber', "Fenwick's Barber Shop"], tavern: ['tavern', 'The Ember Mug'], boutique: ['boutique', 'The Skull Boutique'] };
+    jeweler: ['jeweler', "Rook's Jewels"], banker: ['bank', 'The Bank'], archivist: ['library', 'The Archive'], raidwarden: ['warroom', 'The War Room'], arena: ['arenafloor', 'The Colosseum'], arenaout: ['town', 'Emberwatch'], barber: ['barber', "Fenwick's Barber Shop"], tavern: ['tavern', 'The Ember Mug'], boutique: ['boutique', 'The Skull Boutique'] };
+  // Nov 13: the arena floor (city.js AFL). Kord's spot outside is the way in; inside stand Kord himself, the Wager Board and the gate back out.
+  { const k = NPCS.find(n => n.id === 'arena'); NPCS.push(Object.assign({}, k, { id: 'arenakord', x: AFL.kord[0], y: AFL.kord[1], dir: 'down' }), { id: 'arenaout', name: 'The gate', x: AFL.gate[0], y: AFL.gate[1], dir: 'up', fixed: true, lines: [''], pal: k.pal }); }
   for (const n of NPCS) if (IN_PLACES[n.id]) { n.inside = IN_PLACES[n.id][0]; n.place = IN_PLACES[n.id][1]; }
+  NPCS.find(n => n.id === 'arena').warp = [AFL.inAt[0], AFL.inAt[1], 'up', 'The Colosseum', 'The arena floor']; NPCS.find(n => n.id === 'arenaout').warp = [AFL.outAt[0], AFL.outAt[1], 'left', 'Emberwatch', ''];
   for (const n of NPCS) { n.home = n.dir; solid.add(K(n.x, n.y)); }
   // Nov 2: Tinker Pip (free test goods) only stands in town for admins (supabase/trust.sql: add your user id to public.admins)
   const TINKER = NPCS.find(n => n.id === 'tinker');
@@ -6769,6 +6780,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     const TS = TOWN.TS, hp = heroPos();
     const mw = MW * TS, mh = MH * TS;
     let cx = (hp.x + 0.5) * TS - TOWN.vw / 2, cy = (hp.y + 0.5) * TS - TOWN.vh / 2;
+    if (onFloor(P.y)) { const ax = AFL.x0 * TS, ay = AFL.y0 * TS, aw = AFL.w * TS, ah = AFL.h * TS;   /* on the arena floor the view stays inside its walls */
+      return { x: Math.round(aw <= TOWN.vw ? ax + (aw - TOWN.vw) / 2 : Math.max(ax, Math.min(ax + aw - TOWN.vw, cx))), y: Math.round(ah <= TOWN.vh ? ay + (ah - TOWN.vh) / 2 : Math.max(ay, Math.min(ay + ah - TOWN.vh, cy))) }; }
     cx = mw <= TOWN.vw ? (mw - TOWN.vw) / 2 : Math.max(0, Math.min(mw - TOWN.vw, cx));
     cy = mh <= TOWN.vh ? (mh - TOWN.vh) / 2 : Math.max(0, Math.min(mh - TOWN.vh, cy));
     return { x: Math.round(cx), y: Math.round(cy) };
@@ -6828,7 +6841,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // ---------- movement
   const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
   const KEYDIR = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right', W: 'up', S: 'down', A: 'left', D: 'right' };
-  const free = (x, y) => x >= 0 && y >= 0 && x < MW && y < MH && !solid.has(K(x, y));
+  const free = (x, y) => x >= 0 && y >= 0 && x < MW && y < AFL.MHT && !solid.has(K(x, y));
   const townBusy = () => !$('sheet').hidden || !$('modal').hidden || !$('talk').hidden;
   function tryStep(dir) {
     if (BZ.open) { P.path = []; return false; } // a vendor stays at their stall
@@ -6892,7 +6905,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   const BOARD = { id: 'board', name: 'Hall of Records', fixed: true, x: 73, y: 49, open: 'records', btn: 'Read the records', lines: ['The notice board: who has gone furthest on every road, and which guilds have felled the raid bosses.', 'Names are carved, scratched and painted over each other. Someone has added a crown next to theirs.'] };
   // Nov 1: the statue of Juss in the fire plaza, and the wager board at the Arena
   const STATUE = { id: 'statue', name: 'Statue of Juss', fixed: true, x: 68, y: 55, lines: ['Here lies Juss, who was the first into battle and the first to fall.'] };
-  const ARENA_BOARD = { id: 'arenaboard', name: 'Wager Board', fixed: true, x: 99, y: 88, open: 'arena', btn: 'Read the wagers', lines: ['Wagers are pinned here: what each fighter puts up, and what others offer to match it. Both sides\' gear and decks are locked once an offer is on the table.'] };
+  const ARENA_BOARD = { id: 'arenaboard', name: 'Wager Board', fixed: true, x: AFL.board[0], y: AFL.board[1], open: 'arena', btn: 'Read the wagers', lines: ['Wagers are pinned here: what each fighter puts up, and what others offer to match it. Both sides\' gear and decks are locked once an offer is on the table.'] };
   const TALK_PROPS = ['board', 'statue', 'arenaboard'];
   function propNpc(p) { return p.kind === 'board' ? BOARD : p.kind === 'statue' ? STATUE : p.kind === 'arenaboard' ? ARENA_BOARD : null; }
   function interactFor(p) { return p.kind === 'chest' ? NPCS[0] : p.kind === 'wagon' ? NPCS.find(n => n.id === 'wagon') : TALK_PROPS.includes(p.kind) ? propNpc(p) : NPCS.find(n => n.id === 'chron'); }
@@ -6949,6 +6962,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   };
   function talk(n) {
     P.held = []; P.path = []; P.target = null;
+    if (n.warp && Math.abs(n.x - P.x) + Math.abs(n.y - P.y) <= 2) { const w = n.warp; return veil(w[3], w[4], () => { P.x = w[0]; P.y = w[1]; P.dir = w[2]; P.mv = null; P.path = []; P.held = []; P.target = null; TOWN.district = ''; if (typeof socPos === 'function') socPos(); if (typeof retrack === 'function') retrack(true); updatePrompt(); if (window.CB_AUDIO) CB_AUDIO.sfx('door'); }); }   // Nov 13: a gate to somewhere else on the grid (the arena floor)
     if (n.inside && typeof exEnter === 'function' && !exInside() && Math.abs(n.x - P.x) + Math.abs(n.y - P.y) <= 2) return exEnter(n); // Nov 13: walk in; you talk to them inside
     if (!n.fixed) n.dir = n.x > P.x ? 'left' : n.x < P.x ? 'right' : n.y > P.y ? 'up' : 'down';
     n.lineN = ((n.lineN == null ? -1 : n.lineN) + 1) % n.lines.length;
@@ -7118,7 +7132,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     if (o.q.length > 8) { const s = o.q[o.q.length - 1]; o.q = []; Object.assign(o, { fx: s[0], fy: s[1], x: s[0], y: s[1], t: 1, dir: s[2] }); } // fell far behind: jump
   }
   function otherPos(o) { const k = Math.min(1, o.t); return { x: o.fx + (o.x - o.fx) * k, y: o.fy + (o.y - o.fy) * k }; }
-  function updateOthers(dt) { for (const o of SOC.others.values()) { if (o.t < 1) o.t += dt / (o.mount ? STEP_MS / MOUNT_SPEED : STEP_MS); if (o.t >= 1 && o.q && o.q.length) { const s = o.q.shift(); Object.assign(o, { fx: o.x, fy: o.y, x: s[0], y: s[1], t: 0, dir: s[2] || o.dir, step: o.step + 1 }); } } }
+  function updateOthers(dt) { for (const o of SOC.others.values()) { if (o.t < 1) o.t += dt / (o.mount ? STEP_MS / MOUNT_SPEED : STEP_MS); if (o.t >= 1 && o.q && o.q.length) { const s = o.q.shift(), far = Math.abs(s[0] - o.x) + Math.abs(s[1] - o.y) > 4; Object.assign(o, { fx: far ? s[0] : o.x, fy: far ? s[1] : o.y, x: s[0], y: s[1], t: far ? 1 : 0, dir: s[2] || o.dir, step: o.step + 1 }); }   /* a jump (through a gate) is not walked */ } }
   function othersDrawList(TS, s, t) {
     const out = [];
     for (const o of SOC.others.values()) {
@@ -7549,8 +7563,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794619983586';
-  const CB_BUILD = '0eaf0218d9'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794620570614';
+  const CB_BUILD = '1637fe6e25'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8660,7 +8674,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       ['Interface', "Cards a merchant is selling grow when you point at them, and clicking one opens its rank page (every upgrade and where it drops)."],
       ['Change', "You can no longer walk over the top of the Colosseum in town: the way in is Arenamaster Kord's gate on its west side."],
       ['Art', "26 more weapon looks in the Cosmetic Shop: two-handed swords, axes, mauls, hammers, scythes, staves, shields and off-hand items (a swordfish greatsword, a lute axe, a log maul, a barrel mallet, a broom staff, a wooden door for a tower shield, a skull, a mug of ale and more). The Wooden Practice Sword was redrawn so it looks like a sword."],
-      ['Feature', "The Colosseum has a floor you can walk on. Arenamaster Kord's gate now leads onto the sand: a new place to walk around, with the stands behind you. The Wager Board and Kord are inside, by the far gate; the near gate (or Esc) takes you back to town."],
+      ['Feature', "The arena floor: Arenamaster Kord's gate on the west side of the Colosseum now leads onto the sand inside, a huge walled field about a fifth the size of the whole city, with 27 chalk duelling rings and room for dozens of fighters. It works like the town: you see everyone else who is in there, and can chat, ride and challenge them. The Wager Board and Kord stand by the far wall; the gate in the near wall leads back to Emberwatch."],
       ['Art', "Talent pictures fill their frames: the pale strip under each one is gone."],
       ['Fix', "Enemy card pictures that showed as blurry stripes (Frozen Bite, Stalk, Snow Wall, Ice Bolt and most other Frost cards, 81 in all) are repaired."],
       ['Interface', "Your gear panel now lists resistances as a table: an icon, the name and the number for each element."],
@@ -14991,17 +15005,16 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   function exEnter(n) {
     if (!n || !n.inside) return; if (typeof closeTalk === 'function') closeTalk();
     const im = EXIN.img[n.inside] || (EXIN.img[n.inside] = Object.assign(new Image(), { src: 'img/bg/in_' + n.inside + '.webp' }));
-    (profile.visited = profile.visited || {})[n.inside] = 1; veil(n.place, n.name, () => { EXIN.n = n; EXIN.x = 0.12; EXIN.dir = 1; EXIN.tx = null; EXIN.keys.clear(); EXAR.x = ARF.gate[0]; EXAR.y = ARF.gate[1] - 14; EXAR.face = 'up'; EXAR.to = null; EXAR.then = null; $('inName').textContent = n.place; $('interior').hidden = false; $('townWrap').classList.add('indoors'); $('prompt').hidden = true; exInHint(); if (window.CB_AUDIO) { CB_AUDIO.sfx('door'); CB_AUDIO.music('indoors'); } requestAnimationFrame(exInFrame); });
+    (profile.visited = profile.visited || {})[n.inside] = 1; veil(n.place, n.name, () => { EXIN.n = n; EXIN.x = 0.12; EXIN.dir = 1; EXIN.tx = null; EXIN.keys.clear(); $('inName').textContent = n.place; $('interior').hidden = false; $('townWrap').classList.add('indoors'); $('prompt').hidden = true; exInHint(); if (window.CB_AUDIO) { CB_AUDIO.sfx('door'); CB_AUDIO.music('indoors'); } requestAnimationFrame(exInFrame); });
   }
   function exLeave() { if (!EXIN.n) return; const n = EXIN.n; if (typeof closeTalk === 'function') closeTalk(); veil('Emberwatch', '', () => { EXIN.n = null; $('interior').hidden = true; $('townWrap').classList.remove('indoors'); if (window.CB_AUDIO) { CB_AUDIO.sfx('door'); CB_AUDIO.music('town'); } updatePrompt(); $('town').focus({ preventScroll: true }); }); }
   $('inLeave').onclick = exLeave;
   const IN_AT = { store: [0.59, 6] };   // Nov 13: where the keeper stands in a room, when 0.7 across puts them on the furniture: [how far across, px lower]. Dace stood on a chest.
   const inAt = () => (EXIN.n && IN_AT[EXIN.n.inside]) || [0.7, 0];
-  function exInHint() { const n = EXIN.n; if (!n) return; if (n.inside === 'arenafloor') { const nr = exArNear(); $('inHint').innerHTML = nr === 'board' ? '<kbd>Space</kbd> Read the Wager Board' : nr === 'kord' ? `<kbd>Space</kbd> Talk to ${esc(n.name)}` : nr === 'gate' ? '<kbd>Space</kbd> Leave the arena' : '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or click to walk &middot; the Wager Board stands by the far gate &middot; the near gate leads out'; return; } const near = Math.abs(EXIN.x - inAt()[0]) < 0.13; $('inHint').innerHTML = near ? `<kbd>Space</kbd> Talk to ${esc(n.name)}` : `<kbd>A</kbd><kbd>D</kbd> or click to walk &middot; walk up to ${esc(n.name)} to talk`; }
+  function exInHint() { const n = EXIN.n; if (!n) return; const near = Math.abs(EXIN.x - inAt()[0]) < 0.13; $('inHint').innerHTML = near ? `<kbd>Space</kbd> Talk to ${esc(n.name)}` : `<kbd>A</kbd><kbd>D</kbd> or click to walk &middot; walk up to ${esc(n.name)} to talk`; }
   function exInTalk() { const n = EXIN.n; if (!n) return; EXIN.tx = null; EXIN.dir = EXIN.x < inAt()[0] ? 1 : -1; talk(n); }
   function exInFrame(t) {
     const n = EXIN.n; if (!n) return; requestAnimationFrame(exInFrame);
-    if (n.inside === 'arenafloor') return exArFrame(t);
     const cvs = $('inCv'), W = cvs.clientWidth, H = cvs.clientHeight; if (!W || !H) return; const dpr = Math.min(2, window.devicePixelRatio || 1);
     if (cvs.width !== Math.round(W * dpr)) { cvs.width = Math.round(W * dpr); cvs.height = Math.round(H * dpr); }
     const dt = Math.min(60, t - (EXIN.last || t)); EXIN.last = t;
@@ -15019,56 +15032,16 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     // their name over their head
     g.font = `600 ${Math.round(13 * Math.min(1.6, s / 1.6))}px 'Inter', sans-serif`; g.textAlign = 'center'; g.lineWidth = 3; g.strokeStyle = 'rgba(0,0,0,.85)'; g.fillStyle = '#f4c869'; g.strokeText(n.name, nx, floor - 112 * s); g.fillText(n.name, nx, floor - 112 * s);
   }
-  // ---------- the arena floor (Nov 13): Arenamaster Kord's gate leads onto the sand of the Colosseum, a place you walk about in like the town
-  // (one painting, img/bg/in_arenafloor.webp, bigger than the screen, the view follows you). The Wager Board and Kord stand by the far wall.
-  // ARF is measured on the painting, in its own pixels: where you can walk, and where things stand.
-  const ARF = { w: 480, h: 268, cx: 240, cy: 145, rx: 212, ry: 66, top: 79, board: [220, 84], kord: [262, 86], gate: [240, 252] };
-  const EXAR = { x: 344, y: 340, face: 'up', to: null, then: null, img: null };
-  function arWalk(x, y) {   // keep the feet on the sand: the oval floor, flat along the far wall, plus the lane out through the near gate
-    if (y > ARF.cy + ARF.ry - 3 && Math.abs(x - ARF.gate[0]) < 30) return [Math.max(ARF.gate[0] - 11, Math.min(ARF.gate[0] + 11, x)), Math.min(ARF.gate[1] + 8, y)];
-    let dx = (x - ARF.cx) / ARF.rx, dy = (y - ARF.cy) / ARF.ry; const d = Math.hypot(dx, dy); if (d > 1) { dx /= d; dy /= d; }
-    return [ARF.cx + dx * ARF.rx, Math.max(ARF.top, ARF.cy + dy * ARF.ry)]; }
-  function exArNear() { const d = (p, r) => Math.hypot(EXAR.x - p[0], (EXAR.y - p[1]) * 1.3) < r; return d([ARF.board[0], ARF.board[1] + 8], 34) ? 'board' : d([ARF.kord[0], ARF.kord[1] + 8], 30) ? 'kord' : EXAR.y > ARF.gate[1] - 4 ? 'gate' : ''; }
-  function exArUse(what) { const k = what || exArNear(), n = EXIN.n; if (!n) return; EXAR.to = null; EXAR.then = null;
-    if (k === 'board') { EXAR.face = 'up'; openSheet('arena'); } else if (k === 'kord') { EXAR.face = EXAR.x < ARF.kord[0] ? 'right' : 'left'; talk(n); } else if (k === 'gate') exLeave(); }
-  function exArClick(ev) { const cv = $('inCv'), r = cv.getBoundingClientRect(), v = EXAR.view; if (!v) return; const ax = (ev.clientX - r.left - v.ox) / v.k, ay = (ev.clientY - r.top - v.oy) / v.k;
-    const hit = (p, w, h) => Math.abs(ax - p[0]) < w && ay > p[1] - h && ay < p[1] + 6;
-    if (hit(ARF.board, 20, 46)) { EXAR.to = arWalk(ARF.board[0], ARF.board[1] + 16); EXAR.then = 'board'; } else if (hit(ARF.kord, 14, 40)) { EXAR.to = arWalk(ARF.kord[0] - 22, ARF.kord[1] + 8); EXAR.then = 'kord'; }
-    else if (ay > ARF.gate[1] - 10 && Math.abs(ax - ARF.gate[0]) < 40) { EXAR.to = ARF.gate.slice(); EXAR.then = 'gate'; } else { EXAR.to = arWalk(ax, ay); EXAR.then = null; } }
-  function exArFrame(t) {
-    const n = EXIN.n, cvs = $('inCv'), W = cvs.clientWidth, H = cvs.clientHeight; if (!W || !H) return; const dpr = Math.min(2, window.devicePixelRatio || 1);
-    if (cvs.width !== Math.round(W * dpr)) { cvs.width = Math.round(W * dpr); cvs.height = Math.round(H * dpr); }
-    const dt = Math.min(60, t - (EXIN.last || t)); EXIN.last = t;
-    const busy = !$('talk').hidden || !$('sheet').hidden || !$('modal').hidden, K = EXIN.keys; let vx = 0, vy = 0;
-    if (!busy) { vx = (K.has('r') ? 1 : 0) - (K.has('l') ? 1 : 0); vy = (K.has('dn') ? 1 : 0) - (K.has('u') ? 1 : 0);
-      if (vx || vy) { EXAR.to = null; EXAR.then = null; } else if (EXAR.to) { const dx = EXAR.to[0] - EXAR.x, dy = EXAR.to[1] - EXAR.y, d = Math.hypot(dx, dy); if (d < 2) { const th = EXAR.then; EXAR.to = null; EXAR.then = null; if (th) exArUse(th); } else { vx = dx / d; vy = dy / d; } } }
-    if (vx || vy) { const m = Math.hypot(vx, vy), sp = dt * 0.085 / m; const p = arWalk(EXAR.x + vx * sp, EXAR.y + vy * sp * 0.8); EXAR.x = p[0]; EXAR.y = p[1]; if (EXAR.y >= ARF.gate[1] + 7 && vy > 0) { exLeave(); return; } EXAR.face = Math.abs(vx) >= Math.abs(vy) ? (vx > 0 ? 'right' : 'left') : (vy > 0 ? 'down' : 'up'); }
-    const moving = !!(vx || vy); if (moving !== EXIN.walking || (t | 0) % 9 === 0) { EXIN.walking = moving; exInHint(); }
-    const g = cvs.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.imageSmoothingEnabled = false; g.fillStyle = '#1b0d1d'; g.fillRect(0, 0, W, H);
-    const k = Math.max(3, Math.ceil(Math.max(W / ARF.w, H / ARF.h) * 1.25 * 2) / 2), ox = Math.round(Math.max(W - ARF.w * k, Math.min(0, W / 2 - EXAR.x * k))), oy = Math.round(Math.max(H - ARF.h * k, Math.min(0, H * 0.58 - EXAR.y * k)));
-    EXAR.view = { k, ox, oy }; const im = EXIN.img.arenafloor; if (im && im.complete && im.naturalWidth) g.drawImage(im, ox, oy, ARF.w * k, ARF.h * k);
-    const bd = EXAR.img || (EXAR.img = Object.assign(new Image(), { src: 'img/town/arenaboard.webp' })), s = k * 0.42, c = profile.chars[heroKey], X = (x) => ox + x * k, Y = (y) => oy + y * k;
-    const shadow = (x, y, rx) => { g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(X(x), Y(y), rx * k, rx * k * 0.36, 0, 0, Math.PI * 2); g.fill(); };
-    const draw = [[ARF.board[1], () => { shadow(ARF.board[0], ARF.board[1], 13); if (bd.complete && bd.naturalWidth) { const bw = bd.naturalWidth * k * 0.54, bh = bd.naturalHeight * k * 0.54; g.drawImage(bd, X(ARF.board[0]) - bw / 2, Y(ARF.board[1]) - bh + 2 * k, bw, bh); } }],
-      [ARF.kord[1], () => { if (window.CB_HEROPUP) CB_HEROPUP.npc(g, n.pal, X(ARF.kord[0]), Y(ARF.kord[1]), EXAR.x < ARF.kord[0] - 14 ? 'left' : EXAR.x > ARF.kord[0] + 14 ? 'right' : 'down', 0, s, t); }],
-      [EXAR.y, () => { if (window.CB_FORGE && CB_FORGE.town && c) CB_FORGE.town(g, c.cls, c.gear, X(EXAR.x), Y(EXAR.y), EXAR.face, moving ? 1 : 0, s, t, 'me'); const pk = exApp().cos.pet; if (pk) exPetDraw(g, 'me-in', pk, X(EXAR.x), Y(EXAR.y), s, t); }]];
-    draw.sort((a, b) => a[0] - b[0]); for (const d of draw) d[1]();
-    const tag = (txt, x, y, col) => { g.font = `600 ${Math.round(4.6 * k)}px 'Inter', sans-serif`; g.textAlign = 'center'; g.lineWidth = 3; g.strokeStyle = 'rgba(0,0,0,.85)'; g.fillStyle = col; g.strokeText(txt, X(x), Y(y)); g.fillText(txt, X(x), Y(y)); };
-    tag(n.name, ARF.kord[0], ARF.kord[1] - 35, '#f4c869'); tag('Wager Board', ARF.board[0], ARF.board[1] - 44, '#f4c869');
-    const posts = typeof SOC !== 'undefined' && SOC.online ? [...SOC.online.values()].filter(st => st && st.arena && st.arena.pid).length : 0; if (posts) tag(posts + (posts === 1 ? ' wager up' : ' wagers up'), ARF.board[0], ARF.board[1] - 50, '#ff9a6a');
-  }
-  $('inCv').addEventListener('click', (ev) => { if (!EXIN.n) return; if (EXIN.n.inside === 'arenafloor') return exArClick(ev); const r = $('inCv').getBoundingClientRect(), x = (ev.clientX - r.left) / r.width; if (Math.abs(x - inAt()[0]) < 0.07) { EXIN.tx = inAt()[0] + (EXIN.x < inAt()[0] ? -0.09 : 0.09); EXIN.talkAfter = true; } else { EXIN.tx = Math.max(0.0, Math.min(0.95, x)); EXIN.talkAfter = false; } });
+  $('inCv').addEventListener('click', (ev) => { if (!EXIN.n) return; const r = $('inCv').getBoundingClientRect(), x = (ev.clientX - r.left) / r.width; if (Math.abs(x - inAt()[0]) < 0.07) { EXIN.tx = inAt()[0] + (EXIN.x < inAt()[0] ? -0.09 : 0.09); EXIN.talkAfter = true; } else { EXIN.tx = Math.max(0.0, Math.min(0.95, x)); EXIN.talkAfter = false; } });
   // keys while indoors: caught before the town sees them, so the hero outside stays put
-  { const KD = { a: 'l', A: 'l', ArrowLeft: 'l', d: 'r', D: 'r', ArrowRight: 'r' }, KV = { w: 'u', W: 'u', ArrowUp: 'u', s: 'dn', S: 'dn', ArrowDown: 'dn' };
+  { const KD = { a: 'l', A: 'l', ArrowLeft: 'l', d: 'r', D: 'r', ArrowRight: 'r' };
     document.addEventListener('keydown', (ev) => { if (!EXIN.n || ev.target.matches('input, select, textarea') || !$('modal').hidden || !$('sheet').hidden || !$('talk').hidden) return;
-      const arf = EXIN.n.inside === 'arenafloor';
-      if (arf && KV[ev.key]) { EXIN.keys.add(KV[ev.key]); ev.preventDefault(); ev.stopImmediatePropagation(); return; }
       if (KD[ev.key]) { EXIN.keys.add(KD[ev.key]); ev.preventDefault(); ev.stopImmediatePropagation(); return; }
       if (ev.key === 'Escape') { ev.preventDefault(); ev.stopImmediatePropagation(); ev.cbHandled = true; return exLeave(); }
-      if (ev.key === ' ' || ev.key === 'Enter' || ev.key === 'e' || ev.key === 'E') { ev.preventDefault(); ev.stopImmediatePropagation(); if (arf) exArUse(); else if (Math.abs(EXIN.x - inAt()[0]) < 0.13) exInTalk(); return; }
+      if (ev.key === ' ' || ev.key === 'Enter' || ev.key === 'e' || ev.key === 'E') { ev.preventDefault(); ev.stopImmediatePropagation(); if (Math.abs(EXIN.x - inAt()[0]) < 0.13) exInTalk(); return; }
       if (['w', 'W', 's', 'S', 'ArrowUp', 'ArrowDown', 'm', 'M'].includes(ev.key)) { ev.preventDefault(); ev.stopImmediatePropagation(); }
     }, true);
-    document.addEventListener('keyup', (ev) => { if (KD[ev.key]) EXIN.keys.delete(KD[ev.key]); if (KV[ev.key]) EXIN.keys.delete(KV[ev.key]); }, true); window.addEventListener('blur', () => EXIN.keys.clear()); }
+    document.addEventListener('keyup', (ev) => { if (KD[ev.key]) EXIN.keys.delete(KD[ev.key]); }, true); window.addEventListener('blur', () => EXIN.keys.clear()); }
   // ---------- the group finder (Nov 13): pin a notice in town (your strength, who you want, what you are doing), read everyone else's
   const LFG_DO = ['Runs', 'Boss kills', 'Raids', 'Arena duels', 'Trading', 'Anything'];
   function exLfgMine() { return profile.lfg && profile.lfg.on ? profile.lfg : null; }

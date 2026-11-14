@@ -2093,8 +2093,11 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   for (const n of NPCS) n.pal.ink = 'npc_' + (/^dummy/.test(n.id) ? 'dummy' : n.id); // town art pack key (src/inkart.js)
   // Nov 13: most townsfolk now work indoors. Their spot at the door is where you walk in (src/extras.js exEnter): [room painting, the name over the door]
   const IN_PLACES = { qm: ['armory', "Old Arthur's Armory"], scribe: ['scriptorium', 'The Scriptorium'], chron: ['records', 'Hall of Records'], captain: ['barracks', 'The Barracks'], merchant: ['store', "Dace's Wares"], guildmaster: ['guildhall', 'The Guild Hall'],
-    jeweler: ['jeweler', "Rook's Jewels"], banker: ['bank', 'The Bank'], archivist: ['library', 'The Archive'], raidwarden: ['warroom', 'The War Room'], arena: ['arenafloor', 'The Colosseum'], barber: ['barber', "Fenwick's Barber Shop"], tavern: ['tavern', 'The Ember Mug'], boutique: ['boutique', 'The Skull Boutique'] };
+    jeweler: ['jeweler', "Rook's Jewels"], banker: ['bank', 'The Bank'], archivist: ['library', 'The Archive'], raidwarden: ['warroom', 'The War Room'], arena: ['arenafloor', 'The Colosseum'], arenaout: ['town', 'Emberwatch'], barber: ['barber', "Fenwick's Barber Shop"], tavern: ['tavern', 'The Ember Mug'], boutique: ['boutique', 'The Skull Boutique'] };
+  // Nov 13: the arena floor (city.js AFL). Kord's spot outside is the way in; inside stand Kord himself, the Wager Board and the gate back out.
+  { const k = NPCS.find(n => n.id === 'arena'); NPCS.push(Object.assign({}, k, { id: 'arenakord', x: AFL.kord[0], y: AFL.kord[1], dir: 'down' }), { id: 'arenaout', name: 'The gate', x: AFL.gate[0], y: AFL.gate[1], dir: 'up', fixed: true, lines: [''], pal: k.pal }); }
   for (const n of NPCS) if (IN_PLACES[n.id]) { n.inside = IN_PLACES[n.id][0]; n.place = IN_PLACES[n.id][1]; }
+  NPCS.find(n => n.id === 'arena').warp = [AFL.inAt[0], AFL.inAt[1], 'up', 'The Colosseum', 'The arena floor']; NPCS.find(n => n.id === 'arenaout').warp = [AFL.outAt[0], AFL.outAt[1], 'left', 'Emberwatch', ''];
   for (const n of NPCS) { n.home = n.dir; solid.add(K(n.x, n.y)); }
   // Nov 2: Tinker Pip (free test goods) only stands in town for admins (supabase/trust.sql: add your user id to public.admins)
   const TINKER = NPCS.find(n => n.id === 'tinker');
@@ -2357,6 +2360,8 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     const TS = TOWN.TS, hp = heroPos();
     const mw = MW * TS, mh = MH * TS;
     let cx = (hp.x + 0.5) * TS - TOWN.vw / 2, cy = (hp.y + 0.5) * TS - TOWN.vh / 2;
+    if (onFloor(P.y)) { const ax = AFL.x0 * TS, ay = AFL.y0 * TS, aw = AFL.w * TS, ah = AFL.h * TS;   /* on the arena floor the view stays inside its walls */
+      return { x: Math.round(aw <= TOWN.vw ? ax + (aw - TOWN.vw) / 2 : Math.max(ax, Math.min(ax + aw - TOWN.vw, cx))), y: Math.round(ah <= TOWN.vh ? ay + (ah - TOWN.vh) / 2 : Math.max(ay, Math.min(ay + ah - TOWN.vh, cy))) }; }
     cx = mw <= TOWN.vw ? (mw - TOWN.vw) / 2 : Math.max(0, Math.min(mw - TOWN.vw, cx));
     cy = mh <= TOWN.vh ? (mh - TOWN.vh) / 2 : Math.max(0, Math.min(mh - TOWN.vh, cy));
     return { x: Math.round(cx), y: Math.round(cy) };
@@ -2416,7 +2421,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   // ---------- movement
   const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
   const KEYDIR = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right', W: 'up', S: 'down', A: 'left', D: 'right' };
-  const free = (x, y) => x >= 0 && y >= 0 && x < MW && y < MH && !solid.has(K(x, y));
+  const free = (x, y) => x >= 0 && y >= 0 && x < MW && y < AFL.MHT && !solid.has(K(x, y));
   const townBusy = () => !$('sheet').hidden || !$('modal').hidden || !$('talk').hidden;
   function tryStep(dir) {
     if (BZ.open) { P.path = []; return false; } // a vendor stays at their stall
@@ -2480,7 +2485,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   const BOARD = { id: 'board', name: 'Hall of Records', fixed: true, x: 73, y: 49, open: 'records', btn: 'Read the records', lines: ['The notice board: who has gone furthest on every road, and which guilds have felled the raid bosses.', 'Names are carved, scratched and painted over each other. Someone has added a crown next to theirs.'] };
   // Nov 1: the statue of Juss in the fire plaza, and the wager board at the Arena
   const STATUE = { id: 'statue', name: 'Statue of Juss', fixed: true, x: 68, y: 55, lines: ['Here lies Juss, who was the first into battle and the first to fall.'] };
-  const ARENA_BOARD = { id: 'arenaboard', name: 'Wager Board', fixed: true, x: 99, y: 88, open: 'arena', btn: 'Read the wagers', lines: ['Wagers are pinned here: what each fighter puts up, and what others offer to match it. Both sides\' gear and decks are locked once an offer is on the table.'] };
+  const ARENA_BOARD = { id: 'arenaboard', name: 'Wager Board', fixed: true, x: AFL.board[0], y: AFL.board[1], open: 'arena', btn: 'Read the wagers', lines: ['Wagers are pinned here: what each fighter puts up, and what others offer to match it. Both sides\' gear and decks are locked once an offer is on the table.'] };
   const TALK_PROPS = ['board', 'statue', 'arenaboard'];
   function propNpc(p) { return p.kind === 'board' ? BOARD : p.kind === 'statue' ? STATUE : p.kind === 'arenaboard' ? ARENA_BOARD : null; }
   function interactFor(p) { return p.kind === 'chest' ? NPCS[0] : p.kind === 'wagon' ? NPCS.find(n => n.id === 'wagon') : TALK_PROPS.includes(p.kind) ? propNpc(p) : NPCS.find(n => n.id === 'chron'); }
@@ -2537,6 +2542,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   };
   function talk(n) {
     P.held = []; P.path = []; P.target = null;
+    if (n.warp && Math.abs(n.x - P.x) + Math.abs(n.y - P.y) <= 2) { const w = n.warp; return veil(w[3], w[4], () => { P.x = w[0]; P.y = w[1]; P.dir = w[2]; P.mv = null; P.path = []; P.held = []; P.target = null; TOWN.district = ''; if (typeof socPos === 'function') socPos(); if (typeof retrack === 'function') retrack(true); updatePrompt(); if (window.CB_AUDIO) CB_AUDIO.sfx('door'); }); }   // Nov 13: a gate to somewhere else on the grid (the arena floor)
     if (n.inside && typeof exEnter === 'function' && !exInside() && Math.abs(n.x - P.x) + Math.abs(n.y - P.y) <= 2) return exEnter(n); // Nov 13: walk in; you talk to them inside
     if (!n.fixed) n.dir = n.x > P.x ? 'left' : n.x < P.x ? 'right' : n.y > P.y ? 'up' : 'down';
     n.lineN = ((n.lineN == null ? -1 : n.lineN) + 1) % n.lines.length;
