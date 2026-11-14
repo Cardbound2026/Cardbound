@@ -71,7 +71,7 @@ body:has(#scrStart:not([hidden])) header.top #btnMenu { position: absolute; righ
 .townwrap canvas:focus { outline: none; }
 .prompt { position: absolute; left: 12px; bottom: 12px; background: rgba(13,10,8,.85); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; font-size: 13px; pointer-events: none; }
 kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--muted); border-bottom-width: 2px; border-radius: 3px; padding: 0 4px; margin-right: 4px; }
-.talk { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); width: min(620px, calc(100% - 24px)); background: linear-gradient(180deg, #241c15, #19140f); border: 2px solid var(--accent); border-radius: 10px; padding: 12px 16px; display: grid; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.6); }
+.talk { position: absolute; left: 50%; bottom: 70px; transform: translateX(-50%); width: min(620px, calc(100% - 24px)); background: linear-gradient(180deg, #241c15, #19140f); border: 2px solid var(--accent); border-radius: 10px; padding: 12px 16px; display: grid; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.6); }
 .talk b { font-family: var(--f-display); font-weight: 400; font-size: 24px; color: var(--accent); }
 .talk p { margin: 0; font-size: 16px; color: #e6dac4; }
 .talk .row { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -7708,8 +7708,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794674506276';
-  const CB_BUILD = 'b59059cf52'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794678128911';
+  const CB_BUILD = '0f16c4e0b5'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8815,6 +8815,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Fix', "The shadows left on the ground where town torches used to stand are gone."],
+      ['Interface', "The box that opens when you talk to someone in town sits higher, clear of the bottom bar."],
       ['Change', "The Previous interface and Previous enemy art settings are removed. The game has one look now."],
       ['Change', "Bags now belong to each hero: what one hero carries, the others can't see. Only the bank is shared, so put gear in the bank to pass it to another hero. What was in your shared bags stays with the hero you were playing. Bag slots (the extra space from bags you equip) still count for every hero. A deleted hero's bags go to the bank."],
       ['Interface', "Group finder: a red Cancel my notice button, both next to Update and on your own notice in the list, takes your posting down."],

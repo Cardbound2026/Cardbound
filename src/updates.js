@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Fix', "The shadows left on the ground where town torches used to stand are gone."],
+      ['Interface', "The box that opens when you talk to someone in town sits higher, clear of the bottom bar."],
       ['Change', "The Previous interface and Previous enemy art settings are removed. The game has one look now."],
       ['Change', "Bags now belong to each hero: what one hero carries, the others can't see. Only the bank is shared, so put gear in the bank to pass it to another hero. What was in your shared bags stays with the hero you were playing. Bag slots (the extra space from bags you equip) still count for every hero. A deleted hero's bags go to the bank."],
       ['Interface', "Group finder: a red Cancel my notice button, both next to Update and on your own notice in the list, takes your posting down."],
