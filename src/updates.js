@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Change', "The bags you put in your bag slots now belong to that hero too: each hero has its own bag slots and its own bag space. The bags that were equipped stay with the hero you were playing. The bank's bag slots are still shared."],
       ['Interface', "A big gold call-out pops over the target when a card Multi-hits, Multicasts or Multiplays (and TRIPLE HIT for the Shaman's third hit)."],
       ['Balance', "Mage: Ice Block now also makes you immune to all damage until your next turn (it already removed your debuffs, gave 10 Barrier and blocked new debuffs)."],
       ['Feature', "A sixth class: the Shaman. A storm hybrid that mixes mace Attacks with lightning spells and is built on Multi-hit and Multicast. Nature damage only, no Bleed and no Poison. Its defence is Guard: Dodge, or Block if you carry a shield. Pick it at the campfire with one of four starting decks."],
@@ -17,7 +18,7 @@
       ['Fix', "The shadows left on the ground where town torches used to stand are gone."],
       ['Interface', "The box that opens when you talk to someone in town sits higher, clear of the bottom bar."],
       ['Change', "The Previous interface and Previous enemy art settings are removed. The game has one look now."],
-      ['Change', "Bags now belong to each hero: what one hero carries, the others can't see. Only the bank is shared, so put gear in the bank to pass it to another hero. What was in your shared bags stays with the hero you were playing. Bag slots (the extra space from bags you equip) still count for every hero. A deleted hero's bags go to the bank."],
+      ['Change', "Bags now belong to each hero: what one hero carries, the others can't see. Only the bank is shared, so put gear in the bank to pass it to another hero. What was in your shared bags stays with the hero you were playing. A deleted hero's bags go to the bank."],
       ['Interface', "Group finder: a red Cancel my notice button, both next to Update and on your own notice in the list, takes your posting down."],
       ['Interface', "Rest the mouse on a bag item for a second and its full card shows, with item power and what it would replace, the same as clicking it but without the buttons. Move the mouse and it goes away."],
       ['Interface', "Organise your bags: press and hold an item, drag it to any slot and let go. Two items swap places. Everything stays where you put it, and new loot takes the first free slot."],

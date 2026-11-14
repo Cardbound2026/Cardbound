@@ -5620,7 +5620,7 @@ const MAX_HEROES = 20;
 function deleteChar(p, key) {
   if (!p.chars[key]) return { ok: false, why: 'No such hero' };
   { const c = p.chars[key], same = stashMode(c) === (p.stashMode || 'normal'), v = same ? (p.vault = p.vault || []) : (p.vaultOther = p.vaultOther || []); p.stashOther = p.stashOther || [];   // Nov 14: a deleted hero's bags go to the bank
-    if (p.stashHero === key) { v.push(...p.stash); p.stash = []; p.stashHero = null; } const left = p.stashOther.filter(it => it.own === key); if (left.length) { p.stashOther = p.stashOther.filter(it => it.own !== key); for (const it of left) delete it.own; v.push(...left); } }
+    if (p.stashHero === key) { v.push(...p.stash, ...(p.bags || []).filter(Boolean)); p.stash = []; p.bags = []; p.stashHero = null; syncCaps(p); } else if (c.bags) v.push(...c.bags.filter(Boolean)); const left = p.stashOther.filter(it => it.own === key); if (left.length) { p.stashOther = p.stashOther.filter(it => it.own !== key); for (const it of left) delete it.own; v.push(...left); } }
   delete p.chars[key];
   if (p.last) { if (p.last.cls === key) p.last.cls = Object.keys(p.chars)[0] || ''; if (p.last.party) p.last.party = p.last.party.filter(k => k !== key); }
   return { ok: true };
@@ -5846,8 +5846,9 @@ function useStash(p, key) {
   if (!p.chars[key]) return; bagsSplit(p, key);
   // Nov 14: bags belong to one hero. p.stash is the bags of the hero you are playing (p.stashHero); every other hero's items wait in
   // p.stashOther, each tagged with its owner (it.own). Only the bank (p.vault) is shared.
-  if (p.stashHero !== key) { if (p.chars[p.stashHero]) { for (const it of p.stash) it.own = p.stashHero; p.stashOther.push(...p.stash); p.stash = []; }
-    const mine = p.stashOther.filter(it => it.own === key); if (mine.length) { p.stashOther = p.stashOther.filter(it => it.own !== key); for (const it of mine) delete it.own; p.stash.push(...mine); } p.stashHero = key; }
+  if (p.stashHero !== key) { if (p.chars[p.stashHero]) { for (const it of p.stash) it.own = p.stashHero; p.stashOther.push(...p.stash); p.stash = []; p.chars[p.stashHero].bags = p.bags || []; p.bags = []; }   // Nov 14: the bags in the bag slots belong to the hero too (the bank's bag slots stay shared)
+    if (p.chars[key].bags) { p.bags = p.chars[key].bags; delete p.chars[key].bags; }
+    const mine = p.stashOther.filter(it => it.own === key); if (mine.length) { p.stashOther = p.stashOther.filter(it => it.own !== key); for (const it of mine) delete it.own; p.stash.push(...mine); } p.stashHero = key; syncCaps(p); }
   const want = stashMode(p.chars[key]); if (p.stashMode === want) return;
   p.stashMode = want;
   const v = p.vault || []; p.vault = p.vaultOther || []; p.vaultOther = v;
@@ -8210,8 +8211,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794685387499';
-  const CB_BUILD = '2dc945991f'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794685745149';
+  const CB_BUILD = '023615ef27'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -9328,6 +9329,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Change', "The bags you put in your bag slots now belong to that hero too: each hero has its own bag slots and its own bag space. The bags that were equipped stay with the hero you were playing. The bank's bag slots are still shared."],
       ['Interface', "A big gold call-out pops over the target when a card Multi-hits, Multicasts or Multiplays (and TRIPLE HIT for the Shaman's third hit)."],
       ['Balance', "Mage: Ice Block now also makes you immune to all damage until your next turn (it already removed your debuffs, gave 10 Barrier and blocked new debuffs)."],
       ['Feature', "A sixth class: the Shaman. A storm hybrid that mixes mace Attacks with lightning spells and is built on Multi-hit and Multicast. Nature damage only, no Bleed and no Poison. Its defence is Guard: Dodge, or Block if you carry a shield. Pick it at the campfire with one of four starting decks."],
@@ -9343,7 +9345,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       ['Fix', "The shadows left on the ground where town torches used to stand are gone."],
       ['Interface', "The box that opens when you talk to someone in town sits higher, clear of the bottom bar."],
       ['Change', "The Previous interface and Previous enemy art settings are removed. The game has one look now."],
-      ['Change', "Bags now belong to each hero: what one hero carries, the others can't see. Only the bank is shared, so put gear in the bank to pass it to another hero. What was in your shared bags stays with the hero you were playing. Bag slots (the extra space from bags you equip) still count for every hero. A deleted hero's bags go to the bank."],
+      ['Change', "Bags now belong to each hero: what one hero carries, the others can't see. Only the bank is shared, so put gear in the bank to pass it to another hero. What was in your shared bags stays with the hero you were playing. A deleted hero's bags go to the bank."],
       ['Interface', "Group finder: a red Cancel my notice button, both next to Update and on your own notice in the list, takes your posting down."],
       ['Interface', "Rest the mouse on a bag item for a second and its full card shows, with item power and what it would replace, the same as clicking it but without the buttons. Move the mouse and it goes away."],
       ['Interface', "Organise your bags: press and hold an item, drag it to any slot and let go. Two items swap places. Everything stays where you put it, and new loot takes the first free slot."],

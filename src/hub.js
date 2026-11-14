@@ -90,7 +90,7 @@ const MAX_HEROES = 20;
 function deleteChar(p, key) {
   if (!p.chars[key]) return { ok: false, why: 'No such hero' };
   { const c = p.chars[key], same = stashMode(c) === (p.stashMode || 'normal'), v = same ? (p.vault = p.vault || []) : (p.vaultOther = p.vaultOther || []); p.stashOther = p.stashOther || [];   // Nov 14: a deleted hero's bags go to the bank
-    if (p.stashHero === key) { v.push(...p.stash); p.stash = []; p.stashHero = null; } const left = p.stashOther.filter(it => it.own === key); if (left.length) { p.stashOther = p.stashOther.filter(it => it.own !== key); for (const it of left) delete it.own; v.push(...left); } }
+    if (p.stashHero === key) { v.push(...p.stash, ...(p.bags || []).filter(Boolean)); p.stash = []; p.bags = []; p.stashHero = null; syncCaps(p); } else if (c.bags) v.push(...c.bags.filter(Boolean)); const left = p.stashOther.filter(it => it.own === key); if (left.length) { p.stashOther = p.stashOther.filter(it => it.own !== key); for (const it of left) delete it.own; v.push(...left); } }
   delete p.chars[key];
   if (p.last) { if (p.last.cls === key) p.last.cls = Object.keys(p.chars)[0] || ''; if (p.last.party) p.last.party = p.last.party.filter(k => k !== key); }
   return { ok: true };
@@ -316,8 +316,9 @@ function useStash(p, key) {
   if (!p.chars[key]) return; bagsSplit(p, key);
   // Nov 14: bags belong to one hero. p.stash is the bags of the hero you are playing (p.stashHero); every other hero's items wait in
   // p.stashOther, each tagged with its owner (it.own). Only the bank (p.vault) is shared.
-  if (p.stashHero !== key) { if (p.chars[p.stashHero]) { for (const it of p.stash) it.own = p.stashHero; p.stashOther.push(...p.stash); p.stash = []; }
-    const mine = p.stashOther.filter(it => it.own === key); if (mine.length) { p.stashOther = p.stashOther.filter(it => it.own !== key); for (const it of mine) delete it.own; p.stash.push(...mine); } p.stashHero = key; }
+  if (p.stashHero !== key) { if (p.chars[p.stashHero]) { for (const it of p.stash) it.own = p.stashHero; p.stashOther.push(...p.stash); p.stash = []; p.chars[p.stashHero].bags = p.bags || []; p.bags = []; }   // Nov 14: the bags in the bag slots belong to the hero too (the bank's bag slots stay shared)
+    if (p.chars[key].bags) { p.bags = p.chars[key].bags; delete p.chars[key].bags; }
+    const mine = p.stashOther.filter(it => it.own === key); if (mine.length) { p.stashOther = p.stashOther.filter(it => it.own !== key); for (const it of mine) delete it.own; p.stash.push(...mine); } p.stashHero = key; syncCaps(p); }
   const want = stashMode(p.chars[key]); if (p.stashMode === want) return;
   p.stashMode = want;
   const v = p.vault || []; p.vault = p.vaultOther || []; p.vaultOther = v;
