@@ -208,3 +208,5 @@ Stormheart was dropped (the third hit stays with the Healer's guaranteed Multi-h
 | Card | Rarity, cost, type | Effect |
 |---|---|---|
 | Voltage | Green, 10, Power | You deal 2% more damage to an enemy for each Static on it (up to +40%). |
+| Ride the Wind | Green, 10, Skill | Gain 20 Guard. |
+| Become the Storm | Blue, 20, Skill | Gain 40 Guard. |
