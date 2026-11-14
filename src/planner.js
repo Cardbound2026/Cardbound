@@ -30,9 +30,11 @@
     return b.cards.slice().sort((x, y) => PL_RAR.indexOf(CARDS[x[0]].rarity) - PL_RAR.indexOf(CARDS[y[0]].rarity) || CARDS[x[0]].name.localeCompare(CARDS[y[0]].name)).map(([k, n]) => { const d = CARDS[k], have = todo.mine ? Math.min(n, todo.own[k] || 0) : -1, src = gSources(k);
       return `<tr class="gd-${have < 0 ? 'muted' : have >= n ? 'done' : have ? 'part' : 'miss'}"><td class="gdck">${have < 0 ? '&middot;' : have >= n ? '&#10003;' : have ? '&#9680;' : '&#10007;'}</td><td><span style="color:${RC[d.rarity]};font-weight:600" title="${esc(d.text)}">${esc(d.name)}</span>${n > 1 ? ` <b>x${n}</b>` : ''} <span class="muted">${d.cost == null ? '' : d.cost + ' mana &middot; '}${d.type}</span><div class="gdwhy">${esc(d.text)}</div></td><td>${have < 0 || have >= n ? '' : src.length ? src.slice(0, 2).map(s => `${esc(s.e.name)} <span class="muted">(Map ${s.map.num} ${gTier(s.e.tier)}, ${s.pct}%)</span>`).join(', ') : '<span class="muted">random card drops</span>'}</td></tr>`; }).join('');
   }
+  // Nov 14: the tenth row is the capstone (Lv 20): one of three Powers that starts every fight in play
+  const plCapRow = (tr) => (tr.cap || []).map(k => { const d = CARDS[k]; return d ? { n: d.name, t: 'Capstone: ' + d.text.replace(/^Power:\s*/, '').replace(/^./, m => m.toUpperCase()) } : { n: k, t: '' }; });
   function plTalentsHtml(b, edit) {
     const tr = b.codex && window.CB_TALENTS && CB_TALENTS[b.codex]; if (!tr) return edit ? '<p class="muted" style="margin:0">Pick a codex to plan its talents.</p>' : '';
-    return `<div class="pltal">${tr.rows.map((row, ri) => `<div class="pltrow"><i>${ri + 1}</i>${row.map((t, ci) => { const on = (b.talents || [])[ri] === ci; return edit || on ? `<button type="button" class="${on ? 'on' : ''}" ${edit ? `data-pltal="${ri}:${ci}"` : 'disabled'} style="--tc:${TCOL[ci][1]}" title="${esc(talentText(t.t, b.cls))}"><b>${esc(t.n)}</b>${edit ? '' : `<span>${esc(talentText(t.t, b.cls))}</span>`}</button>` : ''; }).join('')}${!edit && (b.talents || [])[ri] == null ? '<span class="muted" style="font-size:12px">no pick</span>' : ''}</div>`).join('')}</div>`;
+    return `<div class="pltal">${tr.rows.concat([plCapRow(tr)]).map((row, ri) => `<div class="pltrow"><i>${ri + 1}</i>${row.map((t, ci) => { const on = (b.talents || [])[ri] === ci; return edit || on ? `<button type="button" class="${on ? 'on' : ''}" ${edit ? `data-pltal="${ri}:${ci}"` : 'disabled'} style="--tc:${TCOL[ci][1]}" title="${esc(talentText(t.t, b.cls))}"><b>${esc(t.n)}</b>${edit ? '' : `<span>${esc(talentText(t.t, b.cls))}</span>`}</button>` : ''; }).join('')}${!edit && (b.talents || [])[ri] == null ? '<span class="muted" style="font-size:12px">no pick</span>' : ''}</div>`).join('')}</div>`;
   }
   function plRender() {
     const c = profile.chars[heroKey], act = plActive(c); let body = '';
@@ -108,7 +110,7 @@
   }
   // the talent tree at full width, with what each talent does written out
   function plTalentsFull(b) { const tr = window.CB_TALENTS && CB_TALENTS[b.codex]; if (!tr) return '';
-    return `<div class="pltal big"><div class="pltrow head"><i></i>${['Offense', 'Defense', 'Support'].map((n, ci) => `<span style="color:${TCOL[ci][1]}">${n}</span>`).join('')}</div>${tr.rows.map((row, ri) => `<div class="pltrow"><i>Lv ${(ri + 1) * 2}</i>${row.map((t, ci) => { const on = (b.talents || [])[ri] === ci; return `<button type="button" class="${on ? 'on' : ''}" data-pltal="${ri}:${ci}" style="--tc:${TCOL[ci][1]}"><b>${esc(t.n)}</b><span>${esc(talentText(t.t, b.cls))}</span></button>`; }).join('')}</div>`).join('')}</div>`; }
+    return `<div class="pltal big"><div class="pltrow head"><i></i>${['Offense', 'Defense', 'Support'].map((n, ci) => `<span style="color:${TCOL[ci][1]}">${n}</span>`).join('')}</div>${tr.rows.concat([plCapRow(tr)]).map((row, ri) => `<div class="pltrow${ri === 9 ? ' cap' : ''}"><i>Lv ${(ri + 1) * 2}</i>${row.map((t, ci) => { const on = (b.talents || [])[ri] === ci; return `<button type="button" class="${on ? 'on' : ''}" data-pltal="${ri}:${ci}" style="--tc:${TCOL[ci][1]}"><b>${esc(t.n)}</b><span>${esc(talentText(t.t, b.cls))}</span></button>`; }).join('')}</div>`).join('')}</div>`; }
   // ---- posted builds
   async function plFetch() {
     PL.list = null; PL.err = ''; if (!(supa && supaUser)) return;

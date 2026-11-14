@@ -853,6 +853,7 @@ body.inkui:not(.ui-classic) .item.itm .acts .btn:disabled { opacity: .45; filter
 .plbox .plq { font-size: 22px; margin: 2px 0 10px; color: #f4d89a; } .plbox .plq .muted { font-size: 13px; }
 .plbox .plpick { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); } .plbox .plpick.cls { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); } .plbox .plpick button { display: grid; gap: 4px; text-align: left; padding: 12px 14px; border: 1px solid var(--line); border-left: 4px solid var(--rc); border-radius: 6px; background: rgba(255,255,255,.03); color: #cfc4ae; cursor: pointer; } .plbox .plpick button:hover, .plbox .plpick button.on { background: color-mix(in srgb, var(--rc) 16%, transparent); border-color: var(--rc); } .plbox .plpick b { color: var(--rc); font: 600 21px 'Grenze', serif; } .plbox .plpick.cx b { color: #f0e6d0; } .plbox .plpick span { font-size: 12.5px; line-height: 1.35; }
 .plbox .plcount { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; } .plbox .plcount span { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border: 1px solid var(--line); border-radius: 4px; font-size: 13px; color: #cfc4ae; background: rgba(0,0,0,.25); } .plbox .plcount span i { width: 9px; height: 9px; border-radius: 2px; background: var(--rc); } .plbox .plcount b { color: #fff; } .plbox .plcount .full { border-color: var(--rc); } .plbox .plcount .full b { color: var(--rc); } .plbox .plcount .short b { color: #e58a7a; } .plbox .plcount .plnote { border-color: #a04a3a; color: #f0b0a0; background: rgba(120,40,30,.3); } .plbox .plcount .ok b { color: #9fc98a; }
+.plbox .pltrow.cap > i { color: #f0c75a; } .plbox .pltrow.cap button { border-color: rgba(240,199,90,.45); }
 .plbox .plgold { display: flex; flex-wrap: wrap; gap: 14px 12px; margin: 6px 0 4px; } .plbox .plgcard { position: relative; display: grid; justify-items: center; gap: 4px; } .plbox .plgcard > button { padding: 0; border: 0; background: none; cursor: pointer; border-radius: 8px; transition: transform .12s; } .plbox .plgcard > button:hover { transform: scale(1.7); position: relative; z-index: 30; filter: drop-shadow(0 12px 26px rgba(0,0,0,.85)); } .plbox .plgcard:nth-child(-n+7) > button:hover { transform-origin: 50% 20%; } #plPeek { position: fixed; z-index: 9300; pointer-events: none; filter: drop-shadow(0 12px 28px rgba(0,0,0,.85)); } .plbox .plgcard.on > button { box-shadow: 0 0 0 3px #f0c75a, 0 0 22px rgba(240,199,90,.55); } .plbox .plgn { display: flex; align-items: center; gap: 6px; } .plbox .plgn b { color: #ffd76a; } .plbox .plgn button { width: 26px; height: 24px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: rgba(255,255,255,.06); color: #fff; cursor: pointer; }
 .plbox .plrar { margin: 0 0 6px; } .plbox .plrar button { border-bottom: 3px solid var(--rc); } .plbox .plrar button span { color: var(--muted); font-size: 12px; margin-left: 3px; } .plbox .plpool.capped button:not(:has(em)) { opacity: .45; }
 .plbox .pltalbtn { width: 100%; margin-top: 10px; text-align: left; } .plbox .pltal.big .pltrow > i { width: 44px; } .plbox .pltal.big .pltrow button, .plbox .pltal.big .pltrow.head span { flex: 1 1 0; } .plbox .pltal.big .pltrow.head span { font: 700 12px/1 sans-serif; letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; } .plbox .pltal.big .pltrow button span { display: block; font-size: 12px; color: #b9ae98; font-weight: 400; margin-top: 2px; }
@@ -8221,8 +8222,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794686530872';
-  const CB_BUILD = '9aeb33541d'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794686679695';
+  const CB_BUILD = 'df0925d692'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -9339,6 +9340,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Fix', "Deck Planner: the talent tree showed only nine rows. The tenth, the Lv 20 capstone, is there now, both when you plan a build and when you read one."],
       ['Feature', "Two new Shaman defence cards: Ride the Wind (Green, 10 mana: gain 20 Guard) and Become the Storm (Blue, 20 mana: gain 40 Guard)."],
       ['Feature', "New Shaman card: Voltage (Green Power, 10 mana). You deal 2% more damage to an enemy for each Static on it, up to +40%."],
       ['Interface', "Deck Planner: the Gold card step has a search box (name or card text), and pointing at any card in the planner shows it big. Gold cards grow in place; cards in the list and in your deck show the full card beside the pointer."],
@@ -14954,9 +14956,11 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     return b.cards.slice().sort((x, y) => PL_RAR.indexOf(CARDS[x[0]].rarity) - PL_RAR.indexOf(CARDS[y[0]].rarity) || CARDS[x[0]].name.localeCompare(CARDS[y[0]].name)).map(([k, n]) => { const d = CARDS[k], have = todo.mine ? Math.min(n, todo.own[k] || 0) : -1, src = gSources(k);
       return `<tr class="gd-${have < 0 ? 'muted' : have >= n ? 'done' : have ? 'part' : 'miss'}"><td class="gdck">${have < 0 ? '&middot;' : have >= n ? '&#10003;' : have ? '&#9680;' : '&#10007;'}</td><td><span style="color:${RC[d.rarity]};font-weight:600" title="${esc(d.text)}">${esc(d.name)}</span>${n > 1 ? ` <b>x${n}</b>` : ''} <span class="muted">${d.cost == null ? '' : d.cost + ' mana &middot; '}${d.type}</span><div class="gdwhy">${esc(d.text)}</div></td><td>${have < 0 || have >= n ? '' : src.length ? src.slice(0, 2).map(s => `${esc(s.e.name)} <span class="muted">(Map ${s.map.num} ${gTier(s.e.tier)}, ${s.pct}%)</span>`).join(', ') : '<span class="muted">random card drops</span>'}</td></tr>`; }).join('');
   }
+  // Nov 14: the tenth row is the capstone (Lv 20): one of three Powers that starts every fight in play
+  const plCapRow = (tr) => (tr.cap || []).map(k => { const d = CARDS[k]; return d ? { n: d.name, t: 'Capstone: ' + d.text.replace(/^Power:\s*/, '').replace(/^./, m => m.toUpperCase()) } : { n: k, t: '' }; });
   function plTalentsHtml(b, edit) {
     const tr = b.codex && window.CB_TALENTS && CB_TALENTS[b.codex]; if (!tr) return edit ? '<p class="muted" style="margin:0">Pick a codex to plan its talents.</p>' : '';
-    return `<div class="pltal">${tr.rows.map((row, ri) => `<div class="pltrow"><i>${ri + 1}</i>${row.map((t, ci) => { const on = (b.talents || [])[ri] === ci; return edit || on ? `<button type="button" class="${on ? 'on' : ''}" ${edit ? `data-pltal="${ri}:${ci}"` : 'disabled'} style="--tc:${TCOL[ci][1]}" title="${esc(talentText(t.t, b.cls))}"><b>${esc(t.n)}</b>${edit ? '' : `<span>${esc(talentText(t.t, b.cls))}</span>`}</button>` : ''; }).join('')}${!edit && (b.talents || [])[ri] == null ? '<span class="muted" style="font-size:12px">no pick</span>' : ''}</div>`).join('')}</div>`;
+    return `<div class="pltal">${tr.rows.concat([plCapRow(tr)]).map((row, ri) => `<div class="pltrow"><i>${ri + 1}</i>${row.map((t, ci) => { const on = (b.talents || [])[ri] === ci; return edit || on ? `<button type="button" class="${on ? 'on' : ''}" ${edit ? `data-pltal="${ri}:${ci}"` : 'disabled'} style="--tc:${TCOL[ci][1]}" title="${esc(talentText(t.t, b.cls))}"><b>${esc(t.n)}</b>${edit ? '' : `<span>${esc(talentText(t.t, b.cls))}</span>`}</button>` : ''; }).join('')}${!edit && (b.talents || [])[ri] == null ? '<span class="muted" style="font-size:12px">no pick</span>' : ''}</div>`).join('')}</div>`;
   }
   function plRender() {
     const c = profile.chars[heroKey], act = plActive(c); let body = '';
@@ -15032,7 +15036,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   }
   // the talent tree at full width, with what each talent does written out
   function plTalentsFull(b) { const tr = window.CB_TALENTS && CB_TALENTS[b.codex]; if (!tr) return '';
-    return `<div class="pltal big"><div class="pltrow head"><i></i>${['Offense', 'Defense', 'Support'].map((n, ci) => `<span style="color:${TCOL[ci][1]}">${n}</span>`).join('')}</div>${tr.rows.map((row, ri) => `<div class="pltrow"><i>Lv ${(ri + 1) * 2}</i>${row.map((t, ci) => { const on = (b.talents || [])[ri] === ci; return `<button type="button" class="${on ? 'on' : ''}" data-pltal="${ri}:${ci}" style="--tc:${TCOL[ci][1]}"><b>${esc(t.n)}</b><span>${esc(talentText(t.t, b.cls))}</span></button>`; }).join('')}</div>`).join('')}</div>`; }
+    return `<div class="pltal big"><div class="pltrow head"><i></i>${['Offense', 'Defense', 'Support'].map((n, ci) => `<span style="color:${TCOL[ci][1]}">${n}</span>`).join('')}</div>${tr.rows.concat([plCapRow(tr)]).map((row, ri) => `<div class="pltrow${ri === 9 ? ' cap' : ''}"><i>Lv ${(ri + 1) * 2}</i>${row.map((t, ci) => { const on = (b.talents || [])[ri] === ci; return `<button type="button" class="${on ? 'on' : ''}" data-pltal="${ri}:${ci}" style="--tc:${TCOL[ci][1]}"><b>${esc(t.n)}</b><span>${esc(talentText(t.t, b.cls))}</span></button>`; }).join('')}</div>`).join('')}</div>`; }
   // ---- posted builds
   async function plFetch() {
     PL.list = null; PL.err = ''; if (!(supa && supaUser)) return;

@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Fix', "Deck Planner: the talent tree showed only nine rows. The tenth, the Lv 20 capstone, is there now, both when you plan a build and when you read one."],
       ['Feature', "Two new Shaman defence cards: Ride the Wind (Green, 10 mana: gain 20 Guard) and Become the Storm (Blue, 20 mana: gain 40 Guard)."],
       ['Feature', "New Shaman card: Voltage (Green Power, 10 mana). You deal 2% more damage to an enemy for each Static on it, up to +40%."],
       ['Interface', "Deck Planner: the Gold card step has a search box (name or card text), and pointing at any card in the planner shows it big. Gold cards grow in place; cards in the list and in your deck show the full card beside the pointer."],
