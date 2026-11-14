@@ -50,7 +50,7 @@
   const PS = { dmg: ['+10% damage'], crit: ['+10% crit chance'], critMult: ['+10% crit damage'], dexterity: ['+10 Dexterity (+10% Block, Dodge and Barrier gained)'], strength: ['+10 Strength (+10% Attack damage)'],
     intelligence: ['+10 Intelligence (+10% Skill damage)'], spirit: ['+10 Spirit (+10% healing received)'], lifesteal: ['5% lifesteal'], maxHpPct: ['+10% max HP'], maxManaPct: ['+10% max mana'],
     regenPct: ['+10% mana regeneration'], luck: ['+10 Luck (better loot)'], resistAll: ['+10% resistance to every element'], multiHit: ['+10% Multi-hit chance'], multicast: ['+10% Multicast chance'],
-    multiplay: ['+10% Multiplay chance'], initPct: ['+10% Initiative'], heal: ['+10% healing'], bleedChance: ['+10% chance for Attacks to apply 3 Bleed'], thorns: ['+5 Thorns (attackers take 5 damage)'], recovery: ['+5 Recovery (heal 5 HP at the start of each turn)'] };
+    multiplay: ['+10% Multiplay chance'], initPct: ['+10% Initiative'], heal: ['+10% healing'], bleedChance: ['+10% chance for Attacks to apply Bleed equal to half the damage dealt'], thorns: ['+5 Thorns (attackers take 5 damage)'], recovery: ['+5 Recovery (heal 5 HP at the start of each turn)'] };
   const PV = { lifesteal: 5, thorns: 5, recovery: 5 };
   const party = (n, stat) => stat === 'heal' ? T(n, 'You and your allies heal +10% more.', ['heal', 10], ['aura', [['heal', 10]]]) : stat === 'dmg' ? T(n, 'You and your allies deal +10% damage.', ['dmg', 10, {}], ['aura', [['dmg', 10, {}]]])
     : stat === 'luck' ? T(n, `You and your allies gain ${PS[stat][0]}.`, ['run', 'partyLuck', 10]) : T(n, `You and your allies gain ${PS[stat][0]}.`, ['party', stat, PV[stat] || 10]);

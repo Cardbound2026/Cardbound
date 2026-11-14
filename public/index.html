@@ -1537,7 +1537,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = D; else r.
   const PS = { dmg: ['+10% damage'], crit: ['+10% crit chance'], critMult: ['+10% crit damage'], dexterity: ['+10 Dexterity (+10% Block, Dodge and Barrier gained)'], strength: ['+10 Strength (+10% Attack damage)'],
     intelligence: ['+10 Intelligence (+10% Skill damage)'], spirit: ['+10 Spirit (+10% healing received)'], lifesteal: ['5% lifesteal'], maxHpPct: ['+10% max HP'], maxManaPct: ['+10% max mana'],
     regenPct: ['+10% mana regeneration'], luck: ['+10 Luck (better loot)'], resistAll: ['+10% resistance to every element'], multiHit: ['+10% Multi-hit chance'], multicast: ['+10% Multicast chance'],
-    multiplay: ['+10% Multiplay chance'], initPct: ['+10% Initiative'], heal: ['+10% healing'], bleedChance: ['+10% chance for Attacks to apply 3 Bleed'], thorns: ['+5 Thorns (attackers take 5 damage)'], recovery: ['+5 Recovery (heal 5 HP at the start of each turn)'] };
+    multiplay: ['+10% Multiplay chance'], initPct: ['+10% Initiative'], heal: ['+10% healing'], bleedChance: ['+10% chance for Attacks to apply Bleed equal to half the damage dealt'], thorns: ['+5 Thorns (attackers take 5 damage)'], recovery: ['+5 Recovery (heal 5 HP at the start of each turn)'] };
   const PV = { lifesteal: 5, thorns: 5, recovery: 5 };
   const party = (n, stat) => stat === 'heal' ? T(n, 'You and your allies heal +10% more.', ['heal', 10], ['aura', [['heal', 10]]]) : stat === 'dmg' ? T(n, 'You and your allies deal +10% damage.', ['dmg', 10, {}], ['aura', [['dmg', 10, {}]]])
     : stat === 'luck' ? T(n, `You and your allies gain ${PS[stat][0]}.`, ['run', 'partyLuck', 10]) : T(n, `You and your allies gain ${PS[stat][0]}.`, ['party', stat, PV[stat] || 10]);
@@ -4160,7 +4160,7 @@ class Combat {
     if (kind === 'Attack' && e.thorns && e.hp > 0) { const t = this.applyHit(e, p, e.thorns, { defer: true, label: e.isPlayer ? 'Thorns' : 'Spikes' }); this.say('enemy', `${e.name}'s ${e.isPlayer ? 'Thorns' : 'spikes'}: ${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${t.lost} HP.`); }
     if (p.isPlayer && p.slowChance && e.hp > 0 && this.rng() * 100 < p.slowChance) { e.slow = (e.slow || 0) + 2; this.say('player', `${e.name} is slowed (2 Slow).`); }
     if (p.isPlayer && p.tauntChance && e.hp > 0 && !e.isPlayer && this.rng() * 100 < p.tauntChance) { this.setTaunt(p); this.say('player', `${e.name} is taunted by ${p.name}.`); }
-    if (kind === 'Attack' && p.bleedChance && e.hp > 0 && this.rng() * 100 < p.bleedChance) { e.bleed += 3; e.bleedBy = p.id; this.say('crit', `Bleed Chance: ${e.name} gains 3 Bleed.`); }
+    if (kind === 'Attack' && p.bleedChance && e.hp > 0 && this.rng() * 100 < p.bleedChance) { const bl = Math.max(3, Math.round(r.lost * 0.5)); e.bleed += bl; e.bleedBy = p.id; this.fxPush({ t: 'apply', d: e.id, key: 'bleed' }); this.say('crit', `Bleed Chance: ${e.name} gains ${bl} Bleed (half the hit).`); }   // Nov 14: the Bleed is half the damage that got through (at least 3), so it keeps up with your hits; it was a flat 3
     if (p.lifesteal && r.lost) this.heal(p, Math.round(r.lost * p.lifesteal / 100), 'Lifesteal', true);
     if (p.hp <= 0) { this.onDeath(p); return r.lost; }
     if (e.hp <= 0) this.onDeath(e);
@@ -8232,8 +8232,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794688718641';
-  const CB_BUILD = 'cbf400bb24'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794688928155';
+  const CB_BUILD = '7a6786c23a'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -9350,6 +9350,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Balance', "Bleed Chance (one-handed axes, and anything else that gives it): when it triggers, the Bleed is now half the damage that hit dealt, with a minimum of 3. It used to be a flat 3 Bleed however hard you hit."],
       ['Balance', "Shaman, Skybreaker: a Multi-hit now plays the last Skill you played again, free, whatever it was (a heal, Guard, card draw, Static), not only a damaging spell. Damage on the repeat is still halved. Held Breath, Thunder Debt, Borrowed Thunder and the echo cards are never repeated."],
       ['Interface', "The Strength and Intelligence buff tips are shorter: \"12 Strength\". Hold Alt for what the stat does."],
       ['Interface', "Skybreaker: a tag on your hero names the Skill that will be played again when an Attack Multi-hits (\"Repeats: Thunderfall\"). Point at it for its text."],
@@ -14503,7 +14504,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       ['Luck', 'Raises every drop chance: +1% per point.'],
       ['Multi-hit Chance', 'Chance an Attack hits twice.'],
       ['Multiplay / Multicast', 'Chance a damaging Attack (Multiplay) or Skill (Multicast) is played again for free.'],
-      ['Bleed Chance', 'Chance your Attacks also apply 3 Bleed.'],
+      ['Bleed Chance', 'Chance for each Attack hit to also apply Bleed equal to half the damage it dealt (at least 3). One-handed axes have it.'],
       ['Lifesteal', 'Heal for this % of the HP damage your hits deal.'],
       ['Thorns', 'Attackers take this much damage back each time they hit you.'],
       ['Recovery', 'Heal this much at the start of each of your turns.'],

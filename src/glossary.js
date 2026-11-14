@@ -19,7 +19,7 @@
       ['Luck', 'Raises every drop chance: +1% per point.'],
       ['Multi-hit Chance', 'Chance an Attack hits twice.'],
       ['Multiplay / Multicast', 'Chance a damaging Attack (Multiplay) or Skill (Multicast) is played again for free.'],
-      ['Bleed Chance', 'Chance your Attacks also apply 3 Bleed.'],
+      ['Bleed Chance', 'Chance for each Attack hit to also apply Bleed equal to half the damage it dealt (at least 3). One-handed axes have it.'],
       ['Lifesteal', 'Heal for this % of the HP damage your hits deal.'],
       ['Thorns', 'Attackers take this much damage back each time they hit you.'],
       ['Recovery', 'Heal this much at the start of each of your turns.'],

@@ -1699,7 +1699,7 @@ class Combat {
     if (kind === 'Attack' && e.thorns && e.hp > 0) { const t = this.applyHit(e, p, e.thorns, { defer: true, label: e.isPlayer ? 'Thorns' : 'Spikes' }); this.say('enemy', `${e.name}'s ${e.isPlayer ? 'Thorns' : 'spikes'}: ${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${t.lost} HP.`); }
     if (p.isPlayer && p.slowChance && e.hp > 0 && this.rng() * 100 < p.slowChance) { e.slow = (e.slow || 0) + 2; this.say('player', `${e.name} is slowed (2 Slow).`); }
     if (p.isPlayer && p.tauntChance && e.hp > 0 && !e.isPlayer && this.rng() * 100 < p.tauntChance) { this.setTaunt(p); this.say('player', `${e.name} is taunted by ${p.name}.`); }
-    if (kind === 'Attack' && p.bleedChance && e.hp > 0 && this.rng() * 100 < p.bleedChance) { e.bleed += 3; e.bleedBy = p.id; this.say('crit', `Bleed Chance: ${e.name} gains 3 Bleed.`); }
+    if (kind === 'Attack' && p.bleedChance && e.hp > 0 && this.rng() * 100 < p.bleedChance) { const bl = Math.max(3, Math.round(r.lost * 0.5)); e.bleed += bl; e.bleedBy = p.id; this.fxPush({ t: 'apply', d: e.id, key: 'bleed' }); this.say('crit', `Bleed Chance: ${e.name} gains ${bl} Bleed (half the hit).`); }   // Nov 14: the Bleed is half the damage that got through (at least 3), so it keeps up with your hits; it was a flat 3
     if (p.lifesteal && r.lost) this.heal(p, Math.round(r.lost * p.lifesteal / 100), 'Lifesteal', true);
     if (p.hp <= 0) { this.onDeath(p); return r.lost; }
     if (e.hp <= 0) this.onDeath(e);
