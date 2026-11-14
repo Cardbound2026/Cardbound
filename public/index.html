@@ -1102,6 +1102,7 @@ body #scrCombat.bf .stage .uplate .bar span { font-size: 12px; }
   .tlhead { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; padding: 2px 4px; position: sticky; top: 0; background: var(--panel, #15110d); z-index: 1; }
   .tllv { font-size: 12.5px; color: var(--muted); display: flex; flex-direction: column; justify-content: center; } .tllv small { font-size: 10.5px; color: var(--accent); } .tllv.locked { opacity: .6; }
   .tlcell { text-align: left; background: #1a1612; border: 1px solid var(--line); border-left: 3px solid var(--tc); border-radius: 6px; padding: 5px 8px; color: var(--text); font: inherit; cursor: pointer; }
+  .dcard, .pilecard { position: relative; } .bmark { position: absolute; top: 2px; left: 50%; transform: translateX(-50%); z-index: 3; white-space: nowrap; padding: 1px 7px; border-radius: 9px; background: #1a1408; border: 1px solid #e0b354; color: #f2cf6b; font: 700 10.5px/1.4 system-ui, sans-serif; letter-spacing: .5px; text-transform: uppercase; font-style: normal; box-shadow: 0 0 8px rgba(224,179,84,.45); pointer-events: none; }
   .tlcell { position: relative; } .tlcell .tlbuild { position: absolute; top: -7px; right: 6px; z-index: 2; padding: 1px 7px; border-radius: 9px; background: #1a1408; border: 1px solid #e0b354; color: #f2cf6b; font: 700 10.5px/1.4 system-ui, sans-serif; letter-spacing: .5px; text-transform: uppercase; font-style: normal; box-shadow: 0 0 8px rgba(224,179,84,.45); pointer-events: none; }
   .tlcell { display: flex; gap: 9px; align-items: flex-start; background: linear-gradient(#1d1915, #14110e); border-radius: 4px; }
   .tlic { flex: none; width: 40px; height: 40px; background: url(img/ui/talents.webp) 0 0 / 240px 480px no-repeat; image-rendering: pixelated; border-radius: 6px; box-shadow: 0 0 0 1px #000, 0 0 0 2px rgba(255,255,255,.08); filter: saturate(.55) brightness(.8); }
@@ -6470,7 +6471,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   // ---------- character screen (C): paperdoll on the left, deck or stash on the right
   const GT = { tab: 'deck', sort: 'cost' };
   const TYPE_ORDER = { Attack: 0, Skill: 1, Power: 2 };
-  function deckPanel(c) {
+  // Nov 14: cards that the build you follow asks for wear a gold Build marker on the deck screens
+  function buildMark(c) { const b = typeof plActive === 'function' ? plActive(c) : null, need = {}; if (b && b.cls === c.cls) for (const [k, n] of b.cards || []) need[k] = n; return (key) => need[key] ? `<em class="bmark" title="${esc(b.name)} uses ${need[key]} of this card">&#9733; Build${need[key] > 1 ? ' x' + need[key] : ''}</em>` : ''; }
+  function deckPanel(c) { const bm = buildMark(c);
     const chk = CBHub.deckCheck(c.deck), n = chk.counts;
     const costOf = (k) => { const v = CB.rankedCard(k.key, k.rank || 0); return v.cost != null ? v.cost : CARDS[k.key].cost; };
     // stack identical cards (same card, same rank)
@@ -6495,7 +6498,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       ${chk.ok ? '' : `<p class="down" style="margin:0 0 6px;font-size:13px">Deck ${chk.problems.join(', ')}. Fix it at the Scribe before you ride out.</p>`}
       <div class="dtools"><div class="cxchips" role="group" aria-label="Sort">${[['cost', 'Mana'], ['type', 'Type'], ['rarity', 'Rarity'], ['name', 'Name']].map(([k, l]) => `<button class="cxchip ${GT.sort === k ? 'on' : ''}" data-gsort="${k}">${l}</button>`).join('')}</div>
         <button class="btn" id="btnScribe" style="padding:4px 10px;font-size:13px">Edit deck${c.cards.length ? ` (${c.cards.length} in collection)` : ''}</button></div>
-      <div class="pilegrid deckgrid">${list.map(({ k, n }) => { const v = CB.rankedCard(k.key, k.rank || 0); return `<div class="pilecard" data-dcard="${k.id}" title="Click to upgrade">${cardBox(Object.assign({}, CARDS[k.key], v), 120)}${n > 1 ? `<span class="pilecount">x${n}</span>` : ''}${k.rank ? `<span class="pilecount rk">+${k.rank}</span>` : ''}</div>`; }).join('')}</div>
+      <div class="pilegrid deckgrid">${list.map(({ k, n }) => { const v = CB.rankedCard(k.key, k.rank || 0); return `<div class="pilecard" data-dcard="${k.id}" title="Click to upgrade">${cardBox(Object.assign({}, CARDS[k.key], v), 120)}${n > 1 ? `<span class="pilecount">x${n}</span>` : ''}${k.rank ? `<span class="pilecount rk">+${k.rank}</span>` : ''}${bm(k.key)}</div>`; }).join('')}</div>
       <p class="muted" style="font-size:12px;margin:0">Hover a card to read it, click it to rank it up. Adding and removing cards happens at the Scribe.</p>`;
   }
   function renderGearTab(c) {
@@ -6602,8 +6605,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   }
   function renderDeckTab(c) {
     const chk = CBHub.deckCheck(c.deck), n = chk.counts;
-    const deck = c.deck.slice().sort(sortCards).map(k => cardHtml(k, `<button class="btn" data-up="${k.id}">Upgrade</button><button class="btn" data-remove="${k.id}" ${c.deck.length <= CB.DECK_MIN ? 'disabled' : ''}>Remove</button>`)).join('');
-    const coll = c.cards.slice().sort(sortCards).map(k => { const a = CBHub.canAdd(c, k.id); return cardHtml(k, `<button class="btn" data-add="${k.id}" ${a.ok ? '' : `disabled title="${esc(a.why)}"`}>Add to deck</button><button class="btn" data-up="${k.id}">Upgrade</button><button class="btn" data-ink="${k.id}" title="Break this card down for Ink">Ink +${CBHub.inkValue(k)}</button>`); }).join('');
+    const bm = buildMark(c);
+    const deck = c.deck.slice().sort(sortCards).map(k => cardHtml(k, `${bm(k.key)}<button class="btn" data-up="${k.id}">Upgrade</button><button class="btn" data-remove="${k.id}" ${c.deck.length <= CB.DECK_MIN ? 'disabled' : ''}>Remove</button>`)).join('');
+    const coll = c.cards.slice().sort(sortCards).map(k => { const a = CBHub.canAdd(c, k.id); return cardHtml(k, `${bm(k.key)}<button class="btn" data-add="${k.id}" ${a.ok ? '' : `disabled title="${esc(a.why)}"`}>Add to deck</button><button class="btn" data-up="${k.id}">Upgrade</button><button class="btn" data-ink="${k.id}" title="Break this card down for Ink">Ink +${CBHub.inkValue(k)}</button>`); }).join('');
     const spare = c.cards.filter(k => c.deck.some(d => d.key === k.key && (d.rank || 0) < CB.MAX_RANK)).length;
     $('hpDeck').innerHTML = `<p class="savenote" style="margin:0 0 8px">Deck rules: ${CB.DECK_MIN} to ${CB.DECK_MAX} cards, at most 2 Gold, 4 Blue and 6 Green. Feed spare cards into a card to rank it up (to +${CB.MAX_RANK}). Each card gives White 1, Green 3, Blue 9, Gold 27 XP, doubled when it's a copy of the same card. Reaching rank N costs N x 4/8/16/32 XP (by rarity) plus N x 10/20/40/80 gold.</p>
       <div class="inkbar"><b>Ink ${profile.ink || 0}</b><span class="muted">Break spare cards down for Ink (White ${CBHub.INK_GET.White}, Green ${CBHub.INK_GET.Green}, Blue ${CBHub.INK_GET.Blue}, Gold ${CBHub.INK_GET.Gold}; more for ranked cards), then buy cards: normal price for ones you have owned before, ${CBHub.INK_UNSEEN}x for ones you haven't found yet.</span><button class="btn primary" id="btnInkShop">Buy cards with Ink</button></div>
@@ -8233,8 +8237,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794690808309';
-  const CB_BUILD = '7bfab27251'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794691133258';
+  const CB_BUILD = '3641ac94f2'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -9351,6 +9355,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Interface', "Following a build: on the deck screen and at the Scribe, every card your build uses now wears a gold Build marker (with the number of copies when it wants more than one), in your deck and in your collection."],
       ['Interface', "Following a build: on the talent screen, the talent your build picks on each row now wears a gold Build marker, so you know which one to take when you level."],
       ['Fix', "Full bags no longer destroy loot. If the gear you bring home from a run will not fit, a sorting screen opens before you return to camp: mark gear to salvage, from the run or from your bags, until everything fits. Cards and gold never use bag space."],
       ['Interface', "Following a build: the tracker now lists what to go after in order. The codex comes first, then the Gold cards, then the maps, starting with the map that has the most different cards you still need (the count is shown next to the map's name)."],
