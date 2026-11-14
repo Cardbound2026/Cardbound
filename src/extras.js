@@ -79,6 +79,7 @@
     .dyerow button em { position: absolute; right: -5px; bottom: -6px; font: 600 10px/1 sans-serif; font-style: normal; color: #fff; background: #0b0a08; border-radius: 6px; padding: 1px 3px; }
     .dyeslots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 6px; } .dyeslots button { font: inherit; font-size: 13px; padding: 5px 4px; border: 1px solid #4a3d28; border-radius: 3px; background: rgba(10,9,8,.5); color: #d8cdb8; cursor: pointer; display: flex; gap: 5px; align-items: center; justify-content: center; }
     .dyeslots button i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #000; }
+    .bagbar > .baggold { margin-left: auto; display: inline-flex; align-items: center; gap: 7px; padding: 5px 14px 5px 8px; border: 1px solid #8a653d; border-radius: 6px; background: #120e0b; color: #d9c9a8; font-size: 14px; box-shadow: inset 0 0 0 1px #000; } .baggold i { width: 28px; height: 28px; background: url(img/ui/gold.webp) 25% 50% / 500% 100% no-repeat; image-rendering: pixelated; } .baggold b { color: #ffd76a; font-size: 18px; font-variant-numeric: tabular-nums; }
     .bagbar { display: flex; gap: 6px; align-items: center; margin: 0 0 8px; flex-wrap: wrap; } .bagbar > span { color: #b9ad96; font-size: 13px; }
     .bagslot { width: 46px; height: 46px; border: 1px solid #4a3d28; border-radius: 4px; background: rgba(10,9,8,.55); display: grid; place-items: center; position: relative; cursor: pointer; padding: 0; color: #6f6654; font-size: 20px; }
     .bagslot.full { border-color: var(--rc, #d6a14a); } .bagslot em { position: absolute; right: 2px; bottom: 1px; font: 600 11px/1 sans-serif; font-style: normal; color: #fff; text-shadow: 0 1px 0 #000, 0 0 3px #000; }
@@ -272,7 +273,7 @@
     const col = { 5: 0, 10: 1, 15: 2, 20: 3, 30: 4 };
     let h = `<div class="bagbar"><span>${where === 'bank' ? 'Bank' : 'Bag'} slots</span>`;
     for (let i = 0; i < n; i++) { const b = list[i]; h += b ? `<button type="button" class="bagslot full" style="--rc:${RC[b.rarity] || '#d6a14a'}" data-exunbag="${where}:${i}" title="${esc(b.name)}: ${b.bag} slots. Click to take it out."><i class="bagic" style="background-position:${-(col[b.bag] || 0) * 40}px -80px"></i><em>${b.bag}</em></button>` : `<button type="button" class="bagslot" data-exbagslot="${where}" title="Empty bag slot. Click to put a bag from your bags in here.">+</button>`; }
-    return h + `<span>${base} + ${list.reduce((t, b) => t + (b ? b.bag : 0), 0)} from bags</span></div>`;
+    return h + `<span>${base} + ${list.reduce((t, b) => t + (b ? b.bag : 0), 0)} from bags</span>${where === 'bank' ? '' : `<span class="baggold" title="Your gold"><i></i><b>${(profile.gold || 0).toLocaleString()}</b> gold</span>`}</div>`;   /* Nov 13: your gold has its own box beside the bag slots */
   }
   document.addEventListener('click', (ev) => {
     const b = ev.target.closest('[data-exunbag], [data-exbagslot], [data-exbagput]'); if (!b || !profile) return; let r = null;

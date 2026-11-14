@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-13', items: [
+      ['Interface', "Your gold has its own box on the character screen, beside the bag slots."],
       ['Interface', "The light on loot chests is softer: no hard line where it starts, and a fifth dimmer."],
       ['Interface', "Poison, Bleed, Burn and Dread each explain themselves in full when you hover them, with an example, instead of saying 'like Bleed' or 'like Poison'."],
       ['Art', "Skull Shop: four new auras (Circling Skull, Poison Cloud, Blood Rain, Golden Orb), Poison and Holy footsteps, and Wings are now Back cosmetics with eight new things to carry: a gravestone, a poison flask, bloody crossed swords, a chained coffin, a skull war banner, a sack of loot, a rusty anchor and an ale keg."],
