@@ -82,6 +82,7 @@
     const gear = { Chest: set, Pants: set, Boots: set, Belt: set }; if (guard) Object.assign(gear, { Shoulders: set, Gloves: set, Bracers: set }, pal.helm === 'helm' ? { Helm: set } : {}); else if ((h >>> 11) % 3 === 0) gear.Shoulders = set; if (pal.helm === 'hood') gear.Helm = /Cloth/.test(set) ? set : 'physical_Cloth'; else if (pal.helm === 'cap') gear.Helm = /Leather/.test(set) ? set : 'physical_Leather';
     L = { body, skin, eyes: (h >>> 5) % P.EYES, eyeCol: (h >>> 9) % 4, mouth: (h >>> 13) % P.MOUTHS, lipCol: body === 'female' ? (h >>> 15) % 3 : 0, hair: pal.helm === 'helm' ? 'short' : pick(P.HAIR, 17), hairCol: hl > 200 ? 5 : hl > 150 ? 3 : hl > 110 ? 6 : hl > 70 ? 2 : (h >>> 19) % 2, beard: body !== 'female' && (h >>> 21) % 3 === 0 ? pick(P.BEARDS, 23) : null, gear };
     if (pal.helm === 'helm') L.weapon = ['sword1h', 0], L.off = ['kite', 0]; else if ((h >>> 25) % 5 === 0) L.cloak = (h >>> 27) % 4;
+    if (pal.look) Object.assign(L, pal.look);   // Nov 14: a townsperson can ask for an exact look (Chef Brookt's braids and axe)
     NPC.set(pal, L); return L;
   }
   function npc(g, pal, cx, by, dir, step, s, t) {

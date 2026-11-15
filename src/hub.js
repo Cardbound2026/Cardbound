@@ -17,6 +17,13 @@ function equipBag(p, itemId, where) { const list = where === 'bank' ? (p.bankBag
 function unequipBag(p, where, at) { const list = where === 'bank' ? (p.bankBags = p.bankBags || []) : (p.bags = p.bags || []), b = list[at]; if (!b) return { ok: false, why: 'No bag there.' }; const cur = where === 'bank' ? (p.vault || []).length : p.stash.length, cap = (where === 'bank' ? VAULT_MAX : STASH_MAX) - b.bag; if (cur > cap) return { ok: false, why: `Take ${cur - cap} item${cur - cap === 1 ? '' : 's'} out first: that bag is holding them.` }; if (p.stash.length + 1 > STASH_MAX - (where === 'bank' ? 0 : b.bag)) return { ok: false, why: 'No room in your bags for the bag itself.' }; list[at] = null; while (list.length && !list[list.length - 1]) list.pop(); syncCaps(p); p.stash.unshift(b); return { ok: true }; }
 // ---------- Nov 13: Skull Tokens (the shop's currency), and what an account owns: mounts, pets, cosmetics, dyes
 function own(p) { const o = p.own = p.own || {}; o.mounts = o.mounts || ['horse']; o.pets = o.pets || []; o.cos = o.cos || []; o.dyes = o.dyes || {}; if (!o.mounts.includes('horse')) o.mounts.unshift('horse'); return o; }
+// Nov 14: Chef Brookt. p.recipes = { recipe key: [strengths known] } for the whole account; a hero's packed meal is c.meal = { k, t }, eaten on the next map
+function grantRecipe(p, k, t) { if (!CB.FOOD_BY[k]) return false; const R = p.recipes = p.recipes || {}, a = R[k] = R[k] || []; if (a.includes(t)) return false; a.push(t); a.sort(); p.newRecipes = (p.newRecipes || []).concat([[k, t]]); return true; }
+function knowsRecipe(p, k, t) { return !!((p.recipes || {})[k] || []).includes(t); }
+function buyMeal(p, key, k, t) { const c = char(p, key), f = CB.FOOD_BY[k]; if (!c || !f) return { ok: false, why: 'No such dish.' }; if (!knowsRecipe(p, k, t)) return { ok: false, why: 'Brookt needs the recipe first.' };
+  useStash(p, key); const cost = CB.FOOD_PRICE[t]; if ((p.gold || 0) < cost) return { ok: false, why: `That is ${cost} gold. You have ${p.gold || 0}.` };
+  p.gold -= cost; c.meal = { k, t }; bump(p, 'meals'); return { ok: true, cost }; }
+const mealItem = (c) => c && c.meal ? CB.foodItem(c.meal.k, c.meal.t) : null;
 function grantPet(p, key) { const o = own(p); if (o.pets.includes(key)) return false; o.pets.push(key); p.newPets = (p.newPets || []).concat(key); return true; }
 // Hall of Records seasons (Nov 2): the board shows one season at a time. To start a new season, add it here and set SEASON.
 const SEASONS = [{ id: '0.01', name: 'Season 0.01' }, { id: '0.02', name: 'Season 0.02' }];
@@ -518,9 +525,10 @@ function resetTalents(p, key, cx) { const c = char(p, key); if (!c) return; code
 function talentSpec(c) { const cx = wornCodex(c); if (!cx) return undefined; const info = codexInfo(c, cx); return { codex: cx, picks: info.picks.slice(0, info.rows) }; }
 function partyOpts(p, classes) {
   useStash(p, classes[0]); // a party is all hardcore or all normal heroes: the leader's wallet pays
-  return { sharedBank: true, members: classes.map((key, i) => { const c = char(p, key); return { key, cls: c.cls, name: c.name || c.cls, bank: i === 0 ? p.gold : 0, stashFree: Math.max(0, STASH_MAX - stashFor(p, c).length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }) };
+  return { sharedBank: true, members: classes.map((key, i) => { const c = char(p, key); return { key, cls: c.cls, name: c.name || c.cls, bank: i === 0 ? p.gold : 0, stashFree: Math.max(0, STASH_MAX - stashFor(p, c).length), gear: c.gear.map(g => Object.assign({}, g)).concat(mealItem(c) || []), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }) };
 }
-function runOpts(p, key) { useStash(p, key); const c = char(p, key); return { key, cls: c.cls, members: undefined, name: c.name, bank: p.gold, stashFree: Math.max(0, STASH_MAX - stashFor(p, c).length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }
+function runOpts(p, key, meal) { useStash(p, key); const c = char(p, key); const o = runOpts0(p, key, c); if (meal) { const m = mealItem(c); if (m) o.gear.push(m); } return o; }   /* meal: this is a map run, so the hero's packed meal rides along as one more item (Nov 14) */
+function runOpts0(p, key, c) { return { key, cls: c.cls, members: undefined, name: c.name, bank: p.gold, stashFree: Math.max(0, STASH_MAX - stashFor(p, c).length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }
 // Bring a finished run home: equipped gear (incl. merchant buys) stays on the character; kept loot goes to stash/collection.
 // ---------- The Chronicle (Nov 14): lifetime numbers kept on each hero in c.life, shown as a book (src/statbook.js) and sent when inspected.
 //   t / tr   seconds played / of those, in a run (ticked by the page while it is visible)
@@ -556,7 +564,8 @@ function absorbRun(p, run, mi) {
   const mem = run.members ? run.members[mi || 0] : run;
   const c = char(p, mem.key || mem.cls); if (!c) return { items: 0, cards: 0, gold: 0, lost: 0, ordered: 0 };
   useStash(p, mem.key || mem.cls); // this hero's stash, gold and Ink (hardcore heroes have their own)
-  c.gear = mem.gear.map(g => Object.assign({ id: g.id || uid('g') }, g));
+  if (mem.gear.some(g => g && g.slot === 'Food')) delete c.meal;   // the meal was eaten on this map
+  c.gear = mem.gear.filter(g => g && g.slot !== 'Food').map(g => Object.assign({ id: g.id || uid('g') }, g));
   const kept = mem.kept || { items: [], gold: 0 };
   let lost = 0, items = 0, cards = 0, ordered = 0;
   p.gold = Math.max(0, p.gold - (mem.spent || 0));
@@ -570,6 +579,7 @@ function absorbRun(p, run, mi) {
     else lost++;
   }
   p.gold += kept.gold;
+  for (const [k, t] of mem.recipes || []) grantRecipe(p, k, t); mem.recipes = [];   // a recipe is yours whatever happens to the sack
   for (const k of mem.pets || []) grantPet(p, k); mem.pets = []; // Nov 13: a pet that dropped is yours whatever happens to the sack
   // codex XP from this run's kills; +10% for every codex this hero has maxed
   const xpGain = {}; { const bonus = 1 + 0.1 * maxedCodexes(c); for (const [cx, v] of Object.entries(mem.cxp || {})) { if (!CB.CODEX_BY_KEY[cx]) continue; const st = codexState(c, cx), before = CB.codexLevel(st.xp).level, g = Math.round(v * bonus); st.xp += g; xpGain[cx] = { xp: g, from: before, to: CB.codexLevel(st.xp).level }; } }
@@ -598,7 +608,7 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk, ach };
 }
 
-const API = { pvpOf, pvpRank, pvpDelta, pvpApply, PVP_START, lifeOf, lifeSeed, LIFE_MAPS, shopCards, buyShopCard, makeBag, bagSizeFor, syncCaps, equipBag, unequipBag, own, grantPet, BAG_BASE, BANK_BASE, BAG_SLOTS, BANK_BAG_SLOTS, defWord, defText, titleAfter, titled, staffShield, toVault, fromVault, ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { grantRecipe, knowsRecipe, buyMeal, mealItem, pvpOf, pvpRank, pvpDelta, pvpApply, PVP_START, lifeOf, lifeSeed, LIFE_MAPS, shopCards, buyShopCard, makeBag, bagSizeFor, syncCaps, equipBag, unequipBag, own, grantPet, BAG_BASE, BANK_BASE, BAG_SLOTS, BANK_BAG_SLOTS, defWord, defText, titleAfter, titled, staffShield, toVault, fromVault, ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 Object.defineProperty(API, 'STASH_MAX', { get: () => STASH_MAX, enumerable: true }); Object.defineProperty(API, 'VAULT_MAX', { get: () => VAULT_MAX, enumerable: true });
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);

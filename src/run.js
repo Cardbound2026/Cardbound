@@ -312,7 +312,7 @@ class Run {
       } else { m.hp = Math.min(pl.hp, m.stats.maxHp); m.mana = pl.mana; } // talent max-HP buffs last for the fight only
       { const F = m.feat = m.feat || { lost: 0 }; F.lost += pl.fxLost || 0; if (n.type === 'boss') { F.bossClean = !(pl.fxHealed > 0) && !(pl.fxDef > 0); F.bossLost = pl.fxLost || 0; F.bossTypes = Object.assign({}, pl.fxTypes || {}); F.bossDot = pl.fxDot || 0; F.bossDealt = pl.fxDealt || 0; F.bossRounds = cb.round; F.bossHpPct = Math.round(100 * Math.max(0, pl.hp) / Math.max(1, pl.maxHp)); F.bossRes = (pl.resist || {})[((this.data.maps || {})[this.mapKey || 'physical'] || {}).element] || 0; F.bossDiedRound = pl.diedRound == null ? null : pl.diedRound; } } // Nov 2: for achievements (HP lost all run; the boss fight with no healing or defense)
       const regen = Math.round((m.stats.healthRegen + this.partyTalent('partyHealthRegen')) * (1 + (m.stats.spirit || 0) / 100)); if (regen && !fell) m.hp = Math.min(m.stats.maxHp, m.hp + regen); // Spirit boosts healing received
-      const drops = []; let gold = 0;
+      const drops = [], recipes = []; let gold = 0;
       for (const e of cb.enemies) {  // every hero rolls their own loot
         if (e.noLoot) continue; // the rest of a group: the group's first body rolls its loot
         for (let k = 0, kn = (e.enraged ? 2 : 1) + (this.coopBonus() && this.rng() < 0.2 * this.coopBonus() ? 1 : 0); k < kn; k++) { // an Enraged elite drops everything twice; in a party each extra hero adds a 20% chance of one more roll
@@ -322,11 +322,12 @@ class Run {
           const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * goldMult(this.level) * (k < (e.enraged ? 2 : 1) ? 1 + 0.2 * this.coopBonus() : 0));   /* the bonus roll is loot only; gold gets its own +20% per extra hero */
         }
         { const tier = this.data.enemies[e.key].tier, ch = tier === 'Boss' ? 0.2 : tier === 'Elite' ? 0.04 : 0.006; if (this.rng() < ch) drops.push(bagDrop(this.level)); // Nov 13: a bag (its size goes by the map level; named when it reaches your bags)
-          if (this.rng() < 1 / 1000) (m.pets = m.pets || []).push(e.key); } // Nov 13: 1 in 1000: a miniature of the monster follows you home as a pet
+          if (this.rng() < 1 / 1000) (m.pets = m.pets || []).push(e.key); }
+        { const fd = CB.foodDrop(this.data, this.rng, e.key, this.level); if (fd) { (m.recipes = m.recipes || []).push(fd); recipes.push(fd); this.note(`${this.solo ? 'You find' : m.name + ' finds'} a recipe on the ${this.data.enemies[e.key].name}: ${CB.FOOD_BY[fd[0]].name} ${CB.FOOD_RANK[fd[1]]}. Chef Brookt will want to see it.`); } }   // Nov 14: recipes for Chef Brookt // Nov 13: 1 in 1000: a miniature of the monster follows you home as a pet
         if (e.enraged) { const pool = this.data.enemies[e.key].pool; if (pool && pool.length) { const it = rollItem(this.data, this.rng, pool[Math.floor(this.rng() * pool.length)], this.rng() < 0.25 * (1 + this.luck(m) / 100) ? 'Purple (Epic)' : 'Blue', this.level); if (it) drops.push(it); } } // plus a guaranteed Blue, 25% Epic
       }
       m.sack.push(...drops); m.gold += gold;
-      per.push({ drops, gold, fell });
+      per.push({ drops, gold, fell, recipes });
       const nCards = drops.filter(d => d.kind === 'card').length, nGear = drops.length - nCards;
       this.note(`${this.solo ? 'Won' : m.name + ': won'} in ${cb.round} rounds with ${m.hp}/${m.stats.maxHp} HP. Loot: ${nGear} item${nGear === 1 ? '' : 's'}, ${nCards} card${nCards === 1 ? '' : 's'}, ${gold} gold.`);
     });

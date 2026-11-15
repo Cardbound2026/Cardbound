@@ -165,6 +165,14 @@ body:has(#bagPeek) .gtip:not(.bagpop) { display: none !important; }
 .runmain { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 12px; align-items: start; }
 @media (max-width: 980px) { .runmain { grid-template-columns: minmax(0, 1fr); } }
 .mapwrap { position: relative; }
+.foodico { flex: none; display: inline-block; width: 48px; height: 48px; border-radius: 6px; background: #14100c center / 40px 40px no-repeat; box-shadow: inset 0 0 0 1px #4a3a28; image-rendering: pixelated; }
+.chefmeal { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 8px 12px; margin: 0 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel2); font-size: 14.5px; }
+.cheflist { display: grid; gap: 6px; max-height: 56vh; overflow: auto; padding-right: 4px; } .chefrow { display: flex; align-items: center; gap: 12px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: rgba(0,0,0,.18); } .chefrow.unk .foodico { filter: grayscale(1) brightness(.5); } .chefrow.unk .chefinfo b { color: var(--muted); }
+.chefinfo { flex: 1; min-width: 0; display: grid; gap: 2px; } .chefinfo b { font-size: 16px; } .chefinfo small { font-size: 12.5px; line-height: 1.35; }
+.cheftiers { flex: none; display: grid; grid-template-columns: repeat(4, 118px); gap: 5px; } .cheftiers > * { display: grid; gap: 1px; justify-items: center; padding: 4px 4px; font-size: 12px; line-height: 1.2; text-align: center; border-radius: 5px; min-height: 46px; align-content: center; } .cheftiers small { font-size: 11px; opacity: .8; } #modalBox .cheftiers .btn { font: 600 12px / 1.2 var(--f-ui) !important; text-transform: none !important; letter-spacing: 0 !important; font-variant: normal !important; white-space: normal !important; padding: 4px !important; min-width: 0; overflow: hidden; } #modalBox .cheftiers .btn small { font: 500 11px / 1.2 var(--f-ui) !important; font-variant: normal !important; text-transform: none !important; } .cheftiers b { font-size: 12px; }
+.cheflock { border: 1px dashed #3a3026; color: #6f6252; } @media (max-width: 900px) { .chefrow { flex-wrap: wrap; } .cheftiers { grid-template-columns: repeat(2, 1fr); width: 100%; } }
+/* the in-map merchant: cards for sale sit further apart and grow upward, so a card under the pointer never covers its own Buy button */
+.shopcards { gap: 26px 30px !important; padding: 34px 26px 4px; } .shopcard > :first-child { transform-origin: 50% 100% !important; } .shopcard > :first-child:hover { transform: scale(1.6) !important; }
 .votering { filter: drop-shadow(0 0 5px currentColor); animation: votepulse 1.2s ease-in-out infinite; } @keyframes votepulse { 50% { stroke-opacity: .45; } }
 #mapParty { position: absolute; left: 8px; top: 52px; z-index: 4; display: grid; gap: 4px; pointer-events: none; } #mapParty[hidden] { display: none; }
 #mapParty .uf { background: rgba(10,8,6,.6); position: relative; } #mapParty .uf.gone { opacity: .4; filter: grayscale(1); }
@@ -950,6 +958,8 @@ body.inkui:not(.ui-classic) .item.itm .acts .btn:disabled { opacity: .45; filter
 
 /* modal */
 .modal { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(8,6,4,.74); z-index: 20; padding: 16px; }
+#invPop { position: fixed; inset: 0; z-index: 9000; display: grid; place-items: center; background: rgba(8,6,4,.55); padding: 16px; } #invPop[hidden] { display: none; }
+#invPop .invbox { width: min(420px, 100%); padding: 18px 22px; text-align: center; background: var(--panel); border: 2px solid var(--accent); border-radius: 10px; box-shadow: 0 12px 40px rgba(0,0,0,.8), 0 0 24px rgba(214,161,74,.35); } #invPop h2 { margin: 0 0 6px; color: var(--accent); } #invPop p { margin: 0 0 10px; font-size: 16px; } #invPop .row { justify-content: center; }
 .modal .box { background: var(--panel); border: 1px solid var(--accent); border-radius: 10px; padding: 20px 22px; width: min(660px, 100%); max-height: calc(100vh - 32px); overflow: auto; display: grid; gap: 12px; }
 .modal h2 { font-size: 38px; color: var(--accent); }
 .modal h2.loss { color: var(--hp); }
@@ -3516,7 +3526,7 @@ class Combat {
     this.partyScale = this.raid ? this.partySize : 1 + (this.opts.partyStep != null ? this.opts.partyStep : 0.85) * (this.partySize - 1); // 1 when a party fight brings one monster per hero instead // each extra hero: enemies get +85% HP, mana and regen, and +1 draw
     this.hpMult = Math.pow(1.5, this.level) * this.partyScale * (this.opts.mobHp || 1); this.dmgMult = Math.pow(1.3, this.level) * (this.opts.mobDmg || 1); // mobDmg: a party on a +0 map takes 10% less (run.js) // mobHp: extra HP when a party meets one monster per hero
     this.levelHpMult = Math.pow(1.5, this.level);
-    this.typeResist = Math.min(1, 0.05 + 0.05 * this.level);
+    this.typeResist = this.level > 0 ? Math.min(1, 0.05 + 0.05 * this.level) : 0;   // Nov 14: no resistance at all on +0 maps (a Fire mage can farm the Fire road); it starts at +1
     this.duel = !!this.opts.duel; // duel: two heroes, no monsters; each hero's "enemies" are the other hero
     // a group (wolf pack, bandit party...) fills one enemy slot with GROUP_N bodies; only the first one carries the loot
     const slots = []; if (!this.duel) for (const key of this.opts.enemies) { const d = this.data.enemies[key]; if (d && d.group) for (let j = 0; j < d.group; j++) slots.push([key, j]); else slots.push([key, -1]); }
@@ -3754,7 +3764,10 @@ class Combat {
   }
   // paying HP can kill you (Oct 31): the card still finishes, then you fall. Divine Intervention-style 'cannot fall' still holds at 1
   loseHp(p, n, label) { const b0 = p.hp; if (p.isPlayer && n > 0) p.fxLost = (p.fxLost || 0) + Math.min(n, p.hp); p.hp = (p.until && p.until.noDie) || this.hasTimed(p, 'noDie') ? Math.max(1, p.hp - n) : Math.max(0, p.hp - n); if (p.debtUser) p.bloodDebt += Math.round((b0 - p.hp) * (this.has(p, 'pay_in_blood') ? 1 + this.upN(p, 'pay_in_blood', 0, 50) / 100 : 1)); p.dmgRound += b0 - p.hp; this.say('player', `${this.who(p)} lose${this.partySize > 1 ? 's' : ''} ${n} HP (${label}). HP ${p.hp}/${p.maxHp}.`); this.fire(p, 'loseHp'); if (p.hp <= 0) { if (this._playing) this._pendingDeath = p; else this.onDeath(p); } }
-  cleanse(p, n) { let left = n, removed = 0; for (const k of ['vulnerable', 'weak', 'bleed', 'poison', 'burn', 'dread', 'rot', 'slow', 'chill']) if (left > 0 && p[k]) { removed += p[k]; p[k] = 0; if (k === 'rot') p.rotQ = []; left--; } if (left > 0) p.disarmNext = false; this.say('player', removed ? `${this.who(p)}: debuffs removed.` : 'No debuffs to remove.'); this.fire(p, 'onCleanse', removed); }
+  cleanse(p, n) { let left = n, removed = 0; const DOT = ['burn', 'poison', 'bleed', 'dread', 'rot'], names = [];   // Nov 14: "remove one debuff" takes a whole debuff off, every stack of it, and goes for the worst one first: the biggest damage over time, then the rest
+    const ks = DOT.filter(k => p[k] > 0).sort((a, b) => p[b] - p[a]).concat(['vulnerable', 'weak', 'slow', 'chill', 'unwarded', 'exposure', 'magicVuln', 'condemn'].filter(k => p[k] > 0));
+    for (const k of ks) if (left > 0) { removed += p[k]; names.push(`${k === 'magicVuln' ? 'Magic Vulnerability' : k[0].toUpperCase() + k.slice(1)} (${p[k]})`); p[k] = 0; if (k === 'rot') p.rotQ = []; left--; }
+    if (left > 0) p.disarmNext = false; this.say('player', removed ? `${this.who(p)}: ${names.join(', ')} removed.` : 'No debuffs to remove.'); this.fire(p, 'onCleanse', removed); }
   powerHit(p, e, n, label, dtype, kind) {
     const keep = [this._playing, this.player, this._rankMult, this._attackMult, this._skillMult, this._cmult];
     this._playing = { type: kind, dtype, tags: {}, name: label, isPower: true }; this.player = p; this._rankMult = this._rk; this._rk = this._pwRk || null; this._attackMult = 1; this._skillMult = 1; this._cmult = 1;
@@ -5171,7 +5184,40 @@ CARDS_READY = true; if (DATA && DATA.gear) namedLoot(DATA);
 // Nov 13: 1H maces made before the change swap their Holy Damage implicit for Multi-hit and Multicast (a quarter of the Holy number each, at least 1)
 function maceFix(it) { if (!it || !it.imp2 || !(it.arch === '1H Mace' || it.label === '1H Mace' || /^(Flanged|Ember|Snowdrift|Fernleaf|Leyforged|Ashbone) Mace$/.test(it.name || ''))) return false; const v = it.imp2['Elemental/Holy Damage:Holy']; if (v == null) return false;
   delete it.imp2['Elemental/Holy Damage:Holy']; const n = Math.max(1, Math.round(v / 4 * 0.7)); it.r5 = 1; it.imp2['Multi-hit Chance'] = n; it.imp2['Multicast Chance'] = n; return true; }
-const API = { maceFix, STARTER_KITS, staffShieldOk, legalGear, CODEX_NEEDS, codexNeed, weaponSetup, CODEX_TOKEN_CHANCE, bossCodexPct, BOSS_CODEX_BARE, GROUPS, groupData, itemRules, rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
+// Nov 14: Chef Brookt's kitchen. A recipe drops (rarely) from the monsters it is cooked from; its strength goes by the map level it dropped on.
+// A meal is one extra "item" a hero carries for one whole map (slot 'Food'), so every stat works exactly as it does on gear.
+const FOOD_BANDS = [[0, 3], [4, 7], [8, 11], [12, 99]], FOOD_PRICE = [50, 125, 250, 500], FOOD_DROP = 0.06, FOOD_RANK = ['I', 'II', 'III', 'IV'];
+const P5 = [5, 10, 15, 20], R10 = [10, 20, 30, 40], S3 = [3, 6, 9, 12];
+const FOODS = [
+  { k: 'wolf', name: 'Flame-Broiled Wolf', stat: 'Crit Chance', v: P5, from: ['Dire Wolf', 'Ice Wolf', 'Briar Wolf'], what: 'wolves', blurb: 'Charred outside, red inside. You start looking for the soft spots.' },
+  { k: 'panther', name: 'Panther Skewers', stat: 'Multi-hit Chance', v: P5, from: ['Blink Panther', 'Snow Leopard', 'Jungle Stalker'], what: 'great cats', blurb: 'Lean meat off a fast animal. Your hands keep moving after the first swing.' },
+  { k: 'turtle', name: 'Turtle Soup', stat: 'Dexterity', v: P5, from: ['Glacier Shell', 'Bog Lurker'], what: 'shelled things', blurb: 'Slow-simmered in its own shell. You feel harder to get at.' },
+  { k: 'boar', name: 'Honey-Glazed Boar Ribs', stat: 'Strength', v: P5, from: ['Bristleback Boar', 'Thornback Behemoth'], what: 'boars and bristlebacks', blurb: 'A whole rack. You will hit like the boar did.' },
+  { k: 'wisp', name: 'Candied Mana Wisp', stat: 'Intelligence', v: P5, from: ['Mana Wisp', 'Snow Sprite'], what: 'wisps and sprites', blurb: 'It fizzes on the tongue and behind the eyes.' },
+  { k: 'toad', name: 'Herb-Stuffed Toad', stat: 'Spirit', v: P5, from: ['Spitting Toad', 'Salamander'], what: 'toads and salamanders', blurb: 'Bitter herbs, clean broth. Every mend goes further.' },
+  { k: 'bear', name: 'Bear Stew', stat: 'Stamina', v: [15, 30, 45, 60], from: ['Cave Bear', 'Yeti Cub', 'Mammoth'], what: 'bears and other big beasts', blurb: 'Sticks to your ribs. Then pads them.' },
+  { k: 'hell', name: 'Hellhound Chili', stat: 'Crit Damage', v: [15, 30, 45, 60], from: ['Hellhound Alpha', 'Ash Imp'], what: 'hellhounds and imps', blurb: 'It hurts going down. So will you.' },
+  { k: 'wasp', name: 'Wasp Honey Cake', stat: 'Multicast Chance', v: P5, from: ['Giant Wasp', 'Broodmother Spider'], what: 'giant wasps and spiders', blurb: 'Sweet, sticky and buzzing. One spell is never enough.' },
+  { k: 'hound', name: 'Scrap Hound Hash', stat: 'Multiplay Chance', v: P5, from: ['Scrap Hound', 'Crypt Hound', 'Cinder Hound'], what: 'hounds', blurb: 'Leftovers fried twice. Somehow there is always a second helping.' },
+  { k: 'bat', name: 'Fried Bat Wings', stat: 'Initiative', v: S3, from: ['Gloom Bat', 'Werewolf Marauder'], what: 'bats and werewolves', blurb: 'Crisp and gone in a blink. So are you.' },
+  { k: 'vamp', name: 'Blood Sausage', stat: 'Lifesteal', v: S3, from: ['Vampire Spawn', 'Ghoul'], what: 'vampires and ghouls', blurb: 'Brookt will not say what is in it. It works.' },
+  { k: 'ogre', name: "Ogre's Feast", stat: 'Health Regen', v: P5, from: ['Siegebreaker Ogre', 'Obsidian Brute', 'Frost Giant', 'Frost Troll'], what: 'ogres, trolls and giants', blurb: 'Enough for a giant. You heal like one between fights.' },
+  { k: 'bramble', name: 'Bramble Berry Tart', stat: 'Thorns', v: S3, from: ['Elder Bramble', 'Ironbark Treant'], what: 'brambles and treants', blurb: 'Mind the thorns. Brookt left a few in on purpose.' },
+  { k: 'thief', name: "Thief's Trail Mix", stat: 'Luck', v: P5, from: ['Camp Thief', 'Ember Thief', 'Scroll Thief', 'Grave Robber'], what: 'thieves and robbers', blurb: 'Nuts, dried fruit and somebody else\'s lucky coin.' },
+  { k: 'tea', name: "Magister's Tea Cakes", stat: 'Max Mana', v: R10, from: ['Spire Magister', 'Failed Apprentice'], what: 'the mages of the Spire', blurb: 'Small, dry and exact. Your head feels roomier.' },
+  { k: 'drake', name: 'Spiced Drake Wings', stat: 'Resistance:Fire', v: R10, from: ['Blaze Drake', 'Lava Slug'], what: 'drakes and lava slugs', blurb: 'After these, a little fire is nothing.' },
+  { k: 'wendigo', name: 'Winter Root Stew', stat: 'Resistance:Frost', v: R10, from: ['Wendigo', 'Frostbitten Scout'], what: 'wendigos and frozen scouts', blurb: 'Hot enough to keep the long winter out.' },
+  { k: 'mush', name: 'Mushroom Ragout', stat: 'Resistance:Nature', v: R10, from: ['Spore Shambler', 'Sapling Guardian'], what: 'shamblers and saplings', blurb: 'A little poison in every bite. You get used to it.' },
+  { k: 'ley', name: 'Ley Hound Jerky', stat: 'Resistance:Arcane', v: R10, from: ['Ley Hound', 'Spell-Eater Rat'], what: 'ley hounds and spell-eaters', blurb: 'Chewy, and it hums. Spells slide off you.' },
+  { k: 'rat', name: 'Crypt Rat Pie', stat: 'Resistance:Shadow', v: R10, from: ['Crypt Rat', 'Shade'], what: 'crypt rats and shades', blurb: 'Do not ask. The dark stops bothering you.' },
+];
+const FOOD_BY = Object.fromEntries(FOODS.map(f => [f.k, f]));
+const foodTier = (level) => { const i = FOOD_BANDS.findIndex(([a, b]) => level >= a && level <= b); return i < 0 ? 0 : i; };
+const foodStat = (f, t) => { const st = f.stat.startsWith('Resistance:') ? f.stat.slice(11) + ' Resistance' : f.stat, pct = !['Stamina', 'Max Mana', 'Initiative', 'Thorns', 'Health Regen', 'Luck'].includes(f.stat); return `+${f.v[t]}${pct ? '%' : ''} ${st === 'Stamina' ? 'max HP' : st}`; };
+function foodItem(k, t) { const f = FOOD_BY[k]; if (!f || !(t >= 0 && t < 4)) return null; return { slot: 'Food', kind: 'food', food: k, tier: t, name: `${f.name} ${FOOD_RANK[t]}`, rarity: 'Green', stats: { [f.stat]: f.v[t] }, r2: 1, r3: 1, r4: 1, r5: 1 }; }
+// one roll for every monster a recipe can come from; returns [recipe key, strength 0-3] or null
+function foodDrop(data, rng, enemyKey, level) { const e = data.enemies[enemyKey]; if (!e) return null; const pool = FOODS.filter(f => f.from.includes(e.name)); if (!pool.length) return null; if (rng() >= FOOD_DROP) return null; return [pool[Math.floor(rng() * pool.length)].k, foodTier(level)]; }
+const API = { FOODS, FOOD_BY, FOOD_BANDS, FOOD_PRICE, FOOD_RANK, FOOD_DROP, foodTier, foodStat, foodItem, foodDrop, maceFix, STARTER_KITS, staffShieldOk, legalGear, CODEX_NEEDS, codexNeed, weaponSetup, CODEX_TOKEN_CHANCE, bossCodexPct, BOSS_CODEX_BARE, GROUPS, groupData, itemRules, rerollPotential, rerollAffix, CODEX_TOKENS, DEMONS, gearData, SHOULDER_BASES, CARDS_VERSION: 2, REMOVED_CARDS, dropRemovedLoot, MANA_GEAR_CAP, gearRules, BOSS_CODEX_CHANCE, weaponFlat, PHYS_WEAPONS, RAID, RAID_NAMES, raidKey, raidBoss, ENEMY_PLAYER_OPS, STARTER_DECKS, STARTER_AMULETS, starterAmulet, rollNamedCards, CODEXES, CODEX_BY_KEY, makeCodex, CARD_DROPS, CARD_XP, RANK_BASE, DECK_CAPS, DECK_MIN, DECK_MAX, MAX_RANK, rankedCard, cardPool, GEN_OPS, POWERS, TALENTS, CODEX_MAX, CODEX_XP, KILL_XP, codexLevel, talentLuck, talentRun, rollCards, cardPoints, deckLevel, CARDS: C, CLASSES, STARTER_GEAR, presetGear, ELEMENTS, sumGear, Combat, parseEnemyCard, intentKind, BASE, rollItem, rollDrops, makeRng, shuffle, ri };
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CB = Object.assign(root.CB || {}, API);
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -5491,7 +5537,7 @@ class Run {
       } else { m.hp = Math.min(pl.hp, m.stats.maxHp); m.mana = pl.mana; } // talent max-HP buffs last for the fight only
       { const F = m.feat = m.feat || { lost: 0 }; F.lost += pl.fxLost || 0; if (n.type === 'boss') { F.bossClean = !(pl.fxHealed > 0) && !(pl.fxDef > 0); F.bossLost = pl.fxLost || 0; F.bossTypes = Object.assign({}, pl.fxTypes || {}); F.bossDot = pl.fxDot || 0; F.bossDealt = pl.fxDealt || 0; F.bossRounds = cb.round; F.bossHpPct = Math.round(100 * Math.max(0, pl.hp) / Math.max(1, pl.maxHp)); F.bossRes = (pl.resist || {})[((this.data.maps || {})[this.mapKey || 'physical'] || {}).element] || 0; F.bossDiedRound = pl.diedRound == null ? null : pl.diedRound; } } // Nov 2: for achievements (HP lost all run; the boss fight with no healing or defense)
       const regen = Math.round((m.stats.healthRegen + this.partyTalent('partyHealthRegen')) * (1 + (m.stats.spirit || 0) / 100)); if (regen && !fell) m.hp = Math.min(m.stats.maxHp, m.hp + regen); // Spirit boosts healing received
-      const drops = []; let gold = 0;
+      const drops = [], recipes = []; let gold = 0;
       for (const e of cb.enemies) {  // every hero rolls their own loot
         if (e.noLoot) continue; // the rest of a group: the group's first body rolls its loot
         for (let k = 0, kn = (e.enraged ? 2 : 1) + (this.coopBonus() && this.rng() < 0.2 * this.coopBonus() ? 1 : 0); k < kn; k++) { // an Enraged elite drops everything twice; in a party each extra hero adds a 20% chance of one more roll
@@ -5501,11 +5547,12 @@ class Run {
           const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * goldMult(this.level) * (k < (e.enraged ? 2 : 1) ? 1 + 0.2 * this.coopBonus() : 0));   /* the bonus roll is loot only; gold gets its own +20% per extra hero */
         }
         { const tier = this.data.enemies[e.key].tier, ch = tier === 'Boss' ? 0.2 : tier === 'Elite' ? 0.04 : 0.006; if (this.rng() < ch) drops.push(bagDrop(this.level)); // Nov 13: a bag (its size goes by the map level; named when it reaches your bags)
-          if (this.rng() < 1 / 1000) (m.pets = m.pets || []).push(e.key); } // Nov 13: 1 in 1000: a miniature of the monster follows you home as a pet
+          if (this.rng() < 1 / 1000) (m.pets = m.pets || []).push(e.key); }
+        { const fd = CB.foodDrop(this.data, this.rng, e.key, this.level); if (fd) { (m.recipes = m.recipes || []).push(fd); recipes.push(fd); this.note(`${this.solo ? 'You find' : m.name + ' finds'} a recipe on the ${this.data.enemies[e.key].name}: ${CB.FOOD_BY[fd[0]].name} ${CB.FOOD_RANK[fd[1]]}. Chef Brookt will want to see it.`); } }   // Nov 14: recipes for Chef Brookt // Nov 13: 1 in 1000: a miniature of the monster follows you home as a pet
         if (e.enraged) { const pool = this.data.enemies[e.key].pool; if (pool && pool.length) { const it = rollItem(this.data, this.rng, pool[Math.floor(this.rng() * pool.length)], this.rng() < 0.25 * (1 + this.luck(m) / 100) ? 'Purple (Epic)' : 'Blue', this.level); if (it) drops.push(it); } } // plus a guaranteed Blue, 25% Epic
       }
       m.sack.push(...drops); m.gold += gold;
-      per.push({ drops, gold, fell });
+      per.push({ drops, gold, fell, recipes });
       const nCards = drops.filter(d => d.kind === 'card').length, nGear = drops.length - nCards;
       this.note(`${this.solo ? 'Won' : m.name + ': won'} in ${cb.round} rounds with ${m.hp}/${m.stats.maxHp} HP. Loot: ${nGear} item${nGear === 1 ? '' : 's'}, ${nCards} card${nCards === 1 ? '' : 's'}, ${gold} gold.`);
     });
@@ -5620,6 +5667,13 @@ function equipBag(p, itemId, where) { const list = where === 'bank' ? (p.bankBag
 function unequipBag(p, where, at) { const list = where === 'bank' ? (p.bankBags = p.bankBags || []) : (p.bags = p.bags || []), b = list[at]; if (!b) return { ok: false, why: 'No bag there.' }; const cur = where === 'bank' ? (p.vault || []).length : p.stash.length, cap = (where === 'bank' ? VAULT_MAX : STASH_MAX) - b.bag; if (cur > cap) return { ok: false, why: `Take ${cur - cap} item${cur - cap === 1 ? '' : 's'} out first: that bag is holding them.` }; if (p.stash.length + 1 > STASH_MAX - (where === 'bank' ? 0 : b.bag)) return { ok: false, why: 'No room in your bags for the bag itself.' }; list[at] = null; while (list.length && !list[list.length - 1]) list.pop(); syncCaps(p); p.stash.unshift(b); return { ok: true }; }
 // ---------- Nov 13: Skull Tokens (the shop's currency), and what an account owns: mounts, pets, cosmetics, dyes
 function own(p) { const o = p.own = p.own || {}; o.mounts = o.mounts || ['horse']; o.pets = o.pets || []; o.cos = o.cos || []; o.dyes = o.dyes || {}; if (!o.mounts.includes('horse')) o.mounts.unshift('horse'); return o; }
+// Nov 14: Chef Brookt. p.recipes = { recipe key: [strengths known] } for the whole account; a hero's packed meal is c.meal = { k, t }, eaten on the next map
+function grantRecipe(p, k, t) { if (!CB.FOOD_BY[k]) return false; const R = p.recipes = p.recipes || {}, a = R[k] = R[k] || []; if (a.includes(t)) return false; a.push(t); a.sort(); p.newRecipes = (p.newRecipes || []).concat([[k, t]]); return true; }
+function knowsRecipe(p, k, t) { return !!((p.recipes || {})[k] || []).includes(t); }
+function buyMeal(p, key, k, t) { const c = char(p, key), f = CB.FOOD_BY[k]; if (!c || !f) return { ok: false, why: 'No such dish.' }; if (!knowsRecipe(p, k, t)) return { ok: false, why: 'Brookt needs the recipe first.' };
+  useStash(p, key); const cost = CB.FOOD_PRICE[t]; if ((p.gold || 0) < cost) return { ok: false, why: `That is ${cost} gold. You have ${p.gold || 0}.` };
+  p.gold -= cost; c.meal = { k, t }; bump(p, 'meals'); return { ok: true, cost }; }
+const mealItem = (c) => c && c.meal ? CB.foodItem(c.meal.k, c.meal.t) : null;
 function grantPet(p, key) { const o = own(p); if (o.pets.includes(key)) return false; o.pets.push(key); p.newPets = (p.newPets || []).concat(key); return true; }
 // Hall of Records seasons (Nov 2): the board shows one season at a time. To start a new season, add it here and set SEASON.
 const SEASONS = [{ id: '0.01', name: 'Season 0.01' }, { id: '0.02', name: 'Season 0.02' }];
@@ -6121,9 +6175,10 @@ function resetTalents(p, key, cx) { const c = char(p, key); if (!c) return; code
 function talentSpec(c) { const cx = wornCodex(c); if (!cx) return undefined; const info = codexInfo(c, cx); return { codex: cx, picks: info.picks.slice(0, info.rows) }; }
 function partyOpts(p, classes) {
   useStash(p, classes[0]); // a party is all hardcore or all normal heroes: the leader's wallet pays
-  return { sharedBank: true, members: classes.map((key, i) => { const c = char(p, key); return { key, cls: c.cls, name: c.name || c.cls, bank: i === 0 ? p.gold : 0, stashFree: Math.max(0, STASH_MAX - stashFor(p, c).length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }) };
+  return { sharedBank: true, members: classes.map((key, i) => { const c = char(p, key); return { key, cls: c.cls, name: c.name || c.cls, bank: i === 0 ? p.gold : 0, stashFree: Math.max(0, STASH_MAX - stashFor(p, c).length), gear: c.gear.map(g => Object.assign({}, g)).concat(mealItem(c) || []), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }) };
 }
-function runOpts(p, key) { useStash(p, key); const c = char(p, key); return { key, cls: c.cls, members: undefined, name: c.name, bank: p.gold, stashFree: Math.max(0, STASH_MAX - stashFor(p, c).length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }
+function runOpts(p, key, meal) { useStash(p, key); const c = char(p, key); const o = runOpts0(p, key, c); if (meal) { const m = mealItem(c); if (m) o.gear.push(m); } return o; }   /* meal: this is a map run, so the hero's packed meal rides along as one more item (Nov 14) */
+function runOpts0(p, key, c) { return { key, cls: c.cls, members: undefined, name: c.name, bank: p.gold, stashFree: Math.max(0, STASH_MAX - stashFor(p, c).length), gear: c.gear.map(g => Object.assign({}, g)), deck: c.deck.map(x => ({ key: x.key, rank: x.rank || 0 })), talents: talentSpec(c) }; }
 // Bring a finished run home: equipped gear (incl. merchant buys) stays on the character; kept loot goes to stash/collection.
 // ---------- The Chronicle (Nov 14): lifetime numbers kept on each hero in c.life, shown as a book (src/statbook.js) and sent when inspected.
 //   t / tr   seconds played / of those, in a run (ticked by the page while it is visible)
@@ -6159,7 +6214,8 @@ function absorbRun(p, run, mi) {
   const mem = run.members ? run.members[mi || 0] : run;
   const c = char(p, mem.key || mem.cls); if (!c) return { items: 0, cards: 0, gold: 0, lost: 0, ordered: 0 };
   useStash(p, mem.key || mem.cls); // this hero's stash, gold and Ink (hardcore heroes have their own)
-  c.gear = mem.gear.map(g => Object.assign({ id: g.id || uid('g') }, g));
+  if (mem.gear.some(g => g && g.slot === 'Food')) delete c.meal;   // the meal was eaten on this map
+  c.gear = mem.gear.filter(g => g && g.slot !== 'Food').map(g => Object.assign({ id: g.id || uid('g') }, g));
   const kept = mem.kept || { items: [], gold: 0 };
   let lost = 0, items = 0, cards = 0, ordered = 0;
   p.gold = Math.max(0, p.gold - (mem.spent || 0));
@@ -6173,6 +6229,7 @@ function absorbRun(p, run, mi) {
     else lost++;
   }
   p.gold += kept.gold;
+  for (const [k, t] of mem.recipes || []) grantRecipe(p, k, t); mem.recipes = [];   // a recipe is yours whatever happens to the sack
   for (const k of mem.pets || []) grantPet(p, k); mem.pets = []; // Nov 13: a pet that dropped is yours whatever happens to the sack
   // codex XP from this run's kills; +10% for every codex this hero has maxed
   const xpGain = {}; { const bonus = 1 + 0.1 * maxedCodexes(c); for (const [cx, v] of Object.entries(mem.cxp || {})) { if (!CB.CODEX_BY_KEY[cx]) continue; const st = codexState(c, cx), before = CB.codexLevel(st.xp).level, g = Math.round(v * bonus); st.xp += g; xpGain[cx] = { xp: g, from: before, to: CB.codexLevel(st.xp).level }; } }
@@ -6201,7 +6258,7 @@ function absorbRun(p, run, mi) {
   return { items, cards, gold: kept.gold, lost, ordered, xpGain, salvaged, salvGold, salvInk, ach };
 }
 
-const API = { pvpOf, pvpRank, pvpDelta, pvpApply, PVP_START, lifeOf, lifeSeed, LIFE_MAPS, shopCards, buyShopCard, makeBag, bagSizeFor, syncCaps, equipBag, unequipBag, own, grantPet, BAG_BASE, BANK_BASE, BAG_SLOTS, BANK_BAG_SLOTS, defWord, defText, titleAfter, titled, staffShield, toVault, fromVault, ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
+const API = { grantRecipe, knowsRecipe, buyMeal, mealItem, pvpOf, pvpRank, pvpDelta, pvpApply, PVP_START, lifeOf, lifeSeed, LIFE_MAPS, shopCards, buyShopCard, makeBag, bagSizeFor, syncCaps, equipBag, unequipBag, own, grantPet, BAG_BASE, BANK_BASE, BAG_SLOTS, BANK_BAG_SLOTS, defWord, defText, titleAfter, titled, staffShield, toVault, fromVault, ACH, ACH_BY, achCheck, achTake, bump, titleOf, setTitle, useStash, stashFor, SEASON, SEASONS, gearProfile, gearValue, itemPower, upgradeDelta, STATW, shopBasis, mapCleared, setOutCheck, arenaLock, findItem, breakCodex, rerollItem, noteMapBest, progressScore, INK_UNSEEN, INK_GET, INK_COST, inkValue, inkCost, breakCard, craftCard, beatMap, wornCodex, codexInfo, codexState, maxedCodexes, pickTalent, resetTalents, talentSpec, SLOTS, MAX_HEROES, clsOf, newProfile, fix, char, createChar, deleteChar, renameChar, nameProblem, gearScore, powerLevel, slotOptions, equip, unequip, salvage, salvageValue, deckCheck, refreshShop, shopDue, SHOP_RESTOCK_MS, buyShop, shopPrice, canAdd, addToDeck, removeFromDeck, feed, feedXp, rankCost, rankUp, runOpts, partyOpts, absorbRun };
 Object.defineProperty(API, 'STASH_MAX', { get: () => STASH_MAX, enumerable: true }); Object.defineProperty(API, 'VAULT_MAX', { get: () => VAULT_MAX, enumerable: true });
 if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.CBHub = API;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -6480,6 +6537,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
       <p class="savenote" style="margin:4px 0 0">${mapBlurb(mk)}</p>
       <div class="field" style="margin:8px 0"><label for="selLevel">Map ${M.num}: ${esc(M.name)} &middot; level <b id="lvlOut">+${lvl}</b></label><input type="range" id="selLevel" min="0" max="19" step="1" value="${lvl}"></div>
       <p class="savenote" id="lvlInfo"></p>
+      <p class="savenote" style="margin:2px 0 6px">${(() => { const c = profile.chars[heroKey]; return c && c.meal ? `Meal packed for ${esc(c.name)}: <b style="color:var(--accent)">${esc(mealText(c))}</b>. It lasts this whole map.` : 'No meal packed. Chef Brookt, by the Ember Mug, cooks one-map buffs from the recipes you find.'; })()}</p>
       ${onlineParty() ? onlineWagonHtml() : `<fieldset class="partypick"><legend>Party (play them all yourself, in Initiative order)</legend>${heroKeys().map(k => { const off = k !== heroKey && !!profile.chars[k].hardcore !== !!(profile.chars[heroKey] || {}).hardcore; return `<label ${off ? 'title="Hardcore heroes only ride with other Hardcore heroes" class="muted"' : ''}><input type="checkbox" data-party="${k}" ${k === heroKey ? 'checked disabled' : off ? 'disabled' : (profile.last.party || []).includes(k) ? 'checked' : ''}> ${esc(profile.chars[k].name)} <span class="muted">(${profile.chars[k].cls}${profile.chars[k].hardcore ? ', Hardcore' : ''})</span></label>`; }).join('')}</fieldset>
       <p class="savenote" id="partyNote" style="margin:4px 0 0"></p>`}
       <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn" id="btnMapLoot" title="Everything this map can drop">Map loot</button><button class="btn primary" id="btnStart" ${chk.ok && (!onlineParty() || SOC.party.leader === SOC.me) ? '' : 'disabled'}>${onlineParty() ? (SOC.party.leader === SOC.me ? `Set out with the party (${SOC.party.members.length})` : 'Waiting for the leader') : 'Set out'}</button></div>
@@ -6525,7 +6583,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
     const party = [heroKey, ...extra];
     for (const k of extra) { const d = CBHub.deckCheck(CBHub.char(profile, k).deck); if (!d.ok) return toast(`${k}'s deck ${d.problems.join(', ')}. Fix it at the Scribe first.`); }
     profile.last = { cls: heroKey, level: lvl, party: extra, map: mk }; save(); $('sheet').hidden = true;
-    const base = party.length > 1 ? CBHub.partyOpts(profile, party) : CBHub.runOpts(profile, heroKey);
+    const base = party.length > 1 ? CBHub.partyOpts(profile, party) : CBHub.runOpts(profile, heroKey, true);
     run = new Run(Object.assign(base, { level: lvl, map: mk, seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA, firstBoss: party.some(k => !CBHub.beatMap(CBHub.char(profile, k), mk)) }));
     if (typeof exRideOut === 'function') exRideOut(DATA.maps[mk].name, 'Level +' + lvl, () => { show('map'); renderMap(true); }); else { show('map'); renderMap(true); }
   }
@@ -6939,7 +6997,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (ground[y][x] === 'p' && solid.has(K(x, y)) && PROPS.some(p => p.kind === 'bridge' && x >= p.x && x < p.x + p.w)) solid.delete(K(x, y)); // walk over the bridges
   // where each townsperson stands (in front of their building)
   const CITY_NPC = { wagon: [74, 97, 'down'], tinker: [77, 58, 'left'], qm: [58, 57, 'down'], merchant: [43, 57, 'down'], jeweler: [51, 57, 'down'], scribe: [19, 18, 'down'], archivist: [42, 17, 'down'],
-    chron: [70, 49, 'down'], barber: [17, 57, 'down'], boutique: [25, 57, 'down'], tavern: [61, 71, 'down'], captain: [19, 81, 'down'], guildmaster: [41, 81, 'down'], raidwarden: [75, 16, 'down'], arena: [99, 91, 'right'], dummy: [18, 92, 'down'], banker: [35, 57, 'down'] };
+    chron: [70, 49, 'down'], barber: [17, 57, 'down'], boutique: [25, 57, 'down'], tavern: [61, 71, 'down'], chef: [65, 72, 'down'], captain: [19, 81, 'down'], guildmaster: [41, 81, 'down'], raidwarden: [75, 16, 'down'], arena: [99, 91, 'right'], dummy: [18, 92, 'down'], banker: [35, 57, 'down'] };
   // districts: the name shows when you walk in
   const DISTRICTS = [['Ember Square', 61, 49, 88, 71], ['The Grand Bazaar', 93, 47, 141, 73], ['The Colosseum', 97, 77, 137, 105], ['The Wagon Yard', 57, 88, 92, 105], ['Market Row', 4, 50, 60, 62], ['The Old Market', 33, 62, 53, 77],
     ['The Barracks', 4, 72, 47, 105], ['Guild Row', 33, 72, 56, 87], ["Scholars' Quarter", 4, 4, 56, 28], ['The Keep', 57, 4, 92, 24], ['Cathedral Hill', 93, 4, 146, 28], ['The River Ash', 4, 27, 146, 35], ['Riverside', 4, 35, 146, 49], ['The Stables', 93, 94, 106, 105], ['The Arena Floor', 0, 110, 150, 168]];
@@ -7226,6 +7284,9 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     lines: ['Looking for company on the road? Pin a notice to the board. Everyone reads it.', 'Say what you are, what you want and where you are headed. Then wait for a whisper.', 'A full party fights better than four strangers. Mostly.'] });
   NPCS.push({ id: 'boutique', name: 'Madame Skulle', x: 0, y: 0, dir: 'down', open: 'skullshop', btn: 'Browse the Skull Shop', pal: { skin: '#b9a08a', hair: '#1c1612', chest: '#3a2a4a', trim: '#b48cd8', legs: '#22182a', helm: 'hood', helmC: '#3a2a4a', cape: '#3a2a4a', weapon: null },
     lines: ['Skull Tokens only, darling. Mounts, wings, auras, dyes. Nothing that makes you stronger. Everything that makes you seen.', 'A hero should leave footprints. Burning ones, ideally.', 'I do sell bags. A lady has to carry her things.'] });
+  // Nov 14: Chef Brookt, a Viking with a cook fire beside the Ember Mug. Recipes found on the roads unlock his dishes; a meal lasts one map.
+  NPCS.push({ id: 'chef', name: 'Chef Brookt', x: 0, y: 0, dir: 'down', open: 'chef', btn: "See what's cooking", pal: { skin: '#d8ab8c', hair: '#c9772f', chest: '#6a4a2a', trim: '#d6a14a', legs: '#3a2c1c', helm: null, cape: null, weapon: null, look: { body: 'warrior', hair: 'braid', hairCol: 4, beard: 'beard_braid', weapon: ['axe1h', 0], off: null, cloak: null, gear: { Chest: 'physical_Leather', Pants: 'physical_Leather', Boots: 'physical_Leather', Belt: 'physical_Leather', Bracers: 'physical_Leather', Shoulders: 'frost_Leather' } } },
+    lines: ['HAH! You look hungry. Brookt feeds heroes. Bring me recipes off the road and I cook them.', 'Wolf, boar, bear, turtle: if it bit you, I can broil it. But I cook from a recipe, not from a guess.', 'One meal, one road. Eat before you ride and it stays with you until you come home.', 'Stronger beasts, stronger recipes. The deeper levels of a road write better cookbooks.'] });
   { const d0 = NPCS.find(n => n.id === 'dummy'); for (const [i, x, y] of [[2, 24, 92], [3, 30, 92], [4, 36, 92], [5, 24, 98], [6, 30, 98]]) NPCS.push(Object.assign({}, d0, { id: 'dummy' + i, x, y, pal: Object.assign({}, d0.pal) })); }
   for (const n of NPCS) { const q = CITY_NPC[n.id]; if (q) { n.x = q[0]; n.y = q[1]; n.dir = q[2]; } }
   for (const n of NPCS) n.pal.ink = 'npc_' + (/^dummy/.test(n.id) ? 'dummy' : n.id); // town art pack key (src/inkart.js)
@@ -7689,7 +7750,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     { const c = profile.chars[heroKey]; if (n.id === 'wagon' && c && !c.tutRoad && !(c.runs > 0)) { c.tutRoad = 1; save(); closeTalk(); tutStart('road'); return; } } // Nov 2: the first talk with Arisha is the road and fight tutorial
     $('talk').innerHTML = `<b>${esc(n.name)}</b><p>${esc(n.lines[n.lineN])}</p><div class="row">${n.open ? `<button class="btn primary" id="tOpen">${esc(n.btn)}</button>` : ''}${n.id === 'wagon' ? '<button class="btn" id="tHow">How do runs and fights work?</button>' : ''}<button class="btn" id="tBye">${n.open ? 'Not now' : 'Farewell'}</button></div>`;
     $('talk').hidden = false; updatePrompt();
-    if (n.open) $('tOpen').onclick = () => { closeTalk(); if (n.open === 'dummy') startDummy(); else if (n.open === 'barber') openMirror(); else if (n.open === 'lfg') openLfg(); else if (n.open === 'skullshop') openShop(); else openSheet(n.open); };
+    if (n.open) $('tOpen').onclick = () => { closeTalk(); if (n.open === 'dummy') startDummy(); else if (n.open === 'barber') openMirror(); else if (n.open === 'lfg') openLfg(); else if (n.open === 'skullshop') openShop(); else if (n.open === 'chef') openChef(); else openSheet(n.open); };
     $('tBye').onclick = closeTalk; if ($('tHow')) $('tHow').onclick = () => { closeTalk(); tutStart('road'); };
   }
   function closeTalk() { $('talk').hidden = true; updatePrompt(); cv.focus({ preventScroll: true }); }
@@ -8100,7 +8161,13 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
 
   // ---------- social UI: town bar button, party panel, invite cards, Friends sheet
   function placeText(st) { return !st ? 'Offline' : st.where ? st.where : st.place === 'town' ? 'In Emberwatch' : st.place === 'run' ? 'On the March' : st.place === 'duel' ? 'In a duel' : 'Online'; }
-  function renderSocial() {
+  // Nov 14: a party invite comes up in the middle of the screen, in front of whatever else is open (it used to sit only in the party panel, behind any popup)
+  function invPop() { let el = document.getElementById('invPop'); const i = SOC.invites[0];
+    if (!i) { if (el) el.hidden = true; return; }
+    if (!el) { el = document.createElement('div'); el.id = 'invPop'; document.body.appendChild(el); el.addEventListener('click', (ev) => { const b = ev.target.closest('[data-acc],[data-dec]'); if (!b) return; ev.stopPropagation(); answerInvite(b.dataset.acc || b.dataset.dec, !!b.dataset.acc); }); }
+    el.innerHTML = `<div class="invbox" role="alertdialog" aria-label="Party invite"><h2>Party invite</h2><p><b>${esc(i.name)}</b> invites you to a party${i.hc ? ' (Hardcore)' : ''}.</p>${SOC.invites.length > 1 ? `<p class="muted">${SOC.invites.length - 1} more waiting.</p>` : ''}<div class="row"><button class="btn primary" data-acc="${i.from}">Join</button><button class="btn" data-dec="${i.from}">Decline</button></div></div>`;
+    if (el.hidden !== false) { el.hidden = false; try { if (window.CB_AUDIO) CB_AUDIO.sfx('coin'); } catch (e) {} } }
+  function renderSocial() { try { invPop(); } catch (e) {}
     const nOn = SOC.friends.filter(f => SOC.online.has(f.id)).length;
     { const fb = document.querySelector('#actbar [data-act="friends"]'); if (fb) { let bd = fb.querySelector('.abadge'); if (SOC.requestsIn.length) { if (!bd) { bd = document.createElement('span'); bd.className = 'abadge'; fb.appendChild(bd); } bd.textContent = SOC.requestsIn.length; } else if (bd) bd.remove(); fb.dataset.tip = 'Friends' + (socOn() ? ': ' + nOn + ' online' : '') + ' (O)'; } }   // Nov 13: the Friends button lives on the bottom bar now
     if ($('tbFriends')) { $('tbFriends').hidden = true; $('tbFriends').innerHTML = `Friends${SOC.requestsIn.length ? ` <b class="badge">${SOC.requestsIn.length}</b>` : ''} <span class="muted">${socOn() ? nOn + ' online' : 'sign in'}</span>`; }
@@ -8299,8 +8366,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794707925622';
-  const CB_BUILD = '08d1355c31'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794713037263';
+  const CB_BUILD = 'b8d18ba212'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8319,7 +8386,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     const c = profile.chars[heroKey]; if (!c) return { err: 'has no hero yet' };
     if (req && req.kind === 'raid') { const why = raidBlock(c, req.map, req.level); if (why) return { err: why }; }
     const chk = CBHub.deckCheck(c.deck); if (!chk.ok) return { err: `needs to fix their deck (it ${chk.problems.join(', ')})` };
-    const o = CBHub.runOpts(profile, heroKey); delete o.members;
+    const o = CBHub.runOpts(profile, heroKey, !!(req && req.kind !== 'raid' && req.kind !== 'duel')); delete o.members;   // a packed meal rides along on map runs only
     o.pvp = CBHub.pvpOf(c).r; // Nov 14: Arena rating travels with the hero so both sides can score the duel
     return Object.assign(o, { uid: SOC.me, firstBoss: !!(req && req.map) && !CBHub.beatMap(c, req.map) });
   }
@@ -9419,6 +9486,12 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ["Feature", "Chef Brookt, a Viking with a cook fire beside the Ember Mug, now feeds heroes. Recipes drop (rarely, about 6%) from the monsters they are cooked from: Flame-Broiled Wolf from wolves, Panther Skewers from the great cats, Turtle Soup from shelled things, Bear Stew, Boar Ribs and 16 more. Find a recipe and he will cook it for gold; a meal is packed for one hero and buffs them for their whole next map."],
+      ["Feature", "Every recipe comes in four strengths, set by the level of the map it dropped on: I on +0 to +3 (50 gold a meal, for example +5% Crit Chance), II on +4 to +7 (125 gold, +10%), III on +8 to +11 (250 gold, +15%), IV on +12 and up (500 gold, +20%). There is food for Crit, Multi-hit, Multicast, Multiplay, Strength, Intelligence, Dexterity, Spirit, max HP, Crit Damage, Initiative, Lifesteal, Health Regen, Thorns, Luck, Max Mana and each resistance. A recipe you find is yours even if you die on that run."],
+      ["Balance", "+0 maps: monsters no longer resist their own element at all, so a Fire mage can farm the Cinder Reach. The resistance starts at +1 (10%) and grows as before."],
+      ["Fix", "Cards that remove one debuff (Cleansing Rain, Cleansing Light, Shake It Off and the rest) now take the worst one off whole: the biggest Burn, Poison, Bleed, Dread or Rot first, every stack of it. They used to go down a fixed list, so a small Vulnerable could be removed while a big Burn stayed. The log names what came off."],
+      ["Interface", "A party invite now pops up in the middle of the screen, in front of any other window, with Join and Decline."],
+      ["Interface", "Map merchant: the cards for sale stand further apart and grow upward under the pointer, so an enlarged card no longer covers its Buy button."],
       ["Balance", "Co-op on +0 maps: monsters now have 40% less HP in a party (it was 30% less)."],
       ["Feature", "Co-op: if it is your turn and you have not played a card after 3 seconds, YOUR TURN comes up across the field until you act."],
       ["Interface", "Co-op map: the node you voted for wears a thick glowing ring (green for your own vote) with each voter's initial beside it, and the party frames stay up on the map with a green tick next to everyone who has voted."],
@@ -12629,6 +12702,7 @@ window.CB_PUPPET = (function () {
     const gear = { Chest: set, Pants: set, Boots: set, Belt: set }; if (guard) Object.assign(gear, { Shoulders: set, Gloves: set, Bracers: set }, pal.helm === 'helm' ? { Helm: set } : {}); else if ((h >>> 11) % 3 === 0) gear.Shoulders = set; if (pal.helm === 'hood') gear.Helm = /Cloth/.test(set) ? set : 'physical_Cloth'; else if (pal.helm === 'cap') gear.Helm = /Leather/.test(set) ? set : 'physical_Leather';
     L = { body, skin, eyes: (h >>> 5) % P.EYES, eyeCol: (h >>> 9) % 4, mouth: (h >>> 13) % P.MOUTHS, lipCol: body === 'female' ? (h >>> 15) % 3 : 0, hair: pal.helm === 'helm' ? 'short' : pick(P.HAIR, 17), hairCol: hl > 200 ? 5 : hl > 150 ? 3 : hl > 110 ? 6 : hl > 70 ? 2 : (h >>> 19) % 2, beard: body !== 'female' && (h >>> 21) % 3 === 0 ? pick(P.BEARDS, 23) : null, gear };
     if (pal.helm === 'helm') L.weapon = ['sword1h', 0], L.off = ['kite', 0]; else if ((h >>> 25) % 5 === 0) L.cloak = (h >>> 27) % 4;
+    if (pal.look) Object.assign(L, pal.look);   // Nov 14: a townsperson can ask for an exact look (Chef Brookt's braids and axe)
     NPC.set(pal, L); return L;
   }
   function npc(g, pal, cx, by, dir, step, s, t) {
@@ -14657,6 +14731,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       ['Block / Barrier / Dodge / Parry / Absorb', 'Your class\'s defense (Warrior and Paladin: Block, Mage: Barrier, Rogue: Dodge, Warlock: Absorb, Shaman: Guard, which is Dodge or Block with a shield; Parry is Warrior Block). It absorbs damage before HP. Half of it fades at the start of your turn. Poison goes straight past it.'],
       ['Guard (Shaman)', 'The Shaman\'s defense: it is Dodge, or Block while a shield is worn. Works like the other classes\' defenses.'],
       ['Static (Shaman)', 'Lightning builds Static on a target. It never fades and does nothing by itself: the Shaman spends it. Electrocute consumes 10 to Stun for a turn, Mass Electrocute Stuns 1 turn for every 10, Discharge deals 3 damage for each. These Stuns work on bosses and can be chained; raid bosses are immune.'],
+      ['Food', 'A meal from Chef Brookt (beside the Ember Mug in town). One hero carries one meal; it gives a stat for the whole of their next map and is used up when the map ends. He cooks a dish once you have found its recipe, which drops rarely from the monsters it is made of. Recipe strength goes by map level: I from +0 to +3, II from +4 to +7, III from +8 to +11, IV from +12 up.'],
       ['Soaked', 'Shaman debuff. Takes 20% more Nature and Frost damage. Lasts 3 turns. Applied by Drench, Deluge and Overcast.'],
       ['Deafened', 'Shaman debuff. Deals 15% less damage. Lasts 2 turns.'],
       ['Unsteady', 'Shaman debuff. Its Block stops nothing. Lasts 2 turns.'],
@@ -16926,7 +17001,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
 
   function renderSideParty() {
     $('charPanel').innerHTML = `<div class="charhead"><h3>Party</h3><span class="chip" title="Banked gold: spent at merchants">${run.online ? 'Your bank ' + run.bankOf(run.members[run.myMi]) : 'Bank ' + run.bankPool}</span></div>
-      ${run.members.map(m => `<div class="memrow" style="--mc:${CC[m.cls]}${m.left ? ';opacity:.45' : ''}"><b>${esc(m.name)}${run.online && m.idx === run.myMi ? ' <span class="muted">(you)</span>' : ''}${m.left ? ' <span class="muted">(left)</span>' : ''}</b><div class="bar"><i style="width:${100 * m.hp / m.stats.maxHp}%"></i><span>${m.hp} / ${m.stats.maxHp}</span></div><span class="chip" title="Sack: items and gold">${m.sack.length} &middot; ${m.gold}g</span></div>`).join('')}
+      ${run.members.map(m => `<div class="memrow" style="--mc:${CC[m.cls]}${m.left ? ';opacity:.45' : ''}"><b>${esc(m.name)}${run.online && m.idx === run.myMi ? ' <span class="muted">(you)</span>' : ''}${m.left ? ' <span class="muted">(left)</span>' : ''}</b><div class="bar"><i style="width:${100 * m.hp / m.stats.maxHp}%"></i><span>${m.hp} / ${m.stats.maxHp}</span></div><span class="chip" title="Sack: items and gold">${m.sack.length} &middot; ${m.gold}g</span></div>${(() => { const fd = m.gear.find(g => g && g.slot === 'Food'), f = fd && CB.FOOD_BY[fd.food]; return f ? `<div class="muted" style="font-size:12.5px;margin:-2px 0 4px">Meal: ${esc(fd.name)} (${CB.foodStat(f, fd.tier)})</div>` : ''; })()}`).join('')}
       <dl class="kv" style="margin-top:6px"><dt>Fights won</dt><dd>${run.fightsWon}</dd><dt>Falls</dt><dd>${run.members.reduce((t, m) => t + m.deaths, 0)}</dd></dl>
       ${run.over ? '<div style="margin-top:8px"><button class="btn primary" id="btnCamp">Return to camp</button></div>' : ''}
       ${run.buffs.length ? '<div class="tags" style="margin-top:6px">' + run.buffs.map(x => `<span class="tag good">${esc(x.name.replace('Shrine of ', ''))}: ${x.fights} fight${x.fights > 1 ? 's' : ''}</span>`).join('') + '</div>' : ''}`;
@@ -17153,6 +17228,26 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   const lastCrit = {}, lastMulti = {}, lastHitN = {};
   function snapshot() { for (const a of [...cb.players, ...cb.enemies]) { lastHp[a.id] = a.hp; lastBlock[a.id] = a.block; lastCrit[a.id] = a.critN || 0; lastMulti[a.id] = a.multiN || 0; lastHitN[a.id] = a.hitN || 0; } }
   // the mirror (hero window): change your hero's appearance any time (src/heropup.js)
+  // ---------- Chef Brookt's kitchen (Nov 14): every dish, the strengths you hold the recipe for, and the meal packed for this hero's next map
+  function foodIcon(k) { return `<i class="foodico" style="background-image:url(img/ui/food/${k}.png)"></i>`; }
+  function mealText(c) { const m = c && c.meal && CB.FOOD_BY[c.meal.k]; return m ? `${m.name} ${CB.FOOD_RANK[c.meal.t]} (${CB.foodStat(m, c.meal.t)})` : ''; }
+  function openChef() {
+    const c = profile.chars[heroKey]; if (!c) return;
+    const draw = () => { const R = profile.recipes || {}, has = (f) => (R[f.k] || []).length, list = CB.FOODS.slice().sort((a, b) => (has(b) ? 1 : 0) - (has(a) ? 1 : 0)), nKnown = CB.FOODS.reduce((t, f) => t + has(f), 0);
+      try { CBHub.runOpts(profile, heroKey); } catch (e) {}   // points profile.gold at this hero's wallet (Hardcore heroes have their own)
+      modal(`<h2>Brookt's Kitchen</h2><p class="muted" style="margin:0 0 8px">Recipes drop, rarely, from the monsters they are cooked from, and the map level decides how strong the recipe is: I from +0 to +3, II from +4 to +7, III from +8 to +11, IV from +12 up. Once you have found one, Brookt cooks it for gold. A meal is packed for one hero and lasts their whole next map, win or lose.</p>
+        <div class="chefmeal"><span>Packed for <b style="color:${CC[c.cls]}">${esc(c.name)}</b>: ${c.meal ? `<b>${esc(mealText(c))}</b>` : '<span class="muted">nothing yet</span>'}</span><span>Gold <b style="color:var(--accent)">${profile.gold}</b> &middot; Recipes <b>${nKnown}</b> / ${CB.FOODS.length * 4}</span></div>
+        <div class="cheflist">${list.map(f => `<div class="chefrow${has(f) ? '' : ' unk'}">${foodIcon(f.k)}<div class="chefinfo"><b>${esc(f.name)}</b><small>${has(f) ? esc(f.blurb) : 'Recipe not found yet.'} <span class="muted">Drops from ${esc(f.what)}: ${f.from.map(esc).join(', ')}.</span></small></div><div class="cheftiers">${[0, 1, 2, 3].map(t => { const kn = CBHub.knowsRecipe(profile, f.k, t), on = c.meal && c.meal.k === f.k && c.meal.t === t, cost = CB.FOOD_PRICE[t];
+            return kn ? `<button class="btn ${on ? 'primary' : ''}" data-meal="${f.k}:${t}" ${on || profile.gold < cost ? 'disabled' : ''} title="${on ? 'Already packed' : profile.gold < cost ? 'Not enough gold' : 'Pack this for the next map'}"><b>${CB.FOOD_RANK[t]}</b> ${CB.foodStat(f, t)}<small>${on ? 'packed' : cost + ' gold'}</small></button>` : `<span class="cheflock" title="Recipe ${CB.FOOD_RANK[t]} drops on +${CB.FOOD_BANDS[t][0]}${t < 3 ? ' to +' + CB.FOOD_BANDS[t][1] : ' and higher'} maps"><b>${CB.FOOD_RANK[t]}</b> ${CB.foodStat(f, t)}<small>+${CB.FOOD_BANDS[t][0]}${t < 3 ? ' to +' + CB.FOOD_BANDS[t][1] : ' and up'}</small></span>`; }).join('')}</div></div>`).join('')}</div>
+        <div class="row"><button class="btn primary" id="mClose">Leave the kitchen</button></div>`);
+      $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal;
+      for (const b of $('modalBox').querySelectorAll('[data-meal]')) b.onclick = () => { const [k, t] = b.dataset.meal.split(':'), go = () => { const r = CBHub.buyMeal(profile, heroKey, k, +t); if (!r.ok) return toast(r.why); try { if (window.CB_AUDIO) CB_AUDIO.sfx('coin'); } catch (e) {} save(); draw(); };
+        if (c.meal) { modal(`<h2>Swap the meal?</h2><p>${esc(c.name)} already has <b>${esc(mealText(c))}</b> packed. A hero carries one meal: the new one replaces it, and Brookt does not give refunds.</p><div class="row"><button class="btn primary" id="mYes">Swap it</button><button class="btn" id="mNo">Keep it</button></div>`); $('mYes').onclick = go; $('mNo').onclick = draw; } else go(); }; };
+    draw();
+  }
+  function recipeNews() { const n = profile.newRecipes; if (!n || !n.length) return; profile.newRecipes = []; save();
+    modal(`<h2>New recipe${n.length > 1 ? 's' : ''}!</h2><div class="cheflist">${n.map(([k, t]) => { const f = CB.FOOD_BY[k]; return f ? `<div class="chefrow">${foodIcon(k)}<div class="chefinfo"><b>${esc(f.name)} ${CB.FOOD_RANK[t]}</b><small>${CB.foodStat(f, t)} for one map &middot; ${CB.FOOD_PRICE[t]} gold a meal</small></div></div>` : ''; }).join('')}</div><p class="muted">Chef Brookt can cook ${n.length > 1 ? 'these' : 'this'} now. He keeps his fire beside the Ember Mug.</p><div class="row"><button class="btn primary" id="mClose">Good</button></div>`); $('mClose').onclick = closeModal; }
+  setInterval(() => { try { if (profile && profile.newRecipes && profile.newRecipes.length && !$('scrStart').hidden && $('modal').hidden && $('sheet').hidden && (typeof exInside !== 'function' || !exInside())) recipeNews(); } catch (e) {} }, 2600);
   function openMirror() {
     const c = CBHub.char(profile, heroKey); if (!c || !window.CB_HEROPUP) return;
     modal(`<h3>The mirror</h3><p class="muted" style="margin:0 0 8px">Change how ${esc(c.name || 'your hero')} looks. It costs nothing and you can come back any time.</p><div id="mirrorPick"></div><div class="row"><button class="btn primary" id="mirOk">Keep this look</button><button class="btn" id="mClose">Cancel</button></div>`);
@@ -17599,18 +17694,19 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if (!result) return;
     if (result.result === 'loss') { deathScreen(); return; } // stay on the fight so the combat log can be read
     const g = result.gold, d = result.drops;
+    const recHtml = (() => { const rs = (run.online ? [result.per[run.myMi]] : result.per).flatMap(r => (r && r.recipes) || []); return rs.length ? `<p style="margin:8px 0 0"><b style="color:var(--accent)">Recipe found:</b> ${rs.map(([k, t]) => `${esc(CB.FOOD_BY[k].name)} ${CB.FOOD_RANK[t]} <span class="muted">(${CB.foodStat(CB.FOOD_BY[k], t)})</span>`).join(', ')}. It is yours even if you fall. Chef Brookt will cook it in town.</p>` : ''; })();
     const isBoss = run.over === 'victory';
     const showLoot = () => {
     if (!run.solo) {
       modal(`<h2>${isBoss ? esc(bossName()) + ' falls' : 'Victory'}</h2><p>Won in ${result.rounds} rounds. Each hero rolled their own loot.</p>
         ${run.members.map((m, i) => run.online && i !== run.myMi ? `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${m.hp}/${m.stats.maxHp} HP${result.per[i].fell ? ' (fell)' : ''} &middot; ${result.per[i].drops.length} drop${result.per[i].drops.length === 1 ? '' : 's'}, +${result.per[i].gold} gold</div>` : (() => { const r = result.per[i]; return `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${m.hp}/${m.stats.maxHp} HP${r.fell ? ' (fell: sack lost, back up at half HP)' : ''} &middot; +${r.gold} gold</div><div class="list">${r.drops.map(it => itemHtml(it)).join('') || '<span class="muted">No gear or cards.</span>'}</div>`; })()).join('')}
-        <div class="row"><button class="btn primary" id="mBack">${isBoss ? 'See the results' : 'Back to the map'}</button></div>`);
+        ${recHtml}<div class="row"><button class="btn primary" id="mBack">${isBoss ? 'See the results' : 'Back to the map'}</button></div>`);
       $('mBack').onclick = () => { closeModal(); show('map'); renderMap(true); };
       return;
     }
     modal(`<h2>${isBoss ? esc(bossName()) + ' falls' : 'Victory'}</h2><p>Won in ${result.rounds} rounds. HP ${run.hp}/${run.maxHp}${run.stats.healthRegen ? ` (incl. ${run.stats.healthRegen} Health Regen)` : ''}, mana ${run.mana} carried into the next fight.</p>
       <p><b>Into the sack:</b> ${g} gold${d.length ? ' and:' : '. No gear or cards dropped.'}</p><div class="list">${d.map(it => itemHtml(it)).join('')}</div>
-      <div class="row"><button class="btn primary" id="mBack">${isBoss ? 'See the results' : 'Back to the map'}</button></div>`);
+      ${recHtml}<div class="row"><button class="btn primary" id="mBack">${isBoss ? 'See the results' : 'Back to the map'}</button></div>`);
     $('mBack').onclick = () => { closeModal(); show('map'); renderMap(true); };
       };
     // Nov 13: a beat between the last hit and the loot. First who landed the killing blow, then a chest to open

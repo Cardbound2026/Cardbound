@@ -2,6 +2,12 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ["Feature", "Chef Brookt, a Viking with a cook fire beside the Ember Mug, now feeds heroes. Recipes drop (rarely, about 6%) from the monsters they are cooked from: Flame-Broiled Wolf from wolves, Panther Skewers from the great cats, Turtle Soup from shelled things, Bear Stew, Boar Ribs and 16 more. Find a recipe and he will cook it for gold; a meal is packed for one hero and buffs them for their whole next map."],
+      ["Feature", "Every recipe comes in four strengths, set by the level of the map it dropped on: I on +0 to +3 (50 gold a meal, for example +5% Crit Chance), II on +4 to +7 (125 gold, +10%), III on +8 to +11 (250 gold, +15%), IV on +12 and up (500 gold, +20%). There is food for Crit, Multi-hit, Multicast, Multiplay, Strength, Intelligence, Dexterity, Spirit, max HP, Crit Damage, Initiative, Lifesteal, Health Regen, Thorns, Luck, Max Mana and each resistance. A recipe you find is yours even if you die on that run."],
+      ["Balance", "+0 maps: monsters no longer resist their own element at all, so a Fire mage can farm the Cinder Reach. The resistance starts at +1 (10%) and grows as before."],
+      ["Fix", "Cards that remove one debuff (Cleansing Rain, Cleansing Light, Shake It Off and the rest) now take the worst one off whole: the biggest Burn, Poison, Bleed, Dread or Rot first, every stack of it. They used to go down a fixed list, so a small Vulnerable could be removed while a big Burn stayed. The log names what came off."],
+      ["Interface", "A party invite now pops up in the middle of the screen, in front of any other window, with Join and Decline."],
+      ["Interface", "Map merchant: the cards for sale stand further apart and grow upward under the pointer, so an enlarged card no longer covers its Buy button."],
       ["Balance", "Co-op on +0 maps: monsters now have 40% less HP in a party (it was 30% less)."],
       ["Feature", "Co-op: if it is your turn and you have not played a card after 3 seconds, YOUR TURN comes up across the field until you act."],
       ["Interface", "Co-op map: the node you voted for wears a thick glowing ring (green for your own vote) with each voter's initial beside it, and the party frames stay up on the map with a green tick next to everyone who has voted."],

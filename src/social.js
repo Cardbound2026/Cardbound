@@ -359,7 +359,13 @@
 
   // ---------- social UI: town bar button, party panel, invite cards, Friends sheet
   function placeText(st) { return !st ? 'Offline' : st.where ? st.where : st.place === 'town' ? 'In Emberwatch' : st.place === 'run' ? 'On the March' : st.place === 'duel' ? 'In a duel' : 'Online'; }
-  function renderSocial() {
+  // Nov 14: a party invite comes up in the middle of the screen, in front of whatever else is open (it used to sit only in the party panel, behind any popup)
+  function invPop() { let el = document.getElementById('invPop'); const i = SOC.invites[0];
+    if (!i) { if (el) el.hidden = true; return; }
+    if (!el) { el = document.createElement('div'); el.id = 'invPop'; document.body.appendChild(el); el.addEventListener('click', (ev) => { const b = ev.target.closest('[data-acc],[data-dec]'); if (!b) return; ev.stopPropagation(); answerInvite(b.dataset.acc || b.dataset.dec, !!b.dataset.acc); }); }
+    el.innerHTML = `<div class="invbox" role="alertdialog" aria-label="Party invite"><h2>Party invite</h2><p><b>${esc(i.name)}</b> invites you to a party${i.hc ? ' (Hardcore)' : ''}.</p>${SOC.invites.length > 1 ? `<p class="muted">${SOC.invites.length - 1} more waiting.</p>` : ''}<div class="row"><button class="btn primary" data-acc="${i.from}">Join</button><button class="btn" data-dec="${i.from}">Decline</button></div></div>`;
+    if (el.hidden !== false) { el.hidden = false; try { if (window.CB_AUDIO) CB_AUDIO.sfx('coin'); } catch (e) {} } }
+  function renderSocial() { try { invPop(); } catch (e) {}
     const nOn = SOC.friends.filter(f => SOC.online.has(f.id)).length;
     { const fb = document.querySelector('#actbar [data-act="friends"]'); if (fb) { let bd = fb.querySelector('.abadge'); if (SOC.requestsIn.length) { if (!bd) { bd = document.createElement('span'); bd.className = 'abadge'; fb.appendChild(bd); } bd.textContent = SOC.requestsIn.length; } else if (bd) bd.remove(); fb.dataset.tip = 'Friends' + (socOn() ? ': ' + nOn + ' online' : '') + ' (O)'; } }   // Nov 13: the Friends button lives on the bottom bar now
     if ($('tbFriends')) { $('tbFriends').hidden = true; $('tbFriends').innerHTML = `Friends${SOC.requestsIn.length ? ` <b class="badge">${SOC.requestsIn.length}</b>` : ''} <span class="muted">${socOn() ? nOn + ' online' : 'sign in'}</span>`; }

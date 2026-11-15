@@ -23,7 +23,7 @@
     const c = profile.chars[heroKey]; if (!c) return { err: 'has no hero yet' };
     if (req && req.kind === 'raid') { const why = raidBlock(c, req.map, req.level); if (why) return { err: why }; }
     const chk = CBHub.deckCheck(c.deck); if (!chk.ok) return { err: `needs to fix their deck (it ${chk.problems.join(', ')})` };
-    const o = CBHub.runOpts(profile, heroKey); delete o.members;
+    const o = CBHub.runOpts(profile, heroKey, !!(req && req.kind !== 'raid' && req.kind !== 'duel')); delete o.members;   // a packed meal rides along on map runs only
     o.pvp = CBHub.pvpOf(c).r; // Nov 14: Arena rating travels with the hero so both sides can score the duel
     return Object.assign(o, { uid: SOC.me, firstBoss: !!(req && req.map) && !CBHub.beatMap(c, req.map) });
   }

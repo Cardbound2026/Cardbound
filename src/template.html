@@ -161,6 +161,14 @@ body:has(#bagPeek) .gtip:not(.bagpop) { display: none !important; }
 .runmain { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 12px; align-items: start; }
 @media (max-width: 980px) { .runmain { grid-template-columns: minmax(0, 1fr); } }
 .mapwrap { position: relative; }
+.foodico { flex: none; display: inline-block; width: 48px; height: 48px; border-radius: 6px; background: #14100c center / 40px 40px no-repeat; box-shadow: inset 0 0 0 1px #4a3a28; image-rendering: pixelated; }
+.chefmeal { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 8px 12px; margin: 0 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel2); font-size: 14.5px; }
+.cheflist { display: grid; gap: 6px; max-height: 56vh; overflow: auto; padding-right: 4px; } .chefrow { display: flex; align-items: center; gap: 12px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: rgba(0,0,0,.18); } .chefrow.unk .foodico { filter: grayscale(1) brightness(.5); } .chefrow.unk .chefinfo b { color: var(--muted); }
+.chefinfo { flex: 1; min-width: 0; display: grid; gap: 2px; } .chefinfo b { font-size: 16px; } .chefinfo small { font-size: 12.5px; line-height: 1.35; }
+.cheftiers { flex: none; display: grid; grid-template-columns: repeat(4, 118px); gap: 5px; } .cheftiers > * { display: grid; gap: 1px; justify-items: center; padding: 4px 4px; font-size: 12px; line-height: 1.2; text-align: center; border-radius: 5px; min-height: 46px; align-content: center; } .cheftiers small { font-size: 11px; opacity: .8; } #modalBox .cheftiers .btn { font: 600 12px / 1.2 var(--f-ui) !important; text-transform: none !important; letter-spacing: 0 !important; font-variant: normal !important; white-space: normal !important; padding: 4px !important; min-width: 0; overflow: hidden; } #modalBox .cheftiers .btn small { font: 500 11px / 1.2 var(--f-ui) !important; font-variant: normal !important; text-transform: none !important; } .cheftiers b { font-size: 12px; }
+.cheflock { border: 1px dashed #3a3026; color: #6f6252; } @media (max-width: 900px) { .chefrow { flex-wrap: wrap; } .cheftiers { grid-template-columns: repeat(2, 1fr); width: 100%; } }
+/* the in-map merchant: cards for sale sit further apart and grow upward, so a card under the pointer never covers its own Buy button */
+.shopcards { gap: 26px 30px !important; padding: 34px 26px 4px; } .shopcard > :first-child { transform-origin: 50% 100% !important; } .shopcard > :first-child:hover { transform: scale(1.6) !important; }
 .votering { filter: drop-shadow(0 0 5px currentColor); animation: votepulse 1.2s ease-in-out infinite; } @keyframes votepulse { 50% { stroke-opacity: .45; } }
 #mapParty { position: absolute; left: 8px; top: 52px; z-index: 4; display: grid; gap: 4px; pointer-events: none; } #mapParty[hidden] { display: none; }
 #mapParty .uf { background: rgba(10,8,6,.6); position: relative; } #mapParty .uf.gone { opacity: .4; filter: grayscale(1); }
@@ -946,6 +954,8 @@ body.inkui:not(.ui-classic) .item.itm .acts .btn:disabled { opacity: .45; filter
 
 /* modal */
 .modal { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(8,6,4,.74); z-index: 20; padding: 16px; }
+#invPop { position: fixed; inset: 0; z-index: 9000; display: grid; place-items: center; background: rgba(8,6,4,.55); padding: 16px; } #invPop[hidden] { display: none; }
+#invPop .invbox { width: min(420px, 100%); padding: 18px 22px; text-align: center; background: var(--panel); border: 2px solid var(--accent); border-radius: 10px; box-shadow: 0 12px 40px rgba(0,0,0,.8), 0 0 24px rgba(214,161,74,.35); } #invPop h2 { margin: 0 0 6px; color: var(--accent); } #invPop p { margin: 0 0 10px; font-size: 16px; } #invPop .row { justify-content: center; }
 .modal .box { background: var(--panel); border: 1px solid var(--accent); border-radius: 10px; padding: 20px 22px; width: min(660px, 100%); max-height: calc(100vh - 32px); overflow: auto; display: grid; gap: 12px; }
 .modal h2 { font-size: 38px; color: var(--accent); }
 .modal h2.loss { color: var(--hp); }
@@ -1768,6 +1778,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
       <p class="savenote" style="margin:4px 0 0">${mapBlurb(mk)}</p>
       <div class="field" style="margin:8px 0"><label for="selLevel">Map ${M.num}: ${esc(M.name)} &middot; level <b id="lvlOut">+${lvl}</b></label><input type="range" id="selLevel" min="0" max="19" step="1" value="${lvl}"></div>
       <p class="savenote" id="lvlInfo"></p>
+      <p class="savenote" style="margin:2px 0 6px">${(() => { const c = profile.chars[heroKey]; return c && c.meal ? `Meal packed for ${esc(c.name)}: <b style="color:var(--accent)">${esc(mealText(c))}</b>. It lasts this whole map.` : 'No meal packed. Chef Brookt, by the Ember Mug, cooks one-map buffs from the recipes you find.'; })()}</p>
       ${onlineParty() ? onlineWagonHtml() : `<fieldset class="partypick"><legend>Party (play them all yourself, in Initiative order)</legend>${heroKeys().map(k => { const off = k !== heroKey && !!profile.chars[k].hardcore !== !!(profile.chars[heroKey] || {}).hardcore; return `<label ${off ? 'title="Hardcore heroes only ride with other Hardcore heroes" class="muted"' : ''}><input type="checkbox" data-party="${k}" ${k === heroKey ? 'checked disabled' : off ? 'disabled' : (profile.last.party || []).includes(k) ? 'checked' : ''}> ${esc(profile.chars[k].name)} <span class="muted">(${profile.chars[k].cls}${profile.chars[k].hardcore ? ', Hardcore' : ''})</span></label>`; }).join('')}</fieldset>
       <p class="savenote" id="partyNote" style="margin:4px 0 0"></p>`}
       <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn" id="btnMapLoot" title="Everything this map can drop">Map loot</button><button class="btn primary" id="btnStart" ${chk.ok && (!onlineParty() || SOC.party.leader === SOC.me) ? '' : 'disabled'}>${onlineParty() ? (SOC.party.leader === SOC.me ? `Set out with the party (${SOC.party.members.length})` : 'Waiting for the leader') : 'Set out'}</button></div>
@@ -1813,7 +1824,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     const party = [heroKey, ...extra];
     for (const k of extra) { const d = CBHub.deckCheck(CBHub.char(profile, k).deck); if (!d.ok) return toast(`${k}'s deck ${d.problems.join(', ')}. Fix it at the Scribe first.`); }
     profile.last = { cls: heroKey, level: lvl, party: extra, map: mk }; save(); $('sheet').hidden = true;
-    const base = party.length > 1 ? CBHub.partyOpts(profile, party) : CBHub.runOpts(profile, heroKey);
+    const base = party.length > 1 ? CBHub.partyOpts(profile, party) : CBHub.runOpts(profile, heroKey, true);
     run = new Run(Object.assign(base, { level: lvl, map: mk, seed: Math.floor(Math.random() * 2147483646) + 1, data: DATA, firstBoss: party.some(k => !CBHub.beatMap(CBHub.char(profile, k), mk)) }));
     if (typeof exRideOut === 'function') exRideOut(DATA.maps[mk].name, 'Level +' + lvl, () => { show('map'); renderMap(true); }); else { show('map'); renderMap(true); }
   }
@@ -2170,6 +2181,9 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     lines: ['Looking for company on the road? Pin a notice to the board. Everyone reads it.', 'Say what you are, what you want and where you are headed. Then wait for a whisper.', 'A full party fights better than four strangers. Mostly.'] });
   NPCS.push({ id: 'boutique', name: 'Madame Skulle', x: 0, y: 0, dir: 'down', open: 'skullshop', btn: 'Browse the Skull Shop', pal: { skin: '#b9a08a', hair: '#1c1612', chest: '#3a2a4a', trim: '#b48cd8', legs: '#22182a', helm: 'hood', helmC: '#3a2a4a', cape: '#3a2a4a', weapon: null },
     lines: ['Skull Tokens only, darling. Mounts, wings, auras, dyes. Nothing that makes you stronger. Everything that makes you seen.', 'A hero should leave footprints. Burning ones, ideally.', 'I do sell bags. A lady has to carry her things.'] });
+  // Nov 14: Chef Brookt, a Viking with a cook fire beside the Ember Mug. Recipes found on the roads unlock his dishes; a meal lasts one map.
+  NPCS.push({ id: 'chef', name: 'Chef Brookt', x: 0, y: 0, dir: 'down', open: 'chef', btn: "See what's cooking", pal: { skin: '#d8ab8c', hair: '#c9772f', chest: '#6a4a2a', trim: '#d6a14a', legs: '#3a2c1c', helm: null, cape: null, weapon: null, look: { body: 'warrior', hair: 'braid', hairCol: 4, beard: 'beard_braid', weapon: ['axe1h', 0], off: null, cloak: null, gear: { Chest: 'physical_Leather', Pants: 'physical_Leather', Boots: 'physical_Leather', Belt: 'physical_Leather', Bracers: 'physical_Leather', Shoulders: 'frost_Leather' } } },
+    lines: ['HAH! You look hungry. Brookt feeds heroes. Bring me recipes off the road and I cook them.', 'Wolf, boar, bear, turtle: if it bit you, I can broil it. But I cook from a recipe, not from a guess.', 'One meal, one road. Eat before you ride and it stays with you until you come home.', 'Stronger beasts, stronger recipes. The deeper levels of a road write better cookbooks.'] });
   { const d0 = NPCS.find(n => n.id === 'dummy'); for (const [i, x, y] of [[2, 24, 92], [3, 30, 92], [4, 36, 92], [5, 24, 98], [6, 30, 98]]) NPCS.push(Object.assign({}, d0, { id: 'dummy' + i, x, y, pal: Object.assign({}, d0.pal) })); }
   for (const n of NPCS) { const q = CITY_NPC[n.id]; if (q) { n.x = q[0]; n.y = q[1]; n.dir = q[2]; } }
   for (const n of NPCS) n.pal.ink = 'npc_' + (/^dummy/.test(n.id) ? 'dummy' : n.id); // town art pack key (src/inkart.js)
@@ -2633,7 +2647,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     { const c = profile.chars[heroKey]; if (n.id === 'wagon' && c && !c.tutRoad && !(c.runs > 0)) { c.tutRoad = 1; save(); closeTalk(); tutStart('road'); return; } } // Nov 2: the first talk with Arisha is the road and fight tutorial
     $('talk').innerHTML = `<b>${esc(n.name)}</b><p>${esc(n.lines[n.lineN])}</p><div class="row">${n.open ? `<button class="btn primary" id="tOpen">${esc(n.btn)}</button>` : ''}${n.id === 'wagon' ? '<button class="btn" id="tHow">How do runs and fights work?</button>' : ''}<button class="btn" id="tBye">${n.open ? 'Not now' : 'Farewell'}</button></div>`;
     $('talk').hidden = false; updatePrompt();
-    if (n.open) $('tOpen').onclick = () => { closeTalk(); if (n.open === 'dummy') startDummy(); else if (n.open === 'barber') openMirror(); else if (n.open === 'lfg') openLfg(); else if (n.open === 'skullshop') openShop(); else openSheet(n.open); };
+    if (n.open) $('tOpen').onclick = () => { closeTalk(); if (n.open === 'dummy') startDummy(); else if (n.open === 'barber') openMirror(); else if (n.open === 'lfg') openLfg(); else if (n.open === 'skullshop') openShop(); else if (n.open === 'chef') openChef(); else openSheet(n.open); };
     $('tBye').onclick = closeTalk; if ($('tHow')) $('tHow').onclick = () => { closeTalk(); tutStart('road'); };
   }
   function closeTalk() { $('talk').hidden = true; updatePrompt(); cv.focus({ preventScroll: true }); }
@@ -3355,7 +3369,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
 
   function renderSideParty() {
     $('charPanel').innerHTML = `<div class="charhead"><h3>Party</h3><span class="chip" title="Banked gold: spent at merchants">${run.online ? 'Your bank ' + run.bankOf(run.members[run.myMi]) : 'Bank ' + run.bankPool}</span></div>
-      ${run.members.map(m => `<div class="memrow" style="--mc:${CC[m.cls]}${m.left ? ';opacity:.45' : ''}"><b>${esc(m.name)}${run.online && m.idx === run.myMi ? ' <span class="muted">(you)</span>' : ''}${m.left ? ' <span class="muted">(left)</span>' : ''}</b><div class="bar"><i style="width:${100 * m.hp / m.stats.maxHp}%"></i><span>${m.hp} / ${m.stats.maxHp}</span></div><span class="chip" title="Sack: items and gold">${m.sack.length} &middot; ${m.gold}g</span></div>`).join('')}
+      ${run.members.map(m => `<div class="memrow" style="--mc:${CC[m.cls]}${m.left ? ';opacity:.45' : ''}"><b>${esc(m.name)}${run.online && m.idx === run.myMi ? ' <span class="muted">(you)</span>' : ''}${m.left ? ' <span class="muted">(left)</span>' : ''}</b><div class="bar"><i style="width:${100 * m.hp / m.stats.maxHp}%"></i><span>${m.hp} / ${m.stats.maxHp}</span></div><span class="chip" title="Sack: items and gold">${m.sack.length} &middot; ${m.gold}g</span></div>${(() => { const fd = m.gear.find(g => g && g.slot === 'Food'), f = fd && CB.FOOD_BY[fd.food]; return f ? `<div class="muted" style="font-size:12.5px;margin:-2px 0 4px">Meal: ${esc(fd.name)} (${CB.foodStat(f, fd.tier)})</div>` : ''; })()}`).join('')}
       <dl class="kv" style="margin-top:6px"><dt>Fights won</dt><dd>${run.fightsWon}</dd><dt>Falls</dt><dd>${run.members.reduce((t, m) => t + m.deaths, 0)}</dd></dl>
       ${run.over ? '<div style="margin-top:8px"><button class="btn primary" id="btnCamp">Return to camp</button></div>' : ''}
       ${run.buffs.length ? '<div class="tags" style="margin-top:6px">' + run.buffs.map(x => `<span class="tag good">${esc(x.name.replace('Shrine of ', ''))}: ${x.fights} fight${x.fights > 1 ? 's' : ''}</span>`).join('') + '</div>' : ''}`;
@@ -3582,6 +3596,26 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   const lastCrit = {}, lastMulti = {}, lastHitN = {};
   function snapshot() { for (const a of [...cb.players, ...cb.enemies]) { lastHp[a.id] = a.hp; lastBlock[a.id] = a.block; lastCrit[a.id] = a.critN || 0; lastMulti[a.id] = a.multiN || 0; lastHitN[a.id] = a.hitN || 0; } }
   // the mirror (hero window): change your hero's appearance any time (src/heropup.js)
+  // ---------- Chef Brookt's kitchen (Nov 14): every dish, the strengths you hold the recipe for, and the meal packed for this hero's next map
+  function foodIcon(k) { return `<i class="foodico" style="background-image:url(img/ui/food/${k}.png)"></i>`; }
+  function mealText(c) { const m = c && c.meal && CB.FOOD_BY[c.meal.k]; return m ? `${m.name} ${CB.FOOD_RANK[c.meal.t]} (${CB.foodStat(m, c.meal.t)})` : ''; }
+  function openChef() {
+    const c = profile.chars[heroKey]; if (!c) return;
+    const draw = () => { const R = profile.recipes || {}, has = (f) => (R[f.k] || []).length, list = CB.FOODS.slice().sort((a, b) => (has(b) ? 1 : 0) - (has(a) ? 1 : 0)), nKnown = CB.FOODS.reduce((t, f) => t + has(f), 0);
+      try { CBHub.runOpts(profile, heroKey); } catch (e) {}   // points profile.gold at this hero's wallet (Hardcore heroes have their own)
+      modal(`<h2>Brookt's Kitchen</h2><p class="muted" style="margin:0 0 8px">Recipes drop, rarely, from the monsters they are cooked from, and the map level decides how strong the recipe is: I from +0 to +3, II from +4 to +7, III from +8 to +11, IV from +12 up. Once you have found one, Brookt cooks it for gold. A meal is packed for one hero and lasts their whole next map, win or lose.</p>
+        <div class="chefmeal"><span>Packed for <b style="color:${CC[c.cls]}">${esc(c.name)}</b>: ${c.meal ? `<b>${esc(mealText(c))}</b>` : '<span class="muted">nothing yet</span>'}</span><span>Gold <b style="color:var(--accent)">${profile.gold}</b> &middot; Recipes <b>${nKnown}</b> / ${CB.FOODS.length * 4}</span></div>
+        <div class="cheflist">${list.map(f => `<div class="chefrow${has(f) ? '' : ' unk'}">${foodIcon(f.k)}<div class="chefinfo"><b>${esc(f.name)}</b><small>${has(f) ? esc(f.blurb) : 'Recipe not found yet.'} <span class="muted">Drops from ${esc(f.what)}: ${f.from.map(esc).join(', ')}.</span></small></div><div class="cheftiers">${[0, 1, 2, 3].map(t => { const kn = CBHub.knowsRecipe(profile, f.k, t), on = c.meal && c.meal.k === f.k && c.meal.t === t, cost = CB.FOOD_PRICE[t];
+            return kn ? `<button class="btn ${on ? 'primary' : ''}" data-meal="${f.k}:${t}" ${on || profile.gold < cost ? 'disabled' : ''} title="${on ? 'Already packed' : profile.gold < cost ? 'Not enough gold' : 'Pack this for the next map'}"><b>${CB.FOOD_RANK[t]}</b> ${CB.foodStat(f, t)}<small>${on ? 'packed' : cost + ' gold'}</small></button>` : `<span class="cheflock" title="Recipe ${CB.FOOD_RANK[t]} drops on +${CB.FOOD_BANDS[t][0]}${t < 3 ? ' to +' + CB.FOOD_BANDS[t][1] : ' and higher'} maps"><b>${CB.FOOD_RANK[t]}</b> ${CB.foodStat(f, t)}<small>+${CB.FOOD_BANDS[t][0]}${t < 3 ? ' to +' + CB.FOOD_BANDS[t][1] : ' and up'}</small></span>`; }).join('')}</div></div>`).join('')}</div>
+        <div class="row"><button class="btn primary" id="mClose">Leave the kitchen</button></div>`);
+      $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal;
+      for (const b of $('modalBox').querySelectorAll('[data-meal]')) b.onclick = () => { const [k, t] = b.dataset.meal.split(':'), go = () => { const r = CBHub.buyMeal(profile, heroKey, k, +t); if (!r.ok) return toast(r.why); try { if (window.CB_AUDIO) CB_AUDIO.sfx('coin'); } catch (e) {} save(); draw(); };
+        if (c.meal) { modal(`<h2>Swap the meal?</h2><p>${esc(c.name)} already has <b>${esc(mealText(c))}</b> packed. A hero carries one meal: the new one replaces it, and Brookt does not give refunds.</p><div class="row"><button class="btn primary" id="mYes">Swap it</button><button class="btn" id="mNo">Keep it</button></div>`); $('mYes').onclick = go; $('mNo').onclick = draw; } else go(); }; };
+    draw();
+  }
+  function recipeNews() { const n = profile.newRecipes; if (!n || !n.length) return; profile.newRecipes = []; save();
+    modal(`<h2>New recipe${n.length > 1 ? 's' : ''}!</h2><div class="cheflist">${n.map(([k, t]) => { const f = CB.FOOD_BY[k]; return f ? `<div class="chefrow">${foodIcon(k)}<div class="chefinfo"><b>${esc(f.name)} ${CB.FOOD_RANK[t]}</b><small>${CB.foodStat(f, t)} for one map &middot; ${CB.FOOD_PRICE[t]} gold a meal</small></div></div>` : ''; }).join('')}</div><p class="muted">Chef Brookt can cook ${n.length > 1 ? 'these' : 'this'} now. He keeps his fire beside the Ember Mug.</p><div class="row"><button class="btn primary" id="mClose">Good</button></div>`); $('mClose').onclick = closeModal; }
+  setInterval(() => { try { if (profile && profile.newRecipes && profile.newRecipes.length && !$('scrStart').hidden && $('modal').hidden && $('sheet').hidden && (typeof exInside !== 'function' || !exInside())) recipeNews(); } catch (e) {} }, 2600);
   function openMirror() {
     const c = CBHub.char(profile, heroKey); if (!c || !window.CB_HEROPUP) return;
     modal(`<h3>The mirror</h3><p class="muted" style="margin:0 0 8px">Change how ${esc(c.name || 'your hero')} looks. It costs nothing and you can come back any time.</p><div id="mirrorPick"></div><div class="row"><button class="btn primary" id="mirOk">Keep this look</button><button class="btn" id="mClose">Cancel</button></div>`);
@@ -4028,18 +4062,19 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     if (!result) return;
     if (result.result === 'loss') { deathScreen(); return; } // stay on the fight so the combat log can be read
     const g = result.gold, d = result.drops;
+    const recHtml = (() => { const rs = (run.online ? [result.per[run.myMi]] : result.per).flatMap(r => (r && r.recipes) || []); return rs.length ? `<p style="margin:8px 0 0"><b style="color:var(--accent)">Recipe found:</b> ${rs.map(([k, t]) => `${esc(CB.FOOD_BY[k].name)} ${CB.FOOD_RANK[t]} <span class="muted">(${CB.foodStat(CB.FOOD_BY[k], t)})</span>`).join(', ')}. It is yours even if you fall. Chef Brookt will cook it in town.</p>` : ''; })();
     const isBoss = run.over === 'victory';
     const showLoot = () => {
     if (!run.solo) {
       modal(`<h2>${isBoss ? esc(bossName()) + ' falls' : 'Victory'}</h2><p>Won in ${result.rounds} rounds. Each hero rolled their own loot.</p>
         ${run.members.map((m, i) => run.online && i !== run.myMi ? `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${m.hp}/${m.stats.maxHp} HP${result.per[i].fell ? ' (fell)' : ''} &middot; ${result.per[i].drops.length} drop${result.per[i].drops.length === 1 ? '' : 's'}, +${result.per[i].gold} gold</div>` : (() => { const r = result.per[i]; return `<div class="sackhead" style="color:${CC[m.cls]}">${esc(m.name)}: ${m.hp}/${m.stats.maxHp} HP${r.fell ? ' (fell: sack lost, back up at half HP)' : ''} &middot; +${r.gold} gold</div><div class="list">${r.drops.map(it => itemHtml(it)).join('') || '<span class="muted">No gear or cards.</span>'}</div>`; })()).join('')}
-        <div class="row"><button class="btn primary" id="mBack">${isBoss ? 'See the results' : 'Back to the map'}</button></div>`);
+        ${recHtml}<div class="row"><button class="btn primary" id="mBack">${isBoss ? 'See the results' : 'Back to the map'}</button></div>`);
       $('mBack').onclick = () => { closeModal(); show('map'); renderMap(true); };
       return;
     }
     modal(`<h2>${isBoss ? esc(bossName()) + ' falls' : 'Victory'}</h2><p>Won in ${result.rounds} rounds. HP ${run.hp}/${run.maxHp}${run.stats.healthRegen ? ` (incl. ${run.stats.healthRegen} Health Regen)` : ''}, mana ${run.mana} carried into the next fight.</p>
       <p><b>Into the sack:</b> ${g} gold${d.length ? ' and:' : '. No gear or cards dropped.'}</p><div class="list">${d.map(it => itemHtml(it)).join('')}</div>
-      <div class="row"><button class="btn primary" id="mBack">${isBoss ? 'See the results' : 'Back to the map'}</button></div>`);
+      ${recHtml}<div class="row"><button class="btn primary" id="mBack">${isBoss ? 'See the results' : 'Back to the map'}</button></div>`);
     $('mBack').onclick = () => { closeModal(); show('map'); renderMap(true); };
       };
     // Nov 13: a beat between the last hit and the loot. First who landed the killing blow, then a chest to open
