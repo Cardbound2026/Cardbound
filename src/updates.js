@@ -1,6 +1,11 @@
   // ---------- What's new: the changelog (button bottom-right) and the new-version warning
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
+    { date: '2026-11-15', items: [
+      ["Interface", "Taunt now shows on the enemies it holds: every taunted enemy wears a Taunted debuff naming the hero it must attack."],
+      ["Interface", "Co-op: the ready check for a map run has the food slot on it, so everyone can slot a meal before the party sets out, not just the leader at the Wagon."],
+      ["Change", "Shaman: Thunderhead is a standing buff now. It waits for your next lightning spell, on this turn or a later one, instead of fading at the end of the turn. It shows on your hero while it is up."],
+    ] },
     { date: '2026-11-14', items: [
       ["Feature", "Food is slotted at the Wagon now. Meals you buy from Chef Brookt go into a pantry (you can stock several), and when you choose your map there is a food slot: click a meal to slot it, and it buffs that hero for the whole map. It is eaten when the map ends; the slot refills by itself while you have more of the same."],
       ["Fix", "Spiked Ward (Mage) was giving its Thorns all along, but your own Thorns were never shown on your hero, so it looked like nothing happened. Thorns now shows as a buff with its amount, from any source."],

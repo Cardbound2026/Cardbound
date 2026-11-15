@@ -44,7 +44,7 @@ function install(K) {
     const p = cb.player; let v = Math.round(n);
     if (p && p.isPlayer) {
       const d = cb._playing;
-      if (d && !d.isPower && d.tags && d.tags.lit && p.turn && p.turn.thunderhead) v *= 2;
+      if (d && !d.isPower && d.tags && d.tags.lit && p.shThunder) v *= 2;
       if (cb._shIter === 'mc' && has(cb, p, 'resonance')) v += 1;
       v += shx(cb, p, 'staticPlus');
     }
@@ -157,7 +157,7 @@ function install(K) {
     if (d.type === 'Skill') {
       if (d.tags.dmg && !d.tags.noEcho) p.shLast = d;
       if (!NO_REPEAT[d.key] && !d.shNoAct) p.shLastAny = d;
-      if (d.tags.lit && T.thunderhead && d.key !== 'sh_thunderhead') T.thunderhead = false;
+      if (d.tags.lit && p.shThunder && d.key !== 'sh_thunderhead') p.shThunder = false;
       if (T.mcNext && d.key !== 'sh_focus_the_storm') T.mcNext = 0;
       if (T.shSurge && d.key !== 'sh_surge') { T.costSkill = (T.costSkill || 0) + T.shSurge; T.shSurge = 0; }
       if (d.tags.heal) { if (p.shFreeHeal) p.shFreeHeal = false; { const hs = shx(cb, p, 'healStatic'), pool = cb.alive().filter(x => !x.isPlayer); if (hs && pool.length) stat(cb, pool[Math.floor(cb.rng() * pool.length)], hs); } { const ph = shx(cb, p, 'mcPartyHeal'); if (ph && S.didMC) for (const a of cb.allies()) cb.heal(a, ph, 'Monsoon Season', true); }
@@ -232,7 +232,7 @@ function install(K) {
   LIT('lightning_cloud', 'Lightning Cloud', 'Green', 20, 'self', 'For 3 turns, at the start of your turn deal 4 Nature damage and apply 1 Static to all enemies.', (cb, t, p) => { cb.timed(p, 'sh_cloud', 3, { each: (c, q) => { for (const e of c.alive()) if (!c.over) { NAT(c, q, e, 4, 'Lightning Cloud'); stat(c, e, 1); } } }); say(cb, 'A Lightning Cloud gathers for 3 turns.'); }, { aoe: 1 });
   LIT('ball_lightning', 'Ball Lightning', 'Green', 20, 'enemy', 'Deal 10 Nature damage and apply 2 Static. If it Multicasts, it returns to your hand.', (cb, t) => { const e = D_(cb, t, 10, 'Ball Lightning'); stat(cb, e, 2); if (cb._shIter === 'mc' && cb._shSX) cb._shSX.back = true; }, { dmg: 10 });
   LIT('arc', 'Arc', 'Green', 10, 'enemy', 'Deal 5 Nature damage. If the target has Static, the bolt jumps to another enemy for the same.', (cb, t) => { const e = tgtOf(cb, t), had = e && e.static > 0; D_(cb, e, 5, 'Arc'); if (had) { const o = others(cb, e)[0]; if (o) { say(cb, `Arc jumps to ${o.name}.`); cb.hit(o, 5, 'Arc'); } } }, { dmg: 5 });
-  LIT('thunderhead', 'Thunderhead', 'Green', 10, 'self', 'Your next lightning spell this turn applies double Static.', (cb, t, p) => { p.turn.thunderhead = true; say(cb, 'Thunderhead: the next lightning spell applies double Static.'); }, {});
+  LIT('thunderhead', 'Thunderhead', 'Green', 10, 'self', 'Your next lightning spell applies double Static. It waits until you cast one, this turn or a later one.', (cb, t, p) => { p.shThunder = true;   /* Nov 15: a standing buff, no longer lost at end of turn */ say(cb, 'Thunderhead: the next lightning spell applies double Static.'); }, {});
   LIT('lightning_burst', 'Lightning Burst', 'Blue', 20, 'enemy', 'Deal 14 Nature damage. If the target has 5 or more Static, apply 3 more.', (cb, t) => { const e = D_(cb, t, 14, 'Lightning Burst'); if (e && e.static >= 5) stat(cb, e, 3); }, { dmg: 14 });
   LIT('thunderfall', 'Thunderfall', 'Blue', 30, 'enemy', 'Deal 30 Nature damage. Double against a Stunned target.', (cb, t) => { const e = tgtOf(cb, t); D_(cb, e, stunned(e) ? 60 : 30, 'Thunderfall'); }, { dmg: 30 });
   LIT('skys_wrath', "Sky's Wrath", 'Blue', 30, 'all', 'Deal 12 Nature damage and apply 4 Static to all enemies.', (cb) => { for (const e of cb.alive()) if (!cb.over) { cb.hit(e, 12, "Sky's Wrath"); stat(cb, e, 4); } }, { dmg: 12, aoe: 1 });

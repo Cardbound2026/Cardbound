@@ -203,8 +203,10 @@
       const left = Math.max(0, 25 - Math.floor((Date.now() - R.at) / 1000));
       if (!left) { answerReady(false, true); return; }
       const el = $('rcLeft'); if (el && !$('modal').hidden && el.dataset.sid === R.sid) el.textContent = left;
-      else { modal(`<h2>Ready check</h2><p>${esc(nameOfUid(p.from))} is starting ${what}.</p><p class="muted">Are you ready? <span id="rcLeft" data-sid="${R.sid}">${left}</span>s</p><div class="row"><button class="btn primary" id="rcYes">Ready</button><button class="btn" id="rcNo">Not ready</button></div>`);
-        $('rcYes').onclick = () => answerReady(true); $('rcNo').onclick = () => answerReady(false); }
+      else { modal(`<h2>Ready check</h2><p>${esc(nameOfUid(p.from))} is starting ${what}.</p>${p.kind !== 'raid' && typeof foodSlotHtml === 'function' ? foodSlotHtml() : ''}<p class="muted">Are you ready? <span id="rcLeft" data-sid="${R.sid}">${left}</span>s</p><div class="row"><button class="btn primary" id="rcYes">Ready</button><button class="btn" id="rcNo">Not ready</button></div>`);
+        $('rcYes').onclick = () => answerReady(true); $('rcNo').onclick = () => answerReady(false);
+        // Nov 15: the food slot is on the ready check too, so the riders (who never see the leader's Wagon) can slot a meal for this map
+        for (const b of $('modalBox').querySelectorAll('[data-food]')) b.onclick = () => { CBHub.slotMeal(profile, heroKey, b.classList.contains('on') ? '' : b.dataset.food); save(); const el = $('rcLeft'); if (el) el.removeAttribute('id'); draw(); }; }
     };
     draw(); clearInterval(R.timer); R.timer = setInterval(() => { if (NET.rc !== R || R.ans !== null) { clearInterval(R.timer); return; } draw(); }, 500);
   }

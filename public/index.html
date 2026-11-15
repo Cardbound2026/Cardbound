@@ -2168,7 +2168,7 @@ function install(K) {
     const p = cb.player; let v = Math.round(n);
     if (p && p.isPlayer) {
       const d = cb._playing;
-      if (d && !d.isPower && d.tags && d.tags.lit && p.turn && p.turn.thunderhead) v *= 2;
+      if (d && !d.isPower && d.tags && d.tags.lit && p.shThunder) v *= 2;
       if (cb._shIter === 'mc' && has(cb, p, 'resonance')) v += 1;
       v += shx(cb, p, 'staticPlus');
     }
@@ -2281,7 +2281,7 @@ function install(K) {
     if (d.type === 'Skill') {
       if (d.tags.dmg && !d.tags.noEcho) p.shLast = d;
       if (!NO_REPEAT[d.key] && !d.shNoAct) p.shLastAny = d;
-      if (d.tags.lit && T.thunderhead && d.key !== 'sh_thunderhead') T.thunderhead = false;
+      if (d.tags.lit && p.shThunder && d.key !== 'sh_thunderhead') p.shThunder = false;
       if (T.mcNext && d.key !== 'sh_focus_the_storm') T.mcNext = 0;
       if (T.shSurge && d.key !== 'sh_surge') { T.costSkill = (T.costSkill || 0) + T.shSurge; T.shSurge = 0; }
       if (d.tags.heal) { if (p.shFreeHeal) p.shFreeHeal = false; { const hs = shx(cb, p, 'healStatic'), pool = cb.alive().filter(x => !x.isPlayer); if (hs && pool.length) stat(cb, pool[Math.floor(cb.rng() * pool.length)], hs); } { const ph = shx(cb, p, 'mcPartyHeal'); if (ph && S.didMC) for (const a of cb.allies()) cb.heal(a, ph, 'Monsoon Season', true); }
@@ -2356,7 +2356,7 @@ function install(K) {
   LIT('lightning_cloud', 'Lightning Cloud', 'Green', 20, 'self', 'For 3 turns, at the start of your turn deal 4 Nature damage and apply 1 Static to all enemies.', (cb, t, p) => { cb.timed(p, 'sh_cloud', 3, { each: (c, q) => { for (const e of c.alive()) if (!c.over) { NAT(c, q, e, 4, 'Lightning Cloud'); stat(c, e, 1); } } }); say(cb, 'A Lightning Cloud gathers for 3 turns.'); }, { aoe: 1 });
   LIT('ball_lightning', 'Ball Lightning', 'Green', 20, 'enemy', 'Deal 10 Nature damage and apply 2 Static. If it Multicasts, it returns to your hand.', (cb, t) => { const e = D_(cb, t, 10, 'Ball Lightning'); stat(cb, e, 2); if (cb._shIter === 'mc' && cb._shSX) cb._shSX.back = true; }, { dmg: 10 });
   LIT('arc', 'Arc', 'Green', 10, 'enemy', 'Deal 5 Nature damage. If the target has Static, the bolt jumps to another enemy for the same.', (cb, t) => { const e = tgtOf(cb, t), had = e && e.static > 0; D_(cb, e, 5, 'Arc'); if (had) { const o = others(cb, e)[0]; if (o) { say(cb, `Arc jumps to ${o.name}.`); cb.hit(o, 5, 'Arc'); } } }, { dmg: 5 });
-  LIT('thunderhead', 'Thunderhead', 'Green', 10, 'self', 'Your next lightning spell this turn applies double Static.', (cb, t, p) => { p.turn.thunderhead = true; say(cb, 'Thunderhead: the next lightning spell applies double Static.'); }, {});
+  LIT('thunderhead', 'Thunderhead', 'Green', 10, 'self', 'Your next lightning spell applies double Static. It waits until you cast one, this turn or a later one.', (cb, t, p) => { p.shThunder = true;   /* Nov 15: a standing buff, no longer lost at end of turn */ say(cb, 'Thunderhead: the next lightning spell applies double Static.'); }, {});
   LIT('lightning_burst', 'Lightning Burst', 'Blue', 20, 'enemy', 'Deal 14 Nature damage. If the target has 5 or more Static, apply 3 more.', (cb, t) => { const e = D_(cb, t, 14, 'Lightning Burst'); if (e && e.static >= 5) stat(cb, e, 3); }, { dmg: 14 });
   LIT('thunderfall', 'Thunderfall', 'Blue', 30, 'enemy', 'Deal 30 Nature damage. Double against a Stunned target.', (cb, t) => { const e = tgtOf(cb, t); D_(cb, e, stunned(e) ? 60 : 30, 'Thunderfall'); }, { dmg: 30 });
   LIT('skys_wrath', "Sky's Wrath", 'Blue', 30, 'all', 'Deal 12 Nature damage and apply 4 Static to all enemies.', (cb) => { for (const e of cb.alive()) if (!cb.over) { cb.hit(e, 12, "Sky's Wrath"); stat(cb, e, 4); } }, { dmg: 12, aoe: 1 });
@@ -8373,8 +8373,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794717936680';
-  const CB_BUILD = '3adae58acf'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794725125135';
+  const CB_BUILD = 'c9bd7ab721'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8573,8 +8573,10 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       const left = Math.max(0, 25 - Math.floor((Date.now() - R.at) / 1000));
       if (!left) { answerReady(false, true); return; }
       const el = $('rcLeft'); if (el && !$('modal').hidden && el.dataset.sid === R.sid) el.textContent = left;
-      else { modal(`<h2>Ready check</h2><p>${esc(nameOfUid(p.from))} is starting ${what}.</p><p class="muted">Are you ready? <span id="rcLeft" data-sid="${R.sid}">${left}</span>s</p><div class="row"><button class="btn primary" id="rcYes">Ready</button><button class="btn" id="rcNo">Not ready</button></div>`);
-        $('rcYes').onclick = () => answerReady(true); $('rcNo').onclick = () => answerReady(false); }
+      else { modal(`<h2>Ready check</h2><p>${esc(nameOfUid(p.from))} is starting ${what}.</p>${p.kind !== 'raid' && typeof foodSlotHtml === 'function' ? foodSlotHtml() : ''}<p class="muted">Are you ready? <span id="rcLeft" data-sid="${R.sid}">${left}</span>s</p><div class="row"><button class="btn primary" id="rcYes">Ready</button><button class="btn" id="rcNo">Not ready</button></div>`);
+        $('rcYes').onclick = () => answerReady(true); $('rcNo').onclick = () => answerReady(false);
+        // Nov 15: the food slot is on the ready check too, so the riders (who never see the leader's Wagon) can slot a meal for this map
+        for (const b of $('modalBox').querySelectorAll('[data-food]')) b.onclick = () => { CBHub.slotMeal(profile, heroKey, b.classList.contains('on') ? '' : b.dataset.food); save(); const el = $('rcLeft'); if (el) el.removeAttribute('id'); draw(); }; }
     };
     draw(); clearInterval(R.timer); R.timer = setInterval(() => { if (NET.rc !== R || R.ans !== null) { clearInterval(R.timer); return; } draw(); }, 500);
   }
@@ -9492,6 +9494,11 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // ---------- What's new: the changelog (button bottom-right) and the new-version warning
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
+    { date: '2026-11-15', items: [
+      ["Interface", "Taunt now shows on the enemies it holds: every taunted enemy wears a Taunted debuff naming the hero it must attack."],
+      ["Interface", "Co-op: the ready check for a map run has the food slot on it, so everyone can slot a meal before the party sets out, not just the leader at the Wagon."],
+      ["Change", "Shaman: Thunderhead is a standing buff now. It waits for your next lightning spell, on this turn or a later one, instead of fading at the end of the turn. It shows on your hero while it is up."],
+    ] },
     { date: '2026-11-14', items: [
       ["Feature", "Food is slotted at the Wagon now. Meals you buy from Chef Brookt go into a pantry (you can stock several), and when you choose your map there is a food slot: click a meal to slot it, and it buffs that hero for the whole map. It is eaten when the map ends; the slot refills by itself while you have more of the same."],
       ["Fix", "Spiked Ward (Mage) was giving its Thorns all along, but your own Thorns were never shown on your hero, so it looked like nothing happened. Thorns now shows as a buff with its amount, from any source."],
@@ -17379,6 +17386,8 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if (!a.isPlayer && a.sh) { if (a.sh.soaked > 0) t.push(`<span class="tag bad" title="Takes 20% more Nature and Frost damage">Soaked</span>`); if (a.sh.deaf > 0) t.push(`<span class="tag bad" title="Deals 15% less damage">Deafened</span>`); if (a.sh.unsteady > 0) t.push(`<span class="tag bad" title="Its Block stops nothing">Unsteady</span>`); if (a.sh.worn > 0) t.push(`<span class="tag bad" title="All of its resistances are 10% lower">Stormworn</span>`); }
     if (!a.isPlayer && a.stunTurns > 0) t.push(`<span class="tag bad" title="Loses its next ${a.stunTurns > 1 ? a.stunTurns + ' turns' : 'turn'}">${a.toad ? 'Toad' : 'Stunned'}${a.stunTurns > 1 ? ' ' + a.stunTurns : ''}</span>`);
     if (!a.isPlayer && a.manaLock > 0) t.push(`<span class="tag bad" title="Gains no mana on its next turn">Mana Lock</span>`);
+    if (a.isPlayer && a.shThunder) t.push(`<span class="tag good" title="Thunderhead: your next lightning spell applies double Static">Thunderhead</span>`);
+    if (!a.isPlayer && cb.taunting && cb.taunting() && a.hp > 0) t.push(`<span class="tag bad" title="Taunted: it must attack ${esc(cb.taunting().name)} this round">Taunted</span>`);   // Nov 15: a taunt now shows on the enemies it holds
     if (a.isPlayer && a.cls === 'Shaman') { if (a.shMH) t.push(`<span class="tag good" title="Stored Multi-hit chance for your next Attack (Twinstorm)">+${a.shMH}% Multi-hit</span>`); if (a.shMC) t.push(`<span class="tag good" title="Stored Multicast chance for your next spell (Twinstorm)">+${a.shMC}% Multicast</span>`); if (a.shSure) t.push(`<span class="tag good" title="Your next Attack is a sure Multi-hit (Rainbringer)">Sure Multi-hit</span>`); if (a.shNextX > 1) t.push(`<span class="tag good" title="Your next card is played ${a.shNextX === 3 ? 'three times' : 'twice'}">Next card x${a.shNextX}</span>`); if (a.shCoil) t.push(`<span class="tag good" title="Your next card deals ${a.shCoil * 30}% more">Coiled x${a.shCoil}</span>`); if (a.shLW) t.push(`<span class="tag good" title="Charged Attacks left: +4 Nature damage and 1 Static each">Lightning Weapon ${a.shLW}</span>`); if (a.shFW) t.push(`<span class="tag good" title="Burning Attacks left: +4 Fire damage and 1 Burn each">Flame Weapon ${a.shFW}</span>`); if (a.shIW) t.push(`<span class="tag good" title="Freezing Attacks left: +4 Frost damage and 1 Chill each">Frost Weapon ${a.shIW}</span>`); if (a.shDmgUp) t.push(`<span class="tag good" title="Gathering Storm">+${a.shDmgUp}% damage</span>`); if (cb.has(a, 'codex_skybreaker')) t.push(a.shLastAny ? `<span class="tag good" title="Skybreaker: when one of your Attacks Multi-hits, ${esc(a.shLastAny.name)} is played again, free (damage halved). (${esc(a.shLastAny.text)})">Repeats: ${esc(a.shLastAny.name)}</span>` : `<span class="tag" title="Skybreaker repeats the last Skill you played when an Attack Multi-hits. You have not played one yet this fight.">Repeats: no Skill yet</span>`); if (a.shSkip > 0 || (a.turn && a.turn.noAct)) t.push(`<span class="tag bad" title="Turns you cannot act">Sitting out${a.shSkip > 0 ? ' ' + a.shSkip : ''}</span>`); }
     if (!a.isPlayer && a.parryBack) t.push(`<span class="tag bad" title="Attacks into its Parry take damage back">Riposte</span>`);
     if (!a.isPlayer && a.thorns) t.push(`<span class="tag bad">Spikes ${a.thorns}</span>`);
