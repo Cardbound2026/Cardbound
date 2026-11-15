@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Fix', "The welcome screen no longer shows a scroll bar that scrolled nothing."],
+      ['Interface', "The town now fills the whole window, edge to edge: the black frame, the Cardbound logo and the Menu button in the corner are gone (Esc or the gear on the bar still opens the menu). Your hero line sits on the town, top left, and the build number sits just above the mini map."],
       ['Balance', "Tank codexes (Bulwark, Riposte, Barrier Savant, Stormwarden) now say \"Wearing this codex makes you a Tank\" instead of the line about Block fading. A Tank keeps what it had (only 20% of its Block, Parry, Barrier or Guard fades each round, not half) and gains a new passive: each Attack or damaging Skill that hits has a 50% chance to Taunt the enemy. Talents that add Taunt chance stack on top. Tank is in the Glossary."],
       ['Balance', "Playing together pays. For each extra hero in the party everyone gets +20% gold, +20% codex XP (was +10%), a 20% chance of a second roll of each monster's loot, and +10 Luck. Three heroes: +40% gold and XP, a 40% chance of the extra loot roll, +20 Luck."],
       ['Balance', "Parties on +0 maps have an easier time: monsters gain 30% less of their extra party HP and deal 10% less damage. +1 and higher are unchanged."],

@@ -63,6 +63,14 @@ body:has(#scrStart:not([hidden])) header.top .brand h1 { font-size: 32px; line-h
 body:has(#scrStart:not([hidden])) header.top #brandLine, body:has(#scrStart:not([hidden])) header.top #topInfo, #scrStart .tbhelp { display: none; }
 body:has(#scrStart:not([hidden])) header.top #btnMenu { position: absolute; right: 0; top: 1px; padding: 4px 14px; }
 #scrStart .townbar { min-height: 34px; padding-right: 96px; }
+/* Nov 14: the town fills the whole window: no logo, no Menu button (Esc or the gear on the bar opens it), no black frame. The hero line sits on the town itself, top left; the build tag sits just over the mini map. */
+body:has(#scrStart:not([hidden])) header.top { display: none !important; }
+body:has(#scrStart:not([hidden])) { margin: 0 !important; overflow: hidden; }
+body:has(#scrStart:not([hidden])) .wrap { max-width: none !important; padding: 0 !important; gap: 0 !important; }
+#scrStart { position: relative; gap: 0 !important; } #scrStart .townwrap { border: 0 !important; border-radius: 0 !important; }
+#scrStart .townbar { position: absolute; left: 12px; top: 12px; z-index: 6; min-height: 0; padding: 4px 10px; max-width: calc(100% - 330px); background: rgba(10,8,6,.74); border: 1px solid rgba(94,70,48,.65); border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,.6); }
+body:has(#scrStart:not([hidden])) #verTag { top: 12px; bottom: auto; right: 64px; }
+body:has(#scrStart:not([hidden])) .cxbarrow { top: 52px; }
 @media (max-width: 900px) { body:has(#scrStart:not([hidden])) header.top .brand { display: none; } }
 .townbar b { font-family: var(--f-display); font-weight: 400; font-size: 22px; }
 .tbhelp { font-size: 12px; margin-left: auto; }
@@ -549,6 +557,8 @@ body.aiming { cursor: grabbing; user-select: none; }
 #splash { position: fixed; inset: 0; z-index: 2000; display: grid; grid-template-rows: 1fr auto 1fr; justify-items: center; align-items: center; cursor: pointer; background: #050406 url(img/ui/bg_title_hd.webp) center 40% / cover no-repeat; overflow: hidden; transition: opacity .7s ease, visibility .7s; }
 #splash::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 60% at 50% 45%, transparent 0, rgba(5,4,6,.35) 55%, rgba(5,4,6,.92) 100%), linear-gradient(180deg, rgba(5,4,6,.55), transparent 30%, transparent 60%, rgba(5,4,6,.9)); }
 #splash.gone { opacity: 0; visibility: hidden; pointer-events: none; }
+html:has(#splash:not(.gone)), body:has(#splash:not(.gone)) { overflow: hidden !important; }   /* Nov 14: no dead scroll bar beside the welcome screen (it belonged to the page behind it) */
+html:has(#scrStart:not([hidden])) { overflow: hidden; }
 #splash > * { position: relative; image-rendering: auto; }
 #splash .splogo { grid-row: 2; display: grid; justify-items: center; gap: 6px; animation: sprise 1.6s ease both; }
 #splash h1 { margin: 0; padding: 0 .08em .06em; font: 400 clamp(64px, 13vw, 168px)/.9 'Pirata One', 'New Rocker', serif; letter-spacing: 2px; color: #08080a;
@@ -7471,7 +7481,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   function sizeTown() {
     const wrap = $('townWrap'); const w = wrap.clientWidth;
     const TS = w < 600 ? 40 : 48, dpr = Math.min(2, window.devicePixelRatio || 1);
-    const h = Math.max(340, Math.min(window.innerHeight * ((settings.size || 100) / 100) - 118, MH * TS));
+    const h = Math.max(340, Math.min(window.innerHeight * ((settings.size || 100) / 100), MH * TS));   /* Nov 14: the town runs to the edges of the window (it used to leave 118px for the header and the frame) */
     cv.style.width = w + 'px'; cv.style.height = h + 'px'; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
     if (TS !== TOWN.TS || dpr !== TOWN.dpr) { TOWN.TS = TS; TOWN.dpr = dpr; TOWN.chunks.clear(); }
     TOWN.vw = w; TOWN.vh = h;
@@ -8282,8 +8292,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794704983120';
-  const CB_BUILD = '4c67f9af4d'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794705203670';
+  const CB_BUILD = 'b2b33b6394'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -9402,6 +9412,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Fix', "The welcome screen no longer shows a scroll bar that scrolled nothing."],
+      ['Interface', "The town now fills the whole window, edge to edge: the black frame, the Cardbound logo and the Menu button in the corner are gone (Esc or the gear on the bar still opens the menu). Your hero line sits on the town, top left, and the build number sits just above the mini map."],
       ['Balance', "Tank codexes (Bulwark, Riposte, Barrier Savant, Stormwarden) now say \"Wearing this codex makes you a Tank\" instead of the line about Block fading. A Tank keeps what it had (only 20% of its Block, Parry, Barrier or Guard fades each round, not half) and gains a new passive: each Attack or damaging Skill that hits has a 50% chance to Taunt the enemy. Talents that add Taunt chance stack on top. Tank is in the Glossary."],
       ['Balance', "Playing together pays. For each extra hero in the party everyone gets +20% gold, +20% codex XP (was +10%), a 20% chance of a second roll of each monster's loot, and +10 Luck. Three heroes: +40% gold and XP, a 40% chance of the extra loot roll, +20 Luck."],
       ['Balance', "Parties on +0 maps have an easier time: monsters gain 30% less of their extra party HP and deal 10% less damage. +1 and higher are unchanged."],
