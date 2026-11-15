@@ -3,7 +3,7 @@
 //   Static: lightning builds Static on a target. It never fades and does nothing by itself; cards consume it for damage and for Stuns
 //     (Electrocute: 10 Static = 1 turn; Mass Electrocute: 1 turn per 10). Raid bosses can't be Stunned; everything else can, every time.
 //   Guard: the Shaman's defence. It is Dodge, or Block while a shield is worn (p.defName).
-//   Shaman debuffs (only the Shaman applies them; e.sh = { soaked, deaf, unsteady, worn } in turns): Soaked +20% Nature damage taken,
+//   Shaman debuffs (only the Shaman applies them; e.sh = { soaked, deaf, unsteady, worn } in turns): Soaked +20% Nature and Frost damage taken,
 //     Deafened -15% damage dealt, Unsteady: its Block stops nothing, Stormworn: all resistances -10%.
 // Six codexes: Twinstorm (hybrid), Rainbringer (healer), Stormcaller (caster), Skybreaker (melee), Stormwarden (support tank), Calm Eye (control).
 // The engine calls the hooks in X (see "Shaman" in engine.js); the cards, Powers and codex passives are below.
@@ -73,7 +73,7 @@ function install(K) {
     cb.say('crit', `${e.name} is ${word || 'Stunned'}: it loses its next ${e.stunTurns > 1 ? e.stunTurns + ' turns' : 'turn'}.`); return true;
   }
   // ---------------- Shaman debuffs ----------------
-  const DEB = { soaked: ['Soaked', 3, 'takes 20% more Nature damage'], deaf: ['Deafened', 2, 'deals 15% less damage'], unsteady: ['Unsteady', 2, 'its Block stops nothing'], worn: ['Stormworn', 3, 'all resistances -10%'] };
+  const DEB = { soaked: ['Soaked', 3, 'takes 20% more Nature and Frost damage'], deaf: ['Deafened', 2, 'deals 15% less damage'], unsteady: ['Unsteady', 2, 'its Block stops nothing'], worn: ['Stormworn', 3, 'all resistances -10%'] };
   function deb(cb, e, key) {
     if (!e || e.hp <= 0 || cb.over) return; const [nm, turns, what] = DEB[key], p = cb.player;
     if (e.isPlayer) { if (key === 'deaf') e.weak = (e.weak || 0) + 15; else if (key === 'unsteady') e.block = 0; else if (key === 'soaked') e.unwarded = (e.unwarded || 0) + 20; else for (const el of Object.keys(e.resist || {})) e.resist[el] = Math.max(0, e.resist[el] - 10); say(cb, `${e.name} is ${nm}.`); return; }
@@ -184,7 +184,7 @@ function install(K) {
   };
   X.eTick = (cb, e) => { const S = e.sh; if (!S) return; const by = S.by && cb.actorById(S.by), hold = !!(by && by.hp > 0 && cb.has(by, 'codex_stormwarden')); if (hold) return; for (const k of ['soaked', 'deaf', 'unsteady', 'worn']) if (S[k] > 0) S[k]--; };
   // damage an attacker (p) does to e
-  X.vs = (cb, p, e, dtype, kind) => { let m = 1; const S = e.sh; if (S && S.soaked > 0 && dtype === 'Nature') m *= 1.2; if (!p.isPlayer || p.cls !== CLS) return m;
+  X.vs = (cb, p, e, dtype, kind) => { let m = 1; const S = e.sh; if (S && S.soaked > 0 && (dtype === 'Nature' || dtype === 'Frost')) m *= 1.2; if (!p.isPlayer || p.cls !== CLS) return m;
     if (p.shDmgUp) m *= 1 + p.shDmgUp / 100;
     if (!p.powers.some(w => w.def && w.def.shx)) return m;   // the rest are talents
     const v = (k) => shx(cb, p, k), T = p.turn || {};
@@ -325,7 +325,7 @@ function install(K) {
   H('soothing_mist', 'Soothing Mist', 'White', 20, 'self', 'Heal every ally for 10.', (cb) => { for (const a of cb.allies()) cb.heal(a, 10, 'Soothing Mist'); }, { heal: 10 });
   H('rain_mend', 'Rain Mend', 'Green', 10, 'ally', 'Heal an ally for 8 now and 5 a turn for 3 turns.', (cb, t, p) => { const a = allyOf(t, p); cb.heal(a, 8, 'Rain Mend'); a.hot.push({ n: 5, turns: 3 }); say(cb, `${a.name} heals 5 a turn for 3 turns.`); }, { heal: 23 });
   H('leaping_mend', 'Leaping Mend', 'Green', 20, 'ally', 'Heal an ally for 15, then the next most hurt ally for 8.', (cb, t, p) => { const a = allyOf(t, p); cb.heal(a, 15, 'Leaping Mend'); const o = cb.allies().filter(x => x !== a).sort((x, y) => x.hp / x.maxHp - y.hp / y.maxHp)[0]; if (o) cb.heal(o, 8, 'Leaping Mend'); }, { heal: 23 });
-  H('living_lightning', 'Living Lightning', 'Green', 20, 'ally', 'Heal an ally for 14. If it Multicasts, it also casts Chain Lightning.', (cb, t, p) => { cb.heal(allyOf(t, p), 14, 'Living Lightning'); if (cb._shIter === 'mc') recast(cb, p, C.sh_chain_lightning, null, 1, 'Living Lightning'); }, { heal: 14 });
+  H('living_lightning', 'Living Lightning', 'Green', 20, 'ally', 'Chain heal: heal an ally for 14, then it jumps to the next most hurt ally for 10, then another for 7. If it Multicasts, it jumps into Chain Lightning.', (cb, t, p) => { const a = allyOf(t, p); cb.heal(a, 14, 'Living Lightning'); const rest = cb.allies().filter(x => x !== a && x.hp > 0).sort((x, y) => x.hp / x.maxHp - y.hp / y.maxHp); [10, 7].forEach((v, i) => { if (rest[i]) cb.heal(rest[i], v, 'Living Lightning'); }); if (cb._shIter === 'mc') recast(cb, p, C.sh_chain_lightning, null, 1, 'Living Lightning'); }, { heal: 31 });
   W('storm_ward', 'Storm Ward', 'Green', 'Skill', 10, 'ally', 'Nature', 'An ally takes 30% less damage until their next turn.', (cb, t, p) => { const a = allyOf(t, p); a.until.lessDmg = Math.max(a.until.lessDmg || 0, 0.3); say(cb, `${a.name} takes 30% less damage until their next turn.`); }, {});
   H('lifeline', 'Lifeline', 'Blue', 20, 'ally', 'Heal an ally for 23, or for 45 if they are below 30% health.', (cb, t, p) => { const a = allyOf(t, p); cb.heal(a, a.hp < a.maxHp * 0.3 ? 45 : 23, 'Lifeline'); }, { heal: 23 });
   H('tidal_surge', 'Tidal Surge', 'Blue', 30, 'self', 'Heal the whole party for 18.', (cb) => { for (const a of cb.allies()) cb.heal(a, 18, 'Tidal Surge'); }, { heal: 18 });
@@ -336,7 +336,7 @@ function install(K) {
   W('last_light', 'Last Light', 'Gold', 'Skill', 30, 'ally', 'Nature', 'Until their next turn, an ally cannot drop below 1 health. Exhaust.', (cb, t, p) => { const a = allyOf(t, p); a.until.noDie = true; say(cb, `${a.name} cannot fall until their next turn.`); }, {}, { exhaust: true });
 
   // ================= debuffs and control =================
-  LIT('drench', 'Drench', 'White', 10, 'enemy', 'Deal 4 Nature damage and apply Soaked (takes 20% more Nature damage).', (cb, t) => { const e = tgtOf(cb, t); deb(cb, e, 'soaked'); D_(cb, e, 4, 'Drench'); }, { dmg: 4, lit: 0 });
+  LIT('drench', 'Drench', 'White', 10, 'enemy', 'Deal 4 Nature damage and apply Soaked.', (cb, t) => { const e = tgtOf(cb, t); deb(cb, e, 'soaked'); D_(cb, e, 4, 'Drench'); }, { dmg: 4, lit: 0 });
   LIT('weather_away', 'Weather Away', 'White', 10, 'enemy', 'Deal 4 Nature damage and apply Stormworn (all resistances -10%).', (cb, t) => { const e = tgtOf(cb, t); deb(cb, e, 'worn'); D_(cb, e, 4, 'Weather Away'); }, { dmg: 4, lit: 0 });
   W('shifting_ground', 'Shifting Ground', 'White', 'Skill', 10, 'enemy', 'Nature', 'Apply Unsteady (its Block stops nothing). Draw a card.', (cb, t, p) => { deb(cb, tgtOf(cb, t), 'unsteady'); cb.drawCards(p, 1); }, { draw: 1 });
   LIT('siphon_charge', 'Siphon Charge', 'White', 10, 'enemy', "Burn 10 of the target's mana and apply 2 Static.", (cb, t) => { const e = tgtOf(cb, t); if (!e) return; const s = cb.drainMana(e, 10); say(cb, `Siphon Charge burns ${s} mana.`); stat(cb, e, 2); }, { noEcho: 1 });

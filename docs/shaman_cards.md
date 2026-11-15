@@ -100,7 +100,7 @@ Guard means Dodge, or Block while a shield is worn. A star marks a card the desi
 | Soothing Mist | White | 20 | Skill | Heal every ally for 10. |
 | Rain Mend | Green | 10 | Skill | Heal an ally for 8 now and 5 a turn for 3 turns. |
 | Leaping Mend | Green | 20 | Skill | Heal an ally for 15, then the next most hurt ally for 8. |
-| Living Lightning ★ | Green | 20 | Skill | Heal an ally for 14. If it Multicasts, it also casts Chain Lightning. |
+| Living Lightning ★ | Green | 20 | Skill | Chain heal: heal an ally for 14, then it jumps to the next most hurt ally for 10, then another for 7. If it Multicasts, it jumps into Chain Lightning. |
 | Storm Ward | Green | 10 | Skill | An ally takes 30% less damage until your next turn. |
 | Lifeline | Blue | 20 | Skill | Heal an ally for 15, or 30 if they are below 30% health. |
 | Tidal Surge | Blue | 30 | Skill | Heal the whole party for 18. |
@@ -111,7 +111,7 @@ Guard means Dodge, or Block while a shield is worn. A star marks a card the desi
 
 | Card | Rarity | Cost | Type | Effect |
 |---|---|---|---|---|
-| Drench | White | 10 | Skill | Deal 4 Nature damage and apply Soaked (takes 20% more Nature damage). |
+| Drench | White | 10 | Skill | Deal 4 Nature damage and apply Soaked. |
 | Weather Away ★ | White | 10 | Skill | Deal 4 Nature damage and apply Stormworn (all resistances -10%). |
 | Shifting Ground | White | 10 | Skill | Apply Unsteady (loses Dodge and Block). Draw a card. |
 | Siphon Charge | White | 10 | Skill | Burn 10 of the target's mana and apply 2 Static. |

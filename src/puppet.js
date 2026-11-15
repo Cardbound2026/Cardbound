@@ -191,7 +191,7 @@ window.CB_PUPPET = (function () {
     // the off-hand weapon. That weapon used to hang in the air beside the body.
     if (v === 'e' && anim !== 'sit' && anim !== 'dead') {
       const a2 = P.parts[2], a3 = P.parts[3], k2 = [a2.r, a2.dx, a2.dy], k3 = a3.r, calm = anim === 'idle' || anim === 'walk', armed = look.off && !HELD[look.off[0]];
-      a2.r = anim === 'walk' ? -k2[0] * .9 : anim === 'idle' ? k2[0] : (armed ? -.72 : -.3) + k2[0] * .12; a3.r = calm ? Math.min(k3, -.2) : armed ? -.7 : -1.15; a2.dx = k2[1] + (anim === 'idle' ? 1 : 3); a2.dy = k2[2] - 1;
+      a2.r = anim === 'walk' ? -k2[0] * .9 : anim === 'idle' ? k2[0] : (armed ? -.72 : .12) + k2[0] * .12; a3.r = calm ? Math.min(k3, -.2) : armed ? -.7 : -.35;   /* Nov 14: with nothing in the off hand the far arm hangs behind the body in a fight. Raised, its hand poked out past the sword hand and made the glove look like an oven mitt */ a2.dx = k2[1] + (anim === 'idle' ? 1 : 3); a2.dy = k2[2] - 1;
       for (const i of [2, 3]) { base(); chain(wg, B, P, i); wg.drawImage(strip, i * S, 0, S, S, 0, 0, S, S); }
       if (look.off && !HELD[look.off[0]]) held(look.off, 3, 0, calm ? wrot(look.off, 1) : k2[0] + k3 + wrot(look.off, 1) + P.wr - a2.r - a3.r - .3);
       wg.setTransform(1, 0, 0, 1, 0, 0); wg.globalCompositeOperation = 'source-atop'; wg.fillStyle = 'rgba(8,6,12,.34)'; wg.fillRect(0, 0, work.width, work.height); wg.globalCompositeOperation = 'source-over';

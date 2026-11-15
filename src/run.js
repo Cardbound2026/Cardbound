@@ -246,7 +246,7 @@ class Run {
   // Nov 14: playing together pays. Each extra hero in the party: +20% gold, +20% codex XP, a 20% chance of a second roll of every monster's loot, and +10 Luck.
   coopBonus() { return Math.max(0, this.members.length - 1); }
   // Nov 14: a party on a +0 map: monsters gain 30% less of their extra party HP (and deal 10% less: mobDmg). +1 and higher are as before.
-  coopEase() { return this.members.length > 1 && !this.level ? 0.7 : 1; }
+  coopEase() { return this.members.length > 1 && !this.level ? 0.6 : 1; }
   luck(m) { m = m || this.m0; return m.stats.luck + (this.activeBuffs().luck || 0) + (CB.talentRun(m.talents).luck || 0) + this.partyTalent('partyLuck') + 10 * this.coopBonus(); } // + Luck from codex talents
   partyTalent(k) { return this.members.reduce((t, x) => t + (CB.talentRun(x.talents)[k] || 0), 0); }
   finish(result) { this.over = result; for (const m of this.members) if (!m.kept) m.kept = { items: [], gold: 0 }; }

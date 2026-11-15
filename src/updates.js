@@ -2,6 +2,15 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ["Balance", "Co-op on +0 maps: monsters now have 40% less HP in a party (it was 30% less)."],
+      ["Feature", "Co-op: if it is your turn and you have not played a card after 3 seconds, YOUR TURN comes up across the field until you act."],
+      ["Interface", "Co-op map: the node you voted for wears a thick glowing ring (green for your own vote) with each voter's initial beside it, and the party frames stay up on the map with a green tick next to everyone who has voted."],
+      ["Change", "Shaman: Living Lightning is a chain heal now (14 to your target, then 10 and 7 to the next most hurt allies). When it Multicasts it jumps into Chain Lightning."],
+      ["Balance", "Shaman: Soaked makes the enemy take 20% more Nature and Frost damage (it was Nature only). Drench's card text is shorter; Soaked is in the glossary."],
+      ["Interface", "Town: the toolbar sits flush on the bottom edge of the screen, and the hero line (name, power, gold, account) lost its border."],
+      ["Interface", "Show my hand is a small plain button again: no gold, no pulsing."],
+      ["Art", "Heroes with nothing in the off hand keep their far arm behind the body in a fight. Its hand used to stick out past the sword hand, which made the glove look like an oven mitt."],
+      ["Change", "The build stamp in the corner shows Eastern time."],
       ['Fix', "The welcome screen no longer shows a scroll bar that scrolled nothing."],
       ['Interface', "The town now fills the whole window, edge to edge: the black frame, the Cardbound logo and the Menu button in the corner are gone (Esc or the gear on the bar still opens the menu). Your hero line sits on the town, top left, and the build number sits just above the mini map."],
       ['Balance', "Tank codexes (Bulwark, Riposte, Barrier Savant, Stormwarden) now say \"Wearing this codex makes you a Tank\" instead of the line about Block fading. A Tank keeps what it had (only 20% of its Block, Parry, Barrier or Guard fades each round, not half) and gains a new passive: each Attack or damaging Skill that hits has a 50% chance to Taunt the enemy. Talents that add Taunt chance stack on top. Tank is in the Glossary."],

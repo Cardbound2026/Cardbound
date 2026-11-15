@@ -68,7 +68,8 @@ body:has(#scrStart:not([hidden])) header.top { display: none !important; }
 body:has(#scrStart:not([hidden])) { margin: 0 !important; overflow: hidden; }
 body:has(#scrStart:not([hidden])) .wrap { max-width: none !important; padding: 0 !important; gap: 0 !important; }
 #scrStart { position: relative; gap: 0 !important; } #scrStart .townwrap { border: 0 !important; border-radius: 0 !important; }
-#scrStart .townbar { position: absolute; left: 12px; top: 12px; z-index: 6; min-height: 0; padding: 4px 10px; max-width: calc(100% - 330px); background: rgba(10,8,6,.74); border: 1px solid rgba(94,70,48,.65); border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,.6); }
+#scrStart .townbar { position: absolute; left: 12px; top: 12px; z-index: 6; min-height: 0; padding: 4px 10px; max-width: calc(100% - 330px); background: rgba(10,8,6,.74); border: 0; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,.6); }
+@media (max-width: 1750px) { body:has(#scrStart:not([hidden])) #btnUpdates { bottom: 54px; } }   /* the bar now sits on the bottom edge; on narrower screens What's new steps up over it */
 body:has(#scrStart:not([hidden])) #verTag { top: 12px; bottom: auto; right: 64px; }
 body:has(#scrStart:not([hidden])) .cxbarrow { top: 52px; }
 @media (max-width: 900px) { body:has(#scrStart:not([hidden])) header.top .brand { display: none; } }
@@ -164,6 +165,10 @@ body:has(#bagPeek) .gtip:not(.bagpop) { display: none !important; }
 .runmain { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 12px; align-items: start; }
 @media (max-width: 980px) { .runmain { grid-template-columns: minmax(0, 1fr); } }
 .mapwrap { position: relative; }
+.votering { filter: drop-shadow(0 0 5px currentColor); animation: votepulse 1.2s ease-in-out infinite; } @keyframes votepulse { 50% { stroke-opacity: .45; } }
+#mapParty { position: absolute; left: 8px; top: 52px; z-index: 4; display: grid; gap: 4px; pointer-events: none; } #mapParty[hidden] { display: none; }
+#mapParty .uf { background: rgba(10,8,6,.6); position: relative; } #mapParty .uf.gone { opacity: .4; filter: grayscale(1); }
+#mapParty .mpv { flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font: 800 24px / 1 var(--f-ui); color: #5a4a38; border: 2px solid #3a2f24; background: #0c0a09; } #mapParty .uf.voted .mpv { color: #0c0a09; background: #7fe08a; border-color: #2c6a35; box-shadow: 0 0 10px rgba(127,224,138,.7); }
 .mapscroll { overflow: auto; max-height: calc(100vh - 170px); min-height: 420px; border-radius: 6px; background: radial-gradient(120% 70% at 50% 100%, #2a2219 0%, #16120e 70%); }
 .mapscroll svg { display: block; margin: 0 auto; }
 .node { cursor: default; }
@@ -1195,8 +1200,8 @@ body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn:hover { filter: brightness(
 body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn > i { display: none !important; }
 body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn > b { right: -9px !important; bottom: -9px !important; min-width: 26px; height: 26px; border-radius: 13px; border: 2px solid #8a653d; line-height: 22px; font-size: 14px; }
 body #scrCombat.bf.hud3 .field-panel > .hud .pilebtn > em { display: block !important; bottom: auto !important; top: calc(100% + 9px) !important; font-size: 11px !important; color: #8f8676 !important; }
-.watchbtn { display: none; } body #scrCombat.bf.hud3 .field-panel > .hud .watchbtn { display: block; position: absolute; left: calc(var(--u) * 102); top: calc(var(--u) * 35.5); width: calc(var(--u) * 56); height: calc(var(--u) * 11); padding: 0 4px; box-sizing: border-box; border-radius: 4px; border: 2px solid #d6a14a; background: linear-gradient(#5a431f, #2e2110); color: #ffe7b0; font: 700 calc(var(--u) * 4.6) / 1 var(--f-ui); letter-spacing: .03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; z-index: 5; box-shadow: 0 0 0 1px #000, 0 0 10px rgba(214,161,74,.55); image-rendering: auto; }
-body #scrCombat.bf.hud3 .field-panel > .hud .watchbtn:hover { filter: brightness(1.25); } body #scrCombat.bf.hud3 .field-panel > .hud .watchbtn.mine { animation: watchpulse 1.4s ease-in-out infinite; } @keyframes watchpulse { 50% { box-shadow: 0 0 0 1px #000, 0 0 16px 3px rgba(255,214,130,.9); } } @media (prefers-reduced-motion: reduce) { .watchbtn.mine { animation: none !important; } }
+.watchbtn { display: none; } body #scrCombat.bf.hud3 .field-panel > .hud .watchbtn { display: block; position: absolute; left: calc(var(--u) * 109); top: calc(var(--u) * 39.5); width: calc(var(--u) * 42); height: calc(var(--u) * 7.5); padding: 0 4px; box-sizing: border-box; border-radius: 3px; border: 1px solid #5a4a38; background: #1a1612; color: #cfc3ad; font: 600 calc(var(--u) * 3.6) / 1 var(--f-ui); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; z-index: 5; image-rendering: auto; }
+body #scrCombat.bf.hud3 .field-panel > .hud .watchbtn:hover { color: #fff; border-color: #8a7a62; } body #scrCombat.bf.hud3 .field-panel > .hud .watchbtn.mine { color: #e8dcc4; border-color: #7a6a52; }
 body #scrCombat.bf.hud3 .field-panel > .hud .pi-draw { left: calc(var(--u) * 113) !important; top: calc(var(--u) * 50) !important; width: calc(var(--u) * 34) !important; height: calc(var(--u) * 48) !important; }
 body #scrCombat.bf.hud3 .field-panel > .hud .pi-discard { right: calc(var(--u) * 114) !important; top: calc(var(--u) * 30) !important; width: calc(var(--u) * 30) !important; height: calc(var(--u) * 42) !important; }
 body #scrCombat.bf.hud3 .field-panel > .hud .pi-exhaust { right: calc(var(--u) * 114) !important; top: calc(var(--u) * 92) !important; width: calc(var(--u) * 22) !important; height: calc(var(--u) * 22) !important; }
@@ -1311,6 +1316,8 @@ body #scrCombat.bf.hud3 .order .otile .onm, body #scrCombat.bf.hud3 .order .otil
 body #scrCombat.bf.hud3 .order .otile .ofig { width: 100%; height: 100% !important; overflow: hidden; display: grid; place-items: center; }
 body #scrCombat.bf.hud3 .order .otile .ofig img, body #scrCombat.bf.hud3 .order .otile .ofig svg { width: 135% !important; height: 135% !important; object-fit: cover; object-position: 50% 20%; image-rendering: pixelated; }
 body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 21px; text-shadow: 0 1px 2px #000; }
+#yourTurn { position: absolute; left: 50%; top: 30%; transform: translate(-50%, -50%); z-index: 40; pointer-events: none; font: 400 clamp(34px, 4.4vw, 62px) / 1 var(--f-display); letter-spacing: .06em; color: #ffe2a0; text-shadow: 0 3px 0 #000, 0 0 18px rgba(0,0,0,.95), 0 0 34px rgba(255,170,60,.7); white-space: nowrap; animation: ytpop .35s ease-out, ytpulse 1.4s ease-in-out .35s infinite; } #yourTurn[hidden] { display: none; }
+@keyframes ytpop { from { opacity: 0; transform: translate(-50%, -50%) scale(1.6); } } @keyframes ytpulse { 50% { opacity: .72; } }
 /* your frame, top left (World of Warcraft style) */
 #scrCombat.hud3 :is(#pframe, #pframe2) { display: flex; position: absolute; left: 12px; top: 12px; z-index: 6; gap: 12px; align-items: center; width: 340px; padding: 10px 14px 10px 10px; box-sizing: border-box; transform: scale(.96); transform-origin: 0 0; filter: drop-shadow(0 2px 3px rgba(0,0,0,.9)); }
 :is(#pframe, #pframe2, .uf) .pfimg { position: relative; flex: none; width: 66px; height: 66px; border-radius: 50%; overflow: hidden; background: #0c0a09; border: 2px solid #8a653d; box-shadow: 0 0 0 2px #0c0a09; }
@@ -1419,7 +1426,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     <div class="panel mapwrap">
       <div class="mapsearch"><input id="mapFind" type="search" placeholder="Search the map: a card, an item, a monster, a shrine..." aria-label="Search the map" autocomplete="off"><span id="mapFindN" class="muted"></span></div>
       <div class="mapfindres" id="mapFindRes" hidden></div>
-      <div class="mapscroll" id="mapScroll"></div>
+      <div class="mapscroll" id="mapScroll"></div><div id="mapParty" hidden aria-label="Your party"></div>
       <div class="info" id="nodeInfo"></div>
       <div class="legend" id="legend"></div>
       <div class="planbox" id="planBox"></div>
@@ -1440,7 +1447,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   <section id="scrCombat" class="combatmain" hidden aria-label="Battle">
     <aside class="panel combatchat" id="combatChat" hidden aria-label="Chat"><div class="lgrip cgrip-w" data-grip="w" title="Drag to resize (double-click to reset)"></div><div class="lgrip lgrip-h" data-grip="h" title="Drag to resize (double-click to reset)"></div><div class="lgrip cgrip-c" data-grip="c" title="Drag to resize (double-click to reset)"></div></aside>
     <div class="field-panel">
-      <div class="order" id="order"></div><div id="pframe" aria-label="Your hero"></div><div id="pframe2" aria-label="Your rival" hidden></div><div id="ufParty" class="ufcol" aria-label="Your party" hidden></div><div id="ufFoes" class="ufcol" aria-label="The enemy" hidden></div>
+      <div class="order" id="order"></div><div id="yourTurn" hidden>YOUR TURN</div><div id="pframe" aria-label="Your hero"></div><div id="pframe2" aria-label="Your rival" hidden></div><div id="ufParty" class="ufcol" aria-label="Your party" hidden></div><div id="ufFoes" class="ufcol" aria-label="The enemy" hidden></div>
       <div class="stage"><div id="playerSlot"></div><div class="vs">vs</div><div class="foes" id="foes"></div><div class="playedpeek" id="playedPeek" hidden aria-live="polite"></div></div>
       <div class="hud">
         <div class="mana"><div class="orb" id="orb">0</div><div class="mtext"><b>Mana</b><small id="manaSub"></small></div></div>
@@ -2107,7 +2114,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
 //   Static: lightning builds Static on a target. It never fades and does nothing by itself; cards consume it for damage and for Stuns
 //     (Electrocute: 10 Static = 1 turn; Mass Electrocute: 1 turn per 10). Raid bosses can't be Stunned; everything else can, every time.
 //   Guard: the Shaman's defence. It is Dodge, or Block while a shield is worn (p.defName).
-//   Shaman debuffs (only the Shaman applies them; e.sh = { soaked, deaf, unsteady, worn } in turns): Soaked +20% Nature damage taken,
+//   Shaman debuffs (only the Shaman applies them; e.sh = { soaked, deaf, unsteady, worn } in turns): Soaked +20% Nature and Frost damage taken,
 //     Deafened -15% damage dealt, Unsteady: its Block stops nothing, Stormworn: all resistances -10%.
 // Six codexes: Twinstorm (hybrid), Rainbringer (healer), Stormcaller (caster), Skybreaker (melee), Stormwarden (support tank), Calm Eye (control).
 // The engine calls the hooks in X (see "Shaman" in engine.js); the cards, Powers and codex passives are below.
@@ -2177,7 +2184,7 @@ function install(K) {
     cb.say('crit', `${e.name} is ${word || 'Stunned'}: it loses its next ${e.stunTurns > 1 ? e.stunTurns + ' turns' : 'turn'}.`); return true;
   }
   // ---------------- Shaman debuffs ----------------
-  const DEB = { soaked: ['Soaked', 3, 'takes 20% more Nature damage'], deaf: ['Deafened', 2, 'deals 15% less damage'], unsteady: ['Unsteady', 2, 'its Block stops nothing'], worn: ['Stormworn', 3, 'all resistances -10%'] };
+  const DEB = { soaked: ['Soaked', 3, 'takes 20% more Nature and Frost damage'], deaf: ['Deafened', 2, 'deals 15% less damage'], unsteady: ['Unsteady', 2, 'its Block stops nothing'], worn: ['Stormworn', 3, 'all resistances -10%'] };
   function deb(cb, e, key) {
     if (!e || e.hp <= 0 || cb.over) return; const [nm, turns, what] = DEB[key], p = cb.player;
     if (e.isPlayer) { if (key === 'deaf') e.weak = (e.weak || 0) + 15; else if (key === 'unsteady') e.block = 0; else if (key === 'soaked') e.unwarded = (e.unwarded || 0) + 20; else for (const el of Object.keys(e.resist || {})) e.resist[el] = Math.max(0, e.resist[el] - 10); say(cb, `${e.name} is ${nm}.`); return; }
@@ -2288,7 +2295,7 @@ function install(K) {
   };
   X.eTick = (cb, e) => { const S = e.sh; if (!S) return; const by = S.by && cb.actorById(S.by), hold = !!(by && by.hp > 0 && cb.has(by, 'codex_stormwarden')); if (hold) return; for (const k of ['soaked', 'deaf', 'unsteady', 'worn']) if (S[k] > 0) S[k]--; };
   // damage an attacker (p) does to e
-  X.vs = (cb, p, e, dtype, kind) => { let m = 1; const S = e.sh; if (S && S.soaked > 0 && dtype === 'Nature') m *= 1.2; if (!p.isPlayer || p.cls !== CLS) return m;
+  X.vs = (cb, p, e, dtype, kind) => { let m = 1; const S = e.sh; if (S && S.soaked > 0 && (dtype === 'Nature' || dtype === 'Frost')) m *= 1.2; if (!p.isPlayer || p.cls !== CLS) return m;
     if (p.shDmgUp) m *= 1 + p.shDmgUp / 100;
     if (!p.powers.some(w => w.def && w.def.shx)) return m;   // the rest are talents
     const v = (k) => shx(cb, p, k), T = p.turn || {};
@@ -2429,7 +2436,7 @@ function install(K) {
   H('soothing_mist', 'Soothing Mist', 'White', 20, 'self', 'Heal every ally for 10.', (cb) => { for (const a of cb.allies()) cb.heal(a, 10, 'Soothing Mist'); }, { heal: 10 });
   H('rain_mend', 'Rain Mend', 'Green', 10, 'ally', 'Heal an ally for 8 now and 5 a turn for 3 turns.', (cb, t, p) => { const a = allyOf(t, p); cb.heal(a, 8, 'Rain Mend'); a.hot.push({ n: 5, turns: 3 }); say(cb, `${a.name} heals 5 a turn for 3 turns.`); }, { heal: 23 });
   H('leaping_mend', 'Leaping Mend', 'Green', 20, 'ally', 'Heal an ally for 15, then the next most hurt ally for 8.', (cb, t, p) => { const a = allyOf(t, p); cb.heal(a, 15, 'Leaping Mend'); const o = cb.allies().filter(x => x !== a).sort((x, y) => x.hp / x.maxHp - y.hp / y.maxHp)[0]; if (o) cb.heal(o, 8, 'Leaping Mend'); }, { heal: 23 });
-  H('living_lightning', 'Living Lightning', 'Green', 20, 'ally', 'Heal an ally for 14. If it Multicasts, it also casts Chain Lightning.', (cb, t, p) => { cb.heal(allyOf(t, p), 14, 'Living Lightning'); if (cb._shIter === 'mc') recast(cb, p, C.sh_chain_lightning, null, 1, 'Living Lightning'); }, { heal: 14 });
+  H('living_lightning', 'Living Lightning', 'Green', 20, 'ally', 'Chain heal: heal an ally for 14, then it jumps to the next most hurt ally for 10, then another for 7. If it Multicasts, it jumps into Chain Lightning.', (cb, t, p) => { const a = allyOf(t, p); cb.heal(a, 14, 'Living Lightning'); const rest = cb.allies().filter(x => x !== a && x.hp > 0).sort((x, y) => x.hp / x.maxHp - y.hp / y.maxHp); [10, 7].forEach((v, i) => { if (rest[i]) cb.heal(rest[i], v, 'Living Lightning'); }); if (cb._shIter === 'mc') recast(cb, p, C.sh_chain_lightning, null, 1, 'Living Lightning'); }, { heal: 31 });
   W('storm_ward', 'Storm Ward', 'Green', 'Skill', 10, 'ally', 'Nature', 'An ally takes 30% less damage until their next turn.', (cb, t, p) => { const a = allyOf(t, p); a.until.lessDmg = Math.max(a.until.lessDmg || 0, 0.3); say(cb, `${a.name} takes 30% less damage until their next turn.`); }, {});
   H('lifeline', 'Lifeline', 'Blue', 20, 'ally', 'Heal an ally for 23, or for 45 if they are below 30% health.', (cb, t, p) => { const a = allyOf(t, p); cb.heal(a, a.hp < a.maxHp * 0.3 ? 45 : 23, 'Lifeline'); }, { heal: 23 });
   H('tidal_surge', 'Tidal Surge', 'Blue', 30, 'self', 'Heal the whole party for 18.', (cb) => { for (const a of cb.allies()) cb.heal(a, 18, 'Tidal Surge'); }, { heal: 18 });
@@ -2440,7 +2447,7 @@ function install(K) {
   W('last_light', 'Last Light', 'Gold', 'Skill', 30, 'ally', 'Nature', 'Until their next turn, an ally cannot drop below 1 health. Exhaust.', (cb, t, p) => { const a = allyOf(t, p); a.until.noDie = true; say(cb, `${a.name} cannot fall until their next turn.`); }, {}, { exhaust: true });
 
   // ================= debuffs and control =================
-  LIT('drench', 'Drench', 'White', 10, 'enemy', 'Deal 4 Nature damage and apply Soaked (takes 20% more Nature damage).', (cb, t) => { const e = tgtOf(cb, t); deb(cb, e, 'soaked'); D_(cb, e, 4, 'Drench'); }, { dmg: 4, lit: 0 });
+  LIT('drench', 'Drench', 'White', 10, 'enemy', 'Deal 4 Nature damage and apply Soaked.', (cb, t) => { const e = tgtOf(cb, t); deb(cb, e, 'soaked'); D_(cb, e, 4, 'Drench'); }, { dmg: 4, lit: 0 });
   LIT('weather_away', 'Weather Away', 'White', 10, 'enemy', 'Deal 4 Nature damage and apply Stormworn (all resistances -10%).', (cb, t) => { const e = tgtOf(cb, t); deb(cb, e, 'worn'); D_(cb, e, 4, 'Weather Away'); }, { dmg: 4, lit: 0 });
   W('shifting_ground', 'Shifting Ground', 'White', 'Skill', 10, 'enemy', 'Nature', 'Apply Unsteady (its Block stops nothing). Draw a card.', (cb, t, p) => { deb(cb, tgtOf(cb, t), 'unsteady'); cb.drawCards(p, 1); }, { draw: 1 });
   LIT('siphon_charge', 'Siphon Charge', 'White', 10, 'enemy', "Burn 10 of the target's mana and apply 2 Static.", (cb, t) => { const e = tgtOf(cb, t); if (!e) return; const s = cb.drainMana(e, 10); say(cb, `Siphon Charge burns ${s} mana.`); stat(cb, e, 2); }, { noEcho: 1 });
@@ -5418,7 +5425,7 @@ class Run {
   // Nov 14: playing together pays. Each extra hero in the party: +20% gold, +20% codex XP, a 20% chance of a second roll of every monster's loot, and +10 Luck.
   coopBonus() { return Math.max(0, this.members.length - 1); }
   // Nov 14: a party on a +0 map: monsters gain 30% less of their extra party HP (and deal 10% less: mobDmg). +1 and higher are as before.
-  coopEase() { return this.members.length > 1 && !this.level ? 0.7 : 1; }
+  coopEase() { return this.members.length > 1 && !this.level ? 0.6 : 1; }
   luck(m) { m = m || this.m0; return m.stats.luck + (this.activeBuffs().luck || 0) + (CB.talentRun(m.talents).luck || 0) + this.partyTalent('partyLuck') + 10 * this.coopBonus(); } // + Luck from codex talents
   partyTalent(k) { return this.members.reduce((t, x) => t + (CB.talentRun(x.talents)[k] || 0), 0); }
   finish(result) { this.over = result; for (const m of this.members) if (!m.kept) m.kept = { items: [], gold: 0 }; }
@@ -8292,8 +8299,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794705203670';
-  const CB_BUILD = 'b2b33b6394'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794707925622';
+  const CB_BUILD = '08d1355c31'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8712,7 +8719,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // version tag in the bottom-right corner: compare with your co-op partner
   (function () {
     const el = document.createElement('div'); el.id = 'verTag';
-    const when = CB_BUILT_AT ? new Date(CB_BUILT_AT).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+    const when = CB_BUILT_AT ? new Date(CB_BUILT_AT).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }) + ' ET' : '';   /* Nov 14: always Eastern time, whoever is looking */
     el.textContent = `Build ${CB_BUILD}${when ? ' · ' + when : ''}`; el.title = 'The version you have loaded. Co-op partners must show the same build (reload with Ctrl+F5 if not).';
     document.body.appendChild(el);
   })();
@@ -9412,6 +9419,15 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ["Balance", "Co-op on +0 maps: monsters now have 40% less HP in a party (it was 30% less)."],
+      ["Feature", "Co-op: if it is your turn and you have not played a card after 3 seconds, YOUR TURN comes up across the field until you act."],
+      ["Interface", "Co-op map: the node you voted for wears a thick glowing ring (green for your own vote) with each voter's initial beside it, and the party frames stay up on the map with a green tick next to everyone who has voted."],
+      ["Change", "Shaman: Living Lightning is a chain heal now (14 to your target, then 10 and 7 to the next most hurt allies). When it Multicasts it jumps into Chain Lightning."],
+      ["Balance", "Shaman: Soaked makes the enemy take 20% more Nature and Frost damage (it was Nature only). Drench's card text is shorter; Soaked is in the glossary."],
+      ["Interface", "Town: the toolbar sits flush on the bottom edge of the screen, and the hero line (name, power, gold, account) lost its border."],
+      ["Interface", "Show my hand is a small plain button again: no gold, no pulsing."],
+      ["Art", "Heroes with nothing in the off hand keep their far arm behind the body in a fight. Its hand used to stick out past the sword hand, which made the glove look like an oven mitt."],
+      ["Change", "The build stamp in the corner shows Eastern time."],
       ['Fix', "The welcome screen no longer shows a scroll bar that scrolled nothing."],
       ['Interface', "The town now fills the whole window, edge to edge: the black frame, the Cardbound logo and the Menu button in the corner are gone (Esc or the gear on the bar still opens the menu). Your hero line sits on the town, top left, and the build number sits just above the mini map."],
       ['Balance', "Tank codexes (Bulwark, Riposte, Barrier Savant, Stormwarden) now say \"Wearing this codex makes you a Tank\" instead of the line about Block fading. A Tank keeps what it had (only 20% of its Block, Parry, Barrier or Guard fades each round, not half) and gains a new passive: each Attack or damaging Skill that hits has a 50% chance to Taunt the enemy. Talents that add Taunt chance stack on top. Tank is in the Glossary."],
@@ -12478,7 +12494,7 @@ window.CB_PUPPET = (function () {
     // the off-hand weapon. That weapon used to hang in the air beside the body.
     if (v === 'e' && anim !== 'sit' && anim !== 'dead') {
       const a2 = P.parts[2], a3 = P.parts[3], k2 = [a2.r, a2.dx, a2.dy], k3 = a3.r, calm = anim === 'idle' || anim === 'walk', armed = look.off && !HELD[look.off[0]];
-      a2.r = anim === 'walk' ? -k2[0] * .9 : anim === 'idle' ? k2[0] : (armed ? -.72 : -.3) + k2[0] * .12; a3.r = calm ? Math.min(k3, -.2) : armed ? -.7 : -1.15; a2.dx = k2[1] + (anim === 'idle' ? 1 : 3); a2.dy = k2[2] - 1;
+      a2.r = anim === 'walk' ? -k2[0] * .9 : anim === 'idle' ? k2[0] : (armed ? -.72 : .12) + k2[0] * .12; a3.r = calm ? Math.min(k3, -.2) : armed ? -.7 : -.35;   /* Nov 14: with nothing in the off hand the far arm hangs behind the body in a fight. Raised, its hand poked out past the sword hand and made the glove look like an oven mitt */ a2.dx = k2[1] + (anim === 'idle' ? 1 : 3); a2.dy = k2[2] - 1;
       for (const i of [2, 3]) { base(); chain(wg, B, P, i); wg.drawImage(strip, i * S, 0, S, S, 0, 0, S, S); }
       if (look.off && !HELD[look.off[0]]) held(look.off, 3, 0, calm ? wrot(look.off, 1) : k2[0] + k3 + wrot(look.off, 1) + P.wr - a2.r - a3.r - .3);
       wg.setTransform(1, 0, 0, 1, 0, 0); wg.globalCompositeOperation = 'source-atop'; wg.fillStyle = 'rgba(8,6,12,.34)'; wg.fillRect(0, 0, work.width, work.height); wg.globalCompositeOperation = 'source-over';
@@ -14641,7 +14657,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       ['Block / Barrier / Dodge / Parry / Absorb', 'Your class\'s defense (Warrior and Paladin: Block, Mage: Barrier, Rogue: Dodge, Warlock: Absorb, Shaman: Guard, which is Dodge or Block with a shield; Parry is Warrior Block). It absorbs damage before HP. Half of it fades at the start of your turn. Poison goes straight past it.'],
       ['Guard (Shaman)', 'The Shaman\'s defense: it is Dodge, or Block while a shield is worn. Works like the other classes\' defenses.'],
       ['Static (Shaman)', 'Lightning builds Static on a target. It never fades and does nothing by itself: the Shaman spends it. Electrocute consumes 10 to Stun for a turn, Mass Electrocute Stuns 1 turn for every 10, Discharge deals 3 damage for each. These Stuns work on bosses and can be chained; raid bosses are immune.'],
-      ['Soaked', 'Shaman debuff. Takes 20% more Nature damage. Lasts 3 turns.'],
+      ['Soaked', 'Shaman debuff. Takes 20% more Nature and Frost damage. Lasts 3 turns. Applied by Drench, Deluge and Overcast.'],
       ['Deafened', 'Shaman debuff. Deals 15% less damage. Lasts 2 turns.'],
       ['Unsteady', 'Shaman debuff. Its Block stops nothing. Lasts 2 turns.'],
       ['Stormworn', 'Shaman debuff. All of its resistances are 10% lower. Lasts 3 turns.'],
@@ -15772,7 +15788,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     .statbox table { width: 100%; border-collapse: collapse; font-size: 14px; } .statbox th { text-align: right; font-weight: 500; color: #8f8674; font-size: 12px; padding: 0 0 3px 8px; } .statbox th:first-child { text-align: left; padding-left: 0; }
     .statbox td { padding: 2.5px 0 2.5px 8px; text-align: right; color: #a79c86; font-variant-numeric: tabular-nums; border-top: 1px solid rgba(255,255,255,.05); } .statbox td:first-child { text-align: left; color: #d8cdb8; padding-left: 0; } .statbox td.tot { color: #fff; font-weight: 600; } .statbox td.g { color: #9fc98a; } .statbox td.t { color: #b9a3ee; }
     .statbox ul { margin: 0; padding: 0 0 0 16px; font-size: 13.5px; color: #cfc4ae; } .statbox li { margin: 2px 0; } .statbox li b { color: #f0e6d0; }
-    #actbar { position: absolute; right: 12px; bottom: 46px; z-index: 6; display: flex; gap: 4px; padding: 5px; background: linear-gradient(#211c16, #14110d); border: 1px solid #5a4a2e; border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,.55); }
+    #actbar { position: absolute; right: 12px; bottom: 0; border-bottom: 0 !important; border-radius: 6px 6px 0 0 !important; z-index: 6; display: flex; gap: 4px; padding: 5px; background: linear-gradient(#211c16, #14110d); border: 1px solid #5a4a2e; border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,.55); }
     #actbar button { width: 44px; height: 44px; padding: 0; border: 1px solid #3c3222; border-radius: 4px; background: #0e0c0a; cursor: pointer; display: grid; place-items: center; position: relative; }
     #actbar button:hover { border-color: #d6a14a; background: #1c1710; } #actbar button .uic { width: 36px; height: 36px; background-size: 216px 108px; }
     #actbar button kbd { position: absolute; right: 2px; bottom: 1px; font: 600 10px/1 sans-serif; color: #f4d89a; text-shadow: 0 1px 0 #000; }
@@ -16559,6 +16575,10 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     $('mapScroll').innerHTML = mapSvg(true);
     if (window.CB_MAPART) try { CB_MAPART.decorate($('mapScroll'), run); } catch (e) {}
     renderPlan();
+    { const mp = $('mapParty'), on = run.members.length > 1; mp.hidden = !on;   // the party frames stay up on the map, with a tick beside everyone who has voted where to go
+      mp.innerHTML = !on ? '' : run.members.map((m, i) => { const S = run.online && NET.s, gone = m.left || (S && S.gone[i]), voted = !!(S && S.votes[i]), hp = m.hp, mx = (m.stats && m.stats.maxHp) || 1;
+        let fig = ''; try { fig = window.CB_HEROPUP ? CB_HEROPUP.html('mp' + i, CB_HEROPUP.lookOf(m, m.cls, m.gear), { view: 's', s: 1 }) : ''; } catch (e) {}
+        return `<div class="uf ${gone ? 'gone' : ''} ${voted ? 'voted' : ''}"><div class="pfimg">${fig || `<img src="img/heroes/${String(m.cls).toLowerCase()}.png" alt="">`}</div><div class="pfr"><div class="pfn" style="color:${CC[m.cls]}">${esc(m.name)} <small>${esc(m.cls)}${run.online && i === run.myMi ? ' &middot; you' : ''}</small></div><div class="pfrow"><div class="pfhp"><i style="width:${Math.max(0, 100 * hp / mx)}%"></i><span>${hp} / ${mx}</span></div></div></div>${S ? `<div class="mpv" title="${voted ? 'Has voted' : 'Still choosing'}">${voted ? '&#10003;' : ''}</div>` : ''}</div>`; }).join(''); }
     const curRow = run.currentRow(), W = PADX * 2 + (COLS - 1) * CW, H = PADT() + PADY + ROWS * RH, reach = new Set(run.over ? [] : run.reachable());
     if (scroll) { const target = PADT() + (ROWS + 1 - Math.max(1, curRow + 2)) * RH; const sc = $('mapScroll'); sc.scrollTop = Math.max(0, target - sc.clientHeight / 2); }
     $('legend').innerHTML = Object.entries(NODE).map(([k, t]) => `<span><svg width="16" height="16" viewBox="-11 -11 22 22"><path d="${t.path}" fill="${t.color}"/></svg>${t.label}</span>`).join('');
@@ -16624,7 +16644,8 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       const label = vis ? `${n.enraged ? 'Enraged ' : ''}${t.label}${n.enemies ? ': ' + n.enemies.map(k => DATA.enemies[k].name).join(', ') : ''}, row ${n.row}` : `Unknown, row ${n.row}`;
       dots += `<g class="node ${isReach ? 'reach' : ''}" data-id="${n.id}" transform="translate(${p.x},${p.y})" ${isReach ? 'tabindex="0" role="button"' : ''} aria-label="${esc(label)}">
         ${n.enraged && vis ? `<circle r="${r + 6}" fill="none" stroke="#ff3a1a" stroke-width="2.5" class="enraged"><title>Enraged elite</title></circle>` : ''}<circle class="ring" r="${r}" fill="${fill}" stroke="${here ? '#d6a14a' : visited ? '#6b5a44' : vis ? '#4a3d31' : '#2a231c'}" stroke-width="2"/>
-        ${run.online && NET.s ? run.members.map((m, i) => NET.s.votes[i] === n.id ? `<circle cx="${-r + 4 + 9 * i}" cy="${r + 4}" r="4" fill="${CC[m.cls]}" stroke="#111"/>` : '').join('') : ''}
+        ${run.online && NET.s ? (() => { const vs = run.members.map((m, i) => NET.s.votes[i] === n.id ? { m, i } : null).filter(Boolean); if (!vs.length) return ''; const mine = vs.some(v => v.i === run.myMi);
+          return `<circle r="${r + 7}" fill="none" stroke="${mine ? '#7fe08a' : CC[vs[0].m.cls]}" stroke-width="5" class="votering${mine ? ' mine' : ''}"/>` + vs.map((v, k) => `<g transform="translate(${r + 20},${(k - (vs.length - 1) / 2) * 22})"><circle r="10" fill="${CC[v.m.cls]}" stroke="#0c0a09" stroke-width="2"/><text y="4.5" text-anchor="middle" font-size="12" font-weight="800" fill="#0c0a09">${esc((v.m.name || '?')[0].toUpperCase())}</text></g>`).join(''); })() : ''}
         ${vis ? `<path d="${t.path}" transform="scale(${n.id === 'boss' ? 1.25 : .95})" fill="${visited && !here ? '#6b5a44' : t.color}" opacity="${visited && !here ? .7 : 1}"/>` : `<text y="5" text-anchor="middle" fill="#4a3d31" font-size="15" font-weight="700">?</text>`}
       </g>`;
     }
@@ -17246,7 +17267,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if (a.frozen) t.push(`<span class="tag bad">Frozen</span>`);
     // Nov 14: the Shaman's marks
     if (a.static) t.push(`<span class="tag bad" title="Static: it does nothing by itself and never fades. The Shaman spends it: Electrocute Stuns for 10, Discharge deals 3 damage for each.">Static ${a.static}</span>`);
-    if (!a.isPlayer && a.sh) { if (a.sh.soaked > 0) t.push(`<span class="tag bad" title="Takes 20% more Nature damage">Soaked</span>`); if (a.sh.deaf > 0) t.push(`<span class="tag bad" title="Deals 15% less damage">Deafened</span>`); if (a.sh.unsteady > 0) t.push(`<span class="tag bad" title="Its Block stops nothing">Unsteady</span>`); if (a.sh.worn > 0) t.push(`<span class="tag bad" title="All of its resistances are 10% lower">Stormworn</span>`); }
+    if (!a.isPlayer && a.sh) { if (a.sh.soaked > 0) t.push(`<span class="tag bad" title="Takes 20% more Nature and Frost damage">Soaked</span>`); if (a.sh.deaf > 0) t.push(`<span class="tag bad" title="Deals 15% less damage">Deafened</span>`); if (a.sh.unsteady > 0) t.push(`<span class="tag bad" title="Its Block stops nothing">Unsteady</span>`); if (a.sh.worn > 0) t.push(`<span class="tag bad" title="All of its resistances are 10% lower">Stormworn</span>`); }
     if (!a.isPlayer && a.stunTurns > 0) t.push(`<span class="tag bad" title="Loses its next ${a.stunTurns > 1 ? a.stunTurns + ' turns' : 'turn'}">${a.toad ? 'Toad' : 'Stunned'}${a.stunTurns > 1 ? ' ' + a.stunTurns : ''}</span>`);
     if (!a.isPlayer && a.manaLock > 0) t.push(`<span class="tag bad" title="Gains no mana on its next turn">Mana Lock</span>`);
     if (a.isPlayer && a.cls === 'Shaman') { if (a.shMH) t.push(`<span class="tag good" title="Stored Multi-hit chance for your next Attack (Twinstorm)">+${a.shMH}% Multi-hit</span>`); if (a.shMC) t.push(`<span class="tag good" title="Stored Multicast chance for your next spell (Twinstorm)">+${a.shMC}% Multicast</span>`); if (a.shSure) t.push(`<span class="tag good" title="Your next Attack is a sure Multi-hit (Rainbringer)">Sure Multi-hit</span>`); if (a.shNextX > 1) t.push(`<span class="tag good" title="Your next card is played ${a.shNextX === 3 ? 'three times' : 'twice'}">Next card x${a.shNextX}</span>`); if (a.shCoil) t.push(`<span class="tag good" title="Your next card deals ${a.shCoil * 30}% more">Coiled x${a.shCoil}</span>`); if (a.shLW) t.push(`<span class="tag good" title="Charged Attacks left: +4 Nature damage and 1 Static each">Lightning Weapon ${a.shLW}</span>`); if (a.shFW) t.push(`<span class="tag good" title="Burning Attacks left: +4 Fire damage and 1 Burn each">Flame Weapon ${a.shFW}</span>`); if (a.shIW) t.push(`<span class="tag good" title="Freezing Attacks left: +4 Frost damage and 1 Chill each">Frost Weapon ${a.shIW}</span>`); if (a.shDmgUp) t.push(`<span class="tag good" title="Gathering Storm">+${a.shDmgUp}% damage</span>`); if (cb.has(a, 'codex_skybreaker')) t.push(a.shLastAny ? `<span class="tag good" title="Skybreaker: when one of your Attacks Multi-hits, ${esc(a.shLastAny.name)} is played again, free (damage halved). (${esc(a.shLastAny.text)})">Repeats: ${esc(a.shLastAny.name)}</span>` : `<span class="tag" title="Skybreaker repeats the last Skill you played when an Attack Multi-hits. You have not played one yet this fight.">Repeats: no Skill yet</span>`); if (a.shSkip > 0 || (a.turn && a.turn.noAct)) t.push(`<span class="tag bad" title="Turns you cannot act">Sitting out${a.shSkip > 0 ? ' ' + a.shSkip : ''}</span>`); }
@@ -17435,6 +17456,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     { const cb = typeof exCardBack === 'function' ? exCardBack(p.cls) : 0; $('piles').style.setProperty('--cbx', (cb % 10) / 9 * 100 + '%'); const cr = (window.CB_CARDBACKS || { rows: 2 }).rows; $('piles').style.setProperty('--cby', Math.floor(cb / 10) / Math.max(1, cr - 1) * 100 + '%'); $('piles').style.setProperty('--cbh', cr * 100 + '%'); }   // Nov 13: the piles show your card back
     $('piles').innerHTML = `<button class="pilebtn pi-draw" data-n="${p.drawPile.length}" data-pile="draw" title="Draw pile: ${p.drawPile.length} cards (you draw ${p.draw} a round)"><i></i><b>${p.drawPile.length}</b><em>Draw</em></button><button class="pilebtn pi-discard" data-n="${Math.min(3, p.discard.length)}" data-pile="discard" title="Discard pile: ${p.discard.length} cards"><i></i><b>${p.discard.length}</b><em>Discard</em></button><button class="pilebtn pi-exhaust" data-n="${Math.min(1, p.exhaust.length)}" data-pile="exhaust" title="Exhausted: ${p.exhaust.length} cards (gone for this fight)"><i></i><b>${p.exhaust.length}</b><em>Exhaust</em></button><span class="hchip">Draws <b>${p.draw}</b>/round</span>${fat ? `<span class="hchip">Status cards <b>${fat}</b></span>` : ''}${cb.pressure() ? `<span class="hchip">Pressure <b>+${Math.round(cb.pressure() * 100)}%</b></span>` : ''}`;
     const myTurn = cb.phase === 'player' && !cb.over && (cb.myMi == null || cb.canAct(p));
+    yourTurnWatch(myTurn && cb.myMi != null && party && !cb.duel ? cb.round + ':' + p.id : '', p);
     $('btnEnd').disabled = !myTurn || busy;
     const hint = $('hint'); hint.classList.remove('alert');
     if (cb.over) hint.textContent = cb.over === 'win' ? 'Victory.' : 'Defeat.';
@@ -17487,6 +17509,12 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     return `<div class="cardrow" style="--rc:${RC[d.rarity] || 'var(--line)'}"><span class="n">${n}x</span><b>${esc(d.name)}${d.planned === false ? ' <span class="muted">(can\'t afford: discarded)</span>' : ''}</b><span class="cst">${d.cost != null ? d.cost + ' mana' : 'unplayable'}</span><span class="tx">${esc(d.text)}</span></div>`;
   }
   // party frames (Nov 14): only in a party on the new fight screen, and only when the screen is wide enough to give up both edges
+  // co-op: three seconds into your turn with no card played, a YOUR TURN call-out comes up and stays until you act
+  const YT = { key: '', t: 0 };
+  function yourTurnWatch(key, p) { const el = $('yourTurn'), acted = !!(p && p.turn && (p.turn.played || []).length);
+    if (!key || acted) { clearTimeout(YT.t); YT.t = 0; YT.key = acted ? key : ''; el.hidden = true; return; }
+    if (key === YT.key) return; YT.key = key; clearTimeout(YT.t); el.hidden = true;
+    YT.t = setTimeout(() => { YT.t = 0; const q = cb && hero(); if (YT.key !== key || !cb || cb.over || cb.phase !== 'player' || !cb.canAct(q) || (q.turn && (q.turn.played || []).length) || $('scrCombat').hidden) return; el.hidden = false; }, 3000); }
   function ufOn() { return !!cb && hud3On() && !cb.duel && cb.partySize > 1 && cb.partySize <= 4 && innerWidth >= 1200 && cb.enemies.length <= 6; }
   function ufUnit(el, cls) { const f = el && el.closest && el.closest('[data-uf]'); if (!f) return null; const u = document.querySelector(`#scrCombat .stage .unit[data-id="${f.dataset.uf}"]`); return u && (!cls || u.classList.contains(cls)) ? u : null; }
   function hud3On() { return innerWidth >= 900 && innerHeight >= 560 && cb && !cb.raid && !(cb.partySize > 4); }

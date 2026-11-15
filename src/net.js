@@ -423,7 +423,7 @@
   // version tag in the bottom-right corner: compare with your co-op partner
   (function () {
     const el = document.createElement('div'); el.id = 'verTag';
-    const when = CB_BUILT_AT ? new Date(CB_BUILT_AT).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+    const when = CB_BUILT_AT ? new Date(CB_BUILT_AT).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }) + ' ET' : '';   /* Nov 14: always Eastern time, whoever is looking */
     el.textContent = `Build ${CB_BUILD}${when ? ' · ' + when : ''}`; el.title = 'The version you have loaded. Co-op partners must show the same build (reload with Ctrl+F5 if not).';
     document.body.appendChild(el);
   })();

@@ -35,7 +35,7 @@ Lightning spells build Static on the target. Static does nothing by itself: card
 - Power: when a target reaches 15 Static, Electrocute is put into your hand from anywhere (deck, discard, exhaust).
 - Power: Multicasts apply 1 extra Static.
 - Power: if a Skill does not Multicast, roll again at 50% of your Multicast chance (30% chance: a 15% second roll).
-- **Living Lightning** (Healer): heal a target; if it Multicasts, it also casts Chain Lightning.
+- **Living Lightning** (Healer): chain heal (14, then 10 and 7 to the next most hurt allies); if it Multicasts, it jumps into Chain Lightning.
 - **Spirit Link** (Gold Power): all damage is shared evenly between the party.
 - Tank: a debuff that lowers all of the target's resistances by a small amount (counts as one more unique debuff).
 - **Lightning Shield** (Gold Power, lasts the fight): hits against the Shaman build Static on the attacker (amount per hit to set; 1 suggested).

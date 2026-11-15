@@ -33,7 +33,7 @@
       ['Block / Barrier / Dodge / Parry / Absorb', 'Your class\'s defense (Warrior and Paladin: Block, Mage: Barrier, Rogue: Dodge, Warlock: Absorb, Shaman: Guard, which is Dodge or Block with a shield; Parry is Warrior Block). It absorbs damage before HP. Half of it fades at the start of your turn. Poison goes straight past it.'],
       ['Guard (Shaman)', 'The Shaman\'s defense: it is Dodge, or Block while a shield is worn. Works like the other classes\' defenses.'],
       ['Static (Shaman)', 'Lightning builds Static on a target. It never fades and does nothing by itself: the Shaman spends it. Electrocute consumes 10 to Stun for a turn, Mass Electrocute Stuns 1 turn for every 10, Discharge deals 3 damage for each. These Stuns work on bosses and can be chained; raid bosses are immune.'],
-      ['Soaked', 'Shaman debuff. Takes 20% more Nature damage. Lasts 3 turns.'],
+      ['Soaked', 'Shaman debuff. Takes 20% more Nature and Frost damage. Lasts 3 turns. Applied by Drench, Deluge and Overcast.'],
       ['Deafened', 'Shaman debuff. Deals 15% less damage. Lasts 2 turns.'],
       ['Unsteady', 'Shaman debuff. Its Block stops nothing. Lasts 2 turns.'],
       ['Stormworn', 'Shaman debuff. All of its resistances are 10% lower. Lasts 3 turns.'],
