@@ -334,8 +334,24 @@ function placeIntents(stage, foes, s) {
   // hud3: a tall fighter (the act boss) would push its HP bar and intent off the top of the field or under the turn order; slide them down onto the figure instead
   if (document.getElementById('scrCombat').classList.contains('hud3')) {
     const lim = Math.max(sr.top + 8, ord ? R(ord).bottom + 6 : sr.top + 96);
+    // Nov 14: fighters standing close together (trios and bigger) had their HP bars and status tags on top of each other.
+    // Going left to right, a plate that would cover a neighbour's drops under its fighter's feet instead; the next one stays on top, and so on.
+    const hudTop = hud ? R(hud).top : sr.bottom;
+    const full = (pl) => { const r = R(pl), o = { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; for (const c of pl.querySelectorAll('.bar, .ushield, .tags > *, .uname')) { const q = R(c); if (!q.width) continue; o.left = Math.min(o.left, q.left); o.right = Math.max(o.right, q.right); o.top = Math.min(o.top, q.top); o.bottom = Math.max(o.bottom, q.bottom); } return o; };
+    const cross = (a, b, pad) => a.left < b.right + pad && a.right > b.left - pad && a.top < b.bottom + 2 && a.bottom > b.top - 2;
+    for (const side of [document.getElementById('playerSlot'), document.getElementById('foes')]) { if (!side) continue;
+      const us = [...side.querySelectorAll('.unit')].filter(u => u.querySelector('.uplate')).sort((a, b) => R(a).left - R(b).left); for (const u of us) { u.classList.remove('plow'); u.style.setProperty('--px', '0px'); }
+      if (us.length < 2) continue; const rs = us.map(u => full(u.querySelector('.uplate')));
+      if (!rs.some((r, a) => rs.some((q, b) => b > a && cross(r, q, 4)))) continue;            // nothing touches: leave them all on top
+      us.forEach((u, k) => { if (k % 2 === 1) { u.classList.add('plow'); if (full(u.querySelector('.uplate')).bottom > hudTop - 2) u.classList.remove('plow'); } });
+      // plates on the same level that still touch slide apart sideways
+      for (const low of [false, true]) { const row = us.filter(u => u.classList.contains('plow') === low);
+        for (let k = 1; k < row.length; k++) { const a = full(row[k - 1].querySelector('.uplate')), b = full(row[k].querySelector('.uplate')); const over = a.right + 6 - b.left;
+          if (over > 0 && a.top < b.bottom && a.bottom > b.top) { const h = Math.ceil(over / 2), pa = parseFloat(row[k - 1].style.getPropertyValue('--px')) || 0; row[k - 1].style.setProperty('--px', (pa - h) + 'px'); row[k].style.setProperty('--px', h + 'px'); } } }
+    }
     for (const u of document.querySelectorAll('#scrCombat .stage .unit')) {
       u.style.setProperty('--cy', '0px'); const pl = u.querySelector('.uplate'), it = u.querySelector('.uintent'); if (!pl) continue;
+      if (u.classList.contains('plow')) { let top = it && it.textContent.trim() ? R(it).top : lim; if (top < lim) u.style.setProperty('--cy', Math.ceil(lim - top) + 'px'); continue; }
       let top = R(pl).top; if (it && it.textContent.trim()) top = Math.min(top, R(it).top);
       if (top < lim) u.style.setProperty('--cy', Math.ceil(lim - top) + 'px');
     }

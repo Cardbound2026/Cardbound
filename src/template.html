@@ -1311,7 +1311,7 @@ body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 21px; text-sha
 :is(#pframe, #pframe2) .tags { display: flex; gap: 4px; flex-wrap: wrap; } :is(#pframe, #pframe2) .tags .sico.block { display: none; }
 /* compact notched HP bars over every unit; exact numbers on hover */
 #scrCombat.bf.hud3 .stage .unit > .uhead { display: none !important; }
-#scrCombat.bf.hud3 .stage .uplate { left: 50% !important; right: auto !important; bottom: calc(var(--figh, var(--fh)) + 4px) !important; transform: translate(-50%, var(--cy, 0px)); width: 150px !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; display: flex !important; flex-direction: column; align-items: center; gap: 5px; z-index: 4; filter: drop-shadow(0 1px 2px rgba(0,0,0,.9)); }
+#scrCombat.bf.hud3 .stage .uplate { left: 50% !important; right: auto !important; bottom: calc(var(--figh, var(--fh)) + 4px) !important; transform: translate(calc(-50% + var(--px, 0px)), var(--cy, 0px)); width: 150px !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; display: flex !important; flex-direction: column; align-items: center; gap: 5px; z-index: 4; filter: drop-shadow(0 1px 2px rgba(0,0,0,.9)); }
 #scrCombat.bf.hud3 .stage .uplate .uname, #scrCombat.bf.hud3 .stage .uplate .deckbtn, #scrCombat.bf.hud3 .stage #playerSlot .unit.me .uplate .tags { display: none !important; }
 #scrCombat.bf.hud3 .stage .uplate .bar { order: 1; position: relative; width: 124px !important; height: 10px !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; background: #0c0a09 !important; border: 1px solid #000 !important; border-image: none !important; box-shadow: 0 0 0 1px #4e4741 !important; border-radius: 0 !important; }
 #scrCombat.bf.hud3 .stage .uplate .bar::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(var(--n, 12px) - 1px), rgba(0,0,0,.85) calc(var(--n, 12px) - 1px) var(--n, 12px)); pointer-events: none; }
@@ -1320,6 +1320,7 @@ body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 21px; text-sha
 body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !important; } /* heroes' bars drain right to left like the frame up top (the old layout mirrored them) */
 #scrCombat.bf.hud3 .stage .uplate .tags { order: 2; display: flex !important; flex-wrap: wrap; justify-content: center !important; gap: 3px !important; width: 150px; margin: 0 !important; }
 #scrCombat.bf.hud3 .stage .uplate .tags .sico { width: 22px !important; height: 22px !important; }
+#scrCombat.bf.hud3 .stage .unit.plow .uplate { bottom: auto !important; top: 10px !important; transform: translate(calc(-50% + var(--px, 0px)), 0) !important; flex-direction: column; } #scrCombat.bf.hud3 .stage .unit.plow .uintent { bottom: calc(var(--figh, var(--fh)) + 8px) !important; }
 #scrCombat.bf.hud3 .stage .uintent { bottom: calc(var(--figh, var(--fh)) + var(--ih, 40px) + 10px) !important; right: auto !important; left: 0 !important; transform: translate(-50%, var(--cy, 0px)); }
 #scrCombat.hud3 .playedpeek { top: 96px; }
 .playedpeek.foeplay .ppcap b { color: #e8a090; }
