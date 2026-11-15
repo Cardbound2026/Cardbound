@@ -88,24 +88,24 @@ Guard means Dodge, or Block while a shield is worn. A star marks a card the desi
 | Charged Maces | Blue | 20 | Power | Your Attacks apply 1 Static. |
 | Overload | Blue | 20 | Skill | Your next spell is cast twice. |
 | Double Time | Blue | 20 | Skill | Your next Attack hits twice. |
-| Thunder Mend | Blue | 10 | Skill | Heal an ally for 8. Your next Attack deals 8 more as Nature damage. |
+| Thunder Mend | Blue | 10 | Skill | Heal an ally for 12. Your next Attack deals 8 more as Nature damage. |
 | Twin Soul | Gold | 30 | Power | Half your Multi-hit chance also counts as Multicast chance, and half your Multicast chance as Multi-hit chance. |
 
 ## Heals
 
 | Card | Rarity | Cost | Type | Effect |
 |---|---|---|---|---|
-| Mending Rain | White | 10 | Skill | Heal an ally for 8. |
-| Cleansing Rain | White | 10 | Skill | Heal an ally for 5 and remove one debuff. |
-| Soothing Mist | White | 20 | Skill | Heal every ally for 5. |
-| Rain Mend | Green | 10 | Skill | Heal an ally for 5 now and 3 a turn for 3 turns. |
-| Leaping Mend | Green | 20 | Skill | Heal an ally for 10, then the next most hurt ally for 5. |
-| Living Lightning ★ | Green | 20 | Skill | Heal an ally for 9. If it Multicasts, it also casts Chain Lightning. |
+| Mending Rain | White | 10 | Skill | Heal an ally for 12. |
+| Cleansing Rain | White | 10 | Skill | Heal an ally for 8 and remove one debuff. |
+| Soothing Mist | White | 20 | Skill | Heal every ally for 10. |
+| Rain Mend | Green | 10 | Skill | Heal an ally for 8 now and 5 a turn for 3 turns. |
+| Leaping Mend | Green | 20 | Skill | Heal an ally for 15, then the next most hurt ally for 8. |
+| Living Lightning ★ | Green | 20 | Skill | Heal an ally for 14. If it Multicasts, it also casts Chain Lightning. |
 | Storm Ward | Green | 10 | Skill | An ally takes 30% less damage until your next turn. |
 | Lifeline | Blue | 20 | Skill | Heal an ally for 15, or 30 if they are below 30% health. |
-| Tidal Surge | Blue | 30 | Skill | Heal the whole party for 12. |
+| Tidal Surge | Blue | 30 | Skill | Heal the whole party for 18. |
 | Wellspring | Blue | 20 | Power | Your heals are 20% stronger, and half of any overhealing becomes Barrier. |
-| Rainmaker | Gold | 30 | Power | At the start of your turn, heal the most hurt ally for 6. This heal can Multicast. |
+| Rainmaker | Gold | 30 | Power | At the start of your turn, heal the most hurt ally for 12. This heal can Multicast. |
 
 ## Debuffs and control
 
@@ -179,7 +179,7 @@ Stormheart was dropped (the third hit stays with the Healer's guaranteed Multi-h
 | Twin Thunder | 20, Skill | This turn, every Attack you play also counts as a Skill and every Skill as an Attack. | Hybrid |
 | Ride the Storm | 30, Power | Whenever you play an Attack and a Skill in the same turn, draw a card and gain 10 mana. | Hybrid |
 | Storm Vessel | 30, Power | Your stored Hybrid chance is not spent when it triggers; it halves instead. | Hybrid |
-| Monsoon | 30, Skill | Heal the whole party for 10. Roll Multicast separately for each ally. | Healer |
+| Monsoon | 30, Skill | Heal the whole party for 15. Roll Multicast separately for each ally. | Healer |
 | Ancestral Echo | 30, Power | When a heal Multicasts, your next heal costs 0. | Healer |
 | Last Light | 30, Skill | An ally who would die this turn is left at 1 health instead. Exhaust. | Healer, Tank |
 | Stormwarden | 30, Power | You take 10% of the damage dealt to each ally in their place. You have +2 Guard for each ally. | Tank |

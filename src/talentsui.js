@@ -57,7 +57,7 @@
     modal2(`<h2>${esc(cx.name)} talents <span class="muted" style="font-size:15px"><span style="color:${CC[cx.cls]}">${esc(cx.cls)}</span> &middot; ${worn ? 'worn now' : mine ? 'not worn: talents are kept but switched off' : 'preview'}</span></h2>
       <div class="tltabs">${tabs}</div>${prog}
       <div class="tltree"><div></div>${TCOL.map(([n, c]) => `<div class="tlhead" style="color:${c}">${n}</div>`).join('')}${rows.join('')}</div>
-      <p class="muted" style="font-size:12.5px;margin:8px 0 0">Every kill while wearing this codex gives it XP (normal 1, elite 3, boss 10; a party splits kills but gets +10% per extra hero). A new row opens every 2 levels. ${edit ? 'Click a talent to pick it; changing picks is free in town.' : mine ? 'Picks can be changed in town.' : ''}</p>
+      <p class="muted" style="font-size:12.5px;margin:8px 0 0">Every kill while wearing this codex gives it XP (normal 1, elite 3, boss 10; a party splits kills but gets +20% per extra hero). A new row opens every 2 levels. ${edit ? 'Click a talent to pick it; changing picks is free in town.' : mine ? 'Picks can be changed in town.' : ''}</p>
       <div class="row">${edit && picks.some(x => x != null) ? '<button class="btn" id="tlReset">Clear picks</button>' : ''}${opt.compendium ? '<button class="btn" id="tlDrops">Where it drops</button>' : ''}<button class="btn primary" id="mClose">Close <span class="muted">N</span></button></div>`);
     $('modalBox').classList.add('wide', 'tlbox');
     $('mClose').onclick = () => { closeModal(); if (opt.back) opt.back(); };

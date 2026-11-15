@@ -46,6 +46,7 @@
       ['Full parry', 'An enemy hit fully absorbed by your defense. Some cards and Powers trigger on it.'],
       ['Stealth', 'Single-target enemy cards can\'t pick you. It lasts until you attack out of it (after that Attack resolves), play a card that hits all enemies, or an enemy area attack gets through (fully Dodging it keeps you hidden).'],
       ['Taunt', 'Enemies must attack this hero until their next turn.'],
+      ['Tank', 'A hero wearing a tank codex (Bulwark, Riposte, Barrier Savant, Stormwarden). Only 20% of a Tank\'s Block, Parry, Barrier or Guard fades each round (not half), and each Attack or damaging Skill that hits has a 50% chance to Taunt the enemy. Talents can raise that chance.'],
       ['Untouchable / Immune', 'No damage (or no damage of a named type) until your next turn.'],
       ['Reflect', 'The next debuff on you goes back to the enemy that applied it.'],
     ]],
@@ -121,7 +122,7 @@
   // A MutationObserver finds new text as screens render and wraps the terms in <span class="kw">; nothing else is touched.
   const KW_SKIP = new Set(['Gear Score / Deck Level / Power', 'Item power', 'Full parry', 'Cards in enemy decks', 'Ranks (+1 to +10)', 'Card rarity', 'Turn order', 'Enemy intents', 'Elites and the boss', 'Party fights', 'Damage meter', 'Loot sack', 'Bank', 'Map level', 'Mana drain', 'Draws fewer', 'Draw', 'Mana', 'Elemental Damage', 'Untouchable / Immune', 'Attack / Skill / Power', 'Cannot heal / Grievous', 'Shrines']);
   const KW_ALIAS = { Feared: 'Fear', Stunned: 'Stunned', Silenced: 'Silence', Disarmed: 'Disarm', Bleeding: 'Bleed', Poisoned: 'Poison', Burning: 'Burn', Chilled: 'Chill', Frozen: 'Chill', Freezes: 'Chill', Freeze: 'Chill', Exposed: 'Exposure',
-    Taunting: 'Taunt', taunts: 'Taunt', Taunts: 'Taunt', Exhausts: 'Exhaust', Grievous: 'Cannot heal / Grievous', Untouchable: 'Untouchable / Immune', Multicast: 'Multiplay / Multicast', Multiplay: 'Multiplay / Multicast', 'Multicast Chance': 'Multiplay / Multicast', 'Multiplay Chance': 'Multiplay / Multicast',
+    Taunting: 'Taunt', Tank: 'Tank', tank: 'Tank', taunts: 'Taunt', Taunts: 'Taunt', Exhausts: 'Exhaust', Grievous: 'Cannot heal / Grievous', Untouchable: 'Untouchable / Immune', Multicast: 'Multiplay / Multicast', Multiplay: 'Multiplay / Multicast', 'Multicast Chance': 'Multiplay / Multicast', 'Multiplay Chance': 'Multiplay / Multicast',
     'Multi-hit': 'Multi-hit Chance', 'Shadow Armor': 'Armors (Warlock)', 'Blood Armor': 'Armors (Warlock)', 'Soul Armor': 'Armors (Warlock)', 'Nether Armor': 'Armors (Warlock)', 'Demon Armor': 'Armors (Warlock)',
     demon: 'Demons (Warlock)', demons: 'Demons (Warlock)', Demons: 'Demons (Warlock)', Summon: 'Demons (Warlock)', 'Soul Beacon': 'Soul Beacon (Warlock)', 'Mana Regen': 'Mana Regen', 'mana regen': 'Mana Regen', 'mana regeneration': 'Mana Regen', regen: 'Mana Regen', Regen: 'Mana Regen',
     'crit chance': 'Crit Chance', 'Crit chance': 'Crit Chance', 'crit damage': 'Crit Damage', 'Max Mana': 'Max Mana', 'max mana': 'Max Mana', 'maximum mana': 'Max Mana', 'Max HP': 'Max HP', 'Health Regen': 'Health Regen', Curse: 'Curse', Cursed: 'Curse', Fatigue: 'Fatigue', Dazed: 'Dazed' };

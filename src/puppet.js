@@ -166,7 +166,7 @@ window.CB_PUPPET = (function () {
   const WORK = {}, workFor = (q) => WORK[q] || (WORK[q] = (() => { const c = canvas(S * 2 * q, S * 2 * q); return { c, g: c.getContext('2d') }; })());
   function chain(g, B, P, i) { if (PAR[i] >= 0) chain(g, B, P, PAR[i]); const a = P.parts[i], pv = B.piv[i]; g.translate(pv[0] + a.dx, pv[1] + a.dy); if (a.r) g.rotate(a.r); if (a.sy !== 1) g.scale(1, a.sy); g.translate(-pv[0], -pv[1]); }
   const GRIPR = 3.6, OUTL = new WeakMap();
-  function outline(strip) { let o = OUTL.get(strip); if (o) return o; o = canvas(S * 2, S); const og = o.getContext('2d'); og.drawImage(strip, 2 * S, 0, 2 * S, S, 0, 0, 2 * S, S); og.globalCompositeOperation = 'source-in'; og.fillStyle = '#0c0a10'; og.fillRect(0, 0, 2 * S, S); OUTL.set(strip, o); return o; }
+  function outline(strip) { let o = OUTL.get(strip); if (o) return o; o = canvas(strip.width, S); const og = o.getContext('2d'); og.drawImage(strip, 0, 0); og.globalCompositeOperation = 'source-in'; og.fillStyle = '#07060a'; og.fillRect(0, 0, strip.width, S); OUTL.set(strip, o); return o; }   // every part's shape in near-black, for the edge drawn round each part
   function draw(g, look, view, anim, t, x, footY, scale) {
     const flip = view === 'w', v = flip ? 'e' : view, B = D.bodies[look.body] && D.bodies[look.body][v]; if (!B) return false;
     const COS = window.CB_COS; if (COS && look.cos) { const ws = COS.weapon(look); if (ws && W && W.types.includes('legend')) look = Object.assign({}, look, { weapon: ws }); }
@@ -198,7 +198,7 @@ window.CB_PUPPET = (function () {
       a2.r = k2[0]; a2.dx = k2[1]; a2.dy = k2[2]; a3.r = k3;
     }
     for (const i of B.order) {
-      if (i === 2 && v === 'e') { const ol = outline(strip); wg.globalAlpha = .6; for (const j of [2, 3]) { base(); chain(wg, B, P, j); for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) wg.drawImage(ol, (j - 2) * S, 0, S, S, ox, oy, S, S); } wg.globalAlpha = 1; }   /* Nov 13: a dark edge around the near arm, so it reads apart from the chest */
+      { const ol = outline(strip); wg.globalAlpha = .9; base(); chain(wg, B, P, i); for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) wg.drawImage(ol, i * S, 0, S, S, ox, oy, S, S); wg.globalAlpha = 1; }   /* Nov 14: a near-black edge round every part (it was only the near arm), so gloves, arms and each leg read apart instead of melting into one shape */
       base(); chain(wg, B, P, i); wg.drawImage(strip, i * S, 0, S, S, 0, 0, S, S);
       if (i === 0 && cl && v === 'n') wg.drawImage(cl, 0, 0);
       if (i === 0 && v === 'e' && look.off && HELD[look.off[0]]) held(look.off, 0, 0, 0, [B.piv[0][0] + 13, B.piv[0][1] - (look.off[0] === 'focus' ? 24 : 16)]);

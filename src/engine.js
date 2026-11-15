@@ -544,15 +544,16 @@ Object.assign(POWERS, {
 // ---------------- Codexes ----------------
 // A codex is a class-locked gear slot: random affixes like gear plus one fixed passive that boosts a playstyle (it never limits your cards).
 // Six per class; each map's boss drops four (one per class). Passives below are level 1 (codex levels 2-5 come from higher map levels later).
+const TANK_CODEX = { bulwark: 1, riposte: 1, barrier_savant: 1, stormwarden: 1 };   // the tank codexes (see makePlayer and the glossary entry 'Tank')
 const CODEXES = {
-  Warrior: [['bulwark', 'Bulwark', 'Needs a one-handed weapon and a shield. Block you gain is increased by 25%, and only 20% of it fades between turns (not half). When you are hit, the attacker takes Thorns damage equal to 25% of your Block (Strength boosts it like an Attack).'], ['riposte', 'Riposte', 'Needs a two-handed weapon. Only 20% of your Parry fades between turns (not half). When an attack is fully stopped by your Parry, deal 75% of the damage it would have done back to the attacker. Strength boosts it like an Attack.'],
+  Warrior: [['bulwark', 'Bulwark', 'Needs a one-handed weapon and a shield. Wearing this codex makes you a Tank. Block you gain is increased by 25%. When you are hit, the attacker takes Thorns damage equal to 25% of your Block (Strength boosts it like an Attack).'], ['riposte', 'Riposte', 'Needs a two-handed weapon. Wearing this codex makes you a Tank. When an attack is fully stopped by your Parry, deal 75% of the damage it would have done back to the attacker. Strength boosts it like an Attack.'],
     ['bloodbound', 'Bloodbound', 'Bleed you apply to enemies is also applied to you. Each Attack heals you for 10% of your stored Blood Debt (and spends it).'], ['colossus', 'Colossus', 'Needs a two-handed weapon. Every 30 mana you spend on Attacks adds a Stun to the target\'s draw pile.'],
     ['sunderer', 'Sunderer', 'Your Attacks also apply 5 Vulnerable, and you deal 20% more damage to Vulnerable targets. Vulnerable is 50% more effective for you (up to +75% damage). Vulnerable on enemies wears off 10% a turn instead of half.'], ['hemorrhage', 'Hemorrhage', '+10% Crit Chance. Your crits apply Bleed equal to 30% of the damage they deal.']],
   Rogue: [['nightstalker', 'Nightstalker', 'Needs a dagger in your main hand. Attacks you play while in Stealth deal 50% more damage, have +25% crit chance and +50% crit damage.'], ['venomancer', 'Venomancer', 'Needs a weapon in each hand. Poison you apply is increased by 2.'],
     ['bloodletter', 'Bloodletter', 'Needs a weapon in each hand. Bleed you apply is increased by 50%.'], ['ninja', 'Ninja', 'Shurikens deal 4 more damage. Start each turn with a Shuriken in hand.'],
     ['saboteur', 'Saboteur', 'The first card you make an enemy discard each round also adds a Dazed to its discard pile.'], ['phantom', 'Phantom', 'Needs a weapon in each hand. Dodge you gain is increased by 20%. Every time you Dodge 20 damage, your next Attack deals 35% more damage. Stacks.']],
   Mage: [['heart_of_winter', 'Heart of Winter', 'Frost Skills that cost 20 or more deal 30% more damage. Frost damage to Chilled targets is 25% higher and has a 10% chance to Freeze them (they lose their next turn).'], ['spellstorm', 'Spellstorm', 'Each Arcane Skill you play makes your next card cost 5 less; every third one draws a card (at most 3 draws a turn).'],
-    ['conflagration', 'Conflagration', 'Applying Burn to a target that is already Burning also deals that much Fire damage at once.'], ['barrier_savant', 'Barrier Savant', 'Needs a staff. Only 20% of your Barrier fades between turns (not half). Barrier you gain is increased by 25%, and cards that spend Barrier hit 25% harder.'],
+    ['conflagration', 'Conflagration', 'Applying Burn to a target that is already Burning also deals that much Fire damage at once.'], ['barrier_savant', 'Barrier Savant', 'Needs a staff. Wearing this codex makes you a Tank. Barrier you gain is increased by 25%, and cards that spend Barrier hit 25% harder.'],
     ['entropy', 'Entropy', 'Mana you drain or burn from enemies is increased by 20%. The first drain each turn also applies 3 Exposure and 5 Magic Vulnerability.'], ['archmage', 'Archmage', 'A damaging Skill of a different element from the previous one you played (this turn or earlier) deals 50% more damage.']],
   Paladin: [['bastion_of_faith', 'Bastion of Faith', 'Needs a one-handed weapon and a shield. Your damage becomes Holy and is 25% higher, and every card you play gives Block equal to 7% of your max HP.'], ['purifier', 'Purifier', 'Removing debuffs (from yourself or an enemy) deals 4 Holy damage per stack removed to an enemy.'],
     ['righteous_crusader', 'Righteous Crusader', 'An Attack makes your next Block card 45% stronger; a Block card makes your next Attack 45% stronger. Your Attacks deal bonus damage equal to 10% of your Block.'], ['sacred_flame', 'Sacred Flame', 'Holy damage also applies Burn equal to 20% of the damage dealt.'],
@@ -565,7 +566,7 @@ const CODEXES = {
     ['rainbringer', 'Rainbringer', 'Your heals can Multicast. A heal that Multicasts makes your next Attack a sure Multi-hit, and your own Multi-hit chance then becomes the chance of a third hit.'],
     ['stormcaller', 'Stormcaller', 'Whenever one of your spells Multicasts, a third copy is cast at 50% power.'],
     ['skybreaker', 'Skybreaker', 'Whenever one of your Attacks Multi-hits, the last Skill you played is played again, free. Its damage is halved. (Not Held Breath, Thunder Debt, Borrowed Thunder or the echo cards.)'],
-    ['stormwarden', 'Stormwarden', 'Your Soaked, Deafened, Unsteady and Stormworn never wear off, and your timed buffs never run out. Only 20% of your Guard fades between turns (not half). You take 5% less damage from an enemy for each different Shaman debuff on it (Static counts).'],
+    ['stormwarden', 'Stormwarden', 'Your Soaked, Deafened, Unsteady and Stormworn never wear off, and your timed buffs never run out. Wearing this codex makes you a Tank. You take 5% less damage from an enemy for each different Shaman debuff on it (Static counts).'],
     ['calm_eye', 'Calm Eye', 'End a turn without playing a card and your next card is played twice.']],
 };
 const CODEX_BY_KEY = {}; for (const [cls, list] of Object.entries(CODEXES)) for (const [key, name, text] of list) CODEX_BY_KEY[key] = { key, name, text, cls };
@@ -1002,7 +1003,7 @@ class Combat {
     this.partySize = this.players.length;
     this.raid = !!this.opts.raid; // raid: everyone plays at once, then the boss acts; boss HP scales 1:1 with heroes
     this.partyScale = this.raid ? this.partySize : 1 + (this.opts.partyStep != null ? this.opts.partyStep : 0.85) * (this.partySize - 1); // 1 when a party fight brings one monster per hero instead // each extra hero: enemies get +85% HP, mana and regen, and +1 draw
-    this.hpMult = Math.pow(1.5, this.level) * this.partyScale * (this.opts.mobHp || 1); this.dmgMult = Math.pow(1.3, this.level); // mobHp: extra HP when a party meets one monster per hero
+    this.hpMult = Math.pow(1.5, this.level) * this.partyScale * (this.opts.mobHp || 1); this.dmgMult = Math.pow(1.3, this.level) * (this.opts.mobDmg || 1); // mobDmg: a party on a +0 map takes 10% less (run.js) // mobHp: extra HP when a party meets one monster per hero
     this.levelHpMult = Math.pow(1.5, this.level);
     this.typeResist = Math.min(1, 0.05 + 0.05 * this.level);
     this.duel = !!this.opts.duel; // duel: two heroes, no monsters; each hero's "enemies" are the other hero
@@ -1036,7 +1037,8 @@ class Combat {
     if (cxItem) { const cx = CODEX_BY_KEY[cxItem.codex]; let key = 'codex_' + cx.key, text = cx.text;
       { const why = codexNeed(cx.key, spec.gear || [], this.data); if (why) { key = cx.key === 'bastion_of_faith' ? 'codex_bastion_of_faith_off' : 'codex_off'; text = `Inactive: needs ${why}.`; } } // Nov 2: weapon requirements
       p.powers.push({ key, name: cx.name + ' Codex', text, codex: true });
-      if (key === 'codex_shadow_knight') p.strength = Math.round(p.strength + g.strength * 0.2); }
+      if (key === 'codex_shadow_knight') p.strength = Math.round(p.strength + g.strength * 0.2);
+      if (TANK_CODEX[cx.key] && key === 'codex_' + cx.key) { p.tank = true; p.tauntChance = (p.tauntChance || 0) + 50; } }   // Nov 14: a Tank: only 20% of its defence fades each round, and every damaging hit has a 50% chance to taunt (talents add to it)
     // codex talents: only for the codex being worn (spec.talents = { codex, picks: [row 0..9 -> 0 offense | 1 defense | 2 support] })
     const tl = spec.talents, tr = cxItem && tl && tl.codex === cxItem.codex && TALENTS[tl.codex];
     if (tr) {
@@ -1473,7 +1475,7 @@ class Combat {
   beginTurn(a) {
     if (!a.isPlayer && this.opts.blockReset !== 'none' && a.block) { a.block = 0; a.parryBack = 0; }
     if (a.isPlayer && this.opts.blockReset === 'all' && a.block) { this.say('player', `Your ${a.block} ${a.defName} fades.`); a.block = 0; }
-    if (a.isPlayer && this.opts.blockReset === 'decay' && a.block && !(a.until.keepBlock || this.hasTimed(a, 'keepBlock'))) { const hold = this.has(a, 'codex_bulwark') || this.has(a, 'codex_riposte') || this.has(a, 'codex_barrier_savant') || this.has(a, 'codex_stormwarden'); const kept = Math.floor(a.block * (hold ? 0.8 : 0.5)); this.say('player', `${hold ? '20% of ' + (this.partySize > 1 ? a.name + "'s" : 'your') : this.partySize > 1 ? 'Half of ' + a.name + "'s" : 'Half your'} ${a.defName} fades: ${a.block} -> ${kept}.`); a.block = kept; } // Nov 2: Bulwark, Riposte and Barrier Savant keep 80%
+    if (a.isPlayer && this.opts.blockReset === 'decay' && a.block && !(a.until.keepBlock || this.hasTimed(a, 'keepBlock'))) { const hold = !!a.tank; const kept = Math.floor(a.block * (hold ? 0.8 : 0.5)); this.say('player', `${hold ? '20% of ' + (this.partySize > 1 ? a.name + "'s" : 'your') : this.partySize > 1 ? 'Half of ' + a.name + "'s" : 'Half your'} ${a.defName} fades: ${a.block} -> ${kept}.`); a.block = kept; } // Nov 2: Bulwark, Riposte and Barrier Savant keep 80%
     if (a.isPlayer && a.regenDown.length) { for (const r of a.regenDown) r.turns--; }
     const regen = a.isPlayer ? Math.max(0, a.regen - a.regenDown.reduce((s, x) => s + x.n, 0)) : this.effRegen(a);
     if (a.isPlayer) a.regenDown = a.regenDown.filter(r => r.turns > 0);
@@ -1723,7 +1725,7 @@ class Combat {
     const bonus = extra || 0;
     const dmg = Math.max(0, Math.round((base + bonus) * this.dmgMult * e.dmgTune * (1 + str / 100) * (1 - Math.min(e.weak, 90) / 100) * (1 + press) * (1 - res) * (1 + (dtype === 'Physical' ? Math.min(50, p.vulnerable) : 0) / 100) * (e.weakNext ? 1 - (e.weakNext === 1 || e.weakNext === true ? 0.3 : e.weakNext) : 1) * (p.until.lessDmg ? 1 - p.until.lessDmg : 1) * (dtype !== 'Physical' ? 1 + (p.unwarded || 0) / 100 : 1) * (SHX ? SHX.out(e) : 1)));
     const parts = [`${base}${bonus ? ' + ' + bonus : ''}`];
-    if (this.dmgMult !== 1) parts.push(`x ${this.dmgMult.toFixed(2)} map level`);
+    if (this.dmgMult !== 1) parts.push(`x ${this.dmgMult.toFixed(2)} ${this.level ? "map level" : "party on +0"}`);
     if (str) parts.push(`x ${(1 + str / 100).toFixed(2)} Strength`);
     if (e.weak) parts.push(`x ${(1 - e.weak / 100).toFixed(2)} Weak`);
     if (press) parts.push(`x ${(1 + press).toFixed(2)} Pressure`);

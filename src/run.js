@@ -243,7 +243,11 @@ class Run {
   reachable() { return this.at ? this.map.nodes[this.at].next.slice() : this.map.starts.slice(); }
   visible() { return true; }
   activeBuffs() { const b = {}; for (const x of this.buffs) for (const [k, v] of Object.entries(x.buff)) b[k] = (b[k] || 0) + v; return b; }
-  luck(m) { m = m || this.m0; return m.stats.luck + (this.activeBuffs().luck || 0) + (CB.talentRun(m.talents).luck || 0) + this.partyTalent('partyLuck'); } // + Luck from codex talents
+  // Nov 14: playing together pays. Each extra hero in the party: +20% gold, +20% codex XP, a 20% chance of a second roll of every monster's loot, and +10 Luck.
+  coopBonus() { return Math.max(0, this.members.length - 1); }
+  // Nov 14: a party on a +0 map: monsters gain 30% less of their extra party HP (and deal 10% less: mobDmg). +1 and higher are as before.
+  coopEase() { return this.members.length > 1 && !this.level ? 0.7 : 1; }
+  luck(m) { m = m || this.m0; return m.stats.luck + (this.activeBuffs().luck || 0) + (CB.talentRun(m.talents).luck || 0) + this.partyTalent('partyLuck') + 10 * this.coopBonus(); } // + Luck from codex talents
   partyTalent(k) { return this.members.reduce((t, x) => t + (CB.talentRun(x.talents)[k] || 0), 0); }
   finish(result) { this.over = result; for (const m of this.members) if (!m.kept) m.kept = { items: [], gold: 0 }; }
 
@@ -263,7 +267,7 @@ class Run {
       const buffs = this.activeBuffs();
       if (n.type === 'boss') for (const m of this.members) (m.feat = m.feat || { lost: 0 }).bossStartHp = m.hp;   // Nov 13: for achievements
       const party = this.members.map(m => ({ cls: m.cls, name: m.name, gear: m.gear, deck: m.deck || undefined, hp: m.hp, mana: m.mana, buffs, talents: m.talents || undefined }));
-      this.combat = new Combat({ party, enemies: n.enemies, enraged: !!n.enraged, firstBoss: n.type === 'boss' && !!this.opts.firstBoss, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : this.opts.partyStep, mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * (this.members.length - 1) : 1 });
+      this.combat = new Combat({ party, enemies: n.enemies, enraged: !!n.enraged, firstBoss: n.type === 'boss' && !!this.opts.firstBoss, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : (this.opts.partyStep != null ? this.opts.partyStep : 0.85) * this.coopEase(), mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * this.coopEase() * (this.members.length - 1) : 1, mobDmg: this.members.length > 1 && !this.level ? 0.9 : 1 });
       this.note(`Row ${n.row}: ${n.type === 'boss' ? 'the boss' : n.type === 'elite' ? 'an elite' : 'a fight'} against ${n.enemies.map(k => this.data.enemies[k].name).join(', ')}.`);
     } else if (n.type === 'rest') { this.pending = { type: 'rest', heals: this.members.map(m => Math.min(m.stats.maxHp - m.hp, Math.round(m.stats.maxHp * 0.3 * (1 + (m.stats.spirit || 0) / 100)))), keep: n.campfire ? 0.75 : 0.5 }; this.pending.heal = this.pending.heals[0]; }
     else if (n.type === 'shrine') { const s = SHRINES.find(x => x.key === n.shrine); this.buffs.push({ key: s.key, name: s.name, buff: s.buff, fights: 2 }); this.pending = { type: 'shrine', shrine: s }; this.note(`Row ${n.row}: ${s.name}. ${s.text}`); }
@@ -287,7 +291,7 @@ class Run {
     this.rounds = (this.rounds || 0) + (cb.round || 0); { const mk = (this.mobKills = this.mobKills || {}); for (const e of cb.enemies) if (e.hp <= 0 && !e.noLoot && e.key) mk[e.key] = (mk[e.key] || 0) + 1; }
     // codex XP (Nov 1): every kill counts for the codex each hero is wearing; a party splits the kills but gets +10% per extra hero
     { const xp = cb.enemies.filter(e => e.hp <= 0 && !e.noLoot).reduce((s, e) => s + KILL_XP((this.data.enemies[e.key] || {}).tier), 0), N = this.members.length;
-      if (xp > 0) for (const m of this.members) { const cx = (m.gear.find(g => g && g.slot === 'Codex') || {}).codex; if (cx) m.cxp[cx] = (m.cxp[cx] || 0) + xp / N * (1 + 0.1 * (N - 1)) * (1 + 0.1 * (this.level || 0)); } }   /* Nov 13: +10% codex XP per map level (+3 = 1.3x) */
+      if (xp > 0) for (const m of this.members) { const cx = (m.gear.find(g => g && g.slot === 'Codex') || {}).codex; if (cx) m.cxp[cx] = (m.cxp[cx] || 0) + xp / N * (1 + 0.2 * (N - 1)) * (1 + 0.1 * (this.level || 0)); } }   /* Nov 13: +10% codex XP per map level (+3 = 1.3x) */
     for (const b of this.buffs) b.fights--;
     this.buffs = this.buffs.filter(b => b.fights > 0);
     if (cb.over === 'loss') {
@@ -311,11 +315,11 @@ class Run {
       const drops = []; let gold = 0;
       for (const e of cb.enemies) {  // every hero rolls their own loot
         if (e.noLoot) continue; // the rest of a group: the group's first body rolls its loot
-        for (let k = 0; k < (e.enraged ? 2 : 1); k++) { // an Enraged elite drops everything twice
+        for (let k = 0, kn = (e.enraged ? 2 : 1) + (this.coopBonus() && this.rng() < 0.2 * this.coopBonus() ? 1 : 0); k < kn; k++) { // an Enraged elite drops everything twice; in a party each extra hero adds a 20% chance of one more roll
           drops.push(...rollDrops(this.data, this.rng, e.key, this.level, this.luck(m), m.cls, !(m.gear || []).some(g => g.slot === 'Codex')));
           drops.push(...rollCards(this.rng, m.cls, this.data.enemies[e.key].tier, this.luck(m)));
           drops.push(...rollNamedCards(this.data, this.rng, e.key, m.cls, this.luck(m)));
-          const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * goldMult(this.level));
+          const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * goldMult(this.level) * (k < (e.enraged ? 2 : 1) ? 1 + 0.2 * this.coopBonus() : 0));   /* the bonus roll is loot only; gold gets its own +20% per extra hero */
         }
         { const tier = this.data.enemies[e.key].tier, ch = tier === 'Boss' ? 0.2 : tier === 'Elite' ? 0.04 : 0.006; if (this.rng() < ch) drops.push(bagDrop(this.level)); // Nov 13: a bag (its size goes by the map level; named when it reaches your bags)
           if (this.rng() < 1 / 1000) (m.pets = m.pets || []).push(e.key); } // Nov 13: 1 in 1000: a miniature of the monster follows you home as a pet

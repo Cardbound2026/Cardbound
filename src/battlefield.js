@@ -341,10 +341,14 @@ function placeIntents(stage, foes, s) {
     const full = (pl) => { const r = R(pl), o = { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; for (const c of pl.querySelectorAll('.bar, .ushield, .tags > *, .uname')) { const q = R(c); if (!q.width) continue; o.left = Math.min(o.left, q.left); o.right = Math.max(o.right, q.right); o.top = Math.min(o.top, q.top); o.bottom = Math.max(o.bottom, q.bottom); } return o; };
     const cross = (a, b, pad) => a.left < b.right + pad && a.right > b.left - pad && a.top < b.bottom + 2 && a.bottom > b.top - 2;
     for (const side of [document.getElementById('playerSlot'), document.getElementById('foes')]) { if (!side) continue;
-      const us = [...side.querySelectorAll('.unit')].filter(u => u.querySelector('.uplate')).sort((a, b) => R(a).left - R(b).left); for (const u of us) { u.classList.remove('plow'); u.style.setProperty('--px', '0px'); }
+      const us = [...side.querySelectorAll('.unit')].filter(u => u.querySelector('.uplate')).sort((a, b) => R(a).left - R(b).left); for (const u of us) { u.classList.remove('plow'); u.style.setProperty('--px', '0px'); if (u.dataset.pz) { u.style.zIndex = u.dataset.pz; delete u.dataset.pz; } for (const q of u.querySelectorAll(':scope > .figure, :scope > .uplate, :scope > .uintent')) q.style.zIndex = ''; }
       if (us.length < 2) continue; const rs = us.map(u => full(u.querySelector('.uplate')));
       if (!rs.some((r, a) => rs.some((q, b) => b > a && cross(r, q, 4)))) continue;            // nothing touches: leave them all on top
       us.forEach((u, k) => { if (k % 2 === 1) { u.classList.add('plow'); const pl = u.querySelector('.uplate'), it = u.querySelector('.uintent'); u.style.setProperty('--ih', pl.offsetHeight + 'px'); if (full(pl).bottom + (it && it.textContent.trim() ? it.offsetHeight + 6 : 0) > hudTop - 2) u.classList.remove('plow'); } });
+      // a plate at the feet of a fighter standing behind others was drawn under the fighters in front (so the bar seemed to be missing):
+      // such a fighter gives up its own layer, its figure keeps its place in the line and its plate and intent are lifted over everyone
+      for (const u of us) if (u.classList.contains('plow')) { const z = u.style.zIndex || '0', fg = u.querySelector(':scope > .figure'), pl = u.querySelector(':scope > .uplate'), it = u.querySelector(':scope > .uintent');
+        u.dataset.pz = z; u.style.zIndex = 'auto'; if (fg) fg.style.zIndex = z; if (pl) pl.style.zIndex = '300'; if (it) it.style.zIndex = '301'; }
       // plates on the same level that still touch slide apart sideways
       for (const low of [false, true]) { const row = us.filter(u => u.classList.contains('plow') === low);
         for (let k = 1; k < row.length; k++) { const a = full(row[k - 1].querySelector('.uplate')), b = full(row[k].querySelector('.uplate')); const over = a.right + 6 - b.left;
