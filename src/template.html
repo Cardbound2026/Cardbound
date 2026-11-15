@@ -1293,22 +1293,34 @@ body #scrCombat.bf.hud3 .order .otile .ofig img, body #scrCombat.bf.hud3 .order 
 body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 21px; text-shadow: 0 1px 2px #000; }
 /* your frame, top left (World of Warcraft style) */
 #scrCombat.hud3 :is(#pframe, #pframe2) { display: flex; position: absolute; left: 12px; top: 12px; z-index: 6; gap: 12px; align-items: center; width: 340px; padding: 10px 14px 10px 10px; box-sizing: border-box; transform: scale(.96); transform-origin: 0 0; filter: drop-shadow(0 2px 3px rgba(0,0,0,.9)); }
-:is(#pframe, #pframe2) .pfimg { position: relative; flex: none; width: 66px; height: 66px; border-radius: 50%; overflow: hidden; background: #0c0a09; border: 2px solid #8a653d; box-shadow: 0 0 0 2px #0c0a09; }
-:is(#pframe, #pframe2) .pfimg img { width: 120%; height: 120%; margin: -2% 0 0 -10%; object-fit: cover; object-position: 50% 0; image-rendering: pixelated; }
-:is(#pframe, #pframe2) .pfr { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-:is(#pframe, #pframe2) .pfn { font: 400 19px var(--cf-name, var(--f-display)); color: #e8dcc4; line-height: 1; text-shadow: 0 2px 0 #000; } :is(#pframe, #pframe2) .pfn small { font: 500 13px var(--f-ui); color: #a99f8e; }
-:is(#pframe, #pframe2) .pfrow { display: flex; align-items: center; gap: 6px; }
-:is(#pframe, #pframe2) .pfhp { position: relative; flex: 1; height: 18px; background: #0c0a09; border: 1px solid #000; box-shadow: 0 0 0 1px #5a4128; }
-:is(#pframe, #pframe2) .pfhp i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(#c94a3f, #8f2a24); transition: width .3s; }
-:is(#pframe, #pframe2) .pfhp span { position: absolute; inset: 0; display: grid; place-items: center; font: 700 13px var(--f-ui); color: #fff; text-shadow: 0 1px 0 #000; }
+:is(#pframe, #pframe2, .uf) .pfimg { position: relative; flex: none; width: 66px; height: 66px; border-radius: 50%; overflow: hidden; background: #0c0a09; border: 2px solid #8a653d; box-shadow: 0 0 0 2px #0c0a09; }
+:is(#pframe, #pframe2, .uf) .pfimg img { width: 120%; height: 120%; margin: -2% 0 0 -10%; object-fit: cover; object-position: 50% 0; image-rendering: pixelated; }
+:is(#pframe, #pframe2, .uf) .pfr { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+:is(#pframe, #pframe2, .uf) .pfn { font: 400 19px var(--cf-name, var(--f-display)); color: #e8dcc4; line-height: 1; text-shadow: 0 2px 0 #000; } :is(#pframe, #pframe2, .uf) .pfn small { font: 500 13px var(--f-ui); color: #a99f8e; }
+:is(#pframe, #pframe2, .uf) .pfrow { display: flex; align-items: center; gap: 6px; }
+:is(#pframe, #pframe2, .uf) .pfhp { position: relative; flex: 1; height: 18px; background: #0c0a09; border: 1px solid #000; box-shadow: 0 0 0 1px #5a4128; }
+:is(#pframe, #pframe2, .uf) .pfhp i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(#c94a3f, #8f2a24); transition: width .3s; }
+:is(#pframe, #pframe2, .uf) .pfhp span { position: absolute; inset: 0; display: grid; place-items: center; font: 700 13px var(--f-ui); color: #fff; text-shadow: 0 1px 0 #000; }
 .mkshield.zero { opacity: .45; }
 .mkshield { width: 46px; height: 46px; flex: none; display: grid; place-items: center; background: var(--si) center / contain no-repeat; image-rendering: pixelated; filter: drop-shadow(0 0 4px rgba(120,170,255,.55)) drop-shadow(0 2px 2px #000); cursor: help; margin: -14px 0; } .mkshield b { font: 800 20px/1 var(--f-ui); color: #fff; text-shadow: 0 0 2px #000, 0 2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000; }
 /* Nov 14: a duel wears the same fight screen as the roads; your rival gets a frame of their own, top right, mirrored */
+/* Nov 14: party play: a frame for every other hero down the left edge and for every enemy down the right, so you can read and pick the right one. Click a frame (or drop a card on it) to target that fighter. */
+.ufcol { display: none; } #scrCombat.hud3 .ufcol:not([hidden]) { display: grid; gap: 4px; position: absolute; z-index: 6; width: 240px; align-content: start; }
+#scrCombat.hud3 #ufParty { left: 12px; top: 112px; } #scrCombat.hud3 #ufFoes { right: 12px; top: 60px; justify-items: end; }
+.uf { display: flex; gap: 12px; align-items: center; width: 340px; padding: 4px 14px 4px 6px; box-sizing: border-box; zoom: .7; filter: drop-shadow(0 2px 3px rgba(0,0,0,.9)); border-radius: 40px 8px 8px 40px; cursor: default; }
+.uf.foe { flex-direction: row-reverse; padding: 4px 6px 4px 14px; border-radius: 8px 40px 40px 8px; } .uf.foe .pfn { text-align: right; } .uf.foe .pfrow { flex-direction: row-reverse; } .uf.foe .tags { justify-content: flex-end; }
+.uf .pfimg > img:not(.pupfig), .uf .pfimg > svg { width: 100% !important; height: 100% !important; max-width: none !important; object-fit: cover; object-position: 50% 8%; image-rendering: pixelated; pointer-events: none; transform: none !important; animation: none !important; margin: 0 !important; position: static !important; }
+.uf .pfn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .uf * { pointer-events: none; } .uf .sico, .uf .mkshield { pointer-events: auto; }
+.uf.dead { opacity: .4; filter: grayscale(1); } .uf.now .pfimg { border-color: #ffd98a; box-shadow: 0 0 0 2px #0c0a09, 0 0 12px 3px rgba(255,200,110,.75); }
+.uf.tgt, .uf.droptgt { cursor: crosshair; background: rgba(201,71,47,.16); box-shadow: inset 0 0 0 2px rgba(201,71,47,.8); } .uf.tgt:not(.foe), .uf.droptgt.allytgt { cursor: pointer; background: rgba(127,211,106,.14); box-shadow: inset 0 0 0 2px rgba(127,211,106,.8); }
+.uf.tgt:hover, .uf.dropover { background: rgba(201,71,47,.38); } .uf.tgt:not(.foe):hover, .uf.dropover.allytgt { background: rgba(127,211,106,.34); } .uf.hot { filter: drop-shadow(0 2px 3px rgba(0,0,0,.9)) brightness(1.3); }
+#scrCombat.hud3 #pframe { cursor: default; } #scrCombat.hud3 #pframe.tgt { cursor: pointer; background: rgba(127,211,106,.14); box-shadow: inset 0 0 0 2px rgba(127,211,106,.8); border-radius: 44px 8px 8px 44px; }
+#scrCombat .stage .unit.ufhot .figure { filter: drop-shadow(0 0 6px #ffe2a6) drop-shadow(0 0 2px #ffe2a6); }
 #scrCombat.hud3 #pframe2 { left: auto; right: 118px; flex-direction: row-reverse; transform-origin: 100% 0; padding: 10px 10px 10px 14px; } #scrCombat.hud3 #pframe2[hidden] { display: none; }
 #pframe2 .pfn { text-align: right; } #pframe2 .pfrow { flex-direction: row-reverse; } #pframe2 .tags { justify-content: flex-end; } #pframe2 .pfsub { font: 600 12px var(--f-ui); color: #cfc3ad; text-align: right; text-shadow: 0 1px 0 #000; } .pfrate { color: #e0b354; font: 700 12px var(--f-ui); }
 #scrCombat.bf.hud3.duel .stage #foes .uplate .tags { display: none !important; }
 #scrCombat.bf.hud3.duel .stage #foes .uplate .uname { display: block !important; order: 0; text-align: center; } #scrCombat.bf.hud3.duel .stage #foes .uplate .uname small { display: none; } #scrCombat.bf.hud3.duel .stage #foes .uplate .uname b { font-size: 14px; text-shadow: 0 1px 0 #000, 0 0 4px #000; }
-:is(#pframe, #pframe2) .tags { display: flex; gap: 4px; flex-wrap: wrap; } :is(#pframe, #pframe2) .tags .sico.block { display: none; }
+:is(#pframe, #pframe2, .uf) .tags { display: flex; gap: 4px; flex-wrap: wrap; } :is(#pframe, #pframe2, .uf) .tags .sico.block { display: none; }
 /* compact notched HP bars over every unit; exact numbers on hover */
 #scrCombat.bf.hud3 .stage .unit > .uhead { display: none !important; }
 #scrCombat.bf.hud3 .stage .uplate { left: 50% !important; right: auto !important; bottom: calc(var(--figh, var(--fh)) + 4px) !important; transform: translate(calc(-50% + var(--px, 0px)), var(--cy, 0px)); width: 150px !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; display: flex !important; flex-direction: column; align-items: center; gap: 5px; z-index: 4; filter: drop-shadow(0 1px 2px rgba(0,0,0,.9)); }
@@ -1404,7 +1416,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   <section id="scrCombat" class="combatmain" hidden aria-label="Battle">
     <aside class="panel combatchat" id="combatChat" hidden aria-label="Chat"><div class="lgrip cgrip-w" data-grip="w" title="Drag to resize (double-click to reset)"></div><div class="lgrip lgrip-h" data-grip="h" title="Drag to resize (double-click to reset)"></div><div class="lgrip cgrip-c" data-grip="c" title="Drag to resize (double-click to reset)"></div></aside>
     <div class="field-panel">
-      <div class="order" id="order"></div><div id="pframe" aria-label="Your hero"></div><div id="pframe2" aria-label="Your rival" hidden></div>
+      <div class="order" id="order"></div><div id="pframe" aria-label="Your hero"></div><div id="pframe2" aria-label="Your rival" hidden></div><div id="ufParty" class="ufcol" aria-label="Your party" hidden></div><div id="ufFoes" class="ufcol" aria-label="The enemy" hidden></div>
       <div class="stage"><div id="playerSlot"></div><div class="vs">vs</div><div class="foes" id="foes"></div><div class="playedpeek" id="playedPeek" hidden aria-live="polite"></div></div>
       <div class="hud">
         <div class="mana"><div class="orb" id="orb">0</div><div class="mtext"><b>Mana</b><small id="manaSub"></small></div></div>
@@ -3822,12 +3834,18 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
       const fp = st.parentElement, top = Math.round(fp.getBoundingClientRect().top + window.scrollY); if (top > 0 && top < 400) fp.style.setProperty('--fpTop', top + 'px');
     } $('playerSlot').innerHTML = mine.map(unitHtml).join('');
     $('foes').innerHTML = foes.map(unitHtml).join('');
-    if (window.CB_BF) CB_BF.layout(cb, { map: $('scrCombat').dataset.map, row: cb.raid ? 'raid' : run && run.at && run.map && run.map.nodes[run.at] ? (run.at === 'boss' ? 'boss' : run.map.nodes[run.at].row) : null, left: cb.duel ? 'You' : cb.raid ? 'The raid' : cb.partySize > 1 ? 'Your party' : esc(hero().name), right: cb.duel ? 'Your rival' : (DATA.maps[$('scrCombat').dataset.map] || {}).name || 'The enemy' });
+    if (window.CB_BF) CB_BF.layout(cb, { map: $('scrCombat').dataset.map, row: cb.raid ? 'raid' : run && run.at && run.map && run.map.nodes[run.at] ? (run.at === 'boss' ? 'boss' : run.map.nodes[run.at].row) : null, inset: ufOn() ? 256 : 0, left: cb.duel ? 'You' : cb.raid ? 'The raid' : cb.partySize > 1 ? 'Your party' : esc(hero().name), right: cb.duel ? 'Your rival' : (DATA.maps[$('scrCombat').dataset.map] || {}).name || 'The enemy' });
     if (withPops) popups(); else snapshot();
     if (window.CB_FX) CB_FX.consume(cb); // hero moves, hit effects and spell projectiles (src/fx.js, src/forge.js)
-    const pfHtml = (p, foe) => { const rate = cb.duel && typeof NET !== 'undefined' && NET.s && NET.s.pvp && p.uid != null ? NET.s.pvp[p.uid] : null;
-      return `<div class="pfimg">${window.CB_HEROPUP ? CB_HEROPUP.html('pf' + p.id, CB_HEROPUP.lookOf(p, p.cls, p.look), { view: 's', s: 1 }) : `<img src="img/heroes/${String(p.cls).toLowerCase()}.png" alt="">`}</div><div class="pfr"><div class="pfn"${foe ? ` style="color:${CC[p.cls]}"` : ''}>${esc(p.name)} <small>${esc(p.cls)}${rate ? ` &middot; <span class="pfrate" title="Arena rating">${rate} ${CBHub.pvpRank(rate)}</span>` : ''}</small></div><div class="pfrow"><div class="pfhp"><i style="width:${Math.max(0, 100 * p.hp / p.maxHp)}%"></i><span>${p.hp} / ${p.maxHp}</span></div><div class="mkshield${p.block ? '' : ' zero'}" data-tip="${esc(p.defName || 'Block')} ${p.block}: soaks that much damage before HP" style="--si:url(img/ui/status/${({ Dodge: 'dodge', Parry: 'parry', Barrier: 'barrier', Absorb: 'absorb' }[p.defName] || 'block')}.png)"><b>${p.block}</b></div></div>${foe ? `<div class="pfsub">Hand ${p.hand.length} &middot; Mana ${p.mana} / ${p.maxMana} &middot; Deck ${p.drawPile.length}</div>` : ''}<div class="tags">${iconTags(tags(p))}</div></div>`; };
+    const pfHtml = (p, foe, uf) => { const rate = cb.duel && typeof NET !== 'undefined' && NET.s && NET.s.pvp && p.uid != null ? NET.s.pvp[p.uid] : null;
+      return `<div class="pfimg">${!p.isPlayer ? figure(p) : window.CB_HEROPUP ? CB_HEROPUP.html((uf ? 'uf' : 'pf') + p.id, CB_HEROPUP.lookOf(p, p.cls, p.look), { view: 's', s: 1 }) : `<img src="img/heroes/${String(p.cls).toLowerCase()}.png" alt="">`}</div><div class="pfr"><div class="pfn"${foe || uf ? ` style="color:${p.isPlayer ? CC[p.cls] : '#ead9c4'}"` : ''}>${esc(p.name)} <small>${p.isPlayer ? esc(p.cls) : esc((p.tier === 'Elite' || p.tier === 'Boss' ? p.tier + ' ' : '') + (p.type || ''))}${rate ? ` &middot; <span class="pfrate" title="Arena rating">${rate} ${CBHub.pvpRank(rate)}</span>` : ''}</small></div><div class="pfrow"><div class="pfhp"><i style="width:${Math.max(0, 100 * p.hp / p.maxHp)}%"></i><span>${p.hp} / ${p.maxHp}</span></div><div class="mkshield${p.block ? '' : ' zero'}" data-tip="${esc(p.defName || 'Block')} ${p.block}: soaks that much damage before HP" style="--si:url(img/ui/status/${({ Dodge: 'dodge', Parry: 'parry', Barrier: 'barrier', Absorb: 'absorb' }[p.defName] || 'block')}.png)"><b>${p.block}</b></div></div>${foe && !uf ? `<div class="pfsub">Hand ${p.hand.length} &middot; Mana ${p.mana} / ${p.maxMana} &middot; Deck ${p.drawPile.length}</div>` : ''}<div class="tags">${iconTags(tags(p))}</div></div>`; };
     $('pframe').innerHTML = pfHtml(p); { const f2 = $('pframe2'), foe = cb.duel ? cb.players.find(x => x !== p) : null; f2.hidden = !foe; f2.innerHTML = foe ? pfHtml(foe, true) : ''; $('scrCombat').classList.toggle('duel', !!cb.duel); }
+    { const on = ufOn(), L = $('ufParty'), Rt = $('ufFoes'); L.hidden = Rt.hidden = !on;
+      if (on) { const tgtOf = (a) => a.hp > 0 && !!selected && ((CARDS[selected.key].target === 'enemy' && !a.isPlayer) || (CARDS[selected.key].target === 'ally' && a.isPlayer));
+        const one = (a) => { const foe = !a.isPlayer, now = cb.current === a && !cb.over;
+          return `<div class="uf ${foe ? 'foe' : ''} ${a.hp <= 0 ? 'dead' : ''} ${now ? 'now' : ''} ${tgtOf(a) ? 'tgt' : ''}" data-uf="${a.id}">${pfHtml(a, foe, true)}</div>`; };
+        $('pframe').classList.toggle('tgt', tgtOf(p));
+        L.innerHTML = cb.players.filter(a => a !== p).map(one).join(''); Rt.innerHTML = cb.enemies.map(one).join(''); } else { L.innerHTML = ''; Rt.innerHTML = ''; $('pframe').classList.remove('tgt'); } }
     $('orb').innerHTML = `<i class="orbfill" style="--mf:${Math.max(0, Math.min(1, p.mana / Math.max(1, p.maxMana)))}"></i><span>${p.mana}</span>`;
     $('manaSub').innerHTML = `<span class="m3">${p.mana} / ${p.maxMana} MANA</span><span class="mmax">of ${p.maxMana}</span><span class="mreg">+${p.regen} / turn</span>`;
     const fat = [...p.drawPile, ...p.hand, ...p.discard].filter(c => CARDS[c.key].type === 'Status').length;
@@ -3883,6 +3901,9 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   function rowHtml(n, d, extra) {
     return `<div class="cardrow" style="--rc:${RC[d.rarity] || 'var(--line)'}"><span class="n">${n}x</span><b>${esc(d.name)}${d.planned === false ? ' <span class="muted">(can\'t afford: discarded)</span>' : ''}</b><span class="cst">${d.cost != null ? d.cost + ' mana' : 'unplayable'}</span><span class="tx">${esc(d.text)}</span></div>`;
   }
+  // party frames (Nov 14): only in a party on the new fight screen, and only when the screen is wide enough to give up both edges
+  function ufOn() { return !!cb && hud3On() && !cb.duel && cb.partySize > 1 && cb.partySize <= 4 && innerWidth >= 1200 && cb.enemies.length <= 6; }
+  function ufUnit(el, cls) { const f = el && el.closest && el.closest('[data-uf]'); if (!f) return null; const u = document.querySelector(`#scrCombat .stage .unit[data-id="${f.dataset.uf}"]`); return u && (!cls || u.classList.contains(cls)) ? u : null; }
   function hud3On() { return innerWidth >= 900 && innerHeight >= 560 && cb && !cb.raid && !(cb.partySize > 4); }
   function viewPile(which) {
     const p = hero();
@@ -4077,11 +4098,12 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
       const g = D.ghost = document.createElement('div'); g.className = 'dragghost'; g.innerHTML = cardBox(liveD(D.c), 190) || ''; document.body.appendChild(g); fitCards(g);
       D.b.classList.add('dragging'); document.body.classList.add('aiming');
       if (d.target === 'enemy') for (const u of $('foes').querySelectorAll('.unit')) { const a = cb.actorById(u.dataset.id); if (a && a.hp > 0) u.classList.add('droptgt'); }
-      if (d.target === 'ally' && !cb.duel) for (const u of $('playerSlot').querySelectorAll('.unit')) { const a = cb.actorById(u.dataset.id); if (a && a.hp > 0) u.classList.add('droptgt', 'allytgt'); } }
+      if (d.target === 'ally' && !cb.duel) for (const u of $('playerSlot').querySelectorAll('.unit')) { const a = cb.actorById(u.dataset.id); if (a && a.hp > 0) u.classList.add('droptgt', 'allytgt'); }
+      for (const f of document.querySelectorAll('#scrCombat .uf')) { const u = ufUnit(f, 'droptgt'); if (u) f.classList.add('droptgt', ...(u.classList.contains('allytgt') ? ['allytgt'] : [])); } }
     D.ghost.style.transform = `translate(${ev.clientX - 95}px, ${ev.clientY - 300}px)`; // card sits above the pointer so the target stays visible
-    const u = document.elementFromPoint(ev.clientX, ev.clientY); const unit = u && u.closest('#foes .unit.droptgt, #playerSlot .unit.droptgt');
+    const u = document.elementFromPoint(ev.clientX, ev.clientY); const unit = u && (u.closest('#foes .unit.droptgt, #playerSlot .unit.droptgt') || ufUnit(u, 'droptgt'));
     const tid = (d.target === 'enemy' || d.target === 'ally') && unit ? unit.dataset.id : null;
-    if (tid !== D.tgt) { D.tgt = tid; for (const x of document.querySelectorAll('#foes .unit.droptgt, #playerSlot .unit.droptgt')) x.classList.toggle('dropover', x.dataset.id === tid); D.ghost.innerHTML = cardBox(liveD(D.c, tid && cb.actorById(tid)), 190) || ''; fitCards(D.ghost); }
+    if (tid !== D.tgt) { D.tgt = tid; for (const x of document.querySelectorAll('#foes .unit.droptgt, #playerSlot .unit.droptgt')) x.classList.toggle('dropover', x.dataset.id === tid); for (const x of document.querySelectorAll('#scrCombat .uf.droptgt')) x.classList.toggle('dropover', x.dataset.uf === tid); D.ghost.innerHTML = cardBox(liveD(D.c, tid && cb.actorById(tid)), 190) || ''; fitCards(D.ghost); }
     if (d.target !== 'enemy' && !(d.target === 'ally' && D.tgt)) { const armed = ev.clientY < $('hand').getBoundingClientRect().top - 10; if (armed !== D.armed) { D.armed = armed; D.ghost.classList.toggle('armed', armed); } }
     else D.ghost.classList.toggle('armed', !!D.tgt);
   });
@@ -4114,6 +4136,12 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   });
   function pickTarget(id) { if (!selected) return; playCard(selected, id); }
   $('foes').addEventListener('click', (ev) => { const u = ev.target.closest('.unit.targetable'); if (u) pickTarget(u.dataset.id); });
+  for (const id of ['ufParty', 'ufFoes']) { const C = $(id);
+    C.addEventListener('click', (ev) => { const u = ufUnit(ev.target, 'targetable'); if (u) pickTarget(u.dataset.id); });
+    C.addEventListener('mouseover', (ev) => { const u = ufUnit(ev.target); for (const x of document.querySelectorAll('#scrCombat .stage .unit.ufhot')) if (x !== u) x.classList.remove('ufhot'); if (u) u.classList.add('ufhot'); });
+    C.addEventListener('mouseleave', () => { for (const x of document.querySelectorAll('#scrCombat .stage .unit.ufhot')) x.classList.remove('ufhot'); }); }
+  $('pframe').addEventListener('click', () => { const me = cb && hero(), u = me && document.querySelector(`#scrCombat .stage .unit[data-id="${me.id}"]`); if (u && u.classList.contains('targetable')) pickTarget(me.id); });
+  document.querySelector('#scrCombat .stage').addEventListener('mouseover', (ev) => { const u = ev.target.closest('.unit'); for (const f of document.querySelectorAll('#scrCombat .uf')) f.classList.toggle('hot', !!u && f.dataset.uf === u.dataset.id); });
   $('playerSlot').addEventListener('click', (ev) => { const u = ev.target.closest('.unit.targetable'); if (u) pickTarget(u.dataset.id); });
   $('foes').addEventListener('keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('.unit.targetable')) { ev.preventDefault(); pickTarget(ev.target.dataset.id); } });
   document.addEventListener('keydown', (ev) => {

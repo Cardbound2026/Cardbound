@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-14', items: [
+      ['Interface', "Party fights: every other hero now has a frame down the left edge and every enemy has one down the right, each with a portrait, name, HP, block and statuses. Click a frame to target that fighter with the card you picked, or drop a card on it; hovering a frame lights up its fighter (and the other way round). Fighters stand closer to the middle to make room. Shown in parties of 2 to 4 on screens at least 1200 wide."],
       ['Interface', "Fights against three or more: HP bars and status tags no longer sit on top of each other. When two fighters stand close, one keeps its bar over its head and the next one's bar drops under its feet, alternating along the line."],
       ['Balance', "Shrine of Fury now helps healers too: on top of +20% damage it gives +10 Spirit (healing done and received) for the next 2 fights."],
       ['Balance', "Spirit now also raises healing DONE, not only healing received: each point makes the heals you cast on other heroes 1% bigger, on top of the target's own Spirit. Healers finally have a gear stat that scales their healing. A heal on yourself still counts your Spirit once, so self-healing is unchanged."],

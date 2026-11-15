@@ -242,6 +242,7 @@ function layout(cb, opts) {
     if (im) { if (im.naturalWidth) a = im.naturalWidth / im.naturalHeight; else if (!im.dataset.bfw) { im.dataset.bfw = 1; im.addEventListener('load', () => again && again(), { once: true }); } k = parseFloat(im.style.getPropertyValue('--s')) || 1; }
     const hd = el.querySelector(':scope > .uhead'); return { hw: a * k * .5 * .8, ht: k * (el.dataset.boss ? .854 : 1), tw: hd && hd.offsetWidth ? hd.offsetWidth : 0, th: hd && hd.offsetHeight ? hd.offsetHeight : 0 }; }));
   const figTop = 1.08;
+  const E = 12 + (opts && opts.inset ? Math.max(0, opts.inset - P) : 0);   // Nov 14: party frames down both edges push the fighters in towards the middle
   // one side's positions for figure size s; returns null if it doesn't fit
   const plan = (n, h, s, force, compact, sh) => {
     if (!n) return [];
@@ -249,22 +250,22 @@ function layout(cb, opts) {
       const hw = Math.max(...sh.map(q => q.hw)) * s, ph = Math.max(30, ...h) + 4, gap = W / 2 - Math.max(16, W * .04), dx = Math.max(2 * hw * .95, 70) + 6, rh = s * figTop * Math.max(...sh.map(q => q.ht)) + ph + 2;
       for (let rows = 1; rows <= n; rows++) {
         const cols = Math.ceil(n / rows), shift = dx * .35, out = [];
-        if (12 + Math.max(hw, 38) + (cols - 1) * dx + (rows - 1) * shift + Math.max(hw, 38) > gap) continue;
+        if (E + Math.max(hw, 38) + (cols - 1) * dx + (rows - 1) * shift + Math.max(hw, 38) > gap) continue;
         if (rows * rh > B - T) break;
-        for (let i = 0; i < n; i++) { const r = Math.floor(i / cols), c = i % cols; out.push({ x: 12 + Math.max(hw, 38) + c * dx + r * shift, y: B - ph - 4 - r * rh, d: r * 1.2 + c * .1, G: 0, pw: dx - 6 }); }
+        for (let i = 0; i < n; i++) { const r = Math.floor(i / cols), c = i % cols; out.push({ x: E + Math.max(hw, 38) + c * dx + r * shift, y: B - ph - 4 - r * rh, d: r * 1.2 + c * .1, G: 0, pw: dx - 6 }); }
         return out;
       }
       if (!force) return null;
       // too little room: as many columns as fit, rows squeezed together (back rows tuck behind the front ones)
-      const cols = Math.max(1, Math.floor((gap - 12 - 2 * Math.max(hw, 38)) / dx) + 1), rows = Math.ceil(n / cols), top = s * figTop * Math.max(...sh.map(q => q.ht));
+      const cols = Math.max(1, Math.floor((gap - E - 2 * Math.max(hw, 38)) / dx) + 1), rows = Math.ceil(n / cols), top = s * figTop * Math.max(...sh.map(q => q.ht));
       const rh2 = rows > 1 ? Math.max(ph + 6, Math.min(rh, (B - ph - 4 - T - top) / (rows - 1))) : 0, out = [];
-      for (let i = 0; i < n; i++) { const r = Math.floor(i / cols), c = i % cols; out.push({ x: 12 + Math.max(hw, 38) + c * dx + r * dx * .3, y: B - ph - 4 - r * rh2, d: r * 1.2 + c * .1, G: 0, pw: dx - 6 }); }
+      for (let i = 0; i < n; i++) { const r = Math.floor(i / cols), c = i % cols; out.push({ x: E + Math.max(hw, 38) + c * dx + r * dx * .3, y: B - ph - 4 - r * rh2, d: r * 1.2 + c * .1, G: 0, pw: dx - 6 }); }
       return out;
     }
     // each fighter one step in and up; its plate sits just outside its own figure. If that plate would sit over the
     // fighter in front (lower down), the step up is made big enough for the plate to clear that fighter's head.
     const out = [];
-    let x = 12 + P + sh[0].hw * s + 8, y = B;
+    let x = E + P + sh[0].hw * s + 8, y = B;
     for (let i = 0; i < n; i++) {
       if (i) {
         const pv = out[i - 1], dx = Math.max(s * .42, (sh[i - 1].hw + sh[i].hw) * s * .62) + 6; x += dx;   /* Nov 13: fighters on one side stand closer together now that the HP bars are small */
