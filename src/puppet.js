@@ -179,6 +179,7 @@ window.CB_PUPPET = (function () {
     if (Math.abs(lx) < Math.abs(ly) * .75) return false;   // the weapon runs along the forearm (a staff at rest): nothing to cut
     wg.save(); base(); chain(wg, B, P, part); wg.translate(hp[0], hp[1]); wg.rotate(rot); wg.beginPath(); if (lx < 0) wg.rect(-200, -200, 200 + CUTW, 400); else wg.rect(-CUTW, -200, 200 + CUTW, 400); wg.clip(); return true;
   }
+  const FIST2 = window.__fist2 === 0 ? null : (window.__fist2 || [-6, 7]);
   const CUTW = window.__cutw != null ? window.__cutw : 1.2;
   function outline(strip) { let o = OUTL.get(strip); if (o) return o; o = canvas(strip.width, S); const og = o.getContext('2d'); og.drawImage(strip, 0, 0); og.globalCompositeOperation = 'source-in'; og.fillStyle = '#07060a'; og.fillRect(0, 0, strip.width, S); OUTL.set(strip, o); return o; }   // every part's shape in near-black, for the edge drawn round each part
   const TUCK = window.__tuck || [.06, -.16, 0], HAND2 = window.__hand2 || [6, -7];   // the empty far arm folded against the chest (upper arm, forearm, shift); where the second hand sits along a handle
@@ -203,16 +204,22 @@ window.CB_PUPPET = (function () {
       // so fingers wrap the grip instead of the weapon floating in front of an open hand
       // Nov 15: only the fingers lying on the handle are painted back over it (a band as wide as the handle). It was a whole disc round the hand,
       // which also repainted the wrist and cuff over the weapon and left a ring round the glove
-      if (!at && !HELD[it[0]]) { wg.save(); wg.beginPath(); wg.rect(-FING[0], -FING[1], FING[0] * 2, FING[1] * 2); wg.clip(); base(); chain(wg, B, P, part); wg.drawImage(strip, part * S, 0, S, S, 0, 0, S, S); wg.restore(); }
+      if (!at && !HELD[it[0]]) { wg.save(); wg.beginPath(); wg.rect(-FING[0], -FING[1], FING[0] * 2, FING[1] * 2); wg.clip(); base(); chain(wg, B, P, part); wg.drawImage(strip, part * S, 0, S, S, 0, 0, S, S); wg.restore();
+        if (v === 'e' && TWOH[it[0]] && !look.off && anim !== 'idle' && anim !== 'walk' && FIST2) {   // the second hand of a two-hander: a fist on the handle, a little further along
+          const d = LONG[it[0]] ? FIST2[1] : FIST2[0], sx2 = -Math.sin(rot) * d, sy2 = Math.cos(rot) * d;
+          wg.save(); wg.beginPath(); wg.rect(-FING[0] - .4, d - FING[1], FING[0] * 2 + .8, FING[1] * 2); wg.clip(); base(); chain(wg, B, P, part); wg.translate(sx2, sy2); wg.drawImage(strip, part * S, 0, S, S, 0, 0, S, S); wg.restore(); } }
     };
     if (cl && v !== 'n') { base(); chain(wg, B, P, 0); wg.drawImage(cl, 0, 0); }
     const wrot = (it, d) => (HELD[it[0]] ? 0 : LONG[it[0]] || (it[0] === 'legend' && (it[1] === 2 || it[1] === 5)) ? .18 * d : 1.15 * d), mainPart = v === 'n' ? 5 : 3, offPart = v === 'n' ? 3 : 5;
     // Nov 13: from the side the far arm is drawn too (the near arm's picture, a shade darker, behind the body), and it is the hand that holds
     // the off-hand weapon. That weapon used to hang in the air beside the body.
-    if (v === 'e' && anim !== 'sit' && anim !== 'dead') {
+    // Nov 15 (later): in a fight the far arm is only drawn when it carries something (a shield, a second weapon). Empty, or as the second hand on a two-hander,
+    // it could never be fully hidden: its sleeve and glove showed round the near arm as stray shapes at the elbow and past the handle.
+    const farOn = anim === 'idle' || anim === 'walk' || (look.off && !HELD[look.off[0]]);
+    if (v === 'e' && anim !== 'sit' && anim !== 'dead' && farOn) {
       const a2 = P.parts[2], a3 = P.parts[3], k2 = [a2.r, a2.dx, a2.dy], k3 = a3.r, calm = anim === 'idle' || anim === 'walk', armed = look.off && !HELD[look.off[0]];
       a2.r = anim === 'walk' ? -k2[0] * .9 : anim === 'idle' ? k2[0] : armed ? -.72 + k2[0] * .12 : k2[0] + TUCK[0]; a3.r = calm ? Math.min(k3, -.2) : armed ? -.7 : k3 + TUCK[1];   /* Nov 15: an empty far arm shadows the near one, its hand drawn back a touch, so it is hidden behind it (hanging loose it showed as a lump at the hip; raised on its own, as a second glove) */
-      const two = !calm && !look.off && look.weapon && TWOH[look.weapon[0]];
+      const two = false;
       if (two) {   // Nov 15: a two-hander is held in two hands. The far hand is put on the handle, a little way from the near one, and follows it through every swing
         const p2 = B.piv[2], p3 = B.piv[3], h = gripAt(B, 3, 0), rot2 = (a, x, y) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)];
         const e1 = rot2(k2[0], p3[0] - p2[0], p3[1] - p2[1]), f1 = rot2(k2[0] + k3, h[0] - p3[0], h[1] - p3[1]), near = [p2[0] + k2[1] + e1[0] + f1[0], p2[1] + k2[2] + e1[1] + f1[1]];

@@ -2,8 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-15', items: [
-      ["Art", "Heroes in a fight, part one of a rework. Two-handed weapons are held in two hands: the far hand sits on the handle and follows every swing. The hand holding a weapon now ends at the handle (the glove used to run on past it and a round patch was painted over the weapon, which read as a ring round the hand)."],
-      ["Art", "Heroes stand in a fighting stance: front foot forward, back foot behind, knees bent, weight forward, where they used to stand bolt upright. An empty off hand tucks in behind the weapon arm, so there is no lump at the hip any more."],
+      ["Art", "Heroes in a fight, part one of a rework. The far arm is only drawn in a fight when it carries a shield or a second weapon; empty, its sleeve and glove showed round the near arm as stray shapes at the elbow and past the handle. A two-hander shows a second fist on the handle instead. The hand holding a weapon now ends at the handle (the glove used to run on past it and a round patch was painted over the weapon, which read as a ring round the hand)."],
+      ["Art", "Heroes stand in a fighting stance: front foot forward, back foot behind, knees bent, weight forward, where they used to stand bolt upright. There is no lump at the hip any more."],
       ["Art", "The dark outline is one firm line round the whole hero now, with only faint lines between its own parts; it used to pool into black blotches round the legs. Plate bodies carry a slightly smaller head."],
       ["Art", "Fighters sit in the scene: heroes pick up the colour of the light on each map (warm on the March and the Cinder Reach, cold on the Rimewatch, and so on), monsters are a little brighter with a faint lit edge so the dark ones stop vanishing into the background, and heroes cast a ground shadow."],
       ["Balance", "Tanks speed the fight up now: while an enemy is Taunted, every hero other than the one taunting hits it 10% harder (card hits, not damage over time). The Taunted debuff says so."],
