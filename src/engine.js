@@ -1171,6 +1171,8 @@ class Combat {
     const m = p.mana; p.mana = 0; this._spentAll = m; this._paid = (this._paid || 0) + m;
     this.say('player', `${this.who(p)} spend${this.partySize > 1 ? 's' : ''} all ${m} mana.`); return m;
   }
+  // Nov 15: a taunted enemy is busy with the tank, so everyone else in the party hits it 10% harder (card hits; not damage over time)
+  tauntX(p, e) { if (!p || !e || !p.isPlayer || e.isPlayer) return 1; const tk = this.taunting(); return tk && tk !== p ? 1 + TAUNT_OPEN : 1; }
   taunting() { return this.alivePlayers().find(q => q.until.taunt) || null; }
   setTaunt(p) { p.until.taunt = true; for (const e of this.foes()) for (const c of e.hand) if (c.mark) c.mark = p.id; this.say('player', `${p.name} draws every enemy's attention.`); }
   exhaustStatus(p, max) { let n = 0; for (const c of p.hand.slice()) { if (n >= max) break; if (C[c.key].type === 'Status') { p.hand.splice(p.hand.indexOf(c), 1); p.exhaust.push(c); n++; } } if (n) this.say('player', `${n} status card${n > 1 ? 's' : ''} exhausted.`); return n; }
@@ -1303,6 +1305,7 @@ class Combat {
       if (e && e.hp > 0) { // aimed at a target: its weakness/resistance, Vulnerable, Condemnation and Unwarded too
         m *= this.typeMod(e, dtype) * (1 + (dtype !== 'Physical' ? 0 : 1) * Math.min(0.5, (e.vulnerable || 0) / 100) * (pow ? Math.max(1, ...this.pws(p).map(([, q]) => q.vulnX || 1)) : 1)); // the cap is shared; vulnX (Sunderer's talent, cards) multiplies after it // Nov 2: Vulnerable caps at +50%
         m *= (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? (1 + (e.unwarded || 0) / 100) * (1 + Math.min(50, e.magicVuln || 0) / 100) : 1); // Magic Vulnerability caps at +50%
+        m *= this.tauntX(p, e);
         if (e.isPlayer) m *= (1 - Math.min(75, e.resist[dtype] || 0) / 100) * (1 + this.pressure());
       }
       return m;
@@ -1668,7 +1671,7 @@ class Combat {
     const tm = this.typeMod(e, dtype, p);
     const weakMod = 1 - Math.min(p.weak, 90) / 100, vulnMod = 1 + (dtype !== 'Physical' ? 0 : 1) * Math.min(0.5, e.vulnerable / 100) * (pow ? Math.max(1, ...this.pws(p).map(([, d]) => d.vulnX || 1)) : 1); // Nov 2: Vulnerable caps at +50%
     const holyUp = dtype === 'Holy' && p.nextHolyMult > 1 ? p.nextHolyMult : 1; if (holyUp > 1) p.nextHolyMult = 1;
-    const curse = (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? (1 + (e.unwarded || 0) / 100) * (1 + Math.min(50, e.magicVuln || 0) / 100) : 1); // Magic Vulnerability caps at +50%
+    const curse = this.tauntX(p, e) * (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? (1 + (e.unwarded || 0) / 100) * (1 + Math.min(50, e.magicVuln || 0) / 100) : 1); // Magic Vulnerability caps at +50%
     const pm = (pow ? this.pwProd(p, 'hitMult', e, ctx) : 1) * (this._cmult || 1) * (this._allX || 1) * holyUp * curse * (crit && p.turn && p.turn.killingBlow ? (p.turn.killingBlow === true ? 2 : p.turn.killingBlow) : 1) * (SHX ? SHX.vs(this, p, e, dtype, kind) : 1), cmx = pow ? this.pwProd(p, 'critMultX') : 1;
     if (crit && p.turn && p.turn.killingBlow) { p.turn.killingBlow = false; this.say('crit', 'Killing Blow: the crit hits harder.'); }
     const pvp = e.isPlayer ? (1 - Math.min(75, (e.resist[dtype] || 0) * (1 - Math.min(100, p.pen || 0) / 100)) / 100) * (1 + this.pressure()) : 1;
@@ -2665,6 +2668,7 @@ function maceFix(it) { if (!it || !it.imp2 || !(it.arch === '1H Mace' || it.labe
   delete it.imp2['Elemental/Holy Damage:Holy']; const n = Math.max(1, Math.round(v / 4 * 0.7)); it.r5 = 1; it.imp2['Multi-hit Chance'] = n; it.imp2['Multicast Chance'] = n; return true; }
 // Nov 14: Chef Brookt's kitchen. A recipe drops (rarely) from the monsters it is cooked from; its strength goes by the map level it dropped on.
 // A meal is one extra "item" a hero carries for one whole map (slot 'Food'), so every stat works exactly as it does on gear.
+const TAUNT_OPEN = 0.10;
 const FOOD_BANDS = [[0, 3], [4, 7], [8, 11], [12, 99]], FOOD_PRICE = [50, 125, 250, 500], FOOD_DROP = 0.06, FOOD_RANK = ['I', 'II', 'III', 'IV'];
 const P5 = [5, 10, 15, 20], R10 = [10, 20, 30, 40], S3 = [3, 6, 9, 12];
 const FOODS = [

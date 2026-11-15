@@ -47,7 +47,7 @@
       ['Full parry', 'An enemy hit fully absorbed by your defense. Some cards and Powers trigger on it.'],
       ['Stealth', 'Single-target enemy cards can\'t pick you. It lasts until you attack out of it (after that Attack resolves), play a card that hits all enemies, or an enemy area attack gets through (fully Dodging it keeps you hidden).'],
       ['Taunt', 'Enemies must attack this hero until their next turn.'],
-      ['Tank', 'A hero wearing a tank codex (Bulwark, Riposte, Barrier Savant, Stormwarden). Only 20% of a Tank\'s Block, Parry, Barrier or Guard fades each round (not half), and each Attack or damaging Skill that hits has a 50% chance to Taunt the enemy. Talents can raise that chance.'],
+      ['Tank', 'A hero wearing a tank codex (Bulwark, Riposte, Barrier Savant, Stormwarden). Only 20% of a Tank\ While an enemy is Taunted, every other hero in the party hits it 10% harder.'s Block, Parry, Barrier or Guard fades each round (not half), and each Attack or damaging Skill that hits has a 50% chance to Taunt the enemy. Talents can raise that chance.'],
       ['Untouchable / Immune', 'No damage (or no damage of a named type) until your next turn.'],
       ['Reflect', 'The next debuff on you goes back to the enemy that applied it.'],
     ]],

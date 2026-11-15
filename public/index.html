@@ -3696,6 +3696,8 @@ class Combat {
     const m = p.mana; p.mana = 0; this._spentAll = m; this._paid = (this._paid || 0) + m;
     this.say('player', `${this.who(p)} spend${this.partySize > 1 ? 's' : ''} all ${m} mana.`); return m;
   }
+  // Nov 15: a taunted enemy is busy with the tank, so everyone else in the party hits it 10% harder (card hits; not damage over time)
+  tauntX(p, e) { if (!p || !e || !p.isPlayer || e.isPlayer) return 1; const tk = this.taunting(); return tk && tk !== p ? 1 + TAUNT_OPEN : 1; }
   taunting() { return this.alivePlayers().find(q => q.until.taunt) || null; }
   setTaunt(p) { p.until.taunt = true; for (const e of this.foes()) for (const c of e.hand) if (c.mark) c.mark = p.id; this.say('player', `${p.name} draws every enemy's attention.`); }
   exhaustStatus(p, max) { let n = 0; for (const c of p.hand.slice()) { if (n >= max) break; if (C[c.key].type === 'Status') { p.hand.splice(p.hand.indexOf(c), 1); p.exhaust.push(c); n++; } } if (n) this.say('player', `${n} status card${n > 1 ? 's' : ''} exhausted.`); return n; }
@@ -3828,6 +3830,7 @@ class Combat {
       if (e && e.hp > 0) { // aimed at a target: its weakness/resistance, Vulnerable, Condemnation and Unwarded too
         m *= this.typeMod(e, dtype) * (1 + (dtype !== 'Physical' ? 0 : 1) * Math.min(0.5, (e.vulnerable || 0) / 100) * (pow ? Math.max(1, ...this.pws(p).map(([, q]) => q.vulnX || 1)) : 1)); // the cap is shared; vulnX (Sunderer's talent, cards) multiplies after it // Nov 2: Vulnerable caps at +50%
         m *= (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? (1 + (e.unwarded || 0) / 100) * (1 + Math.min(50, e.magicVuln || 0) / 100) : 1); // Magic Vulnerability caps at +50%
+        m *= this.tauntX(p, e);
         if (e.isPlayer) m *= (1 - Math.min(75, e.resist[dtype] || 0) / 100) * (1 + this.pressure());
       }
       return m;
@@ -4193,7 +4196,7 @@ class Combat {
     const tm = this.typeMod(e, dtype, p);
     const weakMod = 1 - Math.min(p.weak, 90) / 100, vulnMod = 1 + (dtype !== 'Physical' ? 0 : 1) * Math.min(0.5, e.vulnerable / 100) * (pow ? Math.max(1, ...this.pws(p).map(([, d]) => d.vulnX || 1)) : 1); // Nov 2: Vulnerable caps at +50%
     const holyUp = dtype === 'Holy' && p.nextHolyMult > 1 ? p.nextHolyMult : 1; if (holyUp > 1) p.nextHolyMult = 1;
-    const curse = (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? (1 + (e.unwarded || 0) / 100) * (1 + Math.min(50, e.magicVuln || 0) / 100) : 1); // Magic Vulnerability caps at +50%
+    const curse = this.tauntX(p, e) * (dtype === 'Holy' ? 1 + (e.condemn || 0) / 100 : 1) * (dtype !== 'Physical' ? (1 + (e.unwarded || 0) / 100) * (1 + Math.min(50, e.magicVuln || 0) / 100) : 1); // Magic Vulnerability caps at +50%
     const pm = (pow ? this.pwProd(p, 'hitMult', e, ctx) : 1) * (this._cmult || 1) * (this._allX || 1) * holyUp * curse * (crit && p.turn && p.turn.killingBlow ? (p.turn.killingBlow === true ? 2 : p.turn.killingBlow) : 1) * (SHX ? SHX.vs(this, p, e, dtype, kind) : 1), cmx = pow ? this.pwProd(p, 'critMultX') : 1;
     if (crit && p.turn && p.turn.killingBlow) { p.turn.killingBlow = false; this.say('crit', 'Killing Blow: the crit hits harder.'); }
     const pvp = e.isPlayer ? (1 - Math.min(75, (e.resist[dtype] || 0) * (1 - Math.min(100, p.pen || 0) / 100)) / 100) * (1 + this.pressure()) : 1;
@@ -5190,6 +5193,7 @@ function maceFix(it) { if (!it || !it.imp2 || !(it.arch === '1H Mace' || it.labe
   delete it.imp2['Elemental/Holy Damage:Holy']; const n = Math.max(1, Math.round(v / 4 * 0.7)); it.r5 = 1; it.imp2['Multi-hit Chance'] = n; it.imp2['Multicast Chance'] = n; return true; }
 // Nov 14: Chef Brookt's kitchen. A recipe drops (rarely) from the monsters it is cooked from; its strength goes by the map level it dropped on.
 // A meal is one extra "item" a hero carries for one whole map (slot 'Food'), so every stat works exactly as it does on gear.
+const TAUNT_OPEN = 0.10;
 const FOOD_BANDS = [[0, 3], [4, 7], [8, 11], [12, 99]], FOOD_PRICE = [50, 125, 250, 500], FOOD_DROP = 0.06, FOOD_RANK = ['I', 'II', 'III', 'IV'];
 const P5 = [5, 10, 15, 20], R10 = [10, 20, 30, 40], S3 = [3, 6, 9, 12];
 const FOODS = [
@@ -8376,8 +8380,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794759616303';
-  const CB_BUILD = '45c6ded348'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794759945532';
+  const CB_BUILD = 'ee56e361f9'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -9517,6 +9521,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-15', items: [
+      ["Balance", "Tanks speed the fight up now: while an enemy is Taunted, every hero other than the one taunting hits it 10% harder (card hits, not damage over time). The Taunted debuff says so."],
       ["Feature", "The party chest: an online party that kills a map boss now opens one more chest together before anyone sees their own loot, and rolls Need, Greed or Pass on each item (the same rolls raids use). A Party Chest holds 3 items for two heroes, a Great Party Chest 5 for three, a Grand Party Chest 7 for a full party of four. Its items are 5 item levels above the boss's drops and roll Epic far more often: 25% at +0, +2% per map level, up to 60%. What you win goes straight to your stash."],
       ["Balance", "Co-op rewards go from 20% to 25% per extra hero: codex XP, gold, and the chance of one more loot roll from every monster. A full party of four is at +75%."],
       ["Balance", "Co-op, normal fights: monsters no longer get any extra HP in a party. One monster per hero shows up, each with exactly the HP it has solo (they had +30% per extra hero, +18% on +0 maps). On every map level."],
@@ -14787,7 +14792,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       ['Full parry', 'An enemy hit fully absorbed by your defense. Some cards and Powers trigger on it.'],
       ['Stealth', 'Single-target enemy cards can\'t pick you. It lasts until you attack out of it (after that Attack resolves), play a card that hits all enemies, or an enemy area attack gets through (fully Dodging it keeps you hidden).'],
       ['Taunt', 'Enemies must attack this hero until their next turn.'],
-      ['Tank', 'A hero wearing a tank codex (Bulwark, Riposte, Barrier Savant, Stormwarden). Only 20% of a Tank\'s Block, Parry, Barrier or Guard fades each round (not half), and each Attack or damaging Skill that hits has a 50% chance to Taunt the enemy. Talents can raise that chance.'],
+      ['Tank', 'A hero wearing a tank codex (Bulwark, Riposte, Barrier Savant, Stormwarden). Only 20% of a Tank\ While an enemy is Taunted, every other hero in the party hits it 10% harder.'s Block, Parry, Barrier or Guard fades each round (not half), and each Attack or damaging Skill that hits has a 50% chance to Taunt the enemy. Talents can raise that chance.'],
       ['Untouchable / Immune', 'No damage (or no damage of a named type) until your next turn.'],
       ['Reflect', 'The next debuff on you goes back to the enemy that applied it.'],
     ]],
@@ -17415,7 +17420,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     if (!a.isPlayer && a.stunTurns > 0) t.push(`<span class="tag bad" title="Loses its next ${a.stunTurns > 1 ? a.stunTurns + ' turns' : 'turn'}">${a.toad ? 'Toad' : 'Stunned'}${a.stunTurns > 1 ? ' ' + a.stunTurns : ''}</span>`);
     if (!a.isPlayer && a.manaLock > 0) t.push(`<span class="tag bad" title="Gains no mana on its next turn">Mana Lock</span>`);
     if (a.isPlayer && a.shThunder) t.push(`<span class="tag good" title="Thunderhead: your next lightning spell applies double Static">Thunderhead</span>`);
-    if (!a.isPlayer && cb.taunting && cb.taunting() && a.hp > 0) t.push(`<span class="tag bad" title="Taunted: it must attack ${esc(cb.taunting().name)} this round">Taunted</span>`);   // Nov 15: a taunt now shows on the enemies it holds
+    if (!a.isPlayer && cb.taunting && cb.taunting() && a.hp > 0) t.push(`<span class="tag bad" title="Taunted: it must attack ${esc(cb.taunting().name)} this round, and everyone else in the party hits it 10% harder">Taunted</span>`);   // Nov 15: a taunt now shows on the enemies it holds
     if (a.isPlayer && a.cls === 'Shaman') { if (a.shMH) t.push(`<span class="tag good" title="Stored Multi-hit chance for your next Attack (Twinstorm)">+${a.shMH}% Multi-hit</span>`); if (a.shMC) t.push(`<span class="tag good" title="Stored Multicast chance for your next spell (Twinstorm)">+${a.shMC}% Multicast</span>`); if (a.shSure) t.push(`<span class="tag good" title="Your next Attack is a sure Multi-hit (Rainbringer)">Sure Multi-hit</span>`); if (a.shNextX > 1) t.push(`<span class="tag good" title="Your next card is played ${a.shNextX === 3 ? 'three times' : 'twice'}">Next card x${a.shNextX}</span>`); if (a.shCoil) t.push(`<span class="tag good" title="Your next card deals ${a.shCoil * 30}% more">Coiled x${a.shCoil}</span>`); if (a.shLW) t.push(`<span class="tag good" title="Charged Attacks left: +4 Nature damage and 1 Static each">Lightning Weapon ${a.shLW}</span>`); if (a.shFW) t.push(`<span class="tag good" title="Burning Attacks left: +4 Fire damage and 1 Burn each">Flame Weapon ${a.shFW}</span>`); if (a.shIW) t.push(`<span class="tag good" title="Freezing Attacks left: +4 Frost damage and 1 Chill each">Frost Weapon ${a.shIW}</span>`); if (a.shDmgUp) t.push(`<span class="tag good" title="Gathering Storm">+${a.shDmgUp}% damage</span>`); if (cb.has(a, 'codex_skybreaker')) t.push(a.shLastAny ? `<span class="tag good" title="Skybreaker: when one of your Attacks Multi-hits, ${esc(a.shLastAny.name)} is played again, free (damage halved). (${esc(a.shLastAny.text)})">Repeats: ${esc(a.shLastAny.name)}</span>` : `<span class="tag" title="Skybreaker repeats the last Skill you played when an Attack Multi-hits. You have not played one yet this fight.">Repeats: no Skill yet</span>`); if (a.shSkip > 0 || (a.turn && a.turn.noAct)) t.push(`<span class="tag bad" title="Turns you cannot act">Sitting out${a.shSkip > 0 ? ' ' + a.shSkip : ''}</span>`); }
     if (!a.isPlayer && a.parryBack) t.push(`<span class="tag bad" title="Attacks into its Parry take damage back">Riposte</span>`);
     if (!a.isPlayer && a.thorns) t.push(`<span class="tag bad">Spikes ${a.thorns}</span>`);

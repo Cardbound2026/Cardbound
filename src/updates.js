@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-15', items: [
+      ["Balance", "Tanks speed the fight up now: while an enemy is Taunted, every hero other than the one taunting hits it 10% harder (card hits, not damage over time). The Taunted debuff says so."],
       ["Feature", "The party chest: an online party that kills a map boss now opens one more chest together before anyone sees their own loot, and rolls Need, Greed or Pass on each item (the same rolls raids use). A Party Chest holds 3 items for two heroes, a Great Party Chest 5 for three, a Grand Party Chest 7 for a full party of four. Its items are 5 item levels above the boss's drops and roll Epic far more often: 25% at +0, +2% per map level, up to 60%. What you win goes straight to your stash."],
       ["Balance", "Co-op rewards go from 20% to 25% per extra hero: codex XP, gold, and the chance of one more loot roll from every monster. A full party of four is at +75%."],
       ["Balance", "Co-op, normal fights: monsters no longer get any extra HP in a party. One monster per hero shows up, each with exactly the HP it has solo (they had +30% per extra hero, +18% on +0 maps). On every map level."],
