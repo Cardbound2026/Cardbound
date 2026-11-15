@@ -110,7 +110,7 @@ window.CB_PUPPET = (function () {
     }
     const b = (Math.sin(p * TAU) + 1) / 2, breathe = (k) => { q[1].dy = -b * .9 * k; q[2].dy = q[4].dy = -b * .6 * k; q[0].sy = 1 + b * .012 * k; };
     if (anim === 'idle') { breathe(1); if (side) { q[2].r = .03 * s; q[4].r = -.03 * s; } return P; }
-    const ready = (k) => { if (!side) return; q[2].r += -.45 * k; q[3].r += -.75 * k; P.wr += .55 * k; q[6].r += -.2 * k; q[7].r += .16 * k; q[8].r += .2 * k; q[9].r += .1 * k; q[0].r += .04 * k; P.dy += 1.2 * k; };   // the fighting stance
+    const ready = (k) => { if (!side) return; q[2].r += -.45 * k; q[3].r += -.75 * k; P.wr += .55 * k; q[6].r += STANCE[0] * k; q[7].r += STANCE[1] * k; q[8].r += STANCE[2] * k; q[9].r += STANCE[3] * k; q[0].r += STANCE[4] * k; q[1].r += -STANCE[4] * .6 * k; P.dy += STANCE[5] * k; };   // the fighting stance (Nov 15: a wider base, both knees bent, the weight forward; it stood bolt upright with its feet together)   // the fighting stance
     if (anim === 'sit') { breathe(1); if (side) { q[6].r = -.8; q[7].r = 1.05; q[8].r = -.8; q[9].r = 1.05; q[8].sy = q[9].sy = 0; q[2].r = -.45; q[3].r = -.8; q[0].r = .05; } else { q[6].r = .85; q[8].r = -.85; q[7].r = -.75; q[9].r = .75; q[6].sy = q[8].sy = .78; q[7].sy = q[9].sy = .85; } return P; }   // riding
     if (anim === 'ready') { breathe(1); ready(1); q[2].r += .03 * s; return P; }
     // the fight moves play once, in the side view: p runs 0..1
@@ -159,20 +159,36 @@ window.CB_PUPPET = (function () {
     }
     return P;
   }
+  const STANCE = window.__stance || [-.45, .3, .16, .12, .08, 2.2];   // front thigh, front shin, back thigh, back shin, torso lean, how far the body sinks
   const CLIP = { thrust: 480, heavy: 820, leap: 820, double: 720, spin: 760, empower: 900, parry: 520, dodge: 460, knock: 560, sit: 1600, ready: 1600, idle: 1600, walk: 760, attack: 560, aoe: 700, cast: 800, guard: 700, hit: 380, dead: 700 }; // ms per loop (or per play)
   const ONCE = { thrust: 1, heavy: 1, leap: 1, double: 1, spin: 1, empower: 1, parry: 1, dodge: 1, knock: 1, attack: 1, aoe: 1, cast: 1, guard: 1, hit: 1, dead: 1 };
   // ---------- drawing: each part is drawn from the look's strip with its parents' moves applied
   // parts are drawn enlarged (each art pixel a block of q x q) and the result shrunk to size, so a turned limb gets clean edges instead of jagged ones
   const WORK = {}, workFor = (q) => WORK[q] || (WORK[q] = (() => { const c = canvas(S * 2 * q, S * 2 * q); return { c, g: c.getContext('2d') }; })());
-  function chain(g, B, P, i) { if (PAR[i] >= 0) chain(g, B, P, PAR[i]); const a = P.parts[i], pv = B.piv[i]; g.translate(pv[0] + a.dx, pv[1] + a.dy); if (a.r) g.rotate(a.r); if (a.sy !== 1) g.scale(1, a.sy); g.translate(-pv[0], -pv[1]); }
-  const GRIPR = 3.6, OUTL = new WeakMap();
+  function chain(g, B, P, i) { if (PAR[i] >= 0) chain(g, B, P, PAR[i]); const a = P.parts[i], pv = B.piv[i]; g.translate(pv[0] + a.dx, pv[1] + a.dy); if (a.r) g.rotate(a.r); if (a.sy !== 1) g.scale(1, a.sy); if (a.s) g.scale(a.s, a.s); g.translate(-pv[0], -pv[1]); }
+  const OLA = window.__ola != null ? window.__ola : .42, GRIPR = 3.6, OUTL = new WeakMap();
+  const TWOH = { sword2h: 1, axe2h: 1, maul: 1, hammer: 1, scythe: 1, staff: 1 }, HEADS = { warrior: .93, paladin: .93 };
+  let SIL = null;
+  const FING = window.__fing || [1.6, 2.4], GRIPOUT = window.__gripout != null ? window.__gripout : 1.6;
+  function gripAt(B, part, hand) { const h = B.hand[hand], e = B.piv[part], dx = h[0] - e[0], dy = h[1] - e[1], d = Math.hypot(dx, dy) || 1; return [h[0] + dx / d * GRIPOUT, h[1] + dy / d * GRIPOUT]; }
+  // Nov 15: the hand that holds a weapon ends at the handle. The glove's picture runs on past the grip, and that stub poking out the far side is what
+  // made a ring round the hand. Everything of the forearm beyond the handle is clipped away (when the weapon lies across the hand, not along it).
+  // Leaves the canvas saved with the clip on: the caller restores.
+  function gripClip(wg, base, B, P, part, hand, rot) {
+    const hp = gripAt(B, part, hand), e = B.piv[part], ex = e[0] - hp[0], ey = e[1] - hp[1], lx = ex * Math.cos(-rot) - ey * Math.sin(-rot), ly = ex * Math.sin(-rot) + ey * Math.cos(-rot);
+    if (Math.abs(lx) < Math.abs(ly) * .75) return false;   // the weapon runs along the forearm (a staff at rest): nothing to cut
+    wg.save(); base(); chain(wg, B, P, part); wg.translate(hp[0], hp[1]); wg.rotate(rot); wg.beginPath(); if (lx < 0) wg.rect(-200, -200, 200 + CUTW, 400); else wg.rect(-CUTW, -200, 200 + CUTW, 400); wg.clip(); return true;
+  }
+  const CUTW = window.__cutw != null ? window.__cutw : 1.2;
   function outline(strip) { let o = OUTL.get(strip); if (o) return o; o = canvas(strip.width, S); const og = o.getContext('2d'); og.drawImage(strip, 0, 0); og.globalCompositeOperation = 'source-in'; og.fillStyle = '#07060a'; og.fillRect(0, 0, strip.width, S); OUTL.set(strip, o); return o; }   // every part's shape in near-black, for the edge drawn round each part
+  const TUCK = window.__tuck || [.06, -.16, 0], HAND2 = window.__hand2 || [6, -7];   // the empty far arm folded against the chest (upper arm, forearm, shift); where the second hand sits along a handle
   function draw(g, look, view, anim, t, x, footY, scale) {
     const flip = view === 'w', v = flip ? 'e' : view, B = D.bodies[look.body] && D.bodies[look.body][v]; if (!B) return false;
     const COS = window.CB_COS; if (COS && look.cos) { const ws = COS.weapon(look); if (ws && W && W.types.includes('legend')) look = Object.assign({}, look, { weapon: ws }); }
     const strip = compose(look, v) || img(look.body + '_' + v); if (!strip) return false;
     if (COS && look.cos) { g.save(); try { COS.draw(g, look, view, anim, t, x, footY, scale, 'back'); } catch (e) {} g.restore(); }
     const len = CLIP[anim] || 1000, p = ONCE[anim] ? Math.min(1, t / len) : (t % len) / len, P = pose(anim, p, v);
+    if (HEADS[look.body] && window.__heads !== 0) P.parts[1].s = window.__heads || HEADS[look.body];   // Nov 15: the plate bodies carried a head a size too big
     const q = scale >= 1.5 ? 3 : 2, wk = workFor(q), work = wk.c, wg = wk.g;
     wg.setTransform(1, 0, 0, 1, 0, 0); wg.clearRect(0, 0, work.width, work.height); wg.imageSmoothingEnabled = false;
     const base = () => wg.setTransform(q, 0, 0, q, (S / 2 + Math.round(P.dx)) * q, (S / 2 + Math.round(P.dy)) * q), wim = (look.weapon || look.off) && W ? img('weapons') : null, cl = cloak(look, v);
@@ -180,10 +196,14 @@ window.CB_PUPPET = (function () {
       if (!it || !wim) return; let ti = W.types.indexOf(it[0]), gp = W.grip[it[0]] && W.grip[it[0]][it[1]], sim = wim, sx = it[1] * W.cw, sy = ti * W.ch; if (ti < 0 || !gp) return;
       // Nov 13: a weapon look from the Skull Shop for this type of weapon (look.cos['wsk_' + type]) is drawn in its place; it is held and swung the same way
       { const SK = window.CB_WSKINS, id = SK && look.cos && look.cos['wsk_' + it[0]]; if (id) { if (!SK.by) { SK.by = {}; SK.list.forEach((q, i) => { SK.by['wsk_' + q.k] = Object.assign({ i }, q); }); } const q = SK.by[id], im2 = q && q.t === it[0] && img('wskins'); if (im2) { sim = im2; sx = (q.i % SK.cols) * W.cw; sy = Math.floor(q.i / SK.cols) * W.ch; gp = q.g; } } }
-      base(); chain(wg, B, P, part); wg.translate(at ? at[0] : B.hand[hand][0], at ? at[1] : B.hand[hand][1]); wg.rotate(rot); wg.drawImage(sim, sx, sy, W.cw, W.ch, -Math.round(gp[0]), -Math.round(gp[1]) + (HELD[it[0]] || LONG[it[0]] || at ? 0 : 2), W.cw, W.ch);
+      // Nov 15: the grip sits out at the fingers (it was mid-palm, so half the glove stuck out past the handle)
+      const hp = at || gripAt(B, part, hand);
+      base(); chain(wg, B, P, part); wg.translate(hp[0], hp[1]); wg.rotate(rot); wg.drawImage(sim, sx, sy, W.cw, W.ch, -Math.round(gp[0]), -Math.round(gp[1]) + (HELD[it[0]] || LONG[it[0]] || at ? 0 : 2), W.cw, W.ch);
       // Nov 13: the fist closes over the handle. The weapon is drawn on the hand, then the hand itself is drawn again on top of it,
       // so fingers wrap the grip instead of the weapon floating in front of an open hand
-      if (!at && !HELD[it[0]]) { wg.save(); base(); chain(wg, B, P, part); wg.beginPath(); wg.arc(B.hand[hand][0], B.hand[hand][1], GRIPR, 0, 7); wg.clip(); wg.drawImage(strip, part * S, 0, S, S, 0, 0, S, S); wg.restore(); }
+      // Nov 15: only the fingers lying on the handle are painted back over it (a band as wide as the handle). It was a whole disc round the hand,
+      // which also repainted the wrist and cuff over the weapon and left a ring round the glove
+      if (!at && !HELD[it[0]]) { wg.save(); wg.beginPath(); wg.rect(-FING[0], -FING[1], FING[0] * 2, FING[1] * 2); wg.clip(); base(); chain(wg, B, P, part); wg.drawImage(strip, part * S, 0, S, S, 0, 0, S, S); wg.restore(); }
     };
     if (cl && v !== 'n') { base(); chain(wg, B, P, 0); wg.drawImage(cl, 0, 0); }
     const wrot = (it, d) => (HELD[it[0]] ? 0 : LONG[it[0]] || (it[0] === 'legend' && (it[1] === 2 || it[1] === 5)) ? .18 * d : 1.15 * d), mainPart = v === 'n' ? 5 : 3, offPart = v === 'n' ? 3 : 5;
@@ -191,20 +211,36 @@ window.CB_PUPPET = (function () {
     // the off-hand weapon. That weapon used to hang in the air beside the body.
     if (v === 'e' && anim !== 'sit' && anim !== 'dead') {
       const a2 = P.parts[2], a3 = P.parts[3], k2 = [a2.r, a2.dx, a2.dy], k3 = a3.r, calm = anim === 'idle' || anim === 'walk', armed = look.off && !HELD[look.off[0]];
-      a2.r = anim === 'walk' ? -k2[0] * .9 : anim === 'idle' ? k2[0] : (armed ? -.72 : .12) + k2[0] * .12; a3.r = calm ? Math.min(k3, -.2) : armed ? -.7 : -.35;   /* Nov 14: with nothing in the off hand the far arm hangs behind the body in a fight. Raised, its hand poked out past the sword hand and made the glove look like an oven mitt */ a2.dx = k2[1] + (anim === 'idle' ? 1 : 3); a2.dy = k2[2] - 1;
-      for (const i of [2, 3]) { base(); chain(wg, B, P, i); wg.drawImage(strip, i * S, 0, S, S, 0, 0, S, S); }
+      a2.r = anim === 'walk' ? -k2[0] * .9 : anim === 'idle' ? k2[0] : armed ? -.72 + k2[0] * .12 : k2[0] + TUCK[0]; a3.r = calm ? Math.min(k3, -.2) : armed ? -.7 : k3 + TUCK[1];   /* Nov 15: an empty far arm shadows the near one, its hand drawn back a touch, so it is hidden behind it (hanging loose it showed as a lump at the hip; raised on its own, as a second glove) */
+      const two = !calm && !look.off && look.weapon && TWOH[look.weapon[0]];
+      if (two) {   // Nov 15: a two-hander is held in two hands. The far hand is put on the handle, a little way from the near one, and follows it through every swing
+        const p2 = B.piv[2], p3 = B.piv[3], h = gripAt(B, 3, 0), rot2 = (a, x, y) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)];
+        const e1 = rot2(k2[0], p3[0] - p2[0], p3[1] - p2[1]), f1 = rot2(k2[0] + k3, h[0] - p3[0], h[1] - p3[1]), near = [p2[0] + k2[1] + e1[0] + f1[0], p2[1] + k2[2] + e1[1] + f1[1]];
+        const ax = rot2(k2[0] + k3 + wrot(look.weapon, 1) + P.wr, 0, -1), off = LONG[look.weapon[0]] ? HAND2[1] : HAND2[0], T = [near[0] + ax[0] * off, near[1] + ax[1] * off];
+        const sx = p2[0] + k2[1] + 3, sy = p2[1] + k2[2] - 1, l1 = Math.hypot(p3[0] - p2[0], p3[1] - p2[1]), l2 = Math.hypot(h[0] - p3[0], h[1] - p3[1]);
+        let vx = T[0] - sx, vy = T[1] - sy, d = Math.hypot(vx, vy); const dd = Math.max(Math.abs(l1 - l2) + .01, Math.min(l1 + l2 - .01, d));
+        const al = Math.atan2(vy, vx), A = Math.acos(Math.max(-1, Math.min(1, (l1 * l1 + dd * dd - l2 * l2) / (2 * l1 * dd))));
+        let best = null; for (const sg of [1, -1]) { const u = al + sg * A, ex = sx + l1 * Math.cos(u), ey = sy + l1 * Math.sin(u); if (!best || ey > best[2]) best = [u, ex, ey]; }   // the elbow that hangs lower
+        const fx = sx + Math.cos(al) * dd, fy = sy + Math.sin(al) * dd, fore = Math.atan2(fy - best[2], fx - best[1]);
+        a2.r = best[0] - Math.atan2(p3[1] - p2[1], p3[0] - p2[0]); a3.r = fore - Math.atan2(h[1] - p3[1], h[0] - p3[0]) - a2.r; a2.dx = k2[1] + 3; a2.dy = k2[2] - 1;
+      } else   /* Nov 14: with nothing in the off hand the far arm hangs behind the body in a fight. Raised, its hand poked out past the sword hand and made the glove look like an oven mitt */ { a2.dx = k2[1] + (anim === 'idle' ? 1 : armed ? 3 : TUCK[2]); a2.dy = k2[2] - 1; }
+      for (const i of [2, 3]) { const cut = two && i === 3 ? gripClip(wg, base, B, P, 3, 0, k2[0] + k3 + wrot(look.weapon, 1) + P.wr - a2.r - a3.r) : false; base(); chain(wg, B, P, i); wg.drawImage(strip, i * S, 0, S, S, 0, 0, S, S); if (cut) wg.restore(); }
       if (look.off && !HELD[look.off[0]]) held(look.off, 3, 0, calm ? wrot(look.off, 1) : k2[0] + k3 + wrot(look.off, 1) + P.wr - a2.r - a3.r - .3);
       wg.setTransform(1, 0, 0, 1, 0, 0); wg.globalCompositeOperation = 'source-atop'; wg.fillStyle = 'rgba(8,6,12,.34)'; wg.fillRect(0, 0, work.width, work.height); wg.globalCompositeOperation = 'source-over';
       a2.r = k2[0]; a2.dx = k2[1]; a2.dy = k2[2]; a3.r = k3;
     }
     for (const i of B.order) {
-      { const ol = outline(strip); wg.globalAlpha = .9; base(); chain(wg, B, P, i); for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) wg.drawImage(ol, i * S, 0, S, S, ox, oy, S, S); wg.globalAlpha = 1; }   /* Nov 14: a near-black edge round every part (it was only the near arm), so gloves, arms and each leg read apart instead of melting into one shape */
-      base(); chain(wg, B, P, i); wg.drawImage(strip, i * S, 0, S, S, 0, 0, S, S);
+      { const ol = outline(strip); const cut0 = v === 'e' && i === mainPart && look.weapon && !HELD[look.weapon[0]] ? gripClip(wg, base, B, P, i, 0, wrot(look.weapon, 1) + P.wr) : false; wg.globalAlpha = OLA; base(); chain(wg, B, P, i); for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) wg.drawImage(ol, i * S, 0, S, S, ox, oy, S, S); wg.globalAlpha = 1; if (cut0) wg.restore(); }   /* Nov 14: a near-black edge round every part (it was only the near arm), so gloves, arms and each leg read apart instead of melting into one shape */
+      const cut = v === 'e' && i === mainPart && look.weapon && !HELD[look.weapon[0]] ? gripClip(wg, base, B, P, i, 0, wrot(look.weapon, 1) + P.wr) : false;
+      base(); chain(wg, B, P, i); wg.drawImage(strip, i * S, 0, S, S, 0, 0, S, S); if (cut) wg.restore();
       if (i === 0 && cl && v === 'n') wg.drawImage(cl, 0, 0);
       if (i === 0 && v === 'e' && look.off && HELD[look.off[0]]) held(look.off, 0, 0, 0, [B.piv[0][0] + 13, B.piv[0][1] - (look.off[0] === 'focus' ? 24 : 16)]);
       if (look.weapon && i === mainPart) held(look.weapon, i, v === 'n' ? 1 : 0, v === 'e' ? wrot(look.weapon, 1) + P.wr : wrot(look.weapon, v === 's' ? -.26 : .26));
       if (look.off && v !== 'e' && i === offPart) held(look.off, i, v === 'n' ? 0 : 1, wrot(look.off, v === 's' ? .26 : -.26));
     }
+    // Nov 15: one firm dark line round the whole figure, drawn behind it; the lines between its own parts are now faint (they were as heavy as the outside one and pooled into black blotches round the legs)
+    { if (!SIL) SIL = {}; let sl = SIL[q]; if (!sl) { const c = canvas(work.width, work.height); sl = SIL[q] = { c, g: c.getContext('2d') }; } const sg = sl.g; sg.globalCompositeOperation = 'source-over'; sg.clearRect(0, 0, work.width, work.height); sg.drawImage(work, 0, 0); sg.globalCompositeOperation = 'source-in'; sg.fillStyle = '#07060a'; sg.fillRect(0, 0, work.width, work.height);
+      wg.setTransform(1, 0, 0, 1, 0, 0); wg.globalCompositeOperation = 'destination-over'; wg.globalAlpha = .92; for (const [ox, oy] of [[q, 0], [-q, 0], [0, q], [0, -q]]) wg.drawImage(sl.c, ox, oy); wg.globalAlpha = 1; wg.globalCompositeOperation = 'source-over'; }
     g.save(); g.imageSmoothingEnabled = scale !== q; g.imageSmoothingQuality = 'high'; g.translate(x, footY); if (flip) g.scale(-1, 1);
     g.drawImage(work, -(S / 2 + B.cx) * scale, -(S / 2 + B.foot) * scale, S * 2 * scale, S * 2 * scale); g.restore();
     if (COS && look.cos) { g.save(); try { COS.draw(g, look, view, anim, t, x, footY, scale, 'front'); } catch (e) {} g.restore(); }

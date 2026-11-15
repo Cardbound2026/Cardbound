@@ -1003,6 +1003,19 @@ body.inkui:not(.ui-classic) .sheetbox .btn, body.inkui:not(.ui-classic) .modal .
 #scrCombat .field-panel::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: 8px; background: var(--battle-bg, radial-gradient(120% 90% at 50% 0%, #2a2219 0%, #15110d 70%)) center 30% / cover no-repeat; filter: brightness(.82) saturate(1.05); }
 #scrCombat .field-panel::after { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: 8px; pointer-events: none; background: radial-gradient(130% 100% at 50% 40%, transparent 45%, rgba(0,0,0,.55) 100%), linear-gradient(180deg, transparent 55%, rgba(8,6,4,.85) 100%); }
 #scrCombat[data-map="physical"] { --battle-bg: url(img/ui/bg_physical.webp); }
+/* Nov 15: fighters sit in the scene. Heroes pick up the light of the map they are on (they were the same cool grey under every sky), monsters are lifted out of the dark
+   with a faint warm edge, and everyone stands on a proper ground shadow. The tint is on the figure's wrapper so the glow and death filters on the canvas still apply. */
+#scrCombat { --scene: brightness(1); }
+#scrCombat[data-map="physical"] { --scene: sepia(.24) saturate(1.2) brightness(.97); --rim: rgba(255,196,140,.42); }
+#scrCombat[data-map="fire"] { --scene: sepia(.34) saturate(1.35) hue-rotate(-8deg); --rim: rgba(255,150,80,.5); }
+#scrCombat[data-map="frost"] { --scene: sepia(.18) hue-rotate(165deg) saturate(1.1) brightness(1.02); --rim: rgba(170,220,255,.45); }
+#scrCombat[data-map="nature"] { --scene: sepia(.2) hue-rotate(55deg) saturate(1.05); --rim: rgba(190,240,160,.38); }
+#scrCombat[data-map="arcane"] { --scene: sepia(.2) hue-rotate(215deg) saturate(1.15); --rim: rgba(210,170,255,.45); }
+#scrCombat[data-map="shadow"] { --scene: saturate(.78) brightness(.92); --rim: rgba(200,190,230,.36); }
+#scrCombat.bf .stage .unit .figure .pupfig { filter: var(--scene) drop-shadow(0 3px 0 rgba(0,0,0,.38)); }
+#scrCombat.bf .stage .unit .figure .pupfig::before { content: ''; position: absolute; left: -6%; right: -6%; bottom: calc(var(--fh) * -.035); height: calc(var(--fh) * .1); border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.6), rgba(0,0,0,.3) 65%, rgba(0,0,0,0)); }
+#scrCombat.bf .stage .unit .figure .mobfig { filter: brightness(1.2) contrast(1.05) drop-shadow(0 0 1px var(--rim, rgba(255,214,170,.4))); }
+#scrCombat.bf .stage .unit::before { background: radial-gradient(closest-side, rgba(0,0,0,.62), rgba(0,0,0,.34) 70%, rgba(0,0,0,0)) !important; border-color: transparent !important; box-shadow: none !important; }
 /* the card table (Nov 11): your hand lies on a worn tavern table with a crimson card mat (PixelLab pixel art in img/ui/table/;
    the corner brackets, dice, coin purse and skull candle were taken off the same day). Everything is a background layer of the hand tray,
    so re-rendering the hand never touches it; the cards keep their own smooth rendering. */
