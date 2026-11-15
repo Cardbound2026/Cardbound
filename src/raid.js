@@ -67,6 +67,21 @@
     if (cx.length) out.push(Object.assign(CB.makeCodex(DATA, rng, cx[Math.floor(rng() * cx.length)], lvl), { raid: d.name }));
     return out.map(it => ({ it, votes: {}, done: false, winner: null }));
   }
+  // ---------- Nov 15: the party chest. An online party that kills a map's boss opens one more chest together and rolls Need / Greed / Pass on it, exactly like raid loot.
+  // 2 heroes: 3 items, 3 heroes: 5, 4 heroes: 7. Items are one map level (5 item levels) above the boss's own drops and roll Epic far more often (25% at +0, +2% a level, up to 60%), the rest Blue.
+  const CHEST = { 2: [3, 'Party Chest'], 3: [5, 'Great Party Chest'], 4: [7, 'Grand Party Chest'] };
+  function partyChestStart(result, then) {
+    const S = NET.s; if (!run || !run.online || !S || !cb || run.over !== 'victory' || cb.raidLoot) return false;
+    const n = Math.min(4, cb.players.length), C = CHEST[n]; if (!C) return false;
+    const d = DATA.enemies[(DATA.maps[run.mapKey] || {}).boss]; if (!d || !d.pool || !d.pool.length) return false;
+    const rng = cb.rng, lvl = cb.level + 1, out = [];
+    for (let i = 0; i < C[0]; i++) { const rar = rng() < Math.min(0.6, 0.25 + 0.02 * cb.level) ? 'Purple (Epic)' : 'Blue'; const it = CB.rollItem(DATA, rng, d.pool[Math.floor(rng() * d.pool.length)], rar, lvl); if (it) out.push(Object.assign(it, { chest: 1 })); }
+    if (!out.length) return false;
+    cb.raidLoot = out.map(it => ({ it, votes: {}, done: false, winner: null })); cb.chest = { name: C[1], n, then }; S.lootAt = Date.now(); S.lootForced = false;
+    sysChat(`The ${C[1]} opens: ${out.length} items for the party. Roll Need, Greed or Pass.`);
+    raidLootModal(); return true;
+  }
+  window.partyChestStart = partyChestStart;
   // the Chronicler keeps raids too, with the fight's damage meter
   function raidHistory(won) {
     if (cb._hist) return;
@@ -91,14 +106,16 @@
     if (!cb || !cb.raidLoot) return;
     const S = NET.s, mi = cb.myMi, all = cb.raidLoot.every(x => x.done), nm = (i) => cb.players[i] ? cb.players[i].name : '?';
     const left = S && S.lootAt ? Math.max(0, VOTE_S - Math.floor((Date.now() - S.lootAt) / 1000)) : 0;
-    modal(`<h2>${esc(CB.RAID_NAMES[cb.raidMap] || 'The raid boss')} falls</h2><p>Won in ${cb.round} rounds. This hero is locked out of this raid for 7 days. ${all ? 'All loot is handed out.' : `Roll on each item: <b>Need</b> beats <b>Greed</b>; ties roll 1-100 (watch the chat).${left ? ` Unanswered rolls count as Pass in ${left}s.` : ''}`}</p>
+    const ch = cb.chest;
+    modal(`<h2>${ch ? `<span class="pchest n${ch.n}"></span>${esc(ch.name)}` : esc(CB.RAID_NAMES[cb.raidMap] || 'The raid boss') + ' falls'}</h2><p>${ch ? `The boss is down, and a party of ${ch.n} earns a chest of its own on top of everyone's loot: ${cb.raidLoot.length} items, a little stronger than the boss drops and far more often Epic. What you win goes straight to your stash.` : `Won in ${cb.round} rounds. This hero is locked out of this raid for 7 days.`} ${all ? 'All loot is handed out.' : `Roll on each item: <b>Need</b> beats <b>Greed</b>; ties roll 1-100 (watch the chat).${left ? ` Unanswered rolls count as Pass in ${left}s.` : ''}`}</p>
       <div class="raidloot">${cb.raidLoot.map((x, i) => { const v = x.votes[mi];
         return `<div class="rlrow">${itemHtml(x.it)}<div class="rlvote">${x.done ? (x.winner != null ? `<b style="color:${CC[cb.players[x.winner].cls]}">${x.winner === mi ? 'You win it' : esc(nm(x.winner)) + ' wins'}</b> <span class="muted">(${x.how})</span>` : '<span class="muted">Everyone passed.</span>')
           : v ? `<span class="muted">You chose ${v}. Waiting for ${Object.keys(x.votes).length}/${raidVoters().length}...</span>` : ['need', 'greed', 'pass'].map(k => `<button class="btn ${k === 'need' ? 'primary' : ''}" data-rl="${i}" data-rv="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div>
           ${x.done ? `<div class="rlrolls">${rollLine(x).map(([j, ch, r]) => `<span style="color:${CC[cb.players[j].cls]}" class="${j === x.winner ? 'win' : ''}">${esc(nm(j))}: ${ch}${r != null ? ' <b>' + r + '</b>' : ''}</span>`).join('')}</div>` : ''}</div>`; }).join('')}</div>
-      <div class="row"><button class="btn ${all ? 'primary' : ''}" id="mNew">${all ? 'Back to Emberwatch' : 'Leave (pass on the rest)'}</button><button class="btn" id="mClose">Look at the fight</button></div>`);
+      <div class="row">${ch ? `<button class="btn ${all ? 'primary' : ''}" id="mNew">${all ? 'On to your own loot' : 'Pass on the rest'}</button>` : `<button class="btn ${all ? 'primary' : ''}" id="mNew">${all ? 'Back to Emberwatch' : 'Leave (pass on the rest)'}</button><button class="btn" id="mClose">Look at the fight</button>`}</div>`);
     $('modalBox').classList.add('wide');
-    $('mNew').onclick = () => { if (NET.s && !all) netLeave(); backToTown(); }; $('mClose').onclick = closeModal;
+    if (ch) $('mNew').onclick = () => { if (!all) { cb.raidLoot.forEach((x, i) => { if (!x.done && !x.votes[mi]) netAct({ t: 'roll', i, v: 'pass' }); }); $('mNew').disabled = true; return; } const then = ch.then; ch.then = null; closeModal(); if (then) then(); };
+    else { $('mNew').onclick = () => { if (NET.s && !all) netLeave(); backToTown(); }; $('mClose').onclick = closeModal; }
     $('modalBox').querySelectorAll('[data-rl]').forEach(b => b.onclick = () => { b.parentElement.querySelectorAll('button').forEach(x => x.disabled = true); netAct({ t: 'roll', i: +b.dataset.rl, v: b.dataset.rv }); });
   }
   // everyone's choice and roll for one item, highest first: [playerIndex, 'Need'|'Greed'|'Pass'|'-', roll]
@@ -114,7 +131,7 @@
     const x = cb.raidLoot[a.i];
     if (a.t === 'roll') { if (!x || x.done || x.votes[a.mi] || !['need', 'greed', 'pass'].includes(a.v)) return; x.votes[a.mi] = a.v; }
     for (const y of cb.raidLoot) if (!y.done && (a.t === 'rollforce' || raidVoters().every(i => y.votes[i]))) raidSettle(y);
-    if (!$('modal').hidden && $('modalBox').querySelector('.raidloot')) raidLootModal();
+    if ((!$('modal').hidden && $('modalBox').querySelector('.raidloot')) || (cb.chest && cb.chest.then && $('modal').hidden)) raidLootModal();   // a party chest that got closed comes back: your own loot waits behind it
   }
   function raidSettle(x) {
     x.done = true; const voters = raidVoters(), need = voters.filter(i => x.votes[i] === 'need'), greed = voters.filter(i => x.votes[i] === 'greed');

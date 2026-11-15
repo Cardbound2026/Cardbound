@@ -100,6 +100,7 @@
       ['Pressure', 'From round 5, enemies deal 2% more damage every round (10% in duels), so fights end.'],
       ['Elites and the boss', 'Elites appear from row 5 and always drop a card. The Warlord has a second phase at half HP with new cards.'],
       ['Party fights', 'A party meets one monster per hero, each with the same HP it has solo. A lone elite or boss instead gets +95% HP per extra hero (+57% on a +0 map), +85% mana and regen (+51% on +0) and draws one more card per extra hero.'],
+      ['Party rewards', 'Every extra hero in the party adds 25% to codex XP and gold, a 25% chance of one more loot roll from each monster, and +10 Luck. An online party that kills the map boss also opens a party chest and rolls Need, Greed or Pass on it: 3 items for two heroes, 5 for three, 7 for four. Chest items are 5 item levels above the boss drops and roll Epic much more often (25% at +0, up to 60%).'],
       ['Damage meter', 'The Meter tab next to the combat log: damage done, healing and damage taken, by ability. Click a bar for the breakdown.'],
     ]],
     ['The run', [

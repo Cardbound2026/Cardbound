@@ -1106,6 +1106,7 @@ body #scrCombat.bf .stage .uplate .bar span { font-size: 12px; }
   .raidrules { margin: 4px 0; padding-left: 18px; font-size: 14px; } .raidrules li { margin: 2px 0; }
   .raidlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; margin-top: 10px; }
   .raidhead { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; } .raidhead b { color: var(--accent); font-size: 18px; }
+  .pchest { display: inline-block; vertical-align: -8px; margin-right: 10px; width: 40px; height: 40px; background: url(img/ui/chest_party.png) center / contain no-repeat; image-rendering: pixelated; } .pchest.n3 { width: 52px; height: 52px; vertical-align: -12px; } .pchest.n4 { width: 64px; height: 64px; vertical-align: -16px; filter: drop-shadow(0 0 8px rgba(214,161,74,.7)); }
   .raidloot { display: grid; gap: 8px; max-height: 60vh; overflow: auto; } .rlrow { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; } .rlvote { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; max-width: 260px; }
   #playerSlot.raid .figure, #playerSlot.raid .figure svg { height: 38px; } #playerSlot.raid .uname b { font-size: 12px; } #playerSlot.raid .tag { font-size: 10px; padding: 0 3px; }
   .order.raid .otile { width: 62px; padding: 2px; } .order.raid .otile .ofig, .order.raid .otile .ofig svg { height: 30px; } .order.raid .otile .onm { font-size: 11px; } .order.raid .otile.now::after { display: none; }
@@ -5234,6 +5235,7 @@ const bagDrop = (level) => { const n = level >= 12 ? 20 : level >= 6 ? 15 : leve
 const { makeRng, shuffle, ri, rollItem, rollDrops, sumGear, STARTER_GEAR, presetGear, Combat, rollCards, rollNamedCards, KILL_XP } = CB;
 
 const ROWS = 14, COLS = 5;
+const COOP_STEP = 0.25;   // Nov 15: each extra hero adds 25% (was 20%) to loot rolls, gold and codex XP
 const BOSS_HP_STEP = 0.95;   // Nov 15: a lone elite or boss gets +95% HP per extra hero (was 85%; +57% on a +0 map). Its mana, regen and draw still scale at 85%.
 const MOB_HP_STEP = 0; // Nov 15: was 0.3. One monster per hero is the whole scaling now; they keep their solo HP. // a party fights one monster per hero, each with +30% HP per extra hero (sims: about solo difficulty)
 const TIER_ROWS = r => r <= 4 ? '1' : r <= 9 ? '2' : '3';
@@ -5520,7 +5522,7 @@ class Run {
     this.rounds = (this.rounds || 0) + (cb.round || 0); { const mk = (this.mobKills = this.mobKills || {}); for (const e of cb.enemies) if (e.hp <= 0 && !e.noLoot && e.key) mk[e.key] = (mk[e.key] || 0) + 1; }
     // codex XP (Nov 1): every kill counts for the codex each hero is wearing; a party splits the kills but gets +10% per extra hero
     { const xp = cb.enemies.filter(e => e.hp <= 0 && !e.noLoot).reduce((s, e) => s + KILL_XP((this.data.enemies[e.key] || {}).tier), 0), N = this.members.length;
-      if (xp > 0) for (const m of this.members) { const cx = (m.gear.find(g => g && g.slot === 'Codex') || {}).codex; if (cx) m.cxp[cx] = (m.cxp[cx] || 0) + xp / N * (1 + 0.2 * (N - 1)) * (1 + 0.1 * (this.level || 0)); } }   /* Nov 13: +10% codex XP per map level (+3 = 1.3x) */
+      if (xp > 0) for (const m of this.members) { const cx = (m.gear.find(g => g && g.slot === 'Codex') || {}).codex; if (cx) m.cxp[cx] = (m.cxp[cx] || 0) + xp / N * (1 + COOP_STEP * (N - 1)) * (1 + 0.1 * (this.level || 0)); } }   /* Nov 13: +10% codex XP per map level (+3 = 1.3x) */
     for (const b of this.buffs) b.fights--;
     this.buffs = this.buffs.filter(b => b.fights > 0);
     if (cb.over === 'loss') {
@@ -5544,11 +5546,11 @@ class Run {
       const drops = [], recipes = []; let gold = 0;
       for (const e of cb.enemies) {  // every hero rolls their own loot
         if (e.noLoot) continue; // the rest of a group: the group's first body rolls its loot
-        for (let k = 0, kn = (e.enraged ? 2 : 1) + (this.coopBonus() && this.rng() < 0.2 * this.coopBonus() ? 1 : 0); k < kn; k++) { // an Enraged elite drops everything twice; in a party each extra hero adds a 20% chance of one more roll
+        for (let k = 0, kn = (e.enraged ? 2 : 1) + (this.coopBonus() && this.rng() < COOP_STEP * this.coopBonus() ? 1 : 0); k < kn; k++) { // an Enraged elite drops everything twice; in a party each extra hero adds a 20% chance of one more roll
           drops.push(...rollDrops(this.data, this.rng, e.key, this.level, this.luck(m), m.cls, !(m.gear || []).some(g => g.slot === 'Codex')));
           drops.push(...rollCards(this.rng, m.cls, this.data.enemies[e.key].tier, this.luck(m)));
           drops.push(...rollNamedCards(this.data, this.rng, e.key, m.cls, this.luck(m)));
-          const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * goldMult(this.level) * (k < (e.enraged ? 2 : 1) ? 1 + 0.2 * this.coopBonus() : 0));   /* the bonus roll is loot only; gold gets its own +20% per extra hero */
+          const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * goldMult(this.level) * (k < (e.enraged ? 2 : 1) ? 1 + COOP_STEP * this.coopBonus() : 0));   /* the bonus roll is loot only; gold gets its own +20% per extra hero */
         }
         { const tier = this.data.enemies[e.key].tier, ch = tier === 'Boss' ? 0.2 : tier === 'Elite' ? 0.04 : 0.006; if (this.rng() < ch) drops.push(bagDrop(this.level)); // Nov 13: a bag (its size goes by the map level; named when it reaches your bags)
           if (this.rng() < 1 / 1000) (m.pets = m.pets || []).push(e.key); }
@@ -8374,8 +8376,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794758970205';
-  const CB_BUILD = '64ad838c65'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794759616303';
+  const CB_BUILD = '45c6ded348'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8499,6 +8501,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       if (a.t === 'end') { if (mi === S.mi) selected = null; if (a.auto) cb.say('sys', `${p.name} ran out of time.`); cb.endTurnAs(p); render(true); if (cb.over) combatOver(); else pump(); return; }
       return;
     }
+    if (a.t === 'roll' || a.t === 'rollforce') { if (cb && cb.raidLoot) raidRollIn(a); return; }   // Nov 15: the party chest after a map boss uses the raid's Need / Greed rolls
     switch (a.t) {
       case 'vote': {
         if (!run || run.over || run.combat || (run.pending && run.pending.type === 'rest')) return;
@@ -8529,6 +8532,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
         if (S.gone[mi]) return; S.gone[mi] = true;
         if (run) { const m = run.members[mi]; m.kept = { items: [], gold: 0 }; m.left = true; run.note(`${m.name} left the March. Their sack is lost.`); }
         if (mi !== S.mi) sysChat(`${who} left the ${S.kind === 'duel' ? 'duel' : 'run'}.`);
+        if (cb && cb.chest && cb.raidLoot) raidRollIn({ t: 'check' });
         if (!active().length) return;
         if (run && !run.over && !run.combat) { if (run.pending && run.pending.type === 'rest' && Object.keys(S.camp).length && tallyDone(S.camp)) resolveCamp(); else if (Object.keys(S.votes).length && tallyDone(S.votes)) resolveMove(); else if (!$('scrMap').hidden) renderMap(); }
         if (cb && !$('scrCombat').hidden) render();
@@ -8751,7 +8755,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       }
     }
     // raid loot: unanswered rolls count as Pass after the vote timer
-    if (cb && cb.raid && cb.raidLoot && S.lootAt && !S.lootForced && now - S.lootAt > VOTE_S * 1000 && cb.raidLoot.some(x => !x.done)) { S.lootForced = true; hostSeq({ t: 'rollforce' }); }
+    if (cb && (cb.raid || cb.chest) && cb.raidLoot && S.lootAt && !S.lootForced && now - S.lootAt > VOTE_S * 1000 && cb.raidLoot.some(x => !x.done)) { S.lootForced = true; hostSeq({ t: 'rollforce' }); }
     netClock();
   }, 1000);
   // everyone shows the turn clock (counted locally from when the turn began here)
@@ -8870,6 +8874,21 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     if (cx.length) out.push(Object.assign(CB.makeCodex(DATA, rng, cx[Math.floor(rng() * cx.length)], lvl), { raid: d.name }));
     return out.map(it => ({ it, votes: {}, done: false, winner: null }));
   }
+  // ---------- Nov 15: the party chest. An online party that kills a map's boss opens one more chest together and rolls Need / Greed / Pass on it, exactly like raid loot.
+  // 2 heroes: 3 items, 3 heroes: 5, 4 heroes: 7. Items are one map level (5 item levels) above the boss's own drops and roll Epic far more often (25% at +0, +2% a level, up to 60%), the rest Blue.
+  const CHEST = { 2: [3, 'Party Chest'], 3: [5, 'Great Party Chest'], 4: [7, 'Grand Party Chest'] };
+  function partyChestStart(result, then) {
+    const S = NET.s; if (!run || !run.online || !S || !cb || run.over !== 'victory' || cb.raidLoot) return false;
+    const n = Math.min(4, cb.players.length), C = CHEST[n]; if (!C) return false;
+    const d = DATA.enemies[(DATA.maps[run.mapKey] || {}).boss]; if (!d || !d.pool || !d.pool.length) return false;
+    const rng = cb.rng, lvl = cb.level + 1, out = [];
+    for (let i = 0; i < C[0]; i++) { const rar = rng() < Math.min(0.6, 0.25 + 0.02 * cb.level) ? 'Purple (Epic)' : 'Blue'; const it = CB.rollItem(DATA, rng, d.pool[Math.floor(rng() * d.pool.length)], rar, lvl); if (it) out.push(Object.assign(it, { chest: 1 })); }
+    if (!out.length) return false;
+    cb.raidLoot = out.map(it => ({ it, votes: {}, done: false, winner: null })); cb.chest = { name: C[1], n, then }; S.lootAt = Date.now(); S.lootForced = false;
+    sysChat(`The ${C[1]} opens: ${out.length} items for the party. Roll Need, Greed or Pass.`);
+    raidLootModal(); return true;
+  }
+  window.partyChestStart = partyChestStart;
   // the Chronicler keeps raids too, with the fight's damage meter
   function raidHistory(won) {
     if (cb._hist) return;
@@ -8894,14 +8913,16 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     if (!cb || !cb.raidLoot) return;
     const S = NET.s, mi = cb.myMi, all = cb.raidLoot.every(x => x.done), nm = (i) => cb.players[i] ? cb.players[i].name : '?';
     const left = S && S.lootAt ? Math.max(0, VOTE_S - Math.floor((Date.now() - S.lootAt) / 1000)) : 0;
-    modal(`<h2>${esc(CB.RAID_NAMES[cb.raidMap] || 'The raid boss')} falls</h2><p>Won in ${cb.round} rounds. This hero is locked out of this raid for 7 days. ${all ? 'All loot is handed out.' : `Roll on each item: <b>Need</b> beats <b>Greed</b>; ties roll 1-100 (watch the chat).${left ? ` Unanswered rolls count as Pass in ${left}s.` : ''}`}</p>
+    const ch = cb.chest;
+    modal(`<h2>${ch ? `<span class="pchest n${ch.n}"></span>${esc(ch.name)}` : esc(CB.RAID_NAMES[cb.raidMap] || 'The raid boss') + ' falls'}</h2><p>${ch ? `The boss is down, and a party of ${ch.n} earns a chest of its own on top of everyone's loot: ${cb.raidLoot.length} items, a little stronger than the boss drops and far more often Epic. What you win goes straight to your stash.` : `Won in ${cb.round} rounds. This hero is locked out of this raid for 7 days.`} ${all ? 'All loot is handed out.' : `Roll on each item: <b>Need</b> beats <b>Greed</b>; ties roll 1-100 (watch the chat).${left ? ` Unanswered rolls count as Pass in ${left}s.` : ''}`}</p>
       <div class="raidloot">${cb.raidLoot.map((x, i) => { const v = x.votes[mi];
         return `<div class="rlrow">${itemHtml(x.it)}<div class="rlvote">${x.done ? (x.winner != null ? `<b style="color:${CC[cb.players[x.winner].cls]}">${x.winner === mi ? 'You win it' : esc(nm(x.winner)) + ' wins'}</b> <span class="muted">(${x.how})</span>` : '<span class="muted">Everyone passed.</span>')
           : v ? `<span class="muted">You chose ${v}. Waiting for ${Object.keys(x.votes).length}/${raidVoters().length}...</span>` : ['need', 'greed', 'pass'].map(k => `<button class="btn ${k === 'need' ? 'primary' : ''}" data-rl="${i}" data-rv="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div>
           ${x.done ? `<div class="rlrolls">${rollLine(x).map(([j, ch, r]) => `<span style="color:${CC[cb.players[j].cls]}" class="${j === x.winner ? 'win' : ''}">${esc(nm(j))}: ${ch}${r != null ? ' <b>' + r + '</b>' : ''}</span>`).join('')}</div>` : ''}</div>`; }).join('')}</div>
-      <div class="row"><button class="btn ${all ? 'primary' : ''}" id="mNew">${all ? 'Back to Emberwatch' : 'Leave (pass on the rest)'}</button><button class="btn" id="mClose">Look at the fight</button></div>`);
+      <div class="row">${ch ? `<button class="btn ${all ? 'primary' : ''}" id="mNew">${all ? 'On to your own loot' : 'Pass on the rest'}</button>` : `<button class="btn ${all ? 'primary' : ''}" id="mNew">${all ? 'Back to Emberwatch' : 'Leave (pass on the rest)'}</button><button class="btn" id="mClose">Look at the fight</button>`}</div>`);
     $('modalBox').classList.add('wide');
-    $('mNew').onclick = () => { if (NET.s && !all) netLeave(); backToTown(); }; $('mClose').onclick = closeModal;
+    if (ch) $('mNew').onclick = () => { if (!all) { cb.raidLoot.forEach((x, i) => { if (!x.done && !x.votes[mi]) netAct({ t: 'roll', i, v: 'pass' }); }); $('mNew').disabled = true; return; } const then = ch.then; ch.then = null; closeModal(); if (then) then(); };
+    else { $('mNew').onclick = () => { if (NET.s && !all) netLeave(); backToTown(); }; $('mClose').onclick = closeModal; }
     $('modalBox').querySelectorAll('[data-rl]').forEach(b => b.onclick = () => { b.parentElement.querySelectorAll('button').forEach(x => x.disabled = true); netAct({ t: 'roll', i: +b.dataset.rl, v: b.dataset.rv }); });
   }
   // everyone's choice and roll for one item, highest first: [playerIndex, 'Need'|'Greed'|'Pass'|'-', roll]
@@ -8917,7 +8938,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     const x = cb.raidLoot[a.i];
     if (a.t === 'roll') { if (!x || x.done || x.votes[a.mi] || !['need', 'greed', 'pass'].includes(a.v)) return; x.votes[a.mi] = a.v; }
     for (const y of cb.raidLoot) if (!y.done && (a.t === 'rollforce' || raidVoters().every(i => y.votes[i]))) raidSettle(y);
-    if (!$('modal').hidden && $('modalBox').querySelector('.raidloot')) raidLootModal();
+    if ((!$('modal').hidden && $('modalBox').querySelector('.raidloot')) || (cb.chest && cb.chest.then && $('modal').hidden)) raidLootModal();   // a party chest that got closed comes back: your own loot waits behind it
   }
   function raidSettle(x) {
     x.done = true; const voters = raidVoters(), need = voters.filter(i => x.votes[i] === 'need'), greed = voters.filter(i => x.votes[i] === 'greed');
@@ -9496,6 +9517,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-15', items: [
+      ["Feature", "The party chest: an online party that kills a map boss now opens one more chest together before anyone sees their own loot, and rolls Need, Greed or Pass on each item (the same rolls raids use). A Party Chest holds 3 items for two heroes, a Great Party Chest 5 for three, a Grand Party Chest 7 for a full party of four. Its items are 5 item levels above the boss's drops and roll Epic far more often: 25% at +0, +2% per map level, up to 60%. What you win goes straight to your stash."],
+      ["Balance", "Co-op rewards go from 20% to 25% per extra hero: codex XP, gold, and the chance of one more loot roll from every monster. A full party of four is at +75%."],
       ["Balance", "Co-op, normal fights: monsters no longer get any extra HP in a party. One monster per hero shows up, each with exactly the HP it has solo (they had +30% per extra hero, +18% on +0 maps). On every map level."],
       ["Balance", "Co-op, elites and bosses: a lone elite or boss now gets +95% HP per extra hero, up from +85% (on +0 maps +57%, up from +51%)."],
       ["Interface", "Taunt now shows on the enemies it holds: every taunted enemy wears a Taunted debuff naming the hero it must attack."],
@@ -14817,6 +14840,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       ['Pressure', 'From round 5, enemies deal 2% more damage every round (10% in duels), so fights end.'],
       ['Elites and the boss', 'Elites appear from row 5 and always drop a card. The Warlord has a second phase at half HP with new cards.'],
       ['Party fights', 'A party meets one monster per hero, each with the same HP it has solo. A lone elite or boss instead gets +95% HP per extra hero (+57% on a +0 map), +85% mana and regen (+51% on +0) and draws one more card per extra hero.'],
+      ['Party rewards', 'Every extra hero in the party adds 25% to codex XP and gold, a 25% chance of one more loot roll from each monster, and +10 Luck. An online party that kills the map boss also opens a party chest and rolls Need, Greed or Pass on it: 3 items for two heroes, 5 for three, 7 for four. Chest items are 5 item levels above the boss drops and roll Epic much more often (25% at +0, up to 60%).'],
       ['Damage meter', 'The Meter tab next to the combat log: damage done, healing and damage taken, by ability. Click a bar for the breakdown.'],
     ]],
     ['The run', [
@@ -16579,6 +16603,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       ${inRun ? `<button class="btn" id="mnLeave">Leave run and return to town</button>` : ''}
       ${cb && cb.duel && !cb.over ? `<button class="btn" id="mnForfeit">Forfeit the duel</button>` : ''}
       ${cb && cb.duel && cb.over ? `<button class="btn" id="mnTown">Return to town</button>` : ''}
+      ${cb && cb.chest && cb.chest.then ? '<button class="btn primary" id="mnRaidLoot">Open the party chest</button>' : ''}
       ${cb && cb.raid ? `<button class="btn" id="mnRaidLeave">${cb.over ? (cb.raidLoot && cb.raidLoot.some(x => !x.done) ? 'Leave (pass on the remaining loot)' : 'Return to town') : 'Leave the raid (your hero falls; no lockout)'}</button>${cb.over && cb.raidLoot ? '<button class="btn" id="mnRaidLoot">Show the loot</button>' : ''}` : ''}
       ${cb && cb.practice ? `<button class="btn" id="mnDummyReset">Reset the dummy (fresh fight)</button><button class="btn" id="mnDummyLeave">Leave the dummy and return to town</button>` : ''}
       ${run && run.over ? `<button class="btn" id="mnTown">Return to town</button>` : ''}
@@ -17720,6 +17745,10 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
     const result = run.finishCombat();
     if (!result) return;
     if (result.result === 'loss') { deathScreen(); return; } // stay on the fight so the combat log can be read
+    if (typeof partyChestStart === 'function' && partyChestStart(result, () => combatWon(result))) return;   // Nov 15: an online party opens its chest first, then everyone sees their own loot
+    combatWon(result);
+  }
+  function combatWon(result) {
     const g = result.gold, d = result.drops;
     const recHtml = (() => { const rs = (run.online ? [result.per[run.myMi]] : result.per).flatMap(r => (r && r.recipes) || []); return rs.length ? `<p style="margin:8px 0 0"><b style="color:var(--accent)">Recipe found:</b> ${rs.map(([k, t]) => `${esc(CB.FOOD_BY[k].name)} ${CB.FOOD_RANK[t]} <span class="muted">(${CB.foodStat(CB.FOOD_BY[k], t)})</span>`).join(', ')}. It is yours even if you fall. Chef Brookt will cook it in town.</p>` : ''; })();
     const isBoss = run.over === 'victory';

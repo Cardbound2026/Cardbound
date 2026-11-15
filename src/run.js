@@ -6,6 +6,7 @@ const bagDrop = (level) => { const n = level >= 12 ? 20 : level >= 6 ? 15 : leve
 const { makeRng, shuffle, ri, rollItem, rollDrops, sumGear, STARTER_GEAR, presetGear, Combat, rollCards, rollNamedCards, KILL_XP } = CB;
 
 const ROWS = 14, COLS = 5;
+const COOP_STEP = 0.25;   // Nov 15: each extra hero adds 25% (was 20%) to loot rolls, gold and codex XP
 const BOSS_HP_STEP = 0.95;   // Nov 15: a lone elite or boss gets +95% HP per extra hero (was 85%; +57% on a +0 map). Its mana, regen and draw still scale at 85%.
 const MOB_HP_STEP = 0; // Nov 15: was 0.3. One monster per hero is the whole scaling now; they keep their solo HP. // a party fights one monster per hero, each with +30% HP per extra hero (sims: about solo difficulty)
 const TIER_ROWS = r => r <= 4 ? '1' : r <= 9 ? '2' : '3';
@@ -292,7 +293,7 @@ class Run {
     this.rounds = (this.rounds || 0) + (cb.round || 0); { const mk = (this.mobKills = this.mobKills || {}); for (const e of cb.enemies) if (e.hp <= 0 && !e.noLoot && e.key) mk[e.key] = (mk[e.key] || 0) + 1; }
     // codex XP (Nov 1): every kill counts for the codex each hero is wearing; a party splits the kills but gets +10% per extra hero
     { const xp = cb.enemies.filter(e => e.hp <= 0 && !e.noLoot).reduce((s, e) => s + KILL_XP((this.data.enemies[e.key] || {}).tier), 0), N = this.members.length;
-      if (xp > 0) for (const m of this.members) { const cx = (m.gear.find(g => g && g.slot === 'Codex') || {}).codex; if (cx) m.cxp[cx] = (m.cxp[cx] || 0) + xp / N * (1 + 0.2 * (N - 1)) * (1 + 0.1 * (this.level || 0)); } }   /* Nov 13: +10% codex XP per map level (+3 = 1.3x) */
+      if (xp > 0) for (const m of this.members) { const cx = (m.gear.find(g => g && g.slot === 'Codex') || {}).codex; if (cx) m.cxp[cx] = (m.cxp[cx] || 0) + xp / N * (1 + COOP_STEP * (N - 1)) * (1 + 0.1 * (this.level || 0)); } }   /* Nov 13: +10% codex XP per map level (+3 = 1.3x) */
     for (const b of this.buffs) b.fights--;
     this.buffs = this.buffs.filter(b => b.fights > 0);
     if (cb.over === 'loss') {
@@ -316,11 +317,11 @@ class Run {
       const drops = [], recipes = []; let gold = 0;
       for (const e of cb.enemies) {  // every hero rolls their own loot
         if (e.noLoot) continue; // the rest of a group: the group's first body rolls its loot
-        for (let k = 0, kn = (e.enraged ? 2 : 1) + (this.coopBonus() && this.rng() < 0.2 * this.coopBonus() ? 1 : 0); k < kn; k++) { // an Enraged elite drops everything twice; in a party each extra hero adds a 20% chance of one more roll
+        for (let k = 0, kn = (e.enraged ? 2 : 1) + (this.coopBonus() && this.rng() < COOP_STEP * this.coopBonus() ? 1 : 0); k < kn; k++) { // an Enraged elite drops everything twice; in a party each extra hero adds a 20% chance of one more roll
           drops.push(...rollDrops(this.data, this.rng, e.key, this.level, this.luck(m), m.cls, !(m.gear || []).some(g => g.slot === 'Codex')));
           drops.push(...rollCards(this.rng, m.cls, this.data.enemies[e.key].tier, this.luck(m)));
           drops.push(...rollNamedCards(this.data, this.rng, e.key, m.cls, this.luck(m)));
-          const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * goldMult(this.level) * (k < (e.enraged ? 2 : 1) ? 1 + 0.2 * this.coopBonus() : 0));   /* the bonus roll is loot only; gold gets its own +20% per extra hero */
+          const g = this.data.enemies[e.key].gold; gold += Math.round(ri(this.rng, g[0], g[1]) * goldMult(this.level) * (k < (e.enraged ? 2 : 1) ? 1 + COOP_STEP * this.coopBonus() : 0));   /* the bonus roll is loot only; gold gets its own +20% per extra hero */
         }
         { const tier = this.data.enemies[e.key].tier, ch = tier === 'Boss' ? 0.2 : tier === 'Elite' ? 0.04 : 0.006; if (this.rng() < ch) drops.push(bagDrop(this.level)); // Nov 13: a bag (its size goes by the map level; named when it reaches your bags)
           if (this.rng() < 1 / 1000) (m.pets = m.pets || []).push(e.key); }

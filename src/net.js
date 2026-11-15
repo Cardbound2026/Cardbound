@@ -128,6 +128,7 @@
       if (a.t === 'end') { if (mi === S.mi) selected = null; if (a.auto) cb.say('sys', `${p.name} ran out of time.`); cb.endTurnAs(p); render(true); if (cb.over) combatOver(); else pump(); return; }
       return;
     }
+    if (a.t === 'roll' || a.t === 'rollforce') { if (cb && cb.raidLoot) raidRollIn(a); return; }   // Nov 15: the party chest after a map boss uses the raid's Need / Greed rolls
     switch (a.t) {
       case 'vote': {
         if (!run || run.over || run.combat || (run.pending && run.pending.type === 'rest')) return;
@@ -158,6 +159,7 @@
         if (S.gone[mi]) return; S.gone[mi] = true;
         if (run) { const m = run.members[mi]; m.kept = { items: [], gold: 0 }; m.left = true; run.note(`${m.name} left the March. Their sack is lost.`); }
         if (mi !== S.mi) sysChat(`${who} left the ${S.kind === 'duel' ? 'duel' : 'run'}.`);
+        if (cb && cb.chest && cb.raidLoot) raidRollIn({ t: 'check' });
         if (!active().length) return;
         if (run && !run.over && !run.combat) { if (run.pending && run.pending.type === 'rest' && Object.keys(S.camp).length && tallyDone(S.camp)) resolveCamp(); else if (Object.keys(S.votes).length && tallyDone(S.votes)) resolveMove(); else if (!$('scrMap').hidden) renderMap(); }
         if (cb && !$('scrCombat').hidden) render();
@@ -380,7 +382,7 @@
       }
     }
     // raid loot: unanswered rolls count as Pass after the vote timer
-    if (cb && cb.raid && cb.raidLoot && S.lootAt && !S.lootForced && now - S.lootAt > VOTE_S * 1000 && cb.raidLoot.some(x => !x.done)) { S.lootForced = true; hostSeq({ t: 'rollforce' }); }
+    if (cb && (cb.raid || cb.chest) && cb.raidLoot && S.lootAt && !S.lootForced && now - S.lootAt > VOTE_S * 1000 && cb.raidLoot.some(x => !x.done)) { S.lootForced = true; hostSeq({ t: 'rollforce' }); }
     netClock();
   }, 1000);
   // everyone shows the turn clock (counted locally from when the turn began here)

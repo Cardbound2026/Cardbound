@@ -1102,6 +1102,7 @@ body #scrCombat.bf .stage .uplate .bar span { font-size: 12px; }
   .raidrules { margin: 4px 0; padding-left: 18px; font-size: 14px; } .raidrules li { margin: 2px 0; }
   .raidlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; margin-top: 10px; }
   .raidhead { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; } .raidhead b { color: var(--accent); font-size: 18px; }
+  .pchest { display: inline-block; vertical-align: -8px; margin-right: 10px; width: 40px; height: 40px; background: url(img/ui/chest_party.png) center / contain no-repeat; image-rendering: pixelated; } .pchest.n3 { width: 52px; height: 52px; vertical-align: -12px; } .pchest.n4 { width: 64px; height: 64px; vertical-align: -16px; filter: drop-shadow(0 0 8px rgba(214,161,74,.7)); }
   .raidloot { display: grid; gap: 8px; max-height: 60vh; overflow: auto; } .rlrow { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; } .rlvote { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; max-width: 260px; }
   #playerSlot.raid .figure, #playerSlot.raid .figure svg { height: 38px; } #playerSlot.raid .uname b { font-size: 12px; } #playerSlot.raid .tag { font-size: 10px; padding: 0 3px; }
   .order.raid .otile { width: 62px; padding: 2px; } .order.raid .otile .ofig, .order.raid .otile .ofig svg { height: 30px; } .order.raid .otile .onm { font-size: 11px; } .order.raid .otile.now::after { display: none; }
@@ -2932,6 +2933,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
       ${inRun ? `<button class="btn" id="mnLeave">Leave run and return to town</button>` : ''}
       ${cb && cb.duel && !cb.over ? `<button class="btn" id="mnForfeit">Forfeit the duel</button>` : ''}
       ${cb && cb.duel && cb.over ? `<button class="btn" id="mnTown">Return to town</button>` : ''}
+      ${cb && cb.chest && cb.chest.then ? '<button class="btn primary" id="mnRaidLoot">Open the party chest</button>' : ''}
       ${cb && cb.raid ? `<button class="btn" id="mnRaidLeave">${cb.over ? (cb.raidLoot && cb.raidLoot.some(x => !x.done) ? 'Leave (pass on the remaining loot)' : 'Return to town') : 'Leave the raid (your hero falls; no lockout)'}</button>${cb.over && cb.raidLoot ? '<button class="btn" id="mnRaidLoot">Show the loot</button>' : ''}` : ''}
       ${cb && cb.practice ? `<button class="btn" id="mnDummyReset">Reset the dummy (fresh fight)</button><button class="btn" id="mnDummyLeave">Leave the dummy and return to town</button>` : ''}
       ${run && run.over ? `<button class="btn" id="mnTown">Return to town</button>` : ''}
@@ -4073,6 +4075,10 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
     const result = run.finishCombat();
     if (!result) return;
     if (result.result === 'loss') { deathScreen(); return; } // stay on the fight so the combat log can be read
+    if (typeof partyChestStart === 'function' && partyChestStart(result, () => combatWon(result))) return;   // Nov 15: an online party opens its chest first, then everyone sees their own loot
+    combatWon(result);
+  }
+  function combatWon(result) {
     const g = result.gold, d = result.drops;
     const recHtml = (() => { const rs = (run.online ? [result.per[run.myMi]] : result.per).flatMap(r => (r && r.recipes) || []); return rs.length ? `<p style="margin:8px 0 0"><b style="color:var(--accent)">Recipe found:</b> ${rs.map(([k, t]) => `${esc(CB.FOOD_BY[k].name)} ${CB.FOOD_RANK[t]} <span class="muted">(${CB.foodStat(CB.FOOD_BY[k], t)})</span>`).join(', ')}. It is yours even if you fall. Chef Brookt will cook it in town.</p>` : ''; })();
     const isBoss = run.over === 'victory';
