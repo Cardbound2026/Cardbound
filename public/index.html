@@ -5234,7 +5234,8 @@ const bagDrop = (level) => { const n = level >= 12 ? 20 : level >= 6 ? 15 : leve
 const { makeRng, shuffle, ri, rollItem, rollDrops, sumGear, STARTER_GEAR, presetGear, Combat, rollCards, rollNamedCards, KILL_XP } = CB;
 
 const ROWS = 14, COLS = 5;
-const MOB_HP_STEP = 0.3; // a party fights one monster per hero, each with +30% HP per extra hero (sims: about solo difficulty)
+const BOSS_HP_STEP = 0.95;   // Nov 15: a lone elite or boss gets +95% HP per extra hero (was 85%; +57% on a +0 map). Its mana, regen and draw still scale at 85%.
+const MOB_HP_STEP = 0; // Nov 15: was 0.3. One monster per hero is the whole scaling now; they keep their solo HP. // a party fights one monster per hero, each with +30% HP per extra hero (sims: about solo difficulty)
 const TIER_ROWS = r => r <= 4 ? '1' : r <= 9 ? '2' : '3';
 const SHRINES = [
   { key: 'crit', name: 'Shrine of the Keen Edge', text: '+10% Crit Chance for the next 2 fights.', buff: { crit: 10 } },
@@ -5495,7 +5496,7 @@ class Run {
       const buffs = this.activeBuffs();
       if (n.type === 'boss') for (const m of this.members) (m.feat = m.feat || { lost: 0 }).bossStartHp = m.hp;   // Nov 13: for achievements
       const party = this.members.map(m => ({ cls: m.cls, name: m.name, gear: m.gear, deck: m.deck || undefined, hp: m.hp, mana: m.mana, buffs, talents: m.talents || undefined }));
-      this.combat = new Combat({ party, enemies: n.enemies, enraged: !!n.enraged, firstBoss: n.type === 'boss' && !!this.opts.firstBoss, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : (this.opts.partyStep != null ? this.opts.partyStep : 0.85) * this.coopEase(), mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * this.coopEase() * (this.members.length - 1) : 1, mobDmg: this.members.length > 1 && !this.level ? 0.9 : 1 });
+      this.combat = new Combat({ party, enemies: n.enemies, enraged: !!n.enraged, firstBoss: n.type === 'boss' && !!this.opts.firstBoss, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : (this.opts.partyStep != null ? this.opts.partyStep : 0.85) * this.coopEase(), mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * this.coopEase() * (this.members.length - 1) : (1 + BOSS_HP_STEP * this.coopEase() * (this.members.length - 1)) / (1 + (this.opts.partyStep != null ? this.opts.partyStep : 0.85) * this.coopEase() * (this.members.length - 1)), mobDmg: this.members.length > 1 && !this.level ? 0.9 : 1 });
       this.note(`Row ${n.row}: ${n.type === 'boss' ? 'the boss' : n.type === 'elite' ? 'an elite' : 'a fight'} against ${n.enemies.map(k => this.data.enemies[k].name).join(', ')}.`);
     } else if (n.type === 'rest') { this.pending = { type: 'rest', heals: this.members.map(m => Math.min(m.stats.maxHp - m.hp, Math.round(m.stats.maxHp * 0.3 * (1 + (m.stats.spirit || 0) / 100)))), keep: n.campfire ? 0.75 : 0.5 }; this.pending.heal = this.pending.heals[0]; }
     else if (n.type === 'shrine') { const s = SHRINES.find(x => x.key === n.shrine); this.buffs.push({ key: s.key, name: s.name, buff: s.buff, fights: 2 }); this.pending = { type: 'shrine', shrine: s }; this.note(`Row ${n.row}: ${s.name}. ${s.text}`); }
@@ -6573,7 +6574,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = API; else 
   function onlineWagonHtml() {
     const pt = SOC.party, lead = pt.members.find(m => m.uid === pt.leader);
     return `<div class="partypick" style="padding:8px 10px"><b>Online party</b> &middot; ${pt.members.map(m => `<span style="color:${CC[m.cls] || 'var(--text)'}">${esc(m.name)}</span>${m.uid === pt.leader ? ' <span class="muted">(leader)</span>' : ''}`).join(', ')}
-      <p class="savenote" style="margin:4px 0 0">${pt.leader === SOC.me ? 'You pick the map level and set out; everyone comes along.' : `${esc(lead ? lead.name : 'The leader')} picks the level and sets out; you'll ride along automatically.`} Each player brings their own hero, gear and deck and controls only that hero. The party votes on every step of the map (ties go to a coin flip). Enemies get +85% HP, mana and regen per extra hero. Everyone takes their own loot home.</p></div>`;
+      <p class="savenote" style="margin:4px 0 0">${pt.leader === SOC.me ? 'You pick the map level and set out; everyone comes along.' : `${esc(lead ? lead.name : 'The leader')} picks the level and sets out; you'll ride along automatically.`} Each player brings their own hero, gear and deck and controls only that hero. The party votes on every step of the map (ties go to a coin flip). A normal fight brings one monster per hero, each at its solo HP. A lone elite or boss gets +95% HP per extra hero. Everyone takes their own loot home.</p></div>`;
   }
   // ---------- maps: six of them, each with its own element, enemies, boss and the resistance its gear rolls
   const ELC = { Physical: '#c9c2b2', Fire: '#ff7a3c', Frost: '#7fd3ff', Nature: '#7fd36a', Arcane: '#c48bff', Shadow: '#9a8cb8' };
@@ -8373,8 +8374,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794725125135';
-  const CB_BUILD = 'c9bd7ab721'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794758970205';
+  const CB_BUILD = '64ad838c65'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -9495,6 +9496,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-15', items: [
+      ["Balance", "Co-op, normal fights: monsters no longer get any extra HP in a party. One monster per hero shows up, each with exactly the HP it has solo (they had +30% per extra hero, +18% on +0 maps). On every map level."],
+      ["Balance", "Co-op, elites and bosses: a lone elite or boss now gets +95% HP per extra hero, up from +85% (on +0 maps +57%, up from +51%)."],
       ["Interface", "Taunt now shows on the enemies it holds: every taunted enemy wears a Taunted debuff naming the hero it must attack."],
       ["Interface", "Co-op: the ready check for a map run has the food slot on it, so everyone can slot a meal before the party sets out, not just the leader at the Wagon."],
       ["Change", "Shaman: Thunderhead is a standing buff now. It waits for your next lightning spell, on this turn or a later one, instead of fading at the end of the turn. It shows on your hero while it is up."],
@@ -14813,7 +14816,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
       ['Group', 'Some tier 2 and 3 fights are a group (Pack of Wolves, Bandit Party, Magma Golems...): three smaller bodies that share one monster\'s HP and damage. It counts as one monster: one loot roll, one kill. Area damage shines here.'],
       ['Pressure', 'From round 5, enemies deal 2% more damage every round (10% in duels), so fights end.'],
       ['Elites and the boss', 'Elites appear from row 5 and always drop a card. The Warlord has a second phase at half HP with new cards.'],
-      ['Party fights', 'A party meets one monster per hero (each with +30% HP per extra hero). Elites and the boss get +85% HP, mana and regen per extra hero instead.'],
+      ['Party fights', 'A party meets one monster per hero, each with the same HP it has solo. A lone elite or boss instead gets +95% HP per extra hero (+57% on a +0 map), +85% mana and regen (+51% on +0) and draws one more card per extra hero.'],
       ['Damage meter', 'The Meter tab next to the combat log: damage done, healing and damage taken, by ability. Click a bar for the breakdown.'],
     ]],
     ['The run', [

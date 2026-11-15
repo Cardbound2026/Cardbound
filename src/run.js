@@ -6,7 +6,8 @@ const bagDrop = (level) => { const n = level >= 12 ? 20 : level >= 6 ? 15 : leve
 const { makeRng, shuffle, ri, rollItem, rollDrops, sumGear, STARTER_GEAR, presetGear, Combat, rollCards, rollNamedCards, KILL_XP } = CB;
 
 const ROWS = 14, COLS = 5;
-const MOB_HP_STEP = 0.3; // a party fights one monster per hero, each with +30% HP per extra hero (sims: about solo difficulty)
+const BOSS_HP_STEP = 0.95;   // Nov 15: a lone elite or boss gets +95% HP per extra hero (was 85%; +57% on a +0 map). Its mana, regen and draw still scale at 85%.
+const MOB_HP_STEP = 0; // Nov 15: was 0.3. One monster per hero is the whole scaling now; they keep their solo HP. // a party fights one monster per hero, each with +30% HP per extra hero (sims: about solo difficulty)
 const TIER_ROWS = r => r <= 4 ? '1' : r <= 9 ? '2' : '3';
 const SHRINES = [
   { key: 'crit', name: 'Shrine of the Keen Edge', text: '+10% Crit Chance for the next 2 fights.', buff: { crit: 10 } },
@@ -267,7 +268,7 @@ class Run {
       const buffs = this.activeBuffs();
       if (n.type === 'boss') for (const m of this.members) (m.feat = m.feat || { lost: 0 }).bossStartHp = m.hp;   // Nov 13: for achievements
       const party = this.members.map(m => ({ cls: m.cls, name: m.name, gear: m.gear, deck: m.deck || undefined, hp: m.hp, mana: m.mana, buffs, talents: m.talents || undefined }));
-      this.combat = new Combat({ party, enemies: n.enemies, enraged: !!n.enraged, firstBoss: n.type === 'boss' && !!this.opts.firstBoss, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : (this.opts.partyStep != null ? this.opts.partyStep : 0.85) * this.coopEase(), mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * this.coopEase() * (this.members.length - 1) : 1, mobDmg: this.members.length > 1 && !this.level ? 0.9 : 1 });
+      this.combat = new Combat({ party, enemies: n.enemies, enraged: !!n.enraged, firstBoss: n.type === 'boss' && !!this.opts.firstBoss, level: this.level, seed: Math.floor(this.rng() * 2147483646) + 1, data: this.data, partyStep: n.enemies.length > 1 ? 0 : (this.opts.partyStep != null ? this.opts.partyStep : 0.85) * this.coopEase(), mobHp: n.enemies.length > 1 ? 1 + MOB_HP_STEP * this.coopEase() * (this.members.length - 1) : (1 + BOSS_HP_STEP * this.coopEase() * (this.members.length - 1)) / (1 + (this.opts.partyStep != null ? this.opts.partyStep : 0.85) * this.coopEase() * (this.members.length - 1)), mobDmg: this.members.length > 1 && !this.level ? 0.9 : 1 });
       this.note(`Row ${n.row}: ${n.type === 'boss' ? 'the boss' : n.type === 'elite' ? 'an elite' : 'a fight'} against ${n.enemies.map(k => this.data.enemies[k].name).join(', ')}.`);
     } else if (n.type === 'rest') { this.pending = { type: 'rest', heals: this.members.map(m => Math.min(m.stats.maxHp - m.hp, Math.round(m.stats.maxHp * 0.3 * (1 + (m.stats.spirit || 0) / 100)))), keep: n.campfire ? 0.75 : 0.5 }; this.pending.heal = this.pending.heals[0]; }
     else if (n.type === 'shrine') { const s = SHRINES.find(x => x.key === n.shrine); this.buffs.push({ key: s.key, name: s.name, buff: s.buff, fights: 2 }); this.pending = { type: 'shrine', shrine: s }; this.note(`Row ${n.row}: ${s.name}. ${s.text}`); }

@@ -1811,7 +1811,7 @@ body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !impor
   function onlineWagonHtml() {
     const pt = SOC.party, lead = pt.members.find(m => m.uid === pt.leader);
     return `<div class="partypick" style="padding:8px 10px"><b>Online party</b> &middot; ${pt.members.map(m => `<span style="color:${CC[m.cls] || 'var(--text)'}">${esc(m.name)}</span>${m.uid === pt.leader ? ' <span class="muted">(leader)</span>' : ''}`).join(', ')}
-      <p class="savenote" style="margin:4px 0 0">${pt.leader === SOC.me ? 'You pick the map level and set out; everyone comes along.' : `${esc(lead ? lead.name : 'The leader')} picks the level and sets out; you'll ride along automatically.`} Each player brings their own hero, gear and deck and controls only that hero. The party votes on every step of the map (ties go to a coin flip). Enemies get +85% HP, mana and regen per extra hero. Everyone takes their own loot home.</p></div>`;
+      <p class="savenote" style="margin:4px 0 0">${pt.leader === SOC.me ? 'You pick the map level and set out; everyone comes along.' : `${esc(lead ? lead.name : 'The leader')} picks the level and sets out; you'll ride along automatically.`} Each player brings their own hero, gear and deck and controls only that hero. The party votes on every step of the map (ties go to a coin flip). A normal fight brings one monster per hero, each at its solo HP. A lone elite or boss gets +95% HP per extra hero. Everyone takes their own loot home.</p></div>`;
   }
   // ---------- maps: six of them, each with its own element, enemies, boss and the resistance its gear rolls
   const ELC = { Physical: '#c9c2b2', Fire: '#ff7a3c', Frost: '#7fd3ff', Nature: '#7fd36a', Arcane: '#c48bff', Shadow: '#9a8cb8' };

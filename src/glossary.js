@@ -99,7 +99,7 @@
       ['Group', 'Some tier 2 and 3 fights are a group (Pack of Wolves, Bandit Party, Magma Golems...): three smaller bodies that share one monster\'s HP and damage. It counts as one monster: one loot roll, one kill. Area damage shines here.'],
       ['Pressure', 'From round 5, enemies deal 2% more damage every round (10% in duels), so fights end.'],
       ['Elites and the boss', 'Elites appear from row 5 and always drop a card. The Warlord has a second phase at half HP with new cards.'],
-      ['Party fights', 'A party meets one monster per hero (each with +30% HP per extra hero). Elites and the boss get +85% HP, mana and regen per extra hero instead.'],
+      ['Party fights', 'A party meets one monster per hero, each with the same HP it has solo. A lone elite or boss instead gets +95% HP per extra hero (+57% on a +0 map), +85% mana and regen (+51% on +0) and draws one more card per extra hero.'],
       ['Damage meter', 'The Meter tab next to the combat log: damage done, healing and damage taken, by ability. Click a bar for the breakdown.'],
     ]],
     ['The run', [

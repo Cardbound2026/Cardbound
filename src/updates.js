@@ -2,6 +2,8 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-15', items: [
+      ["Balance", "Co-op, normal fights: monsters no longer get any extra HP in a party. One monster per hero shows up, each with exactly the HP it has solo (they had +30% per extra hero, +18% on +0 maps). On every map level."],
+      ["Balance", "Co-op, elites and bosses: a lone elite or boss now gets +95% HP per extra hero, up from +85% (on +0 maps +57%, up from +51%)."],
       ["Interface", "Taunt now shows on the enemies it holds: every taunted enemy wears a Taunted debuff naming the hero it must attack."],
       ["Interface", "Co-op: the ready check for a map run has the food slot on it, so everyone can slot a meal before the party sets out, not just the leader at the Wagon."],
       ["Change", "Shaman: Thunderhead is a standing buff now. It waits for your next lightning spell, on this turn or a later one, instead of fading at the end of the turn. It shows on your hero while it is up."],
