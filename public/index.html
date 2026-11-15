@@ -1316,9 +1316,10 @@ body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 21px; text-sha
 .uf .pfimg > img:not(.pupfig), .uf .pfimg > svg { width: 100% !important; height: 100% !important; max-width: none !important; object-fit: cover; object-position: 50% 8%; image-rendering: pixelated; pointer-events: none; transform: none !important; animation: none !important; margin: 0 !important; position: static !important; }
 .uf .pfn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .uf * { pointer-events: none; } .uf .sico, .uf .mkshield { pointer-events: auto; }
 .uf.dead { opacity: .4; filter: grayscale(1); } .uf.now .pfimg { border-color: #ffd98a; box-shadow: 0 0 0 2px #0c0a09, 0 0 12px 3px rgba(255,200,110,.75); }
-.uf.tgt, .uf.droptgt { cursor: crosshair; background: rgba(201,71,47,.16); box-shadow: inset 0 0 0 2px rgba(201,71,47,.8); } .uf.tgt:not(.foe), .uf.droptgt.allytgt { cursor: pointer; background: rgba(127,211,106,.14); box-shadow: inset 0 0 0 2px rgba(127,211,106,.8); }
-.uf.tgt:hover, .uf.dropover { background: rgba(201,71,47,.38); } .uf.tgt:not(.foe):hover, .uf.dropover.allytgt { background: rgba(127,211,106,.34); } .uf.hot { filter: drop-shadow(0 2px 3px rgba(0,0,0,.9)) brightness(1.3); }
-#scrCombat.hud3 #pframe { cursor: default; } #scrCombat.hud3 #pframe.tgt { cursor: pointer; background: rgba(127,211,106,.14); box-shadow: inset 0 0 0 2px rgba(127,211,106,.8); border-radius: 44px 8px 8px 44px; }
+.uf.tgt, .uf.droptgt { cursor: crosshair; } .uf.tgt:not(.foe), .uf.droptgt.allytgt { cursor: pointer; }
+.uf.tgt .pfimg, .uf.droptgt .pfimg { border-color: #e2553c; box-shadow: 0 0 0 2px #0c0a09, 0 0 10px 2px rgba(226,85,60,.8); } .uf.tgt:not(.foe) .pfimg, .uf.droptgt.allytgt .pfimg, #scrCombat.hud3 #pframe.tgt .pfimg { border-color: #7fd36a; box-shadow: 0 0 0 2px #0c0a09, 0 0 10px 2px rgba(127,211,106,.8); }
+.uf.tgt:hover, .uf.dropover, .uf.hot { filter: drop-shadow(0 2px 3px rgba(0,0,0,.9)) brightness(1.4); } .uf.tgt:hover .pfimg, .uf.dropover .pfimg { transform: scale(1.08); }
+#scrCombat.hud3 #pframe { cursor: default; } #scrCombat.hud3 #pframe.tgt { cursor: pointer; }
 #scrCombat .stage .unit.ufhot .figure { filter: drop-shadow(0 0 6px #ffe2a6) drop-shadow(0 0 2px #ffe2a6); }
 #scrCombat.hud3 #pframe2 { left: auto; right: 118px; flex-direction: row-reverse; transform-origin: 100% 0; padding: 10px 10px 10px 14px; } #scrCombat.hud3 #pframe2[hidden] { display: none; }
 #pframe2 .pfn { text-align: right; } #pframe2 .pfrow { flex-direction: row-reverse; } #pframe2 .tags { justify-content: flex-end; } #pframe2 .pfsub { font: 600 12px var(--f-ui); color: #cfc3ad; text-align: right; text-shadow: 0 1px 0 #000; } .pfrate { color: #e0b354; font: 700 12px var(--f-ui); }
@@ -1336,7 +1337,7 @@ body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 21px; text-sha
 body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !important; } /* heroes' bars drain right to left like the frame up top (the old layout mirrored them) */
 #scrCombat.bf.hud3 .stage .uplate .tags { order: 2; display: flex !important; flex-wrap: wrap; justify-content: center !important; gap: 3px !important; width: 150px; margin: 0 !important; }
 #scrCombat.bf.hud3 .stage .uplate .tags .sico { width: 22px !important; height: 22px !important; }
-#scrCombat.bf.hud3 .stage .unit.plow .uplate { bottom: auto !important; top: 10px !important; transform: translate(calc(-50% + var(--px, 0px)), 0) !important; flex-direction: column; } #scrCombat.bf.hud3 .stage .unit.plow .uintent { bottom: calc(var(--figh, var(--fh)) + 8px) !important; }
+#scrCombat.bf.hud3 .stage .unit.plow .uplate { bottom: auto !important; top: 10px !important; transform: translate(calc(-50% + var(--px, 0px)), 0) !important; flex-direction: column; } #scrCombat.bf.hud3 .stage .unit.plow .uintent { bottom: auto !important; top: calc(10px + var(--ih, 40px) + 5px) !important; left: 0 !important; right: auto !important; transform: translate(calc(-50% + var(--px, 0px)), 0) !important; --jc: center; }   /* Nov 14: a plate that drops to the feet takes the intent with it */
 #scrCombat.bf.hud3 .stage .uintent { bottom: calc(var(--figh, var(--fh)) + var(--ih, 40px) + 10px) !important; right: auto !important; left: 0 !important; transform: translate(-50%, var(--cy, 0px)); }
 #scrCombat.hud3 .playedpeek { top: 96px; }
 .playedpeek.foeplay .ppcap b { color: #e8a090; }
@@ -8269,8 +8270,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794701795632';
-  const CB_BUILD = '842bcea3cf'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794701987796';
+  const CB_BUILD = '6d71fd8399'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -9390,7 +9391,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   const CHANGELOG = [
     { date: '2026-11-14', items: [
       ['Interface', "Party fights: every other hero now has a frame down the left edge and every enemy has one down the right, each with a portrait, name, HP, block and statuses. Click a frame to target that fighter with the card you picked, or drop a card on it; hovering a frame lights up its fighter (and the other way round). Fighters stand closer to the middle to make room. Shown in parties of 2 to 4 on screens at least 1200 wide."],
-      ['Interface', "Fights against three or more: HP bars and status tags no longer sit on top of each other. When two fighters stand close, one keeps its bar over its head and the next one's bar drops under its feet, alternating along the line."],
+      ['Interface', "Fights against three or more: HP bars and status tags no longer sit on top of each other. When two fighters stand close, one keeps its bar over its head and the next one's bar drops under its feet, alternating along the line. An enemy whose bar drops to its feet shows what it is about to do down there too, next to the bar."],
       ['Balance', "Shrine of Fury now helps healers too: on top of +20% damage it gives +10 Spirit (healing done and received) for the next 2 fights."],
       ['Balance', "Spirit now also raises healing DONE, not only healing received: each point makes the heals you cast on other heroes 1% bigger, on top of the target's own Spirit. Healers finally have a gear stat that scales their healing. A heal on yourself still counts your Spirit once, so self-healing is unchanged."],
       ['Art', "Shaman lightning spells now fly as a blue ball of lightning with crackling arcs, instead of the green Nature orb."],
@@ -14136,7 +14137,7 @@ function placeIntents(stage, foes, s) {
       const us = [...side.querySelectorAll('.unit')].filter(u => u.querySelector('.uplate')).sort((a, b) => R(a).left - R(b).left); for (const u of us) { u.classList.remove('plow'); u.style.setProperty('--px', '0px'); }
       if (us.length < 2) continue; const rs = us.map(u => full(u.querySelector('.uplate')));
       if (!rs.some((r, a) => rs.some((q, b) => b > a && cross(r, q, 4)))) continue;            // nothing touches: leave them all on top
-      us.forEach((u, k) => { if (k % 2 === 1) { u.classList.add('plow'); if (full(u.querySelector('.uplate')).bottom > hudTop - 2) u.classList.remove('plow'); } });
+      us.forEach((u, k) => { if (k % 2 === 1) { u.classList.add('plow'); const pl = u.querySelector('.uplate'), it = u.querySelector('.uintent'); u.style.setProperty('--ih', pl.offsetHeight + 'px'); if (full(pl).bottom + (it && it.textContent.trim() ? it.offsetHeight + 6 : 0) > hudTop - 2) u.classList.remove('plow'); } });
       // plates on the same level that still touch slide apart sideways
       for (const low of [false, true]) { const row = us.filter(u => u.classList.contains('plow') === low);
         for (let k = 1; k < row.length; k++) { const a = full(row[k - 1].querySelector('.uplate')), b = full(row[k].querySelector('.uplate')); const over = a.right + 6 - b.left;
@@ -14144,7 +14145,7 @@ function placeIntents(stage, foes, s) {
     }
     for (const u of document.querySelectorAll('#scrCombat .stage .unit')) {
       u.style.setProperty('--cy', '0px'); const pl = u.querySelector('.uplate'), it = u.querySelector('.uintent'); if (!pl) continue;
-      if (u.classList.contains('plow')) { let top = it && it.textContent.trim() ? R(it).top : lim; if (top < lim) u.style.setProperty('--cy', Math.ceil(lim - top) + 'px'); continue; }
+      if (u.classList.contains('plow')) continue;
       let top = R(pl).top; if (it && it.textContent.trim()) top = Math.min(top, R(it).top);
       if (top < lim) u.style.setProperty('--cy', Math.ceil(lim - top) + 'px');
     }

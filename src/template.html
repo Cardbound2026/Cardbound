@@ -1312,9 +1312,10 @@ body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 21px; text-sha
 .uf .pfimg > img:not(.pupfig), .uf .pfimg > svg { width: 100% !important; height: 100% !important; max-width: none !important; object-fit: cover; object-position: 50% 8%; image-rendering: pixelated; pointer-events: none; transform: none !important; animation: none !important; margin: 0 !important; position: static !important; }
 .uf .pfn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .uf * { pointer-events: none; } .uf .sico, .uf .mkshield { pointer-events: auto; }
 .uf.dead { opacity: .4; filter: grayscale(1); } .uf.now .pfimg { border-color: #ffd98a; box-shadow: 0 0 0 2px #0c0a09, 0 0 12px 3px rgba(255,200,110,.75); }
-.uf.tgt, .uf.droptgt { cursor: crosshair; background: rgba(201,71,47,.16); box-shadow: inset 0 0 0 2px rgba(201,71,47,.8); } .uf.tgt:not(.foe), .uf.droptgt.allytgt { cursor: pointer; background: rgba(127,211,106,.14); box-shadow: inset 0 0 0 2px rgba(127,211,106,.8); }
-.uf.tgt:hover, .uf.dropover { background: rgba(201,71,47,.38); } .uf.tgt:not(.foe):hover, .uf.dropover.allytgt { background: rgba(127,211,106,.34); } .uf.hot { filter: drop-shadow(0 2px 3px rgba(0,0,0,.9)) brightness(1.3); }
-#scrCombat.hud3 #pframe { cursor: default; } #scrCombat.hud3 #pframe.tgt { cursor: pointer; background: rgba(127,211,106,.14); box-shadow: inset 0 0 0 2px rgba(127,211,106,.8); border-radius: 44px 8px 8px 44px; }
+.uf.tgt, .uf.droptgt { cursor: crosshair; } .uf.tgt:not(.foe), .uf.droptgt.allytgt { cursor: pointer; }
+.uf.tgt .pfimg, .uf.droptgt .pfimg { border-color: #e2553c; box-shadow: 0 0 0 2px #0c0a09, 0 0 10px 2px rgba(226,85,60,.8); } .uf.tgt:not(.foe) .pfimg, .uf.droptgt.allytgt .pfimg, #scrCombat.hud3 #pframe.tgt .pfimg { border-color: #7fd36a; box-shadow: 0 0 0 2px #0c0a09, 0 0 10px 2px rgba(127,211,106,.8); }
+.uf.tgt:hover, .uf.dropover, .uf.hot { filter: drop-shadow(0 2px 3px rgba(0,0,0,.9)) brightness(1.4); } .uf.tgt:hover .pfimg, .uf.dropover .pfimg { transform: scale(1.08); }
+#scrCombat.hud3 #pframe { cursor: default; } #scrCombat.hud3 #pframe.tgt { cursor: pointer; }
 #scrCombat .stage .unit.ufhot .figure { filter: drop-shadow(0 0 6px #ffe2a6) drop-shadow(0 0 2px #ffe2a6); }
 #scrCombat.hud3 #pframe2 { left: auto; right: 118px; flex-direction: row-reverse; transform-origin: 100% 0; padding: 10px 10px 10px 14px; } #scrCombat.hud3 #pframe2[hidden] { display: none; }
 #pframe2 .pfn { text-align: right; } #pframe2 .pfrow { flex-direction: row-reverse; } #pframe2 .tags { justify-content: flex-end; } #pframe2 .pfsub { font: 600 12px var(--f-ui); color: #cfc3ad; text-align: right; text-shadow: 0 1px 0 #000; } .pfrate { color: #e0b354; font: 700 12px var(--f-ui); }
@@ -1332,7 +1333,7 @@ body #scrCombat.bf.hud3 .order .osep { color: #cfc3ad; font-size: 21px; text-sha
 body #scrCombat.bf.hud3 .stage #playerSlot .uplate .bar { transform: none !important; } /* heroes' bars drain right to left like the frame up top (the old layout mirrored them) */
 #scrCombat.bf.hud3 .stage .uplate .tags { order: 2; display: flex !important; flex-wrap: wrap; justify-content: center !important; gap: 3px !important; width: 150px; margin: 0 !important; }
 #scrCombat.bf.hud3 .stage .uplate .tags .sico { width: 22px !important; height: 22px !important; }
-#scrCombat.bf.hud3 .stage .unit.plow .uplate { bottom: auto !important; top: 10px !important; transform: translate(calc(-50% + var(--px, 0px)), 0) !important; flex-direction: column; } #scrCombat.bf.hud3 .stage .unit.plow .uintent { bottom: calc(var(--figh, var(--fh)) + 8px) !important; }
+#scrCombat.bf.hud3 .stage .unit.plow .uplate { bottom: auto !important; top: 10px !important; transform: translate(calc(-50% + var(--px, 0px)), 0) !important; flex-direction: column; } #scrCombat.bf.hud3 .stage .unit.plow .uintent { bottom: auto !important; top: calc(10px + var(--ih, 40px) + 5px) !important; left: 0 !important; right: auto !important; transform: translate(calc(-50% + var(--px, 0px)), 0) !important; --jc: center; }   /* Nov 14: a plate that drops to the feet takes the intent with it */
 #scrCombat.bf.hud3 .stage .uintent { bottom: calc(var(--figh, var(--fh)) + var(--ih, 40px) + 10px) !important; right: auto !important; left: 0 !important; transform: translate(-50%, var(--cy, 0px)); }
 #scrCombat.hud3 .playedpeek { top: 96px; }
 .playedpeek.foeplay .ppcap b { color: #e8a090; }
