@@ -11,7 +11,7 @@
     const gear = c.gear.map(g => { const o = Object.assign({}, g); delete o.id; delete o.lines; return o; });
     return { gear, deck: c.deck.map(k => [k.key, k.rank || 0]), codex: cx ? { key: cx, level: info.level, picks: info.picks.slice(0, info.rows) } : null,
       codexLv: Object.fromEntries(Object.entries(c.codexes || {}).map(([k, st]) => [k, CB.codexLevel(st.xp || 0).level]).filter(x => x[1] > 0)),
-      pvp: c.pvp && (c.pvp.w || c.pvp.l || c.pvp.d) ? { r: c.pvp.r, w: c.pvp.w || 0, l: c.pvp.l || 0, d: c.pvp.d || 0, peak: c.pvp.peak || c.pvp.r } : null, title: CBHub.titleOf(c, profile) || null, runs: c.runs || 0, bossKills: c.bossKills || 0, raidKills: c.raidKills || 0, gearScore: CBHub.gearScore(c), deckLevel: CB.deckLevel(c.deck), starter: c.starter, hardcore: !!c.hardcore, hcFell: c.hcFell || null };
+      pvp: c.pvp && (c.pvp.w || c.pvp.l || c.pvp.d) ? { r: c.pvp.r, w: c.pvp.w || 0, l: c.pvp.l || 0, d: c.pvp.d || 0, peak: c.pvp.peak || c.pvp.r } : null, title: CBHub.titleOf(c, profile) || null, runs: c.runs || 0, bossKills: c.bossKills || 0, raidKills: c.raidKills || 0, gearScore: CBHub.gearScore(c), deckLevel: CB.deckLevel(c.deck), starter: c.starter, hardcore: !!c.hardcore, hcFell: c.hcFell || null, solo: c.sSolo || {}, coop: c.sCoop || {} };
   }
   // publish one hero (throttled to once a minute unless forced)
   async function publishHero(key, force) {
@@ -68,13 +68,14 @@
   const bestMapOf = (h) => { let best = null; for (const M of mapsInOrder()) { const d = doneOf((h.maps || {})[M.key]); if (d >= 0 && (!best || d * 100 + M.num > best.score)) best = { M, d, score: d * 100 + M.num }; } return best; }; // highest map level completed
   function renderRecords() {
     const el = $('hpRec'); if (!el) return;
-    const tabs = [['heroes', 'Heroes'], ['hardcore', 'Hardcore'], ['arena', 'Arena'], ['maps', 'Map records'], ['raids', 'Raid records']].map(([k, n]) => `<button role="tab" data-rectab="${k}" aria-selected="${REC.tab === k}">${n}</button>`).join('');
+    const tabs = [['heroes', 'Heroes'], ['solo', 'Solo'], ['coop', 'Co-op'], ['hardcore', 'Hardcore'], ['arena', 'Arena'], ['maps', 'Map records'], ['raids', 'Raid records']].map(([k, n]) => `<button role="tab" data-rectab="${k}" aria-selected="${REC.tab === k}">${n}</button>`).join('');
     let body = '';
     if (REC.err === 'offline') body = '<p class="muted">Sign in to see the Hall of Records: it lists every player\'s heroes.</p>';
     else if (REC.err === 'setup') body = '<p class="down">The Hall of Records needs a one-time database update: run supabase/records.sql, then supabase/seasons.sql, in the Supabase SQL editor.</p>';
     else if (REC.err) body = `<p class="down">Could not load the records: ${esc(REC.err)}</p>`;
     else if (!REC.heroes) body = '<p class="muted">Reading the records...</p>';
     else if (REC.tab === 'heroes') body = recHeroes();
+    else if (REC.tab === 'solo' || REC.tab === 'coop') body = recMode(REC.tab);
     else if (REC.tab === 'hardcore') body = recHardcore();
     else if (REC.tab === 'arena') body = recArena();
     else if (REC.tab === 'maps') body = recMaps();
@@ -89,8 +90,22 @@
       <p class="savenote" style="margin:0 0 6px">Records count from the start of the season (heroes keep their unlocks; their old records are kept with the past season). Progress counts completed maps: 15 points for every level of a map you've beaten (beating +2 means +0, +1 and +2 count), plus the furthest row on the next level up. Best clear is the highest map level the hero has completed. Click a hero to see their gear, deck and talents.</p>`;
     if (!list.length) return filt + '<p class="muted">No heroes yet.</p>';
     const rows = list.slice(0, 100).map((h, i) => { const bm = bestMapOf(h), cx = h.snapshot && h.snapshot.codex, cxn = cx && CB.CODEX_BY_KEY[cx.key] ? CB.CODEX_BY_KEY[cx.key].name : '';
-      return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td>${recName(h.hero_name, h.snapshot && h.snapshot.title, CC[h.hero_class] || 'var(--text)')} <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num">${h.progress}</td><td class="num">${h.power}</td><td>${bm ? `Map ${bm.M.num} ${esc(bm.M.name)} +${bm.d}` : '<span class="muted">no map completed yet</span>'}</td><td class="muted">${cxn ? `${esc(cxn)} Lv ${cx.level}` : ''}</td></tr>`; }).join('');
+      return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td>${h.snapshot && h.snapshot.hardcore && window.HCT ? HCT(1) : ''}${recName(h.hero_name, h.snapshot && h.snapshot.title, CC[h.hero_class] || 'var(--text)')} <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num">${h.progress}</td><td class="num">${h.power}</td><td>${bm ? `Map ${bm.M.num} ${esc(bm.M.name)} +${bm.d}` : '<span class="muted">no map completed yet</span>'}</td><td class="muted">${cxn ? `${esc(cxn)} Lv ${cx.level}` : ''}</td></tr>`; }).join('');
     return filt + `<div class="rectable"><table><thead><tr><th>#</th><th>Hero</th><th>Guild</th><th class="num">Progress</th><th class="num">Power</th><th>Best clear</th><th>Codex</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  // Nov 15: the Solo and Co-op ladders. Each hero's best clear on every road, counted only from boss wins of that kind:
+  // Solo = the hero alone, Co-op = in a party. Score: 15 points for every map level beaten (beating +2 counts +0, +1 and +2), like Progress.
+  function modeScore(t) { let s = 0; for (const v of Object.values(t || {})) if (v >= 0) s += (v + 1) * 15; return s; }
+  function modeBest(t) { let best = null; for (const M of mapsInOrder()) { const d = (t || {})[M.key]; if (d != null && d >= 0 && (!best || d * 100 + M.num > best.score)) best = { M, d, score: d * 100 + M.num }; } return best; }
+  function recMode(mode) {
+    const key = mode === 'solo' ? 'solo' : 'coop', name = mode === 'solo' ? 'Solo' : 'Co-op';
+    const list = REC.heroes.map(h => ({ h, t: (h.snapshot && h.snapshot[key]) || {} })).map(x => Object.assign(x, { sc: modeScore(x.t) })).filter(x => x.sc > 0 && (REC.cls === 'All' || x.h.hero_class === REC.cls)).sort((a, b) => b.sc - a.sc || b.h.power - a.h.power);
+    const filt = `<div class="recfilt"><span class="muted">Class</span>${['All', ...Object.keys(CLASSES)].map(k => `<button class="chip ${REC.cls === k ? 'on' : ''}" data-reccls="${k}">${k}</button>`).join('')}</div>
+      <p class="savenote" style="margin:0 0 6px">${mode === 'solo' ? 'Boss wins with the hero on its own, no party.' : 'Boss wins in a party of two or more heroes.'} Score: 15 points for every map level beaten that way (beating +2 counts +0, +1 and +2). Best clear is the highest map level beaten ${mode === 'solo' ? 'solo' : 'in a party'}. Wins from before Nov 15 count only if they were among the hero's last 20 runs.</p>`;
+    if (!list.length) return filt + `<p class="muted">No ${name.toLowerCase()} boss wins recorded yet this season.</p>`;
+    const rows = list.slice(0, 100).map(({ h, t, sc }, i) => { const bm = modeBest(t), n = Object.values(t).filter(v => v >= 0).length;
+      return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td>${h.snapshot && h.snapshot.hardcore && window.HCT ? HCT(1) : ''}${recName(h.hero_name, h.snapshot && h.snapshot.title, CC[h.hero_class] || 'var(--text)')} <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num">${sc}</td><td class="num">${h.power}</td><td>${bm ? `Map ${bm.M.num} ${esc(bm.M.name)} +${bm.d}` : ''}</td><td class="num">${n}</td></tr>`; }).join('');
+    return filt + `<div class="rectable"><table><thead><tr><th>#</th><th>Hero</th><th>Guild</th><th class="num">${name} score</th><th class="num">Power</th><th>Best ${name.toLowerCase()} clear</th><th class="num">Roads</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
   // Nov 1: hardcore heroes have their own ladder (living ones), plus a graveyard of hardcore heroes who fell (they play on as normal heroes)
   function recHardcore() {

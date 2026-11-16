@@ -81,9 +81,12 @@ function fix(p) { // tolerate older or partial saves
     if (c.season !== SEASON) {
       (c.seasons = c.seasons || []).unshift({ id: c.season, progress: progressScore(c), sKills: c.sKills || {}, mapBest: c.mapBest || {}, bossKillsBy: c.bossKillsBy || {} });
       c.seasons = c.seasons.slice(0, 12);
-      c.season = SEASON; c.sKills = {}; c.mapBest = {}; c.mapRows = {}; c.mapKillAt = {}; c.bossKillsBy = {};
+      c.season = SEASON; c.sKills = {}; c.mapBest = {}; c.mapRows = {}; c.mapKillAt = {}; c.bossKillsBy = {}; c.sSolo = {}; c.sCoop = {};
     }
   }
+  // Nov 15: Solo and Co-op ladders. Each hero keeps its best clear per map this season by how it was won: alone (one hero) or in a party.
+  // Heroes from before this start from the boss wins still in the run history (the last 20 runs).
+  for (const c of Object.values(p.chars)) if (!c.sSolo) { c.sSolo = {}; c.sCoop = {}; for (const h of p.history || []) if (!h.raid && h.map && h.result === 'victory' && h.name === c.name && h.cls === c.cls) { const t = h.party ? c.sCoop : c.sSolo; t[h.map] = Math.max(t[h.map] == null ? -1 : t[h.map], h.level || 0); } }
   { const all = [p.stash, p.stashOther, p.vault, p.vaultOther, ...Object.values(p.chars || {}).map(c => c.gear), ...(p.bankBags || []), (p.arena && p.arena.stake && p.arena.stake.items) || []]; for (const L of all) if (Array.isArray(L)) for (const it of L) CB.maceFix(it); }   // Nov 13: old 1H maces get the new implicit
   achCheck(p, {}, null, true); // Nov 2: achievements a save can already prove (boss kills, duels, ranks...) unlock quietly
   useStash(p, p.last && p.last.cls); // the stash of the hero you were last playing (hardcore heroes have their own)
@@ -591,7 +594,8 @@ function absorbRun(p, run, mi) {
   if (run.over === 'victory') { const mk0 = run.mapKey || 'physical', had = mapCleared(c, mk0); if ((run.level || 0) > had) (c.mapKillAt = c.mapKillAt || {})[mk0] = Date.now(); }
   if (run.over === 'victory') p.lastBoss = { map: run.mapKey || 'physical', level: run.level || 0, at: Date.now() }; // the town merchant stocks gear from your last boss kill
   if (run.over === 'victory') { const bk = (c.bossKillsBy = c.bossKillsBy || {}); bk[run.mapKey || 'physical'] = (bk[run.mapKey || 'physical'] || 0) + 1; } // Nov 1: boss kills per map (Hall of Records)
-  if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); c.sKills = c.sKills || {}; c.sKills[mk] = Math.max(mapCleared(c, mk), run.level || 0); }
+  if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); c.sKills = c.sKills || {}; c.sKills[mk] = Math.max(mapCleared(c, mk), run.level || 0);
+    const t = run.members && run.members.length > 1 ? (c.sCoop = c.sCoop || {}) : (c.sSolo = c.sSolo || {}); t[mk] = Math.max(t[mk] == null ? -1 : t[mk], run.level || 0); }   // Nov 15: Solo / Co-op ladders
   // the run's damage meter, kept so the Chronicler can show it later (numbers rounded to keep saves small)
   const meter = Object.values(run.meter || {}).map(m => { const r = (o) => Object.fromEntries(Object.entries(o || {}).filter(x => x[1] > 0).map(([k, v]) => [k, Math.round(v)])); return { id: m.id, name: m.name, isPlayer: m.isPlayer, cls: m.cls, dealt: r(m.dealt), healed: r(m.healed), taken: r(m.taken), absorbed: Math.round(m.absorbed || 0) }; });
   try { chronicle(c, run, mem, mi, { items, cards, gold: kept.gold, row }); } catch (e) {}   // Nov 14: lifetime numbers for the Chronicle (statbook.js)

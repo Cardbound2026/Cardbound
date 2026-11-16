@@ -121,7 +121,7 @@
         if (o.mount) drawRider(gx, p.x * TS + TS / 2, p.y * TS + TS * 0.92, o.dir, moving ? ((o.step % 2) + o.t) / 2 : 0, pal, s, t, o.mount, CC[o.cls]);
         else drawChar(gx, p.x * TS + TS / 2, p.y * TS + TS * 0.92, o.dir, moving ? ((o.step + (o.t > 0.5 ? 1 : 0)) % 2 ? 1 : 2) : 0, pal, s, t);
         if (typeof exPetDraw === 'function' && o.ap && o.ap.cos && o.ap.cos.pet) exPetDraw(gx, o.uid, o.ap.cos.pet, p.x * TS + TS / 2, p.y * TS + TS * 0.92, s, t); // Nov 13: their pet
-        const tx = p.x * TS + TS / 2, ty = townTag(gx, tx, p.y * TS + TS * 0.92, o.name, SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0', o.guild, s, o.mount ? (window.CB_HEROPUP ? 150 : 72 + MOUNT_RISE) : 98, o.title);
+        const tx = p.x * TS + TS / 2, ty = townTag(gx, tx, p.y * TS + TS * 0.92, o.name, SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0', o.guild, s, o.mount ? (window.CB_HEROPUP ? 150 : 72 + MOUNT_RISE) : 98, o.title, o.hc);
         if (o.shop && o.shop.t) drawShopSign(gx, tx, ty - 4, o.shop.t, s);
         sayOver(o.uid, tx, ty - (o.shop && o.shop.t ? 24 * s : 0), s);
       } });
@@ -145,7 +145,7 @@
       g.fillStyle = b.yell ? '#ff5a48' : '#f3ead6'; lines.forEach((l, i) => g.fillText(l, tx, y + pad * .7 + lh * (i + .78))); g.restore(); } }
   function addChat(m) {
     if (!m || !m.text) return;
-    SOC.chat.push({ from: m.uid, name: String(m.name || '?').slice(0, 24), text: String(m.text).slice(0, 200), sys: !!m.sys, at: m.at || Date.now(), ch: m.ch || 'world', toName: m.toName, mine: m.uid === SOC.me, items: Array.isArray(m.items) ? m.items.slice(0, 3) : undefined });
+    SOC.chat.push({ from: m.uid, name: String(m.name || '?').slice(0, 24), text: String(m.text).slice(0, 200), sys: !!m.sys, hc: !!m.hc, at: m.at || Date.now(), ch: m.ch || 'world', toName: m.toName, mine: m.uid === SOC.me, items: Array.isArray(m.items) ? m.items.slice(0, 3) : undefined });
     SOC.chat = SOC.chat.slice(-80); renderChat();
     if (!m.sys && (m.ch === 'say' || m.ch === 'yell') && m.uid) SAYS.set(m.uid, { text: String(m.text).slice(0, 200), at: Date.now(), yell: m.ch === 'yell' }); // Nov 14: only /s and /y float over the speaker's head
   }
@@ -168,7 +168,7 @@
   function sendChat(text) {
     text = (text || '').trim().slice(0, 240); if (!text) return;
     if (!socOn()) { sysChat('Sign in to chat with other players.'); return; }
-    const c = profile.chars[heroKey], me = { uid: SOC.me, name: c ? c.name : acctName(supaUser), at: Date.now() };
+    const c = profile.chars[heroKey], me = { uid: SOC.me, name: c ? c.name : acctName(supaUser), at: Date.now(), hc: !!(c && c.hardcore) };
     let m = null; const cmd = text.match(/^\/(\w+)\s*(.*)$/s);
     if (!cmd) m = Object.assign(me, { ch: 'world', text });
     else {
@@ -233,10 +233,12 @@
     fitCards($('modalBox')); $('mClose').onclick = closeModal;
   }
   const CHAN = { world: ['', ''], party: ['[Party] ', 'cparty'], guild: ['[Guild] ', 'cguild'], whisper: ['', 'cwhisper'], say: ['[Say] ', 'csay'], yell: ['[Yell] ', 'cyell'] };
+  const HCT = (hc) => hc ? '<span class="hctag" title="Hardcore: one life">[HC]</span> ' : '';   // Nov 15: Hardcore heroes wear [HC] before their name in chat, LFG and lists
+  window.HCT = HCT;
   function renderChat() {
     const el = $('chatLog'); if (!el) return;
     el.innerHTML = SOC.chat.map((m, i) => { if (m.sys) return `<div class="sys">${esc(m.text)}</div>`; const [tag, cls] = CHAN[m.ch] || CHAN.world;
-      const who = m.ch === 'whisper' ? (m.mine ? `To ${esc(m.toName || '?')}` : `From ${esc(m.name)}`) : esc(m.name);
+      const who = m.ch === 'whisper' ? (m.mine ? `To ${esc(m.toName || '?')}` : `From ${HCT(m.hc)}${esc(m.name)}`) : HCT(m.hc) + esc(m.name);
       let body = esc(m.text); (m.items || []).forEach((l, j) => { if (!l || !l.it || !l.tok) return; const r = l.it.kind === 'card' ? (CARDS[l.it.key] || {}).rarity : l.it.rarity; body = body.split(esc(l.tok)).join(`<a class="ilink" data-chatlink="${i}:${j}" style="color:${RC[r] || 'var(--accent)'}" role="button" tabindex="0">${esc(l.tok)}</a>`); });
       return `<div class="${cls}">${tag}<b>${who}:</b> ${body}</div>`; }).join('') || `<div class="sys">${socOn() ? 'World chat. Say hello. Press Enter to type, /help for channels.' : 'Sign in to see other players and chat.'}</div>`;
     el.scrollTop = el.scrollHeight;
@@ -325,7 +327,7 @@
     if (!p.accept) { sysChat(`${p.name} declined the invite.`); return; }
     if (p.hc != null && !!p.hc !== myHc()) { sysChat(`${p.name} is on a ${p.hc ? 'Hardcore' : 'normal'} hero and can't join a ${myHc() ? 'Hardcore' : 'normal'} party.`); return; }
     if (SOC.party.members.length >= PARTY_MAX || SOC.party.members.some(m => m.uid === p.uid)) return;
-    SOC.party.members.push({ uid: p.uid, name: p.name, cls: p.cls });
+    SOC.party.members.push({ uid: p.uid, name: p.name, cls: p.cls, hc: !!p.hc });
     sysChat(`${p.name} joined the party.`); sendParty();
   }
   function sendParty() { if (socOn() && SOC.party) SOC.ch.send({ type: 'broadcast', event: 'party', payload: SOC.party }); retrack(true); renderSocial(); }
@@ -375,7 +377,7 @@
       const pt = SOC.party;
       pp.hidden = !pt && !SOC.invites.length && !NET.duelIn.length && !TR.inv.length;
       const canDuel = (m) => m.uid !== SOC.me && SOC.online.has(m.uid) && SOC.online.get(m.uid).place === 'town' && !NET.s && !NET.duelOut;
-      pp.innerHTML = (pt ? `<div class="pph"><b>Party ${pt.members.length}/${PARTY_MAX}</b><button class="pilebtn" id="ppLeave">${pt.leader === SOC.me ? 'Disband' : 'Leave'}</button></div>` + pt.members.map(m => `<div class="ppm"><span class="dot ${SOC.online.has(m.uid) || m.uid === SOC.me ? 'on' : ''}"></span><b style="color:${CC[m.cls] || 'var(--text)'}">${esc(m.name)}</b>${m.uid === pt.leader ? ' <span class="muted">leader</span>' : ''}${m.uid !== SOC.me && SOC.online.has(m.uid) ? ` <button class="pilebtn" data-insp="${m.uid}" title="See their gear and deck">Inspect</button>` : ''}${canDuel(m) ? ` <button class="pilebtn" data-duel="${m.uid}" title="Challenge to a duel">Duel</button>` : NET.duelOut === m.uid ? ' <span class="muted">challenged...</span>' : ''}${pt.leader === SOC.me && m.uid !== SOC.me ? ` <button class="pilebtn" data-kick="${m.uid}">Remove</button>` : ''}</div>`).join('') + `<p class="muted" style="margin:4px 0 0;font-size:12px">${pt.leader === SOC.me ? 'Talk to the Wagoneer to set out together.' : 'The leader sets out from the Wagon; you ride along.'}</p>` : '')
+      pp.innerHTML = (pt ? `<div class="pph"><b>Party ${pt.members.length}/${PARTY_MAX}</b><button class="pilebtn" id="ppLeave">${pt.leader === SOC.me ? 'Disband' : 'Leave'}</button></div>` + pt.members.map(m => `<div class="ppm"><span class="dot ${SOC.online.has(m.uid) || m.uid === SOC.me ? 'on' : ''}"></span><b style="color:${CC[m.cls] || 'var(--text)'}">${HCT(m.hc)}${esc(m.name)}</b>${m.uid === pt.leader ? ' <span class="muted">leader</span>' : ''}${m.uid !== SOC.me && SOC.online.has(m.uid) ? ` <button class="pilebtn" data-insp="${m.uid}" title="See their gear and deck">Inspect</button>` : ''}${canDuel(m) ? ` <button class="pilebtn" data-duel="${m.uid}" title="Challenge to a duel">Duel</button>` : NET.duelOut === m.uid ? ' <span class="muted">challenged...</span>' : ''}${pt.leader === SOC.me && m.uid !== SOC.me ? ` <button class="pilebtn" data-kick="${m.uid}">Remove</button>` : ''}</div>`).join('') + `<p class="muted" style="margin:4px 0 0;font-size:12px">${pt.leader === SOC.me ? 'Talk to the Wagoneer to set out together.' : 'The leader sets out from the Wagon; you ride along.'}</p>` : '')
         + tradeInvitesHtml() + NET.duelIn.map(d => `<div class="ppinv"><span><b style="color:${CC[d.cls] || 'inherit'}">${esc(d.name)}</b>${d.pvp ? ` <span class="pfrate" title="Arena rating">${d.pvp} ${CBHub.pvpRank(d.pvp)}</span>` : ''} challenges you to a duel${(() => { const c = profile.chars[heroKey]; return c && d.pvp ? ` <small class="muted">(you: ${CBHub.pvpOf(c).r}; win ${CBHub.pvpDelta(CBHub.pvpOf(c).r, d.pvp, 1) > 0 ? '+' : ''}${CBHub.pvpDelta(CBHub.pvpOf(c).r, d.pvp, 1)}, lose ${CBHub.pvpDelta(CBHub.pvpOf(c).r, d.pvp, 0)})</small>` : ''; })()}</span><span><button class="btn primary" data-dacc="${d.from}">Fight</button> <button class="btn" data-ddec="${d.from}">Decline</button></span></div>`).join('')
         + SOC.invites.map(i => `<div class="ppinv"><span><b>${esc(i.name)}</b> invites you to a party</span><span><button class="btn primary" data-acc="${i.from}">Join</button> <button class="btn" data-dec="${i.from}">Decline</button></span></div>`).join('');
     }

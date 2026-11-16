@@ -960,6 +960,7 @@ body.inkui:not(.ui-classic) .item.itm .acts .btn:disabled { opacity: .45; filter
 .cardgrid .xpbar { width: 150px; }
 
 /* modal */
+.hctag { color: #ff5a48; font-weight: 800; letter-spacing: .02em; }
 .modal { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(8,6,4,.74); z-index: 20; padding: 16px; }
 #invPop { position: fixed; inset: 0; z-index: 9000; display: grid; place-items: center; background: rgba(8,6,4,.55); padding: 16px; } #invPop[hidden] { display: none; }
 #invPop .invbox { width: min(420px, 100%); padding: 18px 22px; text-align: center; background: var(--panel); border: 2px solid var(--accent); border-radius: 10px; box-shadow: 0 12px 40px rgba(0,0,0,.8), 0 0 24px rgba(214,161,74,.35); } #invPop h2 { margin: 0 0 6px; color: var(--accent); } #invPop p { margin: 0 0 10px; font-size: 16px; } #invPop .row { justify-content: center; }
@@ -5754,9 +5755,12 @@ function fix(p) { // tolerate older or partial saves
     if (c.season !== SEASON) {
       (c.seasons = c.seasons || []).unshift({ id: c.season, progress: progressScore(c), sKills: c.sKills || {}, mapBest: c.mapBest || {}, bossKillsBy: c.bossKillsBy || {} });
       c.seasons = c.seasons.slice(0, 12);
-      c.season = SEASON; c.sKills = {}; c.mapBest = {}; c.mapRows = {}; c.mapKillAt = {}; c.bossKillsBy = {};
+      c.season = SEASON; c.sKills = {}; c.mapBest = {}; c.mapRows = {}; c.mapKillAt = {}; c.bossKillsBy = {}; c.sSolo = {}; c.sCoop = {};
     }
   }
+  // Nov 15: Solo and Co-op ladders. Each hero keeps its best clear per map this season by how it was won: alone (one hero) or in a party.
+  // Heroes from before this start from the boss wins still in the run history (the last 20 runs).
+  for (const c of Object.values(p.chars)) if (!c.sSolo) { c.sSolo = {}; c.sCoop = {}; for (const h of p.history || []) if (!h.raid && h.map && h.result === 'victory' && h.name === c.name && h.cls === c.cls) { const t = h.party ? c.sCoop : c.sSolo; t[h.map] = Math.max(t[h.map] == null ? -1 : t[h.map], h.level || 0); } }
   { const all = [p.stash, p.stashOther, p.vault, p.vaultOther, ...Object.values(p.chars || {}).map(c => c.gear), ...(p.bankBags || []), (p.arena && p.arena.stake && p.arena.stake.items) || []]; for (const L of all) if (Array.isArray(L)) for (const it of L) CB.maceFix(it); }   // Nov 13: old 1H maces get the new implicit
   achCheck(p, {}, null, true); // Nov 2: achievements a save can already prove (boss kills, duels, ranks...) unlock quietly
   useStash(p, p.last && p.last.cls); // the stash of the hero you were last playing (hardcore heroes have their own)
@@ -6264,7 +6268,8 @@ function absorbRun(p, run, mi) {
   if (run.over === 'victory') { const mk0 = run.mapKey || 'physical', had = mapCleared(c, mk0); if ((run.level || 0) > had) (c.mapKillAt = c.mapKillAt || {})[mk0] = Date.now(); }
   if (run.over === 'victory') p.lastBoss = { map: run.mapKey || 'physical', level: run.level || 0, at: Date.now() }; // the town merchant stocks gear from your last boss kill
   if (run.over === 'victory') { const bk = (c.bossKillsBy = c.bossKillsBy || {}); bk[run.mapKey || 'physical'] = (bk[run.mapKey || 'physical'] || 0) + 1; } // Nov 1: boss kills per map (Hall of Records)
-  if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); c.sKills = c.sKills || {}; c.sKills[mk] = Math.max(mapCleared(c, mk), run.level || 0); }
+  if (run.over === 'victory') { c.bossKills++; c.mapKills = c.mapKills || {}; const mk = run.mapKey || 'physical'; c.mapKills[mk] = Math.max(c.mapKills[mk] == null ? -1 : c.mapKills[mk], run.level || 0); c.sKills = c.sKills || {}; c.sKills[mk] = Math.max(mapCleared(c, mk), run.level || 0);
+    const t = run.members && run.members.length > 1 ? (c.sCoop = c.sCoop || {}) : (c.sSolo = c.sSolo || {}); t[mk] = Math.max(t[mk] == null ? -1 : t[mk], run.level || 0); }   // Nov 15: Solo / Co-op ladders
   // the run's damage meter, kept so the Chronicler can show it later (numbers rounded to keep saves small)
   const meter = Object.values(run.meter || {}).map(m => { const r = (o) => Object.fromEntries(Object.entries(o || {}).filter(x => x[1] > 0).map(([k, v]) => [k, Math.round(v)])); return { id: m.id, name: m.name, isPlayer: m.isPlayer, cls: m.cls, dealt: r(m.dealt), healed: r(m.healed), taken: r(m.taken), absorbed: Math.round(m.absorbed || 0) }; });
   try { chronicle(c, run, mem, mi, { items, cards, gold: kept.gold, row }); } catch (e) {}   // Nov 14: lifetime numbers for the Chronicle (statbook.js)
@@ -7492,7 +7497,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     poly(g, [[cx - 13 * s + sway, by - 44 * s], [cx + 13 * s + sway, by - 44 * s], [cx + 5 * s + sway, by - 47 * s], [cx + 2 * s + sway, by - 55 * s], [cx - 5 * s + sway, by - 47 * s]], '#4a3826', 1.6); // floppy hat
   }
   // a name tag (and an optional <Guild> line under it) sitting just above a town figure's head; returns the top of the tag
-  function townTag(g, tx, footY, name, col, guild, s, figH, title) {
+  function townTag(g, tx, footY, name, col, guild, s, figH, title, hc) {
     const head = footY - (figH != null ? figH * s : 72 * s) - 3 * s; let y = head;
     g.textAlign = 'center';
     if (guild) { g.font = `italic 500 ${Math.round(10.5 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const t = '<' + guild + '>', w = g.measureText(t).width + 10, h = Math.round(12 * Math.max(0.9, s));
@@ -7507,6 +7512,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     if (title) { g.font = fT; g.fillStyle = '#e4c27a'; g.fillText(title, xt, ty); }
     g.textAlign = 'center';
     if (false) { y -= h - 1; g.font = `italic 600 ${Math.round(10.5 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const tw = g.measureText(title).width + 10, th = Math.round(12 * Math.max(0.9, s)); g.fillStyle = 'rgba(10,8,6,.72)'; g.fillRect(tx - tw / 2, y - th, tw, th); g.fillStyle = '#e4c27a'; g.fillText(title, tx, y - th * .22); return y - th; } // Nov 2: titles
+    if (hc) { const hh = Math.round(12 * Math.max(0.9, s)), top = y - h - hh - 1; g.font = `800 ${Math.round(11 * Math.max(0.9, s))}px "Barlow Semi Condensed", sans-serif`; const w = g.measureText('[HC]').width + 10;   // Nov 15: Hardcore heroes carry [HC] above their name
+      g.fillStyle = 'rgba(10,8,6,.8)'; g.fillRect(tx - w / 2, top, w, hh); g.fillStyle = '#ff5a48'; g.fillText('[HC]', tx, top + hh * .8); return top; }
     return y - h;
   }
   function drawChar(g, cx, by, dir, step, pal, s, t) {
@@ -7620,7 +7627,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     for (const e of TOWN.embers) { gx.fillStyle = `rgba(255,${150 + (e.life * 80 | 0)},70,${e.life})`; gx.fillRect(e.x * TS, e.y * TS, 2.5 * s, 2.5 * s); }
     // name tags over every head: townspeople always, and your own hero with your guild under the name
     for (const n of NV) townTag(gx, n.x * TS + TS / 2, n.y * TS + TS * 0.92, n.inside ? n.place : n.name, n.open ? '#d6a14a' : '#a6978a', null, s, n.inside ? 58 : n.open === 'dummy' ? 84 : window.CB_HEROPUP ? 98 : n.pal && n.pal.forge ? 80 : null);
-    { const c = profile.chars[heroKey]; if (c) { const sy = townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? (window.CB_HEROPUP ? 150 : 72 + MOUNT_RISE) : 98, CBHub.titleOf(c, profile)); if (typeof sayOver === 'function') { if (SOC.me) sayOver(SOC.me, hp.x * TS + TS / 2, sy, s); drawSays(gx); } } }
+    { const c = profile.chars[heroKey]; if (c) { const sy = townTag(gx, hp.x * TS + TS / 2, hp.y * TS + TS * 0.92, c.name, CC[c.cls] || '#ede3d0', typeof GUILD !== 'undefined' && GUILD.me ? GUILD.me.name : null, s, P.mount ? (window.CB_HEROPUP ? 150 : 72 + MOUNT_RISE) : 98, CBHub.titleOf(c, profile), !!c.hardcore); if (typeof sayOver === 'function') { if (SOC.me) sayOver(SOC.me, hp.x * TS + TS / 2, sy, s); drawSays(gx); } } }
     // night: darken everything, then cut light pools around fires and the hero
     const dk = TOWN.dark, dg = dk.getContext('2d');
     dg.setTransform(1, 0, 0, 1, 0, 0); dg.globalCompositeOperation = 'source-over'; dg.clearRect(0, 0, dk.width, dk.height);
@@ -7950,7 +7957,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
         if (o.mount) drawRider(gx, p.x * TS + TS / 2, p.y * TS + TS * 0.92, o.dir, moving ? ((o.step % 2) + o.t) / 2 : 0, pal, s, t, o.mount, CC[o.cls]);
         else drawChar(gx, p.x * TS + TS / 2, p.y * TS + TS * 0.92, o.dir, moving ? ((o.step + (o.t > 0.5 ? 1 : 0)) % 2 ? 1 : 2) : 0, pal, s, t);
         if (typeof exPetDraw === 'function' && o.ap && o.ap.cos && o.ap.cos.pet) exPetDraw(gx, o.uid, o.ap.cos.pet, p.x * TS + TS / 2, p.y * TS + TS * 0.92, s, t); // Nov 13: their pet
-        const tx = p.x * TS + TS / 2, ty = townTag(gx, tx, p.y * TS + TS * 0.92, o.name, SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0', o.guild, s, o.mount ? (window.CB_HEROPUP ? 150 : 72 + MOUNT_RISE) : 98, o.title);
+        const tx = p.x * TS + TS / 2, ty = townTag(gx, tx, p.y * TS + TS * 0.92, o.name, SOC.party && SOC.party.members.some(m => m.uid === o.uid) ? '#7cc261' : '#ede3d0', o.guild, s, o.mount ? (window.CB_HEROPUP ? 150 : 72 + MOUNT_RISE) : 98, o.title, o.hc);
         if (o.shop && o.shop.t) drawShopSign(gx, tx, ty - 4, o.shop.t, s);
         sayOver(o.uid, tx, ty - (o.shop && o.shop.t ? 24 * s : 0), s);
       } });
@@ -7974,7 +7981,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       g.fillStyle = b.yell ? '#ff5a48' : '#f3ead6'; lines.forEach((l, i) => g.fillText(l, tx, y + pad * .7 + lh * (i + .78))); g.restore(); } }
   function addChat(m) {
     if (!m || !m.text) return;
-    SOC.chat.push({ from: m.uid, name: String(m.name || '?').slice(0, 24), text: String(m.text).slice(0, 200), sys: !!m.sys, at: m.at || Date.now(), ch: m.ch || 'world', toName: m.toName, mine: m.uid === SOC.me, items: Array.isArray(m.items) ? m.items.slice(0, 3) : undefined });
+    SOC.chat.push({ from: m.uid, name: String(m.name || '?').slice(0, 24), text: String(m.text).slice(0, 200), sys: !!m.sys, hc: !!m.hc, at: m.at || Date.now(), ch: m.ch || 'world', toName: m.toName, mine: m.uid === SOC.me, items: Array.isArray(m.items) ? m.items.slice(0, 3) : undefined });
     SOC.chat = SOC.chat.slice(-80); renderChat();
     if (!m.sys && (m.ch === 'say' || m.ch === 'yell') && m.uid) SAYS.set(m.uid, { text: String(m.text).slice(0, 200), at: Date.now(), yell: m.ch === 'yell' }); // Nov 14: only /s and /y float over the speaker's head
   }
@@ -7997,7 +8004,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   function sendChat(text) {
     text = (text || '').trim().slice(0, 240); if (!text) return;
     if (!socOn()) { sysChat('Sign in to chat with other players.'); return; }
-    const c = profile.chars[heroKey], me = { uid: SOC.me, name: c ? c.name : acctName(supaUser), at: Date.now() };
+    const c = profile.chars[heroKey], me = { uid: SOC.me, name: c ? c.name : acctName(supaUser), at: Date.now(), hc: !!(c && c.hardcore) };
     let m = null; const cmd = text.match(/^\/(\w+)\s*(.*)$/s);
     if (!cmd) m = Object.assign(me, { ch: 'world', text });
     else {
@@ -8062,10 +8069,12 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     fitCards($('modalBox')); $('mClose').onclick = closeModal;
   }
   const CHAN = { world: ['', ''], party: ['[Party] ', 'cparty'], guild: ['[Guild] ', 'cguild'], whisper: ['', 'cwhisper'], say: ['[Say] ', 'csay'], yell: ['[Yell] ', 'cyell'] };
+  const HCT = (hc) => hc ? '<span class="hctag" title="Hardcore: one life">[HC]</span> ' : '';   // Nov 15: Hardcore heroes wear [HC] before their name in chat, LFG and lists
+  window.HCT = HCT;
   function renderChat() {
     const el = $('chatLog'); if (!el) return;
     el.innerHTML = SOC.chat.map((m, i) => { if (m.sys) return `<div class="sys">${esc(m.text)}</div>`; const [tag, cls] = CHAN[m.ch] || CHAN.world;
-      const who = m.ch === 'whisper' ? (m.mine ? `To ${esc(m.toName || '?')}` : `From ${esc(m.name)}`) : esc(m.name);
+      const who = m.ch === 'whisper' ? (m.mine ? `To ${esc(m.toName || '?')}` : `From ${HCT(m.hc)}${esc(m.name)}`) : HCT(m.hc) + esc(m.name);
       let body = esc(m.text); (m.items || []).forEach((l, j) => { if (!l || !l.it || !l.tok) return; const r = l.it.kind === 'card' ? (CARDS[l.it.key] || {}).rarity : l.it.rarity; body = body.split(esc(l.tok)).join(`<a class="ilink" data-chatlink="${i}:${j}" style="color:${RC[r] || 'var(--accent)'}" role="button" tabindex="0">${esc(l.tok)}</a>`); });
       return `<div class="${cls}">${tag}<b>${who}:</b> ${body}</div>`; }).join('') || `<div class="sys">${socOn() ? 'World chat. Say hello. Press Enter to type, /help for channels.' : 'Sign in to see other players and chat.'}</div>`;
     el.scrollTop = el.scrollHeight;
@@ -8154,7 +8163,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     if (!p.accept) { sysChat(`${p.name} declined the invite.`); return; }
     if (p.hc != null && !!p.hc !== myHc()) { sysChat(`${p.name} is on a ${p.hc ? 'Hardcore' : 'normal'} hero and can't join a ${myHc() ? 'Hardcore' : 'normal'} party.`); return; }
     if (SOC.party.members.length >= PARTY_MAX || SOC.party.members.some(m => m.uid === p.uid)) return;
-    SOC.party.members.push({ uid: p.uid, name: p.name, cls: p.cls });
+    SOC.party.members.push({ uid: p.uid, name: p.name, cls: p.cls, hc: !!p.hc });
     sysChat(`${p.name} joined the party.`); sendParty();
   }
   function sendParty() { if (socOn() && SOC.party) SOC.ch.send({ type: 'broadcast', event: 'party', payload: SOC.party }); retrack(true); renderSocial(); }
@@ -8204,7 +8213,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       const pt = SOC.party;
       pp.hidden = !pt && !SOC.invites.length && !NET.duelIn.length && !TR.inv.length;
       const canDuel = (m) => m.uid !== SOC.me && SOC.online.has(m.uid) && SOC.online.get(m.uid).place === 'town' && !NET.s && !NET.duelOut;
-      pp.innerHTML = (pt ? `<div class="pph"><b>Party ${pt.members.length}/${PARTY_MAX}</b><button class="pilebtn" id="ppLeave">${pt.leader === SOC.me ? 'Disband' : 'Leave'}</button></div>` + pt.members.map(m => `<div class="ppm"><span class="dot ${SOC.online.has(m.uid) || m.uid === SOC.me ? 'on' : ''}"></span><b style="color:${CC[m.cls] || 'var(--text)'}">${esc(m.name)}</b>${m.uid === pt.leader ? ' <span class="muted">leader</span>' : ''}${m.uid !== SOC.me && SOC.online.has(m.uid) ? ` <button class="pilebtn" data-insp="${m.uid}" title="See their gear and deck">Inspect</button>` : ''}${canDuel(m) ? ` <button class="pilebtn" data-duel="${m.uid}" title="Challenge to a duel">Duel</button>` : NET.duelOut === m.uid ? ' <span class="muted">challenged...</span>' : ''}${pt.leader === SOC.me && m.uid !== SOC.me ? ` <button class="pilebtn" data-kick="${m.uid}">Remove</button>` : ''}</div>`).join('') + `<p class="muted" style="margin:4px 0 0;font-size:12px">${pt.leader === SOC.me ? 'Talk to the Wagoneer to set out together.' : 'The leader sets out from the Wagon; you ride along.'}</p>` : '')
+      pp.innerHTML = (pt ? `<div class="pph"><b>Party ${pt.members.length}/${PARTY_MAX}</b><button class="pilebtn" id="ppLeave">${pt.leader === SOC.me ? 'Disband' : 'Leave'}</button></div>` + pt.members.map(m => `<div class="ppm"><span class="dot ${SOC.online.has(m.uid) || m.uid === SOC.me ? 'on' : ''}"></span><b style="color:${CC[m.cls] || 'var(--text)'}">${HCT(m.hc)}${esc(m.name)}</b>${m.uid === pt.leader ? ' <span class="muted">leader</span>' : ''}${m.uid !== SOC.me && SOC.online.has(m.uid) ? ` <button class="pilebtn" data-insp="${m.uid}" title="See their gear and deck">Inspect</button>` : ''}${canDuel(m) ? ` <button class="pilebtn" data-duel="${m.uid}" title="Challenge to a duel">Duel</button>` : NET.duelOut === m.uid ? ' <span class="muted">challenged...</span>' : ''}${pt.leader === SOC.me && m.uid !== SOC.me ? ` <button class="pilebtn" data-kick="${m.uid}">Remove</button>` : ''}</div>`).join('') + `<p class="muted" style="margin:4px 0 0;font-size:12px">${pt.leader === SOC.me ? 'Talk to the Wagoneer to set out together.' : 'The leader sets out from the Wagon; you ride along.'}</p>` : '')
         + tradeInvitesHtml() + NET.duelIn.map(d => `<div class="ppinv"><span><b style="color:${CC[d.cls] || 'inherit'}">${esc(d.name)}</b>${d.pvp ? ` <span class="pfrate" title="Arena rating">${d.pvp} ${CBHub.pvpRank(d.pvp)}</span>` : ''} challenges you to a duel${(() => { const c = profile.chars[heroKey]; return c && d.pvp ? ` <small class="muted">(you: ${CBHub.pvpOf(c).r}; win ${CBHub.pvpDelta(CBHub.pvpOf(c).r, d.pvp, 1) > 0 ? '+' : ''}${CBHub.pvpDelta(CBHub.pvpOf(c).r, d.pvp, 1)}, lose ${CBHub.pvpDelta(CBHub.pvpOf(c).r, d.pvp, 0)})</small>` : ''; })()}</span><span><button class="btn primary" data-dacc="${d.from}">Fight</button> <button class="btn" data-ddec="${d.from}">Decline</button></span></div>`).join('')
         + SOC.invites.map(i => `<div class="ppinv"><span><b>${esc(i.name)}</b> invites you to a party</span><span><button class="btn primary" data-acc="${i.from}">Join</button> <button class="btn" data-dec="${i.from}">Decline</button></span></div>`).join('');
     }
@@ -8393,8 +8402,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794763110151';
-  const CB_BUILD = 'fe5b057ab6'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794790708631';
+  const CB_BUILD = '05a922bf0c'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -8988,7 +8997,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     const gear = c.gear.map(g => { const o = Object.assign({}, g); delete o.id; delete o.lines; return o; });
     return { gear, deck: c.deck.map(k => [k.key, k.rank || 0]), codex: cx ? { key: cx, level: info.level, picks: info.picks.slice(0, info.rows) } : null,
       codexLv: Object.fromEntries(Object.entries(c.codexes || {}).map(([k, st]) => [k, CB.codexLevel(st.xp || 0).level]).filter(x => x[1] > 0)),
-      pvp: c.pvp && (c.pvp.w || c.pvp.l || c.pvp.d) ? { r: c.pvp.r, w: c.pvp.w || 0, l: c.pvp.l || 0, d: c.pvp.d || 0, peak: c.pvp.peak || c.pvp.r } : null, title: CBHub.titleOf(c, profile) || null, runs: c.runs || 0, bossKills: c.bossKills || 0, raidKills: c.raidKills || 0, gearScore: CBHub.gearScore(c), deckLevel: CB.deckLevel(c.deck), starter: c.starter, hardcore: !!c.hardcore, hcFell: c.hcFell || null };
+      pvp: c.pvp && (c.pvp.w || c.pvp.l || c.pvp.d) ? { r: c.pvp.r, w: c.pvp.w || 0, l: c.pvp.l || 0, d: c.pvp.d || 0, peak: c.pvp.peak || c.pvp.r } : null, title: CBHub.titleOf(c, profile) || null, runs: c.runs || 0, bossKills: c.bossKills || 0, raidKills: c.raidKills || 0, gearScore: CBHub.gearScore(c), deckLevel: CB.deckLevel(c.deck), starter: c.starter, hardcore: !!c.hardcore, hcFell: c.hcFell || null, solo: c.sSolo || {}, coop: c.sCoop || {} };
   }
   // publish one hero (throttled to once a minute unless forced)
   async function publishHero(key, force) {
@@ -9045,13 +9054,14 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   const bestMapOf = (h) => { let best = null; for (const M of mapsInOrder()) { const d = doneOf((h.maps || {})[M.key]); if (d >= 0 && (!best || d * 100 + M.num > best.score)) best = { M, d, score: d * 100 + M.num }; } return best; }; // highest map level completed
   function renderRecords() {
     const el = $('hpRec'); if (!el) return;
-    const tabs = [['heroes', 'Heroes'], ['hardcore', 'Hardcore'], ['arena', 'Arena'], ['maps', 'Map records'], ['raids', 'Raid records']].map(([k, n]) => `<button role="tab" data-rectab="${k}" aria-selected="${REC.tab === k}">${n}</button>`).join('');
+    const tabs = [['heroes', 'Heroes'], ['solo', 'Solo'], ['coop', 'Co-op'], ['hardcore', 'Hardcore'], ['arena', 'Arena'], ['maps', 'Map records'], ['raids', 'Raid records']].map(([k, n]) => `<button role="tab" data-rectab="${k}" aria-selected="${REC.tab === k}">${n}</button>`).join('');
     let body = '';
     if (REC.err === 'offline') body = '<p class="muted">Sign in to see the Hall of Records: it lists every player\'s heroes.</p>';
     else if (REC.err === 'setup') body = '<p class="down">The Hall of Records needs a one-time database update: run supabase/records.sql, then supabase/seasons.sql, in the Supabase SQL editor.</p>';
     else if (REC.err) body = `<p class="down">Could not load the records: ${esc(REC.err)}</p>`;
     else if (!REC.heroes) body = '<p class="muted">Reading the records...</p>';
     else if (REC.tab === 'heroes') body = recHeroes();
+    else if (REC.tab === 'solo' || REC.tab === 'coop') body = recMode(REC.tab);
     else if (REC.tab === 'hardcore') body = recHardcore();
     else if (REC.tab === 'arena') body = recArena();
     else if (REC.tab === 'maps') body = recMaps();
@@ -9066,8 +9076,22 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
       <p class="savenote" style="margin:0 0 6px">Records count from the start of the season (heroes keep their unlocks; their old records are kept with the past season). Progress counts completed maps: 15 points for every level of a map you've beaten (beating +2 means +0, +1 and +2 count), plus the furthest row on the next level up. Best clear is the highest map level the hero has completed. Click a hero to see their gear, deck and talents.</p>`;
     if (!list.length) return filt + '<p class="muted">No heroes yet.</p>';
     const rows = list.slice(0, 100).map((h, i) => { const bm = bestMapOf(h), cx = h.snapshot && h.snapshot.codex, cxn = cx && CB.CODEX_BY_KEY[cx.key] ? CB.CODEX_BY_KEY[cx.key].name : '';
-      return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td>${recName(h.hero_name, h.snapshot && h.snapshot.title, CC[h.hero_class] || 'var(--text)')} <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num">${h.progress}</td><td class="num">${h.power}</td><td>${bm ? `Map ${bm.M.num} ${esc(bm.M.name)} +${bm.d}` : '<span class="muted">no map completed yet</span>'}</td><td class="muted">${cxn ? `${esc(cxn)} Lv ${cx.level}` : ''}</td></tr>`; }).join('');
+      return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td>${h.snapshot && h.snapshot.hardcore && window.HCT ? HCT(1) : ''}${recName(h.hero_name, h.snapshot && h.snapshot.title, CC[h.hero_class] || 'var(--text)')} <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num">${h.progress}</td><td class="num">${h.power}</td><td>${bm ? `Map ${bm.M.num} ${esc(bm.M.name)} +${bm.d}` : '<span class="muted">no map completed yet</span>'}</td><td class="muted">${cxn ? `${esc(cxn)} Lv ${cx.level}` : ''}</td></tr>`; }).join('');
     return filt + `<div class="rectable"><table><thead><tr><th>#</th><th>Hero</th><th>Guild</th><th class="num">Progress</th><th class="num">Power</th><th>Best clear</th><th>Codex</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  // Nov 15: the Solo and Co-op ladders. Each hero's best clear on every road, counted only from boss wins of that kind:
+  // Solo = the hero alone, Co-op = in a party. Score: 15 points for every map level beaten (beating +2 counts +0, +1 and +2), like Progress.
+  function modeScore(t) { let s = 0; for (const v of Object.values(t || {})) if (v >= 0) s += (v + 1) * 15; return s; }
+  function modeBest(t) { let best = null; for (const M of mapsInOrder()) { const d = (t || {})[M.key]; if (d != null && d >= 0 && (!best || d * 100 + M.num > best.score)) best = { M, d, score: d * 100 + M.num }; } return best; }
+  function recMode(mode) {
+    const key = mode === 'solo' ? 'solo' : 'coop', name = mode === 'solo' ? 'Solo' : 'Co-op';
+    const list = REC.heroes.map(h => ({ h, t: (h.snapshot && h.snapshot[key]) || {} })).map(x => Object.assign(x, { sc: modeScore(x.t) })).filter(x => x.sc > 0 && (REC.cls === 'All' || x.h.hero_class === REC.cls)).sort((a, b) => b.sc - a.sc || b.h.power - a.h.power);
+    const filt = `<div class="recfilt"><span class="muted">Class</span>${['All', ...Object.keys(CLASSES)].map(k => `<button class="chip ${REC.cls === k ? 'on' : ''}" data-reccls="${k}">${k}</button>`).join('')}</div>
+      <p class="savenote" style="margin:0 0 6px">${mode === 'solo' ? 'Boss wins with the hero on its own, no party.' : 'Boss wins in a party of two or more heroes.'} Score: 15 points for every map level beaten that way (beating +2 counts +0, +1 and +2). Best clear is the highest map level beaten ${mode === 'solo' ? 'solo' : 'in a party'}. Wins from before Nov 15 count only if they were among the hero's last 20 runs.</p>`;
+    if (!list.length) return filt + `<p class="muted">No ${name.toLowerCase()} boss wins recorded yet this season.</p>`;
+    const rows = list.slice(0, 100).map(({ h, t, sc }, i) => { const bm = modeBest(t), n = Object.values(t).filter(v => v >= 0).length;
+      return `<tr data-rechero="${h.user_id}|${esc(h.hero_key)}" class="${supaUser && h.user_id === supaUser.id ? 'mine' : ''}"><td class="rk">${i + 1}</td><td>${h.snapshot && h.snapshot.hardcore && window.HCT ? HCT(1) : ''}${recName(h.hero_name, h.snapshot && h.snapshot.title, CC[h.hero_class] || 'var(--text)')} <span class="muted">${esc(h.hero_class)}</span></td><td class="muted">${esc(h.guild_name || '')}</td><td class="num">${sc}</td><td class="num">${h.power}</td><td>${bm ? `Map ${bm.M.num} ${esc(bm.M.name)} +${bm.d}` : ''}</td><td class="num">${n}</td></tr>`; }).join('');
+    return filt + `<div class="rectable"><table><thead><tr><th>#</th><th>Hero</th><th>Guild</th><th class="num">${name} score</th><th class="num">Power</th><th>Best ${name.toLowerCase()} clear</th><th class="num">Roads</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
   // Nov 1: hardcore heroes have their own ladder (living ones), plus a graveyard of hardcore heroes who fell (they play on as normal heroes)
   function recHardcore() {
@@ -9534,6 +9558,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-15', items: [
+      ["Feature", "Hall of Records: new Solo and Co-op ladders. Each counts only boss wins of its kind (the hero on its own, or in a party of two or more), with its own score, best clear and number of roads beaten. Wins from before today count if they were among the hero's last 20 runs."],
+      ["Interface", "Hardcore heroes wear a red [HC]: above their name in town, and before their name in chat, on the LFG board, in the party list and on the Hall of Records."],
       ["Art", "Bracers and gloves fit the arm now. Their pictures had been cut out far wider than the arm inside them: a glove was a blob twice the size of the fist, with flaps and strips hanging off the forearm, which is where the oven mitts came from. Every set, on every body, is now trimmed to the arm, so a hero has a slim forearm and a real fist closed round the handle."],
       ["Art", "Heroes in a fight, part one of a rework. The far arm is only drawn in a fight when it carries a shield or a second weapon; empty, its sleeve and glove showed round the near arm as stray shapes at the elbow and past the handle. A two-hander shows a second fist on the handle instead. The hand holding a weapon now ends at the handle (the glove used to run on past it and a round patch was painted over the weapon, which read as a ring round the hand)."],
       ["Art", "Heroes stand in a fighting stance: front foot forward, back foot behind, knees bent, weight forward, where they used to stand bolt upright. There is no lump at the hip any more."],
@@ -16397,7 +16423,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
   function openLfg() {
     if (!profile || !profile.chars[heroKey]) return; const c = profile.chars[heroKey], mine = profile.lfg = profile.lfg || { on: false, tx: '', want: [], doing: 'Runs', map: curMap(), lv: profile.last.level || 0 };
     const on = typeof socOn === 'function' && socOn(), others = on ? [...SOC.others.values()].filter(o => o.lfg) : [];
-    const card = (name, cls, l, me, uid, hc) => `<div class="lfgcard" style="--mc:${CC[cls] || '#d6a14a'}"><div class="lfgtop"><b style="color:${CC[cls] || '#fff'}">${esc(name)}</b><span class="muted">${esc(cls || '')}${hc ? ' &middot; Hardcore' : ''}</span><span class="chip">Power ${l.pw}</span><span class="chip">Gear ${l.gs}</span><span class="chip">Deck ${l.dk}</span><span class="chip">${l.n} in party</span></div>
+    const card = (name, cls, l, me, uid, hc) => `<div class="lfgcard" style="--mc:${CC[cls] || '#d6a14a'}"><div class="lfgtop"><b style="color:${CC[cls] || '#fff'}">${hc && window.HCT ? HCT(1) : ''}${esc(name)}</b><span class="muted">${esc(cls || '')}</span><span class="chip">Power ${l.pw}</span><span class="chip">Gear ${l.gs}</span><span class="chip">Deck ${l.dk}</span><span class="chip">${l.n} in party</span></div>
         <div class="lfgmid"><span><i>Doing</i> ${esc(l.doing)}${l.map && DATA.maps[l.map] ? ': ' + esc(DATA.maps[l.map].name) + ' level ' + (+l.lv || 0) : ''}</span><span><i>Looking for</i> ${(l.want && l.want.length ? l.want : ['Anyone']).map(w => `<em style="color:${CC[w] || '#efe6d2'}">${esc(w)}</em>`).join(', ')}</span></div>
         ${l.tx ? `<p>${esc(l.tx)}</p>` : ''}${me ? '<div class="row" style="justify-content:flex-start;margin:6px 0 0"><span class="chip">Your notice</span><button class="btn" data-lfgdown="1" style="border-color:#b0352a;color:#ff9a8a">Cancel my notice</button></div>' : `<div class="row" style="justify-content:flex-start;margin:6px 0 0"><button class="btn primary" data-lfgw="${esc(name)}">Whisper</button><button class="btn" data-lfginv="${uid}">Invite to party</button></div>`}</div>`;
     modal(`<h2>The group board</h2>
@@ -16407,7 +16433,7 @@ window.CB_BF = { layout, watch, draw, get on() { return BF.on; }, set(on) { BF.o
         <textarea id="lfgTx" maxlength="160" rows="2" placeholder="Your notice: what you are doing, when, what you need... (160 letters)">${esc(mine.tx || '')}</textarea>
         <div class="row" style="justify-content:flex-start"><button class="btn primary" id="lfgPost">${mine.on ? 'Update my notice' : 'Pin my notice'}</button>${mine.on ? '<button class="btn" id="lfgDown" style="border-color:#b0352a;color:#ff9a8a">Cancel my notice</button>' : ''}<span class="muted" style="font-size:12.5px">${on ? (mine.on ? 'Your notice is up.' : 'Nothing pinned yet.') : 'Sign in to pin a notice and to read the board.'}</span></div></div>
       <h3 style="font-size:19px;margin:12px 0 6px;color:var(--accent)">Notices <span class="muted" style="font-size:14px">${others.length + (mine.on && on ? 1 : 0)}</span></h3>
-      <div class="lfglist">${mine.on && on ? card(c.name, c.cls, exLfgPresence(), true) : ''}${others.map(o => card(o.name, o.cls, o.lfg, false, o.uid, o.hc)).join('') || (mine.on && on ? '' : `<p class="muted" style="margin:0">${on ? 'The board is empty. Be the first to pin a notice.' : 'You are playing offline.'}</p>`)}</div>
+      <div class="lfglist">${mine.on && on ? card(c.name, c.cls, exLfgPresence(), true, null, !!c.hardcore) : ''}${others.map(o => card(o.name, o.cls, o.lfg, false, o.uid, o.hc)).join('') || (mine.on && on ? '' : `<p class="muted" style="margin:0">${on ? 'The board is empty. Be the first to pin a notice.' : 'You are playing offline.'}</p>`)}</div>
       <div class="row"><button class="btn" id="lfgRef">Refresh</button><button class="btn primary" id="mClose">Close</button></div>`);
     $('modalBox').classList.add('wide'); $('mClose').onclick = closeModal; $('lfgRef').onclick = openLfg;
     const read = () => { mine.doing = $('lfgDo').value; mine.map = $('lfgMap').value; mine.lv = Math.max(0, Math.min(99, +$('lfgLv').value || 0)); mine.tx = $('lfgTx').value.trim().slice(0, 160); mine.want = [...$('modalBox').querySelectorAll('[data-lfgwant]')].filter(x => x.checked).map(x => x.dataset.lfgwant); };

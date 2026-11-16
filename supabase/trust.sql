@@ -162,7 +162,8 @@ begin
   snap := coalesce(p_snapshot, '{}') || jsonb_build_object(
     'gear', coalesce((select jsonb_agg(g - 'id' - 'lines') from jsonb_array_elements(coalesce(c->'gear', '[]')) g), '[]'),
     'deck', coalesce((select jsonb_agg(jsonb_build_array(k->>'key', coalesce((k->>'rank')::int, 0))) from jsonb_array_elements(coalesce(c->'deck', '[]')) k), '[]'),
-    'runs', coalesce((c->>'runs')::int, 0), 'bossKills', coalesce((c->>'bossKills')::int, 0), 'raidKills', coalesce((c->>'raidKills')::int, 0), 'hardcore', coalesce((c->>'hardcore')::boolean, false));
+    'runs', coalesce((c->>'runs')::int, 0), 'bossKills', coalesce((c->>'bossKills')::int, 0), 'raidKills', coalesce((c->>'raidKills')::int, 0), 'hardcore', coalesce((c->>'hardcore')::boolean, false),
+    'solo', coalesce(c->'sSolo', '{}'), 'coop', coalesce(c->'sCoop', '{}'));   -- Nov 15: Solo / Co-op ladders, from the save
   insert into public.hero_records (user_id, hero_key, season, hero_name, hero_class, guild_name, progress, power, maps, snapshot, updated_at, hidden)
   values (uid, p_hero_key, v_season, left(coalesce(c->>'name', '?'), 16), coalesce(c->>'cls', '?'), left(p_guild, 24), public.cb_progress(c), least(100, greatest(0, coalesce(p_power, 0))), maps, snap, now(), pr.flagged or public.is_admin(uid))
   on conflict (user_id, hero_key, season) do update set hero_name = excluded.hero_name, hero_class = excluded.hero_class, guild_name = excluded.guild_name, progress = excluded.progress,
