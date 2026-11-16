@@ -7646,7 +7646,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
     gx.globalCompositeOperation = 'source-over';
     if (typeof tutDraw === 'function') tutDraw(gx, TS, t); // the tutorial's arrow
     // the district name, for a few seconds after you walk into one
-    { const a = (t - TOWN.districtAt) / 3200; if (TOWN.district && a < 1) { gx.setTransform(d, 0, 0, d, 0, 0); const al = a < .15 ? a / .15 : a > .7 ? (1 - a) / .3 : 1; gx.globalAlpha = Math.max(0, al); gx.textAlign = 'center'; gx.font = `400 ${Math.round(28 * Math.max(.8, s))}px "Pirata One", Georgia, serif`; const w2 = gx.measureText(TOWN.district).width + 40; gx.fillStyle = 'rgba(14,10,7,.82)'; gx.fillRect(TOWN.vw / 2 - w2 / 2, 54, w2, 42); gx.strokeStyle = '#d6a14a'; gx.lineWidth = 1.5; gx.strokeRect(TOWN.vw / 2 - w2 / 2 + 4, 58, w2 - 8, 34); gx.fillStyle = '#e4c27a'; gx.fillText(TOWN.district, TOWN.vw / 2, 84); gx.globalAlpha = 1; gx.setTransform(d, 0, 0, d, -cam.x * d, -cam.y * d); } }
+    { const a = (t - TOWN.districtAt) / 3200; if (TOWN.district && a < 1) { gx.setTransform(d, 0, 0, d, 0, 0); const al = a < .15 ? a / .15 : a > .7 ? (1 - a) / .3 : 1; gx.globalAlpha = Math.max(0, al); gx.textAlign = 'center'; gx.font = `400 ${Math.round(28 * Math.max(.8, s))}px "Pirata One", Georgia, serif`; const w2 = gx.measureText(TOWN.district).width + 40; gx.fillStyle = 'rgba(14,10,7,.82)'; gx.fillRect(TOWN.vw / 2 - w2 / 2, 5, w2, 42); gx.strokeStyle = '#d6a14a'; gx.lineWidth = 1.5; gx.strokeRect(TOWN.vw / 2 - w2 / 2 + 4, 9, w2 - 8, 34); gx.fillStyle = '#e4c27a'; gx.fillText(TOWN.district, TOWN.vw / 2, 35);   /* Nov 15: the district name sits above the XP bar (it was drawn under it) */ gx.globalAlpha = 1; gx.setTransform(d, 0, 0, d, -cam.x * d, -cam.y * d); } }
     // click marker
     drawMini(t);
     if (P.target) { const k = (t % 900) / 900; gx.strokeStyle = `rgba(214,161,74,${1 - k})`; gx.lineWidth = 2; gx.beginPath(); gx.ellipse(P.target.x * TS + TS / 2, P.target.y * TS + TS * 0.8, TS * 0.3 * (0.6 + k * 0.5), TS * 0.12 * (0.6 + k * 0.5), 0, 0, Math.PI * 2); gx.stroke(); }
@@ -8402,8 +8402,8 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Every browser applies the same numbered actions, in order, to the same seeded Run or Combat, so all copies of the
   // game stay identical. Each player only ever sends actions for their own hero.
   const NET = { s: null, pend: null, duelIn: [], duelOut: null };
-  const CB_BUILT_AT = +'1794790708631';
-  const CB_BUILD = '05a922bf0c'; // fingerprint of this build: everyone in a game must be on the same version
+  const CB_BUILT_AT = +'1794794689323';
+  const CB_BUILD = '8ae06d215a'; // fingerprint of this build: everyone in a game must be on the same version
   const TURN_S = 90, VOTE_S = 45, GONE_S = 15;
   const netOn = () => !!NET.s;
   const netHost = () => !!(NET.s && NET.s.host === SOC.me);
@@ -9558,6 +9558,7 @@ function brazier(g, p, TS, t) { // the eternal flame: a stepped stone dais and a
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-15', items: [
+      ["Interface", "Town: the name of the district you walk into now shows above the XP bar, where it used to sit behind it."],
       ["Feature", "Hall of Records: new Solo and Co-op ladders. Each counts only boss wins of its kind (the hero on its own, or in a party of two or more), with its own score, best clear and number of roads beaten. Wins from before today count if they were among the hero's last 20 runs."],
       ["Interface", "Hardcore heroes wear a red [HC]: above their name in town, and before their name in chat, on the LFG board, in the party list and on the Hall of Records."],
       ["Art", "Bracers and gloves fit the arm now. Their pictures had been cut out far wider than the arm inside them: a glove was a blob twice the size of the fist, with flaps and strips hanging off the forearm, which is where the oven mitts came from. Every set, on every body, is now trimmed to the arm, so a hero has a slim forearm and a real fist closed round the handle."],

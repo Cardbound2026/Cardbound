@@ -2,6 +2,7 @@
   // Add new entries at the TOP of CHANGELOG (newest day first). Each item: [area, text]. Written for players.
   const CHANGELOG = [
     { date: '2026-11-15', items: [
+      ["Interface", "Town: the name of the district you walk into now shows above the XP bar, where it used to sit behind it."],
       ["Feature", "Hall of Records: new Solo and Co-op ladders. Each counts only boss wins of its kind (the hero on its own, or in a party of two or more), with its own score, best clear and number of roads beaten. Wins from before today count if they were among the hero's last 20 runs."],
       ["Interface", "Hardcore heroes wear a red [HC]: above their name in town, and before their name in chat, on the LFG board, in the party list and on the Hall of Records."],
       ["Art", "Bracers and gloves fit the arm now. Their pictures had been cut out far wider than the arm inside them: a glove was a blob twice the size of the fist, with flaps and strips hanging off the forearm, which is where the oven mitts came from. Every set, on every body, is now trimmed to the arm, so a hero has a slim forearm and a real fist closed round the handle."],
